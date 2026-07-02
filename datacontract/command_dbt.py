@@ -1,7 +1,7 @@
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Set, Tuple
+from typing import Optional
 
 import typer
 from typing_extensions import Annotated
@@ -46,17 +46,17 @@ class _ContractCtx:
 
     contract_path: Path
     odcs: object
-    model_names: List[str]  # effective dbt model names — drive selection and result attribution
+    model_names: list[str]  # effective dbt model names — drive selection and result attribution
     generation_run: Optional[Run]  # set on sync's --run-tests path, None on `dbt test`
     dbt_version: Optional[str] = None  # filename-derived dbt model version, when this contract is versioned
 
 
-def _candidate_models(odcs) -> List[str]:
+def _candidate_models(odcs) -> list[str]:
     """Model names a contract may own on disk — schema name and physicalName, strategy-agnostic.
 
     `dbt test` doesn't know which `--model-resolution` `dbt sync` used, so it matches on both.
     """
-    names: List[str] = []
+    names: list[str] = []
     for s in odcs.schema_ or []:
         if s.name:
             names.append(s.name)
@@ -79,7 +79,7 @@ def _check_model_ownership(owners_by_model: dict) -> None:
     A shared model is allowed only when its owners are versions of the *same* contract: one
     `odcs.id`, distinct `version`s, and each with a filename `v<N>` that maps to a dbt model version.
     """
-    errors: List[str] = []
+    errors: list[str] = []
     for model, owners in owners_by_model.items():
         if len(owners) < 2:
             continue
@@ -112,14 +112,6 @@ def _validate_server_declared(odcs, server: Optional[str]) -> None:
             raise typer.Exit(code=1)
 
 
-def _resolve_run_server(odcs, server: Optional[str], target: Optional[str]) -> Optional[str]:
-    if server is not None:
-        return server
-    if odcs.servers and len(odcs.servers) == 1:
-        return odcs.servers[0].server
-    return target
-
-
 def _maybe_publish(run: Run, odcs, publish: Optional[str], ssl_verification: bool) -> bool:
     """Publish the run if requested; return True if a publish was attempted and failed."""
     if publish is None:
@@ -140,10 +132,9 @@ def _maybe_publish(run: Run, odcs, publish: Optional[str], ssl_verification: boo
     return not publish_test_results_to_entropy_data(run, publish, ssl_verification)
 
 
-def _report_run(run: Run, *, run_only: bool, publish_failed: bool, multiple_contracts: bool, ctx: _ContractCtx) -> bool:
+def _report_run(run: Run, *, run_only: bool, publish_failed: bool, ctx: _ContractCtx) -> bool:
     """Print one contract's results; return True if it should fail the invocation."""
-    if multiple_contracts:
-        console.print(f"\n[bold]Contract {run.dataContractId}@{run.dataContractVersion}[/bold] — {ctx.contract_path}")
+    console.print(f"\n[bold]Contract {run.dataContractId}@{run.dataContractVersion}[/bold] — {ctx.contract_path}")
     if not run.checks:
         if run_only:
             console.print(
@@ -174,18 +165,6 @@ def _report_run(run: Run, *, run_only: bool, publish_failed: bool, multiple_cont
     return run.result in (ResultEnum.failed, ResultEnum.error) or publish_failed
 
 
-def _print_footer(rows: List[Tuple[str, str, str]]) -> None:
-    """Render the per-contract status block + tally (only shown when >1 contract was requested)."""
-    console.print("\n[bold]Contract results:[/bold]")
-    for emoji, label, status in rows:
-        console.print(f"  {emoji} {label} — {status}")
-    tally = {}
-    for _, _, status in rows:
-        tally[status] = tally.get(status, 0) + 1
-    summary = " · ".join(f"{n} {status}" for status, n in tally.items())
-    console.print(f"Tested {len(rows)} contract(s): {summary}.")
-
-
 def _rel(path: Path, project_dir: Path) -> str:
     try:
         return str(path.relative_to(project_dir))
@@ -201,9 +180,9 @@ def _count(n: int, noun: str) -> str:
 _MAX_LISTED_FILES = 5
 
 
-def _print_sync_summary(gen, project_dir: Path, *, multiple_contracts: bool) -> None:
-    """Print the per-contract sync summary, naming the touched files when there aren't too many."""
-    prefix = f"{gen.contract_path.name}: " if multiple_contracts else ""
+def _print_sync_summary(gen, project_dir: Path, *, debug: bool = False) -> None:
+    """Print the per-contract sync summary, naming the touched files."""
+    prefix = f"{gen.contract_path.name}: "
     line = f"{prefix}Synced {_count(len(gen.resolved_models), 'model')}: updated {_count(len(gen.written_yaml), 'YAML file')}"
     if gen.written_sql:
         line += f", wrote {_count(len(gen.written_sql), 'singular SQL test')}"
@@ -216,17 +195,18 @@ def _print_sync_summary(gen, project_dir: Path, *, multiple_contracts: bool) -> 
         + [f"+ {_rel(p, project_dir)}" for p in gen.written_sql]
         + [f"- {_rel(p, project_dir)}" for p in gen.deleted_files]
     )
-    for entry in entries[:_MAX_LISTED_FILES]:
+    shown = entries if debug else entries[:_MAX_LISTED_FILES]
+    for entry in shown:
         console.print(f"  {entry}")
-    if len(entries) > _MAX_LISTED_FILES:
-        console.print(f"  ... and {len(entries) - _MAX_LISTED_FILES} more")
+    if len(entries) > len(shown):
+        console.print(f"  ... and {len(entries) - len(shown)} more [dim](pass --debug to show all)[/dim]")
 
 
-def _warn_prunable(gen, project_dir: Path, *, multiple_contracts: bool) -> None:
+def _warn_prunable(gen, project_dir: Path) -> None:
     """Warn that the project has contract-absent columns/tags `--prune` would remove (it wasn't passed)."""
     if not gen.prunable:
         return
-    prefix = f"{gen.contract_path.name}: " if multiple_contracts else ""
+    prefix = f"{gen.contract_path.name}: "
     shown = gen.prunable[:_MAX_LISTED_FILES]
     console.print(
         f"[yellow]{prefix}{_count(len(gen.prunable), 'item')} in the project "
@@ -240,7 +220,7 @@ def _warn_prunable(gen, project_dir: Path, *, multiple_contracts: bool) -> None:
 
 
 def _run_and_report(
-    ctxs: List[_ContractCtx],
+    ctxs: list[_ContractCtx],
     project_dir: Path,
     *,
     target: Optional[str],
@@ -248,7 +228,7 @@ def _run_and_report(
     publish: Optional[str],
     server: Optional[str],
     ssl_verification: bool,
-    error_rows: List[Tuple[Path, str]],
+    error_rows: list[tuple[Path, str]],
     multiple_contracts: bool,
 ) -> bool:
     """Run `dbt test` once (scoped to all requested contracts' models), then report per contract.
@@ -265,19 +245,23 @@ def _run_and_report(
         completed = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
 
     any_failed = bool(error_rows)
-    footer: List[Tuple[str, str, str]] = []
+    footer: list[tuple[str, str, str]] = []
     for c in ctxs:
-        model_filter: Set[str] = {m.lower() for m in c.model_names}
+        model_filter: set[str] = {m.lower() for m in c.model_names}
         run = parse_dbt_test_run(
             project_dir, c.odcs, completed, model_filter=model_filter, generation_run=c.generation_run
         )
-        run.server = _resolve_run_server(c.odcs, server, target)
+        if server is not None:
+            run.server = server
+        elif c.odcs.servers and len(c.odcs.servers) == 1:
+            run.server = c.odcs.servers[0].server
+        else:
+            run.server = target
         publish_failed = _maybe_publish(run, c.odcs, publish, ssl_verification)
         failed = _report_run(
             run,
             run_only=(c.generation_run is None),
             publish_failed=publish_failed,
-            multiple_contracts=multiple_contracts,
             ctx=c,
         )
         any_failed = any_failed or failed
@@ -292,7 +276,15 @@ def _run_and_report(
         footer.append(("🔴", str(path), "error"))
 
     if multiple_contracts:
-        _print_footer(footer)
+        # Render the per-contract status block + tally.
+        console.print("\n[bold]Contract results:[/bold]")
+        for emoji, label, status in footer:
+            console.print(f"  {emoji} {label} — {status}")
+        tally = {}
+        for _, _, status in footer:
+            tally[status] = tally.get(status, 0) + 1
+        summary = " · ".join(f"{n} {status}" for status, n in tally.items())
+        console.print(f"Tested {len(footer)} contract(s): {summary}.")
     return any_failed
 
 
@@ -302,7 +294,7 @@ def _run_and_report(
 )
 def sync_command(
     contract: Annotated[
-        Optional[List[str]],
+        Optional[list[str]],
         typer.Argument(
             help="Path(s) or glob(s) of ODCS contracts to sync. If omitted, syncs every `*.odcs.yaml` "
             "under --project-dir (default: current directory) and its subdirectories.",
@@ -367,8 +359,8 @@ def sync_command(
     multiple_contracts = len(paths) > 1
 
     # Load + resolve models for the ownership pre-flight, before any contract writes to disk.
-    loaded: List[Tuple[Path, object, List[str], Optional[str]]] = []
-    error_rows: List[Tuple[Path, str]] = []
+    loaded: list[tuple[Path, object, list[str], Optional[str]]] = []
+    error_rows: list[tuple[Path, str]] = []
     owners_by_model: dict = {}
     for path in paths:
         try:
@@ -388,7 +380,7 @@ def sync_command(
     for _, odcs, _, _ in loaded:
         _validate_server_declared(odcs, server)
 
-    ctxs: List[_ContractCtx] = []
+    ctxs: list[_ContractCtx] = []
     for path, odcs, _, dbt_version in loaded:
         try:
             gen = generate_dbt_tests(
@@ -408,13 +400,13 @@ def sync_command(
             console.print(f"Resolved contract {gen.contract_path}")
         for schema in gen.skipped_schemas:
             console.print(f"[yellow]Skipped schema {schema!r}: no matching dbt model found.[/yellow]")
-        _print_sync_summary(gen, project_dir, multiple_contracts=multiple_contracts)
+        _print_sync_summary(gen, project_dir, debug=bool(debug))
         if not prune:
-            _warn_prunable(gen, project_dir, multiple_contracts=multiple_contracts)
+            _warn_prunable(gen, project_dir)
         ctxs.append(_ContractCtx(gen.contract_path, gen.odcs, gen.resolved_models, gen.generation_run, dbt_version))
 
     if not run_tests_flag:
-        console.print("Next: run `datacontract dbt test` to execute the generated tests.")
+        console.print("[dim]Run `datacontract dbt test` to execute the generated tests.[/dim]")
         for path, msg in error_rows:
             console.print(f"[red]🔴 {path}: {msg}[/red]")
         if error_rows:
@@ -443,7 +435,7 @@ def sync_command(
 )
 def test_command(
     contract: Annotated[
-        Optional[List[str]],
+        Optional[list[str]],
         typer.Argument(
             help="Path(s) or glob(s) of ODCS contracts to test. If omitted, tests every `*.odcs.yaml` "
             "under --project-dir (default: current directory) and its subdirectories.",
@@ -485,8 +477,8 @@ def test_command(
     paths = _resolve_contract_paths(contract or [], project_dir)
     multiple_contracts = len(paths) > 1
 
-    ctxs: List[_ContractCtx] = []
-    error_rows: List[Tuple[Path, str]] = []
+    ctxs: list[_ContractCtx] = []
+    error_rows: list[tuple[Path, str]] = []
     owners_by_model: dict = {}
     for path in paths:
         try:

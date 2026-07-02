@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from io import StringIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 import yaml
 from open_data_contract_standard.model import (
@@ -51,7 +51,7 @@ def _load_dbt_project_config(project_dir: Path) -> dict:
     return cfg if isinstance(cfg, dict) else {}
 
 
-def _read_dbt_project_paths(project_dir: Path) -> Tuple[List[Path], List[Path]]:
+def _read_dbt_project_paths(project_dir: Path) -> tuple[list[Path], list[Path]]:
     """Return (model_paths, test_paths) absolute, honoring `dbt_project.yml`."""
     dbt_project_config = _load_dbt_project_config(project_dir)
     raw_models = (
@@ -69,7 +69,7 @@ def _read_dbt_project_paths(project_dir: Path) -> Tuple[List[Path], List[Path]]:
     return model_paths, test_paths
 
 
-def _resolved_generated_dirs(project_dir: Path) -> Tuple[Path, Path]:
+def _resolved_generated_dirs(project_dir: Path) -> tuple[Path, Path]:
     """Absolute (generated_models_dir, generated_tests_dir) for the configured project."""
     model_paths, test_paths = _read_dbt_project_paths(project_dir)
     return model_paths[0] / META_NAMESPACE, test_paths[0] / META_NAMESPACE
@@ -181,7 +181,7 @@ def parse_filename_version(path: Path) -> Optional[str]:
 
 
 def resolve_versioned_target(
-    project_dir: Path, model_names: List[str], filename_version: Optional[str]
+    project_dir: Path, model_names: list[str], filename_version: Optional[str]
 ) -> Optional[str]:
     """The dbt model version this contract targets, or None if it should sync a model in place.
 
@@ -229,7 +229,7 @@ def resolve_model_names(
                 reason=f"Schema `{schema_filter}` not found in contract. Available: {available}.",
                 engine="dbt-sync",
             )
-    missing_physical: List[str] = []
+    missing_physical: list[str] = []
     for schema_obj in schemas:
         if not schema_obj.name:
             continue
@@ -268,7 +268,7 @@ def _make_yaml(*, sequence: int = 4, offset: int = 2) -> YAML:
     return yaml
 
 
-def _guess_indent(text: str) -> Tuple[int, int]:
+def _guess_indent(text: str) -> tuple[int, int]:
     """Best-effort (sequence_indent, block_seq_offset) matching the file's own list style."""
     try:
         _, _, offset = load_yaml_guess_indent(text)
@@ -471,7 +471,7 @@ def _bound_violation_predicate(quality: DataQuality) -> Optional[str]:
     Bounds present on the quality are combined with `OR` (any violated bound fails the test).
     Returns None if the quality has no bound (the contract author forgot to set `mustBe*`).
     """
-    parts: List[str] = []
+    parts: list[str] = []
     if quality.mustBe is not None:
         parts.append(f"metric_value <> {_sql_literal(quality.mustBe)}")
     if quality.mustNotBe is not None:
@@ -505,9 +505,9 @@ def _singular_tests_for_qualities(
     *,
     label_prefix: str = "",
     field: Optional[str] = None,
-) -> List[SingularTest]:
+) -> list[SingularTest]:
     """Generate singular tests for ODCS quality entries that have an associated `query` and bound."""
-    out: List[SingularTest] = []
+    out: list[SingularTest] = []
     for idx, quality in enumerate(qualities or [], start=1):
         if not quality.query:
             continue
@@ -621,7 +621,7 @@ def _row_count_singular_test(
 
 
 def _composite_pk_singular_test(
-    pk_cols: List[str], contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
+    pk_cols: list[str], contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> SingularTest:
     """Dep-free singular SQL asserting a composite primary key is unique (no `dbt_utils`)."""
     col_list = ", ".join(_quote_identifier(c) for c in pk_cols)
@@ -712,7 +712,7 @@ def _regex_violation_jinja(column: str, pattern: str) -> str:
     )
 
 
-def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
+def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     """For `prop`, yield `(kind, sql_predicate)` for each declared bound, where `kind` is one of `"length"` / `"pattern"` / `"range"`.
 
     `sql_predicate` is TRUE only for rows that violate the bound. Length checks
@@ -722,12 +722,12 @@ def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
     `WHERE col IS NOT NULL`.
     """
     column = _quote_identifier(prop.name)
-    pairs: List[Tuple[str, str]] = []
+    pairs: list[tuple[str, str]] = []
 
     min_length = get_logical_type_option(prop, "minLength")
     max_length = get_logical_type_option(prop, "maxLength")
     if min_length is not None or max_length is not None:
-        parts: List[str] = []
+        parts: list[str] = []
         if min_length is not None:
             parts.append(f"LENGTH({column}) < {min_length}")
         if max_length is not None:
@@ -742,7 +742,7 @@ def _field_bound_predicates(prop: SchemaProperty) -> List[Tuple[str, str]]:
     maximum = get_logical_type_option(prop, "maximum")
     exclusive_minimum = get_logical_type_option(prop, "exclusiveMinimum")
     exclusive_maximum = get_logical_type_option(prop, "exclusiveMaximum")
-    range_parts: List[str] = []
+    range_parts: list[str] = []
     if minimum is not None:
         range_parts.append(f"{column} < {_sql_literal(minimum)}")
     if maximum is not None:
@@ -783,10 +783,10 @@ def _build_row_violation_sql(
 
 def _field_singular_tests(
     prop: SchemaProperty, contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
-) -> List[SingularTest]:
+) -> list[SingularTest]:
     """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
     column = _quote_identifier(prop.name)
-    out: List[SingularTest] = []
+    out: list[SingularTest] = []
     for kind, predicate in _field_bound_predicates(prop):
         label = f"{prop.name}__{kind}"
         description = _describe_field_bound(prop, kind)
@@ -819,13 +819,13 @@ def _model_data_tests(
     contract_version: str,
     model: str,
     model_version: Optional[str] = None,
-) -> List[SingularTest]:
+) -> list[SingularTest]:
     """Model-level singular SQL tests: composite-PK uniqueness + table-level rowCount.
 
     Everything is emitted as singular SQL (rather than `dbt_utils` / `dbt_expectations`
     YAML) so generated projects stay free of external macro dependencies.
     """
-    singular_tests: List[SingularTest] = []
+    singular_tests: list[SingularTest] = []
     pk_cols = [p.name for p in (schema_obj.properties or []) if p.primaryKey]
     if len(pk_cols) > 1:
         singular_tests.append(_composite_pk_singular_test(pk_cols, contract_id, contract_version, model, model_version))
@@ -905,7 +905,7 @@ def generate_dbt_tests_for_schema(
     model_name: str,
     run: Run,
     model_version: Optional[str] = None,
-) -> Tuple[dict, List[SingularTest]]:
+) -> tuple[dict, list[SingularTest]]:
     """Build the YAML model dict + list of singular SQL tests for one schema.
 
     `model_version` (set for a versioned model) makes ref-using singular tests target this version's
@@ -928,7 +928,7 @@ def generate_dbt_tests_for_schema(
     if columns:
         model_dict["columns"] = columns
 
-    singulars: List[SingularTest] = list(model_singulars)
+    singulars: list[SingularTest] = list(model_singulars)
     # Field-level bounds (length / regex / numeric range) → singular SQL
     for prop in schema_obj.properties or []:
         singulars.extend(_field_singular_tests(prop, contract_id, contract_version, model_name, model_version))
@@ -951,7 +951,7 @@ def generate_dbt_tests_for_schema(
     return model_dict, singulars
 
 
-def _disambiguate_singular_filenames(singular_tests: List[SingularTest]) -> None:
+def _disambiguate_singular_filenames(singular_tests: list[SingularTest]) -> None:
     """In-place rename so two qualities whose labels slugify identically don't overwrite each other."""
     used: set[str] = set()
     for test in singular_tests:
@@ -972,9 +972,9 @@ def _disambiguate_singular_filenames(singular_tests: List[SingularTest]) -> None
 # ---------------------------------------------------------------------------
 
 
-def _write_singular_sql(target_dir: Path, singular_tests: List[SingularTest]) -> List[Path]:
+def _write_singular_sql(target_dir: Path, singular_tests: list[SingularTest]) -> list[Path]:
     """Write the singular `.sql` tests into `target_dir` (the contract's `datacontract_cli/<id>/` subdir)."""
-    sql_paths: List[Path] = []
+    sql_paths: list[Path] = []
     for s in singular_tests:
         sql_path = target_dir / s.filename
         sql_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1080,21 +1080,6 @@ def _strip_managed(entry: dict) -> bool:
     return changed
 
 
-def _collapse_test(entry: str | dict) -> str | dict:
-    """Collapse `{name: {}}` back to the bare string `name` (e.g. after stripping our meta from an adopted test)."""
-    name = _test_name(entry)
-    if name is not None and isinstance(entry, dict) and not entry[name]:
-        return name
-    return entry
-
-
-def _find_test_index(seq: list, test_name: str) -> Optional[int]:
-    for i, entry in enumerate(seq):
-        if _test_name(entry) == test_name:
-            return i
-    return None
-
-
 def _reconcile_test(
     existing: str | dict,
     desired: dict,
@@ -1140,7 +1125,7 @@ def _reconcile_data_tests(
         if test_name is None:
             continue
         dc_check = _meta_block_for_test(desired).get("check")
-        idx = _find_test_index(existing, test_name)
+        idx = next((i for i, entry in enumerate(existing) if _test_name(entry) == test_name), None)
         if idx is None:
             new_entry = CommentedMap(desired) if not isinstance(desired, CommentedMap) else desired
             _ensure_membership(
@@ -1184,11 +1169,6 @@ def _find_column(entry: dict, name: str) -> Optional[dict]:
     return None
 
 
-def _existing_config(container: dict) -> Optional[dict]:
-    config = container.get("config")
-    return config if isinstance(config, dict) else None
-
-
 def _ensure_config(container: dict) -> dict:
     config = container.get("config")
     if not isinstance(config, dict):
@@ -1204,7 +1184,8 @@ def _union_tags(container: dict, new_tags: list, *, reconcile: bool, prune: bool
     otherwise union, never dropping the user's own tags. Never creates an empty `config`.
     """
     mirror = reconcile or prune
-    config = _existing_config(container)
+    config = container.get("config")
+    config = config if isinstance(config, dict) else None
     existing = config.get("tags") if config else None
     existing = list(existing) if isinstance(existing, list) else None
 
@@ -1278,14 +1259,14 @@ def _remove_our_meta(entry: dict) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _model_entries(data: Any) -> List[dict]:
+def _model_entries(data: Any) -> list[dict]:
     models = data.get("models") if isinstance(data, dict) else None
     return [m for m in models if isinstance(m, dict)] if isinstance(models, list) else []
 
 
-def _iter_model_yaml_files(model_paths: List[Path], legacy_dir: Path):
+def _iter_model_yaml_files(model_paths: list[Path], legacy_dir: Path):
     """Yield every `*.yml` / `*.yaml` under `model-paths`, skipping the legacy generated dir."""
-    seen: Set[Path] = set()
+    seen: set[Path] = set()
     legacy_resolved = legacy_dir.resolve()
     for root in model_paths:
         if not root.is_dir():
@@ -1301,10 +1282,10 @@ def _iter_model_yaml_files(model_paths: List[Path], legacy_dir: Path):
                 yield path
 
 
-def _locate_model_sql(model_paths: List[Path], model_name: str) -> Optional[Path]:
+def _locate_model_sql(model_paths: list[Path], model_name: str) -> Optional[Path]:
     """First `*.sql` whose filename stem matches `model_name` (case-insensitive)."""
     target = model_name.lower()
-    matches: List[Path] = []
+    matches: list[Path] = []
     for root in model_paths:
         if not root.is_dir():
             continue
@@ -1317,13 +1298,13 @@ def _locate_model_sql(model_paths: List[Path], model_name: str) -> Optional[Path
 _VERSIONED_SQL_RE = re.compile(r"^(?P<base>.+)_v(?P<v>\d+)$")
 
 
-def _locate_versioned_model_sql(model_paths: List[Path], model_name: str, model_version: str) -> Optional[Path]:
+def _locate_versioned_model_sql(model_paths: list[Path], model_name: str, model_version: str) -> Optional[Path]:
     """First `<model>_v<N>.sql` whose numeric version equals `model_version` (so `orders_v01.sql`
     matches version "1"). This is how the dbt files for a versioned model are found on disk."""
     if not str(model_version).isdigit():
         return None
     base, want = model_name.lower(), int(model_version)
-    matches: List[Path] = []
+    matches: list[Path] = []
     for root in model_paths:
         if not root.is_dir():
             continue
@@ -1338,12 +1319,12 @@ def _locate_versioned_model_sql(model_paths: List[Path], model_name: str, model_
 class RequiredState:
     """What the current contract declares — drives the provenance-aware cleanup pass."""
 
-    scope_models: Dict[str, str] = field(default_factory=dict)  # lower(model) -> model name
-    required_tests: Dict[str, Set[Tuple[Optional[str], str]]] = field(default_factory=dict)
+    scope_models: dict[str, str] = field(default_factory=dict)  # lower(model) -> model name
+    required_tests: dict[str, set[tuple[Optional[str], str]]] = field(default_factory=dict)
 
 
-def _required_test_keys(model_dict: dict) -> Set[Tuple[Optional[str], str]]:
-    keys: Set[Tuple[Optional[str], str]] = set()
+def _required_test_keys(model_dict: dict) -> set[tuple[Optional[str], str]]:
+    keys: set[tuple[Optional[str], str]] = set()
     for test in model_dict.get("data_tests") or []:
         name = _test_name(test)
         if name:
@@ -1364,13 +1345,13 @@ class _ModelPlan:
     name: str  # effective dbt model name (case as the project has it)
     schema_obj: SchemaObject
     model_dict: dict
-    singular_tests: List["SingularTest"]
+    singular_tests: list["SingularTest"]
     sql_path: Optional[Path]  # set only when matched via a `.sql` file (→ sidecar)
 
 
 def _effective_model_name(
-    session: "_EditSession", model_paths: List[Path], contract_model_name: str, model_version: Optional[str] = None
-) -> Tuple[str, str, Optional[Path]]:
+    session: "_EditSession", model_paths: list[Path], contract_model_name: str, model_version: Optional[str] = None
+) -> tuple[str, str, Optional[Path]]:
     """Map a contract model name to the project's actual dbt model name (case-insensitive, #1254).
 
     Returns ``(name, source, sql_path)`` where ``source`` is ``"entry"`` (a YAML model entry
@@ -1411,8 +1392,8 @@ class _PlannedFile:
 
 class _EditSession:
     def __init__(self) -> None:
-        self.files: Dict[Path, _PlannedFile] = {}
-        self.unparseable: List[Path] = []  # existing YAML that failed to parse
+        self.files: dict[Path, _PlannedFile] = {}
+        self.unparseable: list[Path] = []  # existing YAML that failed to parse
 
     def try_load(self, path: Path) -> Optional[Any]:
         if path in self.files:
@@ -1451,9 +1432,9 @@ class _EditSession:
         pf.yaml.dump(pf.data, buf)
         return buf.getvalue()
 
-    def apply(self) -> Tuple[List[Path], List[Path]]:
-        written: List[Path] = []
-        deleted: List[Path] = []
+    def apply(self) -> tuple[list[Path], list[Path]]:
+        written: list[Path] = []
+        deleted: list[Path] = []
         for pf in self.files.values():
             if pf.deleted:
                 if pf.path.exists():
@@ -1468,7 +1449,7 @@ class _EditSession:
         return written, deleted
 
 
-def _locate_entry(session: _EditSession, model_name: str) -> Optional[Tuple[Path, dict]]:
+def _locate_entry(session: _EditSession, model_name: str) -> Optional[tuple[Path, dict]]:
     """First `models[].name` match across loaded files (case-insensitive, deterministic order)."""
     target = model_name.lower()
     for path in sorted(session.files):
@@ -1537,11 +1518,7 @@ def _bullet_include_element(bullet: dict) -> dict:
     return element
 
 
-def _bullet_has_overrides(bullet: dict) -> bool:
-    return any(isinstance(c, dict) and "name" in c for c in bullet.get("columns") or [])
-
-
-def _bullet_set_exclude(bullet: dict, names: List[str]) -> None:
+def _bullet_set_exclude(bullet: dict, names: list[str]) -> None:
     """Set the bullet's `exclude` to `names` (ordered). Empty → drop it, and collapse a now-bare
     `columns: [{include: '*'}]` (no overrides) back to no `columns` key."""
     if names:
@@ -1554,13 +1531,13 @@ def _bullet_set_exclude(bullet: dict, names: List[str]) -> None:
     for element in cols:
         if isinstance(element, dict) and "include" in element:
             element.pop("exclude", None)
-    if not _bullet_has_overrides(bullet) and all(
+    if not any(isinstance(c, dict) and "name" in c for c in cols) and all(
         isinstance(c, dict) and set(c.keys()) <= {"include"} and c.get("include") in ("*", "all") for c in cols
     ):
         bullet.pop("columns", None)
 
 
-def _bullet_add_excludes(bullet: dict, names: List[str]) -> None:
+def _bullet_add_excludes(bullet: dict, names: list[str]) -> None:
     if not names:
         return
     element = _bullet_include_element(bullet)
@@ -1573,7 +1550,7 @@ def _bullet_add_excludes(bullet: dict, names: List[str]) -> None:
             exclude.append(name)
 
 
-def _bullet_exclude_names(bullet: dict) -> List[str]:
+def _bullet_exclude_names(bullet: dict) -> list[str]:
     """The bullet's current `exclude` list (read-only; does not create the include element)."""
     for element in bullet.get("columns") or []:
         if isinstance(element, dict) and "include" in element:
@@ -1664,9 +1641,9 @@ def _set_override_tests(bullet: dict, col_name: str, test_entries: list, contrac
         override["data_tests"] = tests
 
 
-def _managed_test_args(container: dict) -> Dict[str, dict]:
+def _managed_test_args(container: dict) -> dict[str, dict]:
     """`{test_name: args}` for the CLI-managed tests on a container (args exclude config/description)."""
-    out: Dict[str, dict] = {}
+    out: dict[str, dict] = {}
     for test in container.get("data_tests") or []:
         if not _meta_block_for_test(test):
             continue
@@ -1676,8 +1653,8 @@ def _managed_test_args(container: dict) -> Dict[str, dict]:
     return out
 
 
-def _desired_test_args(desired_tests: list) -> Dict[str, dict]:
-    out: Dict[str, dict] = {}
+def _desired_test_args(desired_tests: list) -> dict[str, dict]:
+    out: dict[str, dict] = {}
     for test in desired_tests or []:
         name = _test_name(test)
         if name is not None:
@@ -1717,8 +1694,8 @@ def _merge_versioned_model_entry(
     # Model-level generic tests (composite PK): shared at top level, versions unioned.
     _reconcile_data_tests(entry, model_dict.get("data_tests") or [], contract_version, versioned=True)
 
-    this_cols_lower: Set[str] = set()
-    newly_created: List[str] = []
+    this_cols_lower: set[str] = set()
+    newly_created: list[str] = []
     for desired_col in model_dict.get("columns") or []:
         col_name = desired_col["name"]
         this_cols_lower.add(col_name.lower())
@@ -1756,7 +1733,7 @@ def _merge_versioned_model_entry(
             # Divergence appears now: relocate the shared tests into each sharing version's own
             # bullet (dbt would otherwise run BOTH the top-level and the override → duplicate node),
             # then add ours. The top-level column keeps only its name/description.
-            shared_versions: Set[str] = set()
+            shared_versions: set[str] = set()
             for test in top_managed:
                 shared_versions.update(_meta_block_for_test(test).get("contract_versions") or [])
             for other_version in shared_versions:
@@ -1781,7 +1758,7 @@ def _merge_versioned_model_entry(
         _prune_versioned_entry(entry, model_dict, contract_version, apply=True)
 
 
-def _prune_versioned_entry(entry: dict, model_dict: dict, contract_version: str, *, apply: bool) -> List[str]:
+def _prune_versioned_entry(entry: dict, model_dict: dict, contract_version: str, *, apply: bool) -> list[str]:
     """Version-aware prune: retire footprint the synced version alone owned and the contract no
     longer declares. Columns/tests any sibling version still references are left untouched.
 
@@ -1798,7 +1775,7 @@ def _prune_versioned_entry(entry: dict, model_dict: dict, contract_version: str,
         str(c.get("name", "")).lower(): {_test_name(t) for t in (c.get("data_tests") or []) if _test_name(t)}
         for c in model_dict.get("columns") or []
     }
-    removed: List[str] = []
+    removed: list[str] = []
 
     # 1. Orphaned top-level columns: excluded by every version bullet → no version references them.
     top_cols = entry.get("columns")
@@ -1883,7 +1860,7 @@ def _merge_model_entry(
     _reconcile_data_tests(entry, model_dict.get("data_tests") or [], contract_version)
 
     # Columns.
-    contract_cols: Set[str] = set()
+    contract_cols: set[str] = set()
     for desired_col in model_dict.get("columns") or []:
         col_name = desired_col["name"]
         contract_cols.add(col_name.lower())
@@ -1918,13 +1895,13 @@ def _merge_model_entry(
                 entry.pop("columns", None)
 
 
-def _prunable_items(entry: dict, schema_obj: SchemaObject, model_dict: dict) -> List[str]:
+def _prunable_items(entry: dict, schema_obj: SchemaObject, model_dict: dict) -> list[str]:
     """Columns/tags on a merged dbt model that aren't in the contract — what `--prune` would remove.
 
     Called post-merge with `prune=False`; a freshly generated entry mirrors the contract exactly and
     yields `[]`, so this only surfaces footprint a user would lose by passing `--prune`.
     """
-    items: List[str] = []
+    items: list[str] = []
     contract_cols = {c["name"].lower() for c in model_dict.get("columns") or []}
     props_by_name = {p.name.lower(): p for p in (schema_obj.properties or []) if p.name}
     for col in entry.get("columns") or []:
@@ -1964,7 +1941,7 @@ def _entry_has_footprint(entry: dict) -> bool:
     return False
 
 
-def _entry_in_scope(entry: dict, scope_contract_id: Optional[str], scope_models: Dict[str, str]) -> bool:
+def _entry_in_scope(entry: dict, scope_contract_id: Optional[str], scope_models: dict[str, str]) -> bool:
     if scope_contract_id is None:
         return _entry_has_footprint(entry)
     return _meta_data_contract(entry) == scope_contract_id or str(entry.get("name", "")).lower() in scope_models
@@ -1973,7 +1950,7 @@ def _entry_in_scope(entry: dict, scope_contract_id: Optional[str], scope_models:
 def _clean_tests_in_container(
     container: dict,
     column_key: Optional[str],
-    required_keys: Set[Tuple[Optional[str], str]],
+    required_keys: set[tuple[Optional[str], str]],
     *,
     model_required: bool,
 ) -> None:
@@ -1992,7 +1969,9 @@ def _clean_tests_in_container(
         if _meta_block_for_test(entry).get("generated") is True:
             continue  # drop the node we created
         _strip_managed(entry)  # drop our meta block, keep the user's test
-        survivors.append(_collapse_test(entry))
+        # Collapse `{name: {}}` back to the bare string `name` if stripping emptied it.
+        collapsed = name if isinstance(entry, dict) and not entry[name] else entry
+        survivors.append(collapsed)
     if len(survivors):
         container["data_tests"] = survivors
     else:
@@ -2002,7 +1981,7 @@ def _clean_tests_in_container(
 def _clean_model_entry(
     entry: dict,
     *,
-    required_keys: Set[Tuple[Optional[str], str]],
+    required_keys: set[tuple[Optional[str], str]],
     model_required: bool,
 ) -> None:
     _clean_tests_in_container(entry, None, required_keys, model_required=model_required)
@@ -2040,11 +2019,6 @@ def _clean_model_entry(
         _remove_our_meta(entry)
 
 
-def _entry_is_bare(entry: dict) -> bool:
-    """True once a model entry has been stripped down to just its `name` — nothing left to keep."""
-    return set(entry.keys()) <= {"name"}
-
-
 def _run_yaml_cleanup(
     session: _EditSession,
     required: RequiredState,
@@ -2065,7 +2039,7 @@ def _run_yaml_cleanup(
         if not isinstance(models, list):
             continue
         touched = False
-        drop_indices: List[int] = []
+        drop_indices: list[int] = []
         for i, entry in enumerate(models):
             if not isinstance(entry, dict) or not _entry_in_scope(entry, scope_contract_id, required.scope_models):
                 continue
@@ -2077,7 +2051,8 @@ def _run_yaml_cleanup(
                 required_keys=required.required_tests.get(model_lower, set()),
                 model_required=model_required,
             )
-            if not model_required and _entry_is_bare(entry):
+            # An entry stripped down to just its `name` has nothing left to keep.
+            if not model_required and set(entry.keys()) <= {"name"}:
                 drop_indices.append(i)
 
         if not touched:
@@ -2094,7 +2069,7 @@ def _run_yaml_cleanup(
 # ---------------------------------------------------------------------------
 
 
-def _remove_legacy_dir(legacy_dir: Path) -> List[Path]:
+def _remove_legacy_dir(legacy_dir: Path) -> list[Path]:
     """Remove the old `<model-paths>/datacontract_cli/` parallel-YAML dir (migration)."""
     if not legacy_dir.is_dir():
         return []
@@ -2107,7 +2082,7 @@ def run_dbt_test(
     *,
     target: Optional[str],
     profiles_dir: Optional[Path],
-    model_versions: Optional[List[Tuple[str, Optional[str], str]]] = None,
+    model_versions: Optional[list[tuple[str, Optional[str], str]]] = None,
 ) -> subprocess.CompletedProcess:
     # Selects every CLI-managed test (generated + adopted) by the meta key all of them carry.
     # When `model_versions` is given, scope to managed tests on those `(model, dbt version, contract
@@ -2176,7 +2151,7 @@ def _load_manifest(project_dir: Path) -> dict:
         return {}
 
 
-def _get_test_metadata(manifest_node: dict, manifest_nodes: dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def _get_test_metadata(manifest_node: dict, manifest_nodes: dict) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """Return (model, column, description) extracted from a manifest.json test node."""
     if not manifest_node:
         return None, None, None
@@ -2211,7 +2186,7 @@ def _get_test_metadata(manifest_node: dict, manifest_nodes: dict) -> Tuple[Optio
 
 
 def parse_run_results_file(
-    project_dir: Path, odcs: OpenDataContractStandard, *, model_filter: Optional[Set[str]] = None
+    project_dir: Path, odcs: OpenDataContractStandard, *, model_filter: Optional[set[str]] = None
 ) -> Run:
     """Parse the run_results.json file from a `dbt test` run."""
     run = Run.create_run()
@@ -2295,18 +2270,28 @@ class DbtTestGenerationResult:
     contract_path: Path
     project_dir: Path
     odcs: OpenDataContractStandard
-    resolved_models: List[str]
-    written_yaml: List[Path]  # model YAML files edited or created
-    written_sql: List[Path]
-    deleted_files: List[Path]
-    skipped_schemas: List[str]
-    prunable: List[str]  # contract-absent columns/tags `--prune` would remove (empty when prune ran)
+    resolved_models: list[str]
+    written_yaml: list[Path]  # model YAML files edited or created
+    written_sql: list[Path]
+    deleted_files: list[Path]
+    skipped_schemas: list[str]
+    prunable: list[str]  # contract-absent columns/tags `--prune` would remove (empty when prune ran)
     generation_run: Run
 
 
 def _resolve_contract_path(contract: Optional[str], search_dir: Path) -> Path:
     if contract:
         contract_path = Path(contract).resolve()
+        if contract_path.is_dir():
+            raise DataContractException(
+                type="dbt_sync",
+                name="resolve contract",
+                reason=(
+                    f"{contract_path} is a directory, not a contract file. Pass --project-dir "
+                    f"{contract_path} if this is a dbt project and you want to sync all contained data contracts."
+                ),
+                engine="dbt-sync",
+            )
         if not contract_path.is_file():
             raise DataContractException(
                 type="dbt_sync",
@@ -2318,7 +2303,7 @@ def _resolve_contract_path(contract: Optional[str], search_dir: Path) -> Path:
     return find_contract(search_dir)
 
 
-def _resolve_contract_paths(contracts: List[str], search_dir: Path) -> List[Path]:
+def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path]:
     """Resolve requested contracts to a deduplicated, sorted list of paths.
 
     No tokens → discover every `*.odcs.yaml` under `search_dir`. Otherwise each token is a literal
@@ -2339,7 +2324,7 @@ def _resolve_contract_paths(contracts: List[str], search_dir: Path) -> List[Path
             )
         return candidates
 
-    resolved: Dict[Path, None] = {}
+    resolved: dict[Path, None] = {}
     for token in contracts:
         if any(ch in token for ch in "*?["):
             matches = sorted(p.resolve() for p in (Path(m) for m in glob.glob(token, recursive=True)) if p.is_file())
@@ -2354,6 +2339,16 @@ def _resolve_contract_paths(contracts: List[str], search_dir: Path) -> List[Path
                 resolved[m] = None
         else:
             path = Path(token).resolve()
+            if path.is_dir():
+                raise DataContractException(
+                    type="dbt_sync",
+                    name="resolve contract",
+                    reason=(
+                        f"{path} is a directory, not a contract file. Pass --project-dir {path} "
+                        "(and omit the contract argument) to sync every `*.odcs.yaml` under it."
+                    ),
+                    engine="dbt-sync",
+                )
             if not path.is_file():
                 raise DataContractException(
                     type="dbt_sync",
@@ -2406,8 +2401,8 @@ def generate_dbt_tests(
     # Resolve each schema to the project's actual dbt model name (case-preserved), then build
     # the desired state (model dict + singular SQL) against that name so `ref()` / patches match.
     schemas_by_name = {s.name: s for s in (odcs.schema_ or []) if s.name}
-    plans: List[_ModelPlan] = []
-    skipped_schemas: List[str] = []
+    plans: list[_ModelPlan] = []
+    skipped_schemas: list[str] = []
     for schema_name_key, contract_model_name in name_map.items():
         effective, source, sql_path = _effective_model_name(session, model_paths, contract_model_name, model_version)
         if source == "missing":
@@ -2439,7 +2434,7 @@ def generate_dbt_tests(
         model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, effective, run, model_version)
         plans.append(_ModelPlan(effective, schema_obj, model_dict, singulars, sql_path))
 
-    singular_tests: List[SingularTest] = [s for p in plans for s in p.singular_tests]
+    singular_tests: list[SingularTest] = [s for p in plans for s in p.singular_tests]
 
     # If there are unparseable yaml files, warn. In case we'd create a new yaml file, error and stop:
     # It could be that our new file would be a duplicate once the user fixes the bad yaml.
@@ -2463,8 +2458,8 @@ def generate_dbt_tests(
         )
         _run_yaml_cleanup(session, required, scope_contract_id=odcs.id)
 
-    resolved_models: List[str] = []
-    prunable: List[str] = []
+    resolved_models: list[str] = []
+    prunable: list[str] = []
     for plan in plans:
         located = _locate_entry(session, plan.name)
         if located is not None:
@@ -2514,7 +2509,7 @@ def generate_dbt_tests(
     contract_subdir = tests_dir / _slugify(odcs.id or "contract")
     this_version = _slugify(odcs.version or "no_version")
     own_prefix = f"{contract_subdir.name}__{this_version}__"
-    deleted_sql: List[Path] = []
+    deleted_sql: list[Path] = []
     if contract_subdir.is_dir():
         for sql in contract_subdir.glob(f"{own_prefix}*.sql"):
             sql.unlink()
@@ -2554,7 +2549,7 @@ def parse_dbt_test_run(
     odcs: OpenDataContractStandard,
     completed: subprocess.CompletedProcess,
     *,
-    model_filter: Optional[Set[str]] = None,
+    model_filter: Optional[set[str]] = None,
     generation_run: Optional[Run] = None,
 ) -> Run:
     """Turn an already-completed `dbt test` invocation into a `Run` for one contract.
@@ -2579,16 +2574,3 @@ def parse_dbt_test_run(
         parsed_run.timestampStart = generation_run.timestampStart
     parsed_run.finish()
     return parsed_run
-
-
-def run_tests(
-    odcs: OpenDataContractStandard,
-    project_dir: Path,
-    *,
-    target: Optional[str] = None,
-    profiles_dir: Optional[Path] = None,
-    generation_run: Optional[Run] = None,
-) -> Run:
-    """Run `dbt test` against the contract-managed tests on disk and return the parsed results."""
-    completed = run_dbt_test(project_dir, target=target, profiles_dir=profiles_dir)
-    return parse_dbt_test_run(project_dir, odcs, completed, generation_run=generation_run)

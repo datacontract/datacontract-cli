@@ -36,11 +36,11 @@ from datacontract.integration.dbt_sync import (
     find_contract,
     generate_dbt_tests,
     generate_dbt_tests_for_schema,
+    parse_dbt_test_run,
     parse_filename_version,
     parse_run_results_file,
     resolve_model_names,
     run_dbt_test,
-    run_tests,
 )
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.model.exceptions import DataContractException
@@ -99,13 +99,8 @@ def sync(
         gen.generation_run.finish()
         run = gen.generation_run
     else:
-        run = run_tests(
-            gen.odcs,
-            gen.project_dir,
-            target=target,
-            profiles_dir=profiles_dir,
-            generation_run=gen.generation_run,
-        )
+        completed = run_dbt_test(gen.project_dir, target=target, profiles_dir=profiles_dir)
+        run = parse_dbt_test_run(gen.project_dir, gen.odcs, completed, generation_run=gen.generation_run)
     return _SyncResult(
         contract_path=gen.contract_path,
         project_dir=gen.project_dir,
@@ -1458,7 +1453,7 @@ def _stub_dbt_test(monkeypatch, project: Path) -> None:
 
 
 def test_run_tests_forwards_dbt_output_to_run_logs(monkeypatch, tmp_path: Path):
-    """`run_tests` must surface `dbt test` stdout/stderr through `run.logs` so the
+    """`dbt sync --run-tests` must surface `dbt test` stdout/stderr through `run.logs` so the
     published Run carries the same context an operator would see locally — minus
     ANSI codes and empty lines."""
     project = _copy_dbt_project(tmp_path)
