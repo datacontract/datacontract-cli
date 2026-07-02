@@ -1232,20 +1232,10 @@ def _union_tags(container: dict, new_tags: list, *, reconcile: bool, prune: bool
             container.pop("config", None)
 
 
-def _set_meta_keys(
-    entry: dict,
-    *,
-    data_contract: Optional[str],
-    version: Optional[str],
-    owner: Optional[str],
-    write_contract_versions: bool = True,
-) -> None:
-    """Make our `config.meta.datacontract_cli` block authoritative: write the `contract_id`/`contract_versions`/`owner`,
-    overwriting prior values, and drop a stale `owner` when the contract has no team. Other meta is kept.
-
-    `write_contract_versions=False` (versioned models) keeps `contract_versions` OFF the model entry:
-    dbt cascades a model's `config.meta` onto every attached test node, which would overwrite each
-    test's own (version-scoped) `contract_versions` and break `dbt test` version selection."""
+def _set_meta_keys(entry: dict, *, data_contract: Optional[str], owner: Optional[str]) -> None:
+    """Set our authoritative `config.meta.datacontract_cli` keys on the model entry: `contract_id` and
+    `owner` (dropping a stale `owner` when the contract has no team). Version provenance is never stamped
+    on the entry — it lives per-test and, for versioned models, on each bullet's `contract_version`."""
     config = _ensure_config(entry)
     meta = config.get("meta")
     if not isinstance(meta, dict):
@@ -1257,10 +1247,6 @@ def _set_meta_keys(
         meta[META_NAMESPACE] = block
     if data_contract is not None:
         block["contract_id"] = data_contract
-    if not write_contract_versions:
-        block.pop("contract_versions", None)
-    elif version is not None:
-        block["contract_versions"] = [version]
     if owner is not None:
         block["owner"] = owner
     else:
@@ -1721,15 +1707,7 @@ def _merge_versioned_model_entry(
     desc = model_dict.get("description")
     if desc:
         entry["description"] = desc
-    # No `contract_versions` on the model entry — it would cascade to every test node and break
-    # version selection. Per-test meta and per-bullet `contract_version` carry the version instead.
-    _set_meta_keys(
-        entry,
-        data_contract=odcs.id,
-        version=contract_version,
-        owner=(odcs.team.name if odcs.team else None),
-        write_contract_versions=False,
-    )
+    _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
     _union_tags(entry, list(schema_obj.tags or []), reconcile=False, prune=prune)
 
     versions = _ensure_versions_block(entry)
@@ -1898,9 +1876,7 @@ def _merge_model_entry(
     desc = model_dict.get("description")
     if desc:
         entry["description"] = desc
-    _set_meta_keys(
-        entry, data_contract=odcs.id, version=contract_version, owner=(odcs.team.name if odcs.team else None)
-    )
+    _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
     _union_tags(entry, list(schema_obj.tags or []), reconcile=False, prune=prune)
 
     # Model-level generic tests (e.g. composite-PK unique_combination).
@@ -2457,10 +2433,7 @@ def generate_dbt_tests(
             raise DataContractException(
                 type="dbt_sync",
                 name="parse existing YAML files",
-                reason=(
-                    f"Cannot parse YAML file(s): {files}\n"
-                    f"Fix or remove them before running dbt sync."
-                ),
+                reason=(f"Cannot parse YAML file(s): {files}\nFix or remove them before running dbt sync."),
                 engine="dbt-sync",
             )
         run.log_warn(f"Ignoring unparseable YAML file: {files}")

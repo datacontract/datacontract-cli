@@ -292,9 +292,12 @@ def test_sync_creates_model_yaml_when_no_yaml_entry(tmp_path: Path):
     assert "AUTO-GENERATED" not in text
     entry = _model_entry(sidecar)
     assert entry["config"]["meta"]["datacontract_cli"]["contract_id"] == "orders-sync-test"
-    assert entry["config"]["meta"]["datacontract_cli"]["contract_versions"] == ["1.0.0"]
+    # Version provenance lives per-test; the entry-level roll-up was write-only and is no longer emitted.
+    assert "contract_versions" not in entry["config"]["meta"]["datacontract_cli"]
     order_id = {c["name"]: c for c in entry["columns"]}["order_id"]
-    assert order_id["data_tests"][0]["not_null"]["config"]["meta"]["datacontract_cli"]["generated"] is True
+    not_null_meta = order_id["data_tests"][0]["not_null"]["config"]["meta"]["datacontract_cli"]
+    assert not_null_meta["contract_versions"] == ["1.0.0"]
+    assert not_null_meta["generated"] is True
     # Columns we create carry the managed marker so a later sync can retire them cleanly.
     assert order_id["meta"]["datacontract_cli"]["generated"] is True
 
@@ -831,7 +834,7 @@ def test_sync_overwrites_descriptions_and_sets_meta_without_clobbering(tmp_path:
     assert entry["config"]["materialized"] == "table"  # user config preserved
     assert entry["config"]["meta"]["custom_key"] == "keep me"  # other meta preserved
     assert entry["config"]["meta"]["datacontract_cli"]["contract_id"] == "tagged-contract"
-    assert entry["config"]["meta"]["datacontract_cli"]["contract_versions"] == ["1.0.0"]
+    assert "contract_versions" not in entry["config"]["meta"]["datacontract_cli"]  # write-only key gone
     assert entry["config"]["meta"]["datacontract_cli"]["owner"] == "data-eng"
     cols = {c["name"]: c for c in entry["columns"]}
     assert cols["order_id"]["description"] == "The order identifier."  # contract wins
