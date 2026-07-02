@@ -2172,6 +2172,20 @@ def test_versioned_sync_builds_versions_block(tmp_path: Path):
     assert _cv(_col(entry, "region")["data_tests"][0]) == ["2.0.0"]
 
 
+def test_nonversioned_sync_onto_versioned_model_errors(tmp_path: Path):
+    """A non-versioned sync onto a versioned model would strip the `versions:` block and strand the
+    `_v*.sql` files, so it errors out (rather than silently dropping the tests) and touches nothing."""
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    before = (project / "models" / "customers.yml").read_text()
+
+    with pytest.raises(DataContractException, match="synced without a version"):
+        generate_dbt_tests(contract=str(project / "customers-v2.odcs.yaml"), project_dir=project)
+
+    assert (project / "models" / "customers.yml").read_text() == before  # aborted before any write
+
+
 def _override(entry: dict, v: int, col: str) -> dict:
     return {e["name"]: e for e in _bullet(entry, v)["columns"] if "name" in e}[col]
 

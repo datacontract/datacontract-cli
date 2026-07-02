@@ -2419,6 +2419,22 @@ def generate_dbt_tests(
             )
             skipped_schemas.append(schema_name_key)
             continue
+        # A non-versioned sync onto a versioned model (entry has a `versions:` block) can't merge safely:
+        # it would strip the block and strand the `<model>_v*.sql` files.
+        if model_version is None:
+            located = _locate_entry(session, effective)
+            versions = located[1].get("versions") if located is not None else None
+            if isinstance(versions, list) and versions:
+                raise DataContractException(
+                    type="dbt_sync",
+                    name="versioned model, unversioned contract",
+                    reason=(
+                        f"Model `{effective}` has a `versions:` block but contract `{odcs.id}` "
+                        "was synced without a version. Name the contract file with the target version "
+                        "(e.g. `<name>_v2.odcs.yaml`), or de-version the model's `.sql` files."
+                    ),
+                    engine="dbt-sync",
+                )
         schema_obj = schemas_by_name[schema_name_key]
         model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, effective, run, model_version)
         plans.append(_ModelPlan(effective, schema_obj, model_dict, singulars, sql_path))
