@@ -200,6 +200,12 @@ def _model_entry(schema_path: Path, name: str = "orders") -> dict:
     return next(m for m in doc["models"] if m["name"].lower() == name.lower())
 
 
+def _broken_yaml(project: Path, name: str = "schema.yml") -> Path:
+    path = project / "models" / name
+    path.write_text("models: [\n  - name: orders\n")  # unclosed flow sequence → parse error
+    return path
+
+
 def test_merge_into_existing_entry_replaces_old_collision_error(tmp_path: Path):
     """A model already defined in the user's YAML is merged into — not a hard error (old behavior)."""
     project = _copy_dbt_project(tmp_path)
@@ -301,6 +307,32 @@ def test_sync_skips_model_with_no_sql_or_entry(tmp_path: Path):
     assert result.written_yaml == []
     assert not (project / "models" / "orders.yml").exists()
     assert any("nothing to test" in log.message for log in result.run.logs)
+
+
+def test_sync_hard_errors_on_unparseable_yaml_when_sidecar_needed(tmp_path: Path):
+    """A broken model-path YAML could be the model's own schema file; writing a sidecar would risk a
+    dbt duplicate-patch error, so refuse before writing anything."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)  # matches via .sql → sidecar in play
+    _broken_yaml(project)
+
+    with pytest.raises(DataContractException, match="Cannot parse YAML file"):
+        sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    assert not (project / "models" / "orders.yml").exists()  # nothing written
+
+
+def test_sync_warns_and_continues_when_unparseable_yaml_is_irrelevant(tmp_path: Path):
+    """When the model resolves via an existing entry (no sidecar), an unparseable unrelated YAML can't
+    be one of ours — warn and continue instead of aborting."""
+    project = _copy_dbt_project(tmp_path)
+    _user_orders_schema(project)  # valid orders entry → resolves via entry, no sidecar
+    _broken_yaml(project, name="broken_sources.yml")
+
+    result = sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    assert result.written_yaml  # sync proceeded
+    assert any("Ignoring unparseable YAML file" in log.message for log in result.run.logs)
 
 
 def test_sync_matches_model_case_insensitively(tmp_path: Path):

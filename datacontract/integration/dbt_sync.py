@@ -1426,6 +1426,7 @@ class _PlannedFile:
 class _EditSession:
     def __init__(self) -> None:
         self.files: Dict[Path, _PlannedFile] = {}
+        self.unparseable: List[Path] = []  # existing YAML that failed to parse
 
     def try_load(self, path: Path) -> Optional[Any]:
         if path in self.files:
@@ -1436,6 +1437,7 @@ class _EditSession:
             y = _make_yaml(sequence=seq_indent, offset=offset)
             data = y.load(text)
         except Exception:
+            self.unparseable.append(path)
             return None  # unparseable / unreadable → leave the file untouched
         if not isinstance(data, dict):
             return None
@@ -2446,6 +2448,22 @@ def generate_dbt_tests(
         plans.append(_ModelPlan(effective, schema_obj, model_dict, singulars, sql_path))
 
     singular_tests: List[SingularTest] = [s for p in plans for s in p.singular_tests]
+
+    # If there are unparseable yaml files, warn. In case we'd create a new yaml file, error and stop:
+    # It could be that our new file would be a duplicate once the user fixes the bad yaml.
+    if session.unparseable:
+        files = ", ".join(str(p) for p in session.unparseable)
+        if any(p.sql_path is not None for p in plans):
+            raise DataContractException(
+                type="dbt_sync",
+                name="parse existing YAML files",
+                reason=(
+                    f"Cannot parse YAML file(s): {files}\n"
+                    f"Fix or remove them before running dbt sync."
+                ),
+                engine="dbt-sync",
+            )
+        run.log_warn(f"Ignoring unparseable YAML file: {files}")
 
     # Versioned sync skips the cross-model provenance cleanup (it can't tell which version a shared
     # test serves); `--prune` instead retires this-version-only footprint via `_prune_versioned_entry`.
