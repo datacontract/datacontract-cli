@@ -2317,8 +2317,10 @@ def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path
                 type="dbt_sync",
                 name="resolve contract",
                 reason=(
-                    f"No `*.odcs.yaml` found below {search_dir}. "
-                    "Pass the contract path explicitly: `datacontract dbt sync <contract>`."
+                    f"No `*.odcs.yaml` found below {search_dir}.\n"
+                    "  - Already have a contract? Pass its path: `datacontract dbt sync <contract>`.\n"
+                    "  - Starting from this dbt project? Bootstrap a contract from it: run `dbt parse`, then "
+                    "`datacontract import dbt --source target/manifest.json --output datacontract-v1.odcs.yaml`."
                 ),
                 engine="dbt-sync",
             )
@@ -2426,7 +2428,7 @@ def generate_dbt_tests(
                     reason=(
                         f"Model `{effective}` has a `versions:` block but contract `{odcs.id}` "
                         "was synced without a version. Name the contract file with the target version "
-                        "(e.g. `<name>_v2.odcs.yaml`), or de-version the model's `.sql` files."
+                        "(e.g. `<name>-v2.odcs.yaml`), or de-version the model's `.sql` files."
                     ),
                     engine="dbt-sync",
                 )
