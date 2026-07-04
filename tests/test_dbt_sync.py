@@ -1520,6 +1520,7 @@ def test_publish_failure_exits_non_zero(monkeypatch, tmp_path: Path):
             str(CONTRACT_PATH),
             "--project-dir",
             str(project),
+            "--run-tests",
             "--server",
             "prod",
             "--publish",
@@ -1552,6 +1553,7 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
             str(CONTRACT_PATH),
             "--project-dir",
             str(project),
+            "--run-tests",
             "--server",
             "prod",
             "--publish",
@@ -1568,8 +1570,8 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
     assert captured["ssl"] is False
 
 
-def test_cli_publish_implies_run(monkeypatch, tmp_path: Path):
-    """`--publish` has no meaning without a run, so it implies `--run-tests`: dbt runs and we publish."""
+def test_cli_publish_requires_run_tests(monkeypatch, tmp_path: Path):
+    """`--publish` has no meaning without a run: it errors when `--run-tests` is missing, without publishing."""
     project = _copy_dbt_project(tmp_path)
     _stub_dbt_test(monkeypatch, project)
 
@@ -1587,8 +1589,9 @@ def test_cli_publish_implies_run(monkeypatch, tmp_path: Path):
         app,
         ["dbt", "sync", str(contract), "--project-dir", str(project), "--publish", "https://example.com"],
     )
-    assert result.exit_code == 0, result.output
-    publish_mock.assert_called_once()
+    assert result.exit_code == 1, result.output
+    assert "--publish/--server require --run-tests" in result.stdout
+    publish_mock.assert_not_called()
 
 
 def test_cli_publish_rejects_non_http_url(tmp_path: Path):
@@ -1627,6 +1630,7 @@ def test_cli_publish_skipped_when_no_server_resolvable(monkeypatch, tmp_path: Pa
             str(CONTRACT_PATH),
             "--project-dir",
             str(project),
+            "--run-tests",
             "--publish",
             "https://example.com",
         ],
@@ -1666,6 +1670,7 @@ def test_cli_server_flag_overrides_target(monkeypatch, tmp_path: Path):
             str(project),
             "--target",
             "ci",
+            "--run-tests",
             "--server",
             "production",
             "--publish",
@@ -1706,6 +1711,7 @@ def test_cli_server_defaults_to_single_contract_server(monkeypatch, tmp_path: Pa
             str(project),
             "--target",
             "ci",
+            "--run-tests",
             "--publish",
             "https://example.com",
         ],
@@ -1731,9 +1737,9 @@ def test_cli_server_rejects_unknown_name(tmp_path: Path):
             str(contract),
             "--project-dir",
             str(project),
+            "--run-tests",
             "--server",
             "typo",
-            "--skip-tests",
         ],
     )
     assert result.exit_code == 1
@@ -2381,3 +2387,169 @@ def test_versioned_sync_same_version_twice_is_idempotent(tmp_path: Path):
     entry = _versioned_entry(project)
     id_not_null = _col(entry, "id")["data_tests"][0]
     assert _cv(id_not_null) == ["1.0.0", "2.0.0"]  # not ["1.0.0","2.0.0","1.0.0","2.0.0"]
+
+
+# ---------------------------------------------------------------------------
+# Column data types
+# ---------------------------------------------------------------------------
+
+_TYPED_CONTRACT = """\
+kind: DataContract
+apiVersion: v3.1.0
+id: typed
+name: Typed
+version: 1.0.0
+status: active
+{servers}schema:
+  - name: orders
+    properties:
+      - name: order_id
+        physicalType: BIGINT
+        primaryKey: true
+      - name: amount
+        logicalType: number
+      - name: note
+        physicalType: VARCHAR(20)
+        description: a note
+"""
+
+_POSTGRES_SERVER = (
+    "servers:\n"
+    "  - server: prod\n"
+    "    type: postgres\n"
+    "    host: localhost\n"
+    "    port: 5432\n"
+    "    database: db\n"
+    "    schema: public\n"
+)
+
+
+def _typed_project(tmp_path: Path, *, with_server: bool) -> Path:
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "orders.sql").write_text("select 1 as order_id, 1 as amount, 'x' as note")
+    (project / "orders.odcs.yaml").write_text(_TYPED_CONTRACT.format(servers=_POSTGRES_SERVER if with_server else ""))
+    return project
+
+
+def test_sync_writes_physical_types_verbatim_without_server(tmp_path: Path):
+    """No resolvable dialect → a `physicalType` is written verbatim; a logical-only column is skipped."""
+    project = _typed_project(tmp_path, with_server=False)
+    gen = generate_dbt_tests(contract=str(project / "orders.odcs.yaml"), project_dir=project)
+    cols = {c["name"]: c for c in _model_entry(project / "models" / "orders.yml")["columns"]}
+    assert cols["order_id"]["data_type"] == "BIGINT"
+    assert cols["note"]["data_type"] == "VARCHAR(20)"
+    assert "data_type" not in cols["amount"]  # logical-only, no dialect → skipped
+    assert any("logical-only" in str(log.message) for log in gen.generation_run.logs)
+
+
+def test_sync_maps_logical_type_via_declared_server(tmp_path: Path):
+    """A single declared server's `type` maps a `logicalType` to a `data_type`, no --server needed."""
+    project = _typed_project(tmp_path, with_server=True)
+    generate_dbt_tests(contract=str(project / "orders.odcs.yaml"), project_dir=project)
+    cols = {c["name"]: c for c in _model_entry(project / "models" / "orders.yml")["columns"]}
+    assert cols["amount"]["data_type"] == "numeric"  # postgres mapping of logicalType number
+
+
+def test_sync_data_type_contract_wins_over_hand_edit(tmp_path: Path):
+    """A contract-declared type overwrites a hand-set `data_type` (contract-authoritative)."""
+    project = _typed_project(tmp_path, with_server=True)
+    generate_dbt_tests(contract=str(project / "orders.odcs.yaml"), project_dir=project)
+    generated = project / "models" / "orders.yml"
+    doc = yaml.safe_load(generated.read_text())
+    for c in doc["models"][0]["columns"]:
+        if c["name"] == "amount":
+            c["data_type"] = "STALE"
+    generated.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    generate_dbt_tests(contract=str(project / "orders.odcs.yaml"), project_dir=project)
+    assert _col(_model_entry(generated), "amount")["data_type"] == "numeric"
+
+
+def test_sync_data_type_preserved_when_silent_removed_on_prune(tmp_path: Path):
+    """A type-silent contract leaves an existing `data_type`; `--prune` removes it."""
+    project = _typed_project(tmp_path, with_server=False)
+    generate_dbt_tests(contract=str(project / "orders.odcs.yaml"), project_dir=project)
+    generated = project / "models" / "orders.yml"
+    assert _col(_model_entry(generated), "order_id")["data_type"] == "BIGINT"
+
+    silent = _write(
+        tmp_path,
+        "silent.odcs.yaml",
+        "kind: DataContract\napiVersion: v3.1.0\nid: typed\nname: Typed\nversion: 1.0.0\nstatus: active\n"
+        "schema:\n  - name: orders\n    properties:\n      - name: order_id\n        primaryKey: true\n"
+        "      - name: amount\n      - name: note\n",
+    )
+    generate_dbt_tests(contract=str(silent), project_dir=project, prune=False)
+    assert _col(_model_entry(generated), "order_id")["data_type"] == "BIGINT"  # silent → preserved
+
+    generate_dbt_tests(contract=str(silent), project_dir=project, prune=True)
+    assert "data_type" not in _col(_model_entry(generated), "order_id")  # prune → removed
+
+
+def _typed_versioned_contract(version: str, amount_type: str) -> str:
+    return (
+        "kind: DataContract\napiVersion: v3.1.0\nid: shop\nname: Shop\n"
+        f"version: {version}\nstatus: active\n"
+        "schema:\n  - name: customers\n    properties:\n"
+        "      - name: id\n        physicalType: bigint\n        primaryKey: true\n        required: true\n"
+        f"      - name: amount\n        physicalType: {amount_type}\n        required: true\n"
+        "        description: the amount column\n"
+    )
+
+
+def _typed_versioned_project(tmp_path: Path) -> Path:
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "customers_v1.sql").write_text("select 1 as id, 1 as amount")
+    (project / "models" / "customers_v2.sql").write_text("select 1 as id, 1 as amount")
+    (project / "customers-v1.odcs.yaml").write_text(_typed_versioned_contract("1.0.0", "integer"))
+    (project / "customers-v2.odcs.yaml").write_text(_typed_versioned_contract("2.0.0", "bigint"))
+    return project
+
+
+def test_versioned_sync_puts_diverging_type_in_per_version_override(tmp_path: Path):
+    """A column whose type differs per version keeps the latest's type at top level and a minimal
+    `{name, data_type, description}` override (no `data_tests`) on the diverging version."""
+    project = _typed_versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    entry = _versioned_entry(project)
+
+    assert _col(entry, "amount")["data_type"] == "bigint"  # latest (v2) at top level
+    assert "data_tests" in _col(entry, "amount")  # shared not_null stays at top level
+    assert _col(entry, "id")["data_type"] == "bigint"  # type agrees → no override
+
+    v1_amount = {c["name"]: c for c in _bullet(entry, 1)["columns"] if isinstance(c, dict) and "name" in c}["amount"]
+    assert v1_amount["data_type"] == "integer"
+    assert v1_amount["description"] == "the amount column"
+    assert "data_tests" not in v1_amount  # inherited from top level; restating would duplicate the node
+    assert not any(isinstance(c, dict) and c.get("name") == "amount" for c in _bullet(entry, 2).get("columns", []))
+
+
+def test_versioned_sync_data_type_is_idempotent(tmp_path: Path):
+    """Re-syncing unchanged versioned contracts is a fixed point — no duplicated test into the bullet."""
+    project = _typed_versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    first = (project / "models" / "customers.yml").read_text()
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    assert (project / "models" / "customers.yml").read_text() == first
+
+
+def test_versioned_sync_data_type_is_order_independent(tmp_path: Path):
+    """Syncing versions v2-then-v1 yields the same per-version types as v1-then-v2."""
+    forward = _typed_versioned_project(tmp_path / "fwd")
+    _sync_versioned(forward, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(forward, "customers-v2.odcs.yaml", "2")
+
+    reverse = _typed_versioned_project(tmp_path / "rev")
+    _sync_versioned(reverse, "customers-v2.odcs.yaml", "2")
+    _sync_versioned(reverse, "customers-v1.odcs.yaml", "1")
+
+    def types(project: Path) -> dict:
+        e = _versioned_entry(project)
+        top = _col(e, "amount")["data_type"]
+        v1 = {c["name"]: c for c in _bullet(e, 1)["columns"] if isinstance(c, dict) and "name" in c}["amount"]
+        return {"top": top, "v1_override": v1["data_type"]}
+
+    assert types(forward) == types(reverse) == {"top": "bigint", "v1_override": "integer"}

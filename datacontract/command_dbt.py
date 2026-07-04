@@ -327,7 +327,7 @@ def sync_command(
         bool,
         typer.Option(
             "--run-tests/--skip-tests",
-            help="Run `dbt test` on the generated tests after syncing. Default: skip (generate only). Implied by --publish/--server.",
+            help="Run `dbt test` on the generated tests after syncing. Default: skip (generate only). Required by --publish/--server.",
         ),
     ] = False,
     publish: Annotated[Optional[str], typer.Option(help="The url to publish the results after the test.")] = None,
@@ -349,9 +349,9 @@ def sync_command(
     enable_debug_logging(debug)
     validate_publish_url(publish)
 
-    # --publish / --server have no meaning without a run, so they imply --run-tests.
-    if publish is not None or server is not None:
-        run_tests_flag = True
+    if (publish is not None or server is not None) and not run_tests_flag:
+        console.print("[red]--publish/--server require --run-tests.[/red]")
+        raise typer.Exit(code=1)
 
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir)
