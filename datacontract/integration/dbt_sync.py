@@ -26,6 +26,7 @@ from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.util import load_yaml_guess_indent
 
+from datacontract.export.sql_type_converter import _get_config_value, convert_to_sql_type
 from datacontract.integration.dbt_test_mapping import field_to_data_tests, get_logical_type_option
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.model.exceptions import DataContractException
@@ -847,6 +848,74 @@ def _model_data_tests(
     return singular_tests
 
 
+# ---------------------------------------------------------------------------
+# Column data types (contract-authoritative)
+# ---------------------------------------------------------------------------
+
+
+def _resolve_type_dialect(odcs: OpenDataContractStandard, server: Optional[str]) -> Optional[str]:
+    """The SQL dialect used to map a `logicalType` to a `data_type`, from the ODCS server `type`."""
+    servers = odcs.servers or []
+    if server:
+        for s in servers:
+            if s.server == server and s.type:
+                return s.type
+    types = {s.type for s in servers if s.type}
+    return next(iter(types)) if len(types) == 1 else None
+
+
+def _resolve_column_type(prop: SchemaProperty, dialect: Optional[str]) -> tuple[Optional[str], str]:
+    """(`data_type`, status) for a column, status ∈ {`resolved`, `silent`, `unresolvable`}.
+
+    `physicalType` → verbatim (dialect-independent). `logicalType` → mapped through `dialect`;
+    `unresolvable` when the contract declares a logical type but no dialect resolves it (skip +
+    warn, never remove). `silent` when the contract declares no type at all (leave; `--prune` drops).
+    """
+    physical = prop.physicalType or _get_config_value(prop, "physicalType")
+    logical = prop.logicalType
+    if not physical and not logical:
+        return None, "silent"
+    if physical:
+        if not dialect:
+            return str(physical), "resolved"  # no warehouse to normalize to → author's type verbatim
+        try:
+            return convert_to_sql_type(prop, dialect), "resolved"
+        except Exception:
+            return str(physical), "resolved"
+    if not dialect:
+        return None, "unresolvable"
+    try:
+        dt = convert_to_sql_type(prop, dialect)
+    except Exception:
+        dt = None
+    return (dt, "resolved") if dt else (None, "unresolvable")
+
+
+def _warn_unresolved_types(run: Optional[Run], model: Optional[str], columns: list[str]) -> None:
+    """Warn once that logical-only columns couldn't be typed for lack of a resolvable dialect."""
+    if run is None or not columns:
+        return
+    run.log_warn(
+        f"`{model}`: could not determine a SQL `data_type` for logical-only column(s) "
+        f"{', '.join(columns)} — pass `--server <name>` or set a `physicalType` in the contract. "
+        "Left any existing data_type untouched."
+    )
+
+
+def _apply_column_data_type(
+    target: dict, prop: Optional[SchemaProperty], dialect: Optional[str], *, prune: bool
+) -> str:
+    """Write `data_type` onto a column entry per the contract-authoritative rule. Returns the status."""
+    if prop is None:
+        return "silent"
+    dt, status = _resolve_column_type(prop, dialect)
+    if status == "resolved" and dt is not None:
+        target["data_type"] = dt
+    elif status == "silent" and prune:
+        target.pop("data_type", None)
+    return status
+
+
 def _column_dict(
     prop: SchemaProperty, odcs: OpenDataContractStandard, single_pk_name: Optional[str], model_name: str, run: Run
 ) -> dict:
@@ -1600,13 +1669,17 @@ def _find_bullet_by_odcs(versions: CommentedSeq, odcs_version: str) -> Optional[
 
 
 def _column_has_override(versions: CommentedSeq, col_name: str) -> bool:
-    """True if any version bullet already carries a per-version override for `col_name`."""
+    """True if any version bullet already carries a per-version test override for `col_name`."""
     target = col_name.lower()
     for bullet in versions:
         if not isinstance(bullet, dict):
             continue
         for element in bullet.get("columns") or []:
-            if isinstance(element, dict) and str(element.get("name", "")).lower() == target:
+            if (
+                isinstance(element, dict)
+                and str(element.get("name", "")).lower() == target
+                and element.get("data_tests")
+            ):
                 return True
     return False
 
@@ -1662,6 +1735,115 @@ def _desired_test_args(desired_tests: list) -> dict[str, dict]:
     return out
 
 
+def _bullet_column_override(bullet: dict, col_name: str, *, create: bool = False) -> Optional[dict]:
+    """The per-version `{name, ...}` column override element on a bullet (not the `include` element)."""
+    target = col_name.lower()
+    for element in bullet.get("columns") or []:
+        if isinstance(element, dict) and "name" in element and str(element.get("name", "")).lower() == target:
+            return element
+    if not create:
+        return None
+    _bullet_include_element(bullet)  # an override must ride alongside `include: '*'` (dbt idiom)
+    element = CommentedMap()
+    element["name"] = col_name
+    bullet["columns"].append(element)
+    return element
+
+
+def _reconcile_versioned_data_types(
+    entry: dict,
+    versions: CommentedSeq,
+    model_dict: dict,
+    props_by_name: dict,
+    dialect: Optional[str],
+    this_version: str,
+    run: Optional[Run],
+    *,
+    prune: bool,
+) -> None:
+    """Maintain per-version `data_type` on a versioned model.
+
+    Top-level carries the *latest* version's type; every version whose type differs gets a
+    minimal `{name, data_type, description}` override.
+    """
+    latest = str(entry.get("latest_version"))
+    unresolved: list[str] = []
+    for desired_col in model_dict.get("columns") or []:
+        col_name = desired_col["name"]
+        prop = props_by_name.get(col_name.lower())
+        this_type, status = _resolve_column_type(prop, dialect) if prop else (None, "silent")
+        this_bullet = _find_bullet(versions, this_version)
+        top_col = _find_column(entry, col_name)
+
+        if status == "unresolvable":
+            unresolved.append(col_name)
+            continue
+        if status == "silent":
+            if prune:
+                override = _bullet_column_override(this_bullet, col_name) if this_bullet else None
+                if override is not None:
+                    override.pop("data_type", None)
+                    _collapse_bare_override(this_bullet, override)
+                if str(this_version) == latest and top_col is not None:
+                    top_col.pop("data_type", None)
+            continue
+
+        # Resolved. Build the {dbt version -> type} map from the current YAML + this sync.
+        top_type = top_col.get("data_type") if top_col else None
+        type_by_version: dict[str, Optional[str]] = {}
+        for b in versions:
+            if not isinstance(b, dict):
+                continue
+            override = _bullet_column_override(b, col_name)
+            ov_type = override.get("data_type") if override else None
+            type_by_version[str(b.get("v"))] = ov_type if ov_type is not None else top_type
+        type_by_version[str(this_version)] = this_type
+
+        if all(t is not None for t in type_by_version.values()):
+            new_top = type_by_version.get(latest, this_type)
+            if top_col is not None and new_top is not None:
+                top_col["data_type"] = new_top
+            for b in versions:
+                if not isinstance(b, dict):
+                    continue
+                t = type_by_version.get(str(b.get("v")))
+                if t is None:
+                    continue
+                if t == new_top:
+                    override = _bullet_column_override(b, col_name)
+                    if override is not None:
+                        override.pop("data_type", None)
+                        _collapse_bare_override(b, override)
+                else:
+                    override = _bullet_column_override(b, col_name, create=True)
+                    override["data_type"] = t
+                    _set_override_description(override, top_col)
+        elif this_bullet is not None:
+            # Some sibling's type is still unknown (e.g. synced before types existed). Don't impose a
+            # top-level type on it — put this version's type in its own bullet only.
+            override = _bullet_column_override(this_bullet, col_name, create=True)
+            override["data_type"] = this_type
+            _set_override_description(override, top_col)
+
+    _warn_unresolved_types(run, model_dict.get("name"), unresolved)
+
+
+def _set_override_description(override: dict, top_col: Optional[dict]) -> None:
+    """Stamp the top-level column's description onto an override (dbt doesn't inherit it)."""
+    desc = top_col.get("description") if isinstance(top_col, dict) else None
+    if desc:
+        override["description"] = desc
+
+
+def _collapse_bare_override(bullet: dict, override: dict) -> None:
+    """Drop an override element that's decayed to just `{name}`, then collapse a now-bare `columns`."""
+    if set(override.keys()) == {"name"}:
+        cols = bullet.get("columns")
+        if isinstance(cols, list) and override in cols:
+            cols.remove(override)
+        _bullet_set_exclude(bullet, _bullet_exclude_names(bullet))  # collapse `columns` if bare
+
+
 def _merge_versioned_model_entry(
     entry: dict,
     schema_obj: SchemaObject,
@@ -1671,6 +1853,8 @@ def _merge_versioned_model_entry(
     *,
     prune: bool,
     defined_in: Optional[str] = None,
+    dialect: Optional[str] = None,
+    run: Optional[Run] = None,
 ) -> None:
     """Merge one contract version into a dbt versioned model, additively toward sibling versions.
 
@@ -1684,6 +1868,8 @@ def _merge_versioned_model_entry(
     desc = model_dict.get("description")
     if desc:
         entry["description"] = desc
+    elif prune:
+        entry.pop("description", None)
     _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
     _union_tags(entry, list(schema_obj.tags or []), reconcile=False, prune=prune)
 
@@ -1714,6 +1900,8 @@ def _merge_versioned_model_entry(
             _mark_managed_column(target)
         if prop is not None and prop.description:
             target["description"] = prop.description.strip().replace("\n", " ")
+        elif prune:
+            target.pop("description", None)
         col_tags = list(prop.tags or []) if prop else []
         _union_tags(target, col_tags, reconcile=(created or _is_managed_column(target)), prune=prune)
 
@@ -1753,6 +1941,9 @@ def _merge_versioned_model_entry(
             _bullet_add_excludes(other, newly_created)
 
     _set_latest_version(entry, versions)
+    _reconcile_versioned_data_types(
+        entry, versions, model_dict, props_by_name, dialect, model_version, run, prune=prune
+    )
 
     if prune:
         _prune_versioned_entry(entry, model_dict, contract_version, apply=True)
@@ -1839,20 +2030,24 @@ def _merge_model_entry(
     odcs: OpenDataContractStandard,
     *,
     prune: bool,
+    dialect: Optional[str] = None,
+    run: Optional[Run] = None,
 ) -> None:
     """Merge the contract's desired metadata + tests into one dbt model entry, in place.
 
-    Additive: the contract's tests/metadata are merged in, but the user's own columns, tags, and
-    descriptions are never dropped without `--prune`. Provenance lives on the individual tests and
-    columns we generate (their `datacontract_cli` meta), not on the file as a whole.
+    Contract-authoritative: what the contract specifies (description, `data_type`, tags,
+    tests) is written and wins; what it omits is preserved and removed only under `--prune`. The
+    user's own columns are never dropped without `--prune`.
     """
     props_by_name = {p.name.lower(): p for p in (schema_obj.properties or []) if p.name}
     contract_version = odcs.version or "no_version"  # stamped on every test so `dbt test` can scope by version
 
-    # Metadata: description (contract wins), config.meta named keys, model tags.
+    # Metadata: description, config.meta, tags
     desc = model_dict.get("description")
     if desc:
         entry["description"] = desc
+    elif prune:
+        entry.pop("description", None)
     _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
     _union_tags(entry, list(schema_obj.tags or []), reconcile=False, prune=prune)
 
@@ -1861,6 +2056,7 @@ def _merge_model_entry(
 
     # Columns.
     contract_cols: set[str] = set()
+    unresolved_types: list[str] = []
     for desired_col in model_dict.get("columns") or []:
         col_name = desired_col["name"]
         contract_cols.add(col_name.lower())
@@ -1876,13 +2072,19 @@ def _merge_model_entry(
                 entry["columns"] = cols
             cols.append(target)
 
+        if _apply_column_data_type(target, prop, dialect, prune=prune) == "unresolvable":
+            unresolved_types.append(col_name)
         if prop is not None and prop.description:
             target["description"] = prop.description.strip().replace("\n", " ")
+        elif prune:
+            target.pop("description", None)
         col_tags = list(prop.tags or []) if prop else []
         _union_tags(target, col_tags, reconcile=(created or _is_managed_column(target)), prune=prune)
         _reconcile_data_tests(target, desired_col.get("data_tests") or [], contract_version)
         if created:
             _mark_managed_column(target)
+
+    _warn_unresolved_types(run, model_dict.get("name") or schema_obj.name, unresolved_types)
 
     # --prune: strict-mirror the contract's column set (drops user columns too).
     if prune:
@@ -2003,6 +2205,7 @@ def _clean_model_entry(
                 and _is_managed_column(col)
                 and not col.get("data_tests")
                 and not col.get("description")
+                and not (col.get("data_type") and model_required)
             ):
                 continue  # drop a managed column that has become empty
             survivors.append(col)
@@ -2370,11 +2573,13 @@ def generate_dbt_tests(
     model_resolution: ModelResolution = ModelResolution.name,
     prune: bool = False,
     model_version: Optional[str] = None,
+    server: Optional[str] = None,
 ) -> DbtTestGenerationResult:
     """Resolve the contract, merge its tests + metadata into the dbt project's model YAML in place.
 
     `model_version` (a dbt model version like "2", from the contract filename) merges this contract
     into a versioned model — a `versions:` block — additively, leaving sibling versions untouched.
+    `server` selects the ODCS server whose `type` maps `logicalType`s to a `data_type`.
     """
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir)
@@ -2382,6 +2587,7 @@ def generate_dbt_tests(
     contract_path = _resolve_contract_path(contract, project_dir)
     odcs = resolve_data_contract(str(contract_path))
     logger.info(f"Resolved contract {odcs.id}@{odcs.version} from {contract_path}")
+    dialect = _resolve_type_dialect(odcs, server)
 
     run = Run.create_run()
     run.dataContractId = odcs.id
@@ -2492,10 +2698,18 @@ def generate_dbt_tests(
                 else None
             )
             _merge_versioned_model_entry(
-                entry, plan.schema_obj, plan.model_dict, odcs, model_version, prune=prune, defined_in=defined_in
+                entry,
+                plan.schema_obj,
+                plan.model_dict,
+                odcs,
+                model_version,
+                prune=prune,
+                defined_in=defined_in,
+                dialect=dialect,
+                run=run,
             )
         else:
-            _merge_model_entry(entry, plan.schema_obj, plan.model_dict, odcs, prune=prune)
+            _merge_model_entry(entry, plan.schema_obj, plan.model_dict, odcs, prune=prune, dialect=dialect, run=run)
         resolved_models.append(plan.name)
         if not prune:
             if model_version is None:

@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - extended `datacontract dbt sync`:
   - now edits existing properties files (schema.yaml) in-place instead of creating new ones
   - preserve manual edits to a properties file
-  - edit schema and tags, not only tests
+  - edit schema incl. descriptions, column types and tags, not only tests
   - add `--prune` flag to remove everything that's not specified in the contract (models, tags, checks) - per default, only generated content gets removed
   - support for multiple contract versions (`versions:` block)
   - possibility to sync multiple contracts at once

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from open_data_contract_standard.model import OpenDataContractStandard
 from typing_extensions import Annotated
 
 from datacontract.cli import (
@@ -45,31 +46,17 @@ class _ContractCtx:
     """One contract resolved for a `dbt test` run (shared across sync's run path and `dbt test`)."""
 
     contract_path: Path
-    odcs: object
+    odcs: OpenDataContractStandard
     model_names: list[str]  # effective dbt model names — drive selection and result attribution
     generation_run: Optional[Run]  # set on sync's --run-tests path, None on `dbt test`
     dbt_version: Optional[str] = None  # filename-derived dbt model version, when this contract is versioned
 
 
-def _candidate_models(odcs) -> list[str]:
-    """Model names a contract may own on disk — schema name and physicalName, strategy-agnostic.
-
-    `dbt test` doesn't know which `--model-resolution` `dbt sync` used, so it matches on both.
-    """
-    names: list[str] = []
-    for s in odcs.schema_ or []:
-        if s.name:
-            names.append(s.name)
-        if getattr(s, "physicalName", None):
-            names.append(s.physicalName)
-    return names
-
-
 @dataclass
 class _Owner:
     path: Path
-    contract_id: object
-    contract_version: object
+    contract_id: Optional[str]
+    contract_version: str
     dbt_version: Optional[str]  # filename-derived version, None if the contract can't map to one
 
 
@@ -390,6 +377,7 @@ def sync_command(
                 model_resolution=model_resolution,
                 prune=prune,
                 model_version=dbt_version,
+                server=server,
             )
         except Exception as e:
             if not multiple_contracts:
@@ -398,8 +386,6 @@ def sync_command(
             continue
         if not contract and not multiple_contracts:
             console.print(f"Resolved contract {gen.contract_path}")
-        for schema in gen.skipped_schemas:
-            console.print(f"[yellow]Skipped schema {schema!r}: no matching dbt model found.[/yellow]")
         _print_sync_summary(gen, project_dir, debug=bool(debug))
         if not prune:
             _warn_prunable(gen, project_dir)
@@ -490,7 +476,13 @@ def test_command(
             continue
         if not contract and not multiple_contracts:
             console.print(f"Resolved contract {path}")
-        model_names = _candidate_models(odcs)
+        # `dbt test` doesn't know which `--model-resolution` `dbt sync` used, so match on both name and physicalName.
+        model_names: list[str] = []
+        for s in odcs.schema_ or []:
+            if s.name:
+                model_names.append(s.name)
+            if getattr(s, "physicalName", None):
+                model_names.append(s.physicalName)
         dbt_version = resolve_versioned_target(project_dir, model_names, parse_filename_version(path))
         ctxs.append(_ContractCtx(path, odcs, model_names, None, dbt_version))
         for model in {m.lower() for m in model_names}:

@@ -8,14 +8,14 @@ description: "Generate dbt tests from a contract and run them."
 
 Work with data contracts in your dbt project. Two subcommands:
 
-- `datacontract dbt sync` — generate dbt tests and model metadata from an ODCS contract.
+- `datacontract dbt sync` — merge an ODCS contract's schema (columns, descriptions, tags) and tests into your dbt project.
 - `datacontract dbt test` — run the generated, contract-managed tests.
 
 See the [dbt Integration](../dbt.md) guide.
 
 ## `datacontract dbt sync`
 
-Generate dbt tests and model metadata from one or more ODCS contracts. Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files or singular SQL tests under `<test-paths>/datacontract_cli/` if needed. Generate-only by default — pass `--run-tests` (or `--publish`/`--server`, which imply it) to also run the contract-managed tests.
+Merge one or more ODCS contracts' schema (column data types, descriptions, tags, model metadata) and tests into your dbt project. Modifies the existing dbt model YAML in place (preserving comments and formatting) and, if needed, creates a new model YAML sidecar (next to a model's `.sql`) or singular SQL tests (under `<test-paths>/datacontract_cli/`). Generate-only by default — pass `--run-tests` to also run the contract-managed tests (required alongside `--publish`/`--server`).
 
 ```bash
 datacontract dbt sync [CONTRACT]...
@@ -33,9 +33,9 @@ datacontract dbt sync [CONTRACT]...
 | `--prune` / `--no-prune` | off | Remove model columns and tags that are not declared in the contract. |
 | `--target` | — | Forwarded to `dbt test --target`. |
 | `--profiles-dir` | — | Forwarded to `dbt test --profiles-dir`. |
-| `--run-tests` / `--skip-tests` | `--skip-tests` | Run `dbt test` after syncing. Implied by `--publish`/`--server`. |
+| `--run-tests` / `--skip-tests` | `--skip-tests` | Run `dbt test` after syncing. Required by `--publish`/`--server`. |
 | `--publish` | — | URL to publish the results to. |
-| `--server` | — | ODCS server name for published test results. |
+| `--server` | — | ODCS server whose `type` is the dialect for mapping the contract's types to column `data_type`s, and the server name for published results. |
 | `--ssl-verification` / `--no-...` | on | SSL verification when publishing. |
 | `--debug` / `--no-debug` | off | Enable debug logging. |
 
