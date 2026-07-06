@@ -59,7 +59,7 @@ excel = [
 databricks = [
   "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.4.0",
-  "databricks-sdk<0.119.0",
+  "databricks-sdk<0.121.0",
   # Not capped to Spark 3.5.x like older builds were: the databricks path uses a
   # caller-provided Spark session (or the databricks SQL connector) and never
   # loads the Kafka/Avro connector jars, so it isn't tied to a Scala/Spark line.
@@ -120,7 +120,7 @@ gcs = [
 azure = [
   "datacontract-cli[duckdb]",
   "duckdb-extension-azure>=1.5.0,<1.6.0",
-  "azure-identity>=1.17.1,<1.18",
+  "azure-identity>=1.17.1,<1.26",
   "azure-storage-blob>=12.24,<12.31",
 ]
 
@@ -170,7 +170,7 @@ rdf = [
 ]
 
 api = [
-  "fastapi>=0.115.0,<0.139.0",
+  "fastapi>=0.115.0,<0.140.0",
   "uvicorn>=0.44.0,<0.50.0",
 ]
 
@@ -200,9 +200,9 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<9.7.0",
-  "ruff==0.15.18",
+  "ruff==0.15.20",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
-  "trino==0.337.0",
+  "trino==0.338.0",
 ]
 
 [project.urls]

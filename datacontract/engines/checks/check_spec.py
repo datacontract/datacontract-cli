@@ -29,6 +29,7 @@ class MetricType(str, Enum):
     INVALID_COUNT = "invalid_count"
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"
+    FIELD_PHYSICAL_TYPE = "field_physical_type"
     FRESHNESS = "freshness"
     RETENTION = "retention"
     CUSTOM_SQL = "custom_sql"
@@ -122,6 +123,7 @@ class CheckSpec:
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
     expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
+    expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
     columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns
 

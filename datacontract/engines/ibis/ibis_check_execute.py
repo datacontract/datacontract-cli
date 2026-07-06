@@ -17,9 +17,11 @@ from typing import List, Optional
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
+from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.type_normalize import schema_property_matches, schema_property_mismatch_reason
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
+from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -58,6 +60,8 @@ def _describe(spec: CheckSpec) -> str:
         return spec.query or ""
     if spec.metric == MetricType.FIELD_TYPE:
         return f"type({spec.field}) == {spec.expected_type_label}"
+    if spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
+        return f"physical_type({spec.field}) == {spec.expected_physical_type}"
     if spec.metric == MetricType.FIELD_PRESENT:
         return f"present({spec.field})"
     if spec.threshold is not None:
@@ -186,6 +190,12 @@ def _run_model(
     columns = {c.lower(): c for c in t.columns}
     schema = t.schema()
 
+    # Physical type checks read the real declared native types from the catalog;
+    # fetch once per model, and only when such a check exists.
+    native_types = None
+    if any(spec.metric == MetricType.FIELD_PHYSICAL_TYPE for spec in specs):
+        native_types = fetch_native_types(con, server, model)
+
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
         try:
@@ -210,6 +220,8 @@ def _run_model(
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
                 _run_type(run, schema, columns, spec)
+            elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
+                _run_physical_type(run, con, server, schema, columns, native_types, spec)
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
                 _run_freshness(run, t, columns, spec)
             elif spec.metric == MetricType.CUSTOM_SQL:
@@ -634,6 +646,73 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
         )
 
 
+def _run_physical_type(run: Run, con, server, schema, columns, native_types, spec: CheckSpec):
+    """Compare a column's real native type against the contract's physicalType.
+
+    When the native type cannot be read for this backend, or the declared
+    physicalType cannot be interpreted in the server's dialect, fall back to the
+    coarse logicalType category check if the property declares one, and only warn
+    (skip) when there is nothing left to compare against.
+    """
+    _set_impl(
+        run,
+        spec.key,
+        f"physical type of '{spec.field}' is '{spec.expected_physical_type}'",
+        "introspection",
+    )
+    actual_col = columns.get(spec.field.lower())
+    if actual_col is None:
+        _set_diagnostics(
+            run, spec.key, _diag(metric="field_physical_type", field=spec.field, expected=spec.expected_physical_type)
+        )
+        _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        return
+
+    actual_native = native_types.get(spec.field.lower()) if native_types else None
+    _set_diagnostics(
+        run,
+        spec.key,
+        _diag(
+            metric="field_physical_type",
+            field=spec.field,
+            expected=spec.expected_physical_type,
+            actual=actual_native,
+        ),
+    )
+
+    result, reason = (None, "")
+    if actual_native is not None:
+        result, reason = physical_type_matches(spec.expected_physical_type, actual_native, sqlglot_dialect(con))
+    else:
+        reason = f"Could not read the native type of '{spec.field}' from the {get_server_type(server)} catalog"
+
+    if result is True:
+        _set_result(run, spec.key, ResultEnum.passed, None)
+        return
+    if result is False:
+        _set_result(run, spec.key, ResultEnum.failed, reason)
+        return
+
+    # result is None: the physical type could not be evaluated. Fall back to the
+    # logicalType category check when the property declares one.
+    fallback = spec.expected_schema_property
+    if fallback is not None and fallback.logicalType is not None:
+        actual_prop = ibis_dtype_to_schema_property(schema[actual_col])
+        if schema_property_matches(fallback, actual_prop):
+            _set_result(run, spec.key, ResultEnum.passed, None)
+        else:
+            mismatch = schema_property_mismatch_reason(fallback, actual_prop)
+            _set_result(
+                run,
+                spec.key,
+                ResultEnum.failed,
+                mismatch or f"Expected type '{fallback.logicalType}' but column is '{schema[actual_col]}'",
+            )
+        return
+
+    _set_result(run, spec.key, ResultEnum.warning, f"{reason}; skipping the physical type check")
+
+
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
     import pandas as pd
 
@@ -692,7 +771,12 @@ def _run_scalar(con, query: str, dialect: Optional[str]):
         logger.debug("con.sql failed (%s); falling back to raw_sql", primary_error)
         cursor = con.raw_sql(query)
         try:
-            row = cursor.fetchone()
+            if hasattr(cursor, "fetchone"):
+                row = cursor.fetchone()
+            else:
+                # Some backends (e.g. BigQuery) return an iterable result set
+                # (RowIterator) instead of a DBAPI cursor.
+                row = next(iter(cursor), None)
         finally:
             # On DuckDB, raw_sql returns the shared connection itself; closing it
             # would tear down the connection and break every subsequent check.
