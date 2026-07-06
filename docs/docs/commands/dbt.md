@@ -69,7 +69,7 @@ schema:
           maxLength: 320
 ```
 
-Let's assume that a minimal model properties file already existed. This is how it looks like after running
+Let's assume that a minimal model properties file already exists. This is what it looks like after running
 `datacontract dbt sync orders-v1.odcs.yaml` (highlighted lines got added):
 
 ```yaml title="models/orders.yml" {4,7-30,32-49}
@@ -150,7 +150,7 @@ datacontract dbt test [CONTRACT]...
 | `--target` | — | Forwarded to `dbt test --target`. |
 | `--profiles-dir` | — | Forwarded to `dbt test --profiles-dir`. |
 | `--publish` | — | URL to publish the results to. |
-| `--server` | — | ODCS server name for published test results. |
+| `--server` | The only one in the contract, else `--target` | ODCS server name for published test results. |
 | `--ssl-verification` / `--no-...` | on | SSL verification when publishing. |
 | `--debug` / `--no-debug` | off | Enable debug logging. |
 
