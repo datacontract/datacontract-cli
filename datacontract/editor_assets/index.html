@@ -16,6 +16,8 @@
     <script type="module">
       import { init } from './datacontract-editor.es.js';
 
+      const apiUrl = window.DATACONTRACT_API_URL || 'https://api.datacontract.com';
+
       init({
         container: '#root',
         mode: 'SERVER',
@@ -23,7 +25,7 @@
         initialView: 'form',
         tests: {
           enabled: true,
-          dataContractCliApiServerUrl: 'https://api.datacontract.com'
+          dataContractCliApiServerUrl: apiUrl
         },
       });
     </script>
