@@ -121,14 +121,18 @@ def find_contract(search_dir: Path) -> Path:
     return candidates[0]
 
 
-def _ensure_dbt_project(project_dir: Path) -> None:
+def _ensure_dbt_project(project_dir: Path, *, explicit: bool = False) -> None:
     if not (project_dir / "dbt_project.yml").is_file():
+        if explicit:
+            reason = f"`--project-dir` {project_dir} is not a dbt project root (no `dbt_project.yml`)."
+        else:
+            reason = (
+                f"`dbt_project.yml` not found in {project_dir}. Pass `--project-dir` to point at a dbt project root."
+            )
         raise DataContractException(
             type="dbt_sync",
             name="resolve dbt project",
-            reason=(
-                f"`dbt_project.yml` not found in {project_dir}. Pass `--project-dir` to point at a dbt project root."
-            ),
+            reason=reason,
             engine="dbt-sync",
         )
 
@@ -2581,8 +2585,9 @@ def generate_dbt_tests(
     into a versioned model — a `versions:` block — additively, leaving sibling versions untouched.
     `server` selects the ODCS server whose `type` maps `logicalType`s to a `data_type`.
     """
+    explicit_project_dir = project_dir is not None
     project_dir = (project_dir or Path.cwd()).resolve()
-    _ensure_dbt_project(project_dir)
+    _ensure_dbt_project(project_dir, explicit=explicit_project_dir)
 
     contract_path = _resolve_contract_path(contract, project_dir)
     odcs = resolve_data_contract(str(contract_path))

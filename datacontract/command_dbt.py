@@ -340,8 +340,9 @@ def sync_command(
         console.print("[red]--publish/--server require --run-tests.[/red]")
         raise typer.Exit(code=1)
 
+    explicit_project_dir = project_dir is not None
     project_dir = (project_dir or Path.cwd()).resolve()
-    _ensure_dbt_project(project_dir)
+    _ensure_dbt_project(project_dir, explicit=explicit_project_dir)
     paths = _resolve_contract_paths(contract or [], project_dir)
     multiple_contracts = len(paths) > 1
 
@@ -458,8 +459,9 @@ def test_command(
     validate_publish_url(publish)
     check_dbt_on_path()
 
+    explicit_project_dir = project_dir is not None
     project_dir = (project_dir or Path.cwd()).resolve()
-    _ensure_dbt_project(project_dir)
+    _ensure_dbt_project(project_dir, explicit=explicit_project_dir)
     paths = _resolve_contract_paths(contract or [], project_dir)
     multiple_contracts = len(paths) > 1
 

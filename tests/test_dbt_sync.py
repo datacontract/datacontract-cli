@@ -144,6 +144,12 @@ def test_ensure_dbt_project_missing_raises(tmp_path: Path):
         _ensure_dbt_project(tmp_path)
 
 
+def test_ensure_dbt_project_missing_explicit_project_dir(tmp_path: Path):
+    # When the user passed --project-dir, don't tell them to pass it — say the path isn't a project root.
+    with pytest.raises(DataContractException, match=r"`--project-dir` .* is not a dbt project root"):
+        _ensure_dbt_project(tmp_path, explicit=True)
+
+
 # ---------------------------------------------------------------------------
 # dbt PATH preflight
 # ---------------------------------------------------------------------------
