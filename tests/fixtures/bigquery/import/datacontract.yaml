@@ -102,7 +102,7 @@ schema:
     items:
       name: items
       physicalType: DATETIME
-      logicalType: date
+      logicalType: timestamp
   - name: Geography_Field
     physicalType: GEOGRAPHY
     description: a geography field
