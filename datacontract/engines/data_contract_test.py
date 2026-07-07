@@ -6,17 +6,18 @@ import typing
 import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
-from datacontract.engines.data_contract_checks import create_checks
+from datacontract.engines.checks.create_checks import create_checks
 
 if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+from datacontract.engines.datacontract.check_azure_blob_file import check_azure_blob_file
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
-from datacontract.engines.soda.check_soda_execute import check_soda_execute
+from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
 
@@ -27,6 +28,9 @@ def execute_data_contract_test(
     server_name: str = None,
     spark: "SparkSession" = None,
     duckdb_connection: "DuckDBPyConnection" = None,
+    schema_name: str = "all",
+    check_categories: set[str] | None = None,
+    include_failed_samples: bool = False,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -46,16 +50,45 @@ def execute_data_contract_test(
     run.outputPortId = None  # ODCS doesn't have outputPortId
     run.server = server_name
 
+    if schema_name != "all":
+        schema_names = {s.name for s in data_contract.schema_} if data_contract.schema_ else set()
+        if schema_name not in schema_names:
+            raise DataContractException(
+                type="lint",
+                name="Check that schema name exists",
+                result=ResultEnum.failed,
+                reason=f"Schema '{schema_name}' not found in data contract. Available schemas: {sorted(schema_names)}",
+                engine="datacontract",
+            )
+
     if server.type == "api":
         server = process_api_response(run, server)
 
-    run.checks.extend(create_checks(data_contract, server))
+    specs = create_checks(data_contract, server, schema_name=schema_name)
+    if check_categories is not None:
+        specs = [s for s in specs if s.category in check_categories]
+        if not specs:
+            run.log_warn(f"No checks found for categories: {', '.join(sorted(check_categories))}")
+    run.checks.extend(build_check_stubs(specs))
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
-        check_jsonschema(run, data_contract, server)
-    check_soda_execute(run, data_contract, server, spark, duckdb_connection)
+        if check_categories is None or "schema" in check_categories:
+            check_jsonschema(run, data_contract, server, schema_name=schema_name)
+    # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
+    if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
+        check_azure_blob_file(run, data_contract, server, schema_name=schema_name, check_categories=check_categories)
+    execute_ibis_checks(
+        run,
+        data_contract,
+        server,
+        specs,
+        spark,
+        duckdb_connection,
+        schema_name=schema_name,
+        include_failed_samples=include_failed_samples,
+    )
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:
@@ -108,3 +141,15 @@ def process_api_response(run, server):
         path=f"{tmp_dir.name}/api_response.json",
     )
     return new_server
+
+
+def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
+    """Return True if the (possibly filtered) schema list contains any logicalType='blob' schema."""
+    if data_contract.schema_ is None:
+        return False
+    for s in data_contract.schema_:
+        if schema_name != "all" and s.name != schema_name:
+            continue
+        if (s.logicalType or "").lower() == "blob":
+            return True
+    return False

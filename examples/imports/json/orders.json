@@ -1,0 +1,7 @@
+{
+  "order_id": "ORD-1001",
+  "order_timestamp": "2024-01-01T10:00:00Z",
+  "customer_id": "CUST-1",
+  "order_total": 4999,
+  "status": "delivered"
+}

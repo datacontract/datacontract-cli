@@ -1,0 +1,51 @@
+{
+  "name": "complex_types_example",
+  "catalog_name": "mycatalog",
+  "schema_name": "myschema",
+  "table_type": "MANAGED",
+  "data_source_format": "DELTA",
+  "columns": [
+    {
+      "name": "id",
+      "type_text": "bigint",
+      "type_name": "LONG",
+      "position": 0,
+      "type_json": "{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "id_list",
+      "type_text": "array<bigint>",
+      "type_name": "ARRAY",
+      "position": 1,
+      "type_json": "{\"name\":\"id_list\",\"type\":{\"type\":\"array\",\"elementType\":\"long\",\"containsNull\":true},\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "id_struct",
+      "type_text": "struct<value:bigint>",
+      "type_name": "STRUCT",
+      "position": 2,
+      "type_json": "{\"name\":\"id_struct\",\"type\":{\"type\":\"struct\",\"fields\":[{\"name\":\"value\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}]},\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "struct_list",
+      "type_text": "array<struct<key:string,value:bigint>>",
+      "type_name": "ARRAY",
+      "position": 3,
+      "type_json": "{\"name\":\"struct_list\",\"type\":{\"type\":\"array\",\"elementType\":{\"type\":\"struct\",\"fields\":[{\"name\":\"key\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"value\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}}]},\"containsNull\":true},\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    },
+    {
+      "name": "attributes",
+      "type_text": "map<string,bigint>",
+      "type_name": "MAP",
+      "position": 4,
+      "type_json": "{\"name\":\"attributes\",\"type\":{\"type\":\"map\",\"keyType\":\"string\",\"valueType\":\"long\",\"valueContainsNull\":true},\"nullable\":true,\"metadata\":{}}",
+      "nullable": true
+    }
+  ],
+  "full_name": "mycatalog.myschema.complex_types_example",
+  "table_id": "complex_types_example"
+}

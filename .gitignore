@@ -343,3 +343,4 @@ fabric.properties
 .worktrees/
 .security-key
 logs/security/
+.playwright-cli/

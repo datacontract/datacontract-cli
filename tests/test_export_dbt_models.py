@@ -13,7 +13,7 @@ from datacontract.export.dbt_exporter import to_dbt_models_yaml
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/export/datacontract.odcs.yaml", "--format", "dbt"])
+    result = runner.invoke(app, ["export", "dbt-models", "./fixtures/export/datacontract.odcs.yaml"])
     assert result.exit_code == 0
 
 

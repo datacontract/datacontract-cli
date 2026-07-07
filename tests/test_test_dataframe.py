@@ -16,6 +16,7 @@ from pyspark.sql.types import (
 )
 
 from datacontract.data_contract import DataContract
+from datacontract.engines.ibis.connections.kafka import spark_connector_packages
 
 # logging.basicConfig(level=logging.INFO, force=True)
 
@@ -34,10 +35,7 @@ def spark(tmp_path_factory) -> Generator[SparkSession, Any, None]:
             f"{tmp_path_factory.mktemp('spark')}/spark-warehouse",
         )
         .config("spark.streaming.stopGracefullyOnShutdown", "true")
-        .config(
-            "spark.jars.packages",
-            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5,org.apache.spark:spark-avro_2.12:3.5.5",
-        )
+        .config("spark.jars.packages", spark_connector_packages())
         .config("spark.driver.host", "127.0.0.1")
         .master("local[*]")
         .config("spark.ui.enabled", False)
@@ -174,3 +172,29 @@ def _prepare_fail_dataframe(spark):
     # Create temporary view
     # Name must match the model name in the data contract
     df.createOrReplaceTempView("my_table")
+
+
+def test_pyspark_unconvertible_column_as_unknown(spark: SparkSession):
+    import ibis
+    import ibis.expr.datatypes as dt
+    from ibis.backends.pyspark.datatypes import PySparkType
+
+    from datacontract.engines.ibis.ibis_check_execute import _resolve_table
+
+    spark.sql("SELECT 1 AS id, INTERVAL '1-2' YEAR TO MONTH AS payload, 10 AS amount").createOrReplaceTempView(
+        "unconvertible_model"
+    )
+
+    # Sanity: the fixture column really is unconvertible for ibis
+    payload_type = spark.table("unconvertible_model").schema["payload"].dataType
+    with pytest.raises(Exception):
+        PySparkType.to_ibis(payload_type)
+
+    con = ibis.pyspark.connect(session=spark)
+    t = _resolve_table(con, "unconvertible_model")
+
+    assert set(t.columns) == {"id", "payload", "amount"}  # kept
+    assert isinstance(t.schema()["payload"], dt.Unknown)  # typed opaque
+    assert t.count().execute() == 1  # table is queryable
+    assert t.amount.isnull().sum().execute() == 0  # checks on other columns run
+    assert t.payload.isnull().sum().execute() == 0  # not-null still works on the opaque column

@@ -77,38 +77,33 @@ schema:
         physicalType: BINARY_DOUBLE
       - name: FIELD_TIMESTAMP
         description: Timestamp with fractional second precision of 6, no timezones
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP(6)
       - name: FIELD_TIMESTAMP_TZ
         description: Timestamp with fractional second precision of 6, with timezones
             (TZ)
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP(6) WITH TIME ZONE
       - name: FIELD_TIMESTAMP_LTZ
         description: Timestamp with fractional second precision of 6, with local timezone
             (LTZ)
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP(6) WITH LOCAL TIME ZONE
       - name: FIELD_INTERVAL_YEAR
         description: Interval of time in years and months with default (2) precision
-        logicalType: integer
         physicalType: INTERVAL YEAR(2) TO MONTH
       - name: FIELD_INTERVAL_DAY
         description: Interval of time in days, hours, minutes and seconds with default
             (2 / 6) precision
-        logicalType: integer
         physicalType: INTERVAL DAY(2) TO SECOND(6)
       - name: FIELD_RAW
         description: Large raw binary data
-        logicalType: object
         physicalType: RAW
       - name: FIELD_ROWID
         description: Base 64 string representing a unique row address
-        logicalType: object
         physicalType: ROWID
       - name: FIELD_UROWID
         description: Base 64 string representing a unique row address
-        logicalType: object
         physicalType: UROWID
       - name: FIELD_CHAR
         description: Fixed-length string
@@ -126,15 +121,12 @@ schema:
         physicalType: CLOB
       - name: FIELD_NCLOB
         description: National character large object
-        logicalType: string
         physicalType: NCLOB
       - name: FIELD_BLOB
         description: Binary large object
-        logicalType: object
         physicalType: BLOB
       - name: FIELD_BFILE
         description: Binary file
-        logicalType: object
         physicalType: BFILE
     quality:
         - type: sql

@@ -16,9 +16,8 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/markdown/export/datacontract.yaml",
-            "--format",
             "markdown",
+            "./fixtures/markdown/export/datacontract.yaml",
         ],
     )
     assert result.exit_code == 0

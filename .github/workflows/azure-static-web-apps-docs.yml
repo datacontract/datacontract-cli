@@ -1,0 +1,164 @@
+name: Docs
+
+# Builds the Docusaurus documentation site in docs/ on every PR
+# and deploys it to docs.datacontract.com on push to main.
+# Same-repo (maintainer) PRs additionally get a live preview environment,
+# with the URL commented on the PR and torn down when the PR closes.
+# Runs alongside the GitHub Pages site at cli.datacontract.com.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/azure-static-web-apps-docs.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/azure-static-web-apps-docs.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    name: Build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - run: npm ci
+        working-directory: docs
+      - run: npm run build # docusaurus build, fails on broken links
+        working-directory: docs
+
+  deploy:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.action != 'closed' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+      - name: Build And Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DATACONTRACT_CLI_DOCS }}
+          action: "upload"
+          ###### Repository/Build Configurations ######
+          app_location: "docs"        # Docusaurus project root
+          api_location: ""            # no API
+          output_location: "build"   # Docusaurus build output (relative to app_location)
+          ###### End of Repository/Build Configurations ######
+
+      - name: Comment preview link and changed pages
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.builddeploy.outputs.static_web_app_url }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const CONTENT_DIR = 'docs/docs';           // Docusaurus docs content root
+            const base = (process.env.PREVIEW_URL || '').replace(/\/$/, '');
+
+            // Map a changed source file to its rendered preview URL, honouring
+            // `slug:` frontmatter and index/README folder pages.
+            const toUrl = (file) => {
+              const rel = file.slice(CONTENT_DIR.length + 1);        // e.g. imports/csv.md
+              let slug;
+              try {
+                const text = fs.readFileSync(file, 'utf8');
+                const fm = text.match(/^---\n([\s\S]*?)\n---/);
+                const m = fm && fm[1].match(/^\s*slug:\s*["']?(.*?)["']?\s*$/m);
+                if (m) slug = m[1];
+              } catch { /* deleted/renamed away — fall through to path derivation */ }
+              let route;
+              if (slug) {
+                route = slug.startsWith('/') ? slug : '/' + path.posix.join(path.dirname(rel), slug);
+              } else {
+                let p = rel.replace(/\.(md|mdx)$/, '');
+                p = p.replace(/(^|\/)(index|README)$/i, '');          // folder page
+                route = '/' + p;
+              }
+              return base + (route === '/' ? '/' : route.replace(/\/$/, ''));
+            };
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const pages = files
+              .filter(f => f.status !== 'removed')
+              .filter(f => f.filename.startsWith(CONTENT_DIR + '/') && /\.(md|mdx)$/.test(f.filename))
+              .sort((a, b) => b.changes - a.changes);
+
+            const lines = [
+              '<!-- docs-preview -->',
+              '### 📖 Docs preview',
+              '',
+              base ? `**Preview site:** ${base}` : '**Preview site:** _not available_',
+            ];
+            if (pages.length) {
+              lines.push('', 'Changed pages (most-changed first):');
+              for (const f of pages) {
+                const rel = f.filename.slice(CONTENT_DIR.length + 1);
+                lines.push(`- [${rel}](${toUrl(f.filename)}) — +${f.additions}/−${f.deletions}`);
+              }
+            } else {
+              lines.push('', '_No rendered doc pages changed._');
+            }
+            const body = lines.join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const existing = comments.find(c => c.body.includes('<!-- docs-preview -->'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number, body,
+              });
+            }
+
+  # Tear down the preview environment when a same-repo PR closes.
+  close:
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    name: Close preview
+    steps:
+      - name: Close preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DATACONTRACT_CLI_DOCS }}
+          action: "close"

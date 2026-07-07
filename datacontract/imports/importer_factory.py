@@ -119,8 +119,16 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.excel_importer",
     class_name="ExcelImporter",
 )
-
-
+importer_factory.register_lazy_importer(
+    name=ImportFormat.powerbi,
+    module_path="datacontract.imports.powerbi_importer",
+    class_name="PowerBiImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.snowflake,
+    module_path="datacontract.imports.snowflake_importer",
+    class_name="SnowflakeImporter",
+)
 importer_factory.register_lazy_importer(
     name=ImportFormat.json,
     module_path="datacontract.imports.json_importer",

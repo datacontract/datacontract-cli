@@ -1,0 +1,11 @@
+id,email,amount,region
+1,alice@example.com,50,EU
+2,no-at,50,EU
+3,carol@example.com,200,
+4,also-no-at,50,US
+5,dave@example.com,50,
+6,bad3,50,EU
+7,bad4,50,EU
+8,bad5,50,EU
+9,bad6,50,EU
+2,frank@example.com,50,EU

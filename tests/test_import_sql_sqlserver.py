@@ -18,6 +18,10 @@ status: draft
 servers:
   - server: sqlserver
     type: sqlserver
+    host: my_host
+    port: 1433
+    database: my_database
+    schema: my_schema
 schema:
   - name: my_table
     physicalType: table
@@ -85,18 +89,22 @@ schema:
         description: Large integer (-9 quintillion to 9 quintillion)
       - name: field_decimal
         logicalType: number
-        logicalTypeOptions:
-          precision: 10
-          scale: 2
         physicalType: NUMERIC(10, 2)
         description: Fixed precision decimal
+        customProperties:
+        - property: precision
+          value: 10
+        - property: scale
+          value: 2
       - name: field_numeric
         logicalType: number
-        logicalTypeOptions:
-          precision: 10
-          scale: 2
         physicalType: NUMERIC(10, 2)
         description: Same as DECIMAL
+        customProperties:
+        - property: precision
+          value: 10
+        - property: scale
+          value: 2
       - name: field_float
         logicalType: number
         physicalType: FLOAT

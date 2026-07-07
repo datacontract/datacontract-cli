@@ -25,6 +25,20 @@ def _make_run(checks):
     return run
 
 
+def test_ci_output_infers_format_from_filename(tmp_path):
+    run = _make_run([Check(type="schema", name="Check types", result=ResultEnum.passed, reason=None)])
+
+    with patch("datacontract.command_ci.DataContract") as mock_datacontract:
+        mock_datacontract.return_value.test.return_value = run
+        result = runner.invoke(
+            app,
+            ["ci", "--output", str(tmp_path / "ci-results.xml"), "./fixtures/junit/datacontract.yaml"],
+        )
+
+    assert result.exit_code == 0
+    assert (tmp_path / "ci-results.xml").exists(), "Should write a JUnit test result file"
+
+
 # --- Annotation tests ---
 
 
@@ -311,6 +325,7 @@ def test_json_output_single(capsys):
     write_json_results([("datacontract.yaml", run)])
     captured = capsys.readouterr()
     data = json.loads(captured.out)
+    assert "datacontractCliVersion" in data
     assert data["result"] == "passed"
     assert data["location"] == "datacontract.yaml"
     assert len(data["checks"]) == 1
@@ -324,6 +339,8 @@ def test_json_output_multi(capsys):
     data = json.loads(captured.out)
     assert isinstance(data, list)
     assert len(data) == 2
+    assert "datacontractCliVersion" in data[0]
+    assert "datacontractCliVersion" in data[1]
     assert data[0]["result"] == "passed"
     assert data[0]["location"] == "orders.yaml"
     assert data[1]["result"] == "failed"
@@ -340,3 +357,4 @@ def test_ci_json_flag():
     assert "result" in data
     assert "location" in data
     assert "checks" in data
+    assert "datacontractCliVersion" in data

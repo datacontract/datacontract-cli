@@ -28,10 +28,12 @@ schema:
     logicalType: date
   - name: field_four
     physicalType: decimal
+    customProperties:
+    - property: precision
+      value: 6
+    - property: scale
+      value: 2
     logicalType: number
-    logicalTypeOptions:
-      precision: 6
-      scale: 2
   - name: field_five
     physicalType: struct
     logicalType: object

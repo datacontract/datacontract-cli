@@ -231,7 +231,7 @@ def process_s3_file(run, server, schema, model_name, validate):
     process_exceptions(run, exceptions)
 
 
-def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: Server):
+def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: Server, schema_name: str = "all"):
     run.log_info("Running engine jsonschema")
 
     # Early exit conditions
@@ -253,6 +253,8 @@ def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: 
         return
 
     for schema_obj in data_contract.schema_:
+        if schema_name != "all" and schema_obj.name != schema_name:
+            continue
         model_name = schema_obj.name
         # Process the model
         run.log_info(f"jsonschema: Converting model {model_name} to JSON Schema")

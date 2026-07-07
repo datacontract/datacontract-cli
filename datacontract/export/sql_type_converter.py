@@ -1,9 +1,39 @@
 import logging
+import re
 from typing import Any, Dict, Optional, Protocol, Union
 
 from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.model.exceptions import DataContractException
+
+logger = logging.getLogger(__name__)
+
+# invalid physicalType from `import spark` in v0.11.0–v0.12.1 (#1048) (e.g. StringType() instead of string)
+# remove after July 2026
+_LEGACY_SPARK_REPR_RE = re.compile(r"^(?:[A-Z][a-zA-Z]*)?Type\(.*\)$")
+
+
+def _warn_cannot_map_type(field: Union[SchemaProperty, "FieldLike"], dialect: str) -> None:
+    """Warn that a field's type cannot be mapped to the target dialect."""
+    if isinstance(field, SchemaProperty):
+        raw_type = field.physicalType
+        logical = field.logicalType
+        name = field.name
+    else:
+        raw_type = getattr(field, "type", None)
+        logical = None
+        name = getattr(field, "name", None)
+    field_part = f" for field {name!r}" if name else ""
+    warning_message = (
+        f"Cannot map type to {dialect} SQL type{field_part} (physicalType={raw_type!r}, logicalType={logical!r})."
+    )
+    if isinstance(raw_type, str) and _LEGACY_SPARK_REPR_RE.match(raw_type):
+        warning_message += (
+            "\nNote: `datacontract import spark` emitted invalid physicalType values in v0.11.0–v0.12.1 (December 2025 until June 2026). "
+            "Re-import datacontracts from these versions to fix."
+        )
+    logger.warning(warning_message)
+    return None
 
 
 class FieldLike(Protocol):
@@ -29,12 +59,13 @@ def _get_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
 
 def _get_base_type(field: Union[SchemaProperty, FieldLike]) -> Optional[str]:
     """Get the lowercase base type from a field, stripping any parameters.
-    E.g. a physicalType of 'VARCHAR(255)' returns 'varchar'."""
+    E.g. 'VARCHAR(255)' -> 'varchar', 'array<string>' -> 'array', 'struct<a:int>' -> 'struct'."""
     field_type = _get_type(field)
     if field_type is None:
         return None
-    if "(" in field_type:
-        return field_type[: field_type.index("(")].strip().lower()
+    for sep in ("(", "<"):
+        if sep in field_type:
+            return field_type[: field_type.index(sep)].strip().lower()
     return field_type.lower()
 
 
@@ -68,10 +99,16 @@ def _get_precision(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
     if isinstance(field, SchemaProperty):
         if field.logicalTypeOptions and field.logicalTypeOptions.get("precision"):
             return field.logicalTypeOptions.get("precision")
-        # Also check customProperties
         val = _get_config_value(field, "precision")
         if val:
             return int(val)
+        # Fall back to parsing decimal(precision,scale) from the type string itself
+        params = _get_params(field)
+        if params:
+            try:
+                return int(params.split(",")[0].strip())
+            except ValueError:
+                return None
         return None
     return field.precision
 
@@ -81,10 +118,16 @@ def _get_scale(field: Union[SchemaProperty, FieldLike]) -> Optional[int]:
     if isinstance(field, SchemaProperty):
         if field.logicalTypeOptions and field.logicalTypeOptions.get("scale"):
             return field.logicalTypeOptions.get("scale")
-        # Also check customProperties
         val = _get_config_value(field, "scale")
         if val:
             return int(val)
+        # Fall back to parsing decimal(precision,scale) from the type string itself
+        params = _get_params(field)
+        if params and "," in params:
+            try:
+                return int(params.split(",")[1].strip())
+            except ValueError:
+                return None
         return None
     return field.scale
 
@@ -132,11 +175,12 @@ def convert_to_sql_type(field: Union[SchemaProperty, FieldLike], server_type: st
     if physical_type:
         return physical_type
 
-    # Compound physicalTypes like "TIMESTAMP(6) WITH TIME ZONE" should pass through verbatim.
     if isinstance(field, SchemaProperty) and field.physicalType:
-        pt = field.physicalType
-        if "(" in pt and not pt.endswith(")"):
-            return pt
+        # Compound physicalTypes like "TIMESTAMP(6) WITH TIME ZONE" pass through verbatim.
+        if "(" in field.physicalType and not field.physicalType.endswith(")"):
+            return field.physicalType
+        # Otherwise try the dialect mapping; fall back to the user's physicalType verbatim if unmappable
+        return _convert_base_to_sql_type(field, server_type) or field.physicalType
 
     return _convert_base_to_sql_type(field, server_type)
 
@@ -145,8 +189,8 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
     """Route a field to the server-specific converter."""
     if server_type == "snowflake":
         return convert_to_snowflake(field)
-    elif server_type == "postgres":
-        return convert_type_to_postgres(field)
+    elif server_type == "postgres" or server_type == "redshift":
+        return convert_type_to_postgres(field)  # Redshift is Postgres-compatible
     elif server_type == "mysql":
         return convert_type_to_mysql(field)
     elif server_type == "dataframe":
@@ -163,6 +207,8 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
         return convert_type_to_trino(field)
     elif server_type == "oracle":
         return convert_type_to_oracle(field)
+    elif server_type == "clickhouse":
+        return convert_type_to_clickhouse(field)
     # Fallback: return the raw type string (preserves original behavior for unknown/None server_type)
     return _get_type(field)
 
@@ -197,19 +243,19 @@ def convert_to_snowflake(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return _attach_params_if_present("NUMBER", field)
     if base_type in ["float", "double"]:
         return "FLOAT"
-    if base_type in ["integer", "int", "long", "bigint"]:
+    if base_type in ["integer", "int", "long", "bigint", "tinyint", "smallint"]:
         return "NUMBER"
     if base_type in ["boolean"]:
         return "BOOLEAN"
     if base_type in ["object", "record", "struct"]:
         return "OBJECT"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return _attach_params_if_present("BINARY", field)
     if base_type in ["array"]:
         return "ARRAY"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_cannot_map_type(field, "snowflake")
 
 
 # https://www.postgresql.org/docs/current/datatype.html
@@ -234,9 +280,10 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return _attach_params_if_present("time", field)
     if base_type in ["number"]:
         return _attach_params_if_present("numeric", field)
-    if base_type in ["decimal"]:
-        return _attach_params_if_present("decimal", field)
-    if base_type in ["numeric"]:
+    if base_type in ["decimal", "numeric"]:
+        # Postgres treats DECIMAL and NUMERIC as exact synonyms and canonicalizes
+        # to NUMERIC in information_schema.columns. Emit NUMERIC so soda's
+        # column-type check matches what the database actually reports.
         return _attach_params_if_present("numeric", field)
     if base_type in ["float"]:
         return "real"
@@ -250,11 +297,13 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return "bigint"
     if base_type in ["long"]:
         return "bigint"
+    if base_type in ["tinyint", "smallint"]:
+        return "smallint"
     if base_type in ["boolean"]:
         return "boolean"
     if base_type in ["object", "record", "struct"]:
         return "jsonb"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "bytea"
     if base_type in ["array"]:
         items = _get_items(field)
@@ -263,7 +312,7 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return "text[]"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_cannot_map_type(field, "postgres")
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/data-types.html
@@ -293,10 +342,11 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return _attach_params_if_present("time", field)
     if base_type in ["number"]:
         return _attach_params_if_present("decimal", field)
-    if base_type in ["decimal"]:
+    if base_type in ["decimal", "numeric"]:
+        # MySQL treats DECIMAL and NUMERIC as synonyms and canonicalizes to DECIMAL
+        # in information_schema.columns. Emit DECIMAL so soda's column-type check
+        # matches what the database actually reports.
         return _attach_params_if_present("decimal", field)
-    if base_type in ["numeric"]:
-        return _attach_params_if_present("numeric", field)
     if base_type in ["float"]:
         return _attach_params_if_present("float", field)
     if base_type in ["double"]:
@@ -305,17 +355,21 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "int"
     if base_type in ["long", "bigint"]:
         return "bigint"
+    if base_type in ["tinyint"]:
+        return "tinyint"
+    if base_type in ["smallint"]:
+        return "smallint"
     if base_type in ["boolean"]:
         return "boolean"
     if base_type in ["object", "record", "struct"]:
         return "json"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "blob"
     if base_type in ["array"]:
         return "json"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_cannot_map_type(field, "mysql")
 
 
 # dataframe data types:
@@ -353,6 +407,10 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "INT"
     if base_type in ["long", "bigint"]:
         return "BIGINT"
+    if base_type in ["tinyint"]:
+        return "TINYINT"
+    if base_type in ["smallint"]:
+        return "SMALLINT"
     if base_type in ["boolean"]:
         return "BOOLEAN"
     if base_type in ["object", "record", "struct"]:
@@ -361,7 +419,7 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
             nested_field_type = convert_to_dataframe(nested_field)
             nested_fields.append(f"{nested_field_name}:{nested_field_type}")
         return f"STRUCT<{','.join(nested_fields)}>"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "BINARY"
     if base_type in ["array"]:
         items = _get_items(field)
@@ -371,7 +429,7 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "ARRAY<STRING>"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_cannot_map_type(field, "dataframe")
 
 
 # databricks data types:
@@ -408,6 +466,10 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "INT"
     if base_type in ["long", "bigint"]:
         return "BIGINT"
+    if base_type in ["tinyint"]:
+        return "TINYINT"
+    if base_type in ["smallint"]:
+        return "SMALLINT"
     if base_type in ["boolean"]:
         return "BOOLEAN"
     if base_type in ["object", "record", "struct"]:
@@ -416,7 +478,7 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
             nested_field_type = convert_to_databricks(nested_field)
             nested_fields.append(f"{nested_field_name}:{nested_field_type}")
         return f"STRUCT<{','.join(nested_fields)}>"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "BINARY"
     if base_type in ["array"]:
         items = _get_items(field)
@@ -428,7 +490,7 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "VARIANT"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_cannot_map_type(field, "databricks")
 
 
 def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
@@ -451,6 +513,10 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "INTEGER"
     if base_type in ["int64", "long", "bigint"]:
         return "BIGINT"
+    if base_type in ["tinyint"]:
+        return "TINYINT"
+    if base_type in ["smallint"]:
+        return "SMALLINT"
     if base_type in ["date"]:
         return "DATE"
     if base_type in ["time"]:
@@ -491,7 +557,7 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         structure_field += ")"
         return structure_field
 
-    return None
+    return _warn_cannot_map_type(field, "duckdb")
 
 
 def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None | str:
@@ -537,7 +603,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
         raise NotImplementedError("SQLServer does not support array types.")
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_cannot_map_type(field, "sqlserver")
 
 
 _BQ_TYPES = {
@@ -621,7 +687,7 @@ def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
     elif logical_type.lower() in ["number", "decimal", "numeric"]:
         return "NUMERIC"
     elif logical_type.lower() == "double":
-        return "BIGNUMERIC"
+        return "FLOAT64"
     elif logical_type.lower() in ["object", "record"] and not nested_fields:
         return "JSON"
     elif logical_type.lower() in ["object", "record", "array"]:
@@ -708,7 +774,7 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return _attach_params_if_present("time", field)
     if base_type in ["boolean"]:
         return "boolean"
-    if base_type in ["bytes"]:
+    if base_type in ["bytes", "binary"]:
         return "varbinary"
     if base_type in ["object", "record", "struct"]:
         return "json"
@@ -716,7 +782,7 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "json"
     if _get_params(field):
         return _get_type(field)
-    return None
+    return _warn_cannot_map_type(field, "trino")
 
 
 def convert_type_to_impala(field: Union[SchemaProperty, FieldLike]) -> None | str:
@@ -804,7 +870,7 @@ def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
         "numeric": "NUMBER",
         "float": "BINARY_FLOAT",
         "double": "BINARY_DOUBLE",
-        "boolean": "CHAR",
+        "boolean": "CHAR(1)",
         "date": "DATE",
         "time": "DATE",
         "timestamp": "TIMESTAMP(6) WITH TIME ZONE",
@@ -816,3 +882,100 @@ def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
     }
 
     return mapping.get(logical_type)
+
+
+def convert_type_to_clickhouse(field: Union[SchemaProperty, FieldLike]) -> None | str:
+    """Convert a data contract field to the corresponding ClickHouse SQL type.
+
+    Reference: https://clickhouse.com/docs/en/sql-reference/data-types
+
+    Supports explicit override via custom property ``clickhouseType``.
+    Complex types are expanded recursively:
+        - ``array`` → ``Array(T)``
+        - ``object``, ``record``, ``struct`` with known fields → ``Tuple(name1 Type1, ...)``
+        - ``map`` → ``Map(KeyType, ValueType)`` (uses config keys ``mapKeys``/``mapValues``,
+          defaults to ``String, String``)
+    """
+    clickhouse_type = _get_config_value(field, "clickhouseType")
+    if clickhouse_type:
+        return clickhouse_type
+
+    base_type = _get_base_type(field)
+    if base_type is None:
+        return None
+
+    # String-like
+    if base_type in ["string", "varchar", "text", "nvarchar"]:
+        if _get_format(field) == "uuid":
+            return "UUID"
+        return "String"
+
+    # Numeric
+    if base_type in ["number", "decimal", "numeric"]:
+        precision = _get_precision(field)
+        scale = _get_scale(field)
+        if precision is not None and scale is not None:
+            return f"Decimal({precision},{scale})"
+        if precision is not None:
+            return f"Decimal({precision},0)"
+        return "Decimal(38,0)"
+
+    if base_type == "float":
+        return "Float32"
+    if base_type == "double":
+        return "Float64"
+
+    # Integer types
+    if base_type in ["integer", "int"]:
+        return "Int32"
+    if base_type in ["long", "bigint"]:
+        return "Int64"
+    if base_type == "tinyint":
+        return "Int8"
+    if base_type == "smallint":
+        return "Int16"
+
+    # Boolean
+    if base_type == "boolean":
+        return "Bool"
+
+    # Temporal
+    if base_type in ["timestamp", "timestamp_tz", "timestamp_ntz"]:
+        return "DateTime64(6)"
+    if base_type == "date":
+        return "Date"
+    if base_type == "time":
+        return "String"
+
+    # Binary / bytes
+    if base_type in ["bytes", "binary"]:
+        params = _get_params(field)
+        if params:
+            return f"FixedString({params})"
+        return "String"
+
+    # Complex types
+    if base_type in ["object", "record", "struct"]:
+        nested_fields = []
+        for nested_field_name, nested_field in _get_nested_fields(field).items():
+            nested_field_type = convert_type_to_clickhouse(nested_field)
+            nested_fields.append(f"{nested_field_name} {nested_field_type}")
+        return f"Tuple({', '.join(nested_fields)})"
+
+    if base_type == "map":
+        keys = _get_config_value(field, "mapKeys")
+        values = _get_config_value(field, "mapValues")
+        key_type = keys if keys else "String"
+        value_type = values if values else "String"
+        return f"Map({key_type}, {value_type})"
+
+    if base_type == "array":
+        items = _get_items(field)
+        if items:
+            item_type = convert_type_to_clickhouse(items)
+            return f"Array({item_type})"
+        return "Array(String)"
+
+    if _get_params(field):
+        return _get_type(field)
+    return _warn_cannot_map_type(field, "clickhouse")

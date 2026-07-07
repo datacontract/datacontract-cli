@@ -1,10 +1,18 @@
 import logging
 from datetime import datetime, timezone
 from enum import Enum
+from importlib import metadata
 from typing import List
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
+
+
+def _cli_version() -> str:
+    try:
+        return metadata.version("datacontract-cli")
+    except metadata.PackageNotFoundError:
+        return "unknown"
 
 
 class ResultEnum(str, Enum):
@@ -31,8 +39,12 @@ class Check(BaseModel):
 
     result: ResultEnum | None = None
     reason: str | None = None
-    details: str | None = None
     diagnostics: dict | None = None
+    # A capped sample of rows that failed this check (only collected when
+    # `datacontract test --include-failed-samples` is set). Each entry is a row
+    # restricted to identifier + offending columns, with sensitive columns
+    # omitted. The full failed count lives in `diagnostics`, not here.
+    failed_samples: list | None = None
 
 
 class Log(BaseModel):
@@ -43,6 +55,7 @@ class Log(BaseModel):
 
 class Run(BaseModel):
     runId: UUID
+    datacontractCliVersion: str = _cli_version()
     dataContractId: str | None = None
     dataContractVersion: str | None = None
     dataProductId: str | None = None

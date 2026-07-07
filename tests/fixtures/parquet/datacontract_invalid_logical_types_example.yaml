@@ -1,0 +1,35 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: invalid-logical-types-example
+status: draft
+schema:
+- name: nested_data
+  physicalType: parquet
+  logicalType: object
+  physicalName: nested_data
+  properties:
+  - name: id
+    physicalType: INT64
+    logicalType: integer
+  - name: values
+    physicalType: LIST
+    logicalType: array
+    items:
+      physicalType: INT64
+      logicalType: string
+  - name: metadata
+    physicalType: STRUCT
+    logicalType: object
+    properties:
+      - name: name
+        physicalType: STRING
+        logicalType: integer
+      - name: active
+        physicalType: BOOLEAN
+        logicalType: integer
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/parquet/data/nested_type_structures.parquet
+    format: parquet

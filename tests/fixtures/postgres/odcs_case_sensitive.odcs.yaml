@@ -26,7 +26,7 @@ schema:
     logicalTypeOptions:
       minimum: 10
   - name: Field_three
-    logicalType: date
+    logicalType: timestamp
     physicalType: timestamp
     isNullable: true
     isUnique: false

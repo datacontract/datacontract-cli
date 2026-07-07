@@ -4,11 +4,15 @@ from typing import Any, Dict, List
 
 from open_data_contract_standard.model import (
     CustomProperty,
+    DataQuality,
     OpenDataContractStandard,
+    Role,
     SchemaObject,
     SchemaProperty,
     Server,
 )
+
+from datacontract.model.server import to_odcs_server_type
 
 
 def create_odcs(
@@ -35,6 +39,7 @@ def create_schema_object(
     business_name: str = None,
     properties: List[SchemaProperty] = None,
     tags: List[str] = None,
+    quality: List[DataQuality] = None,
 ) -> SchemaObject:
     """Create a SchemaObject (equivalent to DCS Model)."""
     schema = SchemaObject(
@@ -51,6 +56,8 @@ def create_schema_object(
         schema.properties = properties
     if tags:
         schema.tags = tags
+    if quality:
+        schema.quality = quality
     return schema
 
 
@@ -79,9 +86,11 @@ def create_property(
     properties: List["SchemaProperty"] = None,
     items: "SchemaProperty" = None,
     custom_properties: Dict[str, Any] = None,
+    id: str = None,
+    quality: List[DataQuality] = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field)."""
-    prop = SchemaProperty(name=name)
+    prop = SchemaProperty(name=name, id=id)
     prop.logicalType = logical_type
 
     if physical_type:
@@ -122,18 +131,24 @@ def create_property(
         logical_type_options["exclusiveMinimum"] = exclusive_minimum
     if exclusive_maximum is not None:
         logical_type_options["exclusiveMaximum"] = exclusive_maximum
-    if precision is not None:
-        logical_type_options["precision"] = precision
-    if scale is not None:
-        logical_type_options["scale"] = scale
     if format:
         logical_type_options["format"] = format
     if logical_type_options:
         prop.logicalTypeOptions = logical_type_options
 
-    # Custom properties
+    # precision/scale are forbidden in logicalTypeOptions for number types per ODCS v3.1.0,
+    # so carry them in customProperties instead.
+    custom_properties = dict(custom_properties or {})
+    if precision is not None:
+        custom_properties.setdefault("precision", precision)
+    if scale is not None:
+        custom_properties.setdefault("scale", scale)
     if custom_properties:
         prop.customProperties = [CustomProperty(property=k, value=v) for k, v in custom_properties.items()]
+
+    # Data quality
+    if quality:
+        prop.quality = quality
 
     return prop
 
@@ -154,9 +169,19 @@ def create_server(
     catalog: str = None,
     topic: str = None,
     format: str = None,
+    roles: List[Role] = None,
+    warehouse: str = None,
 ) -> Server:
-    """Create a Server object."""
-    server = Server(server=name, type=server_type)
+    """Create a Server object.
+
+    Server types outside the ODCS enum (e.g. ``dataframe``) are written in a
+    standard-compliant way as ``type: custom`` with the real type carried in a
+    ``customType`` custom property.
+    """
+    odcs_type, custom_properties = to_odcs_server_type(server_type)
+    server = Server(server=name, type=odcs_type)
+    if custom_properties:
+        server.customProperties = custom_properties
     if environment:
         server.environment = environment
     if host:
@@ -183,6 +208,10 @@ def create_server(
         server.topic = topic
     if format:
         server.format = format
+    if roles:
+        server.roles = roles
+    if warehouse:
+        server.warehouse = warehouse
     return server
 
 

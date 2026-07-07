@@ -1,11 +1,18 @@
+"""Import `.proto` files into an ODCS data contract.
+
+Uses the pure-Python `proto-schema-parser` (no `protoc` system binary, no C
+extension). Imports are resolved transitively by reading `import` statements and
+parsing each referenced file, then message/enum type references are linked across
+all parsed files by their simple (last-segment) name.
+"""
+
 import os
 import re
-import tempfile
-from typing import List
+from typing import Dict, List
 
-from google.protobuf import descriptor_pb2
-from grpc_tools import protoc
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from proto_schema_parser import ast as proto_ast
+from proto_schema_parser.parser import Parser
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -15,9 +22,29 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.model.exceptions import DataContractException
 
+# Proto scalar type name -> protobuf field-type number (FieldDescriptorProto.Type).
+# Kept so the emitted `physicalType` matches the previous protoc-based importer.
+_PROTOBUF_TYPE_NUMBER = {
+    "double": 1,
+    "float": 2,
+    "int64": 3,
+    "uint64": 4,
+    "int32": 5,
+    "fixed64": 6,
+    "fixed32": 7,
+    "bool": 8,
+    "string": 9,
+    "bytes": 12,
+    "uint32": 13,
+    "sfixed32": 15,
+    "sfixed64": 16,
+    "sint32": 17,
+    "sint64": 18,
+}
+
 
 def map_type_from_protobuf(field_type: int) -> str:
-    """Map protobuf field type to ODCS logical type."""
+    """Map a protobuf field-type number to an ODCS logical type."""
     protobuf_type_mapping = {
         1: "number",  # double
         2: "number",  # float
@@ -39,7 +66,7 @@ def map_type_from_protobuf(field_type: int) -> str:
 
 
 def parse_imports_raw(proto_file: str) -> list:
-    """Parse import statements from a .proto file and return the raw import paths."""
+    """Return the raw import paths declared in a `.proto` file."""
     try:
         with open(proto_file, "r") as f:
             content = f.read()
@@ -54,62 +81,80 @@ def parse_imports_raw(proto_file: str) -> list:
     return re.findall(r'import\s+"(.+?)";', content)
 
 
-def compile_proto_to_binary(proto_files: list, output_file: str, proto_root: str = None):
-    """Compile the provided proto files into a single descriptor set."""
-    if proto_root:
-        proto_dirs = {proto_root}
-    else:
-        proto_dirs = set(os.path.dirname(os.path.abspath(proto)) for proto in proto_files)
-    proto_paths = [f"--proto_path={d}" for d in proto_dirs]
-
-    abs_proto_files = [os.path.abspath(proto) for proto in proto_files]
-
-    args = [""] + proto_paths + [f"--descriptor_set_out={output_file}"] + abs_proto_files
-    ret = protoc.main(args)
-    if ret != 0:
+def _parse_proto(proto_file: str) -> proto_ast.File:
+    try:
+        with open(proto_file, "r") as f:
+            return Parser().parse(f.read())
+    except Exception as e:
         raise DataContractException(
             type="schema",
-            name="Compile proto files",
-            reason=f"grpc_tools.protoc failed with exit code {ret}",
+            name="Parse proto file",
+            reason=f"Failed to parse proto file: {proto_file}",
             engine="datacontract",
-            original_exception=None,
+            original_exception=e,
         )
 
 
-def extract_enum_values_from_fds(fds: descriptor_pb2.FileDescriptorSet, enum_name: str) -> dict:
-    """Search the FileDescriptorSet for an enum definition."""
-    for file_descriptor in fds.file:
-        for enum in file_descriptor.enum_type:
-            if enum.name == enum_name:
-                return {value.name: value.number for value in enum.value}
-        for message in file_descriptor.message_type:
-            for enum in message.enum_type:
-                if enum.name == enum_name:
-                    return {value.name: value.number for value in enum.value}
-    return {}
+def _resolve_proto_files(sources: list, proto_root: str) -> List[str]:
+    """Resolve the source files plus all transitively imported `.proto` files."""
+    seen: List[str] = []
+    queue = list(sources)
+    while queue:
+        proto = queue.pop(0)
+        if proto in seen:
+            continue
+        seen.append(proto)
+        proto_dir = os.path.dirname(proto)
+        for imp in parse_imports_raw(proto):
+            resolved = os.path.join(proto_dir, imp)
+            if not os.path.exists(resolved):
+                resolved = os.path.join(proto_root, imp)
+            if os.path.exists(resolved) and resolved not in seen:
+                queue.append(resolved)
+    return seen
 
 
-def extract_message_fields_to_properties(
-    fds: descriptor_pb2.FileDescriptorSet, message_name: str
+def _register_types(elements, messages: Dict[str, proto_ast.Message], enums: Dict[str, dict]) -> None:
+    """Index messages and enums by simple name, recursing into nested definitions."""
+    for el in elements:
+        if isinstance(el, proto_ast.Message):
+            messages.setdefault(el.name, el)
+            _register_types(el.elements, messages, enums)
+        elif isinstance(el, proto_ast.Enum):
+            enums.setdefault(
+                el.name,
+                {v.name: v.number for v in el.elements if isinstance(v, proto_ast.EnumValue)},
+            )
+
+
+def _iter_fields(message: proto_ast.Message):
+    """Yield the fields of a message, flattening any `oneof` groups."""
+    for el in message.elements:
+        if isinstance(el, proto_ast.Field):
+            yield el
+        elif isinstance(el, proto_ast.OneOf):
+            for inner in el.elements:
+                if isinstance(inner, proto_ast.Field):
+                    yield inner
+
+
+def _message_properties(
+    message: proto_ast.Message,
+    messages: Dict[str, proto_ast.Message],
+    enums: Dict[str, dict],
 ) -> List[SchemaProperty]:
-    """Extract message fields from a FileDescriptorSet as ODCS properties."""
-    for file_descriptor in fds.file:
-        for msg in file_descriptor.message_type:
-            if msg.name == message_name:
-                properties = []
-                for field in msg.field:
-                    prop = convert_proto_field_to_property(fds, field)
-                    properties.append(prop)
-                return properties
-    return []
+    return [_convert_field(field, messages, enums) for field in _iter_fields(message)]
 
 
-def convert_proto_field_to_property(fds: descriptor_pb2.FileDescriptorSet, field) -> SchemaProperty:
-    """Convert a protobuf field to an ODCS SchemaProperty."""
-    if field.type == 11:  # TYPE_MESSAGE
-        nested_msg_name = field.type_name.split(".")[-1]
-        nested_properties = extract_message_fields_to_properties(fds, nested_msg_name)
-        if field.label == 3:  # repeated field
+def _convert_field(field, messages: Dict[str, proto_ast.Message], enums: Dict[str, dict]) -> SchemaProperty:
+    """Convert a parsed protobuf field into an ODCS SchemaProperty."""
+    simple_type = field.type.split(".")[-1]
+    repeated = field.cardinality == proto_ast.FieldCardinality.REPEATED
+    required = field.cardinality == proto_ast.FieldCardinality.REQUIRED
+
+    if simple_type in messages:
+        nested_properties = _message_properties(messages[simple_type], messages, enums)
+        if repeated:
             items_prop = create_property(
                 name="items",
                 logical_type="object",
@@ -120,105 +165,71 @@ def convert_proto_field_to_property(fds: descriptor_pb2.FileDescriptorSet, field
                 name=field.name,
                 logical_type="array",
                 physical_type="repeated message",
-                description=f"List of {nested_msg_name}",
+                description=f"List of {simple_type}",
                 items=items_prop,
             )
-        else:
-            return create_property(
-                name=field.name,
-                logical_type="object",
-                physical_type="message",
-                description=f"Nested object of {nested_msg_name}",
-                properties=nested_properties,
-            )
-    elif field.type == 14:  # TYPE_ENUM
-        enum_name = field.type_name.split(".")[-1]
-        enum_values = extract_enum_values_from_fds(fds, enum_name)
+        return create_property(
+            name=field.name,
+            logical_type="object",
+            physical_type="message",
+            description=f"Nested object of {simple_type}",
+            properties=nested_properties,
+        )
+
+    if simple_type in enums:
+        enum_values = enums[simple_type]
         return create_property(
             name=field.name,
             logical_type="string",
             physical_type="enum",
             description=f"Enum field {field.name}",
-            required=field.label == 2,
+            required=required,
             custom_properties={"enumValues": enum_values} if enum_values else None,
         )
-    else:
-        return create_property(
-            name=field.name,
-            logical_type=map_type_from_protobuf(field.type),
-            physical_type=str(field.type),
-            description=f"Field {field.name}",
-            required=field.label == 2,
-        )
+
+    # Scalar field. Emit the protobuf type number as physicalType, matching the
+    # previous protoc-based importer; repeated scalars are not expanded to arrays.
+    type_number = _PROTOBUF_TYPE_NUMBER.get(simple_type)
+    return create_property(
+        name=field.name,
+        logical_type=map_type_from_protobuf(type_number) if type_number is not None else "string",
+        physical_type=str(type_number) if type_number is not None else simple_type,
+        description=f"Field {field.name}",
+        required=required,
+    )
 
 
 def import_protobuf(sources: list, import_args: dict = None) -> OpenDataContractStandard:
     """Import protobuf files and generate an ODCS data contract."""
     proto_root = os.path.dirname(os.path.abspath(sources[0])) if sources else ""
 
-    proto_files_set = set()
-    queue = list(sources)
-    while queue:
-        proto = queue.pop(0)
-        if proto not in proto_files_set:
-            proto_files_set.add(proto)
-            proto_dir = os.path.dirname(proto)
-            for imp in parse_imports_raw(proto):
-                resolved = os.path.join(proto_dir, imp)
-                if not os.path.exists(resolved):
-                    resolved = os.path.join(proto_root, imp)
-                if os.path.exists(resolved) and resolved not in proto_files_set:
-                    queue.append(resolved)
-    all_proto_files = list(proto_files_set)
+    all_proto_files = _resolve_proto_files(sources, proto_root)
 
-    temp_descriptor = tempfile.NamedTemporaryFile(suffix=".pb", delete=False)
-    descriptor_file = temp_descriptor.name
-    temp_descriptor.close()
+    parsed: Dict[str, proto_ast.File] = {proto: _parse_proto(proto) for proto in all_proto_files}
 
-    try:
-        compile_proto_to_binary(all_proto_files, descriptor_file, proto_root)
+    messages: Dict[str, proto_ast.Message] = {}
+    enums: Dict[str, dict] = {}
+    for file_ast in parsed.values():
+        _register_types(file_ast.file_elements, messages, enums)
 
-        with open(descriptor_file, "rb") as f:
-            proto_data = f.read()
-        fds = descriptor_pb2.FileDescriptorSet()
-        try:
-            fds.ParseFromString(proto_data)
-        except Exception as e:
-            raise DataContractException(
-                type="schema",
-                name="Parse descriptor set",
-                reason="Failed to parse descriptor set from compiled proto files",
-                engine="datacontract",
-                original_exception=e,
-            )
+    odcs = create_odcs()
+    odcs.schema_ = []
 
-        odcs = create_odcs()
-        odcs.schema_ = []
-
-        source_proto_basenames = {os.path.basename(proto) for proto in sources}
-
-        for file_descriptor in fds.file:
-            if os.path.basename(file_descriptor.name) not in source_proto_basenames:
-                continue
-
-            for message in file_descriptor.message_type:
-                properties = []
-                for field in message.field:
-                    prop = convert_proto_field_to_property(fds, field)
-                    properties.append(prop)
-
+    for source in sources:
+        file_ast = parsed.get(source)
+        if file_ast is None:
+            continue
+        for element in file_ast.file_elements:
+            if isinstance(element, proto_ast.Message):
                 schema_obj = create_schema_object(
-                    name=message.name,
+                    name=element.name,
                     physical_type="message",
-                    description=f"Details of {message.name}.",
-                    properties=properties,
+                    description=f"Details of {element.name}.",
+                    properties=_message_properties(element, messages, enums),
                 )
                 odcs.schema_.append(schema_obj)
 
-        return odcs
-    finally:
-        if os.path.exists(descriptor_file):
-            os.remove(descriptor_file)
+    return odcs
 
 
 class ProtoBufImporter(Importer):

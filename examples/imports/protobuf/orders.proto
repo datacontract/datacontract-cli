@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package checkout;
+
+// One row per customer order.
+message Orders {
+  string order_id = 1;
+  string order_timestamp = 2;
+  string customer_id = 3;
+  int64 order_total = 4;
+  string status = 5;
+}

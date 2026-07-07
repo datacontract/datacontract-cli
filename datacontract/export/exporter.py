@@ -32,11 +32,24 @@ class Exporter(ABC):
         pass
 
 
+class SqlServerType(str, Enum):
+    auto = "auto"
+    snowflake = "snowflake"
+    postgres = "postgres"
+    mysql = "mysql"
+    databricks = "databricks"
+    sqlserver = "sqlserver"
+    bigquery = "bigquery"
+    trino = "trino"
+    oracle = "oracle"
+    clickhouse = "clickhouse"
+
+
 class ExportFormat(str, Enum):
     jsonschema = "jsonschema"
     pydantic_model = "pydantic-model"
     sodacl = "sodacl"
-    dbt = "dbt"
+    dbt_models = "dbt-models"
     dbt_sources = "dbt-sources"
     dbt_staging_sql = "dbt-staging-sql"
     odcs = "odcs"
@@ -119,6 +132,8 @@ def _determine_sql_server_type(
             return "mysql"
         elif "databricks" in server_types:
             return "databricks"
+        elif "clickhouse" in server_types:
+            return "clickhouse"
         else:
             # default to snowflake dialect
             return "snowflake"

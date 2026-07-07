@@ -33,7 +33,7 @@ schema:
           FROM my_table
         mustBeLessThan: 5
   - name: field_three
-    logicalType: date
+    logicalType: timestamp
     physicalType: timestamptz
     isNullable: true
     isUnique: false

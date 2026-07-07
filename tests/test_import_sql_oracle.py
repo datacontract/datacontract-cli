@@ -15,7 +15,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "sql",
             "--source",
             data_definition_file,
@@ -37,6 +36,10 @@ status: draft
 servers:
   - server: oracle
     type: oracle
+    host: my_host
+    port: 1521
+    database: my_database
+    schema: my_schema
 schema:
   - name: field_showcase
     physicalType: table
@@ -95,11 +98,9 @@ schema:
         physicalType: TIMESTAMPLTZ
         description: Timestamp with fractional second precision of 6, with local timezone (LTZ)
       - name: field_interval_year
-        logicalType: object
         physicalType: INTERVAL YEAR TO MONTH
         description: Interval of time in years and months with default (2) precision
       - name: field_interval_day
-        logicalType: object
         physicalType: INTERVAL DAY TO SECOND
         description: Interval of time in days, hours, minutes and seconds with default (2 / 6) precision
       - name: field_raw
@@ -109,11 +110,9 @@ schema:
         physicalType: RAW
         description: Large raw binary data
       - name: field_rowid
-        logicalType: object
         physicalType: ROWID
         description: Base 64 string representing a unique row address
       - name: field_urowid
-        logicalType: object
         physicalType: UROWID
         description: Base 64 string representing the logical address
       - name: field_char
@@ -165,6 +164,10 @@ status: draft
 servers:
   - server: postgres
     type: postgres
+    host: my_host
+    port: 5432
+    database: my_database
+    schema: public
 schema:
   - name: customer_location
     physicalType: table

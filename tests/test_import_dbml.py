@@ -13,7 +13,6 @@ def test_cli():
         app,
         [
             "import",
-            "--format",
             "dbml",
             "--source",
             "fixtures/dbml/import/dbml.txt",
@@ -28,7 +27,6 @@ def test_cli_with_filters():
         app,
         [
             "import",
-            "--format",
             "dbml",
             "--source",
             "fixtures/dbml/import/dbml.txt",

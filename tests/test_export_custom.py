@@ -16,9 +16,8 @@ def test_cli():
         app,
         [
             "export",
-            "./fixtures/custom/export/datacontract.yaml",
-            "--format",
             "custom",
+            "./fixtures/custom/export/datacontract.yaml",
             "--template",
             "./fixtures/custom/export/template.sql",
         ],

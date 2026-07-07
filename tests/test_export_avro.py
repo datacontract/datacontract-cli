@@ -12,7 +12,7 @@ from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/avro/export/datacontract.yaml", "--format", "avro"])
+    result = runner.invoke(app, ["export", "avro", "./fixtures/avro/export/datacontract.yaml"])
     assert result.exit_code == 0
 
 

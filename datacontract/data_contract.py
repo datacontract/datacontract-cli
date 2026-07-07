@@ -1,5 +1,6 @@
 import logging
 import typing
+from importlib import metadata
 
 from open_data_contract_standard.model import OpenDataContractStandard, Team
 
@@ -27,26 +28,34 @@ class DataContract:
         data_contract: OpenDataContractStandard = None,
         schema_location: str = None,
         server: str = None,
+        schema_name: str = "all",
         publish_url: str = None,
         spark: "SparkSession" = None,
         duckdb_connection: "DuckDBPyConnection" = None,
-        inline_definitions: bool = True,
+        inline_references: bool = True,
         ssl_verification: bool = True,
         publish_test_results: bool = False,
         all_errors: bool = False,
+        check_categories: set[str] | None = None,
+        fastapi_url: str = None,
+        include_failed_samples: bool = False,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
         self._data_contract = data_contract
         self._schema_location = schema_location
         self._server = server
+        self._schema_name = schema_name
         self._publish_url = publish_url
         self._publish_test_results = publish_test_results
         self._spark = spark
         self._duckdb_connection = duckdb_connection
-        self._inline_definitions = inline_definitions
+        self._inline_references = inline_references
         self._ssl_verification = ssl_verification
         self._all_errors = all_errors
+        self._check_categories = check_categories
+        self._fastapi_url = fastapi_url
+        self._include_failed_samples = include_failed_samples
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -63,7 +72,7 @@ class DataContract:
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
                 all_errors=self._all_errors,
             )
             run.checks.append(
@@ -85,14 +94,11 @@ class DataContract:
                         name=error.name,
                         reason=error.reason,
                         engine=error.engine,
-                        details="",
                     )
                 )
                 run.log_error(str(error))
         except DataContractException as e:
-            run.checks.append(
-                Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine, details="")
-            )
+            run.checks.append(Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine))
             run.log_error(str(e))
         except Exception as e:
             run.checks.append(
@@ -108,19 +114,40 @@ class DataContract:
         run.finish()
         return run
 
+    def _runtime_info(self) -> str:
+        try:
+            version = metadata.version("datacontract-cli")
+        except metadata.PackageNotFoundError:
+            version = "unknown"
+        if self._fastapi_url is not None:
+            execution = f"running through FastAPI at {self._fastapi_url}"
+        else:
+            execution = "running as CLI locally"
+        return f"Data Contract CLI {version} {execution}"
+
     def test(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
+            run.log_info(self._runtime_info())
             data_contract = resolve.resolve_data_contract(
                 self._data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
                 self._schema_location,
-                inline_definitions=self._inline_definitions,
+                inline_references=self._inline_references,
             )
 
-            execute_data_contract_test(data_contract, run, self._server, self._spark, self._duckdb_connection)
+            execute_data_contract_test(
+                data_contract,
+                run,
+                self._server,
+                self._spark,
+                self._duckdb_connection,
+                schema_name=self._schema_name,
+                check_categories=self._check_categories,
+                include_failed_samples=self._include_failed_samples,
+            )
 
         except DataContractException as e:
             run.checks.append(
@@ -131,7 +158,6 @@ class DataContract:
                     reason=e.reason,
                     model=e.model,
                     engine=e.engine,
-                    details="",
                 )
             )
             run.log_error(str(e))
@@ -161,7 +187,7 @@ class DataContract:
             data_contract_str=self._data_contract_str,
             data_contract=self._data_contract,
             schema_location=self._schema_location,
-            inline_definitions=self._inline_definitions,
+            inline_references=self._inline_references,
         )
 
     def get_data_contract_file(self) -> str | None:
@@ -170,42 +196,21 @@ class DataContract:
     def export(
         self, export_format: ExportFormat, schema_name: str = "all", sql_server_type: str = "auto", **kwargs
     ) -> str | bytes:
-        if (
-            export_format == ExportFormat.html
-            or export_format == ExportFormat.mermaid
-            or export_format == ExportFormat.excel
-        ):
-            data_contract = resolve.resolve_data_contract(
-                self._data_contract_file,
-                self._data_contract_str,
-                self._data_contract,
-                schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
-            )
+        data_contract = resolve.resolve_data_contract(
+            self._data_contract_file,
+            self._data_contract_str,
+            self._data_contract,
+            schema_location=self._schema_location,
+            inline_references=self._inline_references,
+        )
 
-            return exporter_factory.create(export_format).export(
-                data_contract=data_contract,
-                schema_name=schema_name,
-                server=self._server,
-                sql_server_type=sql_server_type,
-                export_args=kwargs,
-            )
-        else:
-            data_contract = resolve.resolve_data_contract(
-                self._data_contract_file,
-                self._data_contract_str,
-                self._data_contract,
-                schema_location=self._schema_location,
-                inline_definitions=self._inline_definitions,
-            )
-
-            return exporter_factory.create(export_format).export(
-                data_contract=data_contract,
-                schema_name=schema_name,
-                server=self._server,
-                sql_server_type=sql_server_type,
-                export_args=kwargs,
-            )
+        return exporter_factory.create(export_format).export(
+            data_contract=data_contract,
+            schema_name=schema_name,
+            server=self._server,
+            sql_server_type=sql_server_type,
+            export_args=kwargs,
+        )
 
     def changelog(self, other: "DataContract") -> ChangelogResult:
         """Generate a changelog between this data contract and another, returning a ChangelogResult."""
@@ -244,7 +249,6 @@ class DataContract:
         cls,
         format: str,
         source: typing.Optional[str] = None,
-        template: typing.Optional[str] = None,
         **kwargs,
     ) -> OpenDataContractStandard:
         """Import a data contract from a source in a given format.

@@ -15,8 +15,6 @@ def test_output_json_test_result(tmp_path):
             "test",
             "--output",
             str(tmp_path / "test-results.json"),
-            "--output-format",
-            "json",
             "./fixtures/junit/datacontract.yaml",
         ],
     )
@@ -27,4 +25,5 @@ def test_output_json_test_result(tmp_path):
     assert "runId" in data
     assert "checks" in data
     assert "result" in data
+    assert "datacontractCliVersion" in data
     assert data["result"] in ("passed", "warning", "failed", "error")

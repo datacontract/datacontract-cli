@@ -1,0 +1,86 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: orders-unit-test
+name: Orders Unit Test
+version: 1.0.0
+status: active
+description:
+  purpose: The orders data contract
+team:
+  name: checkout
+  description: Checkout team
+servers:
+  - server: production
+    type: bigquery
+    environment: production
+    account: my-account
+    project: my-database
+    dataset: my-schema
+schema:
+  - name: orders
+    businessName: orders
+    physicalType: table
+    description: The orders model
+    properties:
+      - name: order_id
+        businessName: Order ID
+        logicalType: string
+        physicalType: varchar
+        unique: true
+        required: true
+        classification: sensitive
+        tags:
+          - order_id
+        logicalTypeOptions:
+          minLength: 8
+          maxLength: 10
+          pattern: ^B[0-9]+$
+        customProperties:
+          - property: pii
+            value: "true"
+        examples:
+          - B12345678
+          - B12345679
+      - name: order_total
+        logicalType: integer
+        physicalType: bigint
+        required: true
+        description: The order_total field
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 1000000
+        quality:
+          - type: sql
+            description: 95% of all order total values are expected to be between 10 and 499 EUR.
+            query: |
+              SELECT quantile_cont(order_total, 0.95) AS percentile_95
+              FROM orders
+            mustBeBetween:
+              - 1000
+              - 49900
+      - name: order_status
+        logicalType: string
+        physicalType: text
+        required: true
+        customProperties:
+          - property: enum
+            value: "[\"pending\", \"shipped\", \"delivered\"]"
+      - name: user_id
+        businessName: User ID
+        logicalType: string
+        physicalType: varchar
+        required: true
+        relationships:
+          - type: foreignKey
+            to: users.user_id
+  - name: users
+    businessName: users
+    physicalType: table
+    description: The users model
+    properties:
+      - name: user_id
+        businessName: User ID
+        logicalType: string
+        physicalType: varchar
+        unique: true
+        required: true

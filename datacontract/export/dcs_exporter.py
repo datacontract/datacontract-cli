@@ -28,7 +28,7 @@ from datacontract.export.exporter import Exporter
 
 
 class DcsExporter(Exporter):
-    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> dict:
+    def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         return to_dcs_yaml(data_contract)
 
 
@@ -40,13 +40,18 @@ def to_dcs_yaml(data_contract: OpenDataContractStandard) -> str:
 
 def to_dcs(data_contract: OpenDataContractStandard) -> DataContractSpecification:
     """Convert an ODCS data contract to a DCS data contract."""
-    # Basic info
+    # Basic info. ODCS description is a structured object; DCS Info.description
+    # is a plain string, so map the purpose (the full description is carried in
+    # terms below).
     info = Info(
         title=data_contract.name,
         version=data_contract.version,
-        description=data_contract.description,
         status=data_contract.status,
     )
+    if isinstance(data_contract.description, str):
+        info.description = data_contract.description
+    elif data_contract.description is not None:
+        info.description = getattr(data_contract.description, "purpose", None)
 
     # Team/owner
     if data_contract.team:
@@ -145,11 +150,13 @@ def _convert_server(odcs_server: ODCSServer) -> DCSServer:
         dcs_server.port = odcs_server.port
     if odcs_server.catalog:
         dcs_server.catalog = odcs_server.catalog
-    if odcs_server.topic:
+    # These attributes are not part of the ODCS Server model; guard with getattr
+    # so converting a standard ODCS server does not raise AttributeError.
+    if getattr(odcs_server, "topic", None):
         dcs_server.topic = odcs_server.topic
-    if odcs_server.http_path:
+    if getattr(odcs_server, "http_path", None):
         dcs_server.http_path = odcs_server.http_path
-    if odcs_server.driver:
+    if getattr(odcs_server, "driver", None):
         dcs_server.driver = odcs_server.driver
 
     return dcs_server

@@ -1,0 +1,4 @@
+order_id,order_timestamp,customer_id,order_total,status
+ORD-1001,2024-01-01T10:00:00Z,CUST-1,4999,delivered
+ORD-1002,2024-01-02T11:30:00Z,CUST-2,2500,shipped
+ORD-1003,2024-01-03T09:15:00Z,CUST-3,1299,pending

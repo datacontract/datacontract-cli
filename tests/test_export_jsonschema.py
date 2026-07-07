@@ -14,13 +14,13 @@ from datacontract.lint.resolve import resolve_data_contract
 
 def test_cli():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "./fixtures/local-json/datacontract.yaml", "--format", "jsonschema"])
+    result = runner.invoke(app, ["export", "jsonschema", "./fixtures/local-json/datacontract.yaml"])
     assert result.exit_code == 0
 
 
 def test_to_jsonschemas():
     data_contract = DataContract(
-        data_contract_file="fixtures/local-json/datacontract.yaml", inline_definitions=True
+        data_contract_file="fixtures/local-json/datacontract.yaml", inline_references=True
     ).get_data_contract()
 
     with open("fixtures/local-json/datacontract.json") as file:

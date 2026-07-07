@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from enum import Enum
 
 import sqlglot
 from open_data_contract_standard.model import OpenDataContractStandard
@@ -15,6 +16,20 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+
+
+class SqlDialect(str, Enum):
+    postgres = "postgres"
+    tsql = "tsql"
+    sqlserver = "sqlserver"
+    bigquery = "bigquery"
+    snowflake = "snowflake"
+    databricks = "databricks"
+    spark = "spark"
+    duckdb = "duckdb"
+    oracle = "oracle"
+    mysql = "mysql"
+    redshift = "redshift"
 
 
 class SqlImporter(Importer):
@@ -43,7 +58,12 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
     server_type = to_server_type(source, dialect)
     if server_type is not None:
-        odcs.servers = [create_server(name=server_type, server_type=server_type)]
+        server_defaults = get_server_defaults(server_type)
+        odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
+        logging.warning(
+            "SQL import generated a server block with placeholder connection values. "
+            "Update host, port, database, and schema in the output before use."
+        )
 
     tables = [
         t
@@ -138,6 +158,36 @@ def to_dialect(import_args: dict) -> Dialects | None:
     return None
 
 
+def get_server_defaults(server_type: str) -> dict:
+    """Return placeholder connection fields for a given server type.
+
+    These placeholders make it obvious to users which fields require values,
+    since an empty server stub immediately fails `datacontract lint`.
+    """
+    port_map = {
+        "postgres": 5432,
+        "redshift": 5439,
+        "mysql": 3306,
+        "sqlserver": 1433,
+        "oracle": 1521,
+        "snowflake": 443,
+        "databricks": 443,
+    }
+    schema_map = {
+        "postgres": "public",
+        "redshift": "public",
+    }
+    defaults = {
+        "host": "my_host",
+        "database": "my_database",
+        "schema": schema_map.get(server_type, "my_schema"),
+    }
+    port = port_map.get(server_type)
+    if port is not None:
+        defaults["port"] = port
+    return defaults
+
+
 def to_server_type(source, dialect: Dialects | None) -> str | None:
     if dialect is None:
         return None
@@ -229,10 +279,11 @@ def get_precision_scale(column):
     return None, None
 
 
-def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
+def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     """Map SQL type to ODCS logical type and optional format.
 
-    Returns (logicalType, format).
+    Returns (logicalType, format). logicalType is None for unknown or unmappable
+    types (e.g. maps), leaving the field's logicalType unset.
     The format corresponds to ODCS logicalTypeOptions.format (e.g. "binary", "uuid").
     """
     if sql_type is None:
@@ -308,8 +359,16 @@ def map_type_from_sql(sql_type: str) -> tuple[str, str | None]:
         return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
         return ("string", None)
-    else:
+    elif sql_type_normed.startswith("array"):
+        return ("array", None)
+    elif sql_type_normed.startswith("struct"):
         return ("object", None)
+    elif sql_type_normed.startswith("map"):
+        # ODCS v3.1 has no map logical type; RFC 0030 adds logicalType: map in v3.2.
+        # "object" only validates against structs, so leave logicalType unset for maps.
+        return (None, None)
+    else:
+        return (None, None)
 
 
 def remove_variable_tokens(sql_script: str) -> str:

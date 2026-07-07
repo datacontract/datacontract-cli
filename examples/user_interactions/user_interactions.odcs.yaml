@@ -1,0 +1,80 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: urn:datacontract:analytics:user_interactions
+name: User Interactions
+version: 1.0.0
+status: active
+description:
+  purpose: User interaction events on the platform, used for engagement analytics.
+
+tags:
+  - analytics
+  - events
+
+servers:
+  - server: production
+    type: databricks
+    catalog: prod_catalog
+    schema: analytics
+
+schema:
+  - name: user_interactions
+    physicalType: table
+    description: One row per user interaction event.
+    properties:
+      - name: interaction_id
+        logicalType: string
+        physicalType: string
+        required: true
+        description: Unique identifier for the interaction.
+        quality:
+          - type: custom
+            engine: dqx
+            implementation:
+              criticality: error
+              check:
+                function: is_not_null
+      - name: user_id
+        logicalType: string
+        physicalType: string
+        required: true
+        description: Identifier of the user who triggered the interaction.
+        quality:
+          - type: custom
+            engine: dqx
+            implementation:
+              criticality: error
+              check:
+                function: is_not_null
+      - name: interaction_type
+        logicalType: string
+        physicalType: string
+        required: true
+        description: Type of interaction.
+        quality:
+          - type: custom
+            engine: dqx
+            implementation:
+              criticality: error
+              check:
+                function: is_in_list
+                arguments:
+                  allowed:
+                    - click
+                    - view
+                    - purchase
+      - name: interaction_value
+        logicalType: integer
+        physicalType: integer
+        required: false
+        description: Value associated with the interaction, e.g. amount spent.
+        quality:
+          - type: custom
+            engine: dqx
+            implementation:
+              criticality: warn
+              check:
+                function: is_in_range
+                arguments:
+                  min_limit: 0
+                  max_limit: 1000
