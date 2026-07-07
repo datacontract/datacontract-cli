@@ -51,7 +51,7 @@ schema:
   - name: Timestamp_field
     physicalType: TIMESTAMP
     description: A Timestamp field
-    logicalType: date
+    logicalType: timestamp
   - name: Date_field
     physicalType: DATE
     description: A Date field
@@ -59,11 +59,11 @@ schema:
   - name: Time_Field
     physicalType: TIME
     description: A time field
-    logicalType: date
+    logicalType: time
   - name: Datetime_Field
     physicalType: DATETIME
     description: A Datetime field
-    logicalType: date
+    logicalType: timestamp
   - name: Numeric_Field
     physicalType: NUMERIC
     description: A Numeric field with precision 5 and scale 3
