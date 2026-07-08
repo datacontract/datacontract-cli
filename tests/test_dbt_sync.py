@@ -1565,6 +1565,7 @@ def test_publish_failure_exits_non_zero(monkeypatch, tmp_path: Path):
 def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     _stub_dbt_test(monkeypatch, project)
+    contract = _contract_with_server(tmp_path, server="prod")
 
     captured: dict = {}
 
@@ -1582,7 +1583,7 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
         [
             "dbt",
             "sync",
-            str(CONTRACT_PATH),
+            str(contract),
             "--project-dir",
             str(project),
             "--run-tests",
@@ -1899,7 +1900,7 @@ def test_dbt_test_command_skips_junk_alongside_valid(monkeypatch, tmp_path: Path
 
     result = CliRunner().invoke(app, ["dbt", "test", str(junk), str(CONTRACT_PATH), "--project-dir", str(project)])
     assert result.exit_code == 0, result.output
-    assert "not an ODCS data contract" in result.output
+    assert "not an ODCS data contract" in " ".join(result.output.split())
 
 
 # ---------------------------------------------------------------------------
@@ -2743,7 +2744,7 @@ def test_cli_sync_skips_non_odcs_file_with_warning(tmp_path: Path):
     junk = _write(tmp_path, "junk.odcs.yaml", "foo: bar\n")
     result = CliRunner().invoke(app, ["dbt", "sync", str(junk), str(CONTRACT_PATH), "--project-dir", str(project)])
     assert result.exit_code == 0, result.output
-    assert "not an ODCS data contract" in result.output
+    assert "not an ODCS data contract" in " ".join(result.output.split())
 
 
 def test_cli_sync_empty_glob_is_silent(tmp_path: Path):
