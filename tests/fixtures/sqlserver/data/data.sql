@@ -2,7 +2,8 @@
 CREATE TABLE [dbo].[my_table] (
     field_one VARCHAR(10) PRIMARY KEY,
     field_two INT NOT NULL,
-    field_three DATETIME2
+    field_three DATETIME2,
+    field_uuid UNIQUEIDENTIFIER
 );
 
 -- Insert the data

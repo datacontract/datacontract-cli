@@ -22,6 +22,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.ibis.native_type import supports_native_type_introspection
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +172,29 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
         )
 
-        if check_types and prop.logicalType is not None:
+        # A declared physicalType is checked against the column's real native
+        # type in the platform catalog and takes precedence over logicalType,
+        # but only on backends that expose a meaningful native type. Elsewhere
+        # (file sources, etc.) fall through to the logicalType category check.
+        if check_types and prop.physicalType is not None and supports_native_type_introspection(server_type):
+            checks.append(
+                CheckSpec(
+                    key=f"{model}__{field}__field_physical_type",
+                    category="schema",
+                    type="field_physical_type",
+                    name=f"Check that field {field} has physical type {prop.physicalType}",
+                    model=model,
+                    field=field,
+                    metric=MetricType.FIELD_PHYSICAL_TYPE,
+                    expected_category=prop.physicalType,
+                    expected_type_label=prop.physicalType,
+                    expected_physical_type=prop.physicalType,
+                    # Carried for the logicalType fallback when the native type
+                    # cannot be read or the physicalType is cross-dialect.
+                    expected_schema_property=prop if prop.logicalType is not None else None,
+                )
+            )
+        elif check_types and prop.logicalType is not None:
             schema_prop, label = prop, prop.logicalType or ""
             checks.append(
                 CheckSpec(
