@@ -19,6 +19,7 @@ dependencies = [
   "click>=8.1.0,<9.0.0",
   "pydantic>=2.8.2,<2.14.0",
   "pyyaml~=6.0.1",
+  "ruamel.yaml>=0.17,<0.19",
   "requests>=2.31,<2.35",
   "truststore>=0.10,<1.0",
   "fastjsonschema>=2.19.1,<2.22.0",

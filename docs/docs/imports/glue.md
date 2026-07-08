@@ -12,7 +12,7 @@ Creates a data contract from the AWS Glue Data Catalog.
 
 ```bash
 # Import specific tables from a Glue database
-datacontract import glue --source my_database --glue-table orders --glue-table line_items
+datacontract import glue --source my_database --table orders --table line_items
 
 # Import all tables in the database
 datacontract import glue --source my_database

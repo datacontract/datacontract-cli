@@ -15,8 +15,8 @@ Creates a data contract from Databricks Unity Catalog, from an exported JSON fil
 datacontract import unity --source unity_table.json
 
 # From the HTTP endpoint using a PAT
-datacontract import unity --unity-table-full-name catalog.schema.table
+datacontract import unity --table catalog.schema.table
 
 # From the HTTP endpoint using a Databricks profile
-datacontract import unity --unity-table-full-name catalog.schema.table
+datacontract import unity --table catalog.schema.table
 ```

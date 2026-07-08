@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- extended `datacontract dbt sync`:
+  - now edits existing properties files (schema.yaml) in-place instead of creating new ones
+  - preserve manual edits to a properties file
+  - edit schema incl. descriptions, column types and tags, not only tests
+  - add `--prune` flag to remove everything that's not specified in the contract (models, tags, checks) - per default, only generated content gets removed
+  - support for multiple contract versions (`versions:` block)
+  - possibility to sync multiple contracts at once
+  - store the contract id and version in the `meta:` block
+- added `datacontract dbt test`: Use local `dbt` to run all tests that have been generated using `datacontract dbt sync` earlier (scoped to a single data contract, or all data contracts in the opened dbt project)
+  - optionally publish to Entropy Data
+
+### Changed
+- `datacontract dbt sync`:
+  - no longer executes tests per default (use `--run-tests` or run `datacontract dbt test` afterwards)
 - `datacontract test` now verifies a field's `physicalType` against the column's real native type from the platform catalog (length and precision included), taking precedence over `logicalType` (#1354)
 - `datacontract test` JSON output now includes `datacontractCliVersion` (#1353)
 

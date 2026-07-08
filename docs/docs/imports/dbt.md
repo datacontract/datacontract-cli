@@ -12,7 +12,7 @@ Creates a data contract from a dbt `manifest.json`.
 
 ```bash
 # Import specific tables
-datacontract import dbt --source manifest.json --dbt-model orders --dbt-model line_items
+datacontract import dbt --source manifest.json --model orders --model line_items
 
 # Import all tables in the database
 datacontract import dbt --source manifest.json
