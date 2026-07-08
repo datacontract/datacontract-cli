@@ -2,7 +2,7 @@ import os
 import sys
 
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -260,3 +260,28 @@ def read_file(file):
     with open(file, "r") as file:
         file_content = file.read()
     return file_content
+
+
+def test_to_dbt_models_resolves_dialect_from_server_type():
+    """`--server` names a declared server; its `type` (not its literal name) is the mapping dialect."""
+    data_contract = OpenDataContractStandard(
+        apiVersion="v3.0.0",
+        kind="DataContract",
+        id="exp",
+        servers=[Server(server="prod_wh", type="snowflake")],
+        schema=[SchemaObject(name="orders", properties=[SchemaProperty(name="amount", physicalType="bigint")])],
+    )
+    col = yaml.safe_load(to_dbt_models_yaml(data_contract, server="prod_wh"))["models"][0]["columns"][0]
+    assert col["data_type"] == "NUMBER"  # snowflake mapping of bigint, resolved from server.type
+
+
+def test_to_dbt_models_server_falls_back_to_literal_dialect():
+    """A `--server` value that matches no declared server is used as a bare dialect (backward-compat)."""
+    data_contract = OpenDataContractStandard(
+        apiVersion="v3.0.0",
+        kind="DataContract",
+        id="exp",
+        schema=[SchemaObject(name="orders", properties=[SchemaProperty(name="amount", physicalType="bigint")])],
+    )
+    col = yaml.safe_load(to_dbt_models_yaml(data_contract, server="snowflake"))["models"][0]["columns"][0]
+    assert col["data_type"] == "NUMBER"
