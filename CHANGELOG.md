@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-07-08
+
 ### Added
 - extended `datacontract dbt sync`:
   - now edits existing properties files (schema.yaml) in-place instead of creating new ones
@@ -23,12 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract dbt sync`:
   - no longer executes tests per default (use `--run-tests` or run `datacontract dbt test` afterwards)
 - `datacontract test` now verifies a field's `physicalType` against the column's real native type from the platform catalog (length and precision included), taking precedence over `logicalType` (#1354)
-- `datacontract test` JSON output now includes `datacontractCliVersion` (#1353)
+- `datacontract test` JSON output now includes `datacontractCliVersion` (#1353 @hk8suva)
+- `datacontract test` type-check errors now report the first failing field and a count of the remaining errors (#1334 @jorgengranseth)
 
 ### Fixed
 - `datacontract test` no longer fails the type check for SQL Server `uniqueidentifier` (UUID) columns with "the column type could not be determined" (#1354)
 - `datacontract test` against BigQuery no longer fails SQL quality checks with `'RowIterator' object has no attribute 'fetchone'`
-- `datacontract import` against BigQuery applies correct `logicalType` for BigQuery types `TIMESTAMP`, `DATETIME`, and `TIME` (#1366) 
+- `datacontract import` against BigQuery applies correct `logicalType` for BigQuery types `TIMESTAMP`, `DATETIME`, and `TIME` (#1366 @fantastisch) 
 
 ## [1.0.9] - 2026-06-26
 
