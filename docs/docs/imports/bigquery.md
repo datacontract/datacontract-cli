@@ -64,7 +64,7 @@ schema:
     required: true
   - name: order_timestamp
     physicalType: TIMESTAMP
-    logicalType: date
+    logicalType: timestamp
     required: true
   - name: customer_id
     physicalType: STRING
