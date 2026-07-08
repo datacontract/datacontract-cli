@@ -27,13 +27,13 @@ from datacontract.integration.dbt_sync import (
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
     _get_test_metadata,
+    _resolve_contract_paths,
     _resolved_generated_dirs,
     _rewrite_relationships_to_ref,
     _row_count_singular_test,
     _singular_tests_for_qualities,
     _sql_literal,
     check_dbt_on_path,
-    find_contract,
     generate_dbt_tests,
     generate_dbt_tests_for_schema,
     parse_dbt_test_run,
@@ -115,23 +115,13 @@ def sync(
 # ---------------------------------------------------------------------------
 
 
-def test_find_contract_single_match(tmp_path: Path):
-    target = tmp_path / "nested" / "x.odcs.yaml"
-    target.parent.mkdir(parents=True)
-    target.write_text("kind: DataContract\n")
-    assert find_contract(tmp_path) == target
-
-
-def test_find_contract_none_raises(tmp_path: Path):
-    with pytest.raises(DataContractException, match="No `\\*.odcs.yaml`"):
-        find_contract(tmp_path)
-
-
-def test_find_contract_ambiguous_raises(tmp_path: Path):
-    (tmp_path / "a.odcs.yaml").write_text("")
-    (tmp_path / "b.odcs.yaml").write_text("")
-    with pytest.raises(DataContractException, match="Multiple"):
-        find_contract(tmp_path)
+def test_resolve_contract_rejects_directory(tmp_path: Path):
+    """A directory where a contract file is expected errors with a hint to use --project-dir."""
+    project = _copy_dbt_project(tmp_path)
+    some_dir = tmp_path / "adir"
+    some_dir.mkdir()
+    with pytest.raises(DataContractException, match="is a directory, not a contract file"):
+        _resolve_contract_paths([str(some_dir)], project)
 
 
 # ---------------------------------------------------------------------------
@@ -694,6 +684,24 @@ def test_singular_tests_skipped_when_query_has_no_bound():
     assert any("no `mustBe*` bound" in log.message for log in run.logs)
 
 
+def test_generate_outputs_warns_on_unsupported_model_qualities():
+    """Model-level qualities that can't map to a test are skipped with a warning — not dropped
+    silently or crashed on: a `rowCount` with no bound, and a non-`rowCount` metric with no query."""
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    schema_obj = odcs.schema_[0]
+    schema_obj.quality = [
+        DataQuality(metric="rowCount"),  # rowCount but no `mustBe*` bound → no predicate can be built
+        DataQuality(metric="freshness"),  # unsupported metric, no query
+    ]
+    run = Run.create_run()
+    _, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", run)
+
+    assert not any("row_count" in s.filename for s in singulars)  # neither quality produced a test
+    messages = [log.message for log in run.logs]
+    assert any("unsupported row-count quality" in m for m in messages)
+    assert any("metric='freshness'" in m for m in messages)
+
+
 def test_disambiguate_singular_filenames_renames_duplicates():
     from datacontract.integration.dbt_sync import SingularTest
 
@@ -769,11 +777,7 @@ def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: P
 def test_sync_missing_contract_raises(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     with pytest.raises(DataContractException, match="not found"):
-        sync(
-            contract=str(tmp_path / "missing.yaml"),
-            project_dir=project,
-            skip_tests=True,
-        )
+        _resolve_contract_paths([str(tmp_path / "missing.yaml")], project)
 
 
 # ---------------------------------------------------------------------------
@@ -1062,6 +1066,18 @@ def test_run_dbt_test_clears_stale_run_results(tmp_path: Path):
         with pytest.raises(DataContractException, match="some parse error"):
             run_dbt_test(project, target=None, profiles_dir=None)
     assert not stale.exists()
+
+
+def test_run_dbt_test_raises_on_oserror(tmp_path: Path):
+    """If dbt can't be invoked at all (OSError from subprocess), surface a clear error."""
+    project = _copy_dbt_project(tmp_path)
+
+    def boom(args, **kwargs):
+        raise OSError("no such file")
+
+    with mock.patch.object(subprocess, "run", side_effect=boom):
+        with pytest.raises(DataContractException, match="Failed to invoke dbt"):
+            run_dbt_test(project, target=None, profiles_dir=None)
 
 
 def test_run_dbt_test_target_and_profiles_forwarded(tmp_path: Path):
@@ -1440,6 +1456,16 @@ def test_integration_end_to_end(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
+def _contract_with_server(tmp_path: Path, *, server: str = "production") -> Path:
+    """The orders contract with a single declared server, for --server / --publish tests."""
+    contract = tmp_path / "with-server.odcs.yaml"
+    contract.write_text(
+        CONTRACT_PATH.read_text()
+        + f"\nservers:\n  - server: {server}\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
+    )
+    return contract
+
+
 def _stub_dbt_test(monkeypatch, project: Path) -> None:
     """Replace `subprocess.run` so `dbt test` succeeds and leaves a minimal run_results.json."""
     _orders_model_sql(project)  # a resolvable model so sync runs `dbt test` instead of skipping
@@ -1539,6 +1565,7 @@ def test_publish_failure_exits_non_zero(monkeypatch, tmp_path: Path):
 def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     _stub_dbt_test(monkeypatch, project)
+    contract = _contract_with_server(tmp_path, server="prod")
 
     captured: dict = {}
 
@@ -1556,7 +1583,7 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
         [
             "dbt",
             "sync",
-            str(CONTRACT_PATH),
+            str(contract),
             "--project-dir",
             str(project),
             "--run-tests",
@@ -1581,11 +1608,7 @@ def test_cli_publish_requires_run_tests(monkeypatch, tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     _stub_dbt_test(monkeypatch, project)
 
-    contract = tmp_path / "with-server.odcs.yaml"
-    contract.write_text(
-        CONTRACT_PATH.read_text()
-        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
-    )
+    contract = _contract_with_server(tmp_path)
 
     publish_mock = mock.MagicMock(return_value=True)
     monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", publish_mock)
@@ -1596,7 +1619,7 @@ def test_cli_publish_requires_run_tests(monkeypatch, tmp_path: Path):
         ["dbt", "sync", str(contract), "--project-dir", str(project), "--publish", "https://example.com"],
     )
     assert result.exit_code == 1, result.output
-    assert "--publish/--server require --run-tests" in result.stdout
+    assert "--publish requires --run-tests" in result.stdout
     publish_mock.assert_not_called()
 
 
@@ -1659,11 +1682,7 @@ def test_cli_server_flag_overrides_target(monkeypatch, tmp_path: Path):
     monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
 
     # Contract declares a single server. Make it match what we'll pass via --server.
-    contract = tmp_path / "with-server.odcs.yaml"
-    contract.write_text(
-        CONTRACT_PATH.read_text()
-        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
-    )
+    contract = _contract_with_server(tmp_path)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -1700,11 +1719,7 @@ def test_cli_server_defaults_to_single_contract_server(monkeypatch, tmp_path: Pa
 
     monkeypatch.setattr("datacontract.command_dbt.publish_test_results_to_entropy_data", fake_publish)
 
-    contract = tmp_path / "with-server.odcs.yaml"
-    contract.write_text(
-        CONTRACT_PATH.read_text()
-        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
-    )
+    contract = _contract_with_server(tmp_path)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -1728,11 +1743,7 @@ def test_cli_server_defaults_to_single_contract_server(monkeypatch, tmp_path: Pa
 
 def test_cli_server_rejects_unknown_name(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
-    contract = tmp_path / "with-server.odcs.yaml"
-    contract.write_text(
-        CONTRACT_PATH.read_text()
-        + "\nservers:\n  - server: production\n    type: duckdb\n    database: warehouse\n    path: ./w.duckdb\n"
-    )
+    contract = _contract_with_server(tmp_path)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -1751,6 +1762,28 @@ def test_cli_server_rejects_unknown_name(tmp_path: Path):
     assert result.exit_code == 1
     assert "not declared in the contract" in result.stdout
     assert "production" in result.stdout
+
+
+def test_cli_server_rejected_when_no_servers_declared(tmp_path: Path):
+    """A contract with no `servers:` block rejects any --server (it can't be declared)."""
+    project = _copy_dbt_project(tmp_path)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "dbt",
+            "sync",
+            str(CONTRACT_PATH),
+            "--project-dir",
+            str(project),
+            "--run-tests",
+            "--server",
+            "prod",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "not declared in the contract" in result.stdout
 
 
 # ---------------------------------------------------------------------------
@@ -1817,6 +1850,57 @@ def test_dbt_test_command_autodiscovers_contract(monkeypatch, tmp_path: Path):
     result = runner.invoke(app, ["dbt", "test", "--project-dir", str(project)])
     assert result.exit_code == 0, result.output
     assert "Resolved contract" in result.stdout
+
+
+_ORDERS_DCS = """\
+dataContractSpecification: 0.9.3
+id: orders-dcs
+info:
+  title: Orders
+  version: 1.0.0
+models:
+  orders:
+    fields:
+      order_id:
+        type: string
+"""
+
+
+def test_dbt_test_command_rejects_dcs_contract(monkeypatch, tmp_path: Path):
+    """`dbt test`, like `dbt sync`, is ODCS-only: a DCS contract is skipped, not resolved to ODCS."""
+    project = _copy_dbt_project(tmp_path)
+    dcs = _write(tmp_path, "orders.dcs.yaml", _ORDERS_DCS)
+    monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "test", str(dcs), "--project-dir", str(project)])
+    assert result.exit_code == 1, result.output
+    assert "None of the passed contracts are valid ODCS data contracts" in result.output
+
+
+def test_dbt_test_command_all_non_contract_errors(monkeypatch, tmp_path: Path):
+    """`dbt test` with only non-contract files errors once and exits 1 (no per-file warning)."""
+    project = _copy_dbt_project(tmp_path)
+    monkeypatch.setattr(shutil, "which", lambda _: "/fake/dbt")
+    junk = _write(tmp_path, "junk.yaml", "foo: bar\n")
+
+    result = CliRunner().invoke(app, ["dbt", "test", str(junk), "--project-dir", str(project)])
+    assert result.exit_code == 1, result.output
+    assert "None of the passed contracts are valid ODCS data contracts" in result.output
+    assert "Skipping" not in result.output
+
+
+def test_dbt_test_command_skips_junk_alongside_valid(monkeypatch, tmp_path: Path):
+    """A non-ODCS file alongside a valid one is skipped with a warning; the valid one still runs."""
+    project = _copy_dbt_project(tmp_path)
+    _stub_dbt_test_results(
+        monkeypatch, project, [{"unique_id": "test.proj.x.abc", "status": "pass", "failures": 0, "message": None}]
+    )
+    junk = _write(tmp_path, "junk.yaml", "foo: bar\n")
+
+    result = CliRunner().invoke(app, ["dbt", "test", str(junk), str(CONTRACT_PATH), "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    assert "not an ODCS data contract" in " ".join(result.output.split())
 
 
 # ---------------------------------------------------------------------------
@@ -1913,6 +1997,20 @@ def test_sync_overlapping_model_is_hard_error(tmp_path: Path):
     result = runner.invoke(app, ["dbt", "sync", "--project-dir", str(project), "--skip-tests"])
     assert result.exit_code == 1
     assert "claimed by different contracts" in result.stdout
+
+
+def test_sync_same_id_same_version_is_hard_error(tmp_path: Path):
+    """Two contract files with the same id AND version claiming one model abort the run."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    shutil.copy(CONTRACT_PATH, project / "orders.odcs.yaml")
+    shutil.copy(CONTRACT_PATH, project / "orders-copy.odcs.yaml")
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["dbt", "sync", "--project-dir", str(project), "--skip-tests"])
+    assert result.exit_code == 1
+    assert "share ID" in result.stdout
+    assert "and version" in result.stdout
 
 
 def test_sync_glob_selects_matching_contracts(tmp_path: Path):
@@ -2014,19 +2112,6 @@ def test_sync_bump_version_keeps_old_singular_sql(tmp_path: Path):
     sync(contract=str(_orders_contract_at_version(project, "2.0.0")), project_dir=project, skip_tests=True)
     assert list(subdir.glob("orders_sync_test__1_0_0__*.sql")), "old version's singular SQL was dropped"
     assert list(subdir.glob("orders_sync_test__2_0_0__*.sql")), "new version's tests were not written"
-
-
-def test_sync_same_id_two_versions_coexist(tmp_path: Path):
-    """Syncing a second version of the same id keeps the first version's singular SQL."""
-    project = _copy_dbt_project(tmp_path)
-    _orders_model_sql(project)
-    _, tests_dir = _resolved_generated_dirs(project)
-    subdir = tests_dir / "orders_sync_test"
-
-    generate_dbt_tests(contract=str(_orders_contract_at_version(project, "1.0.0")), project_dir=project)
-    generate_dbt_tests(contract=str(_orders_contract_at_version(project, "2.0.0")), project_dir=project)
-    assert list(subdir.glob("orders_sync_test__1_0_0__*.sql")), "sibling version's tests were dropped"
-    assert list(subdir.glob("orders_sync_test__2_0_0__*.sql")), "current version's tests missing"
 
 
 def test_sync_migrates_v1_0_9_flat_singular_sql(tmp_path: Path):
@@ -2354,7 +2439,7 @@ def test_sync_same_id_missing_v_token_errors(tmp_path: Path):
     runner = CliRunner()
     result = runner.invoke(app, ["dbt", "sync", "--project-dir", str(project), "--skip-tests"])
     assert result.exit_code == 1
-    assert "can't map to dbt model versions" in result.stdout
+    assert "rename the files to contain the version number" in result.stdout
 
 
 def test_dbt_test_versioned_selector_targets_version_node(monkeypatch, tmp_path: Path):
@@ -2445,7 +2530,7 @@ def test_sync_writes_physical_types_verbatim_without_server(tmp_path: Path):
     assert cols["order_id"]["data_type"] == "BIGINT"
     assert cols["note"]["data_type"] == "VARCHAR(20)"
     assert "data_type" not in cols["amount"]  # logical-only, no dialect → skipped
-    assert any("logical-only" in str(log.message) for log in gen.generation_run.logs)
+    assert any("could not determine the SQL dialect" in str(log.message) for log in gen.generation_run.logs)
 
 
 def test_sync_maps_logical_type_via_declared_server(tmp_path: Path):
@@ -2559,3 +2644,113 @@ def test_versioned_sync_data_type_is_order_independent(tmp_path: Path):
         return {"top": top, "v1_override": v1["data_type"]}
 
     assert types(forward) == types(reverse) == {"top": "bigint", "v1_override": "integer"}
+
+
+def test_sync_rejects_empty_contract(tmp_path: Path):
+    """An empty contract file errors cleanly instead of leaking a raw `NoneType` AttributeError."""
+    project = _copy_dbt_project(tmp_path)
+    empty = _write(tmp_path, "empty.odcs.yaml", "")
+    with pytest.raises(DataContractException, match="empty or not a YAML mapping"):
+        generate_dbt_tests(contract=str(empty), project_dir=project)
+
+
+def test_cli_sync_server_without_run_tests_resolves_dialect(tmp_path: Path):
+    """`--server` selects the dialect for `data_type` mapping and no longer requires `--run-tests`."""
+    project = _typed_project(tmp_path, with_server=True)
+    result = CliRunner().invoke(
+        app,
+        ["dbt", "sync", str(project / "orders.odcs.yaml"), "--project-dir", str(project), "--server", "prod"],
+    )
+    assert result.exit_code == 0, result.output
+    assert _col(_model_entry(project / "models" / "orders.yml"), "amount")["data_type"] == "numeric"
+
+
+def test_sync_migrates_legacy_tests_key(tmp_path: Path):
+    """A pre-existing dbt `tests:` key is folded into `data_tests:` — dbt rejects a container with both."""
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "orders.sql").write_text("select 1 as order_id")
+    (project / "models" / "orders.yml").write_text(
+        "version: 2\nmodels:\n  - name: orders\n    columns:\n"
+        "      - name: order_id\n        tests:\n          - unique\n"
+    )
+    contract = _write(
+        tmp_path,
+        "leg.odcs.yaml",
+        "kind: DataContract\napiVersion: v3.0.0\nid: leg\nversion: 1.0.0\nstatus: active\n"
+        "schema:\n  - name: orders\n    properties:\n"
+        "      - name: order_id\n        physicalType: integer\n        required: true\n",
+    )
+    generate_dbt_tests(contract=str(contract), project_dir=project)
+    col = _col(_model_entry(project / "models" / "orders.yml"), "order_id")
+    assert "tests" not in col
+    names = {t if isinstance(t, str) else next(iter(t)) for t in col["data_tests"]}
+    assert "unique" in names  # user's legacy test preserved
+    assert "not_null" in names  # our generated test added
+
+
+def _same_type_divergent_contract(version: str, enum_values: str) -> str:
+    return (
+        "kind: DataContract\napiVersion: v3.1.0\nid: shop\nname: Shop\n"
+        f"version: {version}\nstatus: active\n"
+        "schema:\n  - name: customers\n    properties:\n"
+        "      - name: id\n        physicalType: bigint\n        primaryKey: true\n        required: true\n"
+        "      - name: amount\n        physicalType: integer\n        required: true\n"
+        "        customProperties:\n          - property: enum\n"
+        f"            value: {enum_values}\n"
+    )
+
+
+def test_versioned_override_kept_for_divergent_tests_carries_data_type(tmp_path: Path):
+    """A column that diverges in tests but not type must keep `data_type` on each version override —
+    dbt doesn't inherit data_type into an existing override, which breaks `contract.enforced`."""
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "customers_v1.sql").write_text("select 1 as id, 1 as amount")
+    (project / "models" / "customers_v2.sql").write_text("select 1 as id, 1 as amount")
+    (project / "customers-v1.odcs.yaml").write_text(_same_type_divergent_contract("1.0.0", "[1, 2]"))
+    (project / "customers-v2.odcs.yaml").write_text(_same_type_divergent_contract("2.0.0", "[1, 2, 3]"))
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    assert "data_tests" not in _col(entry, "amount")  # divergent → no top-level tests
+    for v in (1, 2):
+        override = _override(entry, v, "amount")
+        assert override.get("data_tests"), f"v{v} override should carry the divergent tests"
+        assert override["data_type"] == "integer", f"v{v} override must keep data_type for enforced builds"
+
+
+def test_cli_sync_all_non_odcs_errors(tmp_path: Path):
+    """`dbt sync` is ODCS-only: when every passed contract is non-ODCS, error once and exit 1
+    (no per-file warning), never mutating managed YAML."""
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "orders.sql").write_text("select 1 as order_id, 'x' as order_status, 1 as order_total")
+    generate_dbt_tests(contract=str(CONTRACT_PATH), project_dir=project)
+    model_yaml = project / "models" / "orders.yml"
+    before = model_yaml.read_text()
+
+    junk = _write(tmp_path, "junk.odcs.yaml", "foo: bar\n")
+    result = CliRunner().invoke(app, ["dbt", "sync", str(junk), "--project-dir", str(project)])
+    assert result.exit_code == 1, result.output
+    assert "None of the passed contracts are valid ODCS data contracts" in result.output
+    assert "Skipping" not in result.output
+    assert model_yaml.read_text() == before  # untouched — no data loss
+
+
+def test_cli_sync_skips_non_odcs_file_with_warning(tmp_path: Path):
+    """A non-ODCS file alongside a valid one is skipped with a warning, never mutating managed YAML."""
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "orders.sql").write_text("select 1 as order_id, 'x' as order_status, 1 as order_total")
+
+    junk = _write(tmp_path, "junk.odcs.yaml", "foo: bar\n")
+    result = CliRunner().invoke(app, ["dbt", "sync", str(junk), str(CONTRACT_PATH), "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    assert "not an ODCS data contract" in " ".join(result.output.split())
+
+
+def test_cli_sync_empty_glob_is_silent(tmp_path: Path):
+    """A glob that matches nothing is neither a warning nor an error."""
+    project = _copy_dbt_project(tmp_path)
+    result = CliRunner().invoke(app, ["dbt", "sync", "no/such/*.odcs.yaml", "--project-dir", str(project)])
+    assert result.exit_code == 0, result.output
+    assert "matched no files" not in result.output
+    assert "Skipping" not in result.output

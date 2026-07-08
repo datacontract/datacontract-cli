@@ -30,6 +30,7 @@ from datacontract.export.sql_type_converter import _get_config_value, convert_to
 from datacontract.integration.dbt_test_mapping import field_to_data_tests, get_logical_type_option
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.odcs import is_open_data_contract_standard
 from datacontract.model.run import Check, ResultEnum, Run
 
 logger = logging.getLogger(__name__)
@@ -90,35 +91,6 @@ class ModelResolution(str, Enum):
 # ---------------------------------------------------------------------------
 # Contract / project resolution
 # ---------------------------------------------------------------------------
-
-
-def find_contract(search_dir: Path) -> Path:
-    """Recursive `*.odcs.yaml` search; raise on 0 or >1 matches."""
-    candidates = sorted(p for p in search_dir.rglob("*.odcs.yaml") if p.is_file())
-    if not candidates:
-        raise DataContractException(
-            type="dbt_sync",
-            name="resolve contract",
-            reason=(
-                f"No `*.odcs.yaml` found below {search_dir}. "
-                "Pass the contract path explicitly: `datacontract dbt sync <contract>`."
-            ),
-            engine="dbt-sync",
-        )
-    if len(candidates) > 1:
-        shown = candidates[:10]
-        listing = "\n  - ".join(str(c.relative_to(search_dir)) for c in shown)
-        more = f"\n  ... and {len(candidates) - len(shown)} more" if len(candidates) > len(shown) else ""
-        raise DataContractException(
-            type="dbt_sync",
-            name="resolve contract",
-            reason=(
-                f"Multiple `*.odcs.yaml` files found below {search_dir}:\n  - {listing}{more}\n"
-                "Pass one explicitly: `datacontract dbt sync <contract>`."
-            ),
-            engine="dbt-sync",
-        )
-    return candidates[0]
 
 
 def _ensure_dbt_project(project_dir: Path, *, explicit: bool = False) -> None:
@@ -572,8 +544,7 @@ def _model_ref(model: str, model_version: Optional[str]) -> str:
     hits this version's relation rather than the latest."""
     if model_version is None:
         return f"{{{{ ref('{model}') }}}}"
-    version_arg = int(model_version) if str(model_version).isdigit() else repr(model_version)
-    return f"{{{{ ref('{model}', version={version_arg}) }}}}"
+    return f"{{{{ ref('{model}', version={int(model_version)}) }}}}"
 
 
 def _build_singular_sql(
@@ -900,18 +871,13 @@ def _warn_unresolved_types(run: Optional[Run], model: Optional[str], columns: li
     if run is None or not columns:
         return
     run.log_warn(
-        f"`{model}`: could not determine a SQL `data_type` for logical-only column(s) "
-        f"{', '.join(columns)} — pass `--server <name>` or set a `physicalType` in the contract. "
-        "Left any existing data_type untouched."
+        f"`{model}`: could not determine the SQL dialect for the `data_type` of column(s) "
+        f"{', '.join(columns)} — pass `--server <name>` or set `physicalType` in the contract."
     )
 
 
-def _apply_column_data_type(
-    target: dict, prop: Optional[SchemaProperty], dialect: Optional[str], *, prune: bool
-) -> str:
+def _apply_column_data_type(target: dict, prop: SchemaProperty, dialect: Optional[str], *, prune: bool) -> str:
     """Write `data_type` onto a column entry per the contract-authoritative rule. Returns the status."""
-    if prop is None:
-        return "silent"
     dt, status = _resolve_column_type(prop, dialect)
     if status == "resolved" and dt is not None:
         target["data_type"] = dt
@@ -1043,17 +1009,6 @@ def _disambiguate_singular_filenames(singular_tests: list[SingularTest]) -> None
 # ---------------------------------------------------------------------------
 # File writing
 # ---------------------------------------------------------------------------
-
-
-def _write_singular_sql(target_dir: Path, singular_tests: list[SingularTest]) -> list[Path]:
-    """Write the singular `.sql` tests into `target_dir` (the contract's `datacontract_cli/<id>/` subdir)."""
-    sql_paths: list[Path] = []
-    for s in singular_tests:
-        sql_path = target_dir / s.filename
-        sql_path.parent.mkdir(parents=True, exist_ok=True)
-        sql_path.write_text(s.sql, encoding="utf-8")
-        sql_paths.append(sql_path)
-    return sql_paths
 
 
 # ---------------------------------------------------------------------------
@@ -1193,6 +1148,11 @@ def _reconcile_data_tests(
     existing = container.get("data_tests")
     if not isinstance(existing, list):
         existing = CommentedSeq()
+    # Fold dbt's deprecated `tests:` key into `data_tests:` — a container can't declare both, and
+    # we're about to add ours. Only touches containers this sync writes tests into.
+    legacy = container.pop("tests", None)
+    if isinstance(legacy, list):
+        existing.extend(legacy)
     for desired in desired_tests:
         test_name = _test_name(desired)
         if test_name is None:
@@ -1374,8 +1334,6 @@ _VERSIONED_SQL_RE = re.compile(r"^(?P<base>.+)_v(?P<v>\d+)$")
 def _locate_versioned_model_sql(model_paths: list[Path], model_name: str, model_version: str) -> Optional[Path]:
     """First `<model>_v<N>.sql` whose numeric version equals `model_version` (so `orders_v01.sql`
     matches version "1"). This is how the dbt files for a versioned model are found on disk."""
-    if not str(model_version).isdigit():
-        return None
     base, want = model_name.lower(), int(model_version)
     matches: list[Path] = []
     for root in model_paths:
@@ -1558,7 +1516,7 @@ def _ensure_version_bullet(versions: CommentedSeq, v: str, defined_in: Optional[
     bullet = _find_bullet(versions, v)
     if bullet is None:
         bullet = CommentedMap()
-        bullet["v"] = int(v) if str(v).isdigit() else v
+        bullet["v"] = int(v)
         if defined_in is not None:
             bullet["defined_in"] = defined_in  # file isn't dbt's default `<model>_v<N>.sql`
         versions.append(bullet)
@@ -1775,7 +1733,7 @@ def _reconcile_versioned_data_types(
     for desired_col in model_dict.get("columns") or []:
         col_name = desired_col["name"]
         prop = props_by_name.get(col_name.lower())
-        this_type, status = _resolve_column_type(prop, dialect) if prop else (None, "silent")
+        this_type, status = _resolve_column_type(prop, dialect)
         this_bullet = _find_bullet(versions, this_version)
         top_col = _find_column(entry, col_name)
 
@@ -1784,7 +1742,7 @@ def _reconcile_versioned_data_types(
             continue
         if status == "silent":
             if prune:
-                override = _bullet_column_override(this_bullet, col_name) if this_bullet else None
+                override = _bullet_column_override(this_bullet, col_name)
                 if override is not None:
                     override.pop("data_type", None)
                     _collapse_bare_override(this_bullet, override)
@@ -1815,14 +1773,18 @@ def _reconcile_versioned_data_types(
                     continue
                 if t == new_top:
                     override = _bullet_column_override(b, col_name)
-                    if override is not None:
+                    if override is not None and not override.get("data_tests"):
                         override.pop("data_type", None)
                         _collapse_bare_override(b, override)
+                    elif override is not None:
+                        # Override survives for divergent tests → keep data_type; dbt doesn't
+                        # inherit it into an existing override entry (breaks `contract.enforced`).
+                        override["data_type"] = t
                 else:
                     override = _bullet_column_override(b, col_name, create=True)
                     override["data_type"] = t
                     _set_override_description(override, top_col)
-        elif this_bullet is not None:
+        else:
             # Some sibling's type is still unknown (e.g. synced before types existed). Don't impose a
             # top-level type on it — put this version's type in its own bullet only.
             override = _bullet_column_override(this_bullet, col_name, create=True)
@@ -2486,36 +2448,25 @@ class DbtTestGenerationResult:
     generation_run: Run
 
 
-def _resolve_contract_path(contract: Optional[str], search_dir: Path) -> Path:
-    if contract:
-        contract_path = Path(contract).resolve()
-        if contract_path.is_dir():
-            raise DataContractException(
-                type="dbt_sync",
-                name="resolve contract",
-                reason=(
-                    f"{contract_path} is a directory, not a contract file. Pass --project-dir "
-                    f"{contract_path} if this is a dbt project and you want to sync all contained data contracts."
-                ),
-                engine="dbt-sync",
-            )
-        if not contract_path.is_file():
-            raise DataContractException(
-                type="dbt_sync",
-                name="resolve contract",
-                reason=f"Contract file not found: {contract_path}",
-                engine="dbt-sync",
-            )
-        return contract_path
-    return find_contract(search_dir)
+def _is_odcs_file(path: Path) -> bool:
+    """True if `path` is an ODCS data contract (`kind: DataContract`, `apiVersion: v3…`).
+
+    `dbt sync` and `dbt test` are ODCS-only; a non-ODCS, empty, or unparseable file returns False so
+    the caller can skip it rather than let the resolver silently coerce it into an empty contract.
+    """
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    return isinstance(data, dict) and is_open_data_contract_standard(data)
 
 
 def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path]:
     """Resolve requested contracts to a deduplicated, sorted list of paths.
 
     No tokens → discover every `*.odcs.yaml` under `search_dir`. Otherwise each token is a literal
-    path (error if missing) or, when it contains glob metacharacters, a glob pattern (error if it
-    matches nothing). Matches are unioned, deduplicated, and sorted.
+    path (error if missing) or, when it contains glob metacharacters, a glob pattern (a pattern that
+    matches nothing is silently ignored). Matches are unioned, deduplicated, and sorted.
     """
     if not contracts:
         candidates = sorted(p for p in search_dir.rglob("*.odcs.yaml") if p.is_file())
@@ -2536,14 +2487,9 @@ def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path
     resolved: dict[Path, None] = {}
     for token in contracts:
         if any(ch in token for ch in "*?["):
+            # A glob that matches nothing is silently ignored — globbing over optional locations is a
+            # normal way to invoke sync; an empty match is not an error.
             matches = sorted(p.resolve() for p in (Path(m) for m in glob.glob(token, recursive=True)) if p.is_file())
-            if not matches:
-                raise DataContractException(
-                    type="dbt_sync",
-                    name="resolve contract",
-                    reason=f"Pattern `{token}` matched no files.",
-                    engine="dbt-sync",
-                )
             for m in matches:
                 resolved[m] = None
         else:
@@ -2571,7 +2517,7 @@ def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path
 
 def generate_dbt_tests(
     *,
-    contract: Optional[str],
+    contract: str,
     project_dir: Optional[Path],
     schema_name: str = "all",
     model_resolution: ModelResolution = ModelResolution.name,
@@ -2589,7 +2535,7 @@ def generate_dbt_tests(
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir, explicit=explicit_project_dir)
 
-    contract_path = _resolve_contract_path(contract, project_dir)
+    contract_path = Path(contract).resolve()
     odcs = resolve_data_contract(str(contract_path))
     logger.info(f"Resolved contract {odcs.id}@{odcs.version} from {contract_path}")
     dialect = _resolve_type_dialect(odcs, server)
@@ -2730,13 +2676,21 @@ def generate_dbt_tests(
     contract_subdir = tests_dir / _slugify(odcs.id or "contract")
     this_version = _slugify(odcs.version or "no_version")
     own_prefix = f"{contract_subdir.name}__{this_version}__"
+    # Reconcile this version's own singular SQL: write only new/changed files and delete removed
+    # ones, so a no-op re-sync reports nothing.
+    desired = {contract_subdir / s.filename: s.sql for s in singular_tests}
     deleted_sql: list[Path] = []
+    written_sql: list[Path] = []
     if contract_subdir.is_dir():
         for sql in contract_subdir.glob(f"{own_prefix}*.sql"):
-            sql.unlink()
-            deleted_sql.append(sql)
-
-    written_sql = _write_singular_sql(contract_subdir, singular_tests)
+            if sql not in desired:
+                sql.unlink()
+                deleted_sql.append(sql)
+    for path, sql in desired.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not path.exists() or path.read_text(encoding="utf-8") != sql:
+            path.write_text(sql, encoding="utf-8")
+            written_sql.append(path)
 
     # Migrate v1.0.9's flat layout: remove our top-level `*.sql` (the dir is CLI-owned wholesale).
     for stale in tests_dir.glob("*.sql"):

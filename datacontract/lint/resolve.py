@@ -311,6 +311,15 @@ def _resolve_data_contract_from_str(
 ) -> OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 
+    if not isinstance(yaml_dict, dict):
+        raise DataContractException(
+            type="schema",
+            result=ResultEnum.failed,
+            name="Parse data contract",
+            reason="The data contract is empty or not a YAML mapping.",
+            engine="datacontract",
+        )
+
     if is_open_data_product_standard(yaml_dict):
         logging.info("Cannot import ODPS, as not supported")
         raise DataContractException(

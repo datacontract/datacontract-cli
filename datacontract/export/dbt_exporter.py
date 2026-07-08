@@ -61,8 +61,12 @@ def to_dbt_models_yaml(odcs: OpenDataContractStandard, server: str = None) -> st
     }
 
     if odcs.schema_:
+        # find out the dialect if possible
+        found_server = _get_server_by_name(odcs, server) if server else None
+        adapter_type = found_server.type if found_server is not None else server
+
         for schema_obj in odcs.schema_:
-            dbt_model = _to_dbt_model(schema_obj.name, schema_obj, odcs, adapter_type=server)
+            dbt_model = _to_dbt_model(schema_obj.name, schema_obj, odcs, adapter_type=adapter_type)
             dbt["models"].append(dbt_model)
     return yaml.safe_dump(dbt, indent=2, sort_keys=False, allow_unicode=True)
 

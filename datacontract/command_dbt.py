@@ -17,6 +17,7 @@ from datacontract.cli import (
 from datacontract.integration.dbt_sync import (
     ModelResolution,
     _ensure_dbt_project,
+    _is_odcs_file,
     _resolve_contract_paths,
     check_dbt_on_path,
     generate_dbt_tests,
@@ -74,14 +75,16 @@ def _check_model_ownership(owners_by_model: dict) -> None:
         versions = [o.contract_version for o in owners]
         if len(ids) > 1:
             listed = ", ".join(f"{o.path.name} ({o.contract_id})" for o in owners)
-            errors.append(f"  - `{model}` is claimed by different contracts: {listed}")
+            errors.append(
+                f"  - `{model}` is claimed by different contracts. If those are versions of the same contract, make sure they have the same ID: {listed}"
+            )
         elif len(set(versions)) != len(versions):
-            errors.append(f"  - `{model}`: two contracts share id `{next(iter(ids))}` and version `{versions[0]}`")
+            errors.append(f"  - `{model}`: Two contracts share ID `{next(iter(ids))}` and version `{versions[0]}`.")
         elif any(o.dbt_version is None for o in owners):
             listed = ", ".join(o.path.name for o in owners if o.dbt_version is None)
             errors.append(
-                f"  - `{model}`: same-id versions can't map to dbt model versions "
-                f"(need a `v<N>` filename and a `{model}_v<N>.sql`): {listed}"
+                f"  - `{model}` is claimed by different contracts. If those are versions of the same contract, "
+                f"rename the files to contain the version number followed by the letter `v`, e.g. `my-contract-v1.odcs.yaml`: {listed}"
             )
     if errors:
         console.print("[red]Cannot sync — overlapping dbt models:\n" + "\n".join(errors) + "[/red]")
@@ -89,14 +92,15 @@ def _check_model_ownership(owners_by_model: dict) -> None:
 
 
 def _validate_server_declared(odcs, server: Optional[str]) -> None:
-    """Reject a `--server` that the contract doesn't declare (when it declares any)."""
-    if server is not None and odcs.servers:
-        known = [s.server for s in odcs.servers if s.server]
-        if server not in known:
-            console.print(
-                f"[red]--server {server!r} is not declared in the contract. Available: {', '.join(known) or '(none)'}[/red]"
-            )
-            raise typer.Exit(code=1)
+    """Reject a `--server` that the contract doesn't declare."""
+    if server is None:
+        return
+    known = [s.server for s in odcs.servers or [] if s.server]
+    if server not in known:
+        console.print(
+            f"[red]--server {server!r} is not declared in the contract. Available: {', '.join(known) or '(none)'}[/red]"
+        )
+        raise typer.Exit(code=1)
 
 
 def _maybe_publish(run: Run, odcs, publish: Optional[str], ssl_verification: bool) -> bool:
@@ -107,7 +111,7 @@ def _maybe_publish(run: Run, odcs, publish: Optional[str], ssl_verification: boo
         if not odcs.servers:
             console.print(
                 "[yellow]Skipping publish: the contract declares no servers. "
-                "Add a `servers:` block or pass --server to identify the run.[/yellow]"
+                "Add a `servers:` block to identify the run.[/yellow]"
             )
         else:
             known = ", ".join(s.server for s in odcs.servers if s.server) or "(none)"
@@ -129,7 +133,7 @@ def _report_run(run: Run, *, run_only: bool, publish_failed: bool, ctx: _Contrac
                 "generate tests from your contract.[/yellow]"
             )
         else:
-            console.print("[yellow]No test results parsed.[/yellow]")
+            console.print("[yellow]No tests ran for this contract.[/yellow]")
         return publish_failed
 
     print_test_results_table(run, console)
@@ -314,14 +318,14 @@ def sync_command(
         bool,
         typer.Option(
             "--run-tests/--skip-tests",
-            help="Run `dbt test` on the generated tests after syncing. Default: skip (generate only). Required by --publish/--server.",
+            help="Run `dbt test` on the generated tests after syncing. Default: skip (generate only).",
         ),
     ] = False,
     publish: Annotated[Optional[str], typer.Option(help="The url to publish the results after the test.")] = None,
     server: Annotated[
         Optional[str],
         typer.Option(
-            help="ODCS server name for published test results. Auto-selected if the contract contains only one server. Otherwise defaults to --target.",
+            help="Selected ODCS server. Determines the dialect for data types and for the server label when publishing results. Default: Auto-selected if only one server exists, else --target.",
         ),
     ] = None,
     ssl_verification: Annotated[bool, typer.Option(help="SSL verification when publishing test results.")] = True,
@@ -336,14 +340,17 @@ def sync_command(
     enable_debug_logging(debug)
     validate_publish_url(publish)
 
-    if (publish is not None or server is not None) and not run_tests_flag:
-        console.print("[red]--publish/--server require --run-tests.[/red]")
+    if publish is not None and not run_tests_flag:
+        console.print("[red]--publish requires --run-tests.[/red]")
         raise typer.Exit(code=1)
 
     explicit_project_dir = project_dir is not None
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir, explicit=explicit_project_dir)
     paths = _resolve_contract_paths(contract or [], project_dir)
+    if paths and not any(_is_odcs_file(p) for p in paths):
+        console.print("[red]None of the passed contracts are valid ODCS data contracts.[/red]")
+        raise typer.Exit(code=1)
     multiple_contracts = len(paths) > 1
 
     # Load + resolve models for the ownership pre-flight, before any contract writes to disk.
@@ -351,6 +358,9 @@ def sync_command(
     error_rows: list[tuple[Path, str]] = []
     owners_by_model: dict = {}
     for path in paths:
+        if not _is_odcs_file(path):
+            console.print(f"[yellow]Skipping {path}: not an ODCS data contract.[/yellow]")
+            continue
         try:
             odcs = resolve_data_contract(str(path))
             model_names = list(resolve_model_names(odcs, model_resolution, schema_name).values())
@@ -443,7 +453,7 @@ def test_command(
     server: Annotated[
         Optional[str],
         typer.Option(
-            help="ODCS server name for published test results. Auto-selected if the contract contains only one server. Otherwise defaults to --target.",
+            help="Selected ODCS server, used as the server label when publishing results. Default: Auto-selected if only one server exists, else --target.",
         ),
     ] = None,
     ssl_verification: Annotated[bool, typer.Option(help="SSL verification when publishing test results.")] = True,
@@ -468,7 +478,11 @@ def test_command(
     ctxs: list[_ContractCtx] = []
     error_rows: list[tuple[Path, str]] = []
     owners_by_model: dict = {}
+    skipped: list[Path] = []
     for path in paths:
+        if not _is_odcs_file(path):
+            skipped.append(path)
+            continue
         try:
             odcs = resolve_data_contract(str(path))
         except Exception as e:
@@ -491,6 +505,12 @@ def test_command(
             owners_by_model.setdefault(model, []).append(
                 _Owner(path, odcs.id, odcs.version or "no_version", dbt_version)
             )
+
+    if paths and not ctxs and not error_rows:
+        console.print("[red]None of the passed contracts are valid ODCS data contracts.[/red]")
+        raise typer.Exit(code=1)
+    for path in skipped:
+        console.print(f"[yellow]Skipping {path}: not an ODCS data contract.[/yellow]")
 
     _check_model_ownership(owners_by_model)
     for c in ctxs:
