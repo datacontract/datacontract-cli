@@ -261,9 +261,9 @@ def map_type_from_bigquery(bigquery_type_str: str) -> str:
         "STRING": "string",
         "BYTES": "array",
         "INTEGER": "integer",
-        "INT64": "integer", # for dbt-bigquery
+        "INT64": "integer",  # for dbt-bigquery
         "FLOAT": "number",
-        "FLOAT64": "number", # for dbt-bigquery
+        "FLOAT64": "number",  # for dbt-bigquery
         "BOOLEAN": "boolean",
         "BOOL": "boolean",
         "TIMESTAMP": "timestamp",
