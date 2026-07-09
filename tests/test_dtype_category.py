@@ -1,7 +1,11 @@
 import ibis.expr.datatypes as dt
 from open_data_contract_standard.model import SchemaProperty
 
-from datacontract.engines.checks.type_normalize import UNKNOWN_LOGICAL_TYPE, schema_property_matches
+from datacontract.engines.checks.type_normalize import (
+    UNKNOWN_LOGICAL_TYPE,
+    schema_property_matches,
+    schema_property_mismatch_reason,
+)
 from datacontract.engines.ibis.dtype_category import (
     ibis_dtype_category,
     ibis_dtype_to_schema_property,
@@ -42,6 +46,15 @@ def test_map_maps_to_opaque_object():
     assert prop is not None
     assert prop.logicalType == "object"
     assert prop.properties is None
+
+
+def test_struct_without_representable_fields_is_not_untyped():
+    # properties=None means untyped map; a struct keeps its (possibly empty) field list
+    actual = ibis_dtype_to_schema_property(dt.Struct({"blob": dt.binary}))
+    expected = SchemaProperty(logicalType="object", properties=[SchemaProperty(name="city", logicalType="string")])
+    assert actual.properties == []
+    assert not schema_property_matches(expected, actual)
+    assert schema_property_mismatch_reason(expected, actual) == "field 'city' is missing"
 
 
 def test_array_of_json_items_are_unknown():
