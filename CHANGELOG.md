@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract test` now verifies `logicalType` for Snowflake `OBJECT`/`ARRAY` columns
+
 ## [1.0.10] - 2026-07-08
 
 ### Added

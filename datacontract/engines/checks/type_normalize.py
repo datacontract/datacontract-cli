@@ -14,6 +14,12 @@ import re
 
 from open_data_contract_standard.model import SchemaProperty
 
+# logicalType marker for a dynamically-typed column the backend cannot describe
+# (ibis json: Snowflake VARIANT, Postgres JSONB, BigQuery JSON). Its storage
+# constrains nothing, so no declared type can be confirmed against it. As a
+# nested element it is skipped here; a top-level occurrence is failed in _run_type.
+UNKNOWN_LOGICAL_TYPE = "__unknown__"
+
 
 def normalize_type_name(type_name: str | None) -> str | None:
     """Map a contract type name (logical or physical) to one of the 9 ODCS categories.
@@ -132,6 +138,9 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
         return True
     if actual is None:
         return False
+    if actual.logicalType == UNKNOWN_LOGICAL_TYPE:
+        # unknown inner type (json element/value): unconfirmable, so skip
+        return True
 
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
@@ -150,6 +159,9 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
 
     if expected_base == "object":
         if not expected.properties:
+            return True
+        if actual.properties is None:
+            # opaque object (ibis map): inner structure unknowable, skip descent
             return True
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
         for exp_field in expected.properties:
@@ -197,6 +209,9 @@ def schema_property_mismatch_reasons(
         exp_str = expected.logicalType or expected.physicalType
         errors.append(f"{field_label}: expected type '{exp_str}' but the column type could not be determined")
         return errors
+    if actual.logicalType == UNKNOWN_LOGICAL_TYPE:
+        # unknown inner type (json element/value): unconfirmable, so skip
+        return errors
 
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
@@ -217,6 +232,9 @@ def schema_property_mismatch_reasons(
 
     if expected_base == "object":
         if not expected.properties:
+            return errors
+        if actual.properties is None:
+            # opaque object (ibis map): inner structure unknowable, skip descent
             return errors
 
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}

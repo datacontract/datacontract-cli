@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 from open_data_contract_standard.model import SchemaProperty
 
+from datacontract.engines.checks.type_normalize import UNKNOWN_LOGICAL_TYPE
+
 if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
 
@@ -53,7 +55,7 @@ def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty | None:
 
     Returns a ``SchemaProperty`` with ``logicalType`` set to one of the 9 ODCS
     categories, recursively populating ``properties`` for structs and ``items``
-    for arrays. Returns ``None`` for unsupported types (binary, map, null, etc.)
+    for arrays. Returns ``None`` for unsupported types (binary, null, etc.)
     so the caller can skip comparison rather than raising a false failure.
     """
     try:
@@ -88,6 +90,12 @@ def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty | None:
         if dtype.is_array():
             element = ibis_dtype_to_schema_property(dtype.value_type)
             return SchemaProperty(logicalType="array", items=element)
+        if dtype.is_map():
+            # base is confirmable, inner values are not (yet)
+            return SchemaProperty(logicalType="object", properties=None)
+        if dtype.is_json():
+            # json is the fallback type which could be everything
+            return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE)
     except AttributeError:
         return None
     return None
