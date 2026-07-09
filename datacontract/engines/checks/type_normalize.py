@@ -138,9 +138,6 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
         return True
     if actual is None:
         return False
-    if actual.logicalType == UNKNOWN_LOGICAL_TYPE:
-        # unknown inner type (json element/value): unconfirmable, so skip
-        return True
 
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
@@ -148,6 +145,8 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
     if expected_base is None:
         return True
     if actual_base is None:
+        # actual is unsupported or dynamically typed (json element/variant): a
+        # declared concrete type can't be confirmed against it, so it fails.
         return False
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         return False
@@ -160,9 +159,8 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
     if expected_base == "object":
         if not expected.properties:
             return True
-        if actual.properties is None:
-            # opaque object (ibis map): inner structure unknowable, skip descent
-            return True
+        # actual.properties is None for an opaque object (ibis map/variant): the
+        # empty lookup below fails every declared field, which is what we want.
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
         for exp_field in expected.properties:
             if not exp_field.name:
@@ -209,14 +207,19 @@ def schema_property_mismatch_reasons(
         exp_str = expected.logicalType or expected.physicalType
         errors.append(f"{field_label}: expected type '{exp_str}' but the column type could not be determined")
         return errors
-    if actual.logicalType == UNKNOWN_LOGICAL_TYPE:
-        # unknown inner type (json element/value): unconfirmable, so skip
-        return errors
-
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
 
     if expected_base is None:
+        return errors
+
+    if actual_base is None:
+        # actual is unsupported or dynamically typed (json element/variant): the
+        # declared type can't be verified against an opaque column.
+        exp_str = expected.logicalType or expected.physicalType
+        errors.append(
+            f"{field_label}: declared as '{exp_str}' but the column is dynamically typed (json/variant) and can't be verified"
+        )
         return errors
 
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
@@ -234,7 +237,10 @@ def schema_property_mismatch_reasons(
         if not expected.properties:
             return errors
         if actual.properties is None:
-            # opaque object (ibis map): inner structure unknowable, skip descent
+            errors.append(
+                f"{field_label}: declared with nested fields but the column is an opaque object "
+                "(map/variant) whose structure can't be verified; use a structured type or specify physicalType"
+            )
             return errors
 
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}

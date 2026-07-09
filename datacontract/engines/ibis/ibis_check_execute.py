@@ -22,6 +22,7 @@ from datacontract.engines.checks.type_normalize import schema_property_matches, 
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
 from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
+from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -196,6 +197,12 @@ def _run_model(
     if any(spec.metric == MetricType.FIELD_PHYSICAL_TYPE for spec in specs):
         native_types = fetch_native_types(con, server, model)
 
+    # Snowflake collapses structured OBJECT/ARRAY nesting in the ibis dtype; read
+    # the real nested types from SHOW COLUMNS so field_type checks can recurse.
+    structured_types = None
+    if get_server_type(server) == "snowflake" and any(spec.metric == MetricType.FIELD_TYPE for spec in specs):
+        structured_types = fetch_structured_types(con, server, model)
+
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
         try:
@@ -219,7 +226,7 @@ def _run_model(
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
-                _run_type(run, schema, columns, spec)
+                _run_type(run, schema, columns, spec, structured_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
                 _run_physical_type(run, con, server, schema, columns, native_types, spec)
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
@@ -615,7 +622,7 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
     )
 
 
-def _run_type(run: Run, schema, columns, spec: CheckSpec):
+def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types=None):
     _set_impl(
         run,
         spec.key,
@@ -628,13 +635,16 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
     dtype = schema[actual_col]
-    actual_prop = ibis_dtype_to_schema_property(dtype)
+    # Snowflake structured types come back collapsed from ibis; prefer the nested
+    # tree recovered from SHOW COLUMNS when available.
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
     _set_diagnostics(
         run,
         spec.key,
         _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label, actual=str(dtype)),
     )
-    if dtype.is_json() or dtype.is_unknown():
+    if structured_prop is None and (dtype.is_json() or dtype.is_unknown()):
         _set_result(
             run,
             spec.key,

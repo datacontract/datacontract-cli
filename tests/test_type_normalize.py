@@ -32,9 +32,17 @@ def _unknown():
     return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE)
 
 
-def test_opaque_object_matches_declared_object_with_properties():
-    # OBJECT column declared with nested properties: base enforced, inner skipped.
+def test_opaque_object_fails_declared_object_with_properties():
+    # OBJECT column declared with nested properties, but the actual column is an
+    # opaque object (untyped OBJECT / MAP): the nested types can't be verified.
     expected = SchemaProperty(logicalType="object", properties=[SchemaProperty(name="city", logicalType="string")])
+    assert not schema_property_matches(expected, _opaque_object())
+    assert "can't be verified" in schema_property_mismatch_reason(expected, _opaque_object())
+
+
+def test_bare_object_matches_opaque_object():
+    # No nested properties declared: the base 'object' is confirmable, so it passes.
+    expected = SchemaProperty(logicalType="object")
     assert schema_property_matches(expected, _opaque_object())
     assert schema_property_mismatch_reason(expected, _opaque_object()) == ""
 
@@ -44,10 +52,18 @@ def test_opaque_object_fails_against_wrong_base():
     assert not schema_property_matches(expected, _opaque_object())
 
 
-def test_array_with_typed_items_matches_unknown_element():
-    # ARRAY reflects as array<json>; a declared items type must not fail on the
-    # unknown element (inner types are skipped, never asserted).
+def test_array_with_typed_items_fails_unknown_element():
+    # ARRAY reflects as array<json>; a declared items type can't be verified
+    # against the dynamically-typed element, so it fails.
     expected = SchemaProperty(logicalType="array", items=SchemaProperty(logicalType="number"))
+    actual = SchemaProperty(logicalType="array", items=_unknown())
+    assert not schema_property_matches(expected, actual)
+    assert "can't be verified" in schema_property_mismatch_reason(expected, actual)
+
+
+def test_bare_array_matches_unknown_element():
+    # No items declared: the base 'array' is confirmable, so it passes.
+    expected = SchemaProperty(logicalType="array")
     actual = SchemaProperty(logicalType="array", items=_unknown())
     assert schema_property_matches(expected, actual)
     assert schema_property_mismatch_reason(expected, actual) == ""
