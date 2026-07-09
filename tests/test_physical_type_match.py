@@ -1,5 +1,6 @@
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.ibis.native_type import (
+    _rows,
     reconstruct_native_type,
     supports_native_type_introspection,
 )
@@ -123,3 +124,24 @@ def test_reconstruct_integer_ignores_numeric_precision():
 
 def test_reconstruct_none():
     assert reconstruct_native_type(None) is None
+
+
+# --- _rows -----------------------------------------------------------------
+class _SparkLikeDataFrame:
+    """Iterating a Spark DataFrame yields Column objects, not rows; only
+    ``collect()`` returns the rows."""
+
+    def __iter__(self):
+        raise AssertionError("must not iterate a Spark DataFrame")
+
+    def collect(self):
+        return [("postal_code", "string", None, None, None)]
+
+
+class _SparkLikeConnection:
+    def raw_sql(self, query):
+        return _SparkLikeDataFrame()
+
+
+def test_rows_collects_spark_dataframe():
+    assert _rows(_SparkLikeConnection(), "select 1") == [("postal_code", "string", None, None, None)]
