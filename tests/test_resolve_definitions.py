@@ -449,8 +449,27 @@ def test_semantics_iri_without_api_key_raises(env, monkeypatch):
     prop = _semantics_prop(iri)
     with pytest.raises(DataContractException) as exc:
         inline_definitions_into_data_contract(_contract(prop))
-    assert "API key" in str(exc.value)
+    msg = str(exc.value)
+    assert "API key" in msg
+    # The host mismatch is the likely root cause, so the fix is named explicitly.
+    assert "ENTROPY_DATA_HOST=http://www.entropy-data.com" in msg
     assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_semantics_iri_403_suggests_setting_host(env):
+    """A 403 from the lookup usually means the configured host is the wrong
+    deployment for this IRI; the error must name the ENTROPY_DATA_HOST fix
+    instead of leaving the user to suspect their API key."""
+    iri = "http://www.entropy-data.com/ns/main/Article"
+    responses.add(responses.GET, f"{_HOST}/api/semantics", status=403)
+
+    prop = _semantics_prop(iri)
+    with pytest.raises(DataContractException) as exc:
+        inline_definitions_into_data_contract(_contract(prop))
+    msg = str(exc.value)
+    assert "HTTP 403" in msg
+    assert "ENTROPY_DATA_HOST=http://www.entropy-data.com" in msg
 
 
 @responses.activate

@@ -206,15 +206,18 @@ def _resolve_definition(url: str, type_: str) -> SchemaProperty:
     if url in _definition_cache:
         return _definition_cache[url]
 
-    target_url, headers = _build_request(url, type_)
+    target_url, headers, host_hint = _build_request(url, type_)
 
     try:
         response = requests.get(target_url, headers=headers, timeout=10)
     except requests.RequestException as e:
-        raise _definition_resolution_error(url, target_url, str(e), original_exception=e)
+        raise _definition_resolution_error(url, target_url, str(e), original_exception=e, hint=host_hint)
 
     if response.status_code != 200:
-        raise _definition_resolution_error(url, target_url, f"HTTP {response.status_code} {response.reason}")
+        # 401/403 here almost always means the configured host is the wrong
+        # deployment for this IRI, so surface the ENTROPY_DATA_HOST hint.
+        hint = host_hint if response.status_code in (401, 403) else None
+        raise _definition_resolution_error(url, target_url, f"HTTP {response.status_code} {response.reason}", hint=hint)
 
     try:
         definition = SchemaProperty.model_validate_json(response.content)
@@ -227,8 +230,13 @@ def _resolve_definition(url: str, type_: str) -> SchemaProperty:
     return definition
 
 
-def _build_request(url: str, type_: str) -> tuple[str, dict[str, str]]:
-    """Return the URL to fetch and the headers to use for a given reference.
+def _build_request(url: str, type_: str) -> tuple[str, dict[str, str], str | None]:
+    """Return the URL to fetch, the headers to use, and an optional host hint.
+
+    The third element is a copy-pasteable ENTROPY_DATA_HOST suggestion that
+    callers append to any auth/transport error from the lookup. It is only set
+    for the off-host semantics IRI case below, where a host mismatch is the most
+    common reason the lookup fails (401/403); it is None otherwise.
 
     Three cases:
       - URL on the configured host (relative path or matching absolute URL):
@@ -252,25 +260,26 @@ def _build_request(url: str, type_: str) -> tuple[str, dict[str, str]]:
         api_key = _get_api_key_or_none()
         if api_key is not None:
             headers["x-api-key"] = api_key
-        return direct_url, headers
+        return direct_url, headers, None
 
     if type_ == "definition":
         # Third-party REST URL: fetch anonymously, no IRI fallback.
-        return direct_url, headers
+        return direct_url, headers, None
 
     # Off-host semantics reference: IRI lookup against the configured host.
+    host_hint = _host_mismatch_hint(url, configured_host)
     api_key = _get_api_key_or_none()
     if api_key is None:
         raise _definition_resolution_error(
             url,
             f"{configured_host.rstrip('/')}/api/semantics",
-            "the reference looks like an IRI (host does not match the configured "
-            "entropy-data host); resolving an IRI goes through /api/semantics which "
-            "requires an API key (set ENTROPY_DATA_API_KEY)",
+            "the reference looks like an IRI, so it is resolved through /api/semantics, "
+            "which requires an API key: set ENTROPY_DATA_API_KEY",
+            hint=host_hint,
         )
     headers["x-api-key"] = api_key
     lookup_url = f"{configured_host.rstrip('/')}/api/semantics?iri={quote(url, safe='')}"
-    return lookup_url, headers
+    return lookup_url, headers, host_hint
 
 
 def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProperty):
@@ -291,10 +300,29 @@ def _hosts_match(url: str, host: str) -> bool:
     return urlparse(url).netloc == urlparse(host).netloc
 
 
+def _host_mismatch_hint(url: str, configured_host: str) -> str:
+    """Actionable hint for the usual cause of a failed IRI lookup: the
+    configured entropy-data host (default https://api.entropy-data.com) is not
+    the deployment that serves this IRI. Names the exact ENTROPY_DATA_HOST value
+    to set -- derived from the IRI's own host -- so the fix is copy-pasteable
+    instead of leaving the user to guess that the host, not the API key, is wrong.
+    """
+    iri = urlparse(url)
+    suggested = f"{iri.scheme}://{iri.netloc}" if iri.scheme and iri.netloc else iri.netloc
+    return (
+        f"the IRI's host '{iri.netloc}' does not match the configured entropy-data host "
+        f"'{urlparse(configured_host).netloc}'; if your contract is served from "
+        f"'{iri.netloc}', set ENTROPY_DATA_HOST={suggested} so the /api/semantics lookup "
+        f"and your API key target that deployment"
+    )
+
+
 def _definition_resolution_error(
-    url: str, target_url: str, detail: str, original_exception: Exception | None = None
+    url: str, target_url: str, detail: str, original_exception: Exception | None = None, hint: str | None = None
 ) -> DataContractException:
     reason = f"Could not resolve business definition '{url}' from {target_url}: {detail}"
+    if hint:
+        reason = f"{reason} — {hint}"
     logging.warning(reason)
     return DataContractException(
         type="lint",
