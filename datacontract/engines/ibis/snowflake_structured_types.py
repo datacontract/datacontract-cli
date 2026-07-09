@@ -48,7 +48,7 @@ def _to_property(node: dict) -> Optional[SchemaProperty]:
     if node_type == "OBJECT":
         fields = node.get("fields")
         if not fields:
-            return None  # untyped/semi-structured OBJECT: opaque
+            return None  # untyped/semi-structured OBJECT
         properties = []
         for field in fields:
             child = _to_property(field.get("fieldType") or {})
@@ -66,7 +66,7 @@ def _to_property(node: dict) -> Optional[SchemaProperty]:
     if node_type == "ARRAY":
         element = node.get("elementType")
         if not element:
-            return None  # untyped/semi-structured ARRAY: opaque
+            return None  # untyped/semi-structured ARRAY
         return SchemaProperty(logicalType="array", items=_to_property(element))
     if node_type == "MAP":
         return None  # dynamic keys can't be matched to named contract properties

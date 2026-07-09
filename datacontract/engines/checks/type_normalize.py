@@ -159,7 +159,7 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
     if expected_base == "object":
         if not expected.properties:
             return True
-        # actual.properties is None for an opaque object (ibis map/variant): the
+        # actual.properties is None for an untyped object (ibis map/variant): the
         # empty lookup below fails every declared field, which is what we want.
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
         for exp_field in expected.properties:
@@ -215,7 +215,7 @@ def schema_property_mismatch_reasons(
 
     if actual_base is None:
         # actual is unsupported or dynamically typed (json element/variant): the
-        # declared type can't be verified against an opaque column.
+        # declared type can't be verified against an untyped column.
         exp_str = expected.logicalType or expected.physicalType
         errors.append(
             f"{field_label}: declared as '{exp_str}' but the column is dynamically typed (json/variant) and can't be verified"
@@ -238,7 +238,7 @@ def schema_property_mismatch_reasons(
             return errors
         if actual.properties is None:
             errors.append(
-                f"{field_label}: declared with nested fields but the column is an opaque object "
+                f"{field_label}: declared with nested fields but the column is an untyped object "
                 "(map/variant) whose structure can't be verified; use a structured type or specify physicalType"
             )
             return errors

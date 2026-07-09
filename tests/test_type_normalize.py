@@ -22,7 +22,7 @@ def test_normalize_oracle_string_types():
     assert normalize_type_name("nvarchar2(100)") == "string"
 
 
-def _opaque_object():
+def _untyped_object():
     # what ibis_dtype_to_schema_property produces for a Snowflake OBJECT (map)
     return SchemaProperty(logicalType="object", properties=None)
 
@@ -32,24 +32,24 @@ def _unknown():
     return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE)
 
 
-def test_opaque_object_fails_declared_object_with_properties():
+def test_untyped_object_fails_declared_object_with_properties():
     # OBJECT column declared with nested properties, but the actual column is an
-    # opaque object (untyped OBJECT / MAP): the nested types can't be verified.
+    # untyped object (untyped OBJECT / MAP): the nested types can't be verified.
     expected = SchemaProperty(logicalType="object", properties=[SchemaProperty(name="city", logicalType="string")])
-    assert not schema_property_matches(expected, _opaque_object())
-    assert "can't be verified" in schema_property_mismatch_reason(expected, _opaque_object())
+    assert not schema_property_matches(expected, _untyped_object())
+    assert "can't be verified" in schema_property_mismatch_reason(expected, _untyped_object())
 
 
-def test_bare_object_matches_opaque_object():
+def test_bare_object_matches_untyped_object():
     # No nested properties declared: the base 'object' is confirmable, so it passes.
     expected = SchemaProperty(logicalType="object")
-    assert schema_property_matches(expected, _opaque_object())
-    assert schema_property_mismatch_reason(expected, _opaque_object()) == ""
+    assert schema_property_matches(expected, _untyped_object())
+    assert schema_property_mismatch_reason(expected, _untyped_object()) == ""
 
 
-def test_opaque_object_fails_against_wrong_base():
+def test_untyped_object_fails_against_wrong_base():
     expected = SchemaProperty(logicalType="array")
-    assert not schema_property_matches(expected, _opaque_object())
+    assert not schema_property_matches(expected, _untyped_object())
 
 
 def test_array_with_typed_items_fails_unknown_element():
@@ -70,7 +70,7 @@ def test_bare_array_matches_unknown_element():
 
 
 def test_real_struct_still_descends_and_fails_on_wrong_nested_type():
-    # Guard: a genuinely-typed nested structure (not opaque) is still validated.
+    # Guard: a genuinely-typed nested structure (not untyped) is still validated.
     expected = SchemaProperty(logicalType="object", properties=[SchemaProperty(name="a", logicalType="string")])
     actual = SchemaProperty(logicalType="object", properties=[SchemaProperty(name="a", logicalType="integer")])
     assert not schema_property_matches(expected, actual)

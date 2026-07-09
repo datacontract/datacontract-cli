@@ -55,7 +55,7 @@ def test_leaf_token_mapping():
     assert _prop('{"type":"REAL"}').logicalType == "number"
 
 
-def test_opaque_types_yield_no_tree():
+def test_untyped_types_yield_no_tree():
     # plain VARIANT, untyped OBJECT/ARRAY, and MAP carry nothing to recurse into.
     assert _to_property({"type": "VARIANT"}) is None
     assert _to_property({"type": "OBJECT"}) is None
