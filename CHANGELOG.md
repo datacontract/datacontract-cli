@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract import` against BigQuery and dbt (BigQuery adapter) now supports compound BigQuery types such as `ARRAY<STRUCT<...>>`, `STRUCT<...>`, `STRING(n)`, and `NUMERIC(p, s)` instead of failing with `Unsupported type`.
+
 ## [1.0.10] - 2026-07-08
 
 ### Added

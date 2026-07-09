@@ -3,7 +3,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.imports.dbt_importer import read_dbt_manifest
+from datacontract.imports.dbt_importer import import_dbt_manifest, read_dbt_manifest
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -154,3 +154,115 @@ def test_cli_versioned_filter_v1():
     assert result.exit_code == 0
     parsed = yaml.safe_load(result.output)
     assert parsed.get("schema"), "Expected non-empty schema in CLI output for mart_orders.v1"
+
+
+# --- BigQuery compound data_type tests (ARRAY<STRUCT<...>>) ---------------------
+
+
+def _make_bigquery_manifest(columns: dict) -> dict:
+    """Build a minimal dbt manifest with a single BigQuery model and the given columns."""
+    return {
+        "metadata": {
+            "project_name": "test_project",
+            "dbt_version": "1.8.0",
+            "adapter_type": "bigquery",
+        },
+        "nodes": {
+            "model.test_project.customers": {
+                "unique_id": "model.test_project.customers",
+                "resource_type": "model",
+                "name": "customers",
+                "description": "Test customer model",
+                "config": {"materialized": "table"},
+                "columns": columns,
+            }
+        },
+        "child_map": {"model.test_project.customers": []},
+    }
+
+
+def test_import_dbt_bigquery_array_of_empty_struct():
+    """Reproduces the original bug: ``ARRAY<STRUCT<>>`` used to raise ``Unsupported type``."""
+    manifest = _make_bigquery_manifest(
+        {
+            "incomeDetails": {
+                "name": "incomeDetails",
+                "data_type": "ARRAY<STRUCT<>>",
+                "description": "Income details of the customer.",
+            }
+        }
+    )
+
+    result = import_dbt_manifest(manifest, dbt_nodes=[], resource_types=["model"])
+
+    assert len(result.schema_) == 1
+    props = result.schema_[0].properties
+    assert len(props) == 1
+    income = props[0]
+    assert income.name == "incomeDetails"
+    assert income.logicalType == "array"
+    assert income.description == "Income details of the customer."
+    assert income.items is not None
+    assert income.items.logicalType == "object"
+    assert income.items.physicalType == "STRUCT"
+    assert income.items.properties is None
+
+
+def test_import_dbt_bigquery_array_of_struct_with_named_fields():
+    manifest = _make_bigquery_manifest(
+        {
+            "incomeDetails": {
+                "name": "incomeDetails",
+                "data_type": "ARRAY<STRUCT<source STRING, amount NUMERIC(10, 2)>>",
+                "description": "Income details of the customer.",
+            }
+        }
+    )
+
+    result = import_dbt_manifest(manifest, dbt_nodes=[], resource_types=["model"])
+    income = result.schema_[0].properties[0]
+    assert income.logicalType == "array"
+    items = income.items
+    assert items.logicalType == "object"
+    assert items.physicalType == "STRUCT"
+    assert [p.name for p in items.properties] == ["source", "amount"]
+    amount = next(p for p in items.properties if p.name == "amount")
+    amount_custom = {cp.property: cp.value for cp in (amount.customProperties or [])}
+    assert amount_custom == {"precision": 10, "scale": 2}
+
+
+def test_import_dbt_bigquery_struct_column():
+    manifest = _make_bigquery_manifest(
+        {
+            "address": {
+                "name": "address",
+                "data_type": "STRUCT<street STRING, zip INT64>",
+                "description": "Postal address.",
+            }
+        }
+    )
+
+    result = import_dbt_manifest(manifest, dbt_nodes=[], resource_types=["model"])
+    address = result.schema_[0].properties[0]
+    assert address.logicalType == "object"
+    assert address.physicalType == "STRUCT"
+    assert [p.name for p in address.properties] == ["street", "zip"]
+    assert [p.logicalType for p in address.properties] == ["string", "integer"]
+
+
+def test_import_dbt_bigquery_scalar_columns_still_work():
+    """Regression guard: simple BigQuery types keep their previous behaviour."""
+    manifest = _make_bigquery_manifest(
+        {
+            "id": {"name": "id", "data_type": "INT64", "description": "PK"},
+            "name": {"name": "name", "data_type": "STRING(50)"},
+        }
+    )
+
+    result = import_dbt_manifest(manifest, dbt_nodes=[], resource_types=["model"])
+    id_prop, name_prop = result.schema_[0].properties
+    assert id_prop.logicalType == "integer"
+    assert id_prop.physicalType == "INT64"
+    assert name_prop.logicalType == "string"
+    assert name_prop.physicalType == "STRING"
+    assert name_prop.logicalTypeOptions == {"maxLength": 50}
