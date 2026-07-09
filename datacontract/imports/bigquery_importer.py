@@ -274,7 +274,7 @@ def map_type_from_bigquery(bigquery_type_str: str) -> str:
         "BIGNUMERIC": "number",
         "GEOGRAPHY": "object",
         "JSON": "object",
-        "INTERVAL": "number",
+        "INTERVAL": "string",
     }
 
     if bigquery_type_str in type_mapping:
