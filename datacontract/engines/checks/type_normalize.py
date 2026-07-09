@@ -14,10 +14,11 @@ import re
 
 from open_data_contract_standard.model import SchemaProperty
 
-# logicalType marker for a dynamically-typed column the backend cannot describe
-# (ibis json: Snowflake VARIANT, Postgres JSONB, BigQuery JSON). Its storage
-# constrains nothing, so no declared type can be confirmed against it. As a
-# nested element it is skipped here; a top-level occurrence is failed in _run_type.
+# logicalType marker for a field whose type the backend cannot describe: a
+# dynamically-typed column (ibis json: Snowflake VARIANT, Postgres JSONB,
+# BigQuery JSON) or an unsupported one (binary, geography). No declared type can
+# be confirmed against it, so any expected type fails rather than silently passing.
+# Distinct from a missing field, which is what dropping it would look like.
 UNKNOWN_LOGICAL_TYPE = "__unknown__"
 
 
@@ -214,11 +215,12 @@ def schema_property_mismatch_reasons(
         return errors
 
     if actual_base is None:
-        # actual is unsupported or dynamically typed (json element/variant): the
-        # declared type can't be verified against an untyped column.
         exp_str = expected.logicalType or expected.physicalType
+        act_str = actual.physicalType or "unknown"
         errors.append(
-            f"{field_label}: declared as '{exp_str}' but the column is dynamically typed (json/variant) and can't be verified"
+            f"{field_label}: has type '{act_str}', but the contract specifies '{exp_str}'. "
+            f"A '{act_str}' value has no verifiable logical type. "
+            "If this is intentional, specify the native type as physicalType."
         )
         return errors
 

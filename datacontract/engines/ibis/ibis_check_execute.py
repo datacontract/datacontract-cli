@@ -644,15 +644,6 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types=None)
         spec.key,
         _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label, actual=str(dtype)),
     )
-    if structured_prop is None and (dtype.is_json() or dtype.is_unknown()):
-        _set_result(
-            run,
-            spec.key,
-            ResultEnum.failed,
-            f"Column '{spec.field}' has type '{dtype}', but the contract specifies '{spec.expected_type_label}'. "
-            "If this is intentional, specify the column's native type as physicalType.",
-        )
-        return
     if schema_property_matches(spec.expected_schema_property, actual_prop):
         _set_result(run, spec.key, ResultEnum.passed, None)
     else:

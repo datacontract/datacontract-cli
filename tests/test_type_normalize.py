@@ -29,7 +29,7 @@ def _untyped_object():
 
 def _unknown():
     # what it produces for a Snowflake VARIANT (json)
-    return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE)
+    return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE, physicalType="json")
 
 
 def test_untyped_object_fails_declared_object_with_properties():
@@ -58,7 +58,22 @@ def test_array_with_typed_items_fails_unknown_element():
     expected = SchemaProperty(logicalType="array", items=SchemaProperty(logicalType="number"))
     actual = SchemaProperty(logicalType="array", items=_unknown())
     assert not schema_property_matches(expected, actual)
-    assert "can't be verified" in schema_property_mismatch_reason(expected, actual)
+    assert schema_property_mismatch_reason(expected, actual) == (
+        "field '[]': has type 'json', but the contract specifies 'number'. "
+        "A 'json' value has no verifiable logical type. "
+        "If this is intentional, specify the native type as physicalType."
+    )
+
+
+def test_unverifiable_type_reports_the_same_message_at_any_depth():
+    # The top-level and nested paths must not diverge: one condition, one message.
+    top = schema_property_mismatch_reason(SchemaProperty(logicalType="number"), _unknown())
+    nested = schema_property_mismatch_reason(
+        SchemaProperty(logicalType="array", items=SchemaProperty(logicalType="number")),
+        SchemaProperty(logicalType="array", items=_unknown()),
+    )
+    assert top == nested.replace("field '[]'", "column")
+    assert "specify the native type as physicalType" in top
 
 
 def test_bare_array_matches_unknown_element():

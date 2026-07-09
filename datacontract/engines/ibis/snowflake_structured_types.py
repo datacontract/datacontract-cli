@@ -19,6 +19,8 @@ from typing import Optional
 
 from open_data_contract_standard.model import SchemaProperty, Server
 
+from datacontract.engines.checks.type_normalize import UNKNOWN_LOGICAL_TYPE
+
 logger = logging.getLogger(__name__)
 
 # SHOW COLUMNS leaf ``type`` tokens -> ODCS logical type. FIXED and REAL both map
@@ -37,46 +39,47 @@ _LEAF_TYPES = {
 }
 
 
-def _to_property(node: dict) -> Optional[SchemaProperty]:
-    """Convert one ``data_type`` JSON node to a ``SchemaProperty``.
-
-    Returns ``None`` when the node carries no structure the contract can be
-    verified against: an untyped/empty ``OBJECT`` or ``ARRAY``, a ``MAP`` (dynamic
-    keys), a ``VARIANT``, or an unmapped leaf token.
-    """
+def _to_property(node: dict) -> SchemaProperty:
+    """Convert one ``data_type`` JSON node to a ``SchemaProperty``."""
     node_type = node.get("type")
     if node_type == "OBJECT":
         fields = node.get("fields")
         if not fields:
-            return None  # untyped/semi-structured OBJECT
+            # untyped OBJECT: same shape as the collapsed ibis map
+            return SchemaProperty(logicalType="object", properties=None)
         properties = []
         for field in fields:
-            child = _to_property(field.get("fieldType") or {})
             name = field.get("fieldName")
-            if name and child is not None:
-                properties.append(
-                    SchemaProperty(
-                        name=name,
-                        logicalType=child.logicalType,
-                        items=child.items,
-                        properties=child.properties,
-                    )
+            if not name:
+                continue
+            child = _to_property(field.get("fieldType") or {})
+            properties.append(
+                SchemaProperty(
+                    name=name,
+                    logicalType=child.logicalType,
+                    physicalType=child.physicalType,
+                    items=child.items,
+                    properties=child.properties,
                 )
+            )
         return SchemaProperty(logicalType="object", properties=properties or None)
     if node_type == "ARRAY":
         element = node.get("elementType")
-        if not element:
-            return None  # untyped/semi-structured ARRAY
-        return SchemaProperty(logicalType="array", items=_to_property(element))
+        # untyped ARRAY: no element type to recurse into
+        return SchemaProperty(logicalType="array", items=_to_property(element) if element else None)
     if node_type == "MAP":
-        return None  # dynamic keys can't be matched to named contract properties
+        # dynamic keys can't be matched to named contract properties
+        return SchemaProperty(logicalType="object", properties=None)
     logical = _LEAF_TYPES.get(node_type)
-    return SchemaProperty(logicalType=logical) if logical else None
+    if logical:
+        return SchemaProperty(logicalType=logical)
+    # VARIANT, BINARY, GEOGRAPHY, …: keep the Snowflake token for the failure message
+    return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE, physicalType=node_type)
 
 
-def _has_nesting(prop: Optional[SchemaProperty]) -> bool:
+def _has_nesting(prop: SchemaProperty) -> bool:
     """True only when the property is a structured OBJECT/ARRAY worth substituting."""
-    return prop is not None and (bool(prop.properties) or prop.items is not None)
+    return bool(prop.properties) or prop.items is not None
 
 
 def fetch_structured_types(con, server: Server, table_name: str) -> Optional[dict[str, SchemaProperty]]:
