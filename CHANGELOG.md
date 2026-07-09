@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract import` can now import BigQuery type `INTERVAL` (#1367)
+
 ## [1.0.10] - 2026-07-08
 
 ### Added
