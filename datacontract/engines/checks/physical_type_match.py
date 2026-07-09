@@ -4,6 +4,11 @@ Both sides are parsed with sqlglot in the server's dialect, so dialect aliases
 (``int`` ≡ ``integer``, ``decimal`` ≡ ``numeric``) and case are handled, while
 genuinely distinct native types (``varchar`` vs ``nvarchar``) stay distinct.
 
+Which names alias each other is decided by the dialect, not by a table here: the
+base type is rendered back out through sqlglot's generator for the server's
+dialect, so BigQuery's ``INTEGER`` ≡ ``INT64`` ≡ ``SMALLINT`` while Postgres
+keeps ``integer`` and ``bigint`` apart.
+
 Length/precision is only enforced when the contract declares it: a bare
 ``varchar`` in the contract matches ``varchar(255)`` in the database, but
 ``varchar(255)`` does not match ``varchar(100)``.
@@ -90,6 +95,17 @@ def _raw_match(expected: str, actual: str) -> Optional[bool]:
     return True if not e_params else e == a
 
 
+def _base_sql(dtype: exp.DataType, dialect) -> str:
+    """Render the bare base type in ``dialect``, collapsing that dialect's aliases.
+
+    BigQuery renders ``INTEGER`` and ``INT64`` both as ``INT64``, while Postgres
+    keeps ``INT`` and ``BIGINT`` apart. Parameters are dropped because generators
+    inject dialect defaults (Snowflake renders a bare ``NUMERIC`` as
+    ``DECIMAL(38, 0)``).
+    """
+    return exp.DataType(this=dtype.this).sql(dialect=dialect).lower()
+
+
 def physical_type_matches(
     expected: Optional[str],
     actual: Optional[str],
@@ -122,7 +138,11 @@ def physical_type_matches(
             f"server under test; skipping the physical type check"
         )
 
-    same_base = exp_dt.this == act_dt.this or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
+    same_base = (
+        exp_dt.this == act_dt.this
+        or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
+        or _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect)
+    )
     if not same_base:
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 

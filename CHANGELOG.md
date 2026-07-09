@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Failed business definition IRI lookups now suggest the `ENTROPY_DATA_HOST` value to set when the IRI host does not match the configured entropy-data host.
+- `datacontract test` no longer reports a physical type mismatch for BigQuery type aliases, such as a `physicalType` of `INTEGER` on an `INT64` column (#1371)
 
 ## [1.0.10] - 2026-07-08
 

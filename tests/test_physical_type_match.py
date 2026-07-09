@@ -45,6 +45,25 @@ def test_distinct_native_types_do_not_match():
     assert ok is False
 
 
+def test_bigquery_legacy_type_names_match_googlesql_names():
+    # `datacontract import bigquery` writes the names the BigQuery API returns
+    # (INTEGER, FLOAT, BOOLEAN, RECORD); INFORMATION_SCHEMA reports the GoogleSQL
+    # names. BigQuery resolves both to the same type.
+    assert physical_type_matches("INTEGER", "INT64", "bigquery")[0] is True
+    assert physical_type_matches("FLOAT", "FLOAT64", "bigquery")[0] is True
+    assert physical_type_matches("BOOLEAN", "BOOL", "bigquery")[0] is True
+    assert physical_type_matches("RECORD", "STRUCT<field1 INT64>", "bigquery")[0] is True
+    assert physical_type_matches("SMALLINT", "INT64", "bigquery")[0] is True
+    assert physical_type_matches("BYTEINT", "INT64", "bigquery")[0] is True
+
+
+def test_integer_widths_stay_distinct_outside_bigquery():
+    # Aliasing is the dialect's call, not ours: INTEGER is a narrower type than
+    # BIGINT in Postgres and Snowflake, so declaring one against the other fails.
+    assert physical_type_matches("INTEGER", "BIGINT", "postgres")[0] is False
+    assert physical_type_matches("INTEGER", "BIGINT", "snowflake")[0] is False
+
+
 def test_wrong_base_type_fails():
     ok, reason = physical_type_matches("uniqueidentifier", "int", "tsql")
     assert ok is False
