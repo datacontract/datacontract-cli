@@ -201,7 +201,7 @@ def _run_model(
     # the real nested types from SHOW COLUMNS so field_type checks can recurse.
     structured_types = None
     if get_server_type(server) == "snowflake" and any(spec.metric == MetricType.FIELD_TYPE for spec in specs):
-        structured_types = fetch_structured_types(con, server, model)
+        structured_types = fetch_structured_types(con, server, t.get_name())
 
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:

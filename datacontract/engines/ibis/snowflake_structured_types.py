@@ -79,14 +79,16 @@ def _has_nesting(prop: Optional[SchemaProperty]) -> bool:
     return prop is not None and (bool(prop.properties) or prop.items is not None)
 
 
-def fetch_structured_types(con, server: Server, model: str) -> Optional[dict[str, SchemaProperty]]:
+def fetch_structured_types(con, server: Server, table_name: str) -> Optional[dict[str, SchemaProperty]]:
     """Return ``{column_name_lower: SchemaProperty}`` for the Snowflake columns of
-    ``model`` whose declared structured type carries nested detail.
+    ``table_name`` whose declared structured type carries nested detail.
 
     Columns without recoverable nesting (scalars, plain VARIANT/OBJECT/ARRAY,
     MAP) are omitted, so the caller keeps the collapsed ibis dtype for them.
     """
-    identifier = ".".join(part for part in (server.database, server.schema_, model) if part)
+    quoted_table = '"{}"'.format(table_name.replace('"', '""'))
+    path = ".".join(part for part in (server.database, server.schema_, quoted_table) if part)
+    identifier = "IDENTIFIER('{}')".format(path.replace("'", "''"))
     try:
         cursor = con.raw_sql(f"SHOW COLUMNS IN TABLE {identifier}")
     except Exception as e:
