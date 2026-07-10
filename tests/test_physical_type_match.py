@@ -1,5 +1,6 @@
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.ibis.native_type import (
+    _rows,
     reconstruct_native_type,
     supports_native_type_introspection,
 )
@@ -43,6 +44,35 @@ def test_distinct_native_types_do_not_match():
     # varchar and nvarchar are genuinely different native types.
     ok, _ = physical_type_matches("varchar(255)", "nvarchar(255)", "tsql")
     assert ok is False
+
+
+def test_bigquery_legacy_type_names_match_googlesql_names():
+    # `datacontract import bigquery` writes the names the BigQuery API returns
+    # (INTEGER, FLOAT, BOOLEAN, RECORD); INFORMATION_SCHEMA reports the GoogleSQL
+    # names. BigQuery resolves both to the same type.
+    assert physical_type_matches("INTEGER", "INT64", "bigquery")[0] is True
+    assert physical_type_matches("FLOAT", "FLOAT64", "bigquery")[0] is True
+    assert physical_type_matches("BOOLEAN", "BOOL", "bigquery")[0] is True
+    assert physical_type_matches("RECORD", "STRUCT<field1 INT64>", "bigquery")[0] is True
+    assert physical_type_matches("SMALLINT", "INT64", "bigquery")[0] is True
+    assert physical_type_matches("BYTEINT", "INT64", "bigquery")[0] is True
+
+
+def test_integer_widths_stay_distinct_outside_bigquery():
+    # Aliasing is the dialect's call, not ours: INTEGER is a narrower type than
+    # BIGINT in Postgres and Snowflake, so declaring one against the other fails.
+    assert physical_type_matches("INTEGER", "BIGINT", "postgres")[0] is False
+    assert physical_type_matches("INTEGER", "BIGINT", "snowflake")[0] is False
+
+
+def test_non_numeric_types_never_alias():
+    # sqlglot renders a type a dialect does not model onto the nearest one it has
+    # (Databricks TIME onto TIMESTAMP, MySQL VARCHAR onto TEXT). Only numeric
+    # widths alias, so those stay distinct.
+    assert physical_type_matches("TIME", "TIMESTAMP", "databricks")[0] is False
+    assert physical_type_matches("TIMESTAMP", "TIME", "databricks")[0] is False
+    assert physical_type_matches("TEXT", "VARCHAR(255)", "mysql")[0] is False
+    assert physical_type_matches("STRING", "VARCHAR(10)", "databricks")[0] is False
 
 
 def test_wrong_base_type_fails():
@@ -123,3 +153,24 @@ def test_reconstruct_integer_ignores_numeric_precision():
 
 def test_reconstruct_none():
     assert reconstruct_native_type(None) is None
+
+
+# --- _rows -----------------------------------------------------------------
+class _SparkLikeDataFrame:
+    """Iterating a Spark DataFrame yields Column objects, not rows; only
+    ``collect()`` returns the rows."""
+
+    def __iter__(self):
+        raise AssertionError("must not iterate a Spark DataFrame")
+
+    def collect(self):
+        return [("postal_code", "string", None, None, None)]
+
+
+class _SparkLikeConnection:
+    def raw_sql(self, query):
+        return _SparkLikeDataFrame()
+
+
+def test_rows_collects_spark_dataframe():
+    assert _rows(_SparkLikeConnection(), "select 1") == [("postal_code", "string", None, None, None)]

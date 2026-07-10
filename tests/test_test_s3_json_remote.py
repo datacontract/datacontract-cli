@@ -1,3 +1,5 @@
+import pytest
+
 from datacontract.data_contract import DataContract
 
 # logging.basicConfig(level=logging.INFO, force=True)
@@ -5,6 +7,7 @@ from datacontract.data_contract import DataContract
 datacontract = "fixtures/s3-json-remote/datacontract.yaml"
 
 
+@pytest.mark.skip(reason="s3://datacontract-example-orders-latest returns AllAccessDisabled")
 def test_test_s3_json(monkeypatch):
     monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
     monkeypatch.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
