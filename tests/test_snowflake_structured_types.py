@@ -7,7 +7,7 @@ from structured-type nesting to the tree the field_type check recurses over.
 
 import json
 
-from open_data_contract_standard.model import SchemaProperty
+from open_data_contract_standard.model import SchemaProperty, Server
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.type_normalize import (
@@ -15,8 +15,9 @@ from datacontract.engines.checks.type_normalize import (
     schema_property_matches,
     schema_property_mismatch_reason,
 )
+from datacontract.engines.ibis import snowflake_structured_types
 from datacontract.engines.ibis.ibis_check_execute import _run_physical_type
-from datacontract.engines.ibis.snowflake_structured_types import _has_nesting, _render_native, _to_property
+from datacontract.engines.ibis.snowflake_structured_types import _render_native, _to_property, has_nesting
 from datacontract.model.run import Check, ResultEnum, Run
 
 
@@ -105,7 +106,7 @@ def test_unverifiable_field_is_kept_not_dropped():
     assert reason == (
         "field 'extra': has type 'VARIANT', but the contract specifies 'object'. "
         "A 'VARIANT' value has no verifiable logical type. "
-        "If this is intentional, specify the native type as physicalType."
+        "If this is intentional, specify `physicalType: VARIANT`."
     )
     assert "missing" not in reason
 
@@ -134,7 +135,7 @@ def test_render_native_untyped_and_leaf_forms():
 
 
 def _physical_type_check(expected: SchemaProperty, structured_types):
-    """Run the physicalType check on the branch where the native type is unavailable."""
+    """Run the physicalType check with no native type from the catalog."""
     spec = CheckSpec(
         key="k",
         category="schema",
@@ -189,9 +190,47 @@ def test_physical_type_fallback_names_the_mismatched_nested_field():
     assert check.reason == "field 'a': expected type 'string' but got 'number'"
 
 
+def test_physical_type_compares_against_the_recovered_native_type():
+    # the catalog only reports 'OBJECT'; the recovered tree carries the real native type
+    tree = _prop(
+        '{"type":"OBJECT","fields":['
+        '{"fieldName":"a","fieldType":{"type":"FIXED","precision":38,"scale":0}},'
+        '{"fieldName":"b","fieldType":{"type":"TEXT","length":16777216}}]}'
+    )
+    tree.physicalType = "OBJECT(a NUMBER(38,0), b VARCHAR(16777216))"
+
+    declared = SchemaProperty(name="s_obj", logicalType="object", physicalType=tree.physicalType)
+    check = _physical_type_check(declared, {"s_obj": tree})
+    assert check.result == ResultEnum.passed
+    assert check.diagnostics["actual"] == "OBJECT(a NUMBER(38,0), b VARCHAR(16777216))"
+
+    wrong = SchemaProperty(name="s_obj", logicalType="object", physicalType="OBJECT(a NUMBER(38,0))")
+    check = _physical_type_check(wrong, {"s_obj": tree})
+    assert check.result == ResultEnum.failed
+    assert "but the column is 'OBJECT(a NUMBER(38,0), b VARCHAR(16777216))'" in check.reason
+
+
+def test_fetch_keeps_unverifiable_leaves_and_drops_scalars(monkeypatch):
+    rows = [
+        ("t", "s", "V", '{"type":"VARIANT"}'),
+        ("t", "s", "N", '{"type":"FIXED","precision":38,"scale":0}'),
+        ("t", "s", "U_OBJ", '{"type":"OBJECT"}'),
+        ("t", "s", "S_ARR", '{"type":"ARRAY","elementType":{"type":"TEXT"}}'),
+    ]
+    monkeypatch.setattr(snowflake_structured_types, "_rows", lambda con, query: rows)
+    result = snowflake_structured_types.fetch_structured_types(None, Server(database="d", schema="s"), "t")
+
+    # a VARIANT is unverifiable but must name itself; a scalar and an untyped OBJECT
+    # add nothing the collapsed ibis dtype does not already say
+    assert sorted(result) == ["s_arr", "v"]
+    assert result["v"].logicalType == UNKNOWN_LOGICAL_TYPE
+    assert result["v"].physicalType == "VARIANT"
+    assert result["s_arr"].physicalType == "ARRAY(VARCHAR)"
+
+
 def test_has_nesting_only_for_structured():
-    assert _has_nesting(_prop('{"type":"OBJECT","fields":[{"fieldName":"a","fieldType":{"type":"TEXT"}}]}'))
-    assert _has_nesting(_prop('{"type":"ARRAY","elementType":{"type":"TEXT"}}'))
-    assert not _has_nesting(_to_property({"type": "OBJECT"}))
-    assert not _has_nesting(_to_property({"type": "ARRAY"}))
-    assert not _has_nesting(_to_property({"type": "VARIANT"}))
+    assert has_nesting(_prop('{"type":"OBJECT","fields":[{"fieldName":"a","fieldType":{"type":"TEXT"}}]}'))
+    assert has_nesting(_prop('{"type":"ARRAY","elementType":{"type":"TEXT"}}'))
+    assert not has_nesting(_to_property({"type": "OBJECT"}))
+    assert not has_nesting(_to_property({"type": "ARRAY"}))
+    assert not has_nesting(_to_property({"type": "VARIANT"}))

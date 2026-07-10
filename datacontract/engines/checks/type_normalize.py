@@ -220,7 +220,7 @@ def schema_property_mismatch_reasons(
         errors.append(
             f"{field_label}: has type '{act_str}', but the contract specifies '{exp_str}'. "
             f"A '{act_str}' value has no verifiable logical type. "
-            "If this is intentional, specify the native type as physicalType."
+            f"If this is intentional, specify `physicalType: {act_str}`."
         )
         return errors
 

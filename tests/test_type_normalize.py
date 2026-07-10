@@ -61,7 +61,7 @@ def test_array_with_typed_items_fails_unknown_element():
     assert schema_property_mismatch_reason(expected, actual) == (
         "field '[]': has type 'json', but the contract specifies 'number'. "
         "A 'json' value has no verifiable logical type. "
-        "If this is intentional, specify the native type as physicalType."
+        "If this is intentional, specify `physicalType: json`."
     )
 
 
@@ -73,7 +73,7 @@ def test_unverifiable_type_reports_the_same_message_at_any_depth():
         SchemaProperty(logicalType="array", items=_unknown()),
     )
     assert top == nested.replace("field '[]'", "column")
-    assert "specify the native type as physicalType" in top
+    assert "specify `physicalType: json`" in top
 
 
 def test_bare_array_matches_unknown_element():

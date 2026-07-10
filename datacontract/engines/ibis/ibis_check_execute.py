@@ -22,7 +22,7 @@ from datacontract.engines.checks.type_normalize import schema_property_matches, 
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
 from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
-from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types
+from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types, has_nesting
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -694,7 +694,13 @@ def _run_physical_type(
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
 
-    actual_native = native_types.get(spec.field.lower()) if native_types else None
+    # The catalog reports a structured OBJECT/ARRAY as its bare token, dropping the
+    # nested types; the tree recovered from SHOW COLUMNS renders the real native type.
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    if structured_prop is not None and has_nesting(structured_prop):
+        actual_native = structured_prop.physicalType
+    else:
+        actual_native = native_types.get(spec.field.lower()) if native_types else None
     _set_diagnostics(
         run,
         spec.key,
@@ -723,13 +729,12 @@ def _run_physical_type(
     # logicalType category check when the property declares one.
     fallback = spec.expected_schema_property
     if fallback is not None and fallback.logicalType is not None:
-        structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
         actual_prop = structured_prop or ibis_dtype_to_schema_property(schema[actual_col])
         if schema_property_matches(fallback, actual_prop):
             _set_result(run, spec.key, ResultEnum.passed, None)
         else:
             mismatch = schema_property_mismatch_reason(fallback, actual_prop)
-            actual_label = structured_prop.physicalType if structured_prop else schema[actual_col]
+            actual_label = actual_native or schema[actual_col]
             _set_result(
                 run,
                 spec.key,

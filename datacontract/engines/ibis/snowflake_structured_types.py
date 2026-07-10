@@ -63,7 +63,7 @@ def _to_property(node: dict) -> SchemaProperty:
     return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE, physicalType=node_type)
 
 
-def _has_nesting(prop: SchemaProperty) -> bool:
+def has_nesting(prop: SchemaProperty) -> bool:
     """True only when the property is a structured OBJECT/ARRAY worth substituting."""
     return bool(prop.properties) or prop.items is not None
 
@@ -100,10 +100,9 @@ def _render_native(node: dict) -> str:
 
 
 def fetch_structured_types(con, server: Server, table_name: str) -> dict[str, SchemaProperty] | None:
-    """Return ``{column_name_lower: SchemaProperty}`` for the columns with nested detail.
-
-    Columns without recoverable nesting are omitted; the caller keeps the collapsed ibis dtype.
-    Best-effort: any failure returns ``None``.
+    """Return ``{column_name_lower: SchemaProperty}`` for the columns whose real type
+    the collapsed ibis dtype does not convey: structured OBJECT/ARRAY, and leaves with
+    no verifiable logical type. Other columns are omitted. Any failure returns ``None``.
     """
     quoted_table = '"{}"'.format(table_name.replace('"', '""'))
     path = ".".join(part for part in (server.database, server.schema_, quoted_table) if part)
@@ -123,8 +122,13 @@ def fetch_structured_types(con, server: Server, table_name: str) -> dict[str, Sc
         except (TypeError, ValueError):
             continue
         prop = _to_property(node)
-        if _has_nesting(prop):
+        if has_nesting(prop):
             # the real native type, for diagnostics the collapsed ibis dtype can't give
             prop.physicalType = _render_native(node)
-            result[str(column_name).lower()] = prop
+        elif prop.logicalType != UNKNOWN_LOGICAL_TYPE:
+            # scalars and untyped OBJECT/ARRAY: the collapsed ibis dtype says the same
+            continue
+        # an unverifiable leaf (VARIANT, GEOGRAPHY, …) keeps its Snowflake token, which
+        # the ibis dtype renders as the useless 'json'
+        result[str(column_name).lower()] = prop
     return result or None
