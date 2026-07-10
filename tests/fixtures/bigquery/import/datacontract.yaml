@@ -114,7 +114,7 @@ schema:
   - name: INTERVAL_Field
     physicalType: INTERVAL
     description: an interval field
-    logicalType: number
+    logicalType: string
   - name: String_List_Field
     description: list of string (REPEATED string)
     logicalType: array
