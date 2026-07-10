@@ -569,9 +569,9 @@ def _map_base_type_to_logical(base_type: str) -> str:
         "STRING": "string",
         "BYTES": "array",
         "INTEGER": "integer",
-        "INT64": "integer",
+        "INT64": "integer",  # for dbt-bigquery
         "FLOAT": "number",
-        "FLOAT64": "number",
+        "FLOAT64": "number",  # for dbt-bigquery
         "BOOLEAN": "boolean",
         "BOOL": "boolean",
         "TIMESTAMP": "timestamp",
@@ -586,6 +586,7 @@ def _map_base_type_to_logical(base_type: str) -> str:
         "STRUCT": "object",
         "RECORD": "object",
         "RANGE": "array",
+        "INTERVAL": "string",
     }
 
     if base_type in type_mapping:

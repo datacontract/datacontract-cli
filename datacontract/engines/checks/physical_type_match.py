@@ -90,6 +90,11 @@ def _raw_match(expected: str, actual: str) -> Optional[bool]:
     return True if not e_params else e == a
 
 
+def _base_sql(dtype: exp.DataType, dialect) -> str:
+    """Render the bare base type in ``dialect``, collapsing that dialect's aliases."""
+    return exp.DataType(this=dtype.this).sql(dialect=dialect).lower()
+
+
 def physical_type_matches(
     expected: Optional[str],
     actual: Optional[str],
@@ -122,7 +127,12 @@ def physical_type_matches(
             f"server under test; skipping the physical type check"
         )
 
-    same_base = exp_dt.this == act_dt.this or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
+    both_numeric = {exp_dt.this, act_dt.this} <= exp.DataType.NUMERIC_TYPES
+    same_base = (
+        exp_dt.this == act_dt.this
+        or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
+        or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
+    )
     if not same_base:
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 
