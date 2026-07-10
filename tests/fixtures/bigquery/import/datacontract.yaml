@@ -111,6 +111,10 @@ schema:
     physicalType: JSON
     description: a json field
     logicalType: object
+  - name: INTERVAL_Field
+    physicalType: INTERVAL
+    description: an interval field
+    logicalType: string
   - name: String_List_Field
     description: list of string (REPEATED string)
     logicalType: array

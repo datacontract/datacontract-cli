@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` now recursively verifies nested `logicalType` for Snowflake structured `OBJECT`/`ARRAY` columns
 - `datacontract test` now fails for complex types when the nested type definition cannot be verified (e.g. if array<integer> is required, array<json> will no longer be accepted)
 
+## [1.0.11] - 2026-07-09
+
+### Added
+- `datacontract import` can now import BigQuery type `INTERVAL` (#1367,#1372 @fantastisch)
+
+### Fixed
+- Failed business definition IRI lookups now suggest the `ENTROPY_DATA_HOST` value to set when the IRI host does not match the configured entropy-data host.
+- `datacontract test` no longer reports a physical type mismatch for BigQuery type aliases, such as a `physicalType` of `INTEGER` on an `INT64` column (#1371 @fantastisch)
+- `datacontract test` no longer fails with `CANNOT_CONVERT_COLUMN_INTO_BOOL` on Databricks when a Spark session is used
+
 ## [1.0.10] - 2026-07-08
 
 ### Added

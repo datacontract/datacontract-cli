@@ -124,6 +124,10 @@ def _rows(con, query: str):
     try:
         if hasattr(cursor, "fetchall"):
             return list(cursor.fetchall())
+        # The pyspark backend (also used for databricks with a Spark session)
+        # returns a DataFrame; iterating it would yield Column objects.
+        if hasattr(cursor, "collect"):
+            return list(cursor.collect())
         # Some backends (e.g. BigQuery) return an iterable result set
         # (RowIterator) instead of a DBAPI cursor.
         return list(cursor)
