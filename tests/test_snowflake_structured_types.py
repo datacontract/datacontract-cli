@@ -9,12 +9,15 @@ import json
 
 from open_data_contract_standard.model import SchemaProperty
 
+from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.type_normalize import (
     UNKNOWN_LOGICAL_TYPE,
     schema_property_matches,
     schema_property_mismatch_reason,
 )
-from datacontract.engines.ibis.snowflake_structured_types import _has_nesting, _to_property
+from datacontract.engines.ibis.ibis_check_execute import _run_physical_type
+from datacontract.engines.ibis.snowflake_structured_types import _has_nesting, _render_native, _to_property
+from datacontract.model.run import Check, ResultEnum, Run
 
 
 def _prop(data_type: str):
@@ -105,6 +108,85 @@ def test_unverifiable_field_is_kept_not_dropped():
         "If this is intentional, specify the native type as physicalType."
     )
     assert "missing" not in reason
+
+
+def test_render_native_rebuilds_the_snowflake_type_string():
+    node = json.loads(
+        '{"type":"OBJECT","fields":['
+        '{"fieldName":"a","fieldType":{"type":"FIXED","precision":38,"scale":0}},'
+        '{"fieldName":"b","fieldType":{"type":"TEXT","length":16777216}},'
+        '{"fieldName":"c","fieldType":{"type":"ARRAY","elementType":{"type":"BOOLEAN"}}}]}'
+    )
+    # matches Snowflake's own DESCRIBE TABLE rendering
+    assert _render_native(node) == "OBJECT(a NUMBER(38,0), b VARCHAR(16777216), c ARRAY(BOOLEAN))"
+
+
+def test_render_native_untyped_and_leaf_forms():
+    assert _render_native({"type": "OBJECT"}) == "OBJECT"
+    assert _render_native({"type": "ARRAY"}) == "ARRAY"
+    assert _render_native({"type": "VARIANT"}) == "VARIANT"
+    assert _render_native({"type": "REAL"}) == "FLOAT"
+    assert _render_native({"type": "TEXT"}) == "VARCHAR"
+    assert (
+        _render_native({"type": "MAP", "keyType": {"type": "TEXT"}, "valueType": {"type": "FIXED"}})
+        == "MAP(VARCHAR, NUMBER(38,0))"
+    )
+
+
+def _physical_type_check(expected: SchemaProperty, structured_types):
+    """Run the physicalType check on the branch where the native type is unavailable."""
+    spec = CheckSpec(
+        key="k",
+        category="schema",
+        type="field_physical_type",
+        name="check",
+        model="m",
+        field="s_obj",
+        metric=MetricType.FIELD_PHYSICAL_TYPE,
+        expected_category=expected.physicalType,
+        expected_type_label=expected.physicalType,
+        expected_physical_type=expected.physicalType,
+        expected_schema_property=expected,
+    )
+    run = Run.create_run()
+    run.checks = [Check(id="k", key="k", category="schema", type=spec.type, name=spec.name, model="m", field="s_obj")]
+    _run_physical_type(
+        run, None, None, {"S_OBJ": "map<string, json>"}, {"s_obj": "S_OBJ"}, None, spec, structured_types
+    )
+    return run.checks[0]
+
+
+def test_physical_type_fallback_uses_the_recovered_structured_tree():
+    tree = _prop(
+        '{"type":"OBJECT","fields":['
+        '{"fieldName":"a","fieldType":{"type":"FIXED","precision":38,"scale":0}},'
+        '{"fieldName":"b","fieldType":{"type":"TEXT","length":16777216}}]}'
+    )
+    expected = SchemaProperty(
+        name="s_obj",
+        logicalType="object",
+        # foreign to the Snowflake dialect, so the physical comparison yields "skip"
+        physicalType="uniqueidentifier",
+        properties=[SchemaProperty(name="a", logicalType="integer"), SchemaProperty(name="b", logicalType="string")],
+    )
+    assert _physical_type_check(expected, {"s_obj": tree}).result == ResultEnum.passed
+
+    # without the tree, the collapsed ibis dtype makes a structured column look untyped
+    check = _physical_type_check(expected, None)
+    assert check.result == ResultEnum.failed
+
+
+def test_physical_type_fallback_names_the_mismatched_nested_field():
+    tree = _prop('{"type":"OBJECT","fields":[{"fieldName":"a","fieldType":{"type":"FIXED","precision":38,"scale":0}}]}')
+    expected = SchemaProperty(
+        name="s_obj",
+        logicalType="object",
+        physicalType="uniqueidentifier",
+        properties=[SchemaProperty(name="a", logicalType="string")],
+    )
+    check = _physical_type_check(expected, {"s_obj": tree})
+    assert check.result == ResultEnum.failed
+    assert check.reason == "field 'a': expected type 'string' but got 'number'"
 
 
 def test_has_nesting_only_for_structured():

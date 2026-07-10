@@ -1,27 +1,13 @@
-"""Recover Snowflake structured-type nesting that ibis collapses.
-
-ibis reflects a Snowflake structured ``OBJECT(a INT, b TEXT)`` as
-``map<string, json>`` (indistinguishable from an untyped ``OBJECT``) and
-``ARRAY(NUMBER)`` as ``array<json>``, discarding the nested field and element
-types. Snowflake still exposes them through ``SHOW COLUMNS``, whose ``data_type``
-column is a recursive JSON tree. This module reads that tree and rebuilds a
-``SchemaProperty`` so the ``field_type`` check can verify nested types.
-
-Best-effort: any failure returns ``None`` so the caller falls back to the
-collapsed ibis dtype.
-"""
+"""Rebuild Snowflake structured OBJECT/ARRAY nesting, which ibis collapses, from SHOW COLUMNS."""
 
 from __future__ import annotations
 
 import json
-import logging
-from typing import Optional
 
 from open_data_contract_standard.model import SchemaProperty, Server
 
 from datacontract.engines.checks.type_normalize import UNKNOWN_LOGICAL_TYPE
-
-logger = logging.getLogger(__name__)
+from datacontract.engines.ibis.native_type import _quote, _rows
 
 # SHOW COLUMNS leaf ``type`` tokens -> ODCS logical type. FIXED and REAL both map
 # to "number" (the comparator treats integer/number as compatible). Tokens not
@@ -82,31 +68,49 @@ def _has_nesting(prop: SchemaProperty) -> bool:
     return bool(prop.properties) or prop.items is not None
 
 
-def fetch_structured_types(con, server: Server, table_name: str) -> Optional[dict[str, SchemaProperty]]:
-    """Return ``{column_name_lower: SchemaProperty}`` for the Snowflake columns of
-    ``table_name`` whose declared structured type carries nested detail.
+def _render_native(node: dict) -> str:
+    """Render one ``data_type`` JSON node back to its Snowflake type string."""
+    node_type = node.get("type")
+    if node_type == "OBJECT":
+        fields = node.get("fields")
+        if not fields:
+            return "OBJECT"
+        rendered = [
+            f"{field['fieldName']} {_render_native(field.get('fieldType') or {})}"
+            for field in fields
+            if field.get("fieldName")
+        ]
+        return "OBJECT({})".format(", ".join(rendered)) if rendered else "OBJECT"
+    if node_type == "ARRAY":
+        element = node.get("elementType")
+        return "ARRAY({})".format(_render_native(element)) if element else "ARRAY"
+    if node_type == "MAP":
+        key, value = node.get("keyType"), node.get("valueType")
+        if key and value:
+            return "MAP({}, {})".format(_render_native(key), _render_native(value))
+        return "MAP"
+    if node_type == "FIXED":
+        return "NUMBER({},{})".format(node.get("precision", 38), node.get("scale", 0))
+    if node_type == "REAL":
+        return "FLOAT"
+    if node_type == "TEXT":
+        length = node.get("length")
+        return f"VARCHAR({length})" if length is not None else "VARCHAR"
+    return str(node_type)
 
-    Columns without recoverable nesting (scalars, plain VARIANT/OBJECT/ARRAY,
-    MAP) are omitted, so the caller keeps the collapsed ibis dtype for them.
+
+def fetch_structured_types(con, server: Server, table_name: str) -> dict[str, SchemaProperty] | None:
+    """Return ``{column_name_lower: SchemaProperty}`` for the columns with nested detail.
+
+    Columns without recoverable nesting are omitted; the caller keeps the collapsed ibis dtype.
+    Best-effort: any failure returns ``None``.
     """
     quoted_table = '"{}"'.format(table_name.replace('"', '""'))
     path = ".".join(part for part in (server.database, server.schema_, quoted_table) if part)
-    identifier = "IDENTIFIER('{}')".format(path.replace("'", "''"))
-    try:
-        cursor = con.raw_sql(f"SHOW COLUMNS IN TABLE {identifier}")
-    except Exception as e:
-        logger.debug("SHOW COLUMNS failed for %s: %s", identifier, e)
+    identifier = "IDENTIFIER('{}')".format(_quote(path))
+    rows = _rows(con, f"SHOW COLUMNS IN TABLE {identifier}")
+    if not rows:
         return None
-    try:
-        rows = list(cursor.fetchall())
-    except Exception as e:
-        logger.debug("could not read SHOW COLUMNS rows for %s: %s", identifier, e)
-        return None
-    finally:
-        try:
-            cursor.close()
-        except Exception:
-            pass
 
     # SHOW COLUMNS columns: table_name, schema_name, column_name, data_type, ...
     result: dict[str, SchemaProperty] = {}
@@ -120,5 +124,7 @@ def fetch_structured_types(con, server: Server, table_name: str) -> Optional[dic
             continue
         prop = _to_property(node)
         if _has_nesting(prop):
+            # the real native type, for diagnostics the collapsed ibis dtype can't give
+            prop.physicalType = _render_native(node)
             result[str(column_name).lower()] = prop
     return result or None
