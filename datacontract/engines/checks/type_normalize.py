@@ -14,6 +14,13 @@ import re
 
 from open_data_contract_standard.model import SchemaProperty
 
+# logicalType marker for a field whose type the backend cannot describe: a
+# dynamically-typed column (ibis json: Snowflake VARIANT, Postgres JSONB,
+# BigQuery JSON) or an unsupported one (binary, geography). No declared type can
+# be confirmed against it, so any expected type fails rather than silently passing.
+# Distinct from a missing field, which is what dropping it would look like.
+UNKNOWN_LOGICAL_TYPE = "__unknown__"
+
 
 def normalize_type_name(type_name: str | None) -> str | None:
     """Map a contract type name (logical or physical) to one of the 9 ODCS categories.
@@ -139,6 +146,8 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
     if expected_base is None:
         return True
     if actual_base is None:
+        # actual is unsupported or dynamically typed (json element/variant): a
+        # declared concrete type can't be confirmed against it, so it fails.
         return False
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         return False
@@ -151,6 +160,8 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
     if expected_base == "object":
         if not expected.properties:
             return True
+        # actual.properties is None for an untyped object (ibis map/variant): the
+        # empty lookup below fails every declared field, which is what we want.
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}
         for exp_field in expected.properties:
             if not exp_field.name:
@@ -197,11 +208,20 @@ def schema_property_mismatch_reasons(
         exp_str = expected.logicalType or expected.physicalType
         errors.append(f"{field_label}: expected type '{exp_str}' but the column type could not be determined")
         return errors
-
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
 
     if expected_base is None:
+        return errors
+
+    if actual_base is None:
+        exp_str = expected.logicalType or expected.physicalType
+        act_str = actual.physicalType or "unknown"
+        errors.append(
+            f"{field_label}: has type '{act_str}', but the contract specifies '{exp_str}'. "
+            f"A '{act_str}' value has no verifiable logical type. "
+            f"If this is intentional, specify `physicalType: {act_str}`."
+        )
         return errors
 
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
@@ -217,6 +237,12 @@ def schema_property_mismatch_reasons(
 
     if expected_base == "object":
         if not expected.properties:
+            return errors
+        if actual.properties is None:
+            errors.append(
+                f"{field_label}: declared with nested fields but the column is an untyped object "
+                "(map/variant) whose structure can't be verified; use a structured type or specify physicalType"
+            )
             return errors
 
         actual_by_name = {p.name.lower(): p for p in (actual.properties or []) if p.name}

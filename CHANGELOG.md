@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract test` now recursively verifies nested `logicalType` for Snowflake structured `OBJECT`/`ARRAY` columns
+- `datacontract test` now fails for complex types when the nested type definition cannot be verified (e.g. if array<integer> is required, array<json> will no longer be accepted)
+
 ## [1.0.11] - 2026-07-09
 
 ### Added

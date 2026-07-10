@@ -194,7 +194,7 @@ def test_pyspark_unconvertible_column_as_unknown(spark: SparkSession):
     t = _resolve_table(con, "unconvertible_model")
 
     assert set(t.columns) == {"id", "payload", "amount"}  # kept
-    assert isinstance(t.schema()["payload"], dt.Unknown)  # typed opaque
+    assert isinstance(t.schema()["payload"], dt.Unknown)  # untyped column
     assert t.count().execute() == 1  # table is queryable
     assert t.amount.isnull().sum().execute() == 0  # checks on other columns run
-    assert t.payload.isnull().sum().execute() == 0  # not-null still works on the opaque column
+    assert t.payload.isnull().sum().execute() == 0  # not-null still works on the untyped column

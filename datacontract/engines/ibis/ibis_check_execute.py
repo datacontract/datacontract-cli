@@ -14,7 +14,7 @@ import uuid
 from collections import defaultdict
 from typing import List, Optional
 
-from open_data_contract_standard.model import OpenDataContractStandard, Server
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
@@ -22,6 +22,7 @@ from datacontract.engines.checks.type_normalize import schema_property_matches, 
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
 from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
+from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types, has_nesting
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -196,6 +197,14 @@ def _run_model(
     if any(spec.metric == MetricType.FIELD_PHYSICAL_TYPE for spec in specs):
         native_types = fetch_native_types(con, server, model)
 
+    # Snowflake collapses structured OBJECT/ARRAY nesting in the ibis dtype; read
+    # the real nested types from SHOW COLUMNS so field_type checks can recurse.
+    structured_types = None
+    if get_server_type(server) == "snowflake" and any(
+        spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE) for spec in specs
+    ):
+        structured_types = fetch_structured_types(con, server, t.get_name())
+
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
         try:
@@ -219,9 +228,9 @@ def _run_model(
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
-                _run_type(run, schema, columns, spec)
+                _run_type(run, schema, columns, spec, structured_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
-                _run_physical_type(run, con, server, schema, columns, native_types, spec)
+                _run_physical_type(run, con, server, schema, columns, native_types, spec, structured_types)
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
                 _run_freshness(run, t, columns, spec)
             elif spec.metric == MetricType.CUSTOM_SQL:
@@ -615,7 +624,7 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
     )
 
 
-def _run_type(run: Run, schema, columns, spec: CheckSpec):
+def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types: dict[str, SchemaProperty] | None = None):
     _set_impl(
         run,
         spec.key,
@@ -628,11 +637,19 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
     dtype = schema[actual_col]
-    actual_prop = ibis_dtype_to_schema_property(dtype)
+    # Snowflake structured types come back collapsed from ibis; prefer the nested
+    # tree recovered from SHOW COLUMNS when available.
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
     _set_diagnostics(
         run,
         spec.key,
-        _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label, actual=str(dtype)),
+        _diag(
+            metric="field_type",
+            field=spec.field,
+            expected=spec.expected_type_label,
+            actual=structured_prop.physicalType if structured_prop else str(dtype),
+        ),
     )
     if schema_property_matches(spec.expected_schema_property, actual_prop):
         _set_result(run, spec.key, ResultEnum.passed, None)
@@ -646,7 +663,16 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec):
         )
 
 
-def _run_physical_type(run: Run, con, server, schema, columns, native_types, spec: CheckSpec):
+def _run_physical_type(
+    run: Run,
+    con,
+    server,
+    schema,
+    columns,
+    native_types,
+    spec: CheckSpec,
+    structured_types: dict[str, SchemaProperty] | None = None,
+):
     """Compare a column's real native type against the contract's physicalType.
 
     When the native type cannot be read for this backend, or the declared
@@ -668,7 +694,13 @@ def _run_physical_type(run: Run, con, server, schema, columns, native_types, spe
         _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
 
-    actual_native = native_types.get(spec.field.lower()) if native_types else None
+    # The catalog reports a structured OBJECT/ARRAY as its bare token, dropping the
+    # nested types; the tree recovered from SHOW COLUMNS renders the real native type.
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    if structured_prop is not None and has_nesting(structured_prop):
+        actual_native = structured_prop.physicalType
+    else:
+        actual_native = native_types.get(spec.field.lower()) if native_types else None
     _set_diagnostics(
         run,
         spec.key,
@@ -697,16 +729,17 @@ def _run_physical_type(run: Run, con, server, schema, columns, native_types, spe
     # logicalType category check when the property declares one.
     fallback = spec.expected_schema_property
     if fallback is not None and fallback.logicalType is not None:
-        actual_prop = ibis_dtype_to_schema_property(schema[actual_col])
+        actual_prop = structured_prop or ibis_dtype_to_schema_property(schema[actual_col])
         if schema_property_matches(fallback, actual_prop):
             _set_result(run, spec.key, ResultEnum.passed, None)
         else:
             mismatch = schema_property_mismatch_reason(fallback, actual_prop)
+            actual_label = actual_native or schema[actual_col]
             _set_result(
                 run,
                 spec.key,
                 ResultEnum.failed,
-                mismatch or f"Expected type '{fallback.logicalType}' but column is '{schema[actual_col]}'",
+                mismatch or f"Expected type '{fallback.logicalType}' but column is '{actual_label}'",
             )
         return
 
