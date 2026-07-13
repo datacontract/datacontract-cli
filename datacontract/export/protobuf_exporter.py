@@ -31,6 +31,20 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _get_proto_package_name(data_contract: OpenDataContractStandard) -> str:
+    """
+    Returns the Protobuf package name from the contract's description customProperties
+    ("proto_package_name"), falling back to "example".
+    """
+    description = data_contract.description
+    if description is None or description.customProperties is None:
+        return "example"
+    for cp in description.customProperties:
+        if cp.property == "proto_package_name" and cp.value:
+            return cp.value
+    return "example"
+
+
 def to_protobuf(data_contract: OpenDataContractStandard) -> str:
     """
     Generates a Protobuf file from the data contract specification.
@@ -58,7 +72,7 @@ def to_protobuf(data_contract: OpenDataContractStandard) -> str:
 
     # Build header with syntax and package declarations.
     header = 'syntax = "proto3";\n\n'
-    package = "example"  # Default package, can be customized
+    package: str = _get_proto_package_name(data_contract)
     header += f"package {package};\n\n"
 
     # Append enum definitions before messages.
