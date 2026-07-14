@@ -43,20 +43,30 @@ def _timestamp_family() -> set:
 
 _TIMESTAMP_FAMILY = _timestamp_family()
 
-# In Snowflake these are one type, and its INFORMATION_SCHEMA reports a VARCHAR
-# column as TEXT, so a contract declaring VARCHAR would never match its own
-# column. Dialect-specific because elsewhere (MySQL, SQL Server) TEXT and VARCHAR
-# are genuinely different types.
-_SNOWFLAKE_TEXT_FAMILY = {
-    exp.DataType.Type.VARCHAR,
-    exp.DataType.Type.TEXT,
-    exp.DataType.Type.NVARCHAR,
-}
+# Each group is a single Snowflake type under different names, which its catalog
+# reports as the one canonical name (TEXT, NUMBER, FLOAT), so a contract declaring
+# any of the aliases must match its own column. Dialect-specific because elsewhere
+# (MySQL, SQL Server) TEXT and VARCHAR, or INT and DECIMAL, are distinct types.
+_SNOWFLAKE_FAMILIES = (
+    {exp.DataType.Type.VARCHAR, exp.DataType.Type.TEXT, exp.DataType.Type.NVARCHAR},
+    # exact numerics: INT/INTEGER/BIGINT/SMALLINT/TINYINT/BYTEINT/NUMERIC are NUMBER(38,0)
+    {
+        exp.DataType.Type.DECIMAL,
+        exp.DataType.Type.INT,
+        exp.DataType.Type.BIGINT,
+        exp.DataType.Type.SMALLINT,
+        exp.DataType.Type.TINYINT,
+    },
+    # approximate numerics: FLOAT/FLOAT4/FLOAT8/DOUBLE/REAL are all 64-bit FLOAT
+    {exp.DataType.Type.DOUBLE, exp.DataType.Type.FLOAT},
+)
 
 
 def _is_snowflake(dialect) -> bool:
+    if isinstance(dialect, str):
+        return dialect.lower() == "snowflake"
     name = getattr(dialect, "__name__", None) or type(dialect).__name__
-    return str(name).lower() == "snowflake" or str(dialect).lower() == "snowflake"
+    return name.lower() == "snowflake"
 
 
 def _parse(type_str: str, dialect) -> Optional[exp.DataType]:
@@ -147,13 +157,14 @@ def physical_type_matches(
         exp_dt.this == act_dt.this
         or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
         or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
-        or (_is_snowflake(dialect) and {exp_dt.this, act_dt.this} <= _SNOWFLAKE_TEXT_FAMILY)
+        or (_is_snowflake(dialect) and any({exp_dt.this, act_dt.this} <= family for family in _SNOWFLAKE_FAMILIES))
     )
     if not same_base:
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 
-    expected_params = _params(exp_dt)
-    if expected_params and expected_params != _params(act_dt):
+    # sqlglot fills in a dialect's default precision (a bare NUMBER parses as
+    # DECIMAL(38,0)), so what the contract declares is read off the raw string.
+    if _split_base(_normalize_raw(expected))[1] and _params(exp_dt) != _params(act_dt):
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 
     return True, ""

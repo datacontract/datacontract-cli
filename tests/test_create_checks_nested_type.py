@@ -315,16 +315,16 @@ def test_an_unparameterized_nested_physical_type_matches_any_length():
     assert _run_snowflake(_sic_code(code="VARCHAR")).result == ResultEnum.passed
 
 
-def test_a_logical_keyword_in_the_physical_type_is_compared_as_a_category():
-    # Contracts routinely carry the logical keyword in physicalType; it names no
-    # native type, so it must not be compared against 'VARCHAR(10)' as one.
+def test_a_logical_keyword_in_the_physical_type_resolves_to_the_native_type():
+    # Contracts routinely carry the logical keyword in physicalType. The dialect
+    # decides what it names: 'string' is Snowflake's VARCHAR, 'boolean' is not.
     assert _run_snowflake(_sic_code(code="string")).result == ResultEnum.passed
     assert _run_snowflake(_sic_code(code="boolean")).result == ResultEnum.failed
 
 
 def test_a_logical_keyword_in_the_physical_type_is_not_overruled_by_the_logical_type():
-    # A property that contradicts itself is still wrong: the physicalType states a
-    # category too, so the logicalType must not silently win.
+    # A property that contradicts itself is still wrong: the physicalType names a
+    # type too, so the logicalType must not silently win.
     prop = SchemaProperty(
         name="primary_sic_code",
         physicalType="OBJECT",
@@ -333,7 +333,44 @@ def test_a_logical_keyword_in_the_physical_type_is_not_overruled_by_the_logical_
     check = _run_snowflake(prop)
 
     assert check.result == ResultEnum.failed
-    assert check.reason == "field 'primary_sic_code.code': expected type 'boolean' but got 'string'"
+    assert (
+        check.reason
+        == "field 'primary_sic_code.code': expected physical type 'boolean' but the column is 'VARCHAR(10)'"
+    )
+
+
+def test_a_nested_number_does_not_match_a_float_column():
+    # NUMBER is both a Snowflake type and an ODCS logical keyword; it must be
+    # checked as the type, so it cannot silently pass on an approximate column.
+    check = _run_snowflake(
+        SchemaProperty(
+            name="geo",
+            physicalType="OBJECT",
+            properties=[SchemaProperty(name="lat", logicalType="number", physicalType="NUMBER")],
+        ),
+        data_type={"type": "OBJECT", "fields": [{"fieldName": "lat", "fieldType": {"type": "REAL"}}]},
+    )
+
+    assert check.result == ResultEnum.failed
+    assert check.reason == "field 'geo.lat': expected physical type 'NUMBER' but the column is 'FLOAT'"
+
+
+def test_an_unparameterized_nested_number_matches_any_precision():
+    # A bare NUMBER declares no precision, so the column's own must not be compared
+    # against the default one sqlglot fills in.
+    check = _run_snowflake(
+        SchemaProperty(
+            name="order",
+            physicalType="OBJECT",
+            properties=[SchemaProperty(name="price", logicalType="number", physicalType="NUMBER")],
+        ),
+        data_type={
+            "type": "OBJECT",
+            "fields": [{"fieldName": "price", "fieldType": {"type": "FIXED", "precision": 12, "scale": 2}}],
+        },
+    )
+
+    assert check.result == ResultEnum.passed
 
 
 def test_a_too_wide_nested_physical_type_fails():
