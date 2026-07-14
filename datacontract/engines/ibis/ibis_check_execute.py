@@ -18,7 +18,12 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
-from datacontract.engines.checks.type_normalize import schema_property_matches, schema_property_mismatch_reason
+from datacontract.engines.checks.type_normalize import (
+    normalize_type_name,
+    schema_property_matches,
+    schema_property_mismatch_reason,
+    schema_property_mismatch_reasons,
+)
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
 from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
@@ -63,6 +68,8 @@ def _describe(spec: CheckSpec) -> str:
         return f"type({spec.field}) == {spec.expected_type_label}"
     if spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
         return f"physical_type({spec.field}) == {spec.expected_physical_type}"
+    if spec.metric in (MetricType.FIELD_NESTED_TYPE, MetricType.FIELD_NESTED_PHYSICAL_TYPE):
+        return f"nested_types({spec.field}) match the contract"
     if spec.metric == MetricType.FIELD_PRESENT:
         return f"present({spec.field})"
     if spec.threshold is not None:
@@ -201,7 +208,14 @@ def _run_model(
     # the real nested types from SHOW COLUMNS so field_type checks can recurse.
     structured_types = None
     if get_server_type(server) == "snowflake" and any(
-        spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE) for spec in specs
+        spec.metric
+        in (
+            MetricType.FIELD_TYPE,
+            MetricType.FIELD_PHYSICAL_TYPE,
+            MetricType.FIELD_NESTED_TYPE,
+            MetricType.FIELD_NESTED_PHYSICAL_TYPE,
+        )
+        for spec in specs
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
 
@@ -231,6 +245,8 @@ def _run_model(
                 _run_type(run, schema, columns, spec, structured_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
                 _run_physical_type(run, con, server, schema, columns, native_types, spec, structured_types)
+            elif spec.metric in (MetricType.FIELD_NESTED_TYPE, MetricType.FIELD_NESTED_PHYSICAL_TYPE):
+                _run_nested_type(run, schema, columns, spec, structured_types)
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
                 _run_freshness(run, t, columns, spec)
             elif spec.metric == MetricType.CUSTOM_SQL:
@@ -744,6 +760,63 @@ def _run_physical_type(
         return
 
     _set_result(run, spec.key, ResultEnum.warning, f"{reason}; skipping the physical type check")
+
+
+def _run_nested_type(
+    run: Run, schema, columns, spec: CheckSpec, structured_types: dict[str, SchemaProperty] | None = None
+):
+    """Compare the children a property declares (``properties:`` / ``items:``) against
+    the column's real nested structure. The column's own type is the base check's job.
+    """
+    metric = spec.metric.value
+    _set_impl(run, spec.key, f"nested types of '{spec.field}' match the contract", "introspection")
+    actual_col = columns.get(spec.field.lower())
+    if actual_col is None:
+        _set_diagnostics(run, spec.key, _diag(metric=metric, field=spec.field, expected=spec.expected_type_label))
+        _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        return
+
+    dtype = schema[actual_col]
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
+    actual_label = (structured_prop.physicalType if structured_prop else None) or str(dtype)
+    _set_diagnostics(
+        run,
+        spec.key,
+        _diag(metric=metric, field=spec.field, expected=spec.expected_type_label, actual=actual_label),
+    )
+
+    expected = spec.expected_schema_property
+    expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
+    actual_base = normalize_type_name(actual_prop.logicalType or actual_prop.physicalType)
+    if actual_base is None:
+        # A dynamically-typed column (json / variant / jsonb) holds a different
+        # structure per row, so there is nothing to compare the children against.
+        _set_result(
+            run,
+            spec.key,
+            ResultEnum.warning,
+            f"The structure of the '{actual_label}' column '{spec.field}' cannot be read; "
+            f"skipping the nested type check",
+        )
+        return
+    if expected_base != actual_base:
+        # The base type check reports why; nested verification cannot run at all.
+        _set_result(
+            run,
+            spec.key,
+            ResultEnum.failed,
+            f"Cannot verify the nested types of '{spec.field}': the column is '{actual_label}', "
+            f"not a nested {expected_base}",
+        )
+        return
+
+    errors = schema_property_mismatch_reasons(expected, actual_prop, spec.field)
+    if not errors:
+        _set_result(run, spec.key, ResultEnum.passed, None)
+        return
+    _update_diagnostics(run, spec.key, {"errors": errors})
+    _set_result(run, spec.key, ResultEnum.failed, schema_property_mismatch_reason(expected, actual_prop, spec.field))
 
 
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
