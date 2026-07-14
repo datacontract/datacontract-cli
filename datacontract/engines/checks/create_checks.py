@@ -22,6 +22,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,51 @@ def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> s
     if schema_object.physicalName:
         return schema_object.physicalName
     return schema_object.name
+
+
+def _scalar_element_type(prop: SchemaProperty, physical: bool) -> Optional[str]:
+    """The declared element type of an array of scalars, or None for anything else."""
+    if normalize_type_name(prop.logicalType or prop.physicalType) != "array" or prop.items is None:
+        return None
+    items = prop.items
+    if items.properties or items.items is not None:
+        return None
+    label = (items.physicalType or items.logicalType) if physical else (items.logicalType or items.physicalType)
+    if normalize_type_name(label) in ("object", "array"):
+        return None
+    return label
+
+
+def _declared_type_label(prop: SchemaProperty, physical: bool) -> Optional[str]:
+    """Render the declared type with its children, e.g. ``OBJECT(code VARCHAR(10), description VARCHAR)``."""
+    label = (prop.physicalType or prop.logicalType) if physical else (prop.logicalType or prop.physicalType)
+    base = normalize_type_name(label)
+    if base == "array" and prop.items is not None:
+        return f"{label}({_declared_type_label(prop.items, physical)})"
+    if base == "object" and prop.properties:
+        children = ", ".join(f"{child.name} {_declared_type_label(child, physical)}" for child in prop.properties)
+        return f"{label}({children})"
+    return label
+
+
+def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: bool) -> CheckSpec:
+    check_type = "field_nested_physical_type" if physical else "field_nested_type"
+    element = _scalar_element_type(prop, physical)
+    if element is not None:
+        name = f"Check that items of array {field} have {'physical type' if physical else 'type'} {element}"
+    else:
+        name = f"Check that nested {'physical types' if physical else 'types'} of {field} are correct"
+    return CheckSpec(
+        key=f"{model}__{field}__{check_type}",
+        category="schema",
+        type=check_type,
+        name=name,
+        model=model,
+        field=field,
+        metric=MetricType.FIELD_NESTED_TYPE,
+        expected_type_label=_declared_type_label(prop, physical),
+        expected_schema_property=prop,
+    )
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -172,6 +218,20 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
         )
 
+        # The raw view cannot provide nested type checks
+        declared_base = normalize_type_name(prop.logicalType or prop.physicalType)
+        nested_checks_possible = (
+            check_types
+            and not uses_raw_view
+            and declared_base in ("object", "array")
+            and (bool(prop.properties) or prop.items is not None)
+        )
+        base_prop = (
+            SchemaProperty(name=prop.name, logicalType=prop.logicalType, physicalType=prop.physicalType)
+            if nested_checks_possible
+            else prop
+        )
+
         # A declared physicalType is checked against the column's real native
         # type in the platform catalog and takes precedence over logicalType,
         # but only on backends that expose a meaningful native type. Elsewhere
@@ -191,11 +251,13 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                     expected_physical_type=prop.physicalType,
                     # Carried for the logicalType fallback when the native type
                     # cannot be read or the physicalType is cross-dialect.
-                    expected_schema_property=prop if prop.logicalType is not None else None,
+                    expected_schema_property=base_prop if prop.logicalType is not None else None,
                 )
             )
+            if nested_checks_possible:
+                checks.append(_nested_type_check(model, field, prop, physical=True))
         elif check_types and prop.logicalType is not None:
-            schema_prop, label = prop, prop.logicalType or ""
+            label = prop.logicalType or ""
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_type",
@@ -207,9 +269,11 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                     metric=MetricType.FIELD_TYPE,
                     expected_category=label,
                     expected_type_label=label,
-                    expected_schema_property=schema_prop,
+                    expected_schema_property=base_prop,
                 )
             )
+            if nested_checks_possible:
+                checks.append(_nested_type_check(model, field, prop, physical=False))
 
         if prop.required:
             checks.append(

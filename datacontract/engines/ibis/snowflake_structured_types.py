@@ -26,13 +26,18 @@ _LEAF_TYPES = {
 
 
 def _to_property(node: dict) -> SchemaProperty:
-    """Convert one ``data_type`` JSON node to a ``SchemaProperty``."""
+    """Convert one ``data_type`` JSON node to a ``SchemaProperty``.
+
+    Every node also carries its rendered native type, so a declared physicalType
+    can be checked against the column's real one down the whole tree.
+    """
+    native = _render_native(node)
     node_type = node.get("type")
     if node_type == "OBJECT":
         fields = node.get("fields")
         if not fields:
             # untyped OBJECT: same shape as the collapsed ibis map
-            return SchemaProperty(logicalType="object", properties=None)
+            return SchemaProperty(logicalType="object", physicalType=native, properties=None)
         properties = []
         for field in fields:
             name = field.get("fieldName")
@@ -48,19 +53,21 @@ def _to_property(node: dict) -> SchemaProperty:
                     properties=child.properties,
                 )
             )
-        return SchemaProperty(logicalType="object", properties=properties or None)
+        return SchemaProperty(logicalType="object", physicalType=native, properties=properties or None)
     if node_type == "ARRAY":
         element = node.get("elementType")
         # untyped ARRAY: no element type to recurse into
-        return SchemaProperty(logicalType="array", items=_to_property(element) if element else None)
+        return SchemaProperty(
+            logicalType="array", physicalType=native, items=_to_property(element) if element else None
+        )
     if node_type == "MAP":
         # dynamic keys can't be matched to named contract properties
-        return SchemaProperty(logicalType="object", properties=None)
+        return SchemaProperty(logicalType="object", physicalType=native, properties=None)
     logical = _LEAF_TYPES.get(node_type)
     if logical:
-        return SchemaProperty(logicalType=logical)
+        return SchemaProperty(logicalType=logical, physicalType=native)
     # VARIANT, BINARY, GEOGRAPHY, …: keep the Snowflake token for the failure message
-    return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE, physicalType=node_type)
+    return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE, physicalType=native)
 
 
 def has_nesting(prop: SchemaProperty) -> bool:
@@ -122,10 +129,7 @@ def fetch_structured_types(con, server: Server, table_name: str) -> dict[str, Sc
         except (TypeError, ValueError):
             continue
         prop = _to_property(node)
-        if has_nesting(prop):
-            # the real native type, for diagnostics the collapsed ibis dtype can't give
-            prop.physicalType = _render_native(node)
-        elif prop.logicalType != UNKNOWN_LOGICAL_TYPE:
+        if not has_nesting(prop) and prop.logicalType != UNKNOWN_LOGICAL_TYPE:
             # scalars and untyped OBJECT/ARRAY: the collapsed ibis dtype says the same
             continue
         # an unverifiable leaf (VARIANT, GEOGRAPHY, …) keeps its Snowflake token, which
