@@ -15,6 +15,7 @@ from open_data_contract_standard.model import (
 from datacontract.engines.checks.check_spec import MetricType
 from datacontract.engines.checks.create_checks import create_checks
 from datacontract.engines.ibis.ibis_check_execute import _run_nested_type, build_check_stubs
+from datacontract.engines.ibis.snowflake_structured_types import _to_property
 from datacontract.model.run import ResultEnum, Run
 
 
@@ -272,6 +273,122 @@ def test_nested_check_fails_when_the_column_is_not_a_nested_type():
 
     assert check.result == ResultEnum.failed
     assert check.reason == "Cannot verify the nested types of 'primary_sic_code': the column is not an object"
+
+
+# ---------------------------------------------------------------------------
+# execution against Snowflake's structured types, where the nested native types
+# are recovered from SHOW COLUMNS
+# ---------------------------------------------------------------------------
+_SHOW_COLUMNS_SIC_CODE = {
+    "type": "OBJECT",
+    "fields": [
+        {"fieldName": "code", "fieldType": {"type": "TEXT", "length": 10}},
+        {"fieldName": "description", "fieldType": {"type": "TEXT", "length": 16777216}},
+    ],
+}
+
+
+def _run_snowflake(prop: SchemaProperty, data_type: dict = _SHOW_COLUMNS_SIC_CODE, dtype: str = "map<string, json>"):
+    specs = _checks(prop, "snowflake")
+    run = Run.create_run()
+    run.checks = build_check_stubs(specs)
+    spec = _nested(specs)
+    field = prop.physicalName or prop.name
+    structured_types = {field.lower(): _to_property(data_type)}
+    _run_nested_type(run, ibis.schema({field: dtype}), {field.lower(): field}, spec, structured_types, "snowflake")
+    return next(c for c in run.checks if c.key == spec.key)
+
+
+def _sic_code(**children: str) -> SchemaProperty:
+    return SchemaProperty(
+        name="primary_sic_code",
+        physicalType="OBJECT",
+        properties=[SchemaProperty(name=name, physicalType=t) for name, t in children.items()],
+    )
+
+
+def test_a_declared_nested_physical_type_is_checked_against_the_real_one():
+    assert _run_snowflake(_sic_code(code="VARCHAR(10)")).result == ResultEnum.passed
+
+
+def test_an_unparameterized_nested_physical_type_matches_any_length():
+    assert _run_snowflake(_sic_code(code="VARCHAR")).result == ResultEnum.passed
+
+
+def test_a_logical_keyword_in_the_physical_type_is_compared_as_a_category():
+    # Contracts routinely carry the logical keyword in physicalType; it names no
+    # native type, so it must not be compared against 'VARCHAR(10)' as one.
+    assert _run_snowflake(_sic_code(code="string")).result == ResultEnum.passed
+    assert _run_snowflake(_sic_code(code="boolean")).result == ResultEnum.failed
+
+
+def test_a_logical_keyword_in_the_physical_type_is_not_overruled_by_the_logical_type():
+    # A property that contradicts itself is still wrong: the physicalType states a
+    # category too, so the logicalType must not silently win.
+    prop = SchemaProperty(
+        name="primary_sic_code",
+        physicalType="OBJECT",
+        properties=[SchemaProperty(name="code", logicalType="string", physicalType="boolean")],
+    )
+    check = _run_snowflake(prop)
+
+    assert check.result == ResultEnum.failed
+    assert check.reason == "field 'primary_sic_code.code': expected type 'boolean' but got 'string'"
+
+
+def test_a_too_wide_nested_physical_type_fails():
+    check = _run_snowflake(_sic_code(code="VARCHAR(64)"))
+
+    assert check.result == ResultEnum.failed
+    assert (
+        check.reason
+        == "field 'primary_sic_code.code': expected physical type 'VARCHAR(64)' but the column is 'VARCHAR(10)'"
+    )
+
+
+def test_the_nested_physical_type_wins_over_the_logical_one():
+    # Only some children declare a physicalType; the others stay on the coarse
+    # category check.
+    prop = SchemaProperty(
+        name="primary_sic_code",
+        physicalType="OBJECT",
+        properties=[
+            SchemaProperty(name="code", logicalType="string"),
+            SchemaProperty(name="description", logicalType="string", physicalType="VARCHAR(5)"),
+        ],
+    )
+    check = _run_snowflake(prop)
+
+    assert check.result == ResultEnum.failed
+    assert "primary_sic_code.description" in check.reason
+
+
+def test_the_declared_element_physical_type_of_an_array_is_checked():
+    prop = SchemaProperty(name="sic_codes", physicalType="ARRAY", items=SchemaProperty(physicalType="VARCHAR(64)"))
+    check = _run_snowflake(prop, {"type": "ARRAY", "elementType": {"type": "TEXT", "length": 10}}, dtype="array<json>")
+
+    assert check.result == ResultEnum.failed
+    assert "sic_codes[]" in check.reason
+
+
+def test_a_nested_physical_type_foreign_to_the_dialect_warns():
+    # An Oracle NCLOB declared against Snowflake can be neither confirmed nor refuted.
+    check = _run_snowflake(_sic_code(code="NCLOB"))
+
+    assert check.result == ResultEnum.warning
+    assert "could not be interpreted" in check.reason
+
+
+def test_a_foreign_nested_physical_type_falls_back_to_the_logical_type():
+    # Same as the column itself: an uninterpretable physicalType degrades to the
+    # category check when the property declares a logicalType.
+    prop = SchemaProperty(
+        name="primary_sic_code",
+        physicalType="OBJECT",
+        properties=[SchemaProperty(name="code", physicalType="NCLOB", logicalType="string")],
+    )
+
+    assert _run_snowflake(prop).result == ResultEnum.passed
 
 
 def test_the_mismatch_reason_does_not_repeat_the_columns_own_structure():

@@ -15,6 +15,8 @@ from typing import NamedTuple
 
 from open_data_contract_standard.model import SchemaProperty
 
+from datacontract.engines.checks.physical_type_match import physical_type_matches
+
 # logicalType marker for a field whose type the backend cannot describe: a
 # dynamically-typed column (ibis json: Snowflake VARIANT, Postgres JSONB,
 # BigQuery JSON) or an unsupported one (binary, geography). No declared type can
@@ -123,6 +125,10 @@ def normalize_type_name(type_name: str | None) -> str | None:
 
 _NUMERIC = {"integer", "number"}
 
+# Contracts routinely carry the logical type keyword in physicalType (it is what
+# DCS did). Such a value names no native type, so it is compared as a category.
+_LOGICAL_KEYWORDS = {"string", "integer", "number", "boolean", "timestamp", "date", "time", "object", "array"}
+
 
 def schema_property_matches(expected: SchemaProperty | None, actual: SchemaProperty | None) -> bool:
     """Return True if ``actual`` is structurally compatible with ``expected``.
@@ -200,15 +206,17 @@ def schema_property_mismatch_reason(
     expected: SchemaProperty | None,
     actual: SchemaProperty | None,
     path: str = "",
+    dialect=None,
 ) -> str:
     """Return a human-readable description of the first structural mismatch and a count of other type errors, or '' if none."""
-    return format_mismatch_reason(schema_property_mismatch_reasons(expected, actual, path))
+    return format_mismatch_reason(schema_property_mismatch_reasons(expected, actual, path, dialect))
 
 
 def schema_property_mismatch_reasons(
     expected: SchemaProperty | None,
     actual: SchemaProperty | None,
     path: str = "",
+    dialect=None,
 ) -> list[TypeMismatch]:
     errors: list[TypeMismatch] = []
 
@@ -244,6 +252,40 @@ def schema_property_mismatch_reasons(
         )
         return errors
 
+    # A physicalType that is only a logical keyword names no native type, but it
+    # still states a category, which the logicalType must not silently overrule.
+    if expected.physicalType and expected.physicalType.strip().lower() in _LOGICAL_KEYWORDS:
+        keyword_base = normalize_type_name(expected.physicalType)
+        if keyword_base != actual_base and not (keyword_base in _NUMERIC and actual_base in _NUMERIC):
+            act_str = actual.logicalType or actual.physicalType
+            errors.append(
+                TypeMismatch(
+                    f"{field_label}: expected type '{expected.physicalType}' but got '{act_str}'", verifiable=True
+                )
+            )
+            return errors
+
+    # A leaf that declares a native physicalType is compared against the column's
+    # real native type, where the backend reports one. The declared type wins over
+    # the logicalType, as it does for the column itself.
+    if (
+        expected_base not in ("object", "array")
+        and expected.physicalType
+        and expected.physicalType.strip().lower() not in _LOGICAL_KEYWORDS
+        and actual.physicalType
+    ):
+        result, reason = physical_type_matches(expected.physicalType, actual.physicalType, dialect)
+        if result is True:
+            return errors
+        if result is False:
+            errors.append(TypeMismatch(f"{field_label}: {reason}", verifiable=True))
+            return errors
+        # The declared type is foreign to this dialect: fall back to the category
+        # comparison, and only give up when there is no logicalType to fall back on.
+        if expected.logicalType is None:
+            errors.append(TypeMismatch(f"{field_label}: {reason}", verifiable=False))
+            return errors
+
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         exp_str = expected.logicalType or expected.physicalType
         act_str = actual.logicalType or actual.physicalType
@@ -253,7 +295,7 @@ def schema_property_mismatch_reasons(
     if expected_base == "array":
         if expected.items is not None:
             child_path = f"{path}[]" if path else "[]"
-            errors.extend(schema_property_mismatch_reasons(expected.items, actual.items, child_path))
+            errors.extend(schema_property_mismatch_reasons(expected.items, actual.items, child_path, dialect))
 
     if expected_base == "object":
         if not expected.properties:
@@ -281,6 +323,6 @@ def schema_property_mismatch_reasons(
                 errors.append(TypeMismatch(f"field '{child_path}' is missing", verifiable=True))
                 continue
 
-            errors.extend(schema_property_mismatch_reasons(exp_field, act_field, child_path))
+            errors.extend(schema_property_mismatch_reasons(exp_field, act_field, child_path, dialect))
 
     return errors

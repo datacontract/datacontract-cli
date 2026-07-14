@@ -241,7 +241,7 @@ def _run_model(
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
                 _run_physical_type(run, con, server, schema, columns, native_types, spec, structured_types)
             elif spec.metric == MetricType.FIELD_NESTED_TYPE:
-                _run_nested_type(run, schema, columns, spec, structured_types)
+                _run_nested_type(run, schema, columns, spec, structured_types, sqlglot_dialect(con))
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
                 _run_freshness(run, t, columns, spec)
             elif spec.metric == MetricType.CUSTOM_SQL:
@@ -758,7 +758,12 @@ def _run_physical_type(
 
 
 def _run_nested_type(
-    run: Run, schema, columns, spec: CheckSpec, structured_types: dict[str, SchemaProperty] | None = None
+    run: Run,
+    schema,
+    columns,
+    spec: CheckSpec,
+    structured_types: dict[str, SchemaProperty] | None = None,
+    dialect=None,
 ):
     """Compare the children a property declares (``properties:`` / ``items:``) against
     the column's real nested structure. The column's own type is the base check's job.
@@ -806,7 +811,7 @@ def _run_nested_type(
         )
         return
 
-    errors = schema_property_mismatch_reasons(expected, actual_prop, spec.field)
+    errors = schema_property_mismatch_reasons(expected, actual_prop, spec.field, dialect)
     if not errors:
         _set_result(run, spec.key, ResultEnum.passed, None)
         return

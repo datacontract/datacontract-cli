@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test` reports the nested types of a property that declares `properties:` or `items:` as a separate check
+- `datacontract test` on Snowflake verifies the `physicalType` of nested properties against the real column type
 
 ## [1.0.12] - 2026-07-10
 

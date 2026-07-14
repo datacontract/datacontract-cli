@@ -58,6 +58,21 @@ def test_nested_object_recurses():
     assert inner["tag"].logicalType == "string"
 
 
+def test_every_node_carries_its_native_type():
+    # A declared physicalType is checked against the column's real native type all
+    # the way down the tree, so every recovered node keeps its rendered type.
+    prop = _prop(
+        '{"type":"OBJECT","fields":['
+        '{"fieldName":"code","fieldType":{"type":"TEXT","length":10}},'
+        '{"fieldName":"lines","fieldType":{"type":"ARRAY","elementType":{"type":"FIXED","precision":12,"scale":2}}}]}'
+    )
+    assert prop.physicalType == "OBJECT(code VARCHAR(10), lines ARRAY(NUMBER(12,2)))"
+    children = {p.name: p for p in prop.properties}
+    assert children["code"].physicalType == "VARCHAR(10)"
+    assert children["lines"].physicalType == "ARRAY(NUMBER(12,2))"
+    assert children["lines"].items.physicalType == "NUMBER(12,2)"
+
+
 def test_leaf_token_mapping():
     assert _prop('{"type":"TIMESTAMP_NTZ"}').logicalType == "timestamp"
     assert _prop('{"type":"TIMESTAMP_LTZ"}').logicalType == "timestamp"
