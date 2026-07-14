@@ -46,6 +46,17 @@ def test_distinct_native_types_do_not_match():
     assert ok is False
 
 
+def test_snowflake_text_and_varchar_are_the_same_type():
+    # Snowflake's INFORMATION_SCHEMA reports a VARCHAR column as TEXT; there they
+    # are synonyms, so a contract declaring VARCHAR must match its own column.
+    assert physical_type_matches("VARCHAR", "TEXT(16777216)", "snowflake")[0] is True
+    assert physical_type_matches("TEXT", "TEXT(16777216)", "snowflake")[0] is True
+    # the declared length is still enforced
+    assert physical_type_matches("VARCHAR(10)", "TEXT(16777216)", "snowflake")[0] is False
+    # and the alias is Snowflake's alone
+    assert physical_type_matches("VARCHAR(255)", "TEXT", "tsql")[0] is False
+
+
 def test_bigquery_legacy_type_names_match_googlesql_names():
     # `datacontract import bigquery` writes the names the BigQuery API returns
     # (INTEGER, FLOAT, BOOLEAN, RECORD); INFORMATION_SCHEMA reports the GoogleSQL

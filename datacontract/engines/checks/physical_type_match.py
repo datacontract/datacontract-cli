@@ -43,6 +43,21 @@ def _timestamp_family() -> set:
 
 _TIMESTAMP_FAMILY = _timestamp_family()
 
+# In Snowflake these are one type, and its INFORMATION_SCHEMA reports a VARCHAR
+# column as TEXT, so a contract declaring VARCHAR would never match its own
+# column. Dialect-specific because elsewhere (MySQL, SQL Server) TEXT and VARCHAR
+# are genuinely different types.
+_SNOWFLAKE_TEXT_FAMILY = {
+    exp.DataType.Type.VARCHAR,
+    exp.DataType.Type.TEXT,
+    exp.DataType.Type.NVARCHAR,
+}
+
+
+def _is_snowflake(dialect) -> bool:
+    name = getattr(dialect, "__name__", None) or type(dialect).__name__
+    return str(name).lower() == "snowflake" or str(dialect).lower() == "snowflake"
+
 
 def _parse(type_str: str, dialect) -> Optional[exp.DataType]:
     """Parse a type string into an ``exp.DataType`` for ``dialect``, or ``None``."""
@@ -132,6 +147,7 @@ def physical_type_matches(
         exp_dt.this == act_dt.this
         or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
         or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
+        or (_is_snowflake(dialect) and {exp_dt.this, act_dt.this} <= _SNOWFLAKE_TEXT_FAMILY)
     )
     if not same_base:
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
