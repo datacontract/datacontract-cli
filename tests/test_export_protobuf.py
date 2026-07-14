@@ -19,10 +19,9 @@ def test_to_protobuf():
 kind: DataContract
 apiVersion: v3.1.0
 id: test_protobuf
-description:
-  customProperties:
-    - property: proto_package_name
-      value: com.example.product
+customProperties:
+  - property: protoPackageName
+    value: com.example.product
 schema:
   - name: Product
     description: Details of Product.

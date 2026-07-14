@@ -33,14 +33,13 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
 
 def _get_proto_package_name(data_contract: OpenDataContractStandard) -> str:
     """
-    Returns the Protobuf package name from the contract's description customProperties
-    ("proto_package_name"), falling back to "example".
+    Returns the Protobuf package name from the contract's customProperties
+    ("protoPackageName"), falling back to "example".
     """
-    description = data_contract.description
-    if description is None or description.customProperties is None:
+    if data_contract.customProperties is None:
         return "example"
-    for cp in description.customProperties:
-        if cp.property == "proto_package_name" and cp.value:
+    for cp in data_contract.customProperties:
+        if cp.property == "protoPackageName" and cp.value:
             return cp.value
     return "example"
 
