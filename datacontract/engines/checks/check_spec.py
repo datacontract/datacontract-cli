@@ -31,7 +31,6 @@ class MetricType(str, Enum):
     FIELD_TYPE = "field_type"
     FIELD_PHYSICAL_TYPE = "field_physical_type"
     FIELD_NESTED_TYPE = "field_nested_type"
-    FIELD_NESTED_PHYSICAL_TYPE = "field_nested_physical_type"
     FRESHNESS = "freshness"
     RETENTION = "retention"
     CUSTOM_SQL = "custom_sql"

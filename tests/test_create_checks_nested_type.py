@@ -25,10 +25,7 @@ def _checks(prop: SchemaProperty, server_type: str, fmt: str | None = None):
 
 
 def _nested(checks):
-    return next(
-        (c for c in checks if c.metric in (MetricType.FIELD_NESTED_TYPE, MetricType.FIELD_NESTED_PHYSICAL_TYPE)),
-        None,
-    )
+    return next((c for c in checks if c.metric == MetricType.FIELD_NESTED_TYPE), None)
 
 
 def _base(checks):
@@ -68,6 +65,14 @@ def test_object_with_properties_gets_a_nested_physical_type_check():
     assert nested.key == "USERS__primary_sic_code__field_nested_physical_type"
     assert nested.field == "primary_sic_code"
     assert nested.name == "Check that nested physical types of primary_sic_code are correct"
+
+
+def test_the_expected_label_renders_the_declared_children():
+    # The base check already reports the bare container type; the nested check's
+    # diagnostics are only useful if they show the declared structure.
+    nested = _nested(_checks(_SIC_CODE, "snowflake"))
+
+    assert nested.expected_type_label == "OBJECT(code VARCHAR(10), description VARCHAR)"
 
 
 def test_array_of_scalars_names_the_element_type():
@@ -140,6 +145,39 @@ def test_no_nested_check_on_parquet():
     assert _nested(_checks(_SIC_CODE, "local", fmt="parquet")) is None
 
 
+def test_no_nested_check_for_an_uninterpretable_container():
+    # A vendor type outside the 9 ODCS categories has no nested structure the
+    # CLI can name; the base check still compares it against the catalog.
+    prop = SchemaProperty(
+        name="attrs",
+        physicalType="MAP(VARCHAR, VARCHAR)",
+        properties=[SchemaProperty(name="a", physicalType="VARCHAR")],
+    )
+    checks = _checks(prop, "snowflake")
+
+    assert _nested(checks) is None
+    assert _base(checks).expected_physical_type == "MAP(VARCHAR, VARCHAR)"
+
+
+def test_no_nested_check_for_a_scalar_with_items():
+    prop = SchemaProperty(name="weird", logicalType="string", items=SchemaProperty(logicalType="string"))
+
+    assert _nested(_checks(prop, "local", fmt="delta")) is None
+
+
+def test_dynamically_typed_column_still_gets_a_nested_check():
+    # variant / json / jsonb are objects; the check is what reports that their
+    # structure cannot be read.
+    prop = SchemaProperty(
+        name="payload",
+        physicalType="VARIANT",
+        logicalType="object",
+        properties=[SchemaProperty(name="code", logicalType="string")],
+    )
+
+    assert _nested(_checks(prop, "snowflake")) is not None
+
+
 # ---------------------------------------------------------------------------
 # execution
 # ---------------------------------------------------------------------------
@@ -196,10 +234,51 @@ def test_nested_check_warns_for_a_dynamically_typed_column():
     assert "cannot be read" in check.reason
 
 
+def test_nested_check_warns_for_an_untyped_object():
+    # Snowflake's untyped OBJECT reads as a map: the keys differ per row, so the
+    # declared children are as unverifiable as those of a variant.
+    check = _run(_SIC_CODE, "map<string, json>")
+
+    assert check.result == ResultEnum.warning
+    assert "can't be verified" in check.reason
+
+
+def test_nested_check_warns_for_an_untyped_array():
+    check = _run(_SIC_CODES, "array<json>")
+
+    assert check.result == ResultEnum.warning
+    assert "no verifiable logical type" in check.reason
+
+
+def test_a_real_mismatch_outranks_an_unverifiable_child():
+    prop = SchemaProperty(
+        name="primary_sic_code",
+        logicalType="object",
+        properties=[
+            SchemaProperty(name="code", logicalType="integer"),
+            SchemaProperty(
+                name="description", logicalType="object", properties=[SchemaProperty(name="x", logicalType="string")]
+            ),
+        ],
+    )
+    check = _run(prop, "struct<code: string, description: json>")
+
+    assert check.result == ResultEnum.failed
+    assert "primary_sic_code.code" in check.reason
+
+
 def test_nested_check_fails_when_the_column_is_not_a_nested_type():
     check = _run(_SIC_CODE, "int64")
 
     assert check.result == ResultEnum.failed
-    assert check.reason == (
-        "Cannot verify the nested types of 'primary_sic_code': the column is 'int64', not a nested object"
-    )
+    assert check.reason == "Cannot verify the nested types of 'primary_sic_code': the column is not an object"
+
+
+def test_the_mismatch_reason_does_not_repeat_the_columns_own_structure():
+    # The base type check names the actual type; rendering a whole structured
+    # column here would run for lines.
+    check = _run(_SIC_CODE, "array<struct<sku: string, quantity: int64, price: decimal(12, 2)>>")
+
+    assert check.result == ResultEnum.failed
+    assert check.reason == "Cannot verify the nested types of 'primary_sic_code': the column is not an object"
+    assert check.diagnostics["actual"] == "array<struct<sku: string, quantity: int64, price: decimal(12, 2)>>"

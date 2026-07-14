@@ -55,10 +55,6 @@ def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> s
     return schema_object.name
 
 
-def _without_children(prop: SchemaProperty) -> SchemaProperty:
-    return SchemaProperty(name=prop.name, logicalType=prop.logicalType, physicalType=prop.physicalType)
-
-
 def _scalar_element_type(prop: SchemaProperty, physical: bool) -> Optional[str]:
     """The declared element type of an array of scalars, or None for anything else."""
     if normalize_type_name(prop.logicalType or prop.physicalType) != "array" or prop.items is None:
@@ -69,6 +65,18 @@ def _scalar_element_type(prop: SchemaProperty, physical: bool) -> Optional[str]:
     label = (items.physicalType or items.logicalType) if physical else (items.logicalType or items.physicalType)
     if normalize_type_name(label) in ("object", "array"):
         return None
+    return label
+
+
+def _declared_type_label(prop: SchemaProperty, physical: bool) -> Optional[str]:
+    """Render the declared type with its children, e.g. ``OBJECT(code VARCHAR(10), description VARCHAR)``."""
+    label = (prop.physicalType or prop.logicalType) if physical else (prop.logicalType or prop.physicalType)
+    base = normalize_type_name(label)
+    if base == "array" and prop.items is not None:
+        return f"{label}({_declared_type_label(prop.items, physical)})"
+    if base == "object" and prop.properties:
+        children = ", ".join(f"{child.name} {_declared_type_label(child, physical)}" for child in prop.properties)
+        return f"{label}({children})"
     return label
 
 
@@ -86,8 +94,8 @@ def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: b
         name=name,
         model=model,
         field=field,
-        metric=MetricType.FIELD_NESTED_PHYSICAL_TYPE if physical else MetricType.FIELD_NESTED_TYPE,
-        expected_type_label=element or (prop.physicalType if physical else prop.logicalType),
+        metric=MetricType.FIELD_NESTED_TYPE,
+        expected_type_label=_declared_type_label(prop, physical),
         expected_schema_property=prop,
     )
 
@@ -211,8 +219,18 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         )
 
         # The raw view cannot provide nested type checks
-        nested_checks_possible = check_types and not uses_raw_view and (bool(prop.properties) or prop.items is not None)
-        base_prop = _without_children(prop) if nested_checks_possible else prop
+        declared_base = normalize_type_name(prop.logicalType or prop.physicalType)
+        nested_checks_possible = (
+            check_types
+            and not uses_raw_view
+            and declared_base in ("object", "array")
+            and (bool(prop.properties) or prop.items is not None)
+        )
+        base_prop = (
+            SchemaProperty(name=prop.name, logicalType=prop.logicalType, physicalType=prop.physicalType)
+            if nested_checks_possible
+            else prop
+        )
 
         # A declared physicalType is checked against the column's real native
         # type in the platform catalog and takes precedence over logicalType,

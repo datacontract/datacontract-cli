@@ -19,6 +19,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.type_normalize import (
+    format_mismatch_reason,
     normalize_type_name,
     schema_property_matches,
     schema_property_mismatch_reason,
@@ -68,7 +69,7 @@ def _describe(spec: CheckSpec) -> str:
         return f"type({spec.field}) == {spec.expected_type_label}"
     if spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
         return f"physical_type({spec.field}) == {spec.expected_physical_type}"
-    if spec.metric in (MetricType.FIELD_NESTED_TYPE, MetricType.FIELD_NESTED_PHYSICAL_TYPE):
+    if spec.metric == MetricType.FIELD_NESTED_TYPE:
         return f"nested_types({spec.field}) match the contract"
     if spec.metric == MetricType.FIELD_PRESENT:
         return f"present({spec.field})"
@@ -208,13 +209,7 @@ def _run_model(
     # the real nested types from SHOW COLUMNS so field_type checks can recurse.
     structured_types = None
     if get_server_type(server) == "snowflake" and any(
-        spec.metric
-        in (
-            MetricType.FIELD_TYPE,
-            MetricType.FIELD_PHYSICAL_TYPE,
-            MetricType.FIELD_NESTED_TYPE,
-            MetricType.FIELD_NESTED_PHYSICAL_TYPE,
-        )
+        spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE, MetricType.FIELD_NESTED_TYPE)
         for spec in specs
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
@@ -245,7 +240,7 @@ def _run_model(
                 _run_type(run, schema, columns, spec, structured_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
                 _run_physical_type(run, con, server, schema, columns, native_types, spec, structured_types)
-            elif spec.metric in (MetricType.FIELD_NESTED_TYPE, MetricType.FIELD_NESTED_PHYSICAL_TYPE):
+            elif spec.metric == MetricType.FIELD_NESTED_TYPE:
                 _run_nested_type(run, schema, columns, spec, structured_types)
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
                 _run_freshness(run, t, columns, spec)
@@ -768,7 +763,7 @@ def _run_nested_type(
     """Compare the children a property declares (``properties:`` / ``items:``) against
     the column's real nested structure. The column's own type is the base check's job.
     """
-    metric = spec.metric.value
+    metric = spec.type
     _set_impl(run, spec.key, f"nested types of '{spec.field}' match the contract", "introspection")
     actual_col = columns.get(spec.field.lower())
     if actual_col is None:
@@ -801,13 +796,13 @@ def _run_nested_type(
         )
         return
     if expected_base != actual_base:
-        # The base type check reports why; nested verification cannot run at all.
+        # The base type check names the actual type; repeating it here would print
+        # the column's whole rendered structure.
         _set_result(
             run,
             spec.key,
             ResultEnum.failed,
-            f"Cannot verify the nested types of '{spec.field}': the column is '{actual_label}', "
-            f"not a nested {expected_base}",
+            f"Cannot verify the nested types of '{spec.field}': the column is not an {expected_base}",
         )
         return
 
@@ -815,8 +810,14 @@ def _run_nested_type(
     if not errors:
         _set_result(run, spec.key, ResultEnum.passed, None)
         return
-    _update_diagnostics(run, spec.key, {"errors": errors})
-    _set_result(run, spec.key, ResultEnum.failed, schema_property_mismatch_reason(expected, actual_prop, spec.field))
+    _update_diagnostics(run, spec.key, {"errors": [error.message for error in errors]})
+    verified = any(error.verifiable for error in errors)
+    _set_result(
+        run,
+        spec.key,
+        ResultEnum.failed if verified else ResultEnum.warning,
+        format_mismatch_reason(errors),
+    )
 
 
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):

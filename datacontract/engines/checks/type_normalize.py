@@ -11,6 +11,7 @@ the actual type is structurally compatible with the expected one.
 from __future__ import annotations
 
 import re
+from typing import NamedTuple
 
 from open_data_contract_standard.model import SchemaProperty
 
@@ -176,29 +177,40 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
     return True
 
 
+class TypeMismatch(NamedTuple):
+    message: str
+    # False when the actual structure cannot be read (json / variant / untyped
+    # object): the declared type is neither confirmed nor refuted.
+    verifiable: bool
+
+
+def format_mismatch_reason(errors: list[TypeMismatch]) -> str:
+    """The first mismatch and a count of the other type errors, or '' if none."""
+    num_errors = len(errors)
+
+    if num_errors == 0:
+        return ""
+    elif num_errors == 1:
+        return errors[0].message
+    else:
+        return f"{errors[0].message} (and {num_errors - 1} other error{'s' if num_errors > 2 else ''})"
+
+
 def schema_property_mismatch_reason(
     expected: SchemaProperty | None,
     actual: SchemaProperty | None,
     path: str = "",
 ) -> str:
     """Return a human-readable description of the first structural mismatch and a count of other type errors, or '' if none."""
-    errors = schema_property_mismatch_reasons(expected, actual, path)
-    num_errors = len(errors)
-
-    if num_errors == 0:
-        return ""
-    elif num_errors == 1:
-        return errors[0]
-    else:
-        return f"{errors[0]} (and {num_errors - 1} other error{'s' if num_errors > 2 else ''})"
+    return format_mismatch_reason(schema_property_mismatch_reasons(expected, actual, path))
 
 
 def schema_property_mismatch_reasons(
     expected: SchemaProperty | None,
     actual: SchemaProperty | None,
     path: str = "",
-) -> list[str]:
-    errors: list[str] = []
+) -> list[TypeMismatch]:
+    errors: list[TypeMismatch] = []
 
     if expected is None:
         return errors
@@ -206,7 +218,12 @@ def schema_property_mismatch_reasons(
     field_label = f"field '{path}'" if path else "column"
     if actual is None:
         exp_str = expected.logicalType or expected.physicalType
-        errors.append(f"{field_label}: expected type '{exp_str}' but the column type could not be determined")
+        errors.append(
+            TypeMismatch(
+                f"{field_label}: expected type '{exp_str}' but the column type could not be determined",
+                verifiable=False,
+            )
+        )
         return errors
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual.logicalType or actual.physicalType)
@@ -218,16 +235,19 @@ def schema_property_mismatch_reasons(
         exp_str = expected.logicalType or expected.physicalType
         act_str = actual.physicalType or "unknown"
         errors.append(
-            f"{field_label}: has type '{act_str}', but the contract specifies '{exp_str}'. "
-            f"A '{act_str}' value has no verifiable logical type. "
-            f"If this is intentional, specify `physicalType: {act_str}`."
+            TypeMismatch(
+                f"{field_label}: has type '{act_str}', but the contract specifies '{exp_str}'. "
+                f"A '{act_str}' value has no verifiable logical type. "
+                f"If this is intentional, specify `physicalType: {act_str}`.",
+                verifiable=False,
+            )
         )
         return errors
 
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         exp_str = expected.logicalType or expected.physicalType
         act_str = actual.logicalType or actual.physicalType
-        errors.append(f"{field_label}: expected type '{exp_str}' but got '{act_str}'")
+        errors.append(TypeMismatch(f"{field_label}: expected type '{exp_str}' but got '{act_str}'", verifiable=True))
         return errors
 
     if expected_base == "array":
@@ -240,8 +260,12 @@ def schema_property_mismatch_reasons(
             return errors
         if actual.properties is None:
             errors.append(
-                f"{field_label}: declared with nested fields but the column is an untyped object "
-                "(map/variant) whose structure can't be verified; use a structured type or specify physicalType"
+                TypeMismatch(
+                    f"{field_label}: nested properties are declared but the column is an untyped object "
+                    "whose structure can't be verified. Use a structured type for your data or specify "
+                    "physicalType.",
+                    verifiable=False,
+                )
             )
             return errors
 
@@ -254,7 +278,7 @@ def schema_property_mismatch_reasons(
             act_field = actual_by_name.get(exp_field.name.lower())
 
             if act_field is None:
-                errors.append(f"field '{child_path}' is missing")
+                errors.append(TypeMismatch(f"field '{child_path}' is missing", verifiable=True))
                 continue
 
             errors.extend(schema_property_mismatch_reasons(exp_field, act_field, child_path))
