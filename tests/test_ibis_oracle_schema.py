@@ -66,6 +66,17 @@ def test_table_database_none_for_redshift_without_schema():
     con = _FakeBackend("postgres", {})
     assert _table_database(con, server) is None
 
+def test_table_database_uses_server_schema_for_sqlserver():
+    server = Server(type="sqlserver", schema="DEBUG")
+    con = _FakeBackend("sqlserver", {})
+    assert _table_database(con, server) == "DEBUG"
+
+
+def test_table_database_none_for_sqlserver_without_schema():
+    server = Server(type="sqlserver")
+    con = _FakeBackend("sqlserver", {})
+    assert _table_database(con, server) is None
+
 
 def test_table_database_none_without_server():
     con = _FakeBackend("oracle", {})

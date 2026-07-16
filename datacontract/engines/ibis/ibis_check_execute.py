@@ -1060,6 +1060,10 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
       Redshift with ``column "current_schema" does not exist``, since Redshift
       only supports the parenthesized ``current_schema()``. Passing the schema
       explicitly skips that query.
+    - **SQL Server** cannot pin the schema at connect time. ``ibis.mssql.connect()``
+      has no ``schema`` parameter. Its ``database`` kwarf is forwarded to pyodbc as
+      the ODBC ``Database =`` attribute. This functions as expected when the sql schema
+      is ``dbo`` as there is a default, but cannot handle other schemas.
 
     Other backends pin the schema at connect time and need no qualifier.
     """
@@ -1069,7 +1073,7 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
         return server.schema_
     # Redshift rides the Postgres backend, so detect it by the contract's server
     # type rather than con.name.
-    if get_server_type(server) == "redshift":
+    if get_server_type(server) in ("redshift", "sqlserver"):
         return server.schema_
     return None
 
