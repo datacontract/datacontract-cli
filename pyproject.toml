@@ -200,7 +200,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<9.7.0",
-  "ruff==0.15.21",
+  "ruff==0.15.22",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
   "trino==0.338.0",
 ]
