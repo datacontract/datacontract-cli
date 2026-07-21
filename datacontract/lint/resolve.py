@@ -44,11 +44,12 @@ _SafeLoaderNoTimestamp.yaml_implicit_resolvers = {
 
 
 def _resolve_jsonschema_compliance_error_message_path(yaml_str, message):
+    except_message = message
+
     try:
         matches = re.findall(r"\[(\d+)\]", message)
         schema_index = matches[0] if len(matches) > 0 else None
         property_index = matches[1] if len(matches) > 1 else None
-        except_message = message
         if schema_index is not None and "schema" in yaml_str and int(schema_index) < len(yaml_str["schema"]):
             except_message = except_message.replace(
                 f"schema[{schema_index}]", f"schema.{yaml_str['schema'][int(schema_index)]['name']}"
@@ -68,8 +69,8 @@ def _resolve_jsonschema_compliance_error_message_path(yaml_str, message):
     except Exception:
         logging.warning("YAML doesn't conform to JSON schema. Could not resolve indexed schema or property names.")
         except_message = message
-    finally:
-        return except_message
+
+    return except_message
 
 
 def resolve_data_contract_dict(
