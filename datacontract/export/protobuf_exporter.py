@@ -1,10 +1,15 @@
+import re
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.exceptions import DataContractException
 
 OBJECT_TYPES: set = {"object", "record", "struct"}
+
+# A valid proto package is a dot-separated sequence of identifiers.
+_PROTO_PACKAGE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
 
 
 class ProtoBufExporter(Exporter):
@@ -29,6 +34,27 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     if prop.logicalTypeOptions is None:
         return None
     return prop.logicalTypeOptions.get(key)
+
+
+def _get_proto_package_name(data_contract: OpenDataContractStandard) -> str:
+    """
+    Returns the Protobuf package name from the contract's customProperties
+    ("protoPackageName"), falling back to "example".
+    """
+    if data_contract.customProperties is None:
+        return "example"
+    for cp in data_contract.customProperties:
+        if cp.property == "protoPackageName" and cp.value:
+            if not _PROTO_PACKAGE_PATTERN.match(cp.value):
+                raise DataContractException(
+                    type="protobuf-export",
+                    name="invalid-proto-package-name",
+                    reason=f"Invalid protoPackageName '{cp.value}'. "
+                    "Must be a dot-separated sequence of identifiers, e.g. 'com.example.mydata'.",
+                    engine="datacontract",
+                )
+            return cp.value
+    return "example"
 
 
 def to_protobuf(data_contract: OpenDataContractStandard) -> str:
@@ -58,7 +84,7 @@ def to_protobuf(data_contract: OpenDataContractStandard) -> str:
 
     # Build header with syntax and package declarations.
     header = 'syntax = "proto3";\n\n'
-    package = "example"  # Default package, can be customized
+    package: str = _get_proto_package_name(data_contract)
     header += f"package {package};\n\n"
 
     # Append enum definitions before messages.

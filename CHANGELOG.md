@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract export protobuf` supports a customizable package name via the `protoPackageName` custom property (#1381)
+
 ### Fixed
 - SyntaxWarning during installation: `datacontract/lint/resolve.py:72: SyntaxWarning: 'return' in a 'finally' block return except_message` is handled properly
 
