@@ -46,6 +46,40 @@ def test_distinct_native_types_do_not_match():
     assert ok is False
 
 
+def test_snowflake_text_and_varchar_are_the_same_type():
+    # Snowflake's INFORMATION_SCHEMA reports a VARCHAR column as TEXT; there they
+    # are synonyms, so a contract declaring VARCHAR must match its own column.
+    assert physical_type_matches("VARCHAR", "TEXT(16777216)", "snowflake")[0] is True
+    assert physical_type_matches("TEXT", "TEXT(16777216)", "snowflake")[0] is True
+    # the declared length is still enforced
+    assert physical_type_matches("VARCHAR(10)", "TEXT(16777216)", "snowflake")[0] is False
+    # and the alias is Snowflake's alone
+    assert physical_type_matches("VARCHAR(255)", "TEXT", "tsql")[0] is False
+
+
+def test_snowflake_numeric_aliases_are_the_same_type():
+    # Snowflake stores INT/INTEGER/BIGINT/SMALLINT/TINYINT/BYTEINT/NUMBER as
+    # NUMBER(38,0), and FLOAT/REAL/DOUBLE as FLOAT, and reports only the canonical
+    # name, so a contract declaring any alias must match its own column.
+    assert physical_type_matches("BIGINT", "NUMBER(38,0)", "snowflake")[0] is True
+    assert physical_type_matches("INTEGER", "NUMBER(38,0)", "snowflake")[0] is True
+    assert physical_type_matches("REAL", "FLOAT", "snowflake")[0] is True
+    assert physical_type_matches("DOUBLE", "FLOAT", "snowflake")[0] is True
+    # exact and approximate numerics stay distinct
+    assert physical_type_matches("NUMBER", "FLOAT", "snowflake")[0] is False
+    assert physical_type_matches("FLOAT", "NUMBER(12,2)", "snowflake")[0] is False
+
+
+def test_precision_is_only_enforced_when_the_contract_declares_it():
+    # sqlglot fills in the dialect's default precision, so a bare NUMBER parses as
+    # DECIMAL(38,0); that default must not be compared against the real column.
+    assert physical_type_matches("NUMBER", "NUMBER(12,2)", "snowflake")[0] is True
+    assert physical_type_matches("DECIMAL", "NUMBER(12,2)", "snowflake")[0] is True
+    assert physical_type_matches("NUMERIC", "NUMBER(12,2)", "postgres")[0] is True
+    # a declared precision is still enforced
+    assert physical_type_matches("NUMBER(5,0)", "NUMBER(12,2)", "snowflake")[0] is False
+
+
 def test_bigquery_legacy_type_names_match_googlesql_names():
     # `datacontract import bigquery` writes the names the BigQuery API returns
     # (INTEGER, FLOAT, BOOLEAN, RECORD); INFORMATION_SCHEMA reports the GoogleSQL
@@ -60,9 +94,8 @@ def test_bigquery_legacy_type_names_match_googlesql_names():
 
 def test_integer_widths_stay_distinct_outside_bigquery():
     # Aliasing is the dialect's call, not ours: INTEGER is a narrower type than
-    # BIGINT in Postgres and Snowflake, so declaring one against the other fails.
+    # BIGINT in Postgres, so declaring one against the other fails.
     assert physical_type_matches("INTEGER", "BIGINT", "postgres")[0] is False
-    assert physical_type_matches("INTEGER", "BIGINT", "snowflake")[0] is False
 
 
 def test_non_numeric_types_never_alias():
