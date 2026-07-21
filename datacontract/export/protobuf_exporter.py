@@ -1,10 +1,15 @@
+import re
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.exceptions import DataContractException
 
 OBJECT_TYPES: set = {"object", "record", "struct"}
+
+# A valid proto package is a dot-separated sequence of identifiers.
+_PROTO_PACKAGE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
 
 
 class ProtoBufExporter(Exporter):
@@ -40,6 +45,14 @@ def _get_proto_package_name(data_contract: OpenDataContractStandard) -> str:
         return "example"
     for cp in data_contract.customProperties:
         if cp.property == "protoPackageName" and cp.value:
+            if not _PROTO_PACKAGE_PATTERN.match(cp.value):
+                raise DataContractException(
+                    type="protobuf-export",
+                    name="invalid-proto-package-name",
+                    reason=f"Invalid protoPackageName '{cp.value}'. "
+                    "Must be a dot-separated sequence of identifiers, e.g. 'com.example.mydata'.",
+                    engine="datacontract",
+                )
             return cp.value
     return "example"
 

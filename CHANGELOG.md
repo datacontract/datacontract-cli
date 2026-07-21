@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract export protobuf` supports a customizable package name via the `protoPackageName` custom property (#1381)
+
 ## [1.0.12] - 2026-07-10
 
 ### Fixed
