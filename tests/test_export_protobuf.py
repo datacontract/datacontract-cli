@@ -148,7 +148,6 @@ message Review {
 
     """.strip()
     result = to_protobuf(data_contract).strip()
-    print(result)
 
     assert result == expected_protobuf
 
