@@ -374,9 +374,8 @@ def _get_field_declaration(prop: SchemaProperty) -> str:
 
     logical_type = (prop.logicalType or "").lower()
     is_array = logical_type == "array"
-    is_message_type = logical_type in OBJECT_TYPES
 
-    # Add 'optional' only for non-required, non-array, non-message fields (scalars/enums)
-    if hasattr(prop, "required") and prop.required is False and not is_array and not is_message_type:
+    # Add 'optional' only for non-required, non-array
+    if hasattr(prop, "required") and prop.required is False and not is_array:
         return f"optional {field_type}"
     return field_type
