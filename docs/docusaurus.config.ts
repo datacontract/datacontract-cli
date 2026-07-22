@@ -81,9 +81,6 @@ const config: Config = {
           routeBasePath: '/',
           editUrl:
             'https://github.com/datacontract/datacontract-cli/tree/main/docs/',
-          // Surfaces a freshness signal to readers and feeds `dateModified`
-          // into the TechArticle JSON-LD that answer engines read.
-          showLastUpdateTime: true,
         },
         blog: false,
         theme: {
