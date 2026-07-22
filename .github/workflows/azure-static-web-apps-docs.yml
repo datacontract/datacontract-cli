@@ -34,6 +34,9 @@ jobs:
     name: Build
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so Docusaurus can derive each page's last-updated date.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -56,6 +59,8 @@ jobs:
         with:
           submodules: true
           lfs: false
+          # Full history so Docusaurus can derive each page's last-updated date.
+          fetch-depth: 0
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1

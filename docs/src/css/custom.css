@@ -5,14 +5,17 @@
  */
 
 /* You can override the default Infima variables here. */
+/* The green is darkened compared to the Infima default so that links reach
+   WCAG AA (4.5:1) not only on white but also on the #f2f2f2 sidebar and
+   breadcrumb backgrounds, where the default #2e8555 only reached 4.07:1. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-color-primary: #277250;
+  --ifm-color-primary-dark: #236748;
+  --ifm-color-primary-darker: #215f43;
+  --ifm-color-primary-darkest: #1a4c35;
+  --ifm-color-primary-light: #2c7f5a;
+  --ifm-color-primary-lighter: #2e855e;
+  --ifm-color-primary-lightest: #359a6c;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
@@ -27,6 +30,15 @@
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* WCAG 1.4.1 (Use of Color): links inside running prose must not be
+   distinguishable by colour alone — the green does not reach 3:1 against the
+   body text — so underline them. Cards, heading anchors and buttons are
+   excluded because they are already distinguishable by their own affordances. */
+.theme-doc-markdown a:not(.doc-card):not(.hash-link):not(.card):not([class*='button']) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 /* Overview card grids (Connect your Data, Imports, Exports) */
@@ -50,6 +62,16 @@
 .doc-card:hover {
   border-color: var(--ifm-color-primary);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+/* Keyboard users need to see which card has focus — hover alone is not enough. */
+.doc-card:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .doc-card {
+    transition: none;
+  }
 }
 .doc-card img {
   width: 32px;

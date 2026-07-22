@@ -4,6 +4,41 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
+/**
+ * Several syntax-highlighting colours in the stock Prism themes fall below the
+ * WCAG AA 4.5:1 threshold against their own code-block background (e.g. the
+ * light theme's `#36acaa` at 2.58:1, and Dracula's comment grey at 3.03:1).
+ * Remap just those tokens to a darker/lighter shade of the same hue so code
+ * blocks stay readable without changing the overall look.
+ */
+function withAccessibleTokenColors(
+  theme: typeof prismThemes.github,
+  replacements: Record<string, string>,
+) {
+  return {
+    ...theme,
+    styles: theme.styles.map((entry) => {
+      const color = entry.style?.color;
+      const replacement = color && replacements[color];
+      return replacement
+        ? {...entry, style: {...entry.style, color: replacement}}
+        : entry;
+    }),
+  };
+}
+
+const lightCodeTheme = withAccessibleTokenColors(prismThemes.github, {
+  '#999988': '#717161', // comment
+  '#e3116c': '#da1067', // string, attr-value
+  '#36acaa': '#277b7a', // number, boolean, property, variable, …
+  '#00a4db': '#0078a0', // keyword, attr-name, selector
+  '#d73a49': '#d42d3d', // function, tag, deleted
+});
+
+const darkCodeTheme = withAccessibleTokenColors(prismThemes.dracula, {
+  'rgb(98, 114, 164)': 'rgb(134, 146, 185)', // comment
+});
+
 const config: Config = {
   title: 'Data Contract CLI',
   tagline: 'Lint, test, and export data contracts from the command line',
@@ -11,6 +46,9 @@ const config: Config = {
 
   future: {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
+    // Rspack/SWC/LightningCSS toolchain (@docusaurus/faster): faster builds and
+    // smaller, more aggressively minified CSS/JS bundles.
+    faster: true,
   },
 
   // Production url of the documentation site.
@@ -43,6 +81,9 @@ const config: Config = {
           routeBasePath: '/',
           editUrl:
             'https://github.com/datacontract/datacontract-cli/tree/main/docs/',
+          // Surfaces a freshness signal to readers and feeds `dateModified`
+          // into the TechArticle JSON-LD that answer engines read.
+          showLastUpdateTime: true,
         },
         blog: false,
         theme: {
@@ -128,14 +169,27 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/datacontractcli.png',
+    metadata: [
+      {name: 'og:type', content: 'website'},
+      {name: 'og:site_name', content: 'Data Contract CLI'},
+      {
+        name: 'keywords',
+        content:
+          'data contract, data contract cli, ODCS, Open Data Contract Standard, data quality, data testing, data governance, schema validation, dbt, Snowflake, BigQuery, Databricks',
+      },
+    ],
     colorMode: {
       respectPrefersColorScheme: true,
     },
     navbar: {
       title: 'Data Contract CLI',
       logo: {
-        alt: 'Data Contract CLI',
+        // Decorative: the adjacent navbar title already says "Data Contract CLI",
+        // so an alt text here would be redundant for screen readers.
+        alt: '',
         src: 'img/favicon.png',
+        width: 32,
+        height: 32,
       },
       items: [
         {
@@ -196,7 +250,9 @@ const config: Config = {
       ],
       logo: {
         alt: 'Entropy Data',
-        src: 'https://entropy-data.com/media/entropy-data-logo.svg',
+        // Self-hosted: a third-party request on every page costs a DNS lookup
+        // plus a TLS handshake and leaks visitor IPs to another origin.
+        src: 'img/entropy-data-logo.svg',
         href: 'https://entropy-data.com',
         width: 148,
         height: 36,
@@ -204,8 +260,8 @@ const config: Config = {
       copyright: `Copyright © ${new Date().getFullYear()} Data Contract CLI authors. Built with Docusaurus.`,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      theme: lightCodeTheme,
+      darkTheme: darkCodeTheme,
       additionalLanguages: ['bash', 'sql', 'yaml', 'python', 'json', 'docker'],
     },
   } satisfies Preset.ThemeConfig,
