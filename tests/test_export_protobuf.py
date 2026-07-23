@@ -21,9 +21,6 @@ def test_to_protobuf():
 kind: DataContract
 apiVersion: v3.1.0
 id: test_protobuf
-customProperties:
-  - property: protoPackageName
-    value: com.example.mydata
 schema:
   - name: Product
     description: Details of Product.
@@ -96,7 +93,7 @@ schema:
     expected_protobuf = """
 syntax = "proto3";
 
-package com.example.mydata;
+package example;
 
 // Enum for Category
 enum Category {
