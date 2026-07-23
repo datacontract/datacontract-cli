@@ -133,7 +133,9 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The multi-arch build+push runs ~9.5 min and had been getting cancelled
+    # right at a 10 min limit; 20 gives headroom.
+    timeout-minutes: 20
     needs:
       - test
     if: github.event_name != 'pull_request' && github.repository == 'datacontract/datacontract-cli'
