@@ -103,6 +103,17 @@ def to_protobuf(data_contract: OpenDataContractStandard) -> str:
     return header + messages
 
 
+def _is_array_of_objects(prop: SchemaProperty) -> bool:
+    """Check if property is an array of objects."""
+    return (
+        prop.logicalType
+        and prop.logicalType.lower() == "array"
+        and prop.items
+        and prop.items.logicalType
+        and prop.items.logicalType.lower() in OBJECT_TYPES
+    )
+
+
 def _is_enum_field(prop: SchemaProperty) -> bool:
     """
     Returns True if the field has a non-empty "enumValues" property (via customProperties).
@@ -168,13 +179,7 @@ def _get_type_name(prop: SchemaProperty) -> str:
         return _snake_to_upper_camel(prop.name)
 
     # For objects inside arrays
-    if (
-        prop.logicalType
-        and prop.logicalType.lower() == "array"
-        and prop.items
-        and prop.items.logicalType
-        and prop.items.logicalType.lower() in OBJECT_TYPES
-    ):
+    if _is_array_of_objects(prop):
         # If explicit name is provided in items.name
         if hasattr(prop.items, "name") and prop.items.name:
             # Normalize items.name the same way as message declarations
@@ -201,9 +206,8 @@ def _should_create_nested_message(prop: SchemaProperty) -> bool:
         return True
 
     # Array of objects
-    if lower_type == "array" and prop.items:
-        items_lower_type = prop.items.logicalType.lower() if prop.items.logicalType else ""
-        return items_lower_type in OBJECT_TYPES
+    if _is_array_of_objects(prop):
+        return True
 
     return False
 
@@ -216,13 +220,7 @@ def _get_nested_properties(prop: SchemaProperty) -> Optional[List[SchemaProperty
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.properties or []
 
-    if (
-        prop.logicalType
-        and prop.logicalType.lower() == "array"
-        and prop.items
-        and prop.items.logicalType
-        and prop.items.logicalType.lower() in OBJECT_TYPES
-    ):
+    if _is_array_of_objects(prop):
         return prop.items.properties or []
 
     return None
@@ -235,13 +233,7 @@ def _get_nested_description(prop: SchemaProperty) -> str:
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.description or ""
 
-    if (
-        prop.logicalType
-        and prop.logicalType.lower() == "array"
-        and prop.items
-        and prop.items.logicalType
-        and prop.items.logicalType.lower() in OBJECT_TYPES
-    ):
+    if _is_array_of_objects(prop):
         return prop.items.description or ""
 
     return ""
