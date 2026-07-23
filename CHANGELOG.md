@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract test` supports SAP HANA via the new `sap-hana` server type (install with the `sap-hana` extra)
 - `datacontract export protobuf` supports a customizable package name via the `protoPackageName` custom property (#1381)
 
 ### Fixed
