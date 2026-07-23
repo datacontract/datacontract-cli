@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - SyntaxWarning during installation: `datacontract/lint/resolve.py:72: SyntaxWarning: 'return' in a 'finally' block return except_message` is handled properly
+- `datacontract test` no longer reports "backend is not installed" for Athena and other ibis SQL backends when `packaging` is missing from the environment
 
 ## [1.0.13] - 2026-07-14
 

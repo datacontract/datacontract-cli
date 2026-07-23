@@ -93,6 +93,8 @@ postgres = [
   # psycopg's binary wheels bundle libpq, so the extra works without
   # PostgreSQL client libraries installed on the system.
   "psycopg[binary]>=3.1,<4.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 redshift = [
@@ -101,6 +103,8 @@ redshift = [
   # psycopg's binary wheels bundle libpq, so the extra works without
   # PostgreSQL client libraries installed on the system.
   "psycopg[binary]>=3.1,<4.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 # DuckDB extension wheels are bundled for air-gapped installs. The 1.5.x line
@@ -130,23 +134,33 @@ snowflake = [
 ]
 
 sqlserver = [
-  "ibis-framework[mssql]>=10.0.0,<13.0.0"
+  "ibis-framework[mssql]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 oracle = [
-  "ibis-framework[oracle]>=10.0.0,<13.0.0"
+  "ibis-framework[oracle]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 athena = [
-  "ibis-framework[athena]>=10.0.0,<13.0.0"
+  "ibis-framework[athena]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 trino = [
-  "ibis-framework[trino]>=10.0.0,<13.0.0"
+  "ibis-framework[trino]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 impala = [
-  "ibis-framework[impala]>=10.0.0,<13.0.0"
+  "ibis-framework[impala]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 dbml = [
