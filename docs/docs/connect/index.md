@@ -90,6 +90,9 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
     <img src="/img/icons/postgres.svg" alt="" />
     <span><span className="doc-card-title">Postgres</span><span className="doc-card-desc">Postgres and Postgres-compatible (e.g. RisingWave)</span></span>
   </a>
+  <a className="doc-card" href="/connect/sap-hana">
+    <span><span className="doc-card-title">SAP HANA</span><span className="doc-card-desc">SAP HANA Cloud or on-premise</span></span>
+  </a>
   <a className="doc-card" href="/connect/snowflake">
     <img src="/img/icons/snowflake.svg" alt="" />
     <span><span className="doc-card-title">Snowflake</span><span className="doc-card-desc">Snowflake</span></span>

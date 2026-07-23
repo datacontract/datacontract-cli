@@ -1,0 +1,48 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: sap-hana
+name: sap-hana
+version: 0.0.1
+domain: my-domain-team
+status: active
+schema:
+- name: my_table
+  physicalName: my_table
+  logicalType: object
+  physicalType: table
+  properties:
+  - name: field_one
+    logicalType: string
+    physicalType: varchar
+    isNullable: false
+    isUnique: true
+    logicalTypeOptions:
+      pattern: '[A-Za-z]{2}-\d{3}-[A-Za-z]{2}$'
+  - name: field_two
+    logicalType: integer
+    physicalType: integer
+    isNullable: true
+    isUnique: false
+    logicalTypeOptions:
+      minimum: 10
+  - name: field_three
+    logicalType: timestamp
+    physicalType: timestamp
+    isNullable: true
+    isUnique: false
+  - name: field_four
+    logicalType: number
+    physicalType: decimal
+    isNullable: true
+    isUnique: false
+servers:
+- server: sap-hana
+  # sap-hana is not an ODCS-standard server type, so it is written as `custom`
+  # with the real datacontract-CLI type carried in the customType property.
+  type: custom
+  customProperties:
+  - property: customType
+    value: sap-hana
+  schema: MYSCHEMA
+  host: localhost
+  port: 39013

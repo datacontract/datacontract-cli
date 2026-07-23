@@ -126,6 +126,9 @@ def connect_ibis(
     if server_type == "mysql":
         return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name)
 
+    if server_type == "sap-hana":
+        return _connect_sap_hana_via_duckdb(ibis, data_contract, server, run, schema_name)
+
     if server_type == "snowflake":
         prefix = "DATACONTRACT_SNOWFLAKE_"
         extra = {k.replace(prefix, "").lower(): v for k, v in os.environ.items() if k.startswith(prefix)}
@@ -353,6 +356,72 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
             last_error = e
     if last_error is not None:
         logger.warning("Could not read MySQL table '%s': %s", model, last_error)
+
+
+def _connect_sap_hana_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str):
+    """Connect to SAP HANA via hdbcli and materialize each contract model into a
+    local DuckDB table.
+
+    Neither ibis nor DuckDB has a SAP HANA backend (the only DuckDB-ATTACH route
+    is the ODBC/nanodbc community extension, which needs unixODBC + SAP's ODBC
+    driver as system packages and breaks the pure-pip install). Instead we read
+    each table over SAP's pure-pip ``hdbcli`` driver and load the rows into
+    DuckDB, so the rest of the engine runs unchanged against local data — the
+    same materialize-and-check-locally approach as the MySQL path.
+    """
+    import duckdb
+    import pandas as pd
+    from hdbcli import dbapi
+
+    user = require_env("DATACONTRACT_SAP_HANA_USERNAME", server_type="sap-hana")
+    password = require_env("DATACONTRACT_SAP_HANA_PASSWORD", server_type="sap-hana")
+    host = server.host or "localhost"
+    port = int(server.port) if server.port else 443  # HANA Cloud default; on-prem is 3<instance>13
+    schema = server.schema_
+
+    # HANA Cloud mandates TLS; on-prem instances often don't. Default encryption
+    # on and let users override for on-prem via the env toggles below.
+    run.log_info(f"Connecting to SAP HANA {host}:{port} via hdbcli")
+    hana = dbapi.connect(
+        address=host,
+        port=port,
+        user=user,
+        password=password,
+        encrypt=_get_bool_env("DATACONTRACT_SAP_HANA_ENCRYPT", True),
+        sslValidateCertificate=_get_bool_env("DATACONTRACT_SAP_HANA_VALIDATE_CERT", True),
+        currentSchema=schema or None,
+    )
+
+    con = duckdb.connect()
+    try:
+        if data_contract.schema_:
+            for schema_obj in data_contract.schema_:
+                if schema_name != "all" and schema_obj.name != schema_name:
+                    continue
+                model = schema_obj.physicalName or schema_obj.name
+                _materialize_hana_table(con, hana, pd, schema, model, run)
+    finally:
+        hana.close()
+
+    return ibis.duckdb.from_connection(con)
+
+
+def _materialize_hana_table(con, hana, pd, schema: str | None, model: str, run: Run):
+    """Read one HANA table over hdbcli into a local DuckDB table named ``model``."""
+    src = f'"{schema}"."{model}"' if schema else f'"{model}"'
+    cursor = hana.cursor()
+    try:
+        cursor.execute(f"SELECT * FROM {src}")
+        columns = [desc[0] for desc in cursor.description]
+        df = pd.DataFrame(cursor.fetchall(), columns=columns)
+    except Exception as e:  # noqa: BLE001 - surface as a warning, don't fail the whole run
+        run.log_warn(f"Could not read SAP HANA table '{model}': {e}")
+        return
+    finally:
+        cursor.close()
+    con.register("_datacontract_hana_df", df)
+    con.execute(f'CREATE OR REPLACE TABLE "{model}" AS SELECT * FROM _datacontract_hana_df')
+    con.unregister("_datacontract_hana_df")
 
 
 def _connect_sqlserver(ibis, server: Server):

@@ -88,6 +88,15 @@ mysql = [
   "datacontract-cli[duckdb]",
 ]
 
+# SAP HANA has no ibis or DuckDB backend, so we read tables over SAP's pure-pip
+# hdbcli driver and materialize them into DuckDB (like the mysql path). pandas
+# bridges the hdbcli cursor rows into DuckDB.
+sap-hana = [
+  "datacontract-cli[duckdb]",
+  "hdbcli>=2.19,<3.0",
+  "pandas>=2.0.0",
+]
+
 postgres = [
   "ibis-framework[postgres]>=10.0.0,<13.0.0",
   # psycopg's binary wheels bundle libpq, so the extra works without
@@ -180,7 +189,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,sap-hana,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version

@@ -9,7 +9,7 @@ from open_data_contract_standard.model import CustomProperty, Server
 CUSTOM_SERVER_TYPE_PROPERTY = "customType"
 
 # Server types datacontract-CLI supports but ODCS does not define.
-NON_ODCS_SERVER_TYPES = {"dataframe"}
+NON_ODCS_SERVER_TYPES = {"dataframe", "sap-hana"}
 
 
 def to_odcs_server_type(server_type: Optional[str]) -> Tuple[Optional[str], Optional[List[CustomProperty]]]:

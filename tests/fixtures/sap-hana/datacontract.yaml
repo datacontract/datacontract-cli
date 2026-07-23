@@ -1,0 +1,28 @@
+dataContractSpecification: 1.2.1
+id: sap-hana
+info:
+  title: sap-hana
+  version: 0.0.1
+  owner: my-domain-team
+servers:
+  my-dataproduct/sap-hana:
+    type: sap-hana
+    host: localhost
+    port: 39013
+    schema: MYSCHEMA
+models:
+  my_table:
+    type: table
+    fields:
+      field_one:
+        type: varchar
+        required: true
+        unique: true
+        pattern: "[A-Za-z]{2}-\\d{3}-[A-Za-z]{2}$"
+      field_two:
+        type: integer
+        minimum: 10
+      field_three:
+        type: timestamp
+      field_four:
+        type: numeric
