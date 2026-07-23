@@ -497,7 +497,8 @@ def _singular_tests_for_qualities(
                 f"Skipping singular SQL test `{test_label}` on `{model}`: quality has a `query` but no `mustBe*` bound."
             )
             continue
-        # Resolve the ODCS placeholders to dbt constructs (same tokens as the test engine).
+        # Resolve the ODCS model/field placeholders to dbt constructs. `{schema}` (which the test
+        # engine also resolves) has no clean dbt equivalent and is intentionally left untouched.
         query = re.sub(r'["\']?\$?\{(model|table|object)}["\']?', model_ref, quality.query)
         if field is not None:
             query = re.sub(r'["\']?\$?\{(field|column|property)}["\']?', field, query)
