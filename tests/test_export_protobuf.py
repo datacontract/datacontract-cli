@@ -79,6 +79,14 @@ schema:
       - name: user
         logicalType: string
         description: Field user
+      - name: sub_review
+        description: Details of sub review.
+        required: False
+        logicalType: object
+        properties:
+          - name: comment
+            logicalType: string
+            description: Field comment
 """
     data_contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
 
@@ -119,14 +127,21 @@ message Product {
 
 // Details of Review.
 message Review {
+  // Details of sub review.
+  message SubReview {
+    // Field comment
+    string comment = 1;
+  }
+
   // Field comment
   string comment = 1;
   // Field rating
   int32 rating = 2;
   // Field user
   string user = 3;
+  // Details of sub review.
+  optional SubReview sub_review = 4;
 }
-
 
     """.strip()
     result = to_protobuf(data_contract).strip()
