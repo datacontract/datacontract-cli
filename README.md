@@ -269,6 +269,7 @@ A list of available extras:
 | RDF                                      | `pip install datacontract-cli[rdf]`        |
 | Amazon Redshift                          | `pip install datacontract-cli[redshift]`   |
 | S3 Integration                           | `pip install datacontract-cli[s3]`         |
+| SAP HANA Integration                     | `pip install datacontract-cli[sap-hana]`   |
 | Snowflake Integration                    | `pip install datacontract-cli[snowflake]`  |
 | Microsoft SQL Server                     | `pip install datacontract-cli[sqlserver]`  |
 | Trino                                    | `pip install datacontract-cli[trino]`      |
