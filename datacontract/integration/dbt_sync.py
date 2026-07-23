@@ -482,9 +482,11 @@ def _singular_tests_for_qualities(
     *,
     label_prefix: str = "",
     field: Optional[str] = None,
+    model_version: Optional[str] = None,
 ) -> list[SingularTest]:
     """Generate singular tests for ODCS quality entries that have an associated `query` and bound."""
     out: list[SingularTest] = []
+    model_ref = _model_ref(model, model_version)
     for idx, quality in enumerate(qualities or [], start=1):
         if not quality.query:
             continue
@@ -495,13 +497,18 @@ def _singular_tests_for_qualities(
                 f"Skipping singular SQL test `{test_label}` on `{model}`: quality has a `query` but no `mustBe*` bound."
             )
             continue
+        # Resolve the ODCS model/field placeholders to dbt constructs. `{schema}` (which the test
+        # engine also resolves) has no clean dbt equivalent and is intentionally left untouched.
+        query = re.sub(r'["\']?\$?\{(model|table|object)}["\']?', model_ref, quality.query)
+        if field is not None:
+            query = re.sub(r'["\']?\$?\{(field|column|property)}["\']?', field, query)
         severity = _normalize_severity(quality.severity)
         filename = f"{_slugify(contract_id)}__{_slugify(contract_version)}__{_slugify(model)}__{_slugify(test_label)}"
         out.append(
             SingularTest(
                 filename=f"{filename}.sql",
                 sql=_build_singular_sql(
-                    quality.query,
+                    query,
                     predicate,
                     severity,
                     contract_id,
@@ -982,9 +989,14 @@ def generate_dbt_tests_for_schema(
                 run,
                 label_prefix=f"{prop.name}__",
                 field=prop.name,
+                model_version=model_version,
             )
         )
-    singulars.extend(_singular_tests_for_qualities(schema_obj.quality, contract_id, contract_version, model_name, run))
+    singulars.extend(
+        _singular_tests_for_qualities(
+            schema_obj.quality, contract_id, contract_version, model_name, run, model_version=model_version
+        )
+    )
     _disambiguate_singular_filenames(singulars)
 
     return model_dict, singulars

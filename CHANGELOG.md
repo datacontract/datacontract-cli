@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export protobuf` emits `optional` for non-required message/object fields (#1390)
 
 ### Fixed
+- `datacontract dbt sync` resolves `{object}`/`{property}` placeholders in custom `sql` quality checks to the dbt `ref()` and column name (#1397)
 - SyntaxWarning during installation: `datacontract/lint/resolve.py:72: SyntaxWarning: 'return' in a 'finally' block return except_message` is handled properly
 - `datacontract test` no longer reports "backend is not installed" for Athena and other ibis SQL backends when `packaging` is missing from the environment
 

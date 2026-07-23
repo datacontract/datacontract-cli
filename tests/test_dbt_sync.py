@@ -684,6 +684,32 @@ def test_singular_tests_skipped_when_query_has_no_bound():
     assert any("no `mustBe*` bound" in log.message for log in run.logs)
 
 
+def test_singular_query_resolves_object_and_property_placeholders():
+    """ODCS `{object}`/`{property}` placeholders in a custom `quality.query` resolve to the dbt
+    `ref()` and column name so the generated singular test compiles (issue #1397)."""
+    run = Run.create_run()
+    qualities = [
+        DataQuality(
+            query="SELECT COUNT(*) FROM {object} WHERE {property} < 0",
+            mustBe=0,
+            name="positive",
+        )
+    ]
+    out = _singular_tests_for_qualities(qualities, "c", "1.0.0", "MY_TABLE", run, field="my_column")
+    assert len(out) == 1
+    assert "SELECT COUNT(*) FROM {{ ref('MY_TABLE') }} WHERE my_column < 0" in out[0].sql
+    assert "{object}" not in out[0].sql
+    assert "{property}" not in out[0].sql
+
+
+def test_singular_query_placeholder_resolves_versioned_ref():
+    """On a versioned model, `{object}` resolves to a version-pinned `ref()`."""
+    run = Run.create_run()
+    qualities = [DataQuality(query="SELECT COUNT(*) FROM {model}", mustBe=0, name="rc")]
+    out = _singular_tests_for_qualities(qualities, "c", "1.0.0", "MY_TABLE", run, model_version="2")
+    assert "{{ ref('MY_TABLE', version=2) }}" in out[0].sql
+
+
 def test_generate_outputs_warns_on_unsupported_model_qualities():
     """Model-level qualities that can't map to a test are skipped with a warning — not dropped
     silently or crashed on: a `rowCount` with no bound, and a non-`rowCount` metric with no query."""
