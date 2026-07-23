@@ -282,9 +282,13 @@ def _databricks_credentials_provider(**config_kwargs):
     """
 
     def credentials_provider():
-        from databricks.sdk.core import Config
+        from databricks.sdk.core import Config, oauth_service_principal
 
-        return Config(**config_kwargs).authenticate
+        cfg = Config(**config_kwargs)
+
+        if config_kwargs.get("client_id") and config_kwargs.get("client_secret"):
+            return oauth_service_principal(cfg)
+        return cfg.authenticate
 
     return credentials_provider
 
