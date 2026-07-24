@@ -16,6 +16,7 @@ from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
 
+from datacontract.configuration.source_config import SourceConfig
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.type_normalize import (
@@ -91,6 +92,7 @@ def execute_ibis_checks(
     duckdb_connection=None,
     schema_name: str = "all",
     include_failed_samples: bool = False,
+    source_config: SourceConfig | None = None,
 ):
     if data_contract is None:
         run.log_warn("Cannot run engine ibis, as data contract is invalid")
@@ -109,7 +111,7 @@ def execute_ibis_checks(
 
     run.log_info("Running engine ibis")
     try:
-        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name)
+        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name, source_config)
     except DataContractException:
         raise
     except ImportError:

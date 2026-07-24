@@ -4,6 +4,8 @@ from importlib import metadata
 
 from open_data_contract_standard.model import OpenDataContractStandard, Team
 
+from datacontract.configuration.source_config import SourceConfig
+
 if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
@@ -39,6 +41,7 @@ class DataContract:
         check_categories: set[str] | None = None,
         fastapi_url: str = None,
         include_failed_samples: bool = False,
+        source_config: SourceConfig | None = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -56,6 +59,7 @@ class DataContract:
         self._check_categories = check_categories
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
+        self.source_config = source_config
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -147,6 +151,7 @@ class DataContract:
                 schema_name=self._schema_name,
                 check_categories=self._check_categories,
                 include_failed_samples=self._include_failed_samples,
+                source_config=self.source_config,
             )
 
         except DataContractException as e:
