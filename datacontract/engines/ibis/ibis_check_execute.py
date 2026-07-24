@@ -1053,6 +1053,9 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     - **Oracle** logs in as one user but the tables may be owned by a different
       schema (``server.schema``). ibis defaults the owner to the login user, so
       an unqualified lookup raises ``TableNotFound``.
+    - **SQL Server** (``mssql`` backend) has no ``schema`` kwarg on
+      ``do_connect()`` either, so it has the same limitation as Oracle: an
+      unqualified lookup falls back to the login's default schema.
     - **Redshift** has no dedicated ibis backend and goes through the Postgres
       backend (``con.name == "postgres"``). When no schema is passed, ibis's
       Postgres introspection resolves the active schema with ``SELECT
@@ -1065,7 +1068,7 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     """
     if server is None or not server.schema_:
         return None
-    if getattr(con, "name", None) == "oracle":
+    if getattr(con, "name", None) in ("oracle", "mssql"):
         return server.schema_
     # Redshift rides the Postgres backend, so detect it by the contract's server
     # type rather than con.name.
