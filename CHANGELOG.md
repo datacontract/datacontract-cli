@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract import --format dbt` derives the contract `id` from the dbt manifest's `project_name` instead of always emitting the placeholder `my-data-contract` (#1221 @DMZ22)
+
 ## [1.0.14] - 2026-07-23
 
 ### Added
