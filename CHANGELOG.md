@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract dbt sync` resolves `{object}`/`{property}` placeholders in custom `sql` quality checks to the dbt `ref()` and column name (#1397)
 - SyntaxWarning during installation: `datacontract/lint/resolve.py:72: SyntaxWarning: 'return' in a 'finally' block return except_message` is handled properly (#1384 @Cupprum)
 - `datacontract test` no longer reports "backend is not installed" for Athena and other ibis SQL backends when `packaging` is missing from the environment
+- `datacontract test` against SQL Server no longer fails every check with "Could not read model" when `server.schema` differs from the login's default schema
 
 ## [1.0.13] - 2026-07-14
 
