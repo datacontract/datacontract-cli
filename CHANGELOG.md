@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import` can now import BigQuery type `INTERVAL` (#1367,#1372 @fantastisch)
 
 ### Fixed
+- `datacontract import` against BigQuery and dbt (BigQuery adapter) now supports compound BigQuery types such as `ARRAY<STRUCT<...>>`, `STRUCT<...>`, `STRING(n)`, and `NUMERIC(p, s)` instead of failing with `Unsupported type`.
 - Failed business definition IRI lookups now suggest the `ENTROPY_DATA_HOST` value to set when the IRI host does not match the configured entropy-data host.
 - `datacontract test` no longer reports a physical type mismatch for BigQuery type aliases, such as a `physicalType` of `INTEGER` on an `INT64` column (#1371 @fantastisch)
 - `datacontract test` no longer fails with `CANNOT_CONVERT_COLUMN_INTO_BOOL` on Databricks when a Spark session is used

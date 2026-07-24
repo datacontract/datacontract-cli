@@ -4,7 +4,10 @@ from typing import Any, List, Optional, TypedDict
 
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
 
-from datacontract.imports.bigquery_importer import map_type_from_bigquery
+from datacontract.imports.bigquery_importer import (
+    build_schema_property_from_bigquery_type,
+    map_type_from_bigquery,
+)
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -354,7 +357,6 @@ def create_field(
 ) -> SchemaProperty:
     """Create an ODCS SchemaProperty from a dbt column."""
     data_type = column.get("data_type")
-    column_type = convert_data_type_by_adapter_type(data_type, adapter_type) if data_type else "string"
 
     all_tests = get_column_tests(manifest, model_unique_id, column.get("name"))
 
@@ -382,6 +384,25 @@ def create_field(
     if column.get("tags"):
         custom_props["tags"] = ",".join(column["tags"])
 
+    # BigQuery data types may be compound (``ARRAY<STRUCT<...>>``), so build the
+    # nested ``items``/``properties`` tree via the BigQuery type parser. Other
+    # adapters use the flat scalar mapping.
+    if adapter_type == "bigquery" and data_type:
+        prop = build_schema_property_from_bigquery_type(
+            name=column.get("name"),
+            bigquery_type_str=data_type,
+            description=column.get("description"),
+            required=required if required else None,
+        )
+        _apply_column_metadata(
+            prop,
+            unique=unique,
+            is_primary_key=is_primary_key,
+            custom_props=custom_props,
+        )
+        return prop
+
+    column_type = convert_data_type_by_adapter_type(data_type, adapter_type) if data_type else "string"
     return create_property(
         name=column.get("name"),
         logical_type=column_type,
@@ -393,3 +414,22 @@ def create_field(
         primary_key_position=1 if is_primary_key else None,
         custom_properties=custom_props if custom_props else None,
     )
+
+
+def _apply_column_metadata(
+    prop: SchemaProperty,
+    unique: bool,
+    is_primary_key: bool,
+    custom_props: dict[str, Any],
+) -> None:
+    """Attach dbt column-level metadata (unique/primary key/custom props) to *prop* in-place."""
+    if unique:
+        prop.unique = True
+    if is_primary_key:
+        prop.primaryKey = True
+        prop.primaryKeyPosition = 1
+    if custom_props:
+        existing = {cp.property: cp.value for cp in (prop.customProperties or [])}
+        for key, value in custom_props.items():
+            existing.setdefault(key, value)
+        prop.customProperties = [CustomProperty(property=k, value=v) for k, v in existing.items()]
