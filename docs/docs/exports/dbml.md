@@ -4,9 +4,7 @@ title: "Export: DBML"
 description: "Export a data contract to DBML (Database Markup Language) for diagrams and documentation."
 ---
 
-<img className="page-icon" src="/img/icons/dbml.svg" alt="" />
-
-# Export: DBML
+# <img className="page-icon" src="/img/icons/dbml.svg" alt="" /> Export: DBML
 
 Converts the data contract to [DBML](https://dbml.dbdiagram.io/) (Database Markup Language).
 

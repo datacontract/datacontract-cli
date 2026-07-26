@@ -4,17 +4,29 @@ title: "Spark DataFrame"
 description: "Test in-memory Spark DataFrames in a pipeline (programmatic)."
 ---
 
-<img className="page-icon" src="/img/icons/spark.svg" alt="" />
+# <img className="page-icon" src="/img/icons/spark.svg" alt="" /> Spark DataFrame
 
-# Spark DataFrame
+Test Spark DataFrames in a pipeline before writing them to a data source. DataFrames are registered as named temporary views; multiple views are supported if the contract has multiple schemas. This connection is used programmatically from Python — no credentials are needed, the existing Spark session is reused.
 
-:::info[Required extra]
-This connection needs **no additional extra**. See [Installation](../installation.md).
-:::
+## 1. Install
 
-Test Spark DataFrames in a pipeline before writing them to a data source. DataFrames are registered as named temporary views; multiple views are supported if the contract has multiple schemas.
+No extra is required (the Spark session comes from your environment):
 
-## Server
+```bash
+uv tool install --python python3.11 --upgrade datacontract-cli
+```
+
+In a notebook or pipeline environment, install `datacontract-cli` as a library instead. See [Installation](../installation.md) for pip, pipx, and Docker.
+
+## 2. Create a contract from your DataFrames
+
+Inside an active Spark session, import the schema of registered tables or views:
+
+```bash
+datacontract import spark --tables my_table --output datacontract.yaml
+```
+
+The generated contract includes a `servers` entry of type `dataframe`:
 
 ```yaml
 servers:
@@ -22,7 +34,9 @@ servers:
     type: dataframe
 ```
 
-## Programmatic use
+## 3. Test the DataFrame
+
+Register the DataFrame as a temporary view named like the schema, then run the test with the Spark session:
 
 ```python
 from datacontract.data_contract import DataContract
@@ -37,3 +51,10 @@ run = data_contract.test()
 assert run.result == "passed"
 ```
 
+## 4. Let it catch a violation
+
+The contract becomes valuable when it detects drift. Tighten an expectation — for example, mark a field as `required: true` or add a quality rule — and run the test again: `run.result` becomes `"failed"` and `run.checks` lists each violation, so the assert stops your pipeline before bad data is written.
+
+## Reference
+
+The Spark data type mappings: **[Spark DataFrame Reference](../reference/dataframe.md)**.

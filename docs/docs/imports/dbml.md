@@ -4,9 +4,7 @@ title: "Import: DBML"
 description: "Create a data contract from a DBML file, with optional schema/table filters."
 ---
 
-<img className="page-icon" src="/img/icons/dbml.svg" alt="" />
-
-# Import: DBML
+# <img className="page-icon" src="/img/icons/dbml.svg" alt="" /> Import: DBML
 
 Creates a data contract from a [DBML](https://dbml.dbdiagram.io/) file. You can filter by schema and table name.
 

@@ -1,20 +1,85 @@
 ---
-sidebar_position: 6
+sidebar_position: 3
 title: "Databricks"
-description: "Test data in Databricks (Unity Catalog or Hive metastore)."
+description: "Create a data contract from Unity Catalog and test the actual data against it — in about 5 minutes."
 ---
 
-<img className="page-icon" src="/img/icons/databricks.svg" alt="" />
+# <img className="page-icon" src="/img/icons/databricks.svg" alt="" /> Databricks
 
-# Databricks
+Go from an existing Unity Catalog table to a tested data contract in about five minutes: import the schema from Unity Catalog, then test the actual data on a SQL warehouse. Works with Unity Catalog and the Hive metastore; testing needs a running SQL warehouse or compute cluster.
 
-:::info[Required extra]
-This connection requires the `databricks` extra. See [Installation](../installation.md).
-:::
+## 1. Install
 
-Test data in Databricks. Works with Unity Catalog and the Hive metastore. Needs a running SQL warehouse or compute cluster.
+```bash
+uv tool install --python python3.11 --upgrade 'datacontract-cli[databricks]'
+```
 
-## Server
+See [Installation](../installation.md) for pip, pipx, and Docker.
+
+## 2. Set credentials
+
+Create a `.env` file in your working directory (or export the variables):
+
+```bash
+# .env
+DATACONTRACT_DATABRICKS_SERVER_HOSTNAME=dbc-abcdefgh-1234.cloud.databricks.com
+DATACONTRACT_DATABRICKS_HTTP_PATH=/sql/1.0/warehouses/b053a3ff69ee87a8
+DATACONTRACT_DATABRICKS_TOKEN=<your-personal-access-token>
+```
+
+Find the hostname and HTTP path under your SQL warehouse's **Connection details** tab. For OAuth service principals and profile-based auth, see the [Databricks Reference](../reference/databricks.md).
+
+## 3. Create a contract from your tables
+
+Import the table metadata directly from Unity Catalog. This also generates a ready-to-test `servers` block:
+
+```bash
+datacontract import unity \
+  --table my_catalog.my_schema.orders \
+  --output datacontract.yaml
+```
+
+Repeat `--table` for multiple tables.
+
+## 4. Test the actual data
+
+```bash
+datacontract test datacontract.yaml
+```
+
+```
+Testing datacontract.yaml
+Server: databricks (type=databricks, catalog=my_catalog, schema=my_schema)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 8.4 seconds.
+```
+
+## 5. Let it catch a violation
+
+The contract becomes valuable when it detects drift. Tighten an expectation — for example, add a quality rule to a schema in `datacontract.yaml`:
+
+```yaml
+schema:
+  - name: orders
+    # ...
+    quality:
+      - type: sql
+        description: No order has a negative total
+        query: SELECT COUNT(*) FROM orders WHERE order_total < 0
+        mustBe: 0
+```
+
+Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../testing.md#scheduling-and-cicd) so you catch drift before your consumers do.
+
+## Server reference
+
+Connection details live in the contract's `servers` block; `catalog` and `schema` come from there:
 
 ```yaml
 servers:
@@ -24,19 +89,9 @@ servers:
     schema: orders_latest
 ```
 
-## Environment variables
+## Reference
 
-| Variable | Example | Description |
-|---|---|---|
-| `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `dbc-abcdefgh-1234.cloud.databricks.com` | Host of the SQL warehouse or compute cluster |
-| `DATACONTRACT_DATABRICKS_HTTP_PATH` | `/sql/1.0/warehouses/b053a3ff...` | HTTP path to the SQL warehouse or compute cluster |
-| `DATACONTRACT_DATABRICKS_TOKEN` | `dapia0000...` | A personal access token (PAT) |
-| `DATACONTRACT_DATABRICKS_CLIENT_ID` | `00000000-...` | Service principal client ID for OAuth M2M auth |
-| `DATACONTRACT_DATABRICKS_CLIENT_SECRET` | `dose0000...` | Service principal OAuth secret (used with the client ID) |
-| `DATACONTRACT_DATABRICKS_PROFILE` | `my-profile` | A profile from `~/.databrickscfg` (Databricks SDK unified auth) |
-| `DATACONTRACT_DATABRICKS_AUTH_TYPE` | `databricks-oauth` | Explicit connector auth type, e.g. for interactive U2M browser login |
-
-The authentication method is selected from the variables you set, in this order: PAT → OAuth service principal (`CLIENT_ID` + `CLIENT_SECRET`) → config profile → explicit `AUTH_TYPE`.
+All authentication options (PAT, OAuth M2M, profiles, precedence order) and the data type mappings: **[Databricks Reference](../reference/databricks.md)**.
 
 ## Programmatic (in a notebook or pipeline)
 
@@ -56,3 +111,8 @@ run.result
 On Databricks LTS ML runtimes (15.4, 16.4), installing via `%pip install` in notebooks can cause issues. Instead, add `datacontract-cli[databricks]` as a **PyPI library** on the cluster (Compute → your cluster → Libraries → Install new → PyPI), then restart the cluster.
 :::
 
+## Troubleshooting
+
+- **`Invalid HTTP path`, or the test hangs** — `DATACONTRACT_DATABRICKS_HTTP_PATH` must point at a running SQL warehouse or cluster (check the **Connection details** tab). `import unity` works without it, but `test` requires it.
+- **`403 Invalid access token`** — the PAT is expired or belongs to a different workspace than `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME`.
+- **`TABLE_OR_VIEW_NOT_FOUND`** — the token's principal lacks `USE CATALOG`/`USE SCHEMA`/`SELECT` privileges on the table.

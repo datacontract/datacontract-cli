@@ -4,9 +4,7 @@ title: "Export: Go"
 description: "Generate Go struct type definitions from a data contract's schema."
 ---
 
-<img className="page-icon" src="/img/icons/go.svg" alt="" />
-
-# Export: Go
+# <img className="page-icon" src="/img/icons/go.svg" alt="" /> Export: Go
 
 Generates Go `struct` types from the data contract.
 
