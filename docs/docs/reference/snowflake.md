@@ -55,9 +55,10 @@ The `SNOWFLAKE_`-prefixed equivalents work as fallbacks. If no password is set, 
 | `BOOLEAN` | `boolean` | |
 | `DATE` | `date` | |
 | `TIMESTAMP_NTZ` / `_LTZ` / `_TZ` | `timestamp` | |
+| `TIME` | `time` | |
 | `BINARY` | `string` (format `binary`) | |
 | `ARRAY` | `array` | |
-| `TIME`, `VARIANT`, `OBJECT`, `GEOGRAPHY`, `GEOMETRY` | *(unset)* | `physicalType` is still written |
+| `VARIANT`, `OBJECT`, `GEOGRAPHY`, `GEOMETRY` | *(unset)* | `physicalType` is still written |
 
 Columns also get `required` (from `IS_NULLABLE`), `unique` (from `IS_IDENTITY`), and custom properties for `ordinalPosition`, `default`, `precision`, `scale`, `characterSet`, and `collation`.
 

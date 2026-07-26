@@ -22,9 +22,9 @@ Data type handling for [local file connections](../connect/local.md). No environ
 | `DOUBLE` | `number` |
 | `VARCHAR` | `string` |
 
-It also profiles the data: `required` (no nulls), `unique` (all distinct), `examples`, and `minimum`/`maximum` for numeric columns. Values that all match an email or UUID pattern get a `format` custom property.
+It also profiles the data: `required` (no nulls), `unique` (all distinct), `examples`, and `minimum`/`maximum` for numeric columns. Values that all match an email or UUID pattern get `logicalTypeOptions.format`.
 
-`datacontract import json` inspects the first 20 records: booleans, integers, and floats map to `boolean`/`integer`/`number`; strings map to `string` (with a detected `format` of `date`, `date-time`, `email`, or `uuid` as a custom property); objects and arrays map to `object`/`array` with nested properties. When records disagree, the wider type wins (integer + float → `number`; anything + string → `string`).
+`datacontract import json` inspects the first 20 records: booleans, integers, and floats map to `boolean`/`integer`/`number`; strings map to `string` (with a detected `format` of `date`, `date-time`, `email`, or `uuid` in `logicalTypeOptions`); objects and arrays map to `object`/`array` with nested properties. When records disagree, the wider type wins (integer + float → `number`; anything + string → `string`).
 
 `datacontract import parquet` reads types from the Parquet metadata.
 

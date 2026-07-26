@@ -343,7 +343,10 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("string", "binary")
     elif sql_type_normed == "date":
         return ("date", None)
-    elif sql_type_normed == "time":
+    elif sql_type_normed == "time" or sql_type_normed.startswith("time(") or sql_type_normed.startswith("time "):
+        # TIME, TIME(9), TIME WITH TIME ZONE — but not TIMESTAMP, which is checked below
+        return ("time", None)
+    elif sql_type_normed == "timetz":  # postgres
         return ("time", None)
     elif sql_type_normed.startswith("timestamp"):
         return ("timestamp", None)

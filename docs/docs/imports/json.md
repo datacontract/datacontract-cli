@@ -56,15 +56,15 @@ schema:
     - ORD-1001
   - name: order_timestamp
     physicalType: string
-    customProperties:
-    - property: format
-      value: date-time
     logicalType: string
+    logicalTypeOptions:
+      format: date-time
     examples:
     - '2024-01-01T10:00:00Z'
   - name: customer_id
     physicalType: string
     logicalType: string
+    examples:
 # …
 ```
 

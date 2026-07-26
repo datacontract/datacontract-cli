@@ -298,8 +298,9 @@ def test_logical_time_databricks():
 
 
 def test_logical_decimal_local():
+    # without declared precision/scale, fall back to DuckDB's default DECIMAL
     field = SchemaProperty(name="col", logicalType="decimal")
-    assert convert_to_sql_type(field, "local") == "decimal"
+    assert convert_to_sql_type(field, "local") == "DECIMAL"
 
 
 def test_logical_long_s3():
