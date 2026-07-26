@@ -63,7 +63,7 @@ When no `physicalType` is declared, the CLI derives the native type from the `lo
 | `boolean` | `BOOL` |
 | `date` | `DATE` |
 | `timestamp` | `TIMESTAMP` |
-| `time` | *(not supported)* |
+| `time` | `TIME` |
 | `object` | `STRUCT<>` |
 | `array` | `ARRAY<STRING>` |
 

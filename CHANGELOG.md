@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
 
+### Fixed
+- BigQuery export failed on fields with `logicalType: time`
+- Testing Parquet files failed for `number` fields without a declared precision and scale
+
 ## [1.0.14] - 2026-07-23
 
 ### Added

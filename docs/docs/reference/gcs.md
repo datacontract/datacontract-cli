@@ -32,7 +32,7 @@ When no `physicalType` is declared, the CLI derives the DuckDB column type from 
 |---|---|---|
 | `string` | `VARCHAR` | `VARCHAR` |
 | `integer` | `BIGINT` | `INTEGER` |
-| `number` | `DOUBLE` | `number` |
+| `number` | `DOUBLE` | `DECIMAL` |
 | `boolean` | `BOOLEAN` | `BOOLEAN` |
 | `date` | `DATE` | `DATE` |
 | `timestamp` | `TIMESTAMP` | `TIMESTAMP WITH TIME ZONE` |
