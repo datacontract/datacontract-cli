@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
 
 ### Fixed
+- `datacontract test` now respects the schema provided when running against SQL server. (Previously only used `dbo`)
 - BigQuery export failed on fields with `logicalType: time`
 - Testing Parquet files failed for `number` fields without a declared precision and scale
 - CSV and JSON imports now write detected formats (`email`, `uuid`, `date-time`) to `logicalTypeOptions.format` instead of a custom property, so they are validated by `datacontract test`
