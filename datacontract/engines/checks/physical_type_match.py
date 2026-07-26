@@ -87,6 +87,17 @@ def _params(dtype: exp.DataType) -> list[str]:
     return [e.sql().strip().lower() for e in dtype.expressions]
 
 
+def _fields(dtype: exp.DataType) -> Optional[list[Tuple[str, exp.DataType]]]:
+    """Named fields of a structured type (``OBJECT(a INT, b TEXT)``), or ``None``.
+
+    Returns ``None`` for ordinary parameterized types, whose ``expressions`` are
+    length/precision literals rather than field definitions.
+    """
+    if not dtype.expressions or not all(isinstance(e, exp.ColumnDef) for e in dtype.expressions):
+        return None
+    return [(e.name.lower(), e.args["kind"]) for e in dtype.expressions]
+
+
 def _normalize_raw(type_str: str) -> str:
     return re.sub(r"\s+", " ", type_str.strip().lower())
 
@@ -118,6 +129,41 @@ def _raw_match(expected: str, actual: str) -> Optional[bool]:
 def _base_sql(dtype: exp.DataType, dialect) -> str:
     """Render the bare base type in ``dialect``, collapsing that dialect's aliases."""
     return exp.DataType(this=dtype.this).sql(dialect=dialect).lower()
+
+
+def _same_base(exp_dt: exp.DataType, act_dt: exp.DataType, dialect) -> bool:
+    """Whether two types are the same base type, ignoring parameters."""
+    both_numeric = {exp_dt.this, act_dt.this} <= exp.DataType.NUMERIC_TYPES
+    return (
+        exp_dt.this == act_dt.this
+        or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
+        or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
+        or (_is_snowflake(dialect) and any({exp_dt.this, act_dt.this} <= family for family in _SNOWFLAKE_FAMILIES))
+    )
+
+
+def _fields_match(expected_fields, actual_fields, dialect) -> bool:
+    """Compare the fields of two structured types, ignoring field order.
+
+    Each field is compared with the same alias-aware rule used for top-level
+    types, so ``a INT`` matches Snowflake's ``a NUMBER(38,0)``, and a field
+    parameter is only enforced when the contract declares one.
+    """
+    actual_by_name = dict(actual_fields)
+    if set(actual_by_name) != {name for name, _ in expected_fields}:
+        return False
+    for name, exp_kind in expected_fields:
+        act_kind = actual_by_name[name]
+        if not _same_base(exp_kind, act_kind, dialect):
+            return False
+        nested_expected = _fields(exp_kind)
+        if nested_expected is not None:
+            nested_actual = _fields(act_kind)
+            if nested_actual is None or not _fields_match(nested_expected, nested_actual, dialect):
+                return False
+        elif exp_kind.expressions and _params(exp_kind) != _params(act_kind):
+            return False
+    return True
 
 
 def physical_type_matches(
@@ -152,15 +198,22 @@ def physical_type_matches(
             f"server under test; skipping the physical type check"
         )
 
-    both_numeric = {exp_dt.this, act_dt.this} <= exp.DataType.NUMERIC_TYPES
-    same_base = (
-        exp_dt.this == act_dt.this
-        or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
-        or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
-        or (_is_snowflake(dialect) and any({exp_dt.this, act_dt.this} <= family for family in _SNOWFLAKE_FAMILIES))
-    )
-    if not same_base:
+    if not _same_base(exp_dt, act_dt, dialect):
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
+
+    # Structured types (Snowflake OBJECT(a INT, b TEXT)) carry named fields
+    # rather than length/precision literals, so compare them field by field and
+    # order-independently. The catalog reports the bare base type when it cannot
+    # supply the field list, in which case the base match is all that can be
+    # checked.
+    expected_fields = _fields(exp_dt)
+    if expected_fields is not None:
+        actual_fields = _fields(act_dt)
+        if actual_fields is None:
+            return True, ""
+        if not _fields_match(expected_fields, actual_fields, dialect):
+            return False, f"expected physical type '{expected}' but the column is '{actual}'"
+        return True, ""
 
     # sqlglot fills in a dialect's default precision (a bare NUMBER parses as
     # DECIMAL(38,0)), so what the contract declares is read off the raw string.

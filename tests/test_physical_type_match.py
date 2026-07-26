@@ -80,6 +80,25 @@ def test_precision_is_only_enforced_when_the_contract_declares_it():
     assert physical_type_matches("NUMBER(5,0)", "NUMBER(12,2)", "snowflake")[0] is False
 
 
+def test_structured_object_fields_are_compared_by_name():
+    # OBJECT(a INT, b TEXT) must match its own column, whose catalog type spells
+    # the field types with Snowflake's canonical names, in any field order.
+    assert (
+        physical_type_matches("OBJECT(a INT, b TEXT)", "OBJECT(a NUMBER(38,0), b VARCHAR(16777216))", "snowflake")[0]
+        is True
+    )
+    assert physical_type_matches("OBJECT(b TEXT, a INT)", "OBJECT(a INT, b TEXT)", "snowflake")[0] is True
+    # INFORMATION_SCHEMA reports structured types as a bare OBJECT, so only the
+    # base type can be checked.
+    assert physical_type_matches("OBJECT(a INT, b TEXT)", "OBJECT", "snowflake")[0] is True
+    # genuine differences still fail
+    assert physical_type_matches("OBJECT(a INT, b TEXT)", "OBJECT(a INT, c TEXT)", "snowflake")[0] is False
+    assert physical_type_matches("OBJECT(a INT)", "OBJECT(a TEXT)", "snowflake")[0] is False
+    # a declared field length is enforced, a bare field type is not
+    assert physical_type_matches("OBJECT(a VARCHAR(10))", "OBJECT(a VARCHAR(20))", "snowflake")[0] is False
+    assert physical_type_matches("OBJECT(a VARCHAR)", "OBJECT(a VARCHAR(20))", "snowflake")[0] is True
+
+
 def test_bigquery_legacy_type_names_match_googlesql_names():
     # `datacontract import bigquery` writes the names the BigQuery API returns
     # (INTEGER, FLOAT, BOOLEAN, RECORD); INFORMATION_SCHEMA reports the GoogleSQL

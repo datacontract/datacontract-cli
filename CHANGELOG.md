@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - BigQuery export failed on fields with `logicalType: time`
 - Testing Parquet files failed for `number` fields without a declared precision and scale
+- `datacontract test` no longer fails the `physicalType` check for structured types such as Snowflake `OBJECT(a INT, b TEXT)`, whose fields are now compared by name with the same alias-aware rule as top-level types (#1377)
 
 ## [1.0.14] - 2026-07-23
 
