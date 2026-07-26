@@ -61,7 +61,10 @@ def _convert(prop: SchemaProperty, fn, *args) -> str:
 
 
 def sql_table(server_type: str, column: str) -> str:
-    rows = [f"| `{lt}` | {_convert(SchemaProperty(name='example', logicalType=lt), convert_to_sql_type, server_type)} |" for lt in LOGICAL_TYPES]
+    rows = [
+        f"| `{lt}` | {_convert(SchemaProperty(name='example', logicalType=lt), convert_to_sql_type, server_type)} |"
+        for lt in LOGICAL_TYPES
+    ]
     return f"| `logicalType` | {column} |\n|---|---|\n" + "\n".join(rows)
 
 
