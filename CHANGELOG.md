@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
+
 ## [1.0.14] - 2026-07-23
 
 ### Added
