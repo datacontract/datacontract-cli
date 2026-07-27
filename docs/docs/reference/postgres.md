@@ -16,11 +16,13 @@ Authentication options and data type handling for [Postgres connections](../test
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres` | Username |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password |
 
-`host`, `port` (default 5432), `database`, and `schema` come from the contract's `servers` block.
+`host`, `port` (default 5432), `database`, and `schema` come from the contract's `servers` block — or, for `datacontract import postgres`, from `--source`, `--port`, `--database`, and `--schema`.
 
 ## Data types
 
 ### Importing
+
+`datacontract import postgres` reads the declared type from `information_schema.columns` and keeps it as `physicalType` exactly as the test path reads it back (`character varying(36)`, `numeric(10,2)`, `timestamp with time zone`), so an imported contract passes `datacontract test` without hand-editing.
 
 `datacontract import sql --dialect postgres` maps DDL types as follows; the normalized SQL type is kept as `physicalType`.
 
