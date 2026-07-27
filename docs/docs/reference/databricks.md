@@ -7,7 +7,7 @@ description: "All Databricks authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/databricks.svg" alt="" /> Databricks Reference
 
-Authentication options and data type handling for [Databricks connections](../connect/databricks.md).
+Authentication options and data type handling for [Databricks connections](../testing/databricks.md).
 
 ## Authentication
 

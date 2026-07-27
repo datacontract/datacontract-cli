@@ -7,7 +7,7 @@ description: "All Redshift authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/redshift.svg" alt="" /> Amazon Redshift Reference
 
-Authentication options and data type handling for [Redshift connections](../connect/redshift.md).
+Authentication options and data type handling for [Redshift connections](../testing/redshift.md).
 
 ## Authentication
 

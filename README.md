@@ -88,7 +88,7 @@ $ datacontract import snowflake --source <account> --database ORDER_DB --schema 
 $ datacontract test datacontract.yaml
 ```
 
-Copy-paste guides with credentials setup are available for [Snowflake](https://docs.datacontract.com/connect/snowflake), [BigQuery](https://docs.datacontract.com/connect/bigquery), [Databricks](https://docs.datacontract.com/connect/databricks), and [15+ other sources](https://docs.datacontract.com/connect).
+Copy-paste guides with credentials setup are available for [Snowflake](https://docs.datacontract.com/testing/snowflake), [BigQuery](https://docs.datacontract.com/testing/bigquery), [Databricks](https://docs.datacontract.com/testing/databricks), and [15+ other sources](https://docs.datacontract.com/testing).
 
 We can also use the data contract metadata to export in many [formats](https://docs.datacontract.com/exports), e.g., to generate a SQL DDL:
 
@@ -292,7 +292,7 @@ It covers everything in depth, including the complete command reference:
 
 - [Quickstart](https://docs.datacontract.com/quickstart) — install and run your first test
 - [Open Data Contract Standard](https://docs.datacontract.com/open-data-contract-standard) — the contract format
-- [Test your contract](https://docs.datacontract.com/testing) and [Connect your Data](https://docs.datacontract.com/connect) — schema & quality tests against 18+ data sources
+- [Test your Data](https://docs.datacontract.com/testing) — schema & quality tests against 18+ data sources
 - [Define your Quality Rules](https://docs.datacontract.com/quality-rules) — SQL, library, text, and custom checks
 - [Sync with dbt](https://docs.datacontract.com/dbt) · [Edit your contract](https://docs.datacontract.com/editor)
 - [Imports](https://docs.datacontract.com/imports) and [Exports](https://docs.datacontract.com/exports) — convert to/from 25+ formats

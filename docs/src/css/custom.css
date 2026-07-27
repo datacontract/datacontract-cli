@@ -41,7 +41,7 @@
   text-underline-offset: 0.15em;
 }
 
-/* Overview card grids (Connect your Data, Imports, Exports) */
+/* Overview card grids (Test your Data, Imports, Exports) */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

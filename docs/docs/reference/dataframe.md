@@ -7,7 +7,7 @@ description: "Data type mappings for in-memory Spark DataFrames."
 
 # <img className="page-icon" src="/img/icons/spark.svg" alt="" /> Spark DataFrame Reference
 
-Data type handling for [Spark DataFrame connections](../connect/dataframe.md). No environment variables are needed — the existing Spark session is passed programmatically.
+Data type handling for [Spark DataFrame connections](../testing/dataframe.md). No environment variables are needed — the existing Spark session is passed programmatically.
 
 ## Data types
 

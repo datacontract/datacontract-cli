@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 2
 title: "Amazon Redshift"
 description: "Create a data contract from your Redshift tables and test the actual data against it — in about 5 minutes."
 ---

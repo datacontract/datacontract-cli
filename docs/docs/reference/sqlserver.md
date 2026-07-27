@@ -7,7 +7,7 @@ description: "All SQL Server authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/sqlserver.svg" alt="" /> Microsoft SQL Server Reference
 
-Authentication options and data type handling for [SQL Server connections](../connect/sqlserver.md).
+Authentication options and data type handling for [SQL Server connections](../testing/sqlserver.md).
 
 ## Authentication
 

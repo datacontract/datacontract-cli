@@ -7,7 +7,7 @@ description: "All GCS authentication options and data type handling."
 
 # <img className="page-icon" src="/img/icons/gcs.svg" alt="" /> Google Cloud Storage Reference
 
-Authentication options and data type handling for [GCS connections](../connect/gcs.md). GCS is accessed through the S3 interoperability layer (`type: s3` with `endpointUrl: https://storage.googleapis.com`).
+Authentication options and data type handling for [GCS connections](../testing/gcs.md). GCS is accessed through the S3 interoperability layer (`type: s3` with `endpointUrl: https://storage.googleapis.com`).
 
 ## Authentication
 

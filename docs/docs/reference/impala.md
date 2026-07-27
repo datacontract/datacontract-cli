@@ -7,7 +7,7 @@ description: "All Impala authentication options and data type handling."
 
 # <img className="page-icon" src="/img/icons/impala.svg" alt="" /> Apache Impala Reference
 
-Authentication options and data type handling for [Impala connections](../connect/impala.md).
+Authentication options and data type handling for [Impala connections](../testing/impala.md).
 
 ## Authentication
 

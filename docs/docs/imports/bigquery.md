@@ -20,7 +20,7 @@ datacontract import bigquery \
 
 Repeat `--table` for multiple tables, or omit it to import every table in the dataset. Authentication uses Application Default Credentials (`gcloud auth application-default login`, or `GOOGLE_APPLICATION_CREDENTIALS`).
 
-The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[BigQuery connection guide](../connect/bigquery.md)** for the full 5-minute walkthrough and troubleshooting.
+The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[BigQuery connection guide](../testing/bigquery.md)** for the full 5-minute walkthrough and troubleshooting.
 
 ## From an exported JSON file
 

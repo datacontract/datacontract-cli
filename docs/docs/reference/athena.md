@@ -7,7 +7,7 @@ description: "All Athena authentication options and data type handling."
 
 # <img className="page-icon" src="/img/icons/athena.svg" alt="" /> Amazon Athena Reference
 
-Authentication options and data type handling for [Athena connections](../connect/athena.md).
+Authentication options and data type handling for [Athena connections](../testing/athena.md).
 
 ## Authentication
 

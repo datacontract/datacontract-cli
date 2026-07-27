@@ -7,7 +7,7 @@ description: "Data type handling for local CSV, JSON, Parquet, and Delta files."
 
 # <img className="page-icon" src="/img/icons/local.svg" alt="" /> Local Files Reference
 
-Data type handling for [local file connections](../connect/local.md). No environment variables are needed.
+Data type handling for [local file connections](../testing/local.md). No environment variables are needed.
 
 ## Data types
 

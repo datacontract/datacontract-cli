@@ -7,7 +7,7 @@ description: "All MySQL authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/mysql.svg" alt="" /> MySQL Reference
 
-Authentication options and data type handling for [MySQL connections](../connect/mysql.md).
+Authentication options and data type handling for [MySQL connections](../testing/mysql.md).
 
 ## Authentication
 

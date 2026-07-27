@@ -7,7 +7,7 @@ description: "Authentication options and data type mappings for every data sourc
 
 # Data Source Reference
 
-Lookup material for every supported data source: all **authentication** options (environment variables) and how **data types** are mapped when importing a contract and checked when testing one. For task-oriented walkthroughs, see [Connect your Data](../connect/index.md).
+Lookup material for every supported data source: all **authentication** options (environment variables) and how **data types** are mapped when importing a contract and checked when testing one. For task-oriented walkthroughs, see [Test your Data](../testing/index.md).
 
 ## How authentication works
 

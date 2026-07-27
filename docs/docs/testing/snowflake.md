@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 16
 title: "Snowflake"
 description: "Create a data contract from your Snowflake tables and test the actual data against it — in about 5 minutes."
 ---

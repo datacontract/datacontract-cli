@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 8
 title: "Scheduling and CI/CD"
 description: "Run data contract tests continuously — in CI/CD on every change and on a daily schedule — to catch data drift before your consumers do."
 ---
@@ -8,7 +8,7 @@ description: "Run data contract tests continuously — in CI/CD on every change 
 
 Data contracts deliver the most value when they are checked **continuously**, not just once. The recommended practice is to test contracts in CI/CD on every change and, in addition, to run them on a recurring schedule (for example daily) so you detect data drift and quality regressions in production data over time.
 
-The [`ci`](./commands/ci.md) command is purpose-built for this: it wraps [`test`](./testing.md) with CI-friendly annotations, a markdown summary, machine-readable output, and exit-code control via `--fail-on`.
+The [`ci`](./commands/ci.md) command is purpose-built for this: it wraps [`test`](./commands/test.md) with CI-friendly annotations, a markdown summary, machine-readable output, and exit-code control via `--fail-on`.
 
 ## GitHub Actions (on change and scheduled)
 

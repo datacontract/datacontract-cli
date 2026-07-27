@@ -21,7 +21,7 @@ All facts below were verified in July 2026, with sources linked at the bottom of
 | **What the contract covers** | Schema, semantics, quality rules, servers, service levels, ownership | Quality expectations | Schema and quality checks | Column names, data types, constraints |
 | **When checks run** | On demand, in CI/CD, or scheduled — against data that already exists | After the data is written | After the data is written | At build time (preflight check plus DDL constraints) |
 | **Where it runs** | Standalone CLI, Python library, Docker, GitHub Action, REST API | Python library | CLI and Python library | Only inside a dbt run |
-| **Data sources** | [18+](./connect/index.md), including Snowflake, Databricks, BigQuery, Kafka, S3, and local files | SQL databases, Spark, pandas | Postgres, Snowflake, BigQuery, Databricks, Redshift, SQL Server, Fabric, Synapse, Athena, DuckDB | Whatever your dbt adapter supports |
+| **Data sources** | [18+](./testing/index.md), including Snowflake, Databricks, BigQuery, Kafka, S3, and local files | SQL databases, Spark, pandas | Postgres, Snowflake, BigQuery, Databricks, Redshift, SQL Server, Fabric, Synapse, Athena, DuckDB | Whatever your dbt adapter supports |
 | **Contract is shareable with consumers** | Yes — one portable YAML file | No | Within Soda | No — scoped to one dbt project |
 
 ## Data Contract CLI
@@ -65,7 +65,7 @@ A data contract is the definition; these tools are execution engines. The CLI ca
 - [`datacontract export --format sodacl`](./exports/sodacl.md) generates SodaCL checks.
 - [`datacontract export --format dbt`](./exports/dbt-models.md) generates a dbt model schema, [sources](./exports/dbt-sources.md), or [staging SQL](./exports/dbt-staging-sql.md).
 
-A common setup is: define the contract in ODCS, enforce structure at build time with dbt, and run [`datacontract test`](./testing.md) in CI/CD and on a schedule against the deployed data.
+A common setup is: define the contract in ODCS, enforce structure at build time with dbt, and run [`datacontract test`](./testing/index.md) in CI/CD and on a schedule against the deployed data.
 
 ## Sources
 

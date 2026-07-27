@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 1
 title: "Amazon Athena"
 description: "Create a data contract from your Athena tables and test the actual data against it."
 ---

@@ -112,4 +112,4 @@ Available extras:
 | Trino | `pip install datacontract-cli[trino]` |
 | API (run as web server) | `pip install datacontract-cli[api]` |
 
-Each [data source](./connect/index.md) lists the extra it needs.
+Each [data source](./testing/index.md) lists the extra it needs.

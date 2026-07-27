@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 7
 title: "Google BigQuery"
 description: "Create a data contract from your BigQuery tables and test the actual data against it — in about 5 minutes."
 ---

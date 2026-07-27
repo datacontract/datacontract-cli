@@ -7,7 +7,7 @@ description: "All Kafka authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/kafka.svg" alt="" /> Kafka Reference
 
-Authentication options and data type handling for [Kafka connections](../connect/kafka.md).
+Authentication options and data type handling for [Kafka connections](../testing/kafka.md).
 
 ## Authentication
 
