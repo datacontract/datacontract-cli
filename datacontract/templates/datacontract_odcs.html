@@ -23,10 +23,16 @@
       <span
         class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-800 ring-1 ring-inset ring-red-600/20">Critical</span>
       {% endif %}
+      {% if property.classification %}
+      <span
+        class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-800 ring-1 ring-inset ring-green-600/20">{{ property.classification }}</span>
+      {% endif %}
     </td>
+    {% if has_businessName %}
     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{
       property.businessName or "-" }}
     </td>
+    {% endif %}
     <td class="px-4 py-4 whitespace-nowrap">
       <div class="text-sm text-gray-900">{{ property.logicalType }}</div>
       {% if property.physicalType and property.physicalType !=
@@ -43,6 +49,16 @@
     </td>
     <td class="px-4 py-4 text-sm text-gray-500">{{ property.description or "-"
       }}
+    </td>
+    <td class="px-4 py-4 text-sm text-gray-500">
+    {% if property.customProperties %}
+      {% for customProperty in property.customProperties %}
+        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-800 ring-1 ring-inset ring-blue-600/20">
+          {{ customProperty.property }}: {{ customProperty.value }}
+        </span>
+      {% endfor %}
+    {% else %}-
+    {% endif %}
     </td>
   </tr>
     {% if property.properties %}
@@ -198,6 +214,17 @@
                   <dd class="mt-1 text-sm text-gray-700">{{ datacontract.description.limitations }}</dd>
                 </div>
                 {% endif %}
+
+                {% if datacontract.description.authoritativeDefinitions %}
+                <div>
+                  <dt class="text-sm font-medium text-gray-900">Authoritative Definitions</dt>
+                  {% for authDef in datacontract.description.authoritativeDefinitions %}
+                  <dd class="mt-1 text-sm text-gray-700">
+                    <a href="{{ authDef.url }}" target="_blank" class="text-sky-500 hover:text-sky-700 text-sm font-medium">{{ authDef.type }}</a>
+                  </dd>
+                  {% endfor %}
+                {% endif %}
+
                 {% endif %}
 
                 {% if datacontract.contractCreatedTs %}
@@ -303,10 +330,13 @@
                           class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Property
                         </th>
+                        {% set has_businessName = schema.businessName|selectattr('businessName')|list|length > 0 %}
+                        {% if has_businessName %}
                         <th
                           class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Business Name
                         </th>
+                        {% endif %}
                         <th
                           class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
@@ -318,6 +348,10 @@
                         <th
                           class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Description
+                        </th>
+                        <th
+                          class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Custom Properties
                         </th>
                       </tr>
                       </thead>
@@ -344,6 +378,68 @@
                       </tfoot>
                       {% endif %}
                     </table>
+
+                    {% if schema.authoritativeDefinitions %}
+                    <div class="min-w-full divide-y divide-gray-300">
+                      <div class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+                        <h1 class="text-base font-semibold leading-6 text-gray-900">Authoritative Definitions</h1>
+                      </div>
+                      <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-300">
+                          <thead class="bg-gray-50">
+                            <tr>
+                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Url</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-gray-200 bg-white">
+                            {% for authDef in datacontract.authoritativeDefinitions %}
+                            <tr>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ authDef.type }}</td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <a href="{{ authDef.url }}" target="_blank" class="text-sky-500 hover:text-sky-700 text-sm font-medium">
+                                  {% if authDef.description %}{{ authDef.description }}{% else %}{{ authDef.url }}{% endif %}
+                                </a>
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    {% endif %}
+
+                    {% if schema.customProperties %}
+                    <div class="min-w-full divide-y divide-gray-300">
+                      <div class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+                        <h1 class="text-base font-semibold leading-6 text-gray-900">Custom Properties</h1>
+                      </div>
+                      <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-300">
+                          <thead class="bg-gray-50">
+                            <tr>
+                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-gray-200 bg-white">
+                            {% for prop in schema.customProperties %}
+                            <tr>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ prop.property }}</td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if prop.value is iterable and prop.value is not string %}
+                                  {% for item in prop.value %}{{ item }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                {% else %}
+                                  {{ prop.value }}
+                                {% endif %}
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -459,17 +555,34 @@
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date Out
                   </th>
+                  {% set has_replaced = team_members|selectattr('replacedByUsername')|list|length > 0 %}
+                  {% if has_replaced %}
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Replaced By
+                  </th>
+                  {% endif %}
+                  {% set has_comment = team_members|selectattr('comment')|list|length > 0 %}
+                  {% if has_comment %}
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Comment
                   </th>
+                  {% endif %}
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                 {% for member in team_members %}
                 <tr>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{
-                    member.username }}
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <div>{{ member.username }}</div>
+                    <div>{% if member.tags %}
+                    {% for tag in member.tags %}
+                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 mr-1">
+                      <span>{{ tag }}</span>
+                    </span>
+                    {% endfor %}
+                    {% endif %}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ member.role }}
                   </td>
@@ -479,9 +592,16 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ member.dateOut or
                     "-" }}
                   </td>
+                  {% if has_replaced %}
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ member.replacedByUsername or
+                    "-" }}
+                  </td>
+                  {% endif %}
+                  {% if has_comment %}
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ member.comment or
                     "-" }}
                   </td>
+                  {% endif %}
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -600,6 +720,37 @@
           </section>
           {% endif %}
 
+          {% if datacontract.authoritativeDefinitions %}
+          <section id="authoritative-definitions">
+            <div class="px-4 sm:px-0">
+              <h1 class="text-base font-semibold leading-6 text-gray-900">Authoritative Definitions</h1>
+              <p class="text-sm text-gray-500">Definition of delegation to third party systems</p>
+            </div>
+
+            <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+              <table class="min-w-full divide-y divide-gray-300">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Url</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white">
+                  {% for authDef in datacontract.authoritativeDefinitions %}
+                  <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ authDef.type }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <a href="{{ authDef.url }}" target="_blank" class="text-sky-500 hover:text-sky-700 text-sm font-medium">
+                        {% if authDef.description %}{{ authDef.description }}{% else %}{{ authDef.url }}{% endif %}
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          {% endif %}
 
           {% if datacontract.customProperties %}
           <section id="custom-properties">
