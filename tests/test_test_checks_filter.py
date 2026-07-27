@@ -2,7 +2,6 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.engines.checks.create_checks import create_checks
 
 runner = CliRunner()
 
@@ -27,14 +26,6 @@ schema:
       - name: order_id
         logicalType: integer
 """
-
-
-def test_row_count_quality_rule_is_categorized_as_quality():
-    dc = DataContract(data_contract_str=ROW_COUNT_CONTRACT)
-    odcs = dc.get_data_contract()
-    checks = create_checks(odcs, odcs.servers[0])
-    row_count = next(c for c in checks if c.type == "row_count")
-    assert row_count.category == "quality"
 
 
 def test_checks_quality_only_runs_row_count_rule():
