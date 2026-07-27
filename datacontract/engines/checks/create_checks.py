@@ -494,7 +494,7 @@ def _invalid_count_check(
 def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__row_count",
-        category="schema",
+        category="quality",
         type="row_count",
         name=f"Check that model {model} has row_count {threshold.describe()}",
         model=model,
