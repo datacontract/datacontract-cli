@@ -1,5 +1,6 @@
 """Tests for the Postgres importer, run against a real Postgres container."""
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -15,12 +16,16 @@ from datacontract.model.run import ResultEnum
 
 postgres = PostgresContainer("postgres:16")
 
+# This module-scoped fixture is instantiated before conftest's function-scoped
+# chdir into the test directory, so the seed file is addressed from this file.
+SEED_SQL = Path(__file__).parent / "fixtures" / "postgres" / "data" / "import.sql"
+
 
 @pytest.fixture(scope="module", autouse=True)
 def postgres_container(request):
     postgres.start()
     request.addfinalizer(postgres.stop)
-    _init_sql("fixtures/postgres/data/import.sql")
+    _init_sql(SEED_SQL)
 
 
 @pytest.fixture(autouse=True)
