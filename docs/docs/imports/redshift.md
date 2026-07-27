@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 16
 title: "Import: Amazon Redshift"
 description: "Create a data contract from an Amazon Redshift schema."
 ---

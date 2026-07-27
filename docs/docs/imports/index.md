@@ -28,41 +28,45 @@ Each import page shows a runnable example: a small source file under [`examples/
 ## Available importers
 
 <div className="card-grid">
-  <a className="doc-card" href="/imports/sql">
-    <img src="/img/icons/database.svg" alt="" />
-    <span><span className="doc-card-title">sql</span><span className="doc-card-desc">A SQL DDL file.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/dbt">
-    <img src="/img/icons/dbt.svg" alt="" />
-    <span><span className="doc-card-title">dbt</span><span className="doc-card-desc">A dbt manifest file.</span></span>
-  </a>
   <a className="doc-card" href="/imports/avro">
     <img src="/img/icons/avro.svg" alt="" />
     <span><span className="doc-card-title">avro</span><span className="doc-card-desc">An Avro schema file.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/dbml">
-    <img src="/img/icons/dbml.svg" alt="" />
-    <span><span className="doc-card-title">dbml</span><span className="doc-card-desc">A DBML file.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/glue">
-    <img src="/img/icons/glue.svg" alt="" />
-    <span><span className="doc-card-title">glue</span><span className="doc-card-desc">AWS Glue Data Catalog.</span></span>
   </a>
   <a className="doc-card" href="/imports/bigquery">
     <img src="/img/icons/bigquery.svg" alt="" />
     <span><span className="doc-card-title">bigquery</span><span className="doc-card-desc">Google BigQuery (file or API).</span></span>
   </a>
-  <a className="doc-card" href="/imports/unity">
-    <img src="/img/icons/databricks.svg" alt="" />
-    <span><span className="doc-card-title">unity</span><span className="doc-card-desc">Databricks Unity Catalog.</span></span>
+  <a className="doc-card" href="/imports/csv">
+    <img src="/img/icons/custom.svg" alt="" />
+    <span><span className="doc-card-title">csv</span><span className="doc-card-desc">A CSV file.</span></span>
   </a>
-  <a className="doc-card" href="/imports/jsonschema">
-    <img src="/img/icons/jsonschema.svg" alt="" />
-    <span><span className="doc-card-title">jsonschema</span><span className="doc-card-desc">A JSON Schema file.</span></span>
+  <a className="doc-card" href="/imports/dbml">
+    <img src="/img/icons/dbml.svg" alt="" />
+    <span><span className="doc-card-title">dbml</span><span className="doc-card-desc">A DBML file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/dbt">
+    <img src="/img/icons/dbt.svg" alt="" />
+    <span><span className="doc-card-title">dbt</span><span className="doc-card-desc">A dbt manifest file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/excel">
+    <img src="/img/icons/excel.svg" alt="" />
+    <span><span className="doc-card-title">excel</span><span className="doc-card-desc">An ODCS Excel template.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/glue">
+    <img src="/img/icons/glue.svg" alt="" />
+    <span><span className="doc-card-title">glue</span><span className="doc-card-desc">AWS Glue Data Catalog.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/iceberg">
+    <img src="/img/icons/iceberg.svg" alt="" />
+    <span><span className="doc-card-title">iceberg</span><span className="doc-card-desc">An Iceberg schema.</span></span>
   </a>
   <a className="doc-card" href="/imports/json">
     <img src="/img/icons/json.svg" alt="" />
     <span><span className="doc-card-title">json</span><span className="doc-card-desc">A JSON data file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/jsonschema">
+    <img src="/img/icons/jsonschema.svg" alt="" />
+    <span><span className="doc-card-title">jsonschema</span><span className="doc-card-desc">A JSON Schema file.</span></span>
   </a>
   <a className="doc-card" href="/imports/odcs">
     <img src="/img/icons/odcs.svg" alt="" />
@@ -72,41 +76,37 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/parquet.svg" alt="" />
     <span><span className="doc-card-title">parquet</span><span className="doc-card-desc">A Parquet file.</span></span>
   </a>
-  <a className="doc-card" href="/imports/csv">
-    <img src="/img/icons/custom.svg" alt="" />
-    <span><span className="doc-card-title">csv</span><span className="doc-card-desc">A CSV file.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/protobuf">
-    <img src="/img/icons/custom.svg" alt="" />
-    <span><span className="doc-card-title">protobuf</span><span className="doc-card-desc">A Protobuf schema file.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/spark">
-    <img src="/img/icons/spark.svg" alt="" />
-    <span><span className="doc-card-title">spark</span><span className="doc-card-desc">A Spark schema / DataFrame.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/iceberg">
-    <img src="/img/icons/iceberg.svg" alt="" />
-    <span><span className="doc-card-title">iceberg</span><span className="doc-card-desc">An Iceberg schema.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/excel">
-    <img src="/img/icons/excel.svg" alt="" />
-    <span><span className="doc-card-title">excel</span><span className="doc-card-desc">An ODCS Excel template.</span></span>
+  <a className="doc-card" href="/imports/postgres">
+    <img src="/img/icons/postgres.svg" alt="" />
+    <span><span className="doc-card-title">postgres</span><span className="doc-card-desc">A Postgres schema.</span></span>
   </a>
   <a className="doc-card" href="/imports/powerbi">
     <img src="/img/icons/powerbi.svg" alt="" />
     <span><span className="doc-card-title">powerbi</span><span className="doc-card-desc">A Power BI semantic model (.pbit, .bim, or .json).</span></span>
   </a>
-  <a className="doc-card" href="/imports/snowflake">
-    <img src="/img/icons/snowflake.svg" alt="" />
-    <span><span className="doc-card-title">snowflake</span><span className="doc-card-desc">A Snowflake workspace.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/postgres">
-    <img src="/img/icons/postgres.svg" alt="" />
-    <span><span className="doc-card-title">postgres</span><span className="doc-card-desc">A Postgres schema.</span></span>
+  <a className="doc-card" href="/imports/protobuf">
+    <img src="/img/icons/custom.svg" alt="" />
+    <span><span className="doc-card-title">protobuf</span><span className="doc-card-desc">A Protobuf schema file.</span></span>
   </a>
   <a className="doc-card" href="/imports/redshift">
     <img src="/img/icons/redshift.svg" alt="" />
     <span><span className="doc-card-title">redshift</span><span className="doc-card-desc">An Amazon Redshift schema.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/snowflake">
+    <img src="/img/icons/snowflake.svg" alt="" />
+    <span><span className="doc-card-title">snowflake</span><span className="doc-card-desc">A Snowflake workspace.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/spark">
+    <img src="/img/icons/spark.svg" alt="" />
+    <span><span className="doc-card-title">spark</span><span className="doc-card-desc">A Spark schema / DataFrame.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/sql">
+    <img src="/img/icons/database.svg" alt="" />
+    <span><span className="doc-card-title">sql</span><span className="doc-card-desc">A SQL DDL file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/unity">
+    <img src="/img/icons/databricks.svg" alt="" />
+    <span><span className="doc-card-title">unity</span><span className="doc-card-desc">Databricks Unity Catalog.</span></span>
   </a>
 </div>
 
