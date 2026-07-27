@@ -82,7 +82,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
                 flag, _, value = arg.partition("=")
                 if flag == "--schema" and not takes_database_schema:
                     typer.secho(
-                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
+                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in a future release.",
                         err=True,
                         fg=typer.colors.YELLOW,
                     )

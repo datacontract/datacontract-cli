@@ -140,3 +140,11 @@ def test_error_message_keeps_bracketed_text(monkeypatch, capsys):
         cli.main()
 
     assert "botocore[crt]" in capsys.readouterr().out
+
+
+def test_schema_alias_warning_does_not_cite_an_unreleased_version():
+    """The alias predates the switch to 1.x, so it must not promise removal in v0.13.0."""
+    result = runner.invoke(app, ["lint", "--schema", "some-schema.json", "unknown.yaml"])
+
+    assert "--json-schema" in result.output
+    assert "v0.13.0" not in result.output
