@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 9
 title: "Sync with dbt"
 description: "Sync a data contract's schema and tests into your dbt project with datacontract dbt sync, then run them with datacontract dbt test."
 ---

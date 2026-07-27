@@ -19,19 +19,29 @@ It natively supports the [Open Data Contract Standard (ODCS)](https://bitol-io.g
 
 The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
 
-Three commands take you from an existing warehouse table to a tested data contract:
+Try it right now — this tests a published example contract against a hosted demo database, so there is nothing to set up:
 
 ```bash
-uv tool install --python python3.11 --upgrade 'datacontract-cli[snowflake]'
+uv tool install --python python3.11 --upgrade 'datacontract-cli[postgres]'
+
+export DATACONTRACT_POSTGRES_USERNAME=datacontract_cli.egzhawjonpfweuutedfy
+export DATACONTRACT_POSTGRES_PASSWORD=jio10JuQfDfl9JCCPdaCCpuZ1YO
+
+datacontract test https://datacontract.com/orders-v1.odcs.yaml
+```
+
+```
+🟢 data contract is valid. Run 25 checks. Took 3.9 seconds.
+```
+
+Against your own warehouse it is the same two commands, with an import that generates the contract and a ready-to-test `servers` block:
+
+```bash
 datacontract import snowflake --source <account> --database ORDER_DB --schema PUBLIC --output datacontract.yaml
 datacontract test datacontract.yaml
 ```
 
-```
-🟢 data contract is valid. Run 24 checks. Took 5.2 seconds.
-```
-
-The same flow works for [BigQuery](./connect/bigquery.md), [Databricks](./connect/databricks.md), [Postgres](./connect/postgres.md), and [15+ other sources](./connect/index.md) — or [try it on a local CSV file](./connect/local.md) without any credentials.
+The same flow works for [BigQuery](./connect/bigquery.md), [Databricks](./connect/databricks.md), [Postgres](./connect/postgres.md), and [15+ other sources](./connect/index.md) — or [on a local CSV file](./connect/local.md), offline and without any credentials.
 
 ![Overview of the Data Contract CLI: schemas from SQL DDL, JSON Schema, Iceberg, Protobuf, BigQuery, Unity Catalog, AWS Glue, and Excel are imported into an ODCS data contract, which is linted, tested against S3, BigQuery, Azure, Databricks, Snowflake, and Kafka, and exported to SQL DDL, HTML, dbt, Entropy Data, Avro, SodaCL, Pydantic, and Excel.](/img/datacontractcli.webp)
 
@@ -56,7 +66,8 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - Test your own warehouse in 5 minutes: **[Snowflake](./connect/snowflake.md)**, **[BigQuery](./connect/bigquery.md)**, **[Databricks](./connect/databricks.md)**, or **[any other source](./connect/index.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
-- Run checks against real data with **[Testing](./testing.md)**.
+- Run checks against real data with **[Testing](./testing.md)**, then keep them running with **[Scheduling and CI/CD](./ci-cd.md)**.
+- Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
 
 ## Frequently asked questions
@@ -71,7 +82,7 @@ It natively uses the [Open Data Contract Standard (ODCS)](./open-data-contract-s
 
 ### How do I install the Data Contract CLI?
 
-Run `pip install datacontract-cli[all]`, or use `uv tool install "datacontract-cli[all]"`. A Docker image is published as `datacontract/cli`. See [Installation](./installation.md) for all options.
+Run `pip install 'datacontract-cli[postgres]'` (or the extra matching your data source), or use `uv tool install`. `datacontract-cli[all]` installs every optional dependency. A Docker image is published as `datacontract/cli`. See [Installation](./installation.md) for all options.
 
 ### Which data sources can the Data Contract CLI test?
 

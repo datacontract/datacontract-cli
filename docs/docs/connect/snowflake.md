@@ -78,7 +78,7 @@ schema:
         mustBe: 0
 ```
 
-Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../testing.md#scheduling-and-cicd) so you catch drift before your consumers do.
+Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
 ## Server reference
 
