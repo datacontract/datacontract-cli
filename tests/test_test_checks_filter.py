@@ -2,8 +2,49 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.engines.checks.create_checks import create_checks
 
 runner = CliRunner()
+
+ROW_COUNT_CONTRACT = """
+apiVersion: v3.0.2
+kind: DataContract
+id: row_count_category_test
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    quality:
+      - type: library
+        metric: rowCount
+        mustBeGreaterThan: 1
+    properties:
+      - name: order_id
+        logicalType: integer
+"""
+
+
+def test_row_count_quality_rule_is_categorized_as_quality():
+    dc = DataContract(data_contract_str=ROW_COUNT_CONTRACT)
+    odcs = dc.get_data_contract()
+    checks = create_checks(odcs, odcs.servers[0])
+    row_count = next(c for c in checks if c.type == "row_count")
+    assert row_count.category == "quality"
+
+
+def test_checks_quality_only_runs_row_count_rule():
+    run = DataContract(
+        data_contract_str=ROW_COUNT_CONTRACT,
+        check_categories={"quality"},
+    ).test()
+    print(run.pretty())
+    assert run.result == "passed"
+    assert [check.type for check in run.checks] == ["row_count"]
 
 
 def test_checks_schema_only():

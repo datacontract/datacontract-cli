@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract test --checks quality` now runs `rowCount` quality rules, which were categorized as schema checks
+
 ## [1.0.14] - 2026-07-23
 
 ### Added
