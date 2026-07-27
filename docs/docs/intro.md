@@ -12,6 +12,10 @@ description: "An open-source command-line tool for working with data contracts b
     <img alt="PyPI Monthly Downloads" src="https://img.shields.io/pypi/dm/datacontract-cli" /></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="GitHub Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
+  <a href="https://github.com/datacontract/datacontract-cli/graphs/contributors">
+    <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/datacontract/datacontract-cli" /></a>
+  <a href="https://hub.docker.com/r/datacontract/cli">
+    <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/datacontract/cli" /></a>
 </p>
 
 The `datacontract` CLI is an open-source command-line tool for working with [data contracts](https://datacontract.com).
