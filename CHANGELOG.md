@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract import postgres` creates a data contract from a live Postgres schema, including a ready-to-test `servers` block
 - `datacontract import redshift` creates a data contract from an Amazon Redshift schema, including a ready-to-test `servers` block
 - Redshift supports IAM authentication with `DATACONTRACT_REDSHIFT_AUTHENTICATION=iam`, using temporary credentials from your AWS session instead of a database password
 - `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import

@@ -135,6 +135,11 @@ importer_factory.register_lazy_importer(
     class_name="RedshiftImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.postgres,
+    module_path="datacontract.imports.postgres_importer",
+    class_name="PostgresImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.json,
     module_path="datacontract.imports.json_importer",
     class_name="JsonImporter",

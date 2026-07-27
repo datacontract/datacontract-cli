@@ -6,7 +6,7 @@ description: "Create a data contract from your Postgres tables and test the actu
 
 # <img className="page-icon" src="/img/icons/postgres.svg" alt="" /> Postgres
 
-Go from an existing Postgres table to a tested data contract in about five minutes. Works with Postgres and Postgres-compatible databases (e.g. RisingWave).
+Go from an existing Postgres table to a tested data contract in about five minutes: import the schema straight from Postgres, then test the actual data against it. Works with Postgres and Postgres-compatible databases (e.g. RisingWave).
 
 ## 1. Install
 
@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[postgres]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 
@@ -26,26 +26,24 @@ DATACONTRACT_POSTGRES_USERNAME=postgres
 DATACONTRACT_POSTGRES_PASSWORD=mysecretpassword
 ```
 
+The database user needs `USAGE` on the schema and `SELECT` on the tables. `import` and `test` use the same two variables.
+
 ## 3. Create a contract from your tables
 
-Dump the DDL of a table and import it:
+Import the table metadata directly from the Postgres catalog. This also generates a ready-to-test `servers` block:
 
 ```bash
-pg_dump --schema-only --table orders "$DATABASE_URL" > orders.sql
-datacontract import sql --source orders.sql --dialect postgres --output datacontract.yaml
+datacontract import postgres \
+  --source localhost \
+  --database postgres \
+  --schema public \
+  --table orders \
+  --output datacontract.yaml
 ```
 
-The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your host, port, database, and schema:
+`--source` is the host of your Postgres server. Add `--port` if it doesn't listen on the default `5432`, repeat `--table` for multiple tables, or omit it to import every table in the schema. `--schema` defaults to `public`.
 
-```yaml
-servers:
-  - server: postgres
-    type: postgres
-    host: localhost
-    port: 5432
-    database: postgres
-    schema: public
-```
+Only have a DDL file? `datacontract import sql --source orders.sql --dialect postgres` works too, but writes a `servers` block with placeholder values that you have to fill in by hand.
 
 ## 4. Test the actual data
 
@@ -87,6 +85,20 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
+## Server reference
+
+Connection details live in the contract's `servers` block; `host`, `port`, `database`, and `schema` come from there:
+
+```yaml
+servers:
+  - server: postgres
+    type: postgres
+    host: localhost
+    port: 5432
+    database: postgres
+    schema: public
+```
+
 ## Reference
 
 All authentication options and the data type mappings: **[Postgres Reference](../reference/postgres.md)**.
@@ -96,3 +108,4 @@ All authentication options and the data type mappings: **[Postgres Reference](..
 - **`password authentication failed`** — check the two environment variables above; note that values from an already-set shell variable take precedence over `.env`.
 - **`connection refused`** — host/port in the `servers` block are wrong, or the database isn't reachable from your machine (VPN, firewall, `pg_hba.conf`).
 - **`relation does not exist`** — the `schema` in the `servers` block doesn't match where the table lives, or the user lacks `USAGE`/`SELECT` grants.
+- **The import finds no tables** — `--schema` is case-sensitive and must match the schema as stored in the catalog.

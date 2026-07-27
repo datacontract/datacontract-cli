@@ -505,3 +505,38 @@ def import_redshift(
         id=id,
     )
     _write_result(result, output)
+
+
+@import_app.command(
+    name="postgres",
+    epilog="Example: datacontract import postgres --source localhost --database postgres --schema public --output datacontract.yaml",
+)
+def import_postgres(
+    source: Annotated[Optional[str], typer.Option(help="The host of the Postgres server.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The Postgres port (default 5432).")] = None,
+    database: database_option = None,
+    schema: Annotated[
+        Optional[str], typer.Option("--schema", help="The Postgres schema name (default public).")
+    ] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables in the schema)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a Postgres schema."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="postgres",
+        source=source,
+        port=port,
+        database=database,
+        schema=schema,
+        postgres_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)

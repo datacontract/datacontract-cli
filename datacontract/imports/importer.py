@@ -41,6 +41,7 @@ class ImportFormat(str, Enum):
     powerbi = "powerbi"
     snowflake = "snowflake"
     redshift = "redshift"
+    postgres = "postgres"
 
     @classmethod
     def get_supported_formats(cls):
