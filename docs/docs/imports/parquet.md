@@ -4,9 +4,7 @@ title: "Import: Parquet"
 description: "Create a data contract from a Parquet file."
 ---
 
-<img className="page-icon" src="/img/icons/parquet.svg" alt="" />
-
-# Import: Parquet
+# <img className="page-icon" src="/img/icons/parquet.svg" alt="" /> Import: Parquet
 
 Creates a data contract from the schema of a Parquet file.
 

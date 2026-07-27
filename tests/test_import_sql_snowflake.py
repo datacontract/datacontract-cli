@@ -177,3 +177,16 @@ schema:
 
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+
+
+def test_map_type_from_sql_time_with_precision():
+    # TIME(9) is what Snowflake's INFORMATION_SCHEMA generates; it must map to time, not stay unmapped
+    from datacontract.imports.sql_importer import map_type_from_sql
+
+    assert map_type_from_sql("TIME(9)") == ("time", None)
+    assert map_type_from_sql("time") == ("time", None)
+    assert map_type_from_sql("time with time zone") == ("time", None)
+    assert map_type_from_sql("timetz") == ("time", None)
+    # must not swallow timestamps
+    assert map_type_from_sql("timestamp(6)") == ("timestamp", None)
+    assert map_type_from_sql("TIMESTAMP_NTZ(9)") == ("timestamp", None)

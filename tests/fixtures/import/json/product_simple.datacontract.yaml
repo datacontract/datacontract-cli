@@ -90,10 +90,9 @@ schema:
         - CS
       - name: dateAvailable
         physicalType: string
-        customProperties:
-        - property: format
-          value: date
         logicalType: string
+        logicalTypeOptions:
+          format: date
         examples:
         - '2021-02-01'
       - name: shapeDescriptionEnglish
@@ -203,10 +202,9 @@ schema:
         - n/a
       - name: dateEffective
         physicalType: string
-        customProperties:
-        - property: format
-          value: date
         logicalType: string
+        logicalTypeOptions:
+          format: date
         examples:
         - '2021-02-01'
       - name: totalUnits
@@ -407,4 +405,3 @@ schema:
         logicalType: string
         examples:
         - OT
-

@@ -617,7 +617,7 @@ def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConf
     return Check(
         id=str(uuid.uuid4()),
         key=check_key,
-        category="schema",
+        category="quality",
         type=check_type,
         name=f"Check that model {model_name} has row_count {threshold}",
         model=model_name,

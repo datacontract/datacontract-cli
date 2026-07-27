@@ -8,7 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
+
+### Fixed
+- BigQuery export failed on fields with `logicalType: time`
+- Testing Parquet files failed for `number` fields without a declared precision and scale
+- CSV and JSON imports now write detected formats (`email`, `uuid`, `date-time`) to `logicalTypeOptions.format` instead of a custom property, so they are validated by `datacontract test`
+- SQL imports now map `TIME` types with precision or time zone (e.g. `TIME(9)`) to `logicalType: time`; previously the logical type was left unset
+- `datacontract test --checks quality` now runs `rowCount` quality rules, which were wrongly categorized as schema checks
 
 ## [1.0.14] - 2026-07-23
 

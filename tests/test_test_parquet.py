@@ -54,6 +54,17 @@ def test_decimal():
     assert run.result == "passed"
 
 
+def test_number_without_precision():
+    # logicalType number without declared precision/scale maps to DuckDB DECIMAL,
+    # not the invalid raw type name "number"
+    data_contract = DataContract(
+        data_contract_file="fixtures/parquet/datacontract_number_no_precision.odcs.yaml",
+    )
+    run = data_contract.test()
+    print(run.pretty())
+    assert run.result == "passed"
+
+
 def test_array():
     data_contract = DataContract(
         data_contract_file="fixtures/parquet/datacontract_array.yaml",

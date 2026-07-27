@@ -1,20 +1,42 @@
 ---
 sidebar_position: 18
 title: "Trino"
-description: "Test data in Trino with basic, JWT, or OAuth2 auth."
+description: "Create a data contract from your Trino tables and test the actual data against it."
 ---
 
-<img className="page-icon" src="/img/icons/trino.svg" alt="" />
-
-# Trino
-
-:::info[Required extra]
-This connection requires the `trino` extra. See [Installation](../installation.md).
-:::
+# <img className="page-icon" src="/img/icons/trino.svg" alt="" /> Trino
 
 Test data in Trino.
 
-## Server
+## 1. Install
+
+```bash
+uv tool install --python python3.11 --upgrade 'datacontract-cli[trino]'
+```
+
+See [Installation](../installation.md) for pip, pipx, and Docker.
+
+## 2. Set credentials
+
+Create a `.env` file in your working directory (or export the variables):
+
+```bash
+# .env
+DATACONTRACT_TRINO_USERNAME=trino
+DATACONTRACT_TRINO_PASSWORD=mysecretpassword
+```
+
+The default is `basic` auth; JWT and OAuth2 are also supported — see the [Trino Reference](../reference/trino.md).
+
+## 3. Create a contract from your tables
+
+Get the DDL of a table (`SHOW CREATE TABLE my_catalog.my_schema.orders;`), save it to a file, and import it. Trino's ANSI-style DDL generally parses well with the `postgres` dialect:
+
+```bash
+datacontract import sql --source orders.sql --dialect postgres --output datacontract.yaml
+```
+
+The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your cluster:
 
 ```yaml
 servers:
@@ -26,12 +48,38 @@ servers:
     schema: my_schema
 ```
 
-## Environment variables
+## 4. Test the actual data
 
-| Variable | Example | Description |
-|---|---|---|
-| `DATACONTRACT_TRINO_USERNAME` | `trino` | Username for `basic` auth |
-| `DATACONTRACT_TRINO_PASSWORD` | `mysecretpassword` | Password for `basic` auth |
-| `DATACONTRACT_TRINO_AUTHENTICATION` | `oauth2` | `basic` (default), `jwt`, or `oauth2` |
-| `DATACONTRACT_TRINO_JWT_TOKEN` | `eyJhbGciOi...` | JWT bearer token for `jwt` auth |
+```bash
+datacontract test datacontract.yaml
+```
 
+```
+🟢 data contract is valid. Run 24 checks. Took 4.4 seconds.
+```
+
+## 5. Let it catch a violation
+
+The contract becomes valuable when it detects drift. Tighten an expectation — for example, add a quality rule to a schema in `datacontract.yaml`:
+
+```yaml
+schema:
+  - name: orders
+    # ...
+    quality:
+      - type: sql
+        description: No order has a negative total
+        query: SELECT COUNT(*) FROM orders WHERE order_total < 0
+        mustBe: 0
+```
+
+Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../testing.md#scheduling-and-cicd) so you catch drift before your consumers do.
+
+## Reference
+
+All authentication options (basic, JWT, OAuth2) and the data type handling: **[Trino Reference](../reference/trino.md)**.
+
+## Troubleshooting
+
+- **`401 Unauthorized`** — check the auth mode: password-protected clusters need `basic` credentials over HTTPS; token-based setups need `DATACONTRACT_TRINO_AUTHENTICATION=jwt` and `DATACONTRACT_TRINO_JWT_TOKEN`.
+- **`Catalog ... does not exist` / `Schema ... does not exist`** — `catalog` and `schema` in the `servers` block must match `SHOW CATALOGS` / `SHOW SCHEMAS FROM <catalog>`.

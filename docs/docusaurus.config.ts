@@ -139,6 +139,8 @@ const config: Config = {
           'imports/*.md',
           'exports/index.md',
           'exports/*.md',
+          'reference/index.md',
+          'reference/*.md',
           'commands/index.md',
           'commands/*.md',
           'python-library.md',

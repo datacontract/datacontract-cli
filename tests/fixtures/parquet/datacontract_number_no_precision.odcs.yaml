@@ -1,0 +1,17 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-unit-test
+name: Orders Unit Test
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: local
+    path: ./fixtures/parquet/data/decimal.parquet
+    format: parquet
+schema:
+  - name: orders
+    physicalType: table
+    properties:
+      - name: decimal_field
+        logicalType: number

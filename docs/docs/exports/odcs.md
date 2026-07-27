@@ -4,9 +4,7 @@ title: "Export: ODCS"
 description: "Export a data contract to the Open Data Contract Standard (ODCS) format."
 ---
 
-<img className="page-icon" src="/img/icons/odcs.svg" alt="" />
-
-# Export: ODCS
+# <img className="page-icon" src="/img/icons/odcs.svg" alt="" /> Export: ODCS
 
 Exports the data contract to the [Open Data Contract Standard](../open-data-contract-standard.md) (ODCS) YAML format. Useful for normalizing or converting an in-memory contract back to canonical ODCS.
 

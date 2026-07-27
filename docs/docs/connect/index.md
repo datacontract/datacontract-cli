@@ -11,7 +11,7 @@ To [test](../testing.md) a data contract, the CLI connects to the data source de
 
 ```yaml
 servers:
-  production:
+  - server: production
     type: postgres   # selects the connection engine
     host: localhost
     port: 5432
@@ -30,6 +30,30 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
 ## Supported connections
 
 <div className="card-grid">
+  <a className="doc-card" href="/connect/snowflake">
+    <img src="/img/icons/snowflake.svg" alt="" />
+    <span><span className="doc-card-title">Snowflake</span><span className="doc-card-desc">Import a contract from your tables and test in 5 minutes</span></span>
+  </a>
+  <a className="doc-card" href="/connect/bigquery">
+    <img src="/img/icons/bigquery.svg" alt="" />
+    <span><span className="doc-card-title">Google BigQuery</span><span className="doc-card-desc">Import a contract from your tables and test in 5 minutes</span></span>
+  </a>
+  <a className="doc-card" href="/connect/databricks">
+    <img src="/img/icons/databricks.svg" alt="" />
+    <span><span className="doc-card-title">Databricks</span><span className="doc-card-desc">Import a contract from Unity Catalog and test in 5 minutes</span></span>
+  </a>
+  <a className="doc-card" href="/connect/postgres">
+    <img src="/img/icons/postgres.svg" alt="" />
+    <span><span className="doc-card-title">Postgres</span><span className="doc-card-desc">Postgres and Postgres-compatible (e.g. RisingWave)</span></span>
+  </a>
+  <a className="doc-card" href="/connect/s3">
+    <img src="/img/icons/s3.svg" alt="" />
+    <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">CSV, JSON, Delta, Parquet on S3 / S3-compatible storage</span></span>
+  </a>
+  <a className="doc-card" href="/connect/local">
+    <img src="/img/icons/local.svg" alt="" />
+    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Try it in 60 seconds — no credentials needed</span></span>
+  </a>
   <a className="doc-card" href="/connect/athena">
     <img src="/img/icons/athena.svg" alt="" />
     <span><span className="doc-card-title">Amazon Athena</span><span className="doc-card-desc">Athena over data in S3</span></span>
@@ -38,10 +62,6 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
     <img src="/img/icons/redshift.svg" alt="" />
     <span><span className="doc-card-title">Amazon Redshift</span><span className="doc-card-desc">Redshift (Postgres wire protocol)</span></span>
   </a>
-  <a className="doc-card" href="/connect/s3">
-    <img src="/img/icons/s3.svg" alt="" />
-    <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">CSV, JSON, Delta, Parquet on S3 / S3-compatible storage</span></span>
-  </a>
   <a className="doc-card" href="/connect/impala">
     <img src="/img/icons/impala.svg" alt="" />
     <span><span className="doc-card-title">Apache Impala</span><span className="doc-card-desc">Impala</span></span>
@@ -49,14 +69,6 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
   <a className="doc-card" href="/connect/azure">
     <img src="/img/icons/azure.svg" alt="" />
     <span><span className="doc-card-title">Azure Blob / ADLS</span><span className="doc-card-desc">Files on Azure Blob storage or ADLS Gen2</span></span>
-  </a>
-  <a className="doc-card" href="/connect/databricks">
-    <img src="/img/icons/databricks.svg" alt="" />
-    <span><span className="doc-card-title">Databricks</span><span className="doc-card-desc">Unity Catalog / Hive metastore (warehouse or notebook)</span></span>
-  </a>
-  <a className="doc-card" href="/connect/bigquery">
-    <img src="/img/icons/bigquery.svg" alt="" />
-    <span><span className="doc-card-title">Google BigQuery</span><span className="doc-card-desc">BigQuery tables and views</span></span>
   </a>
   <a className="doc-card" href="/connect/gcs">
     <img src="/img/icons/gcs.svg" alt="" />
@@ -70,10 +82,6 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
     <img src="/img/icons/kafka.svg" alt="" />
     <span><span className="doc-card-title">Kafka</span><span className="doc-card-desc">Kafka topics (experimental)</span></span>
   </a>
-  <a className="doc-card" href="/connect/local">
-    <img src="/img/icons/local.svg" alt="" />
-    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Local Parquet, JSON, CSV, or Delta files</span></span>
-  </a>
   <a className="doc-card" href="/connect/sqlserver">
     <img src="/img/icons/sqlserver.svg" alt="" />
     <span><span className="doc-card-title">Microsoft SQL Server</span><span className="doc-card-desc">SQL Server, Azure SQL, Synapse, Fabric</span></span>
@@ -85,14 +93,6 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
   <a className="doc-card" href="/connect/oracle">
     <img src="/img/icons/oracle.svg" alt="" />
     <span><span className="doc-card-title">Oracle</span><span className="doc-card-desc">Oracle Database</span></span>
-  </a>
-  <a className="doc-card" href="/connect/postgres">
-    <img src="/img/icons/postgres.svg" alt="" />
-    <span><span className="doc-card-title">Postgres</span><span className="doc-card-desc">Postgres and Postgres-compatible (e.g. RisingWave)</span></span>
-  </a>
-  <a className="doc-card" href="/connect/snowflake">
-    <img src="/img/icons/snowflake.svg" alt="" />
-    <span><span className="doc-card-title">Snowflake</span><span className="doc-card-desc">Snowflake</span></span>
   </a>
   <a className="doc-card" href="/connect/dataframe">
     <img src="/img/icons/spark.svg" alt="" />

@@ -81,6 +81,15 @@ Server: production (type=postgres, host=aws-1-eu-central-2.pooler.supabase.com, 
 
 Voilà, the CLI tested that the YAML itself is valid, all records comply with the schema, and all quality attributes are met.
 
+To test your own data, import a contract straight from an existing table (this also generates the `servers` block) and run the tests against the actual data:
+
+```bash
+$ datacontract import snowflake --source <account> --database ORDER_DB --schema PUBLIC --output datacontract.yaml
+$ datacontract test datacontract.yaml
+```
+
+Copy-paste guides with credentials setup are available for [Snowflake](https://docs.datacontract.com/connect/snowflake), [BigQuery](https://docs.datacontract.com/connect/bigquery), [Databricks](https://docs.datacontract.com/connect/databricks), and [15+ other sources](https://docs.datacontract.com/connect).
+
 We can also use the data contract metadata to export in many [formats](https://docs.datacontract.com/exports), e.g., to generate a SQL DDL:
 
 ```bash
@@ -90,17 +99,17 @@ $ datacontract export sql https://datacontract.com/orders-v1.odcs.yaml
 -- Data Contract: orders
 -- SQL Dialect: postgres
 CREATE TABLE orders (
-  order_id None not null primary key,
+  order_id UUID not null primary key,
   customer_id text not null,
   order_total integer not null,
-  order_timestamp None,
+  order_timestamp TIMESTAMPTZ,
   order_status text
 );
 CREATE TABLE line_items (
-  line_item_id None not null primary key,
+  line_item_id UUID not null primary key,
   sku text not null,
   price integer not null,
-  order_id None
+  order_id UUID
 );
 ```
 
