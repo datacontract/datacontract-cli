@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 16
 title: "Python Library"
 description: "Use the Data Contract CLI programmatically as a Python library to test, export, import, lint, and compare data contracts."
 ---

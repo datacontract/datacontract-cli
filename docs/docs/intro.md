@@ -56,7 +56,8 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - Test your own warehouse in 5 minutes: **[Snowflake](./connect/snowflake.md)**, **[BigQuery](./connect/bigquery.md)**, **[Databricks](./connect/databricks.md)**, or **[any other source](./connect/index.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
-- Run checks against real data with **[Testing](./testing.md)**.
+- Run checks against real data with **[Testing](./testing.md)**, then keep them running with **[Scheduling and CI/CD](./ci-cd.md)**.
+- Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
 - Evaluating options? See **[Comparison with other Tools](./comparison.md)**.
 
@@ -72,7 +73,7 @@ It natively uses the [Open Data Contract Standard (ODCS)](./open-data-contract-s
 
 ### How do I install the Data Contract CLI?
 
-Run `pip install datacontract-cli[all]`, or use `uv tool install "datacontract-cli[all]"`. A Docker image is published as `datacontract/cli`. See [Installation](./installation.md) for all options.
+Run `pip install 'datacontract-cli[postgres]'` (or the extra matching your data source), or use `uv tool install`. `datacontract-cli[all]` installs every optional dependency. A Docker image is published as `datacontract/cli`. See [Installation](./installation.md) for all options.
 
 ### Which data sources can the Data Contract CLI test?
 

@@ -10,13 +10,13 @@ This guide gets you from zero to a tested data contract in a few minutes — fir
 
 ## Install
 
-The preferred way to install is [uv](https://docs.astral.sh/uv/):
+The preferred way to install is [uv](https://docs.astral.sh/uv/). Add the extra for the data source you want to test — the demo below uses Postgres:
 
 ```bash
-uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
+uv tool install --python python3.11 --upgrade 'datacontract-cli[postgres]'
 ```
 
-The `[all]` extra installs every optional data-source dependency. See [Installation options](#installation-options) below for `pip`, `pipx`, and Docker.
+Every source has its own extra (`snowflake`, `bigquery`, `databricks`, `s3`, `duckdb` for local files, …), so you only install what you need. `datacontract-cli[all]` pulls in every optional dependency, including Spark — convenient, but a much larger download. See [Installation options](#installation-options) below for `pip`, `pipx`, and Docker.
 
 Verify the installation:
 
@@ -72,7 +72,7 @@ Follow the copy-paste guide for your data source, including credentials setup an
 - **[Postgres](./connect/postgres.md)**, **[Amazon S3](./connect/s3.md)**, and [15+ other sources](./connect/index.md)
 - **[Local files](./connect/local.md)** — no warehouse or credentials needed, works offline
 
-Each guide ends with the same payoff: tighten an expectation, rerun `datacontract test`, and watch the contract catch the violation with exit code `1` — the exact behavior you'll later use [in CI/CD](./testing.md#scheduling-and-cicd).
+Each guide ends with the same payoff: tighten an expectation, rerun `datacontract test`, and watch the contract catch the violation with exit code `1` — the exact behavior you'll later use [in CI/CD](./ci-cd.md).
 
 ## Export to another format
 
@@ -141,6 +141,12 @@ if not run.has_passed():
     print("Data quality validation failed.")
     # Abort pipeline, alert, or take corrective actions...
 ```
+
+## Next steps
+
+- Keep the tests running automatically: **[Scheduling and CI/CD](./ci-cd.md)** — GitHub Actions, Azure DevOps, cron, and orchestrators.
+- Roll data contracts out across a team: **[Adopting Data Contracts](./best-practices.md)**.
+- Browse everything the CLI can do: **[Commands](./commands/index.md)**.
 
 ## Installation options
 

@@ -1,10 +1,10 @@
 ---
-sidebar_position: 16
-title: "Best Practices"
-description: "Recommended workflows for adopting data contracts: the data-first and contract-first approaches."
+sidebar_position: 17
+title: "Adopting Data Contracts"
+description: "Best practices for rolling out data contracts across a team: the data-first and contract-first approaches."
 ---
 
-# Best Practices
+# Adopting Data Contracts
 
 There are two proven ways to introduce data contracts with the Data Contract CLI. Pick the one that matches your situation.
 
@@ -37,7 +37,7 @@ Create a data contract based on the **actual data**. This is the fastest way to 
    datacontract ci --publish https://api.entropy-data.com/api/test-results
    ```
 
-   See [Test your contract → Scheduling and CI/CD](./testing.md#scheduling-and-cicd).
+   See [Scheduling and CI/CD](./ci-cd.md).
 
 ## Contract-first approach
 
