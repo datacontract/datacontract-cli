@@ -55,11 +55,6 @@ schema:
 
 `v3.1.0` is the current version of the standard and the one [`datacontract init`](./commands/init.md) writes. The CLI also validates contracts declaring `v3.0.2`, `v3.0.1`, `v3.0.0`, and the v2.2.x line.
 
-Two things changed in `v3.1.0` that are worth knowing when you update an older contract:
-
-- **`team` is an object** with `name`, `description`, and a `members` array, as above. The previous form — a bare array of members — still validates but is deprecated and will be removed in ODCS v4.
-- **`dataProduct` is deprecated.** Use `domain` and the contract's own identity fields instead.
-
 :::note
 The CLI also accepts the older Data Contract Specification format (which uses `models`/`fields` instead of ODCS `schema`/`properties`), but new contracts should follow ODCS — all examples in this documentation use ODCS.
 :::
@@ -75,7 +70,7 @@ The CLI also accepts the older Data Contract Specification format (which uses `m
 | `schema` | The logical structure: schemas (tables/objects) and their properties (columns/fields), types, constraints, and semantics. |
 | `quality` | Data quality rules, attached to the schema or to individual properties. See [Quality Rules](./quality-rules/index.md). |
 | `slaProperties` | Service-level expectations such as freshness, retention, and frequency. |
-| `team` / `roles` | Ownership and access information. Since `v3.1.0`, `team` is an object with a `members` array. |
+| `team` / `roles` | Ownership and access information. `team` is an object with a `members` array. |
 | `customProperties` | Extension point for backend-specific settings (for example `clickhouseType`, `trinoType`, `avroLogicalType`). |
 
 ## Logical vs. physical types
