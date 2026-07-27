@@ -9,7 +9,7 @@ description: "An open-source command-line tool for working with data contracts b
 
 <p>
   <a href="https://pypistats.org/packages/datacontract-cli">
-    <img alt="PyPI Monthly Downloads" src="https://img.shields.io/pypi/dm/datacontract-cli" /></a>
+    <img alt="PyPI Monthly Downloads" src="https://img.shields.io/badge/downloads-1.4M%2Fmonth-brightgreen" /></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="GitHub Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
   <a href="https://github.com/datacontract/datacontract-cli/graphs/contributors">
