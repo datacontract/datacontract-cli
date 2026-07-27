@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 title: "Postgres"
 description: "Create a data contract from your Postgres tables and test the actual data against it — in about 5 minutes."
 ---
