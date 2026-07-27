@@ -7,6 +7,13 @@ description: "An open-source command-line tool for working with data contracts b
 
 # What is Data Contract CLI?
 
+<p>
+  <a href="https://pypistats.org/packages/datacontract-cli">
+    <img alt="PyPI Monthly Downloads" src="https://img.shields.io/pypi/dm/datacontract-cli" /></a>
+  <a href="https://github.com/datacontract/datacontract-cli">
+    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
+</p>
+
 The `datacontract` CLI is an open-source command-line tool for working with [data contracts](https://datacontract.com).
 
 It natively supports the [Open Data Contract Standard (ODCS)](https://bitol-io.github.io/open-data-contract-standard/latest/) to:

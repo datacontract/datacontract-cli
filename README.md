@@ -5,6 +5,8 @@
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/datacontract-cli/ci.yaml?branch=main"></a>
   <a href="https://pypi.org/project/datacontract-cli/">
     <img alt="PyPI Version" src="https://img.shields.io/pypi/v/datacontract-cli" /></a>
+  <a href="https://pypistats.org/packages/datacontract-cli">
+    <img alt="PyPI Monthly Downloads" src="https://img.shields.io/pypi/dm/datacontract-cli" /></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
