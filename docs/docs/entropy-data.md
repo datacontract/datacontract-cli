@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 18
 title: "Integrate with Entropy Data"
 description: "Publish data contract test results to Entropy Data, a commercial platform for managing data contracts."
 ---

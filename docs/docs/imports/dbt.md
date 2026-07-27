@@ -4,9 +4,7 @@ title: "Import: dbt"
 description: "Create a data contract from a dbt manifest file."
 ---
 
-<img className="page-icon" src="/img/icons/dbt.svg" alt="" />
-
-# Import: dbt
+# <img className="page-icon" src="/img/icons/dbt.svg" alt="" /> Import: dbt
 
 Creates a data contract from a dbt `manifest.json`.
 

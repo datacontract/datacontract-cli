@@ -4,9 +4,7 @@ title: "Export: HTML"
 description: "Export a data contract to a standalone HTML page."
 ---
 
-<img className="page-icon" src="/img/icons/custom.svg" alt="" />
-
-# Export: HTML
+# <img className="page-icon" src="/img/icons/custom.svg" alt="" /> Export: HTML
 
 Generates a standalone, self-contained HTML page documenting the data contract.
 

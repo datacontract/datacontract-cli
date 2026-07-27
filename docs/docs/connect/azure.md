@@ -1,20 +1,80 @@
 ---
-sidebar_position: 5
+sidebar_position: 10
 title: "Azure Blob / ADLS"
-description: "Test data on Azure Blob storage or Azure Data Lake Storage Gen2."
+description: "Create a data contract from files on Azure Blob storage or ADLS Gen2 and test them against it."
 ---
 
-<img className="page-icon" src="/img/icons/azure.svg" alt="" />
-
-# Azure Blob / ADLS
-
-:::info[Required extra]
-This connection requires the `azure` and `duckdb` extras. See [Installation](../installation.md).
-:::
+# <img className="page-icon" src="/img/icons/azure.svg" alt="" /> Azure Blob / ADLS
 
 Test data stored in Azure Blob storage or Azure Data Lake Storage Gen2 (ADLS) in various formats.
 
-## Server
+## 1. Install
+
+```bash
+uv tool install --python python3.11 --upgrade 'datacontract-cli[azure,duckdb]'
+```
+
+See [Installation](../installation.md) for pip, pipx, and Docker.
+
+## 2. Set credentials
+
+Authentication uses an Azure Service Principal (App Registration) with a secret. Create a `.env` file in your working directory (or export the variables):
+
+```bash
+# .env
+DATACONTRACT_AZURE_TENANT_ID=79f5b80f-10ff-40b9-9d1f-774b42d605fc
+DATACONTRACT_AZURE_CLIENT_ID=3cf7ce49-e2e9-4cbc-a922-4328d4a58622
+DATACONTRACT_AZURE_CLIENT_SECRET=yZK8Q~GWO1MMXXXXXXXXXXXXX
+```
+
+## 3. Create a contract from your files
+
+Download one blob and import its schema, then point the generated `servers` block at the storage account:
+
+```bash
+az storage blob download --account-name myaccount --container-name inventory \
+  --name inventory_events/part-000.parquet --file part-000.parquet
+datacontract import parquet --source part-000.parquet --output datacontract.yaml
+```
+
+The import generates a `servers` entry of `type: local`. Replace it with your Azure location:
+
+```yaml
+servers:
+  - server: production
+    type: azure
+    location: abfss://inventory@myaccount.dfs.core.windows.net/inventory_events/*.parquet
+    format: parquet
+```
+
+## 4. Test the actual data
+
+```bash
+datacontract test datacontract.yaml
+```
+
+```
+🟢 data contract is valid. Run 17 checks. Took 4.1 seconds.
+```
+
+## 5. Let it catch a violation
+
+The contract becomes valuable when it detects drift. Tighten an expectation — for example, mark a field as `required: true` that occasionally arrives empty, or add a quality rule:
+
+```yaml
+schema:
+  - name: inventory_events
+    # ...
+    quality:
+      - type: sql
+        description: No event has a negative quantity
+        query: SELECT COUNT(*) FROM inventory_events WHERE quantity < 0
+        mustBe: 0
+```
+
+Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../testing.md#scheduling-and-cicd) so you catch drift before your consumers do.
+
+## Server reference
 
 ```yaml
 servers:
@@ -24,15 +84,14 @@ servers:
     format: parquet
 ```
 
-## Environment variables
+## Reference
 
-Authentication uses an Azure Service Principal (App Registration) with a secret.
+All authentication options (service principal, connection string, account key), supported location URL formats, and the data type handling per file format: **[Azure Reference](../reference/azure.md)**.
 
-| Variable | Example | Description |
-|---|---|---|
-| `DATACONTRACT_AZURE_TENANT_ID` | `79f5b80f-...` | The Azure Tenant ID |
-| `DATACONTRACT_AZURE_CLIENT_ID` | `3cf7ce49-...` | The Application/Client ID of the app registration |
-| `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1M...` | The client secret value |
+## Troubleshooting
+
+- **`AuthorizationPermissionMismatch` / `403`** — the service principal needs the **Storage Blob Data Reader** role on the container or storage account (IAM role assignment, not just API permissions).
+- **`No files found that match the pattern`** — check the `location` URL format (see below) and the glob; it matches blob names under the prefix.
 
 ## Metadata checks
 
@@ -79,3 +138,4 @@ Supported `location` URL formats (on the server block):
 - `azure://<container>@<account>.blob.core.windows.net/<prefix>`
 - `wasbs://<container>@<account>.blob.core.windows.net/<prefix>`
 
+The metadata-check path also accepts `DATACONTRACT_AZURE_CONNECTION_STRING` or `DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY` instead of the service principal variables.

@@ -1,20 +1,40 @@
 ---
-sidebar_position: 4
+sidebar_position: 9
 title: "Apache Impala"
-description: "Run checks against an Apache Impala cluster."
+description: "Create a data contract from your Impala tables and test the actual data against it."
 ---
 
-<img className="page-icon" src="/img/icons/impala.svg" alt="" />
-
-# Apache Impala
-
-:::info[Required extra]
-This connection requires the `impala` extra. See [Installation](../installation.md).
-:::
+# <img className="page-icon" src="/img/icons/impala.svg" alt="" /> Apache Impala
 
 Run checks against an Apache Impala cluster.
 
-## Server
+## 1. Install
+
+```bash
+uv tool install --python python3.11 --upgrade 'datacontract-cli[impala]'
+```
+
+See [Installation](../installation.md) for pip, pipx, and Docker.
+
+## 2. Set credentials
+
+Create a `.env` file in your working directory (or export the variables):
+
+```bash
+# .env
+DATACONTRACT_IMPALA_USERNAME=analytics_user
+DATACONTRACT_IMPALA_PASSWORD=mysecretpassword
+```
+
+## 3. Create a contract from your tables
+
+Get the DDL of a table (`SHOW CREATE TABLE orders;` in impala-shell or Hue), save it to a file, and import it. Impala DDL is Hive-compatible, so use the `spark` dialect:
+
+```bash
+datacontract import sql --source orders.sql --dialect spark --output datacontract.yaml
+```
+
+The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your cluster:
 
 ```yaml
 servers:
@@ -25,14 +45,38 @@ servers:
     database: my_database # optional default database
 ```
 
-## Environment variables
+## 4. Test the actual data
 
-| Variable | Example | Description |
-|---|---|---|
-| `DATACONTRACT_IMPALA_USERNAME` | `analytics_user` | Username |
-| `DATACONTRACT_IMPALA_PASSWORD` | `mysecretpassword` | Password |
-| `DATACONTRACT_IMPALA_USE_SSL` | `true` | Whether to use SSL (defaults to true) |
-| `DATACONTRACT_IMPALA_AUTH_MECHANISM` | `LDAP` | Authentication mechanism (defaults to LDAP) |
-| `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT` | `true` | Whether to use HTTP transport (defaults to true) |
-| `DATACONTRACT_IMPALA_HTTP_PATH` | `cliservice` | HTTP path for the Impala service (defaults to cliservice) |
+```bash
+datacontract test datacontract.yaml
+```
 
+```
+🟢 data contract is valid. Run 24 checks. Took 6.3 seconds.
+```
+
+## 5. Let it catch a violation
+
+The contract becomes valuable when it detects drift. Tighten an expectation — for example, add a quality rule to a schema in `datacontract.yaml`:
+
+```yaml
+schema:
+  - name: orders
+    # ...
+    quality:
+      - type: sql
+        description: No order has a negative total
+        query: SELECT COUNT(*) FROM orders WHERE order_total < 0
+        mustBe: 0
+```
+
+Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../testing.md#scheduling-and-cicd) so you catch drift before your consumers do.
+
+## Reference
+
+All authentication options (SSL, transport, auth mechanism) and the data type mappings: **[Impala Reference](../reference/impala.md)**.
+
+## Troubleshooting
+
+- **Connection errors** — the defaults assume LDAP auth over SSL and HTTP transport (port 443, e.g. behind a load balancer). For a plain binary-protocol cluster, set `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT=false` and use port `21050`.
+- **`AuthorizationException`** — the user lacks `SELECT` on the table or the Ranger/Sentry policy doesn't cover the database in the `servers` block.

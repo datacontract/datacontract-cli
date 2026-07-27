@@ -9,6 +9,7 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
+    create_server,
 )
 from datacontract.model.exceptions import DataContractException
 
@@ -63,6 +64,7 @@ def import_bigquery_from_api(
         bigquery_tables = fetch_table_names(client, bigquery_dataset)
 
     odcs = create_odcs()
+    odcs.servers = create_bigquery_servers(bigquery_project, bigquery_dataset)
     odcs.schema_ = []
 
     for table in bigquery_tables:
@@ -103,9 +105,18 @@ def fetch_table_names(client, dataset: str) -> List[str]:
     return table_names
 
 
+def create_bigquery_servers(project: str, dataset: str) -> list:
+    """Create a testable BigQuery server entry, so `datacontract test` works right after the import."""
+    if not project or not dataset:
+        return []
+    return [create_server(name="bigquery", server_type="bigquery", project=project, dataset=dataset)]
+
+
 def convert_bigquery_schema(bigquery_schema: dict) -> OpenDataContractStandard:
     """Convert a BigQuery schema to ODCS format."""
     odcs = create_odcs()
+    table_reference = bigquery_schema.get("tableReference", {})
+    odcs.servers = create_bigquery_servers(table_reference.get("projectId"), table_reference.get("datasetId"))
     odcs.schema_ = [convert_bigquery_table_to_schema(bigquery_schema)]
     return odcs
 

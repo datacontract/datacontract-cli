@@ -6,7 +6,7 @@ description: "Install the Data Contract CLI and test, export, and import your fi
 
 # Quickstart
 
-This guide gets you from zero to a tested data contract in a few minutes.
+This guide gets you from zero to a tested data contract in a few minutes — first against a hosted demo database (60 seconds, nothing to set up), then against your own data warehouse (about 5 minutes).
 
 ## Install
 
@@ -24,7 +24,7 @@ Verify the installation:
 datacontract --version
 ```
 
-## Test your first data contract
+## Test your first data contract (60 seconds)
 
 Let's use the example contract published at
 [`https://datacontract.com/orders-v1.odcs.yaml`](https://datacontract.com/orders-v1.odcs.yaml).
@@ -55,6 +55,25 @@ Server: production (type=postgres, host=..., database=postgres, schema=dp_orders
 
 The CLI verified that the YAML itself is valid, that all records comply with the schema, and that all quality attributes are met.
 
+## Test your own data (5 minutes)
+
+The real magic moment is when a contract catches drift in *your* data. Import a contract straight from an existing table — the import generates the schema and a ready-to-test `servers` block — then test the actual data against it:
+
+```bash
+datacontract import snowflake --source <account> --database ORDER_DB --schema PUBLIC --output datacontract.yaml
+datacontract test datacontract.yaml
+```
+
+Follow the copy-paste guide for your data source, including credentials setup and troubleshooting:
+
+- **[Snowflake](./connect/snowflake.md)** — import from your tables, test in 5 minutes
+- **[Google BigQuery](./connect/bigquery.md)** — import from your tables, test in 5 minutes
+- **[Databricks](./connect/databricks.md)** — import from Unity Catalog, test in 5 minutes
+- **[Postgres](./connect/postgres.md)**, **[Amazon S3](./connect/s3.md)**, and [15+ other sources](./connect/index.md)
+- **[Local files](./connect/local.md)** — no warehouse or credentials needed, works offline
+
+Each guide ends with the same payoff: tighten an expectation, rerun `datacontract test`, and watch the contract catch the violation with exit code `1` — the exact behavior you'll later use [in CI/CD](./testing.md#scheduling-and-cicd).
+
 ## Export to another format
 
 You can use the contract metadata to generate downstream artifacts. For example, a SQL DDL:
@@ -67,10 +86,10 @@ datacontract export sql https://datacontract.com/orders-v1.odcs.yaml
 -- Data Contract: orders
 -- SQL Dialect: postgres
 CREATE TABLE orders (
-  order_id uuid not null primary key,
+  order_id UUID not null primary key,
   customer_id text not null,
   order_total integer not null,
-  order_timestamp timestamptz,
+  order_timestamp TIMESTAMPTZ,
   order_status text
 );
 ```

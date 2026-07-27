@@ -4,9 +4,7 @@ title: "Import: JSON"
 description: "Create a data contract by inferring a schema from a JSON data file."
 ---
 
-<img className="page-icon" src="/img/icons/json.svg" alt="" />
-
-# Import: JSON
+# <img className="page-icon" src="/img/icons/json.svg" alt="" /> Import: JSON
 
 Creates a data contract by inferring the schema from a JSON data file.
 
@@ -58,15 +56,15 @@ schema:
     - ORD-1001
   - name: order_timestamp
     physicalType: string
-    customProperties:
-    - property: format
-      value: date-time
     logicalType: string
+    logicalTypeOptions:
+      format: date-time
     examples:
     - '2024-01-01T10:00:00Z'
   - name: customer_id
     physicalType: string
     logicalType: string
+    examples:
 # …
 ```
 

@@ -4,9 +4,7 @@ title: "Export: DQX"
 description: "Export a data contract to Databricks DQX checks."
 ---
 
-<img className="page-icon" src="/img/icons/dqx.svg" alt="" />
-
-# Export: DQX
+# <img className="page-icon" src="/img/icons/dqx.svg" alt="" /> Export: DQX
 
 Converts the contract's [quality rules](../quality-rules/index.md) to [Databricks DQX](https://databrickslabs.github.io/dqx/) checks.
 
