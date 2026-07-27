@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: "Local files"
 description: "Test local files in Parquet, JSON, CSV, or Delta format — the fastest way to try the CLI, no credentials needed."
 ---

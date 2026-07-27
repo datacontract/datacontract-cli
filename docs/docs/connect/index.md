@@ -42,6 +42,10 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
     <img src="/img/icons/databricks.svg" alt="" />
     <span><span className="doc-card-title">Databricks</span><span className="doc-card-desc">Import a contract from Unity Catalog and test in 5 minutes</span></span>
   </a>
+  <a className="doc-card" href="/connect/redshift">
+    <img src="/img/icons/redshift.svg" alt="" />
+    <span><span className="doc-card-title">Amazon Redshift</span><span className="doc-card-desc">Import a contract from your tables and test in 5 minutes</span></span>
+  </a>
   <a className="doc-card" href="/connect/postgres">
     <img src="/img/icons/postgres.svg" alt="" />
     <span><span className="doc-card-title">Postgres</span><span className="doc-card-desc">Postgres and Postgres-compatible (e.g. RisingWave)</span></span>
@@ -57,10 +61,6 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
   <a className="doc-card" href="/connect/athena">
     <img src="/img/icons/athena.svg" alt="" />
     <span><span className="doc-card-title">Amazon Athena</span><span className="doc-card-desc">Athena over data in S3</span></span>
-  </a>
-  <a className="doc-card" href="/connect/redshift">
-    <img src="/img/icons/redshift.svg" alt="" />
-    <span><span className="doc-card-title">Amazon Redshift</span><span className="doc-card-desc">Import a contract from your tables and test in 5 minutes</span></span>
   </a>
   <a className="doc-card" href="/connect/impala">
     <img src="/img/icons/impala.svg" alt="" />

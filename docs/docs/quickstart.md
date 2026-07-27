@@ -69,6 +69,7 @@ Follow the copy-paste guide for your data source, including credentials setup an
 - **[Snowflake](./connect/snowflake.md)** — import from your tables, test in 5 minutes
 - **[Google BigQuery](./connect/bigquery.md)** — import from your tables, test in 5 minutes
 - **[Databricks](./connect/databricks.md)** — import from Unity Catalog, test in 5 minutes
+- **[Amazon Redshift](./connect/redshift.md)** — import from your tables, test in 5 minutes
 - **[Postgres](./connect/postgres.md)**, **[Amazon S3](./connect/s3.md)**, and [15+ other sources](./connect/index.md)
 - **[Local files](./connect/local.md)** — no warehouse or credentials needed, works offline
 
