@@ -58,6 +58,7 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
 - Run checks against real data with **[Testing](./testing.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
+- Evaluating options? See **[Comparison with other Tools](./comparison.md)**.
 
 ## Frequently asked questions
 
