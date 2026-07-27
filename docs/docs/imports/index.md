@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [Amazon Athena](./athena.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, Athena, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -28,6 +28,10 @@ Each import page shows a runnable example: a small source file under [`examples/
 ## Available importers
 
 <div className="card-grid">
+  <a className="doc-card" href="/imports/athena">
+    <img src="/img/icons/athena.svg" alt="" />
+    <span><span className="doc-card-title">athena</span><span className="doc-card-desc">An Amazon Athena database.</span></span>
+  </a>
   <a className="doc-card" href="/imports/avro">
     <img src="/img/icons/avro.svg" alt="" />
     <span><span className="doc-card-title">avro</span><span className="doc-card-desc">An Avro schema file.</span></span>

@@ -450,7 +450,7 @@ def _connect_athena(ibis, server: Server):
         aws_access_key_id=s3_access_key_id,
         aws_secret_access_key=s3_secret_access_key,
         aws_session_token=s3_session_token,
-        region_name=os.getenv("DATACONTRACT_S3_REGION") or getattr(server, "region_name", None),
+        region_name=os.getenv("DATACONTRACT_S3_REGION") or server.regionName,
         schema_name=server.schema_,
     )
 

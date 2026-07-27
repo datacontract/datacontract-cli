@@ -564,3 +564,41 @@ def import_postgres(
         id=id,
     )
     _write_result(result, output)
+
+
+@import_app.command(
+    name="athena",
+    epilog="Example: datacontract import athena --schema my_database --staging-dir s3://my-bucket/athena-results/ --output datacontract.yaml",
+)
+def import_athena(
+    schema: Annotated[
+        Optional[str], typer.Option("--schema", help="The Athena database name (called schema in the contract).")
+    ] = None,
+    staging_dir: Annotated[
+        Optional[str],
+        typer.Option(help="S3 location where Athena writes query results, e.g. s3://my-bucket/athena-results/."),
+    ] = None,
+    region: Annotated[Optional[str], typer.Option(help="The AWS region the Glue Data Catalog lives in.")] = None,
+    catalog: Annotated[Optional[str], typer.Option(help="The Athena catalog (default awsdatacatalog).")] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables in the schema)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from an Amazon Athena database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="athena",
+        schema=schema,
+        staging_dir=staging_dir,
+        region=region,
+        catalog=catalog,
+        athena_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)

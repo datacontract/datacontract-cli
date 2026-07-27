@@ -43,6 +43,7 @@ class ImportFormat(str, Enum):
     snowflake = "snowflake"
     redshift = "redshift"
     postgres = "postgres"
+    athena = "athena"
 
     @classmethod
     def get_supported_formats(cls):
