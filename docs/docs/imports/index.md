@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Unity Catalog](./unity.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, and Unity Catalog also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Unity Catalog](./unity.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, and Unity Catalog also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -99,6 +99,10 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/snowflake">
     <img src="/img/icons/snowflake.svg" alt="" />
     <span><span className="doc-card-title">snowflake</span><span className="doc-card-desc">A Snowflake workspace.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/redshift">
+    <img src="/img/icons/redshift.svg" alt="" />
+    <span><span className="doc-card-title">redshift</span><span className="doc-card-desc">An Amazon Redshift schema.</span></span>
   </a>
 </div>
 

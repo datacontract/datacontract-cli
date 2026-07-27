@@ -470,3 +470,38 @@ def import_snowflake(
         format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id
     )
     _write_result(result, output)
+
+
+@import_app.command(
+    name="redshift",
+    epilog="Example: datacontract import redshift --source my-cluster.abc123.us-east-1.redshift.amazonaws.com --database dev --schema public --output datacontract.yaml",
+)
+def import_redshift(
+    source: Annotated[
+        Optional[str], typer.Option(help="The Redshift endpoint host of the cluster or serverless workgroup.")
+    ] = None,
+    port: Annotated[Optional[int], typer.Option(help="The Redshift port (default 5439).")] = None,
+    database: database_option = None,
+    schema: Annotated[Optional[str], typer.Option("--schema", help="The Redshift schema name.")] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables in the schema)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from an Amazon Redshift schema."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="redshift",
+        source=source,
+        port=port,
+        database=database,
+        schema=schema,
+        redshift_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)

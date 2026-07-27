@@ -9,6 +9,7 @@ import typer
 from click import Context
 from dotenv import find_dotenv, load_dotenv
 from rich.console import Console
+from rich.markup import escape
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
@@ -47,6 +48,10 @@ class OrderedCommands(TyperGroup):
 class OrderedCommandsWithMigrationHints(OrderedCommands):
     """Intercepts removed or renamed options on import/export and points the user to the v0.12.0 migration notes."""
 
+    # Import formats where `--schema` still means the database schema, so it must
+    # not be rewritten to the v0.12.0 `--json-schema`.
+    DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift"}
+
     RENAMED_FLAGS = {
         "--format": None,
         "--rdf-base": "--base",
@@ -65,13 +70,17 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
         subcommand = positionals[0] if positionals else None
 
         # this function is called by both `datacontract` and `datacontract import`
-        is_import_snowflake = (positionals[:1] == ["snowflake"]) or (positionals[:2] == ["import", "snowflake"])
+        if subcommand == "import":
+            import_format = positionals[1] if len(positionals) > 1 else None
+        else:
+            import_format = subcommand
+        takes_database_schema = import_format in self.DATABASE_SCHEMA_IMPORTS
 
         rewritten_args = []
         for arg in args:
             if isinstance(arg, str) and arg.startswith("--"):
                 flag, _, value = arg.partition("=")
-                if flag == "--schema" and not is_import_snowflake:
+                if flag == "--schema" and not takes_database_schema:
                     typer.secho(
                         "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
                         err=True,
@@ -261,7 +270,9 @@ def main():
         from datacontract.model.exceptions import DataContractException
 
         message = e.reason if isinstance(e, DataContractException) else str(e)
-        console.print(f"[red]Error:[/red] {message}")
+        # Escape the message: bracketed text in an exception (e.g. a driver's
+        # `pip install "botocore[crt]"` hint) would otherwise be eaten as rich markup.
+        console.print(f"[red]Error:[/red] {escape(message)}")
         console.print("[dim]Pass --debug (or set DATACONTRACT_CLI_DEBUG=1) for the full traceback.[/dim]")
         sys.exit(1)
 

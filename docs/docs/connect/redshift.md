@@ -1,12 +1,12 @@
 ---
 sidebar_position: 8
 title: "Amazon Redshift"
-description: "Create a data contract from your Redshift tables and test the actual data against it."
+description: "Create a data contract from your Redshift tables and test the actual data against it — in about 5 minutes."
 ---
 
 # <img className="page-icon" src="/img/icons/redshift.svg" alt="" /> Amazon Redshift
 
-Test data in Amazon Redshift (both provisioned clusters and Redshift Serverless). Redshift is reached over the PostgreSQL wire protocol via the ibis Postgres backend, using username/password authentication.
+Go from an existing Redshift table to a tested data contract in about five minutes: import the schema straight from Redshift, then test the actual data against it. Works with provisioned clusters and Redshift Serverless — both are reached over the PostgreSQL wire protocol.
 
 ## 1. Install
 
@@ -16,9 +16,22 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[redshift]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
-Create a `.env` file in your working directory (or export the variables):
+The easiest way is IAM — sign in to AWS once and the CLI requests temporary database credentials itself, so no database password is stored anywhere:
+
+```bash
+aws sso login   # or any other way of getting an AWS session
+```
+
+```bash
+# .env
+DATACONTRACT_REDSHIFT_AUTHENTICATION=iam
+```
+
+Your AWS identity needs `redshift-serverless:GetCredentials` (Serverless) or `redshift:GetClusterCredentialsWithIAM` (provisioned cluster), and the resulting database user needs `USAGE` on the schema plus `SELECT` on the tables.
+
+Prefer a database user? Leave the authentication variable unset and provide the credentials directly:
 
 ```bash
 # .env
@@ -26,29 +39,22 @@ DATACONTRACT_REDSHIFT_USERNAME=awsuser
 DATACONTRACT_REDSHIFT_PASSWORD=mysecretpassword
 ```
 
-:::note
-IAM-based authentication (region / access key / role ARN) is not currently supported for Redshift, because ibis connects through the generic Postgres backend rather than a Redshift-specific driver.
-:::
+Either way, `import` and `test` use the same setup. For custom domains, VPC endpoints, and the full list of options, see the [Redshift Reference](../reference/redshift.md).
 
 ## 3. Create a contract from your tables
 
-Get the DDL of a table (e.g. with `SHOW TABLE my_schema.orders;` in the Redshift query editor), save it to a file, and import it:
+Import the table metadata directly from the Redshift catalog. This also generates a ready-to-test `servers` block:
 
 ```bash
-datacontract import sql --source orders.sql --dialect redshift --output datacontract.yaml
+datacontract import redshift \
+  --source my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com \
+  --database dev \
+  --schema analytics \
+  --table orders \
+  --output datacontract.yaml
 ```
 
-The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your endpoint:
-
-```yaml
-servers:
-  - server: redshift
-    type: redshift
-    host: my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
-    port: 5439
-    database: dev
-    schema: analytics
-```
+`--source` is the endpoint host of your cluster or serverless workgroup (without the trailing `:5439/dev` that the console shows). Repeat `--table` for multiple tables, or omit it to import every table in the schema.
 
 ## 4. Test the actual data
 
@@ -57,6 +63,15 @@ datacontract test datacontract.yaml
 ```
 
 ```
+Testing datacontract.yaml
+Server: redshift (type=redshift, host=my-workgroup..., database=dev, schema=analytics)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
 🟢 data contract is valid. Run 24 checks. Took 4.9 seconds.
 ```
 
@@ -77,6 +92,20 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../testing.md#scheduling-and-cicd) so you catch drift before your consumers do.
 
+## Server reference
+
+Connection details live in the contract's `servers` block; `host`, `port`, `database`, and `schema` come from there:
+
+```yaml
+servers:
+  - server: redshift
+    type: redshift
+    host: my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
+    port: 5439
+    database: dev
+    schema: analytics
+```
+
 ## Reference
 
 All authentication options and the data type mappings: **[Redshift Reference](../reference/redshift.md)**.
@@ -84,5 +113,8 @@ All authentication options and the data type mappings: **[Redshift Reference](..
 ## Troubleshooting
 
 - **Connection timeout** — the cluster/workgroup must be reachable from your machine: check **Publicly accessible**, the VPC security group's inbound rule for port `5439`, and VPN routing.
-- **`password authentication failed`** — Redshift Serverless uses the namespace's admin credentials or database users; IAM users don't work over the Postgres wire protocol.
+- **`password authentication failed`** — with `password` authentication, Redshift Serverless expects the namespace's admin credentials or a database user; an IAM user name is not a database user. Set `DATACONTRACT_REDSHIFT_AUTHENTICATION=iam` to sign in with your AWS identity instead.
+- **`Could not obtain temporary Redshift credentials`** — the AWS identity may call the wrong region (set `DATACONTRACT_REDSHIFT_REGION`) or lack `GetCredentials` / `GetClusterCredentialsWithIAM` permission.
+- **`Using the login credential provider requires an additional dependency`** — your AWS profile uses the `aws login` flow, which needs `pip install "botocore[crt]"` in the same environment as the CLI.
 - **`relation does not exist`** — check the `schema` in the `servers` block and the user's `USAGE` grant on it.
+- **The import finds no tables** — `--schema` is case-sensitive and must match the schema as stored in the catalog; external schemas need the `SVV_EXTERNAL_*` permissions granted to your user.

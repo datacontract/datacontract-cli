@@ -104,16 +104,22 @@ def connect_ibis(
         )
 
     if server_type == "redshift":
+        from datacontract.engines.ibis.connections.redshift_credentials import resolve_redshift_login
+        from datacontract.engines.ibis.connections.redshift_patch import CLIENT_ENCODING
+
+        login = resolve_redshift_login(server.host, server.database)
         kwargs = dict(
             host=server.host,
             port=int(server.port) if server.port else 5439,
-            user=require_env("DATACONTRACT_REDSHIFT_USERNAME", server_type="redshift"),
+            user=login.user,
             database=server.database,
             schema=server.schema_,
+            client_encoding=CLIENT_ENCODING,
         )
-        password = os.getenv("DATACONTRACT_REDSHIFT_PASSWORD")
-        if password:
-            kwargs["password"] = password
+        if login.password:
+            kwargs["password"] = login.password
+        if login.sslmode:
+            kwargs["sslmode"] = login.sslmode
         # Redshift speaks the postgres wire protocol; ibis has no dedicated backend.
         con = ibis.postgres.connect(**kwargs)
         # ibis's postgres schema introspection joins pg_catalog.pg_enum, which

@@ -11,20 +11,45 @@ Authentication options and data type handling for [Redshift connections](../conn
 
 ## Authentication
 
-| Connection parameter | Environment variable |
-|---|---|
-| `user` | `DATACONTRACT_REDSHIFT_USERNAME` |
-| `password` | `DATACONTRACT_REDSHIFT_PASSWORD` |
+`datacontract test` and `datacontract import redshift` authenticate identically. `host`, `port` (default 5439), `database`, and `schema` come from the contract's `servers` block; for the import they are passed as `--source`, `--port`, `--database`, and `--schema`.
 
-`host`, `port` (default 5439), `database`, and `schema` come from the contract's `servers` block.
+| Variable | Example | Description |
+|---|---|---|
+| `DATACONTRACT_REDSHIFT_AUTHENTICATION` | `iam` | `password` (default) or `iam` |
+| `DATACONTRACT_REDSHIFT_USERNAME` | `awsuser` | Database user. Required for `password`; in `iam` mode it selects the legacy API (see below) |
+| `DATACONTRACT_REDSHIFT_PASSWORD` | `mysecretpassword` | Password (`password` mode only) |
+| `DATACONTRACT_REDSHIFT_SSLMODE` | `verify-full` | TLS mode passed to the driver. Defaults to `require` in `iam` mode, and to the driver's own default (`prefer`) otherwise |
 
-:::note
-IAM-based authentication (region / access key / role ARN) is not currently supported for Redshift, because ibis connects through the generic Postgres backend rather than a Redshift-specific driver.
-:::
+### IAM authentication
+
+With `DATACONTRACT_REDSHIFT_AUTHENTICATION=iam`, the CLI asks AWS for temporary database credentials and uses them to log in — no database password anywhere. The AWS credentials themselves come from the same variables Athena uses (`DATACONTRACT_S3_ACCESS_KEY_ID`, `DATACONTRACT_S3_SECRET_ACCESS_KEY`, `DATACONTRACT_S3_SESSION_TOKEN`, `DATACONTRACT_S3_REGION`), and fall back to the standard AWS chain: `aws sso login`, `AWS_PROFILE`, EC2/ECS/EKS instance roles, or GitHub OIDC in CI.
+
+Which AWS API is called depends on the endpoint and whether a username is set:
+
+| Endpoint | Username set | API |
+|---|---|---|
+| Serverless | — | `redshift-serverless:GetCredentials` |
+| Provisioned | no | `redshift:GetClusterCredentialsWithIAM` — the database user is derived from your IAM identity |
+| Provisioned | yes | `redshift:GetClusterCredentials` — credentials are requested for that database user |
+
+The workgroup or cluster identifier and the region are derived from the endpoint host in the `servers` block, so a standard endpoint needs no extra configuration. Custom domains and VPC endpoints don't follow that naming, so they need an override:
+
+| Variable | Example | Description |
+|---|---|---|
+| `DATACONTRACT_REDSHIFT_WORKGROUP` | `my-workgroup` | Serverless workgroup name |
+| `DATACONTRACT_REDSHIFT_CLUSTER_IDENTIFIER` | `my-cluster` | Provisioned cluster identifier |
+| `DATACONTRACT_REDSHIFT_REGION` | `eu-central-1` | AWS region (otherwise `DATACONTRACT_S3_REGION`, then the host) |
+| `DATACONTRACT_REDSHIFT_DURATION_SECONDS` | `3600` | Lifetime of the temporary credentials (900–3600) |
+| `DATACONTRACT_REDSHIFT_AUTO_CREATE` | `true` | Create the database user if it doesn't exist (`GetClusterCredentials` only) |
+| `DATACONTRACT_REDSHIFT_DB_GROUPS` | `readers,analysts` | Database groups the user joins for the session (`GetClusterCredentials` only) |
+
+The AWS identity needs permission to call the API from the table above — `redshift-serverless:GetCredentials` on the workgroup, or `redshift:GetClusterCredentialsWithIAM` / `redshift:GetClusterCredentials` on the `dbname:`/`dbuser:` resources (plus `redshift:JoinGroup` when using `DB_GROUPS`). Credentials are minted per connection and expire, which is why a long-running process may need to reconnect.
 
 ## Data types
 
 ### Importing
+
+`datacontract import redshift` reads the declared types from the `SVV_COLUMNS` catalog view and writes them as `physicalType` in the catalog's own spelling, including length and precision (`character varying(36)`, `numeric(10,2)`). That is exactly what the physical type check reads back during a test, so an imported contract passes on the first run. The `logicalType` is derived with the same mapping as the SQL import below.
 
 `datacontract import sql --dialect redshift` maps DDL types like the [Postgres dialect](./postgres.md#importing): `VARCHAR`/`CHAR`/`TEXT` → `string`, integer types → `integer`, `NUMERIC`/`DECIMAL`/`REAL`/`DOUBLE PRECISION` → `number`, `BOOLEAN` → `boolean`, `DATE` → `date`, `TIME` → `time`, `TIMESTAMP`/`TIMESTAMP WITH TIME ZONE` → `timestamp`. Redshift-specific types without a portable equivalent (`SUPER`, `GEOMETRY`) get no `logicalType`; the `physicalType` is still written.
 

@@ -30,6 +30,13 @@ import types
 
 logger = logging.getLogger(__name__)
 
+# Redshift identifies as "PostgreSQL 8.0.2" and reports client_encoding under the
+# 8.0-era name "UNICODE". psycopg's codec table only knows the modern spelling
+# ("UTF8"), so without this every query fails with
+# `NotSupportedError: codec not available in Python: 'UNICODE'`. Requesting the
+# encoding at connect time makes the server report "utf8" back.
+CLIENT_ENCODING = "utf8"
+
 # ibis's get_schema query without the pg_enum-dependent enum CASE. Every other
 # relation (pg_attribute / pg_class / pg_namespace) and pg_catalog.format_type
 # is supported by Redshift's leader-node catalog.

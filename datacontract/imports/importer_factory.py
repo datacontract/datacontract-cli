@@ -130,6 +130,11 @@ importer_factory.register_lazy_importer(
     class_name="SnowflakeImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.redshift,
+    module_path="datacontract.imports.redshift_importer",
+    class_name="RedshiftImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.json,
     module_path="datacontract.imports.json_importer",
     class_name="JsonImporter",
