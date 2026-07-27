@@ -40,6 +40,7 @@ class ImportFormat(str, Enum):
     excel = "excel"
     powerbi = "powerbi"
     snowflake = "snowflake"
+    redshift = "redshift"
 
     @classmethod
     def get_supported_formats(cls):

@@ -60,7 +60,7 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
   </a>
   <a className="doc-card" href="/connect/redshift">
     <img src="/img/icons/redshift.svg" alt="" />
-    <span><span className="doc-card-title">Amazon Redshift</span><span className="doc-card-desc">Redshift (Postgres wire protocol)</span></span>
+    <span><span className="doc-card-title">Amazon Redshift</span><span className="doc-card-desc">Import a contract from your tables and test in 5 minutes</span></span>
   </a>
   <a className="doc-card" href="/connect/impala">
     <img src="/img/icons/impala.svg" alt="" />
