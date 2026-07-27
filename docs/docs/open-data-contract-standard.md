@@ -78,7 +78,7 @@ The CLI also accepts the older Data Contract Specification format (which uses `m
 ODCS separates the **logical type** (`logicalType`, e.g. `string`, `integer`, `number`, `boolean`, `date`, `timestamp`) from the **physical type** (`physicalType`, e.g. `varchar`, `uuid`, `INT64`).
 
 - The CLI uses the logical type as the portable, server-independent description.
-- When you select a server (via `--server` or the server `type`), the CLI maps logical types to that backend's physical types for [exports](./exports/index.md) and [tests](./testing.md).
+- When you select a server (via `--server` or the server `type`), the CLI maps logical types to that backend's physical types for [exports](./exports/index.md) and [tests](./testing/index.md).
 - You can always override the physical type per field, or pin a backend-specific type via `customProperties` / `config` (for example `clickhouseType`, `trinoType`).
 
 ## Working with ODCS in the CLI

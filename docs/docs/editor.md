@@ -20,7 +20,7 @@ Key behaviors:
 
 - If the file does not exist, you are asked whether to initialize a new data contract.
 - If a **URL** is given, you are asked whether to download a local copy, which is then edited.
-- The server also acts as the editor's **test runner**: clicking "Run test" in the editor executes the data contract tests locally against the servers defined in the contract. Credentials for the data sources must be provided as environment variables — see [Testing](./testing.md).
+- The server also acts as the editor's **test runner**: clicking "Run test" in the editor executes the data contract tests locally against the servers defined in the contract. Credentials for the data sources must be provided as environment variables — see [Test your Data](./testing/index.md#configuring-the-connection).
 
 ## Requirements
 

@@ -7,7 +7,7 @@ description: "All Trino authentication options and data type handling."
 
 # <img className="page-icon" src="/img/icons/trino.svg" alt="" /> Trino Reference
 
-Authentication options and data type handling for [Trino connections](../connect/trino.md).
+Authentication options and data type handling for [Trino connections](../testing/trino.md).
 
 ## Authentication
 

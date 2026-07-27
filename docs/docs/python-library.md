@@ -149,8 +149,8 @@ run = data_contract.test()
 assert run.result == "passed"
 ```
 
-See [Spark DataFrame](./connect/dataframe.md) and [Databricks](./connect/databricks.md) for details.
+See [Spark DataFrame](./testing/dataframe.md) and [Databricks](./testing/databricks.md) for details.
 
 ## Credentials
 
-Server credentials are read from environment variables (or a `.env` file), exactly as with the CLI — see [Connect your Data](./connect/index.md). Set them before constructing `DataContract`.
+Server credentials are read from environment variables (or a `.env` file), exactly as with the CLI — see [Test your Data](./testing/index.md). Set them before constructing `DataContract`.

@@ -66,12 +66,12 @@ datacontract test datacontract.yaml
 
 Follow the copy-paste guide for your data source, including credentials setup and troubleshooting:
 
-- **[Snowflake](./connect/snowflake.md)** — import from your tables, test in 5 minutes
-- **[Google BigQuery](./connect/bigquery.md)** — import from your tables, test in 5 minutes
-- **[Databricks](./connect/databricks.md)** — import from Unity Catalog, test in 5 minutes
-- **[Amazon Redshift](./connect/redshift.md)** — import from your tables, test in 5 minutes
-- **[Postgres](./connect/postgres.md)**, **[Amazon S3](./connect/s3.md)**, and [15+ other sources](./connect/index.md)
-- **[Local files](./connect/local.md)** — no warehouse or credentials needed, works offline
+- **[Snowflake](./testing/snowflake.md)** — import from your tables, test in 5 minutes
+- **[Google BigQuery](./testing/bigquery.md)** — import from your tables, test in 5 minutes
+- **[Databricks](./testing/databricks.md)** — import from Unity Catalog, test in 5 minutes
+- **[Amazon Redshift](./testing/redshift.md)** — import from your tables, test in 5 minutes
+- **[Postgres](./testing/postgres.md)**, **[Amazon S3](./testing/s3.md)**, and [15+ other sources](./testing/index.md)
+- **[Local files](./testing/local.md)** — no warehouse or credentials needed, works offline
 
 Each guide ends with the same payoff: tighten an expectation, rerun `datacontract test`, and watch the contract catch the violation with exit code `1` — the exact behavior you'll later use [in CI/CD](./ci-cd.md).
 

@@ -18,6 +18,6 @@ datacontract import redshift \
 
 `--source` is the endpoint host of your cluster or serverless workgroup. Add `--port` if it doesn't listen on the default `5439`, and repeat `--table` to import only specific tables (by default every table in the schema is imported).
 
-The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[Redshift connection guide](../connect/redshift.md)** for credentials, the full 5-minute walkthrough, and troubleshooting.
+The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[Redshift connection guide](../testing/redshift.md)** for credentials, the full 5-minute walkthrough, and troubleshooting.
 
 Credentials are provided as environment variables and are the same ones `datacontract test` uses: either IAM (`DATACONTRACT_REDSHIFT_AUTHENTICATION=iam`, which requests temporary credentials from your AWS session) or a database user (`DATACONTRACT_REDSHIFT_USERNAME`, `DATACONTRACT_REDSHIFT_PASSWORD`) — see the [Redshift Reference](../reference/redshift.md).

@@ -7,7 +7,7 @@ description: "All Snowflake authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/snowflake.svg" alt="" /> Snowflake Reference
 
-Authentication options and data type handling for [Snowflake connections](../connect/snowflake.md).
+Authentication options and data type handling for [Snowflake connections](../testing/snowflake.md).
 
 ## Authentication
 

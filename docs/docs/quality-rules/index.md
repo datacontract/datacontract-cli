@@ -7,7 +7,7 @@ description: "Define and run data quality rules in a data contract using ODCS qu
 
 # Define your Quality Rules
 
-Beyond schema checks (presence, type, nullability), a data contract can declare **quality rules**. When you run [`datacontract test`](../testing.md), executable rules run against the data source and are reported alongside the schema checks.
+Beyond schema checks (presence, type, nullability), a data contract can declare **quality rules**. When you run [`datacontract test`](../testing/index.md), executable rules run against the data source and are reported alongside the schema checks.
 
 Quality rules use the ODCS `quality` attribute, which can be attached either to a **schema** (table/object level) or to an individual **property** (column/field level):
 

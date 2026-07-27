@@ -7,7 +7,7 @@ description: "All BigQuery authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/bigquery.svg" alt="" /> Google BigQuery Reference
 
-Authentication options and data type handling for [BigQuery connections](../connect/bigquery.md).
+Authentication options and data type handling for [BigQuery connections](../testing/bigquery.md).
 
 ## Authentication
 

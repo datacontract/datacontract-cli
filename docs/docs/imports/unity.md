@@ -18,4 +18,4 @@ datacontract import unity --source unity_table.json
 
 For the HTTP endpoint, authenticate either with a personal access token (`DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` + `DATACONTRACT_DATABRICKS_TOKEN`) or with a profile from `~/.databrickscfg` (`DATACONTRACT_DATABRICKS_PROFILE`).
 
-The generated contract includes a ready-to-test `servers` block (`type: databricks` with catalog and schema). To run `datacontract test` afterwards, additionally set `DATACONTRACT_DATABRICKS_HTTP_PATH` to a running SQL warehouse — see the **[Databricks connection guide](../connect/databricks.md)** for the full 5-minute walkthrough and troubleshooting.
+The generated contract includes a ready-to-test `servers` block (`type: databricks` with catalog and schema). To run `datacontract test` afterwards, additionally set `DATACONTRACT_DATABRICKS_HTTP_PATH` to a running SQL warehouse — see the **[Databricks connection guide](../testing/databricks.md)** for the full 5-minute walkthrough and troubleshooting.

@@ -31,7 +31,7 @@ datacontract test datacontract.yaml
 🟢 data contract is valid. Run 24 checks. Took 5.2 seconds.
 ```
 
-The same flow works for [BigQuery](./connect/bigquery.md), [Databricks](./connect/databricks.md), [Postgres](./connect/postgres.md), and [15+ other sources](./connect/index.md) — or [try it on a local CSV file](./connect/local.md) without any credentials.
+The same flow works for [BigQuery](./testing/bigquery.md), [Databricks](./testing/databricks.md), [Postgres](./testing/postgres.md), and [15+ other sources](./testing/index.md) — or [try it on a local CSV file](./testing/local.md) without any credentials.
 
 ![Overview of the Data Contract CLI: schemas from SQL DDL, JSON Schema, Iceberg, Protobuf, BigQuery, Unity Catalog, AWS Glue, and Excel are imported into an ODCS data contract, which is linted, tested against S3, BigQuery, Azure, Databricks, Snowflake, and Kafka, and exported to SQL DDL, HTML, dbt, Entropy Data, Avro, SodaCL, Pydantic, and Excel.](/img/datacontractcli.webp)
 
@@ -48,15 +48,15 @@ A typical contract has a `servers` section with endpoint details, a `schema` des
 
 ## How it works
 
-When you run `datacontract test`, the CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid. Internally it uses different engines based on the server `type` — it connects with DuckDB, Spark, or a native connection, executes most checks with [_ibis_](https://ibis-project.org/) (compiling dialect-specific SQL per backend), and validates JSON with [_fastjsonschema_](https://pypi.org/project/fastjsonschema/).
+When you run `datacontract test`, the CLI connects to a data source and runs schema and quality tests to verify that the actual data complies with the contract. It picks a connection engine based on the server `type` — see **[Test your Data](./testing/index.md#how-it-works)**.
 
 ## Next steps
 
 - New here? Start with the **[Quickstart](./quickstart.md)**.
-- Test your own warehouse in 5 minutes: **[Snowflake](./connect/snowflake.md)**, **[BigQuery](./connect/bigquery.md)**, **[Databricks](./connect/databricks.md)**, **[Amazon Redshift](./connect/redshift.md)**, or **[any other source](./connect/index.md)**.
+- Test your own warehouse in 5 minutes: **[Snowflake](./testing/snowflake.md)**, **[BigQuery](./testing/bigquery.md)**, **[Databricks](./testing/databricks.md)**, **[Amazon Redshift](./testing/redshift.md)**, or **[any other source](./testing/index.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
-- Run checks against real data with **[Testing](./testing.md)**, then keep them running with **[Scheduling and CI/CD](./ci-cd.md)**.
+- Run checks against real data with **[Test your Data](./testing/index.md)**, then keep them running with **[Scheduling and CI/CD](./ci-cd.md)**.
 - Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
 - Evaluating options? See **[Comparison with other Tools](./comparison.md)**.
@@ -77,7 +77,7 @@ Run `pip install 'datacontract-cli[postgres]'` (or the extra matching your data 
 
 ### Which data sources can the Data Contract CLI test?
 
-Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Connect your Data](./connect/index.md).
+Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Test your Data](./testing/index.md).
 
 ### Is the Data Contract CLI free to use?
 

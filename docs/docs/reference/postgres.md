@@ -7,7 +7,7 @@ description: "All Postgres authentication options and data type mappings."
 
 # <img className="page-icon" src="/img/icons/postgres.svg" alt="" /> Postgres Reference
 
-Authentication options and data type handling for [Postgres connections](../connect/postgres.md).
+Authentication options and data type handling for [Postgres connections](../testing/postgres.md).
 
 ## Authentication
 

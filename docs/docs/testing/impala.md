@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 4
 title: "Apache Impala"
 description: "Create a data contract from your Impala tables and test the actual data against it."
 ---

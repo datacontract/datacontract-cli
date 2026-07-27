@@ -7,7 +7,7 @@ description: "All HTTP API authentication options and data type handling."
 
 # <img className="page-icon" src="/img/icons/api.svg" alt="" /> HTTP API Reference
 
-Authentication options and data type handling for [HTTP API connections](../connect/api.md).
+Authentication options and data type handling for [HTTP API connections](../testing/api.md).
 
 ## Authentication
 
