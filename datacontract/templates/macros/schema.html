@@ -1,0 +1,226 @@
+{% macro render_nested_properties(properties, schema_name, indent=0) -%}
+  {% for property in properties or [] %}
+    {% set property_name = property.name if property.name is defined and property.name else "items" %}
+    {% set property_business_name = property.businessName if property.businessName is defined and property.businessName else none %}
+    {% set property_physical_name = property.physicalName if property.physicalName is defined and property.physicalName else none %}
+    {% set property_description = property.description if property.description is defined and property.description else none %}
+    {% set property_examples = property.examples if property.examples is defined and property.examples and property.examples is sequence and property.examples is not string else [] %}
+    {% set property_tags = property.tags if property.tags is defined and property.tags and property.tags is sequence and property.tags is not string else [] %}
+    {% set property_quality = property.quality if property.quality is defined and property.quality and property.quality is sequence and property.quality is not string else [] %}
+    {% set property_custom_properties = property.customProperties if property.customProperties is defined else none %}
+
+    {% set type_source = property.items if property.items is defined and property.items is mapping else property %}
+    {% set logical_type = type_source.logicalType if type_source.logicalType is defined and type_source.logicalType else none %}
+    {% set physical_type = type_source.physicalType if type_source.physicalType is defined and type_source.physicalType else none %}
+    {% set fallback_type = property.type if property.type is defined and property.type else none %}
+    {% set opts = type_source.logicalTypeOptions if type_source.logicalTypeOptions is defined and type_source.logicalTypeOptions is mapping else none %}
+    {% set left_pad = ((indent - 1) if indent > 0 else 0) * 1.25 %}
+
+    {% set type_tooltip = "" %}
+    {% if logical_type %}{% set type_tooltip = "logicalType: " ~ logical_type %}{% endif %}
+    {% if physical_type %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "physicalType: " ~ physical_type %}{% endif %}
+    {% if opts %}
+      {% if opts.minLength is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "minLength: " ~ opts.minLength %}{% endif %}
+      {% if opts.maxLength is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "maxLength: " ~ opts.maxLength %}{% endif %}
+      {% if opts.pattern is defined and opts.pattern %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "pattern: " ~ opts.pattern %}{% endif %}
+      {% if opts.format is defined and opts.format %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "format: " ~ opts.format %}{% endif %}
+      {% if opts.minimum is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "minimum: " ~ opts.minimum %}{% endif %}
+      {% if opts.exclusiveMinimum is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "exclusiveMinimum: " ~ opts.exclusiveMinimum %}{% endif %}
+      {% if opts.maximum is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "maximum: " ~ opts.maximum %}{% endif %}
+      {% if opts.exclusiveMaximum is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "exclusiveMaximum: " ~ opts.exclusiveMaximum %}{% endif %}
+      {% if opts.multipleOf is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "multipleOf: " ~ opts.multipleOf %}{% endif %}
+      {% if opts.minItems is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "minItems: " ~ opts.minItems %}{% endif %}
+      {% if opts.maxItems is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "maxItems: " ~ opts.maxItems %}{% endif %}
+      {% if opts.uniqueItems is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "uniqueItems: " ~ ("yes" if opts.uniqueItems else "no") %}{% endif %}
+      {% if opts.minProperties is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "minProperties: " ~ opts.minProperties %}{% endif %}
+      {% if opts.maxProperties is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "maxProperties: " ~ opts.maxProperties %}{% endif %}
+      {% if opts.required is defined and opts.required is sequence and opts.required is not string and opts.required|length > 0 %}
+        {% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "required: " ~ (opts.required|join(", ")) %}
+      {% endif %}
+      {% if opts.timezone is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "timezone: " ~ ("yes" if opts.timezone else "no") %}{% endif %}
+      {% if opts.defaultTimezone is defined and opts.defaultTimezone %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "defaultTimezone: " ~ opts.defaultTimezone %}{% endif %}
+    {% endif %}
+
+    {% set transform_tooltip = "" %}
+    {% if property.transformLogic is defined and property.transformLogic %}
+      {% set transform_tooltip = "Transformation Logic: " ~ property.transformLogic %}
+    {% endif %}
+    {% if property.transformDescription is defined and property.transformDescription %}
+      {% set transform_tooltip = transform_tooltip ~ ("\n" if transform_tooltip else "") ~ "Transformation Description: " ~ property.transformDescription %}
+    {% endif %}
+
+    <tr class="print:break-inside-avoid-page align-top">
+      <td class="py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6">
+        <div class="flex items-start">
+          <span style="padding-left: {{ left_pad }}rem;">
+            {% if indent > 0 %}
+              <span class="mr-1 text-gray-400">↳</span>
+            {% endif %}
+          </span>
+          <div>
+            {% if property_business_name %}
+              <span>{{ property_business_name }}</span><br>
+            {% endif %}
+            <span class="font-mono">{{ property_name }}</span>
+            {% if property_physical_name %}
+              <span class="ml-1 text-gray-400 cursor-help" title="{{ property_physical_name }}">ⓘ</span>
+            {% endif %}
+          </div>
+        </div>
+      </td>
+
+      <td class="px-1 py-2 text-sm text-gray-500">
+        {% if logical_type %}
+          <span
+            class="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-500/10 mr-1 mb-1"
+            {% if type_tooltip %}title="{{ type_tooltip }}"{% endif %}
+          >
+            <span>{{ logical_type }}</span>
+            {% if type_tooltip %}<span class="text-blue-500">ⓘ</span>{% endif %}
+          </span>
+        {% elif physical_type %}
+          <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10 mr-1 mb-1">
+            {{ physical_type }}
+          </span>
+        {% elif fallback_type %}
+          <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+            {{ fallback_type }}
+          </span>
+        {% endif %}
+      </td>
+
+      <td class="px-3 py-2 text-sm text-gray-500">
+        {% if property_description %}
+          <div>{{ property_description }}</div>
+        {% else %}
+          <div class="text-gray-400">No description</div>
+        {% endif %}
+
+        {% if property_examples and property_examples|length > 0 %}
+          <div class="mt-1 italic">
+            {% if property_examples|length == 1 %}
+              Example <span>{{ property_examples[0] }}</span>
+            {% else %}
+              Examples <span>{{ property_examples|join(', ') }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <div class="mt-1 flex gap-x-1 items-center flex-wrap">
+          {% if property.primaryKey %}
+            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+              primaryKey{% if property.primaryKeyPosition is defined and property.primaryKeyPosition %} ({{ property.primaryKeyPosition }}){% endif %}
+            </span>
+          {% endif %}
+
+          {% if property.required %}
+            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">required</span>
+          {% endif %}
+
+          {% if property.unique %}
+            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">unique</span>
+          {% endif %}
+
+          {% if property.partitioned %}
+            <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+              partitioned{% if property.partitionKeyPosition is defined and property.partitionKeyPosition %} ({{ property.partitionKeyPosition }}){% endif %}
+            </span>
+          {% endif %}
+
+          {% if property.classification is defined and property.classification %}
+            {% set classification_value = (property.classification ~ '')|trim %}
+            <span class="inline-flex items-center gap-1 rounded-md bg-blue-50 px-1 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+              {% if classification_value|lower != 'public' %}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;display:inline-block">
+                  <path d="M12 1.5a4.5 4.5 0 00-4.5 4.5V9H6a2.25 2.25 0 00-2.25 2.25v8.25A2.25 2.25 0 006 21.75h12a2.25 2.25 0 002.25-2.25v-8.25A2.25 2.25 0 0018 9h-1.5V6A4.5 4.5 0 0012 1.5zm-3 7.5V6a3 3 0 116 0v3H9z"></path>
+                </svg>
+              {% endif %}
+              {{ classification_value }}
+            </span>
+          {% endif %}
+
+          {% if property.criticalDataElement %}
+            <span class="inline-flex items-center rounded-md bg-red-50 px-1 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-700/10">
+              criticalDataElement
+            </span>
+          {% endif %}
+
+          {% if property.encryptedName is defined and property.encryptedName %}
+            <span class="inline-flex items-center rounded-md bg-purple-50 px-1 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
+              {{ property.encryptedName }}
+            </span>
+          {% endif %}
+
+          {% if transform_tooltip %}
+            <span
+              class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20"
+              title="{{ transform_tooltip }}"
+            >
+              transformation
+            </span>
+          {% endif %}
+
+          {% if property_custom_properties %}
+            {% if property_custom_properties is mapping %}
+              {% for key, value in property_custom_properties.items() %}
+                <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                  {{ key }}:{{ value }}
+                </span>
+              {% endfor %}
+            {% elif property_custom_properties is sequence and property_custom_properties is not string %}
+              {% for cp in property_custom_properties %}
+                {% if cp.property is defined and cp.value is defined %}
+                  <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                    {{ cp.property }}:{{ cp.value }}
+                  </span>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+
+          {% if property_tags and property_tags|length > 0 %}
+            {% for tag in property_tags %}
+              <span class="inline-flex items-center rounded-md bg-indigo-50 px-1 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+                {{ tag }}
+              </span>
+            {% endfor %}
+          {% endif %}
+
+          {% if property_quality and property_quality|length > 0 %}
+            {% for q in property_quality %}
+              {% set q_title = "" %}
+              {% if q.description is defined and q.description %}{% set q_title = q.description %}{% endif %}
+              {% if q.type is defined and q.type %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "type: " ~ q.type %}{% endif %}
+              {% if q.dimension is defined and q.dimension %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "dimension: " ~ q.dimension %}{% endif %}
+              {% if q.metric is defined and q.metric %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "metric: " ~ q.metric %}{% endif %}
+              {% if q.mustBeGreaterThan is defined %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "mustBeGreaterThan: " ~ q.mustBeGreaterThan %}{% endif %}
+              {% if q.mustBeLessThan is defined %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "mustBeLessThan: " ~ q.mustBeLessThan %}{% endif %}
+              {% if q.mustBe is defined %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "mustBe: " ~ q.mustBe %}{% endif %}
+              {% if q.mustBeBetween is defined and q.mustBeBetween is sequence and q.mustBeBetween|length == 2 %}
+                {% set q_title = q_title ~ ("\n" if q_title else "") ~ "mustBeBetween: " ~ q.mustBeBetween[0] ~ " and " ~ q.mustBeBetween[1] %}
+              {% endif %}
+              <span
+                class="inline-flex items-center rounded-md bg-fuchsia-50 px-2 py-1 text-xs font-medium text-fuchsia-700 ring-1 ring-inset ring-fuchsia-600/20"
+                {% if q_title %}title="{{ q_title }}"{% endif %}
+              >
+                {{ q.name if q.name is defined and q.name else "qualityCheck" }}
+              </span>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+
+    {% if property.properties is defined and property.properties %}
+      {{ render_nested_properties(property.properties, schema_name, indent + 1) }}
+    {% endif %}
+
+    {% if property.items is defined and property.items %}
+      {% if property.items is mapping %}
+        {{ render_nested_properties([property.items], schema_name, indent + 1) }}
+      {% elif property.items is sequence and property.items is not string %}
+        {{ render_nested_properties(property.items, schema_name, indent + 1) }}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{%- endmacro %}

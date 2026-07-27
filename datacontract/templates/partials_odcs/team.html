@@ -1,0 +1,236 @@
+{% import 'macros/authoritative_definitions.html' as ad_macros %}
+
+{% set team = datacontract.team if datacontract.team is defined and datacontract.team is not callable else none %}
+{% if team %}
+  {% set team_name = team.name if team.name is defined and team.name else none %}
+  {% set team_description = team.description if team.description is defined and team.description else none %}
+  {% set team_members = team.members if team.members is defined and team.members and team.members is sequence and team.members is not string else [] %}
+  {% set team_tags = team.tags if team.tags is defined and team.tags and team.tags is sequence and team.tags is not string else [] %}
+  {% set team_auth_defs = team.authoritativeDefinitions if team.authoritativeDefinitions is defined and team.authoritativeDefinitions and team.authoritativeDefinitions is sequence and team.authoritativeDefinitions is not string else [] %}
+  {% set team_custom_properties = team.customProperties if team.customProperties is defined else none %}
+  {% set has_data = team_name or team_description or (team_members|length > 0) or (team_tags|length > 0) or (team_auth_defs|length > 0) or team_custom_properties %}
+
+  {% if has_data %}
+  <section id="team">
+    <div class="px-4 sm:px-0">
+      <h1 class="text-base font-semibold leading-6 text-gray-900" id="team">Team</h1>
+      <p class="text-sm text-gray-500">This section lists team information and members</p>
+    </div>
+
+    <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+      <div class="px-4 py-4 sm:px-6">
+
+        {% if team_auth_defs and team_auth_defs|length > 0 %}
+        <div class="flex flex-wrap gap-2 mb-6">
+          {% for definition in team_auth_defs %}
+          <a
+            href="{{ definition.url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col text-center rounded-md bg-white px-3 py-3 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:ring-indigo-300 transition-colors"
+            style="min-width: 120px"
+            title="{{ definition.description if definition.description is defined else '' }}"
+          >
+            <div class="mx-auto w-8 h-8 mb-2 text-gray-500">
+              {{ ad_macros.icon_for(definition) }}
+            </div>
+            <div class="text-xs font-medium">{{ definition.type }}</div>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="flex flex-col gap-3">
+          {% if team_name %}
+          <div>
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Team name</div>
+            <div class="mt-1 text-sm text-gray-900">{{ team_name }}</div>
+          </div>
+          {% endif %}
+
+          {% if team_description %}
+          <div>
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Description</div>
+            <div class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ team_description }}</div>
+          </div>
+          {% endif %}
+
+          {% if team_tags and team_tags|length > 0 %}
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">Tags</div>
+            <div class="flex flex-wrap gap-1">
+              {% for tag in team_tags %}
+              <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+                {{ tag }}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if team_custom_properties %}
+            {% if team_custom_properties is mapping and team_custom_properties|length > 0 %}
+            <div>
+              <div class="text-sm font-medium text-gray-500 mb-2">Custom Properties</div>
+              <div class="flex flex-wrap gap-x-4 gap-y-2">
+                {% for key, value in team_custom_properties.items() %}
+                <div class="min-w-0">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ key }}</div>
+                  <div class="text-sm text-gray-900">
+                    {% if value is mapping or (value is sequence and value is not string) %}
+                      {{ value | tojson }}
+                    {% elif value is sameas true %}
+                      true
+                    {% elif value is sameas false %}
+                      false
+                    {% else %}
+                      {{ value }}
+                    {% endif %}
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% elif team_custom_properties is sequence and team_custom_properties is not string and team_custom_properties|length > 0 %}
+            <div>
+              <div class="text-sm font-medium text-gray-500 mb-2">Custom Properties</div>
+              <div class="flex flex-wrap gap-x-4 gap-y-2">
+                {% for cp in team_custom_properties %}
+                  {% if cp.property is defined and cp.value is defined %}
+                  <div class="min-w-0">
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide inline-flex items-center gap-1">
+                      {{ cp.property }}
+                      {% if cp.description is defined and cp.description %}
+                        <span class="text-gray-400 cursor-help" title="{{ cp.description }}">ⓘ</span>
+                      {% endif %}
+                    </div>
+                    <div class="text-sm text-gray-900">
+                      {% if cp.value is mapping or (cp.value is sequence and cp.value is not string) %}
+                        {{ cp.value | tojson }}
+                      {% elif cp.value is sameas true %}
+                        true
+                      {% elif cp.value is sameas false %}
+                        false
+                      {% else %}
+                        {{ cp.value }}
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          {% endif %}
+
+          {% if team_members and team_members|length > 0 %}
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">Members</div>
+            <div>
+              <div class="space-y-3">
+                {% for member in team_members %}
+                  {% set m_username = member.username if member.username is defined and member.username else none %}
+                  {% set m_name = member.name if member.name is defined and member.name else none %}
+                  {% set m_role = member.role if member.role is defined and member.role else none %}
+                  {% set m_description = member.description if member.description is defined and member.description else none %}
+                  {% set m_date_in = member.dateIn if member.dateIn is defined and member.dateIn else none %}
+                  {% set m_date_out = member.dateOut if member.dateOut is defined and member.dateOut else none %}
+                  {% set m_replaced_by = member.replacedByUsername if member.replacedByUsername is defined and member.replacedByUsername else none %}
+                  {% set m_tags = member.tags if member.tags is defined and member.tags and member.tags is sequence and member.tags is not string else [] %}
+                  {% set m_auth_defs = member.authoritativeDefinitions if member.authoritativeDefinitions is defined and member.authoritativeDefinitions and member.authoritativeDefinitions is sequence and member.authoritativeDefinitions is not string else [] %}
+                  {% set m_custom_props = member.customProperties if member.customProperties is defined else none %}
+                  {% set has_member_data = m_username or m_name or m_role or m_description or m_date_in or m_date_out or m_replaced_by or (m_tags|length > 0) or (m_auth_defs|length > 0) or m_custom_props %}
+
+                  <div class="{{ 'border-l-2 border-gray-200 pl-3 py-1' if has_member_data else 'pl-0 py-1' }}">
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                      {% if m_username %}
+                        <span class="text-gray-900 font-medium">{{ m_username }}</span>
+                      {% endif %}
+                      {% if m_name %}
+                        <span class="text-gray-600">{{ m_name }}</span>
+                      {% endif %}
+                      {% if m_role %}
+                        <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                          {{ m_role }}
+                        </span>
+                      {% endif %}
+                    </div>
+
+                    {% if m_description %}
+                      <p class="text-sm text-gray-500 mt-1">{{ m_description }}</p>
+                    {% endif %}
+
+                    {% if m_date_in or m_date_out or m_replaced_by %}
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-gray-500">
+                      {% if m_date_in %}
+                        <span>Date in: {{ m_date_in }}</span>
+                      {% endif %}
+                      {% if m_date_out %}
+                        <span>Date out: {{ m_date_out }}</span>
+                      {% endif %}
+                      {% if m_replaced_by %}
+                        <span>Replaced by: {{ m_replaced_by }}</span>
+                      {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if m_tags and m_tags|length > 0 %}
+                    <div class="mt-1 flex flex-wrap gap-1">
+                      {% for tag in m_tags %}
+                        <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+                          {{ tag }}
+                        </span>
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% set has_member_refs = (m_auth_defs|length > 0) %}
+                    {% set has_member_cp = (m_custom_props is mapping and m_custom_props|length > 0) or (m_custom_props is sequence and m_custom_props is not string and m_custom_props|length > 0) %}
+                    {% if has_member_refs or has_member_cp %}
+                    <div class="flex flex-wrap gap-2 mt-2">
+                      {% if has_member_refs %}
+                        {% for definition in m_auth_defs %}
+                        <a
+                          href="{{ definition.url }}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                          title="{{ definition.description if definition.description is defined else '' }}"
+                        >
+                          {{ ad_macros.icon_for(definition) }}
+                          <span>{{ definition.type }}</span>
+                        </a>
+                        {% endfor %}
+                      {% endif %}
+
+                      {% if has_member_cp %}
+                        {% if m_custom_props is mapping %}
+                          {% for key, value in m_custom_props.items() %}
+                          <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                            {{ key }}:{% if value is sameas true %}true{% elif value is sameas false %}false{% elif value is mapping or (value is sequence and value is not string) %}{{ value|tojson }}{% else %}{{ value }}{% endif %}
+                          </span>
+                          {% endfor %}
+                        {% elif m_custom_props is sequence and m_custom_props is not string %}
+                          {% for cp in m_custom_props %}
+                            {% if cp.property is defined and cp.value is defined %}
+                            <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                              {{ cp.property }}:{% if cp.value is sameas true %}true{% elif cp.value is sameas false %}false{% elif cp.value is mapping or (cp.value is sequence and cp.value is not string) %}{{ cp.value|tojson }}{% else %}{{ cp.value }}{% endif %}
+                            </span>
+                            {% endif %}
+                          {% endfor %}
+                        {% endif %}
+                      {% endif %}
+                    </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+{% endif %}
