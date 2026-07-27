@@ -201,6 +201,15 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         server is not None and server.type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
     )
 
+    # A primary key is both not-null and unique. A composite key is unique as a
+    # tuple, not column by column, so its members are checked together after
+    # the loop instead of individually.
+    primary_key_props = sorted(
+        (prop for prop in properties if prop.primaryKey),
+        key=lambda prop: prop.primaryKeyPosition if prop.primaryKeyPosition is not None else 0,
+    )
+    primary_key_is_composite = len(primary_key_props) > 1
+
     for prop in properties:
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
         field = prop.physicalName or prop.name
@@ -297,6 +306,31 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                     category="schema",
                 )
             )
+        if prop.primaryKey:
+            # Skip whatever `required` and `unique` have already emitted, so a
+            # property declaring both does not produce two identical checks.
+            if not prop.required:
+                checks.append(
+                    _missing_count_check(
+                        model,
+                        field,
+                        "field_primary_key_required",
+                        Threshold(Op.EQ, 0),
+                        name=f"Check that primary key field {field} has no missing values",
+                        category="schema",
+                    )
+                )
+            if not primary_key_is_composite and not prop.unique:
+                checks.append(
+                    _duplicate_count_check(
+                        model,
+                        field,
+                        "field_primary_key_unique",
+                        Threshold(Op.EQ, 0),
+                        name=f"Check that primary key field {field} has no duplicate values",
+                        category="schema",
+                    )
+                )
 
         min_length = _get_logical_type_option(prop, "minLength")
         if min_length is not None:
@@ -414,6 +448,22 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
 
         if prop.quality:
             checks.extend(_quality_checks(model, field, prop.quality, server))
+
+    if primary_key_is_composite:
+        primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]
+        checks.append(
+            CheckSpec(
+                key=f"{model}__primary_key_unique",
+                category="schema",
+                type="primary_key_unique",
+                name=f"Check that primary key ({', '.join(primary_key_fields)}) has no duplicate values",
+                model=model,
+                field=None,
+                metric=MetricType.DUPLICATE_COUNT,
+                threshold=Threshold(Op.EQ, 0),
+                columns=primary_key_fields,
+            )
+        )
 
     if schema_object.quality:
         checks.extend(_quality_checks(model, None, schema_object.quality, server))

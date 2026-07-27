@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
+- `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
 
 ### Fixed
 - BigQuery export failed on fields with `logicalType: time`
