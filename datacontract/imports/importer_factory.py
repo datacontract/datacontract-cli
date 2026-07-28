@@ -150,6 +150,11 @@ importer_factory.register_lazy_importer(
     class_name="AthenaImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.trino,
+    module_path="datacontract.imports.trino_importer",
+    class_name="TrinoImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.oracle,
     module_path="datacontract.imports.oracle_importer",
     class_name="OracleImporter",

@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [MySQL](./mysql.md), [SQL Server](./sqlserver.md), [Oracle](./oracle.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Google Cloud Storage](./gcs.md), [Azure Blob / ADLS](./adls.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, MySQL, SQL Server, Oracle, Athena, S3, GCS, ADLS, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [MySQL](./mysql.md), [SQL Server](./sqlserver.md), [Oracle](./oracle.md), [Trino](./trino.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Google Cloud Storage](./gcs.md), [Azure Blob / ADLS](./adls.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, MySQL, SQL Server, Oracle, Trino, Athena, S3, GCS, ADLS, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -135,6 +135,10 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/sqlserver">
     <img src="/img/icons/sqlserver.svg" alt="" />
     <span><span className="doc-card-title">sqlserver</span><span className="doc-card-desc">A SQL Server database.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/trino">
+    <img src="/img/icons/trino.svg" alt="" />
+    <span><span className="doc-card-title">trino</span><span className="doc-card-desc">A Trino catalog.</span></span>
   </a>
 </div>
 
