@@ -237,6 +237,17 @@ def _load_extension(con, name: str, extra: str) -> None:
         ) from e
 
 
+def _sql_literal(value) -> str:
+    """Escape a value for a single-quoted duckdb string literal.
+
+    Several of these come from the contract rather than the environment —
+    `endpointUrl` and the storage account derived from `location` — and a
+    contract can be a URL someone else published. A quote in one of those
+    would otherwise end the literal and let the rest be parsed as SQL.
+    """
+    return str(value).replace("'", "''") if value is not None else ""
+
+
 def setup_s3_connection(con, server: Server):
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
@@ -262,25 +273,25 @@ def setup_s3_connection(con, server: Server):
             con.sql(f"""
                 CREATE OR REPLACE SECRET s3_secret (
                     TYPE S3,
-                    REGION '{s3_region}',
-                    KEY_ID '{s3_access_key_id}',
-                    SECRET '{s3_secret_access_key}',
-                    SESSION_TOKEN '{s3_session_token}',
-                    ENDPOINT '{s3_endpoint}',
-                    USE_SSL '{use_ssl}',
-                    URL_STYLE '{url_style}'
+                    REGION '{_sql_literal(s3_region)}',
+                    KEY_ID '{_sql_literal(s3_access_key_id)}',
+                    SECRET '{_sql_literal(s3_secret_access_key)}',
+                    SESSION_TOKEN '{_sql_literal(s3_session_token)}',
+                    ENDPOINT '{_sql_literal(s3_endpoint)}',
+                    USE_SSL '{_sql_literal(use_ssl)}',
+                    URL_STYLE '{_sql_literal(url_style)}'
                 );
             """)
         else:
             con.sql(f"""
                 CREATE OR REPLACE SECRET s3_secret (
                     TYPE S3,
-                    REGION '{s3_region}',
-                    KEY_ID '{s3_access_key_id}',
-                    SECRET '{s3_secret_access_key}',
-                    ENDPOINT '{s3_endpoint}',
-                    USE_SSL '{use_ssl}',
-                    URL_STYLE '{url_style}'
+                    REGION '{_sql_literal(s3_region)}',
+                    KEY_ID '{_sql_literal(s3_access_key_id)}',
+                    SECRET '{_sql_literal(s3_secret_access_key)}',
+                    ENDPOINT '{_sql_literal(s3_endpoint)}',
+                    USE_SSL '{_sql_literal(use_ssl)}',
+                    URL_STYLE '{_sql_literal(url_style)}'
                 );
             """)
     else:
@@ -301,7 +312,7 @@ def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style
 
     region = region or credentials.region
     token_clause = f"SESSION_TOKEN '{credentials.session_token}'," if credentials.session_token else ""
-    region_clause = f"REGION '{region}'," if region else ""
+    region_clause = f"REGION '{_sql_literal(region)}'," if region else ""
     con.sql(f"""
         CREATE OR REPLACE SECRET s3_secret (
             TYPE S3,
@@ -309,9 +320,9 @@ def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style
             KEY_ID '{credentials.access_key_id}',
             SECRET '{credentials.secret_access_key}',
             {token_clause}
-            ENDPOINT '{endpoint}',
-            USE_SSL '{use_ssl}',
-            URL_STYLE '{url_style}'
+            ENDPOINT '{_sql_literal(endpoint)}',
+            USE_SSL '{_sql_literal(use_ssl)}',
+            URL_STYLE '{_sql_literal(url_style)}'
         );
     """)
 
@@ -324,8 +335,8 @@ def setup_gcs_connection(con, server: Server):
     con.sql(f"""
     CREATE SECRET gcs_secret (
         TYPE GCS,
-        KEY_ID '{key_id}',
-        SECRET '{secret}'
+        KEY_ID '{_sql_literal(key_id)}',
+        SECRET '{_sql_literal(secret)}'
     );
     """)
 
@@ -345,10 +356,10 @@ def setup_azure_connection(con, server: Server):
         CREATE SECRET azure_spn (
             TYPE AZURE,
             PROVIDER SERVICE_PRINCIPAL,
-            TENANT_ID '{tenant_id}',
-            CLIENT_ID '{client_id}',
-            CLIENT_SECRET '{client_secret}',
-            ACCOUNT_NAME '{storage_account}'
+            TENANT_ID '{_sql_literal(tenant_id)}',
+            CLIENT_ID '{_sql_literal(client_id)}',
+            CLIENT_SECRET '{_sql_literal(client_secret)}',
+            ACCOUNT_NAME '{_sql_literal(storage_account)}'
         );
         """)
     else:
@@ -356,9 +367,9 @@ def setup_azure_connection(con, server: Server):
         CREATE SECRET azure_spn (
             TYPE AZURE,
             PROVIDER SERVICE_PRINCIPAL,
-            TENANT_ID '{tenant_id}',
-            CLIENT_ID '{client_id}',
-            CLIENT_SECRET '{client_secret}'
+            TENANT_ID '{_sql_literal(tenant_id)}',
+            CLIENT_ID '{_sql_literal(client_id)}',
+            CLIENT_SECRET '{_sql_literal(client_secret)}'
         );
         """)
 
