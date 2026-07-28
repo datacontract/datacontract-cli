@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 title: "Import: Databricks"
 description: "Create a data contract from Databricks Unity Catalog."
 ---
