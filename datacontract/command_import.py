@@ -231,21 +231,25 @@ def import_bigquery(
     _write_result(result, output)
 
 
+databricks_source_option = Annotated[
+    Optional[str],
+    typer.Option(
+        help="Path to a Unity Catalog TableInfo JSON file. If omitted, imports from the Unity API using --table."
+    ),
+]
+databricks_table_option = Annotated[
+    Optional[List[str]],
+    typer.Option(help="Full name of a table in the Unity Catalog (repeat for multiple tables)."),
+]
+
+
 @import_app.command(
-    name="unity",
-    epilog="Example: datacontract import unity --table catalog.schema.my_table --output datacontract.yaml",
+    name="databricks",
+    epilog="Example: datacontract import databricks --table catalog.schema.my_table --output datacontract.yaml",
 )
-def import_unity(
-    source: Annotated[
-        Optional[str],
-        typer.Option(
-            help="Path to a Unity Catalog TableInfo JSON file. If omitted, imports from the Unity API using --table."
-        ),
-    ] = None,
-    table: Annotated[
-        Optional[List[str]],
-        typer.Option(help="Full name of a table in the Unity Catalog (repeat for multiple tables)."),
-    ] = None,
+def import_databricks(
+    source: databricks_source_option = None,
+    table: databricks_table_option = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -255,9 +259,29 @@ def import_unity(
     """Import a data contract from Databricks Unity Catalog."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="unity", source=source, schema=schema, unity_table_full_name=table, owner=owner, id=id
+        format="databricks", source=source, schema=schema, unity_table_full_name=table, owner=owner, id=id
     )
     _write_result(result, output)
+
+
+# `unity` predates the `databricks` name and stays working; hidden so the help
+# lists one name for one importer.
+@import_app.command(
+    name="unity",
+    hidden=True,
+    epilog="Example: datacontract import databricks --table catalog.schema.my_table --output datacontract.yaml",
+)
+def import_unity(
+    source: databricks_source_option = None,
+    table: databricks_table_option = None,
+    output: output_option = None,
+    schema: schema_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from Databricks Unity Catalog (alias of `import databricks`)."""
+    import_databricks(source=source, table=table, output=output, schema=schema, owner=owner, id=id, debug=debug)
 
 
 @import_app.command(

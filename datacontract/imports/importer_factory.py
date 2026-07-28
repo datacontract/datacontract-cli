@@ -82,6 +82,11 @@ importer_factory.register_lazy_importer(
     class_name="UnityImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.databricks,
+    module_path="datacontract.imports.unity_importer",
+    class_name="UnityImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.spark,
     module_path="datacontract.imports.spark_importer",
     class_name="SparkImporter",

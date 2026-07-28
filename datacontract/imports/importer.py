@@ -32,6 +32,7 @@ class ImportFormat(str, Enum):
     bigquery = "bigquery"
     odcs = "odcs"
     unity = "unity"
+    databricks = "databricks"
     spark = "spark"
     iceberg = "iceberg"
     parquet = "parquet"

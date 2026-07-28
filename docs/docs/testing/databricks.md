@@ -34,7 +34,7 @@ Find the hostname and HTTP path under your SQL warehouse's **Connection details*
 Import the table metadata directly from Unity Catalog. This also generates a ready-to-test `servers` block:
 
 ```bash
-datacontract import unity \
+datacontract import databricks \
   --table my_catalog.my_schema.orders \
   --output datacontract.yaml
 ```
@@ -101,6 +101,6 @@ On Databricks LTS ML runtimes (15.4, 16.4), installing via `%pip install` in not
 
 ## Troubleshooting
 
-- **`Invalid HTTP path`, or the test hangs** — `DATACONTRACT_DATABRICKS_HTTP_PATH` must point at a running SQL warehouse or cluster (check the **Connection details** tab). `import unity` works without it, but `test` requires it.
+- **`Invalid HTTP path`, or the test hangs** — `DATACONTRACT_DATABRICKS_HTTP_PATH` must point at a running SQL warehouse or cluster (check the **Connection details** tab). `import databricks` works without it, but `test` requires it.
 - **`403 Invalid access token`** — the PAT is expired or belongs to a different workspace than `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME`.
 - **`TABLE_OR_VIEW_NOT_FOUND`** — the token's principal lacks `USE CATALOG`/`USE SCHEMA`/`SELECT` privileges on the table.

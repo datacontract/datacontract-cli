@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 14
 title: "Import: Postgres"
 description: "Create a data contract from a Postgres schema."
 ---
