@@ -82,4 +82,3 @@ All authentication options and the data type mappings: **[Athena Reference](../r
 
 - **`Access Denied` on query start** — the credentials need `athena:StartQueryExecution` plus write access to the `stagingDir` bucket.
 - **`Table not found`** — `schema` in the `servers` block must be the Athena *database* name (as shown in the Glue Data Catalog), and `regionName` must match where the catalog lives.
-- **Query results land in the wrong place** — `stagingDir` is required; Athena writes query results there before the CLI reads them.

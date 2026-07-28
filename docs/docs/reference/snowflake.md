@@ -9,6 +9,17 @@ description: "All Snowflake authentication options and data type mappings."
 
 Authentication options and data type handling for [Snowflake connections](../testing/snowflake.md).
 
+## Server
+
+```yaml
+servers:
+  - server: snowflake
+    type: snowflake
+    account: abcdefg-xn12345
+    database: ORDER_DB
+    schema: ORDERS_PII_V2
+```
+
 ## Authentication
 
 Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver. Set the variables required by your workspace's `authenticator` mode.

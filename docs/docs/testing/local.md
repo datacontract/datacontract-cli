@@ -73,15 +73,3 @@ invalid_count(order_total) was 1, expected = 0
 The command exits with code `1`, so the same call works as a gate in [CI/CD pipelines](../ci-cd.md).
 
 Ready for your real data? Do the same against [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), or [Databricks](./databricks.md).
-
-## Server reference
-
-```yaml
-servers:
-  - server: local
-    type: local
-    path: ./*.parquet # glob patterns and a {model} placeholder are supported
-    format: parquet   # parquet, json, csv, or delta
-```
-
-No environment variables are needed for local files. Data type inference and per-format type handling: **[Local Files Reference](../reference/local.md)**.

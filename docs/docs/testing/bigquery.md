@@ -76,18 +76,6 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
-## Server reference
-
-Connection details live in the contract's `servers` block; `project` and `dataset` come from there:
-
-```yaml
-servers:
-  - server: production
-    type: bigquery
-    project: datameshexample-product
-    dataset: datacontract_cli_test_dataset
-```
-
 ## Reference
 
 All authentication options (service-account keys, WIF, billing project) and the data type mappings: **[BigQuery Reference](../reference/bigquery.md)**.

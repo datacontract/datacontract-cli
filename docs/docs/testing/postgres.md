@@ -85,20 +85,6 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
-## Server reference
-
-Connection details live in the contract's `servers` block; `host`, `port`, `database`, and `schema` come from there:
-
-```yaml
-servers:
-  - server: postgres
-    type: postgres
-    host: localhost
-    port: 5432
-    database: postgres
-    schema: public
-```
-
 ## Reference
 
 All authentication options and the data type mappings: **[Postgres Reference](../reference/postgres.md)**.
@@ -106,6 +92,4 @@ All authentication options and the data type mappings: **[Postgres Reference](..
 ## Troubleshooting
 
 - **`password authentication failed`** — check the two environment variables above; note that values from an already-set shell variable take precedence over `.env`.
-- **`connection refused`** — host/port in the `servers` block are wrong, or the database isn't reachable from your machine (VPN, firewall, `pg_hba.conf`).
-- **`relation does not exist`** — the `schema` in the `servers` block doesn't match where the table lives, or the user lacks `USAGE`/`SELECT` grants.
-- **The import finds no tables** — `--schema` is case-sensitive and must match the schema as stored in the catalog.
+- **`relation does not exist`** — the user lacks `USAGE` on the schema or `SELECT` on the table; a missing grant reads as a missing relation.

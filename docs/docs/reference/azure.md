@@ -9,6 +9,16 @@ description: "All Azure storage authentication options and data type handling."
 
 Authentication options and data type handling for [Azure storage connections](../testing/azure.md).
 
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: azure
+    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/inventory_events/*.parquet
+    format: parquet
+```
+
 ## Authentication
 
 Authentication uses an Azure Service Principal (App Registration) with a secret:

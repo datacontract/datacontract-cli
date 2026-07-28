@@ -77,18 +77,6 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
-## Server reference
-
-Connection details live in the contract's `servers` block; `catalog` and `schema` come from there:
-
-```yaml
-servers:
-  - server: production
-    type: databricks
-    catalog: acme_catalog_prod
-    schema: orders_latest
-```
-
 ## Reference
 
 All authentication options (PAT, OAuth M2M, profiles, precedence order) and the data type mappings: **[Databricks Reference](../reference/databricks.md)**.

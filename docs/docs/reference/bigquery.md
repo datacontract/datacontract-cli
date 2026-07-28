@@ -9,6 +9,16 @@ description: "All BigQuery authentication options and data type mappings."
 
 Authentication options and data type handling for [BigQuery connections](../testing/bigquery.md).
 
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: bigquery
+    project: datameshexample-product
+    dataset: datacontract_cli_test_dataset
+```
+
 ## Authentication
 
 Authentication uses a Service Account Key or Application Default Credentials (ADC) — including Workload Identity Federation (WIF), the GCE metadata server, and `gcloud auth application-default login`. The account needs the **BigQuery Job User** and **BigQuery Data Viewer** roles.
