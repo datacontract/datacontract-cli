@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 8
 title: "Export: dbt Sources"
 description: "Export a data contract to dbt sources YAML."
 ---

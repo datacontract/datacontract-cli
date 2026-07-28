@@ -1,5 +1,5 @@
 ---
-sidebar_position: 24
+sidebar_position: 5
 title: "Export: Data Caterer"
 description: "Export a data contract to a Data Caterer data-generation task."
 ---

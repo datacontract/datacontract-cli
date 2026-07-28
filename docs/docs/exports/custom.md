@@ -1,5 +1,5 @@
 ---
-sidebar_position: 28
+sidebar_position: 4
 title: "Export: Custom (Jinja)"
 description: "Export a data contract to any format using a custom Jinja template."
 ---

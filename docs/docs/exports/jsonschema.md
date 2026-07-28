@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 17
 title: "Export: JSON Schema"
 description: "Export a data contract to a JSON Schema document for validating JSON data."
 ---

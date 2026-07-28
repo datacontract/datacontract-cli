@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 23
 title: "Export: RDF"
 description: "Export a data contract to an RDF representation."
 ---

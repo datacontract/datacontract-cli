@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 25
 title: "Export: Spark"
 description: "Export a data contract to a Spark StructType schema."
 ---

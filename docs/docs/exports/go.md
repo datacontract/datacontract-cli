@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 13
 title: "Export: Go"
 description: "Generate Go struct type definitions from a data contract's schema."
 ---

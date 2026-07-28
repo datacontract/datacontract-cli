@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 22
 title: "Export: Pydantic Model"
 description: "Export a data contract to a Pydantic model."
 ---

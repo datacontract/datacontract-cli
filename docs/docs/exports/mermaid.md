@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 19
 title: "Export: Mermaid"
 description: "Export a data contract to a Mermaid diagram."
 ---

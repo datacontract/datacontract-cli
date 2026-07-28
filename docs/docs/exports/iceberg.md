@@ -1,5 +1,5 @@
 ---
-sidebar_position: 21
+sidebar_position: 16
 title: "Export: Iceberg"
 description: "Export a data contract to an Apache Iceberg schema."
 ---

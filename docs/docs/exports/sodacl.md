@@ -1,5 +1,5 @@
 ---
-sidebar_position: 22
+sidebar_position: 24
 title: "Export: SodaCL"
 description: "Export a data contract to SodaCL checks."
 ---

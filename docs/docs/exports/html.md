@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 15
 title: "Export: HTML"
 description: "Export a data contract to a standalone HTML page."
 ---

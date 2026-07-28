@@ -1,5 +1,5 @@
 ---
-sidebar_position: 26
+sidebar_position: 11
 title: "Export: DQX"
 description: "Export a data contract to Databricks DQX checks."
 ---

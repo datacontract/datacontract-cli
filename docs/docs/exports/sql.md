@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 26
 title: "Export: SQL DDL"
 description: "Convert a data contract into a SQL data definition language (DDL) file."
 ---
