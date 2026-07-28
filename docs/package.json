@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
+    "release-notes": "node scripts/generate-release-notes.mjs",
+    "prestart": "npm run release-notes",
     "start": "docusaurus start",
+    "prebuild": "npm run release-notes",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",

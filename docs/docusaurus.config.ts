@@ -128,6 +128,7 @@ const config: Config = {
           'intro.md',
           'quickstart.md',
           'open-data-contract-standard.md',
+          'migrate-dcs-to-odcs.md',
           'installation.md',
           'editor.md',
           'testing/index.md',
@@ -147,6 +148,7 @@ const config: Config = {
           'dbt.md',
           'api.md',
           'extending.md',
+          'release-notes.md',
         ],
         includeUnmatchedLast: true,
       },
@@ -220,6 +222,7 @@ const config: Config = {
             {label: 'What is Data Contract CLI?', to: '/'},
             {label: 'Quickstart', to: '/quickstart'},
             {label: 'Commands', to: '/commands/'},
+            {label: 'Release Notes', to: '/release-notes'},
           ],
         },
         {

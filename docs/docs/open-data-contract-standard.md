@@ -56,7 +56,7 @@ schema:
 `v3.1.0` is the current version of the standard and the one [`datacontract init`](./commands/init.md) writes. The CLI also validates contracts declaring `v3.0.2`, `v3.0.1`, `v3.0.0`, and the v2.2.x line.
 
 :::note
-The CLI also accepts the older Data Contract Specification format (which uses `models`/`fields` instead of ODCS `schema`/`properties`), but new contracts should follow ODCS — all examples in this documentation use ODCS.
+The CLI also accepts the older Data Contract Specification format (which uses `models`/`fields` instead of ODCS `schema`/`properties`), but new contracts should follow ODCS — all examples in this documentation use ODCS. To convert an existing one, see [Migrate from DCS to ODCS](./migrate-dcs-to-odcs.md).
 :::
 
 ## Key sections

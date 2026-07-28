@@ -71,6 +71,8 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
 - Evaluating options? See **[Comparison with other Tools](./comparison.md)**.
+- Coming from the older `datacontract.yaml` format? **[Migrate from DCS to ODCS](./migrate-dcs-to-odcs.md)**.
+- Upgrading? See what changed in **[Release Notes](./release-notes.md)**.
 
 ## Frequently asked questions
 

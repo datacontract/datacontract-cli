@@ -1,0 +1,39 @@
+# Data Contract CLI
+
+> The `datacontract` CLI is an open-source command-line tool for working with data contracts. It natively supports the Open Data Contract Standard (ODCS) to lint data contracts, connect to data sources and execute schema and quality tests, and export to different formats. The tool is written in Python and published under the MIT license. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
+
+This page is the entry point for the project's GitHub repository and README. The complete documentation is a separate site with its own, much larger llms.txt.
+
+- Contract format: the [Open Data Contract Standard (ODCS)](https://bitol-io.github.io/open-data-contract-standard/latest/), governed by Bitol under the Linux Foundation AI & Data. The older Data Contract Specification (DCS) is still read and can be exported.
+- Install: `uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'`, `pip install 'datacontract-cli[all]'`, or the `datacontract/cli` Docker image. Extras such as `[snowflake]`, `[bigquery]`, `[databricks]`, and `[postgres]` install only one data source.
+- Core commands: `init`, `lint`, `test`, `export`, `import`, `ci`, `changelog`, `catalog`, `publish`, `api`, `edit`, `dbt`.
+
+## Documentation
+
+- [Full documentation](https://docs.datacontract.com): every command, data source, importer, and exporter.
+- [Documentation as llms.txt](https://docs.datacontract.com/llms.txt): the same documentation as a link index for LLMs.
+- [Documentation as llms-full.txt](https://docs.datacontract.com/llms-full.txt): the full text of every documentation page in one file.
+- [Quickstart](https://docs.datacontract.com/quickstart): from installation to a tested data contract in a few minutes.
+- [Commands](https://docs.datacontract.com/commands): reference for every CLI command and its options.
+- [Test your Data](https://docs.datacontract.com/testing): connecting to Snowflake, Databricks, BigQuery, Redshift, Athena, Postgres, Kafka, S3, and 10+ more.
+- [Imports](https://docs.datacontract.com/imports): generating a data contract from SQL DDL, dbt, Avro, JSON Schema, Excel, Iceberg, Protobuf, and live catalogs.
+- [Exports](https://docs.datacontract.com/exports): converting a data contract to SQL DDL, dbt, Avro, JSON Schema, HTML, Protobuf, Pydantic, and 20+ more.
+- [Quality Rules](https://docs.datacontract.com/quality-rules): SQL, library, text, and custom quality rules.
+- [Scheduling and CI/CD](https://docs.datacontract.com/ci-cd): running contract tests on every change and on a schedule.
+- [Release Notes](https://docs.datacontract.com/release-notes): what changed in every release.
+
+## Project
+
+- [Source code](https://github.com/datacontract/datacontract-cli): the GitHub repository, MIT licensed.
+- [Issues](https://github.com/datacontract/datacontract-cli/issues): bug reports and feature requests.
+- [Changelog](https://github.com/datacontract/datacontract-cli/blob/main/CHANGELOG.md): the source of the release notes.
+- [PyPI package](https://pypi.org/project/datacontract-cli/): released versions and install instructions.
+- [Docker image](https://hub.docker.com/r/datacontract/cli): `datacontract/cli`.
+- [GitHub Action](https://github.com/datacontract/datacontract-action/): running the CLI in a GitHub workflow.
+- [Community Slack](https://datacontract.com/slack): questions and discussion.
+
+## Optional
+
+- [datacontract.com](https://datacontract.com): what data contracts are, and the example `orders` contract used throughout the documentation.
+- [Data Contract Editor](https://editor.datacontract.com): a web editor for ODCS contracts, also available offline via `datacontract edit`.
+- [Entropy Data](https://entropy-data.com): the commercial data product platform the CLI can publish test results to.
