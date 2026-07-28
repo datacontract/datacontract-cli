@@ -1,9 +1,35 @@
+import ipaddress
 import os
+import socket
 from urllib.parse import urlparse
 
 import requests
 
 from datacontract.model.exceptions import DataContractException
+
+
+def _validate_url_not_internal(url: str):
+    hostname = urlparse(url).hostname
+    if hostname is None:
+        raise DataContractException(
+            type="lint",
+            name=f"Reading data contract from {url}",
+            reason="Invalid URL: no hostname.",
+            engine="datacontract",
+            result="error",
+        )
+    try:
+        ip = ipaddress.ip_address(socket.gethostbyname(hostname))
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise DataContractException(
+                type="lint",
+                name=f"Reading data contract from {url}",
+                reason="Requests to internal or reserved IP addresses are not allowed.",
+                engine="datacontract",
+                result="error",
+            )
+    except socket.gaierror:
+        pass  # Let requests.get fail naturally if hostname cannot be resolved
 
 
 def fetch_resource(url: str):
@@ -12,6 +38,7 @@ def fetch_resource(url: str):
     }
 
     _set_api_key(headers, url)
+    _validate_url_not_internal(url)
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         return response.text
