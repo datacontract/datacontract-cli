@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 14
 title: "Oracle Reference"
 sidebar_label: "Oracle"
 description: "All Oracle authentication options and data type mappings."

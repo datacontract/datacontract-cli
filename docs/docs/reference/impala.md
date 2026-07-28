@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 4
 title: "Apache Impala Reference"
 sidebar_label: "Apache Impala"
 description: "All Impala authentication options and data type handling."
