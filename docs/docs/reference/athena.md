@@ -9,6 +9,18 @@ description: "All Athena authentication options and data type handling."
 
 Authentication options and data type handling for [Athena connections](../testing/athena.md).
 
+## Server
+
+```yaml
+servers:
+  - server: athena
+    type: athena
+    catalog: awsdatacatalog # default
+    schema: my_database     # in Athena, this is called "database"
+    regionName: eu-central-1
+    stagingDir: s3://my-bucket/athena-results/
+```
+
 ## Authentication
 
 Athena uses the S3 environment variables:

@@ -82,22 +82,6 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
-## Server reference
-
-Connection details live in the contract's `servers` block; `catalog`, `schema`, `regionName`, and `stagingDir` come from there:
-
-```yaml
-servers:
-  - server: athena
-    type: athena
-    catalog: awsdatacatalog # default
-    schema: my_database     # in Athena, this is called "database"
-    regionName: eu-central-1
-    stagingDir: s3://my-bucket/athena-results/
-```
-
-`DATACONTRACT_S3_REGION` takes precedence over `regionName` when both are set.
-
 ## Reference
 
 All authentication options and the data type mappings: **[Athena Reference](../reference/athena.md)**.
