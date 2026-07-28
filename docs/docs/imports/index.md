@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [MySQL](./mysql.md), [SQL Server](./sqlserver.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, MySQL, SQL Server, Athena, S3, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [MySQL](./mysql.md), [SQL Server](./sqlserver.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Google Cloud Storage](./gcs.md), [Azure Blob Storage](./azure.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, MySQL, SQL Server, Athena, S3, GCS, Azure, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -35,6 +35,10 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/avro">
     <img src="/img/icons/avro.svg" alt="" />
     <span><span className="doc-card-title">avro</span><span className="doc-card-desc">An Avro schema file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/azure">
+    <img src="/img/icons/azure.svg" alt="" />
+    <span><span className="doc-card-title">azure</span><span className="doc-card-desc">Files in Azure Blob Storage.</span></span>
   </a>
   <a className="doc-card" href="/imports/bigquery">
     <img src="/img/icons/bigquery.svg" alt="" />
@@ -59,6 +63,10 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/excel">
     <img src="/img/icons/excel.svg" alt="" />
     <span><span className="doc-card-title">excel</span><span className="doc-card-desc">An ODCS Excel template.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/gcs">
+    <img src="/img/icons/gcs.svg" alt="" />
+    <span><span className="doc-card-title">gcs</span><span className="doc-card-desc">Files in Google Cloud Storage.</span></span>
   </a>
   <a className="doc-card" href="/imports/glue">
     <img src="/img/icons/glue.svg" alt="" />

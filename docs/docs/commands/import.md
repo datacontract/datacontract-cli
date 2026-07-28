@@ -18,4 +18,4 @@ Run `datacontract import <format> --help` to see format-specific options.
 datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-Available formats: `athena`, `avro`, `bigquery`, `csv`, `databricks`, `dbml`, `dbt`, `excel`, `glue`, `iceberg`, `json`, `jsonschema`, `mysql`, `odcs`, `parquet`, `postgres`, `powerbi`, `protobuf`, `redshift`, `s3`, `snowflake`, `spark`, `sql`, `sqlserver`.
+Available formats: `athena`, `avro`, `azure`, `bigquery`, `csv`, `databricks`, `dbml`, `dbt`, `excel`, `gcs`, `glue`, `iceberg`, `json`, `jsonschema`, `mysql`, `odcs`, `parquet`, `postgres`, `powerbi`, `protobuf`, `redshift`, `s3`, `snowflake`, `spark`, `sql`, `sqlserver`.

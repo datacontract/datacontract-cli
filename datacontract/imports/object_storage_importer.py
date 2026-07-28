@@ -1,8 +1,10 @@
-"""Create a data contract from files in an S3 bucket.
+"""Create a data contract from files in object storage: S3, GCS or Azure.
 
 The objects are read with duckdb through the same connection setup that
 ``datacontract test`` uses, so the import authenticates identically and infers
-the column types from exactly the reader that will later verify them.
+the column types from exactly the reader that will later verify them. One
+importer serves all three: it takes the server type from the format it was
+registered under.
 """
 
 from __future__ import annotations
@@ -27,6 +29,13 @@ FORMATS_BY_SUFFIX = {
 }
 SUPPORTED_FORMATS = {"json", "csv", "parquet", "delta"}
 
+# duckdb reads GCS through the S3-compatible endpoint, hence the s3:// scheme there.
+_EXAMPLE_LOCATIONS = {
+    "s3": "s3://my-bucket/orders/*.json",
+    "gcs": "s3://my-bucket/orders/*.json",
+    "azure": "abfss://my-container/orders/*.json",
+}
+
 _READERS = {
     "json": "read_json_auto('{location}', hive_partitioning=1)",
     "csv": "read_csv_auto('{location}', hive_partitioning=1)",
@@ -35,18 +44,21 @@ _READERS = {
 }
 
 
-class S3Importer(Importer):
+class ObjectStorageImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_s3(
+        return import_object_storage(
             location=source,
-            format=import_args.get("s3_format"),
+            # registered once per storage, so the format is the server type
+            server_type=self.import_format,
+            format=import_args.get("file_format"),
             delimiter=import_args.get("delimiter"),
             endpoint_url=import_args.get("endpoint_url"),
         )
 
 
-def import_s3(
+def import_object_storage(
     location: Optional[str],
+    server_type: str = "s3",
     format: Optional[str] = None,
     delimiter: Optional[str] = None,
     endpoint_url: Optional[str] = None,
@@ -54,8 +66,11 @@ def import_s3(
     if not location:
         raise DataContractException(
             type="source",
-            name="s3 import source",
-            reason="The S3 location is required for the s3 import, e.g. --source s3://my-bucket/orders/*.json",
+            name=f"{server_type} import source",
+            reason=(
+                f"The location is required for the {server_type} import, "
+                f"e.g. --source {_EXAMPLE_LOCATIONS[server_type]}"
+            ),
             engine="datacontract",
         )
 
@@ -63,7 +78,7 @@ def import_s3(
     if format not in SUPPORTED_FORMATS:
         raise DataContractException(
             type="source",
-            name="s3 import format",
+            name=f"{server_type} import format",
             reason=(
                 f"Could not tell the format of '{location}'. "
                 f"Pass --format with one of: {', '.join(sorted(SUPPORTED_FORMATS))}."
@@ -73,7 +88,7 @@ def import_s3(
 
     server = create_server(
         name="production",
-        server_type="s3",
+        server_type=server_type,
         location=location,
         format=format,
     )
@@ -122,11 +137,17 @@ def schema_name(location: str) -> str:
 
 
 def _read_columns(server: Server, location: str, format: str):
-    from datacontract.engines.ibis.connections.duckdb_connection import _import_duckdb, setup_s3_connection
+    from datacontract.engines.ibis.connections.duckdb_connection import (
+        _import_duckdb,
+        setup_azure_connection,
+        setup_gcs_connection,
+        setup_s3_connection,
+    )
 
+    setup = {"s3": setup_s3_connection, "gcs": setup_gcs_connection, "azure": setup_azure_connection}[server.type]
     duckdb = _import_duckdb()
     con = duckdb.connect(database=":memory:")
-    setup_s3_connection(con, server)
+    setup(con, server)
     if format == "delta":
         con.sql("update extensions;")
     reader = _READERS[format].format(location=location)

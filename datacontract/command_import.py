@@ -567,6 +567,61 @@ def import_postgres(
 
 
 @import_app.command(
+    name="gcs",
+    epilog="Example: datacontract import gcs --source s3://my-bucket/orders/*.json --output datacontract.yaml",
+)
+def import_gcs(
+    source: Annotated[
+        Optional[str],
+        typer.Option(help="The location of the files. duckdb reads GCS over the S3-compatible endpoint, so use s3://."),
+    ] = None,
+    format: Annotated[
+        Optional[str], typer.Option(help="File format: json, csv, parquet or delta (inferred from the suffix).")
+    ] = None,
+    delimiter: Annotated[
+        Optional[str], typer.Option(help="For JSON: new_line, array or none. Detected automatically when omitted.")
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from files in Google Cloud Storage."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="gcs", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="azure",
+    epilog="Example: datacontract import azure --source abfss://my-container/orders/*.json --output datacontract.yaml",
+)
+def import_azure(
+    source: Annotated[
+        Optional[str], typer.Option(help="The location of the files, e.g. abfss://my-container/orders/*.json.")
+    ] = None,
+    format: Annotated[
+        Optional[str], typer.Option(help="File format: json, csv, parquet or delta (inferred from the suffix).")
+    ] = None,
+    delimiter: Annotated[
+        Optional[str], typer.Option(help="For JSON: new_line, array or none. Detected automatically when omitted.")
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from files in Azure Blob Storage."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="azure", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="sqlserver",
     epilog="Example: datacontract import sqlserver --source localhost --database mydb --output datacontract.yaml",
 )
@@ -657,7 +712,7 @@ def import_s3(
     result = DataContract.import_from_source(
         format="s3",
         source=source,
-        s3_format=format,
+        file_format=format,
         delimiter=delimiter,
         endpoint_url=endpoint_url,
         owner=owner,

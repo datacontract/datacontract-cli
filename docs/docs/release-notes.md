@@ -27,6 +27,7 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Added
+- `datacontract import gcs` and `datacontract import azure` create a data contract from files in Google Cloud Storage or Azure Blob Storage, including a ready-to-test `servers` block
 - `datacontract import sqlserver` creates a data contract from a live SQL Server database, including a ready-to-test `servers` block
 - `datacontract import mysql` creates a data contract from a live MySQL database, including a ready-to-test `servers` block
 - The documentation has a [Release Notes](https://docs.datacontract.com/release-notes) page, generated from this changelog

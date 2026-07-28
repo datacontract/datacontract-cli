@@ -10,7 +10,7 @@ import pytest
 from testcontainers.minio import MinioContainer
 
 from datacontract.data_contract import DataContract
-from datacontract.imports.s3_importer import detect_format, schema_name
+from datacontract.imports.object_storage_importer import detect_format, schema_name
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
@@ -117,3 +117,53 @@ def test_an_unreadable_object_explains_the_location_and_format(minio, credential
 
     assert "missing.csv" in exc_info.value.reason
     assert "as csv" in exc_info.value.reason
+
+
+# ---------------------------------------------------------------------------
+# One importer serves S3, GCS and Azure; it takes the server type from the
+# format it was registered under. The GCS and Azure reads need real credentials,
+# which is how the existing gcs/azure suites are gated, so only the dispatch is
+# checked here.
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("storage", ["s3", "gcs", "azure"])
+def test_each_storage_writes_its_own_server_type(storage, monkeypatch):
+    from datacontract.imports import object_storage_importer
+
+    captured = {}
+
+    def fake_read_columns(server, location, file_format):
+        captured["server"] = server
+        return [("id", "BIGINT")]
+
+    monkeypatch.setattr(object_storage_importer, "_read_columns", fake_read_columns)
+    result = DataContract.import_from_source(storage, "s3://bucket/orders/orders.csv")
+
+    assert captured["server"].type == storage
+    assert result.servers[0].type == storage
+    assert result.servers[0].format == "csv"
+
+
+@pytest.mark.parametrize("storage", ["s3", "gcs", "azure"])
+def test_each_storage_names_its_own_location_in_the_error(storage):
+    with pytest.raises(DataContractException) as exc_info:
+        DataContract.import_from_source(storage, None)
+
+    assert "location is required" in exc_info.value.reason
+    assert f"the {storage} import" in exc_info.value.reason
+
+
+def test_azure_uses_the_azure_connection_setup(monkeypatch):
+    """Each storage must reach duckdb through its own credential setup."""
+    from datacontract.imports import object_storage_importer
+
+    calls = []
+    for name in ("setup_s3_connection", "setup_gcs_connection", "setup_azure_connection"):
+        monkeypatch.setattr(
+            "datacontract.engines.ibis.connections.duckdb_connection." + name,
+            lambda con, server, _n=name: calls.append(_n),
+        )
+    monkeypatch.setattr(object_storage_importer, "_READERS", {"csv": "(SELECT 1 AS id)"})
+
+    DataContract.import_from_source("azure", "abfss://container/orders/orders.csv")
+
+    assert calls == ["setup_azure_connection"]
