@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 8
 title: "Google Cloud Storage Reference"
 sidebar_label: "Google Cloud Storage"
 description: "All GCS authentication options and data type handling."
@@ -8,6 +8,17 @@ description: "All GCS authentication options and data type handling."
 # <img className="page-icon" src="/img/icons/gcs.svg" alt="" /> Google Cloud Storage Reference
 
 Authentication options and data type handling for [GCS connections](../testing/gcs.md). GCS is accessed through the S3 interoperability layer (`type: s3` with `endpointUrl: https://storage.googleapis.com`).
+
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: gcs
+    location: s3://my-bucket/orders/*.json # duckdb reads GCS over the S3-compatible endpoint
+    format: json
+    delimiter: new_line # new_line, array, or none
+```
 
 ## Authentication
 

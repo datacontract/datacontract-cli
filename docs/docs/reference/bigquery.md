@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 7
 title: "Google BigQuery Reference"
 sidebar_label: "Google BigQuery"
 description: "All BigQuery authentication options and data type mappings."

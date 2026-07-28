@@ -46,7 +46,16 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 17 checks. Took 4.1 seconds.
+Testing datacontract.yaml
+Server: production (type=azure, format=parquet, location=abfss://my-container/orders/*.parquet)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 4.5 seconds.
 ```
 
 ## 5. Let it catch a violation

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 14
 title: "Oracle Reference"
 sidebar_label: "Oracle"
 description: "All Oracle authentication options and data type mappings."
@@ -8,6 +8,18 @@ description: "All Oracle authentication options and data type mappings."
 # <img className="page-icon" src="/img/icons/oracle.svg" alt="" /> Oracle Reference
 
 Authentication options and data type handling for [Oracle connections](../testing/oracle.md).
+
+## Server
+
+```yaml
+servers:
+  - server: oracle
+    type: oracle
+    host: localhost
+    port: 1521
+    serviceName: ORCL
+    schema: ADMIN
+```
 
 ## Authentication
 

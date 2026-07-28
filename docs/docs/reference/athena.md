@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 1
 title: "Amazon Athena Reference"
 sidebar_label: "Amazon Athena"
 description: "All Athena authentication options and data type handling."

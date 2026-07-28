@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 12
 title: "Microsoft SQL Server Reference"
 sidebar_label: "Microsoft SQL Server"
 description: "All SQL Server authentication options and data type mappings."
@@ -8,6 +8,19 @@ description: "All SQL Server authentication options and data type mappings."
 # <img className="page-icon" src="/img/icons/sqlserver.svg" alt="" /> Microsoft SQL Server Reference
 
 Authentication options and data type handling for [SQL Server connections](../testing/sqlserver.md).
+
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: sqlserver
+    host: localhost
+    port: 1433
+    database: mydb
+    schema: dbo
+    driver: ODBC Driver 18 for SQL Server
+```
 
 ## Authentication
 

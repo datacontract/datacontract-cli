@@ -32,30 +32,6 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
 ## Data sources
 
 <div className="card-grid">
-  <a className="doc-card" href="/reference/snowflake">
-    <img src="/img/icons/snowflake.svg" alt="" />
-    <span><span className="doc-card-title">Snowflake</span><span className="doc-card-desc">Authentication and data types</span></span>
-  </a>
-  <a className="doc-card" href="/reference/bigquery">
-    <img src="/img/icons/bigquery.svg" alt="" />
-    <span><span className="doc-card-title">Google BigQuery</span><span className="doc-card-desc">Authentication and data types</span></span>
-  </a>
-  <a className="doc-card" href="/reference/databricks">
-    <img src="/img/icons/databricks.svg" alt="" />
-    <span><span className="doc-card-title">Databricks</span><span className="doc-card-desc">Authentication and data types</span></span>
-  </a>
-  <a className="doc-card" href="/reference/postgres">
-    <img src="/img/icons/postgres.svg" alt="" />
-    <span><span className="doc-card-title">Postgres</span><span className="doc-card-desc">Authentication and data types</span></span>
-  </a>
-  <a className="doc-card" href="/reference/s3">
-    <img src="/img/icons/s3.svg" alt="" />
-    <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">Authentication and data types</span></span>
-  </a>
-  <a className="doc-card" href="/reference/local">
-    <img src="/img/icons/local.svg" alt="" />
-    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Data types for CSV, JSON, Parquet, Delta</span></span>
-  </a>
   <a className="doc-card" href="/reference/athena">
     <img src="/img/icons/athena.svg" alt="" />
     <span><span className="doc-card-title">Amazon Athena</span><span className="doc-card-desc">Authentication and data types</span></span>
@@ -64,6 +40,10 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
     <img src="/img/icons/redshift.svg" alt="" />
     <span><span className="doc-card-title">Amazon Redshift</span><span className="doc-card-desc">Authentication and data types</span></span>
   </a>
+  <a className="doc-card" href="/reference/s3">
+    <img src="/img/icons/s3.svg" alt="" />
+    <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">Authentication and data types</span></span>
+  </a>
   <a className="doc-card" href="/reference/impala">
     <img src="/img/icons/impala.svg" alt="" />
     <span><span className="doc-card-title">Apache Impala</span><span className="doc-card-desc">Authentication and data types</span></span>
@@ -71,6 +51,14 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
   <a className="doc-card" href="/reference/azure">
     <img src="/img/icons/azure.svg" alt="" />
     <span><span className="doc-card-title">Azure Blob / ADLS</span><span className="doc-card-desc">Authentication and data types</span></span>
+  </a>
+  <a className="doc-card" href="/reference/databricks">
+    <img src="/img/icons/databricks.svg" alt="" />
+    <span><span className="doc-card-title">Databricks</span><span className="doc-card-desc">Authentication and data types</span></span>
+  </a>
+  <a className="doc-card" href="/reference/bigquery">
+    <img src="/img/icons/bigquery.svg" alt="" />
+    <span><span className="doc-card-title">Google BigQuery</span><span className="doc-card-desc">Authentication and data types</span></span>
   </a>
   <a className="doc-card" href="/reference/gcs">
     <img src="/img/icons/gcs.svg" alt="" />
@@ -84,6 +72,10 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
     <img src="/img/icons/kafka.svg" alt="" />
     <span><span className="doc-card-title">Kafka</span><span className="doc-card-desc">Authentication and data types</span></span>
   </a>
+  <a className="doc-card" href="/reference/local">
+    <img src="/img/icons/local.svg" alt="" />
+    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Data types for CSV, JSON, Parquet, Delta</span></span>
+  </a>
   <a className="doc-card" href="/reference/sqlserver">
     <img src="/img/icons/sqlserver.svg" alt="" />
     <span><span className="doc-card-title">Microsoft SQL Server</span><span className="doc-card-desc">Authentication and data types</span></span>
@@ -95,6 +87,14 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
   <a className="doc-card" href="/reference/oracle">
     <img src="/img/icons/oracle.svg" alt="" />
     <span><span className="doc-card-title">Oracle</span><span className="doc-card-desc">Authentication and data types</span></span>
+  </a>
+  <a className="doc-card" href="/reference/postgres">
+    <img src="/img/icons/postgres.svg" alt="" />
+    <span><span className="doc-card-title">Postgres</span><span className="doc-card-desc">Authentication and data types</span></span>
+  </a>
+  <a className="doc-card" href="/reference/snowflake">
+    <img src="/img/icons/snowflake.svg" alt="" />
+    <span><span className="doc-card-title">Snowflake</span><span className="doc-card-desc">Authentication and data types</span></span>
   </a>
   <a className="doc-card" href="/reference/dataframe">
     <img src="/img/icons/spark.svg" alt="" />

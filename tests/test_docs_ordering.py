@@ -15,6 +15,11 @@ from tests.docs_paths import DOCS
 FOLDERS = [("imports", "Import: ", "import"), ("exports", "Export: ", "export")]
 IDS = [folder for folder, _, _ in FOLDERS]
 
+# The reference and connection guides are listed the same way, minus a command
+# page to cross-check against.
+SIDEBAR_FOLDERS = FOLDERS + [("reference", "", None), ("testing", "", None)]
+SIDEBAR_IDS = [folder for folder, _, _ in SIDEBAR_FOLDERS]
+
 
 def pages(folder: str):
     """Every listed page of the folder, index and unlisted stubs excluded."""
@@ -39,14 +44,14 @@ def sidebar_position(page) -> int:
     return int(re.search(r"^sidebar_position: (\d+)$", page.read_text(), re.M).group(1))
 
 
-@pytest.mark.parametrize("folder, prefix, _command", FOLDERS, ids=IDS)
+@pytest.mark.parametrize("folder, prefix, _command", SIDEBAR_FOLDERS, ids=SIDEBAR_IDS)
 def test_sidebar_is_ordered_by_the_label_it_renders(folder, prefix, _command):
     ordered = [sidebar_label(page, prefix) for page in sorted(pages(folder), key=sidebar_position)]
 
     assert ordered == sorted(ordered, key=str.lower)
 
 
-@pytest.mark.parametrize("folder, prefix, _command", FOLDERS, ids=IDS)
+@pytest.mark.parametrize("folder, prefix, _command", SIDEBAR_FOLDERS, ids=SIDEBAR_IDS)
 def test_sidebar_positions_are_a_gapless_sequence(folder, prefix, _command):
     """A duplicate or a gap makes the rendered order depend on the file name again."""
     positions = sorted(sidebar_position(page) for page in pages(folder))
@@ -63,6 +68,16 @@ def test_card_grid_lists_every_page_in_order(folder, prefix, _command):
 
     assert titles == sorted(titles)
     assert titles == [page.stem for page in pages(folder)]
+
+
+def test_the_reference_card_grid_matches_its_sidebar():
+    """Its cards show the page label rather than a format name."""
+    index = (DOCS / "reference" / "index.md").read_text()
+    grid = re.search(r'<div className="card-grid">(.*?)</div>', index, re.S).group(1)
+    titles = re.findall(r'doc-card-title">([^<]+)<', grid)
+
+    assert titles == sorted(titles, key=str.lower)
+    assert titles == [sidebar_label(page, "") for page in sorted(pages("reference"), key=sidebar_position)]
 
 
 @pytest.mark.parametrize("folder, prefix, command", FOLDERS, ids=IDS)

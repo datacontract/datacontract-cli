@@ -50,6 +50,15 @@ datacontract test datacontract.yaml
 ```
 
 ```
+Testing datacontract.yaml
+Server: oracle (type=oracle, host=localhost, port=1521, schema=ADMIN)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
 🟢 data contract is valid. Run 24 checks. Took 3.4 seconds.
 ```
 

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 4
 title: "Apache Impala Reference"
 sidebar_label: "Apache Impala"
 description: "All Impala authentication options and data type handling."
@@ -8,6 +8,17 @@ description: "All Impala authentication options and data type handling."
 # <img className="page-icon" src="/img/icons/impala.svg" alt="" /> Apache Impala Reference
 
 Authentication options and data type handling for [Impala connections](../testing/impala.md).
+
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: impala
+    host: my-impala-host
+    port: 443
+    database: my_database # optional default database
+```
 
 ## Authentication
 

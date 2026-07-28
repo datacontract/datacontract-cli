@@ -45,7 +45,16 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 17 checks. Took 3.9 seconds.
+Testing datacontract.yaml
+Server: production (type=gcs, format=json, location=s3://my-bucket/orders/*.json)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 3.1 seconds.
 ```
 
 ## 5. Let it catch a violation

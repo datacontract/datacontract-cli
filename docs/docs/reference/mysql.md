@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 13
 title: "MySQL Reference"
 sidebar_label: "MySQL"
 description: "All MySQL authentication options and data type mappings."
@@ -8,6 +8,17 @@ description: "All MySQL authentication options and data type mappings."
 # <img className="page-icon" src="/img/icons/mysql.svg" alt="" /> MySQL Reference
 
 Authentication options and data type handling for [MySQL connections](../testing/mysql.md).
+
+## Server
+
+```yaml
+servers:
+  - server: mysql
+    type: mysql
+    host: localhost
+    port: 3306
+    database: mydb
+```
 
 ## Authentication
 

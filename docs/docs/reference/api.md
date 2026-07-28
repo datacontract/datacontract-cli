@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 9
 title: "HTTP API Reference"
 sidebar_label: "HTTP API"
 description: "All HTTP API authentication options and data type handling."
@@ -8,6 +8,16 @@ description: "All HTTP API authentication options and data type handling."
 # <img className="page-icon" src="/img/icons/api.svg" alt="" /> HTTP API Reference
 
 Authentication options and data type handling for [HTTP API connections](../testing/api.md).
+
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: api
+    location: "https://api.example.com/orders"
+    format: json
+```
 
 ## Authentication
 
