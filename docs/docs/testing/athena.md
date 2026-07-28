@@ -18,7 +18,13 @@ See [Installation](../installation.md) for pip, pipx, and Docker.
 
 ## 2. Authenticate
 
-Athena uses the S3 environment variables. Create a `.env` file in your working directory (or export the variables):
+The easiest way is to sign in to AWS once — the CLI picks the session up, so no key is stored anywhere and nothing else has to be configured:
+
+```bash
+aws sso login   # or any other way of getting an AWS session
+```
+
+Prefer static keys? Set them directly and they are used instead:
 
 ```bash
 # .env
@@ -27,7 +33,7 @@ DATACONTRACT_S3_ACCESS_KEY_ID=AKIAXV5Q5QABCDEFGH
 DATACONTRACT_S3_SECRET_ACCESS_KEY=93S7LRrJcqLaaaa/XXXXXXXXXXXXX
 ```
 
-The credentials need `glue:GetTables` to import, and `athena:StartQueryExecution` plus write access to the staging directory to test. `import` and `test` use the same variables.
+Either way, your AWS identity needs `glue:GetTables` to import, and `athena:StartQueryExecution` plus read access to the data and write access to the staging directory to test. `import` and `test` use the same setup.
 
 ## 3. Create a contract from your tables
 
@@ -90,3 +96,4 @@ All authentication options and the data type mappings: **[Athena Reference](../r
 
 - **`Access Denied` on query start** — the credentials need `athena:StartQueryExecution` plus write access to the `stagingDir` bucket.
 - **`Table not found`** — `schema` in the `servers` block must be the Athena *database* name (as shown in the Glue Data Catalog), and `regionName` must match where the catalog lives.
+- **`Your session has expired`** — the AWS session has lapsed; run `aws sso login` again. No `DATACONTRACT_S3_*` variable is needed when a session is present.

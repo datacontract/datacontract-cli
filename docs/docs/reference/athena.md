@@ -23,7 +23,9 @@ servers:
 
 ## Authentication
 
-Athena uses the S3 environment variables:
+Athena authenticates as an AWS principal, so an existing AWS session is enough — `aws sso login`, `AWS_PROFILE`, EC2/ECS/EKS instance roles, or GitHub OIDC in CI. Unlike Redshift, no database user is involved, so nothing has to be minted or configured.
+
+Set the variables below only to override that with static keys:
 
 | Variable | Example | Description |
 |---|---|---|
