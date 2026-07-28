@@ -9,6 +9,18 @@ description: "All Redshift authentication options and data type mappings."
 
 Authentication options and data type handling for [Redshift connections](../testing/redshift.md).
 
+## Server
+
+```yaml
+servers:
+  - server: redshift
+    type: redshift
+    host: my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
+    port: 5439
+    database: dev
+    schema: analytics
+```
+
 ## Authentication
 
 `datacontract test` and `datacontract import redshift` authenticate identically. `host`, `port` (default 5439), `database`, and `schema` come from the contract's `servers` block; for the import they are passed as `--source`, `--port`, `--database`, and `--schema`.

@@ -92,20 +92,6 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
-## Server reference
-
-Connection details live in the contract's `servers` block; `host`, `port`, `database`, and `schema` come from there:
-
-```yaml
-servers:
-  - server: redshift
-    type: redshift
-    host: my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com
-    port: 5439
-    database: dev
-    schema: analytics
-```
-
 ## Reference
 
 All authentication options and the data type mappings: **[Redshift Reference](../reference/redshift.md)**.

@@ -9,6 +9,16 @@ description: "All Databricks authentication options and data type mappings."
 
 Authentication options and data type handling for [Databricks connections](../testing/databricks.md).
 
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: databricks
+    catalog: acme_catalog_prod
+    schema: orders_latest
+```
+
 ## Authentication
 
 | Variable | Example | Description |

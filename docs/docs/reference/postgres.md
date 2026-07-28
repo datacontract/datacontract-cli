@@ -9,6 +9,18 @@ description: "All Postgres authentication options and data type mappings."
 
 Authentication options and data type handling for [Postgres connections](../testing/postgres.md).
 
+## Server
+
+```yaml
+servers:
+  - server: postgres
+    type: postgres
+    host: localhost
+    port: 5432
+    database: postgres
+    schema: public
+```
+
 ## Authentication
 
 | Variable | Example | Description |

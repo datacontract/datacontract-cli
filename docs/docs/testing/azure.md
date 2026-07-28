@@ -74,16 +74,6 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
-## Server reference
-
-```yaml
-servers:
-  - server: production
-    type: azure
-    location: abfss://datameshdatabricksdemo.dfs.core.windows.net/inventory_events/*.parquet
-    format: parquet
-```
-
 ## Reference
 
 All authentication options (service principal, connection string, account key), supported location URL formats, and the data type handling per file format: **[Azure Reference](../reference/azure.md)**.

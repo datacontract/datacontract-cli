@@ -80,19 +80,6 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD scheduling](../ci-cd.md) so you catch drift before your consumers do.
 
-## Server reference
-
-Connection details live in the contract's `servers` block; `account`, `database`, and `schema` come from there:
-
-```yaml
-servers:
-  - server: snowflake
-    type: snowflake
-    account: abcdefg-xn12345
-    database: ORDER_DB
-    schema: ORDERS_PII_V2
-```
-
 ## Reference
 
 All authentication options (key-pair, SSO, connections.toml) and the data type mappings: **[Snowflake Reference](../reference/snowflake.md)**.
