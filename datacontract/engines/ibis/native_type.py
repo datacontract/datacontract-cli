@@ -66,6 +66,13 @@ _DECIMAL_TYPES = {"decimal", "numeric", "number", "dec"}
 _ORACLE_LENGTH_TYPES = {"char", "nchar", "varchar", "varchar2", "nvarchar2", "raw"}
 
 
+def oracle_char_length(data_type: Optional[str], data_length):
+    """Oracle reports DATA_LENGTH for every column, but the length is only part
+    of the declared type for character and raw types; appending it elsewhere
+    would corrupt types such as ROWID or DATE."""
+    return data_length if (data_type or "").strip().lower() in _ORACLE_LENGTH_TYPES else None
+
+
 def reconstruct_native_type(
     data_type: Optional[str],
     char_len=None,
@@ -155,9 +162,7 @@ def _map_reconstructed(con, query: str, oracle_length: bool = False) -> Optional
         column_name, data_type = row[0], row[1]
         char_len = row[2]
         if oracle_length:
-            # Oracle reports DATA_LENGTH for every column; keep it only for the
-            # types where it is really part of the declared type.
-            char_len = char_len if (data_type or "").strip().lower() in _ORACLE_LENGTH_TYPES else None
+            char_len = oracle_char_length(data_type, char_len)
         native = reconstruct_native_type(data_type, char_len, row[3], row[4])
         if column_name and native:
             result[str(column_name).lower()] = native

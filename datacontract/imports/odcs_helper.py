@@ -173,6 +173,7 @@ def create_server(
     warehouse: str = None,
     region_name: str = None,
     staging_dir: str = None,
+    service_name: str = None,
 ) -> Server:
     """Create a Server object.
 
@@ -218,6 +219,8 @@ def create_server(
         server.regionName = region_name
     if staging_dir:
         server.stagingDir = staging_dir
+    if service_name:
+        server.serviceName = service_name
     return server
 
 

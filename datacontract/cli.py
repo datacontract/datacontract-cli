@@ -50,7 +50,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
 
     # Import formats where `--schema` still means the database schema, so it must
     # not be rewritten to the v0.12.0 `--json-schema`.
-    DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver"}
+    DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver", "oracle"}
 
     RENAMED_FLAGS = {
         "--format": None,

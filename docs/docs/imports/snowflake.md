@@ -1,5 +1,5 @@
 ---
-sidebar_position: 23
+sidebar_position: 24
 title: "Import: Snowflake"
 description: "Create a data contract from a Snowflake workspace."
 ---

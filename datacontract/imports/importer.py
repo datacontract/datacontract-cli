@@ -49,6 +49,7 @@ class ImportFormat(str, Enum):
     sqlserver = "sqlserver"
     gcs = "gcs"
     adls = "adls"
+    oracle = "oracle"
 
     @classmethod
     def get_supported_formats(cls):
