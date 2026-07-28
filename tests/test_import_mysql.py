@@ -173,3 +173,27 @@ def test_import_mysql_requires_credentials(monkeypatch):
         _import()
 
     assert "DATACONTRACT_MYSQL_PASSWORD is not set" in exc_info.value.reason
+
+
+def test_a_quote_in_the_database_name_is_escaped_for_both_layers(monkeypatch):
+    """The statement travels inside a duckdb string literal, which consumes one
+    level of quoting before MySQL sees it — escaping once hands MySQL raw quotes."""
+    from datacontract.imports import mysql_importer
+
+    executed = []
+
+    class FakeResult:
+        description = [("table_name",)]
+
+        def fetchall(self):
+            return []
+
+    class FakeCon:
+        def sql(self, statement):
+            executed.append(statement)
+            return FakeResult()
+
+    mysql_importer._query(FakeCon(), "SELECT 1 WHERE table_schema = 'it''s'")
+
+    # duckdb turns '''' back into '', which is what MySQL needs for one quote
+    assert "'it''''s'" in executed[0]
