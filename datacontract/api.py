@@ -204,6 +204,25 @@ customProperties:
 contractCreatedTs: "2025-01-15T10:00:00Z"
 """
 
+
+def _require_schema_url(schema: str | None) -> str | None:
+    """Reject anything that is not an http(s) URL.
+
+    The parameter is documented as a URL, but `fetch_schema` falls through to the
+    filesystem for anything else — so without this an unauthenticated caller could
+    have the server open its own files, and tell existing paths from missing ones
+    by the error it got back.
+    """
+    if schema is None:
+        return None
+    if not schema.startswith(("http://", "https://")):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The schema parameter must be an http:// or https:// URL.",
+        )
+    return schema
+
+
 app = FastAPI(
     docs_url="/",
     title="Data Contract CLI API",
@@ -365,7 +384,9 @@ async def lint(
         Query(description="Report all JSON Schema validation errors instead of only the first one."),
     ] = False,
 ):
-    data_contract = DataContract(data_contract_str=body, schema_location=schema, all_errors=all_errors)
+    data_contract = DataContract(
+        data_contract_str=body, schema_location=_require_schema_url(schema), all_errors=all_errors
+    )
     lint_result = data_contract.lint()
     return {"result": lint_result.result, "checks": lint_result.checks}
 
