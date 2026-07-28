@@ -122,3 +122,43 @@ def test_changelog_data_contract_exception_returns_422():
     detail = response.json()["detail"]
     assert detail.startswith("Data Contract Validation Failure:")
     assert "something went wrong" in detail
+
+
+# ---------------------------------------------------------------------------
+# The schema parameter is documented as a URL. Without that being enforced,
+# fetch_schema falls through to the filesystem, so an unauthenticated caller
+# could have the server open its own files and tell existing paths from missing
+# ones by the error returned.
+# ---------------------------------------------------------------------------
+def _lint_with_schema(schema: str):
+    with open("fixtures/lint/valid_datacontract.yaml") as f:
+        return client.post(url="/lint", params={"schema": schema}, json=f.read())
+
+
+def test_a_local_path_as_schema_is_rejected():
+    response = _lint_with_schema("/etc/passwd")
+
+    assert response.status_code == 422
+    assert "http://" in response.json()["detail"]
+
+
+def test_a_missing_path_is_rejected_the_same_way():
+    """Identical responses, so nothing can be learned about the filesystem."""
+    existing = _lint_with_schema("/etc/passwd")
+    missing = _lint_with_schema("/nonexistent/path")
+
+    assert existing.status_code == missing.status_code == 422
+    assert existing.json() == missing.json()
+
+
+def test_a_relative_path_is_rejected():
+    assert _lint_with_schema("fixtures/lint/valid_datacontract.yaml").status_code == 422
+
+
+def test_an_http_url_is_still_accepted():
+    """Only the filesystem fallback is closed; URLs keep working."""
+    with patch("datacontract.lint.schema.requests.get") as get:
+        get.return_value.json.return_value = {"type": "object"}
+        response = _lint_with_schema("https://example.com/schema.json")
+
+    assert response.status_code == 200

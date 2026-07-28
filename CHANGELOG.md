@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
 
 ### Fixed
+- The `datacontract api` server accepted a local file path as the `schema` query parameter, so a caller could have it read files from the server's filesystem; only `http(s)` URLs are accepted now
 - Trino physical type checks were silently skipped: its `information_schema` has no length or precision columns, so the catalog query failed and a wrong `physicalType` still passed
 - `datacontract import athena` and `datacontract import glue` now honour `DATACONTRACT_S3_ACCESS_KEY_ID` and `DATACONTRACT_S3_SECRET_ACCESS_KEY`; the Glue catalog was read with ambient AWS credentials only
 - S3 now uses an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles) when no access key is configured; previously such a setup failed with `403 Forbidden`
