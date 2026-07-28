@@ -197,6 +197,12 @@ const config: Config = {
           label: 'Documentation',
         },
         {
+          href: 'https://datacontract.com/slack',
+          label: 'Join Community',
+          position: 'right',
+          'aria-label': 'Join the community on Slack',
+        },
+        {
           href: 'https://github.com/datacontract/datacontract-cli',
           label: 'GitHub',
           position: 'right',
