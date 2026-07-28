@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 10
 title: "Import: Excel"
 description: "Create a data contract from an ODCS Excel template."
 ---
