@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 20
 title: "Export: ODCS"
 description: "Export a data contract to the Open Data Contract Standard (ODCS) format."
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 7
 title: "Export: dbt Models"
 description: "Export a data contract to dbt model schema YAML."
 ---

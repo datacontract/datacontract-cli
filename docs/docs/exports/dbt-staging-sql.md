@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 9
 title: "Export: dbt Staging SQL"
 description: "Export a data contract to a dbt staging SQL file."
 ---

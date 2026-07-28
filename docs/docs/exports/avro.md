@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 1
 title: "Export: Avro"
 description: "Export a data contract to an Avro schema, with custom logicalType and default support."
 ---

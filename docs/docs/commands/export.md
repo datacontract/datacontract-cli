@@ -20,4 +20,4 @@ datacontract export html datacontract.yaml --output datacontract.html
 
 For SQL dialects (`postgres`, `mysql`, `snowflake`, `databricks`, `sqlserver`, `trino`, `oracle`, `clickhouse`), use `datacontract export sql --dialect <dialect>`.
 
-Available formats: `sql`, `sql-query`, `dbt-models`, `dbt-sources`, `dbt-staging-sql`, `avro`, `avro-idl`, `jsonschema`, `pydantic-model`, `protobuf`, `odcs`, `rdf`, `html`, `markdown`, `mermaid`, `bigquery`, `dbml`, `go`, `spark`, `sqlalchemy`, `iceberg`, `sodacl`, `great-expectations`, `data-caterer`, `dcs`, `dqx`, `excel`, `custom`.
+Available formats: `avro`, `avro-idl`, `bigquery`, `custom`, `data-caterer`, `dbml`, `dbt-models`, `dbt-sources`, `dbt-staging-sql`, `dcs`, `dqx`, `excel`, `go`, `great-expectations`, `html`, `iceberg`, `jsonschema`, `markdown`, `mermaid`, `odcs`, `protobuf`, `pydantic-model`, `rdf`, `sodacl`, `spark`, `sql`, `sql-query`, `sqlalchemy`.

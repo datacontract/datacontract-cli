@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 2
 title: "Export: Avro IDL"
 description: "Export a data contract to an Avro IDL (.avdl) schema definition."
 ---

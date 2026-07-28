@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 3
 title: "Export: BigQuery"
 description: "Export a data contract to a BigQuery schema."
 ---

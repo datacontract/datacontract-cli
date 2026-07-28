@@ -1,5 +1,5 @@
 ---
-sidebar_position: 23
+sidebar_position: 14
 title: "Export: Great Expectations"
 description: "Export a data contract to a Great Expectations suite."
 ---

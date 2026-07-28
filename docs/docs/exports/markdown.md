@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 18
 title: "Export: Markdown"
 description: "Export a data contract to Markdown documentation."
 ---
