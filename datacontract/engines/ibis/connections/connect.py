@@ -429,7 +429,8 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
 
 
 def _connect_athena(ibis, server: Server):
-    credentials = aws_credentials.client_kwargs(server.regionName)
+    # regionName is a contract value, so the variable still wins over it
+    credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName))
     if not server.schema_:
         raise DataContractException(
             type="athena-connection",

@@ -4,7 +4,7 @@ The format detection and schema naming are pure and tested directly; the read
 itself runs against a MinIO container, the same seam the s3 test suites use.
 """
 
-import os
+from pathlib import Path
 
 import pytest
 from testcontainers.minio import MinioContainer
@@ -17,7 +17,9 @@ from datacontract.model.run import ResultEnum
 BUCKET = "test-bucket"
 ACCESS_KEY = "test-access"
 SECRET_KEY = "test-secret"
-CSV_FIXTURE = "fixtures/s3-csv/data/sample_data.csv"
+# resolved from this file: the container fixture is module-scoped and therefore
+# runs before conftest chdirs into the test directory
+CSV_FIXTURE = Path(__file__).parent / "fixtures" / "s3-csv" / "data" / "sample_data.csv"
 
 
 @pytest.mark.parametrize(
@@ -69,7 +71,7 @@ def minio(request):
         client = container.get_client()
         client.make_bucket(BUCKET)
         with open(CSV_FIXTURE, "rb") as file:
-            client.put_object(BUCKET, "orders/orders.csv", file, os.path.getsize(CSV_FIXTURE))
+            client.put_object(BUCKET, "orders/orders.csv", file, CSV_FIXTURE.stat().st_size)
         yield container
 
 

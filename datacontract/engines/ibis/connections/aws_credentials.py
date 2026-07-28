@@ -31,11 +31,13 @@ def configured_region(default: Optional[str] = None) -> Optional[str]:
 def client_kwargs(region: Optional[str] = None) -> Dict[str, Any]:
     """boto3 client kwargs for the configured credentials.
 
-    Unset values stay ``None``, which is how boto3 is told to fall back to its
-    own chain, so an `aws sso login` session works without any variable.
+    A region passed by the caller wins: it comes from a `--region` flag or from
+    the endpoint host, both of which are more specific than the variable. Unset
+    values stay ``None``, which is how boto3 is told to fall back to its own
+    chain, so an `aws sso login` session works without any variable.
     """
     return {
-        "region_name": configured_region(region),
+        "region_name": region or os.getenv(REGION),
         "aws_access_key_id": os.getenv(ACCESS_KEY_ID),
         "aws_secret_access_key": os.getenv(SECRET_ACCESS_KEY),
         "aws_session_token": os.getenv(SESSION_TOKEN),
@@ -72,14 +74,14 @@ def resolve_aws_credentials() -> Optional[AwsCredentials]:
 
         session = boto3.Session()
         credentials = session.get_credentials()
+        if credentials is None:
+            return None
+        frozen = credentials.get_frozen_credentials()
     except Exception as e:
+        # An expired SSO session raises here while trying to refresh.
         logger.debug("could not resolve AWS credentials: %s", e)
         return None
 
-    if credentials is None:
-        return None
-
-    frozen = credentials.get_frozen_credentials()
     return AwsCredentials(
         access_key_id=frozen.access_key,
         secret_access_key=frozen.secret_key,

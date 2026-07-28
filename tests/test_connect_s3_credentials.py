@@ -121,11 +121,33 @@ def test_an_unset_variable_leaves_boto3_to_its_own_chain(env):
     assert boto3_client.call_args.kwargs["aws_access_key_id"] is None
 
 
-def test_the_region_variable_wins_over_the_argument(env):
+def test_an_explicit_region_wins_over_the_variable(env):
+    """--region and the Redshift endpoint host are more specific than the variable."""
     env.setenv("DATACONTRACT_S3_REGION", "us-east-1")
     from datacontract.imports.glue_importer import glue_client
 
     with patch("boto3.client") as boto3_client:
         glue_client("eu-central-1")
 
+    assert boto3_client.call_args.kwargs["region_name"] == "eu-central-1"
+
+
+def test_the_region_variable_is_used_when_no_region_is_passed(env):
+    env.setenv("DATACONTRACT_S3_REGION", "us-east-1")
+    from datacontract.imports.glue_importer import glue_client
+
+    with patch("boto3.client") as boto3_client:
+        glue_client()
+
     assert boto3_client.call_args.kwargs["region_name"] == "us-east-1"
+
+
+def test_an_expired_session_falls_back_to_no_credentials():
+    """boto3 raises while refreshing an expired SSO session; a public bucket still reads."""
+    from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
+
+    session = MagicMock()
+    session.get_credentials.return_value.get_frozen_credentials.side_effect = Exception("session expired")
+
+    with patch("boto3.Session", return_value=session):
+        assert resolve_aws_credentials() is None
