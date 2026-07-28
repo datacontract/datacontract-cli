@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 title: "Import: dbt"
 description: "Create a data contract from a dbt manifest file."
 ---

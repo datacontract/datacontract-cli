@@ -47,6 +47,8 @@ class ImportFormat(str, Enum):
     s3 = "s3"
     mysql = "mysql"
     sqlserver = "sqlserver"
+    gcs = "gcs"
+    adls = "adls"
 
     @classmethod
     def get_supported_formats(cls):
