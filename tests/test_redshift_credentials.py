@@ -30,8 +30,24 @@ REDSHIFT_ENV = [
 
 
 @pytest.fixture(autouse=True)
-def clean_env(monkeypatch):
-    """A developer's own AWS/Redshift variables must not leak into these tests."""
+def clean_env(monkeypatch, tmp_path):
+    """A developer's own AWS/Redshift variables must not leak into these tests.
+
+    Authentication is now inferred, so an ambient `aws sso login` would other-
+    wise decide the outcome. Point boto3 at empty config files and switch the
+    metadata service off so its chain resolves nothing, deterministically.
+    """
+    for name in (
+        "AWS_PROFILE",
+        "AWS_DEFAULT_PROFILE",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_SESSION_TOKEN",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("AWS_CONFIG_FILE", str(tmp_path / "no-config"))
+    monkeypatch.setenv("AWS_SHARED_CREDENTIALS_FILE", str(tmp_path / "no-credentials"))
+    monkeypatch.setenv("AWS_EC2_METADATA_DISABLED", "true")
     for name in REDSHIFT_ENV:
         monkeypatch.delenv(name, raising=False)
 
@@ -58,7 +74,9 @@ def test_password_authentication_is_the_default(monkeypatch):
     assert login.sslmode is None
 
 
-def test_password_authentication_requires_a_username():
+def test_password_authentication_requires_a_username(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_PASSWORD", "secret")
+
     with pytest.raises(DataContractException) as exc_info:
         resolve_redshift_login(SERVERLESS_HOST, "dev")
 
@@ -194,3 +212,62 @@ def test_unsupported_authentication_mode(monkeypatch):
         resolve_redshift_login(SERVERLESS_HOST, "dev")
 
     assert "Supported values are: password, iam" in exc_info.value.reason
+
+
+# ---------------------------------------------------------------------------
+# Inferring the authentication method
+# ---------------------------------------------------------------------------
+def test_password_is_inferred_from_the_password_variable(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_USERNAME", "awsuser")
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_PASSWORD", "secret")
+
+    login = resolve_redshift_login(SERVERLESS_HOST, "dev")
+
+    assert (login.user, login.password) == ("awsuser", "secret")
+
+
+def test_iam_is_inferred_from_an_aws_session(monkeypatch):
+    """No Redshift variable at all: AWS credentials are enough."""
+    monkeypatch.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "AKIA_TEST")
+    monkeypatch.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "secret")
+    aws = MagicMock()
+    aws.get_credentials.return_value = {"dbUser": "IAM:alice", "dbPassword": "temporary"}
+
+    with patch("boto3.client", return_value=aws):
+        login = resolve_redshift_login(SERVERLESS_HOST, "dev")
+
+    assert (login.user, login.password) == ("IAM:alice", "temporary")
+
+
+def test_a_username_alone_does_not_force_password_auth(monkeypatch):
+    """IAM on a provisioned cluster reads USERNAME as the database user."""
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_USERNAME", "awsuser")
+    monkeypatch.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "AKIA_TEST")
+    monkeypatch.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "secret")
+    aws = MagicMock()
+    aws.get_cluster_credentials.return_value = {"DbUser": "IAM:awsuser", "DbPassword": "temporary"}
+
+    with patch("boto3.client", return_value=aws):
+        login = resolve_redshift_login(PROVISIONED_HOST, "dev")
+
+    assert login.user == "IAM:awsuser"
+    aws.get_cluster_credentials.assert_called_once()
+
+
+def test_the_override_still_wins(monkeypatch):
+    """The explicit variable stays available when inference guesses wrong."""
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_AUTHENTICATION", "password")
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_USERNAME", "awsuser")
+
+    login = resolve_redshift_login(SERVERLESS_HOST, "dev")
+
+    assert (login.user, login.password) == ("awsuser", None)
+
+
+def test_no_password_and_no_aws_session_explains_both_options():
+    with pytest.raises(DataContractException) as exc_info:
+        resolve_redshift_login(SERVERLESS_HOST, "dev")
+
+    reason = exc_info.value.reason
+    assert "DATACONTRACT_REDSHIFT_PASSWORD" in reason
+    assert "aws sso login" in reason

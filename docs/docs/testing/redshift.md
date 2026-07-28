@@ -18,20 +18,15 @@ See [Installation](../installation.md) for pip, pipx, and Docker.
 
 ## 2. Authenticate
 
-The easiest way is IAM — sign in to AWS once and the CLI requests temporary database credentials itself, so no database password is stored anywhere:
+The easiest way is IAM — sign in to AWS once and the CLI requests temporary database credentials itself, so no database password is stored anywhere and nothing else has to be configured:
 
 ```bash
 aws sso login   # or any other way of getting an AWS session
 ```
 
-```bash
-# .env
-DATACONTRACT_REDSHIFT_AUTHENTICATION=iam
-```
-
 Your AWS identity needs `redshift-serverless:GetCredentials` (Serverless) or `redshift:GetClusterCredentialsWithIAM` (provisioned cluster), and the resulting database user needs `USAGE` on the schema plus `SELECT` on the tables.
 
-Prefer a database user? Leave the authentication variable unset and provide the credentials directly:
+Prefer a database user? Set the credentials directly and they are used instead:
 
 ```bash
 # .env
@@ -39,7 +34,7 @@ DATACONTRACT_REDSHIFT_USERNAME=awsuser
 DATACONTRACT_REDSHIFT_PASSWORD=mysecretpassword
 ```
 
-Either way, `import` and `test` use the same setup. For custom domains, VPC endpoints, and the full list of options, see the [Redshift Reference](../reference/redshift.md).
+The CLI picks the method from what you configured: a password means a database login, otherwise it uses your AWS session. Either way, `import` and `test` use the same setup. For custom domains, VPC endpoints, and the full list of options, see the [Redshift Reference](../reference/redshift.md).
 
 ## 3. Create a contract from your tables
 
@@ -99,7 +94,7 @@ All authentication options and the data type mappings: **[Redshift Reference](..
 ## Troubleshooting
 
 - **Connection timeout** — the cluster/workgroup must be reachable from your machine: check **Publicly accessible**, the VPC security group's inbound rule for port `5439`, and VPN routing.
-- **`password authentication failed`** — with `password` authentication, Redshift Serverless expects the namespace's admin credentials or a database user; an IAM user name is not a database user. Set `DATACONTRACT_REDSHIFT_AUTHENTICATION=iam` to sign in with your AWS identity instead.
+- **`password authentication failed`** — Redshift Serverless expects the namespace's admin credentials or a database user; an IAM user name is not a database user. Unset `DATACONTRACT_REDSHIFT_PASSWORD` to sign in with your AWS identity instead.
 - **`Could not obtain temporary Redshift credentials`** — the AWS identity may call the wrong region (set `DATACONTRACT_REDSHIFT_REGION`) or lack `GetCredentials` / `GetClusterCredentialsWithIAM` permission.
 - **`Using the login credential provider requires an additional dependency`** — your AWS profile uses the `aws login` flow, which needs `pip install "botocore[crt]"` in the same environment as the CLI.
 - **`relation does not exist`** — check the `schema` in the `servers` block and the user's `USAGE` grant on it.
