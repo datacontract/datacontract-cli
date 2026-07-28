@@ -49,6 +49,15 @@ datacontract test datacontract.yaml
 ```
 
 ```
+Testing datacontract.yaml
+Server: mysql (type=mysql, host=localhost, port=3306, database=mydb)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
 🟢 data contract is valid. Run 24 checks. Took 2.1 seconds.
 ```
 

@@ -9,6 +9,17 @@ description: "All Impala authentication options and data type handling."
 
 Authentication options and data type handling for [Impala connections](../testing/impala.md).
 
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: impala
+    host: my-impala-host
+    port: 443
+    database: my_database # optional default database
+```
+
 ## Authentication
 
 | Variable | Example | Description |

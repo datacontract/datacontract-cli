@@ -9,6 +9,16 @@ description: "All HTTP API authentication options and data type handling."
 
 Authentication options and data type handling for [HTTP API connections](../testing/api.md).
 
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: api
+    location: "https://api.example.com/orders"
+    format: json
+```
+
 ## Authentication
 
 | Variable | Example | Description |

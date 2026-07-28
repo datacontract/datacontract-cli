@@ -9,6 +9,17 @@ description: "All MySQL authentication options and data type mappings."
 
 Authentication options and data type handling for [MySQL connections](../testing/mysql.md).
 
+## Server
+
+```yaml
+servers:
+  - server: mysql
+    type: mysql
+    host: localhost
+    port: 3306
+    database: mydb
+```
+
 ## Authentication
 
 | Variable | Example | Description |

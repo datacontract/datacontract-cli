@@ -9,6 +9,17 @@ description: "All Kafka authentication options and data type mappings."
 
 Authentication options and data type handling for [Kafka connections](../testing/kafka.md).
 
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: kafka
+    host: abc-12345.eu-central-1.aws.confluent.cloud:9092
+    topic: orders
+    format: json # or avro
+```
+
 ## Authentication
 
 | Variable | Example | Description |

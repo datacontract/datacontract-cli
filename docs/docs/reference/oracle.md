@@ -9,6 +9,18 @@ description: "All Oracle authentication options and data type mappings."
 
 Authentication options and data type handling for [Oracle connections](../testing/oracle.md).
 
+## Server
+
+```yaml
+servers:
+  - server: oracle
+    type: oracle
+    host: localhost
+    port: 1521
+    serviceName: ORCL
+    schema: ADMIN
+```
+
 ## Authentication
 
 | Variable | Example | Description |

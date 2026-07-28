@@ -9,6 +9,19 @@ description: "All SQL Server authentication options and data type mappings."
 
 Authentication options and data type handling for [SQL Server connections](../testing/sqlserver.md).
 
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: sqlserver
+    host: localhost
+    port: 1433
+    database: mydb
+    schema: dbo
+    driver: ODBC Driver 18 for SQL Server
+```
+
 ## Authentication
 
 | Variable | Example | Description |
