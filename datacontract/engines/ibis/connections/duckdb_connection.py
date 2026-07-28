@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from typing import TYPE_CHECKING, Any, List, Optional
@@ -11,6 +12,8 @@ from datacontract.model.run import Run
 
 if TYPE_CHECKING:
     import duckdb
+
+logger = logging.getLogger(__name__)
 
 
 def _import_duckdb():
@@ -278,6 +281,47 @@ def setup_s3_connection(con, server: Server):
                     URL_STYLE '{url_style}'
                 );
             """)
+    else:
+        _create_s3_secret_from_aws_session(con, s3_region, s3_endpoint, use_ssl, url_style)
+
+
+def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style):
+    """Hand duckdb the credentials boto3 resolves, when no explicit key is set.
+
+    duckdb's own ``PROVIDER credential_chain`` cannot read an SSO cache, so an
+    ``aws sso login`` session that works for Athena and Redshift would otherwise
+    fail here with a bare 403. boto3 resolves the whole chain — SSO, profiles,
+    instance roles, OIDC — and its temporary credentials are passed on.
+
+    Anything unresolvable leaves the connection without a secret, which is what
+    public buckets need.
+    """
+    try:
+        import boto3
+
+        credentials = boto3.Session().get_credentials()
+    except Exception as e:
+        logger.debug("could not resolve AWS credentials for S3: %s", e)
+        return
+    if credentials is None:
+        return
+
+    frozen = credentials.get_frozen_credentials()
+    region = region or boto3.Session().region_name
+    token_clause = f"SESSION_TOKEN '{frozen.token}'," if frozen.token else ""
+    region_clause = f"REGION '{region}'," if region else ""
+    con.sql(f"""
+        CREATE OR REPLACE SECRET s3_secret (
+            TYPE S3,
+            {region_clause}
+            KEY_ID '{frozen.access_key}',
+            SECRET '{frozen.secret_key}',
+            {token_clause}
+            ENDPOINT '{endpoint}',
+            USE_SSL '{use_ssl}',
+            URL_STYLE '{url_style}'
+        );
+    """)
 
 
 def setup_gcs_connection(con, server: Server):
