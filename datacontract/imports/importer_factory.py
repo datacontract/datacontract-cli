@@ -150,6 +150,11 @@ importer_factory.register_lazy_importer(
     class_name="AthenaImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.s3,
+    module_path="datacontract.imports.s3_importer",
+    class_name="S3Importer",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.json,
     module_path="datacontract.imports.json_importer",
     class_name="JsonImporter",

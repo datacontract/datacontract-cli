@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - The documentation has a [Release Notes](https://docs.datacontract.com/release-notes) page, generated from this changelog
 - The documentation has a guide to [migrate contracts from DCS to ODCS](https://docs.datacontract.com/migrate-dcs-to-odcs)
+- `datacontract import s3` creates a data contract from files in an S3 bucket, including a ready-to-test `servers` block
 - `datacontract import athena` creates a data contract from an Amazon Athena database, including a ready-to-test `servers` block
 - `datacontract import unity` is now `datacontract import databricks`; the `unity` format name keeps working
 - Redshift infers the authentication method: a password means a database login, otherwise your AWS session is used for IAM. `DATACONTRACT_REDSHIFT_AUTHENTICATION` is no longer required and remains as an override
@@ -20,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
 
 ### Fixed
+- `datacontract import athena` and `datacontract import glue` now honour `DATACONTRACT_S3_ACCESS_KEY_ID` and `DATACONTRACT_S3_SECRET_ACCESS_KEY`; the Glue catalog was read with ambient AWS credentials only
+- S3 now uses an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles) when no access key is configured; previously such a setup failed with `403 Forbidden`
 - Documented that Athena authenticates with an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles); static access keys were presented as the only option
 - `regionName` in an Athena `servers` block was ignored, so the region could only be set via `DATACONTRACT_S3_REGION`
 - `datacontract import glue` mapped `timestamp` columns to `logicalType: date` instead of `timestamp`

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 21
 title: "Import: Spark"
 description: "Create a data contract from Spark tables or DataFrames (programmatic)."
 ---

@@ -16,6 +16,7 @@ import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException, require_env
 from datacontract.model.run import Check, ResultEnum, Run
@@ -428,9 +429,8 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
 
 
 def _connect_athena(ibis, server: Server):
-    s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
-    s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
-    s3_session_token = os.getenv("DATACONTRACT_S3_SESSION_TOKEN")
+    # regionName is a contract value, so the variable still wins over it
+    credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName))
     if not server.schema_:
         raise DataContractException(
             type="athena-connection",
@@ -447,10 +447,10 @@ def _connect_athena(ibis, server: Server):
         )
     return ibis.athena.connect(
         s3_staging_dir=server.stagingDir,
-        aws_access_key_id=s3_access_key_id,
-        aws_secret_access_key=s3_secret_access_key,
-        aws_session_token=s3_session_token,
-        region_name=os.getenv("DATACONTRACT_S3_REGION") or server.regionName,
+        aws_access_key_id=credentials["aws_access_key_id"],
+        aws_secret_access_key=credentials["aws_secret_access_key"],
+        aws_session_token=credentials["aws_session_token"],
+        region_name=credentials["region_name"],
         schema_name=server.schema_,
     )
 

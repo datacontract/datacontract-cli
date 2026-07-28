@@ -1,9 +1,11 @@
-import os
+import logging
 import re
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
+from datacontract.engines.ibis.connections import aws_credentials
+from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.exceptions import require_env
@@ -11,6 +13,8 @@ from datacontract.model.run import Run
 
 if TYPE_CHECKING:
     import duckdb
+
+logger = logging.getLogger(__name__)
 
 
 def _import_duckdb():
@@ -236,10 +240,11 @@ def _load_extension(con, name: str, extra: str) -> None:
 def setup_s3_connection(con, server: Server):
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
-    s3_region = os.getenv("DATACONTRACT_S3_REGION")
-    s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
-    s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
-    s3_session_token = os.getenv("DATACONTRACT_S3_SESSION_TOKEN")
+    configured = aws_credentials.client_kwargs()
+    s3_region = configured["region_name"]
+    s3_access_key_id = configured["aws_access_key_id"]
+    s3_secret_access_key = configured["aws_secret_access_key"]
+    s3_session_token = configured["aws_session_token"]
     s3_endpoint = "s3.amazonaws.com"
     use_ssl = "true"
     url_style = "vhost"
@@ -278,6 +283,37 @@ def setup_s3_connection(con, server: Server):
                     URL_STYLE '{url_style}'
                 );
             """)
+    else:
+        _create_s3_secret_from_aws_session(con, s3_region, s3_endpoint, use_ssl, url_style)
+
+
+def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style):
+    """Hand duckdb the credentials boto3 resolves, when no explicit key is set.
+
+    duckdb's own ``PROVIDER credential_chain`` cannot read an SSO cache, so an
+    ``aws sso login`` session that works for Athena and Redshift would otherwise
+    fail here with a bare 403. Nothing resolvable leaves the connection without
+    a secret, which is what public buckets need.
+    """
+    credentials = resolve_aws_credentials()
+    if credentials is None:
+        return
+
+    region = region or credentials.region
+    token_clause = f"SESSION_TOKEN '{credentials.session_token}'," if credentials.session_token else ""
+    region_clause = f"REGION '{region}'," if region else ""
+    con.sql(f"""
+        CREATE OR REPLACE SECRET s3_secret (
+            TYPE S3,
+            {region_clause}
+            KEY_ID '{credentials.access_key_id}',
+            SECRET '{credentials.secret_access_key}',
+            {token_clause}
+            ENDPOINT '{endpoint}',
+            USE_SSL '{use_ssl}',
+            URL_STYLE '{url_style}'
+        );
+    """)
 
 
 def setup_gcs_connection(con, server: Server):
