@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 20
 title: "Import: Protobuf"
 description: "Create a data contract from a Protobuf schema file."
 ---

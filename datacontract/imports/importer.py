@@ -45,6 +45,7 @@ class ImportFormat(str, Enum):
     postgres = "postgres"
     athena = "athena"
     s3 = "s3"
+    mysql = "mysql"
 
     @classmethod
     def get_supported_formats(cls):
