@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[mysql]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 
@@ -28,23 +28,19 @@ DATACONTRACT_MYSQL_PASSWORD=mysecretpassword
 
 ## 3. Create a contract from your tables
 
-Dump the DDL of a table and import it:
+Import the table metadata directly from the database. This also generates a ready-to-test `servers` block:
 
 ```bash
-mysqldump --no-data mydb orders > orders.sql
-datacontract import sql --source orders.sql --dialect mysql --output datacontract.yaml
+datacontract import mysql \
+  --source localhost \
+  --database mydb \
+  --table orders \
+  --output datacontract.yaml
 ```
 
-The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your server:
+`--source` is the host of your MySQL server. Add `--port` if it doesn't listen on the default `3306`, repeat `--table` for multiple tables, or omit it to import every table in the database.
 
-```yaml
-servers:
-  - server: mysql
-    type: mysql
-    host: localhost
-    port: 3306
-    database: mydb
-```
+Only have a DDL file? `datacontract import sql --source orders.sql --dialect mysql` works too, but writes a `servers` block with placeholder values that you have to fill in by hand.
 
 ## 4. Test the actual data
 

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract import mysql` creates a data contract from a live MySQL database, including a ready-to-test `servers` block
 - The documentation has a [Release Notes](https://docs.datacontract.com/release-notes) page, generated from this changelog
 - The documentation has a guide to [migrate contracts from DCS to ODCS](https://docs.datacontract.com/migrate-dcs-to-odcs)
 - `datacontract import s3` creates a data contract from files in an S3 bucket, including a ready-to-test `servers` block
