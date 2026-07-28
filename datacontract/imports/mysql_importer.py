@@ -27,14 +27,14 @@ DEFAULT_PORT = 3306
 _TABLES_QUERY = """
     SELECT table_name, table_type, table_comment
     FROM information_schema.tables
-    WHERE table_schema = ''{database}''
+    WHERE table_schema = '{database}'
 """
 
 _COLUMNS_QUERY = """
     SELECT table_name, column_name, column_type, is_nullable, column_key, column_comment,
            character_maximum_length, numeric_precision, numeric_scale
     FROM information_schema.columns
-    WHERE table_schema = ''{database}''
+    WHERE table_schema = '{database}'
     ORDER BY table_name, ordinal_position
 """
 
@@ -134,9 +134,14 @@ def _attach(host: str, port: int, database: str):
 
 
 def _query(con, sql: str) -> List[Dict[str, Any]]:
-    """Run a catalog statement on MySQL itself and return decoded rows."""
+    """Run a catalog statement on MySQL itself and return decoded rows.
+
+    The statement is escaped a second time here: it travels inside a duckdb
+    string literal, which consumes one level of quoting before MySQL sees it.
+    Escaping only once would hand MySQL the raw quotes.
+    """
     try:
-        result = con.sql(f"SELECT * FROM mysql_query('mysqldb', '{sql}')")
+        result = con.sql(f"SELECT * FROM mysql_query('mysqldb', '{_escape(sql)}')")
         # MySQL 8 names its information_schema columns in upper case
         columns = [description[0].lower() for description in result.description]
         return [dict(zip(columns, (_decode(value) for value in row))) for row in result.fetchall()]
