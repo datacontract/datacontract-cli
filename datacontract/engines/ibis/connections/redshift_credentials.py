@@ -20,6 +20,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.model.exceptions import DataContractException, require_env
 
 logger = logging.getLogger(__name__)
@@ -106,7 +107,8 @@ def _infer_authentication() -> str:
 
 def _aws_credentials_available() -> bool:
     """True when boto3 can resolve credentials from anywhere in its chain."""
-    if os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID") and os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"):
+    configured = aws_credentials.client_kwargs()
+    if configured["aws_access_key_id"] and configured["aws_secret_access_key"]:
         return True
     try:
         import boto3
@@ -201,15 +203,7 @@ def _resolve_endpoint(host: Optional[str]) -> Tuple[str, str, Optional[str]]:
 
 
 def _aws_client(service: str, region: Optional[str]):
-    import boto3
-
-    return boto3.client(
-        service,
-        region_name=region,
-        aws_access_key_id=os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"),
-        aws_session_token=os.getenv("DATACONTRACT_S3_SESSION_TOKEN"),
-    )
+    return aws_credentials.client(service, region)
 
 
 def _call_aws(operation, kwargs: dict, api_name: str) -> dict:

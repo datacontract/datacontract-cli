@@ -94,3 +94,38 @@ def test_a_custom_endpoint_still_uses_path_style(env):
     assert "localhost:9000" in sql
     assert "URL_STYLE 'path'" in sql
     assert "USE_SSL 'false'" in sql
+
+
+# ---------------------------------------------------------------------------
+# One place resolves the DATACONTRACT_S3_* variables for every AWS service
+# ---------------------------------------------------------------------------
+def test_glue_honours_the_configured_credentials(env):
+    """`import athena` reads the Glue catalog, and used to ignore these entirely."""
+    env.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "AKIA_CONFIGURED")
+    env.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "configured-secret")
+    from datacontract.imports.glue_importer import glue_client
+
+    with patch("boto3.client") as boto3_client:
+        glue_client("eu-central-1")
+
+    assert boto3_client.call_args.kwargs["aws_access_key_id"] == "AKIA_CONFIGURED"
+    assert boto3_client.call_args.kwargs["region_name"] == "eu-central-1"
+
+
+def test_an_unset_variable_leaves_boto3_to_its_own_chain(env):
+    from datacontract.imports.glue_importer import glue_client
+
+    with patch("boto3.client") as boto3_client:
+        glue_client()
+
+    assert boto3_client.call_args.kwargs["aws_access_key_id"] is None
+
+
+def test_the_region_variable_wins_over_the_argument(env):
+    env.setenv("DATACONTRACT_S3_REGION", "us-east-1")
+    from datacontract.imports.glue_importer import glue_client
+
+    with patch("boto3.client") as boto3_client:
+        glue_client("eu-central-1")
+
+    assert boto3_client.call_args.kwargs["region_name"] == "us-east-1"

@@ -1,10 +1,10 @@
 import logging
-import os
 import re
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
+from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
@@ -240,10 +240,11 @@ def _load_extension(con, name: str, extra: str) -> None:
 def setup_s3_connection(con, server: Server):
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
-    s3_region = os.getenv("DATACONTRACT_S3_REGION")
-    s3_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
-    s3_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
-    s3_session_token = os.getenv("DATACONTRACT_S3_SESSION_TOKEN")
+    configured = aws_credentials.client_kwargs()
+    s3_region = configured["region_name"]
+    s3_access_key_id = configured["aws_access_key_id"]
+    s3_secret_access_key = configured["aws_secret_access_key"]
+    s3_session_token = configured["aws_session_token"]
     s3_endpoint = "s3.amazonaws.com"
     use_ssl = "true"
     url_style = "vhost"

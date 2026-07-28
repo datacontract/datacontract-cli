@@ -40,6 +40,7 @@ marked as such in the entry.
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) ([#1220](https://github.com/datacontract/datacontract-cli/issues/1220) [@DMZ22](https://github.com/DMZ22))
 
 ### Fixed
+- `datacontract import athena` and `datacontract import glue` now honour `DATACONTRACT_S3_ACCESS_KEY_ID` and `DATACONTRACT_S3_SECRET_ACCESS_KEY`; the Glue catalog was read with ambient AWS credentials only
 - S3 now uses an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles) when no access key is configured; previously such a setup failed with `403 Forbidden`
 - Documented that Athena authenticates with an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles); static access keys were presented as the only option
 - `regionName` in an Athena `servers` block was ignored, so the region could only be set via `DATACONTRACT_S3_REGION`

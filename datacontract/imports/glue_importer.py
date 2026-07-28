@@ -1,9 +1,9 @@
 import re
 from typing import Dict, Generator, List
 
-import boto3
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
+from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -19,8 +19,8 @@ class GlueImporter(Importer):
 
 
 def glue_client(region: str = None):
-    """Return a Glue client; without a region boto3 resolves it from the AWS chain."""
-    return boto3.client("glue", region_name=region) if region else boto3.client("glue")
+    """Return a Glue client honouring the same credentials as every other AWS call."""
+    return aws_credentials.client("glue", region)
 
 
 def get_glue_database(database_name: str, region: str = None):
