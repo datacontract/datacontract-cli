@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 title: "Import: BigQuery"
 description: "Create a data contract from BigQuery, via an exported JSON file or the BigQuery API."
 ---
