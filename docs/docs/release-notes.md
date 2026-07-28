@@ -27,6 +27,7 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Added
+- `datacontract import sqlserver` creates a data contract from a live SQL Server database, including a ready-to-test `servers` block
 - `datacontract import mysql` creates a data contract from a live MySQL database, including a ready-to-test `servers` block
 - The documentation has a [Release Notes](https://docs.datacontract.com/release-notes) page, generated from this changelog
 - The documentation has a guide to [migrate contracts from DCS to ODCS](https://docs.datacontract.com/migrate-dcs-to-odcs)
