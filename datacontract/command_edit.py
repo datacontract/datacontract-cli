@@ -234,7 +234,11 @@ def create_app(
                 return Response(content=f.read(), media_type=content_type)
         cached = asset_cache.get(asset_path)
         if cached is None:
-            upstream_url = f"{editor_assets_url}/{asset_path}"
+            import re
+            match = re.fullmatch(r"([A-Za-z0-9_./~-]+)", asset_path)
+            if not match:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid asset path")
+            upstream_url = f"{editor_assets_url}/{match.group(1)}"
             try:
                 upstream = requests.get(upstream_url, timeout=30)
             except requests.RequestException as e:
