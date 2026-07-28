@@ -151,3 +151,37 @@ def test_an_expired_session_falls_back_to_no_credentials():
 
     with patch("boto3.Session", return_value=session):
         assert resolve_aws_credentials() is None
+
+
+def test_a_quote_in_the_endpoint_cannot_end_the_sql_literal(env):
+    """endpointUrl comes from the contract, and a contract can be someone else's URL.
+
+    A single quote is a legal URI sub-delimiter, so the schema's `format: uri`
+    check lets it through; without escaping it ended the literal and the rest
+    was parsed as SQL.
+    """
+    env.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "AKIA_TEST")
+    env.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "secret")
+    server = Server(
+        server="production",
+        type="s3",
+        location="s3://bucket/orders/*.csv",
+        format="csv",
+        endpointUrl="http://a',SCOPE,'b",
+    )
+
+    sql = _setup(server=server)
+
+    # the quotes are doubled, so the whole thing stays one literal
+    assert "a'',SCOPE,''b" in sql
+    assert "SCOPE," not in sql.replace("a'',SCOPE,''b", "")
+
+
+def test_a_quote_in_a_credential_is_escaped(env):
+    env.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "AKIA'X")
+    env.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "se'cret")
+
+    sql = _setup()
+
+    assert "AKIA''X" in sql
+    assert "se''cret" in sql
