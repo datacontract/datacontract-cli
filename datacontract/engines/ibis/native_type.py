@@ -43,9 +43,9 @@ _CATALOG_STRATEGY = {
     "redshift": "information_schema",
     "snowflake": "information_schema",
     "databricks": "information_schema",
-    "trino": "information_schema",
     "oracle": "oracle",
-    "athena": "athena",
+    "athena": "full_type",
+    "trino": "full_type",
     "bigquery": "bigquery",
 }
 
@@ -205,8 +205,12 @@ def _read_oracle(con, server: Server, model: str) -> Optional[dict[str, str]]:
     return _map_reconstructed(con, query, oracle_length=True)
 
 
-def _read_athena(con, server: Server, model: str) -> Optional[dict[str, str]]:
-    """Athena's information_schema.data_type is already a full type string."""
+def _read_full_type_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Athena and Trino report a complete type string in ``data_type``.
+
+    Their ``information_schema.columns`` has no length or precision columns at
+    all, so asking for them fails the whole query and silently skips the check.
+    """
     schema_filter = f" AND table_schema = '{_quote(server.schema_)}'" if server.schema_ else ""
     query = (
         "SELECT column_name, data_type FROM information_schema.columns "
@@ -231,7 +235,7 @@ def _read_bigquery(con, server: Server, model: str) -> Optional[dict[str, str]]:
 _READERS = {
     "information_schema": _read_information_schema,
     "oracle": _read_oracle,
-    "athena": _read_athena,
+    "full_type": _read_full_type_information_schema,
     "bigquery": _read_bigquery,
 }
 

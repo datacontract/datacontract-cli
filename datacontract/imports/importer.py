@@ -50,6 +50,7 @@ class ImportFormat(str, Enum):
     gcs = "gcs"
     adls = "adls"
     oracle = "oracle"
+    trino = "trino"
 
     @classmethod
     def get_supported_formats(cls):

@@ -27,6 +27,7 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Added
+- `datacontract import trino` creates a data contract from a Trino catalog, including a ready-to-test `servers` block
 - `datacontract import oracle` creates a data contract from a live Oracle database, including a ready-to-test `servers` block
 - `datacontract import gcs` and `datacontract import adls` create a data contract from files in Google Cloud Storage or Azure Blob Storage, including a ready-to-test `servers` block
 - `datacontract import sqlserver` creates a data contract from a live SQL Server database, including a ready-to-test `servers` block
@@ -44,6 +45,7 @@ marked as such in the entry.
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) ([#1220](https://github.com/datacontract/datacontract-cli/issues/1220) [@DMZ22](https://github.com/DMZ22))
 
 ### Fixed
+- Trino physical type checks were silently skipped: its `information_schema` has no length or precision columns, so the catalog query failed and a wrong `physicalType` still passed
 - `datacontract import athena` and `datacontract import glue` now honour `DATACONTRACT_S3_ACCESS_KEY_ID` and `DATACONTRACT_S3_SECRET_ACCESS_KEY`; the Glue catalog was read with ambient AWS credentials only
 - S3 now uses an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles) when no access key is configured; previously such a setup failed with `403 Forbidden`
 - Documented that Athena authenticates with an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles); static access keys were presented as the only option

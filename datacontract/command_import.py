@@ -622,6 +622,39 @@ def import_adls(
 
 
 @import_app.command(
+    name="trino",
+    epilog="Example: datacontract import trino --source localhost --catalog my_catalog --schema my_schema --output datacontract.yaml",
+)
+def import_trino(
+    source: Annotated[Optional[str], typer.Option(help="The host of the Trino coordinator.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The Trino port (default 8080).")] = None,
+    catalog: Annotated[Optional[str], typer.Option(help="The Trino catalog.")] = None,
+    schema: Annotated[Optional[str], typer.Option("--schema", help="The Trino schema.")] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a Trino catalog."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="trino",
+        source=source,
+        port=port,
+        catalog=catalog,
+        schema=schema,
+        trino_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="oracle",
     epilog="Example: datacontract import oracle --source localhost --service-name XEPDB1 --schema ADMIN --output datacontract.yaml",
 )
