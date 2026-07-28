@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 19
 title: "Migrate from DCS to ODCS"
 description: "Convert a Data Contract Specification (datacontract.yaml) file to the Open Data Contract Standard with one command, and verify the conversion was lossless."
 ---
@@ -11,7 +11,7 @@ Contracts that start with `dataContractSpecification:` and describe their struct
 originally built around. The CLI now uses the
 **[Open Data Contract Standard (ODCS)](./open-data-contract-standard.md)** natively.
 
-:::note Your DCS contracts keep working
+:::note[Your DCS contracts keep working]
 `lint`, `test`, and `export` detect a DCS file and convert it in memory before doing their work.
 Migrating just makes the ODCS version the file you keep in Git.
 :::
