@@ -27,14 +27,14 @@ servers:
 
 | Variable | Example | Description |
 |---|---|---|
-| `DATACONTRACT_REDSHIFT_AUTHENTICATION` | `iam` | `password` (default) or `iam` |
+| `DATACONTRACT_REDSHIFT_AUTHENTICATION` | `iam` | `password` or `iam`; only needed to override what is inferred |
 | `DATACONTRACT_REDSHIFT_USERNAME` | `awsuser` | Database user. Required for `password`; in `iam` mode it selects the legacy API (see below) |
 | `DATACONTRACT_REDSHIFT_PASSWORD` | `mysecretpassword` | Password (`password` mode only) |
 | `DATACONTRACT_REDSHIFT_SSLMODE` | `verify-full` | TLS mode passed to the driver. Defaults to `require` in `iam` mode, and to the driver's own default (`prefer`) otherwise |
 
 ### IAM authentication
 
-With `DATACONTRACT_REDSHIFT_AUTHENTICATION=iam`, the CLI asks AWS for temporary database credentials and uses them to log in — no database password anywhere. The AWS credentials themselves come from the same variables Athena uses (`DATACONTRACT_S3_ACCESS_KEY_ID`, `DATACONTRACT_S3_SECRET_ACCESS_KEY`, `DATACONTRACT_S3_SESSION_TOKEN`, `DATACONTRACT_S3_REGION`), and fall back to the standard AWS chain: `aws sso login`, `AWS_PROFILE`, EC2/ECS/EKS instance roles, or GitHub OIDC in CI.
+The method is inferred: setting `DATACONTRACT_REDSHIFT_PASSWORD` selects a database login, otherwise resolvable AWS credentials select IAM. Set `DATACONTRACT_REDSHIFT_AUTHENTICATION` explicitly only to override that. With IAM, the CLI asks AWS for temporary database credentials and uses them to log in — no database password anywhere. The AWS credentials themselves come from the same variables Athena uses (`DATACONTRACT_S3_ACCESS_KEY_ID`, `DATACONTRACT_S3_SECRET_ACCESS_KEY`, `DATACONTRACT_S3_SESSION_TOKEN`, `DATACONTRACT_S3_REGION`), and fall back to the standard AWS chain: `aws sso login`, `AWS_PROFILE`, EC2/ECS/EKS instance roles, or GitHub OIDC in CI.
 
 Which AWS API is called depends on the endpoint and whether a username is set:
 

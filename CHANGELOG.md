@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract import unity` is now `datacontract import databricks`; the `unity` format name keeps working
+- Redshift infers the authentication method: a password means a database login, otherwise your AWS session is used for IAM. `DATACONTRACT_REDSHIFT_AUTHENTICATION` is no longer required and remains as an override
 - `datacontract import postgres` creates a data contract from a live Postgres schema, including a ready-to-test `servers` block
 - `datacontract import redshift` creates a data contract from an Amazon Redshift schema, including a ready-to-test `servers` block
-- Redshift supports IAM authentication with `DATACONTRACT_REDSHIFT_AUTHENTICATION=iam`, using temporary credentials from your AWS session instead of a database password
+- Redshift supports IAM authentication, using temporary credentials from your AWS session instead of a database password
 - `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
 

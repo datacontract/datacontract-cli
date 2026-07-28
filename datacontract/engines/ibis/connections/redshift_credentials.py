@@ -43,8 +43,14 @@ class RedshiftLogin:
 
 
 def resolve_redshift_login(host: Optional[str], database: Optional[str]) -> RedshiftLogin:
-    """Return the database login to connect with, per DATACONTRACT_REDSHIFT_AUTHENTICATION."""
-    authentication = os.getenv("DATACONTRACT_REDSHIFT_AUTHENTICATION", "password").strip().lower()
+    """Return the database login to connect with.
+
+    The method is inferred from what is configured, so the common cases need no
+    extra variable. ``DATACONTRACT_REDSHIFT_AUTHENTICATION`` stays as an
+    override for when the inference guesses wrong, matching the equivalent
+    variables on Databricks, Snowflake, SQL Server and Trino.
+    """
+    authentication = os.getenv("DATACONTRACT_REDSHIFT_AUTHENTICATION", "").strip().lower() or _infer_authentication()
 
     if authentication == "password":
         return RedshiftLogin(
@@ -73,6 +79,42 @@ def resolve_redshift_login(host: Optional[str], database: Optional[str]) -> Reds
         ),
         engine="datacontract",
     )
+
+
+def _infer_authentication() -> str:
+    """Pick the authentication method from what is configured.
+
+    Keyed on the password, not the username: IAM on a provisioned cluster also
+    reads ``DATACONTRACT_REDSHIFT_USERNAME`` as the database user, so a set
+    username says nothing about which method was intended.
+    """
+    if os.getenv("DATACONTRACT_REDSHIFT_PASSWORD"):
+        return "password"
+    if _aws_credentials_available():
+        return "iam"
+    raise DataContractException(
+        type="redshift-connection",
+        name="no_authentication_available",
+        reason=(
+            "Could not determine how to authenticate with Redshift. Set DATACONTRACT_REDSHIFT_USERNAME and "
+            "DATACONTRACT_REDSHIFT_PASSWORD for a database login, or sign in to AWS (e.g. aws sso login) to use "
+            "IAM authentication."
+        ),
+        engine="datacontract",
+    )
+
+
+def _aws_credentials_available() -> bool:
+    """True when boto3 can resolve credentials from anywhere in its chain."""
+    if os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID") and os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY"):
+        return True
+    try:
+        import boto3
+
+        return boto3.Session().get_credentials() is not None
+    except Exception as e:  # boto3 missing, or a broken profile/config file
+        logger.debug("could not resolve AWS credentials: %s", e)
+        return False
 
 
 def _mint_iam_credentials(host: Optional[str], database: Optional[str]) -> Tuple[str, str]:
