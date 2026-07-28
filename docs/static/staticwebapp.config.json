@@ -38,6 +38,13 @@
       "headers": {
         "Cache-Control": "public, max-age=3600"
       }
+    },
+    {
+      "route": "/context7.json",
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "public, max-age=3600"
+      }
     }
   ],
   "globalHeaders": {
