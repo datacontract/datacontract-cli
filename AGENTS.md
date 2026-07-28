@@ -159,3 +159,4 @@ The project uses factory patterns for extensibility:
 - Type hints throughout the codebase
 - Follows PEP 8 style guidelines with some adjustments (120 character line length)
 - `CHANGELOG.md` entries should be one line each: what changed (user-facing), not how or why. Append the fixed issue, if exists, as `(#NNN)`. No details on mechanism, rationale, or edge cases.
+- The docs list every importer and exporter three times (sidebar, card grid, `Available formats:`), all alphabetical, enforced by `tests/test_docs_ordering.py`. The sidebar is ordered by the label it **renders**, not the file name — `Import: AWS Glue` belongs under A, not G.
