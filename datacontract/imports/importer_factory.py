@@ -150,6 +150,11 @@ importer_factory.register_lazy_importer(
     class_name="AthenaImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.sqlserver,
+    module_path="datacontract.imports.sqlserver_importer",
+    class_name="SqlServerImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.mysql,
     module_path="datacontract.imports.mysql_importer",
     class_name="MysqlImporter",

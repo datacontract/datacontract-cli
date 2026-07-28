@@ -567,6 +567,39 @@ def import_postgres(
 
 
 @import_app.command(
+    name="sqlserver",
+    epilog="Example: datacontract import sqlserver --source localhost --database mydb --output datacontract.yaml",
+)
+def import_sqlserver(
+    source: Annotated[Optional[str], typer.Option(help="The host of the SQL Server instance.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The SQL Server port (default 1433).")] = None,
+    database: database_option = None,
+    schema: Annotated[Optional[str], typer.Option("--schema", help="The schema name (default dbo).")] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a SQL Server database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="sqlserver",
+        source=source,
+        port=port,
+        database=database,
+        schema=schema,
+        sqlserver_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="mysql",
     epilog="Example: datacontract import mysql --source localhost --database mydb --output datacontract.yaml",
 )

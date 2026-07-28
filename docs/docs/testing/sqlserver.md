@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[sqlserver]'
 
 The connection also requires the [Microsoft ODBC Driver 18 for SQL Server](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server) on your machine. See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 
@@ -31,24 +31,20 @@ For Entra ID (Active Directory) authentication modes, see the [SQL Server Refere
 
 ## 3. Create a contract from your tables
 
-Script the DDL of a table (SSMS: right-click the table → **Script Table as → CREATE To**), save it to a file, and import it:
+Import the table metadata directly from the database. This also generates a ready-to-test `servers` block:
 
 ```bash
-datacontract import sql --source orders.sql --dialect sqlserver --output datacontract.yaml
+datacontract import sqlserver \
+  --source localhost \
+  --database mydb \
+  --schema dbo \
+  --table orders \
+  --output datacontract.yaml
 ```
 
-The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your server:
+`--source` is the host of your SQL Server instance. Add `--port` if it doesn't listen on the default `1433`, repeat `--table` for multiple tables, or omit it to import every table. `--schema` defaults to `dbo`.
 
-```yaml
-servers:
-  - server: production
-    type: sqlserver
-    host: localhost
-    port: 1433
-    database: mydb
-    schema: dbo
-    driver: ODBC Driver 18 for SQL Server
-```
+Only have a DDL script? `datacontract import sql --source orders.sql --dialect sqlserver` works too, but writes a `servers` block with placeholder values that you have to fill in by hand.
 
 ## 4. Test the actual data
 
