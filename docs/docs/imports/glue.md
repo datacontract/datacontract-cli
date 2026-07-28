@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 title: "Import: AWS Glue"
 description: "Create a data contract from the AWS Glue Data Catalog."
 ---

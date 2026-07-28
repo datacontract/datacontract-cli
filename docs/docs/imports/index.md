@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [Unity Catalog](./unity.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, and Unity Catalog also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -39,6 +39,10 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/csv">
     <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">csv</span><span className="doc-card-desc">A CSV file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/databricks">
+    <img src="/img/icons/databricks.svg" alt="" />
+    <span><span className="doc-card-title">databricks</span><span className="doc-card-desc">Databricks Unity Catalog.</span></span>
   </a>
   <a className="doc-card" href="/imports/dbml">
     <img src="/img/icons/dbml.svg" alt="" />
@@ -103,10 +107,6 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/sql">
     <img src="/img/icons/database.svg" alt="" />
     <span><span className="doc-card-title">sql</span><span className="doc-card-desc">A SQL DDL file.</span></span>
-  </a>
-  <a className="doc-card" href="/imports/unity">
-    <img src="/img/icons/databricks.svg" alt="" />
-    <span><span className="doc-card-title">unity</span><span className="doc-card-desc">Databricks Unity Catalog.</span></span>
   </a>
 </div>
 
