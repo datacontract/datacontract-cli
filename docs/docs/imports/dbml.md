@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 9
 title: "Import: DBML"
 description: "Create a data contract from a DBML file, with optional schema/table filters."
 ---

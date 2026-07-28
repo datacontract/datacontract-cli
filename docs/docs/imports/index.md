@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [Amazon Athena](./athena.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, Athena, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, Athena, S3, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -99,6 +99,10 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/redshift">
     <img src="/img/icons/redshift.svg" alt="" />
     <span><span className="doc-card-title">redshift</span><span className="doc-card-desc">An Amazon Redshift schema.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/s3">
+    <img src="/img/icons/s3.svg" alt="" />
+    <span><span className="doc-card-title">s3</span><span className="doc-card-desc">Files in an Amazon S3 bucket.</span></span>
   </a>
   <a className="doc-card" href="/imports/snowflake">
     <img src="/img/icons/snowflake.svg" alt="" />

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 14
 title: "Import: JSON Schema"
 description: "Create a data contract from a JSON Schema file."
 ---
