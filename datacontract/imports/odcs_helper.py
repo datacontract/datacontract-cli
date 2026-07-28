@@ -171,6 +171,8 @@ def create_server(
     format: str = None,
     roles: List[Role] = None,
     warehouse: str = None,
+    region_name: str = None,
+    staging_dir: str = None,
 ) -> Server:
     """Create a Server object.
 
@@ -212,6 +214,10 @@ def create_server(
         server.roles = roles
     if warehouse:
         server.warehouse = warehouse
+    if region_name:
+        server.regionName = region_name
+    if staging_dir:
+        server.stagingDir = staging_dir
     return server
 
 

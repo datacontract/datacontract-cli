@@ -145,6 +145,11 @@ importer_factory.register_lazy_importer(
     class_name="PostgresImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.athena,
+    module_path="datacontract.imports.athena_importer",
+    class_name="AthenaImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.json,
     module_path="datacontract.imports.json_importer",
     class_name="JsonImporter",

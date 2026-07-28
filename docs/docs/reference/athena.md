@@ -9,6 +9,18 @@ description: "All Athena authentication options and data type handling."
 
 Authentication options and data type handling for [Athena connections](../testing/athena.md).
 
+## Server
+
+```yaml
+servers:
+  - server: athena
+    type: athena
+    catalog: awsdatacatalog # default
+    schema: my_database     # in Athena, this is called "database"
+    regionName: eu-central-1
+    stagingDir: s3://my-bucket/athena-results/
+```
+
 ## Authentication
 
 Athena uses the S3 environment variables:
@@ -20,13 +32,15 @@ Athena uses the S3 environment variables:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJ...` | AWS Secret Access Key |
 | `DATACONTRACT_S3_SESSION_TOKEN` | `AQoDYXdzEJr...` | AWS temporary session token (optional) |
 
-`catalog`, `schema` (the Athena database), `regionName`, and `stagingDir` (required, for query results) come from the contract's `servers` block. The credentials need `athena:StartQueryExecution` plus read access to the data and write access to `stagingDir`.
+`catalog`, `schema` (the Athena database), `regionName`, and `stagingDir` (required, for query results) come from the contract's `servers` block; `DATACONTRACT_S3_REGION` takes precedence over `regionName` when both are set. The credentials need `athena:StartQueryExecution` plus read access to the data and write access to `stagingDir`, and `glue:GetTables` to import.
 
 ## Data types
 
 ### Importing
 
-There is no direct Athena importer. Since Athena tables live in the AWS Glue Data Catalog, use `datacontract import glue --database my_database` — Glue/Hive types map through the shared SQL mapping: `string`/`varchar`/`char` → `string`, `int`/`bigint`/`smallint`/`tinyint` → `integer`, `float`/`double`/`decimal` → `number`, `boolean` → `boolean`, `date` → `date`, `timestamp` → `timestamp`, `array<...>` → `array`, `struct<...>` → `object`, `binary` → `string` (format `binary`), `map<...>` → no logical type.
+`datacontract import athena` reads the table metadata from the AWS Glue Data Catalog, where Athena keeps it. Glue stores the Hive spelling of two types, which the import rewrites to what Athena reports back — `string` → `varchar` and `binary` → `varbinary` — so the physical type checks pass on the first test run. Every other type already compares equal in the Athena dialect (`int`/`integer`, `array<int>`/`array(integer)`, `struct`/`row(...)`, `decimal`/`decimal(10,2)`).
+
+Types map through the shared Glue mapping: `string`/`varchar`/`char` → `string`, `int`/`bigint`/`smallint`/`tinyint` → `integer`, `float`/`double`/`decimal` → `number`, `boolean` → `boolean`, `date` → `date`, `timestamp` → `timestamp`, `array<...>` → `array`, `struct<...>` → `object`, `binary` → `string` (format `binary`), `map<...>` → no logical type.
 
 ### Testing
 

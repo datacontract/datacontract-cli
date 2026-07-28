@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract import athena` creates a data contract from an Amazon Athena database, including a ready-to-test `servers` block
 - `datacontract import unity` is now `datacontract import databricks`; the `unity` format name keeps working
 - Redshift infers the authentication method: a password means a database login, otherwise your AWS session is used for IAM. `DATACONTRACT_REDSHIFT_AUTHENTICATION` is no longer required and remains as an override
 - `datacontract import postgres` creates a data contract from a live Postgres schema, including a ready-to-test `servers` block
@@ -17,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
 
 ### Fixed
+- `regionName` in an Athena `servers` block was ignored, so the region could only be set via `DATACONTRACT_S3_REGION`
+- `datacontract import glue` mapped `timestamp` columns to `logicalType: date` instead of `timestamp`
 - Testing and importing Redshift failed with `codec not available in Python: 'UNICODE'`
 - Error messages no longer drop bracketed text such as `pip install "botocore[crt]"`
 - BigQuery export failed on fields with `logicalType: time`

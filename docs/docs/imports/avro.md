@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 title: "Import: Avro"
 description: "Create a data contract from an Avro schema file."
 ---

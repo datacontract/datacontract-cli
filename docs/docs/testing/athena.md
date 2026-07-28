@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: "Amazon Athena"
-description: "Create a data contract from your Athena tables and test the actual data against it."
+description: "Create a data contract from your Athena tables and test the actual data against it — in about 5 minutes."
 ---
 
 # <img className="page-icon" src="/img/icons/athena.svg" alt="" /> Amazon Athena
 
-Test data in AWS Athena stored in S3. Supports formats such as Iceberg, Parquet, JSON, and CSV.
+Go from an existing Athena table to a tested data contract in about five minutes: import the schema straight from the catalog, then test the actual data against it. Athena reads data in S3, so this covers formats such as Iceberg, Parquet, JSON, and CSV.
 
 ## 1. Install
 
@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[athena]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Athena uses the S3 environment variables. Create a `.env` file in your working directory (or export the variables):
 
@@ -27,25 +27,24 @@ DATACONTRACT_S3_ACCESS_KEY_ID=AKIAXV5Q5QABCDEFGH
 DATACONTRACT_S3_SECRET_ACCESS_KEY=93S7LRrJcqLaaaa/XXXXXXXXXXXXX
 ```
 
+The credentials need `glue:GetTables` to import, and `athena:StartQueryExecution` plus write access to the staging directory to test. `import` and `test` use the same variables.
+
 ## 3. Create a contract from your tables
 
-Athena tables live in the AWS Glue Data Catalog, so import them from Glue:
+Import the table metadata directly from the catalog. This also generates a ready-to-test `servers` block:
 
 ```bash
-datacontract import glue --database my_database --table orders --output datacontract.yaml
+datacontract import athena \
+  --schema my_database \
+  --staging-dir s3://my-bucket/athena-results/ \
+  --region eu-central-1 \
+  --table orders \
+  --output datacontract.yaml
 ```
 
-The Glue import writes a `servers` entry of `type: glue`, which `datacontract test` cannot connect to directly. Replace it with an Athena server:
+`--schema` is the Athena database. Repeat `--table` for multiple tables, or omit it to import every table in the database. `--catalog` defaults to `awsdatacatalog`.
 
-```yaml
-servers:
-  - server: athena
-    type: athena
-    catalog: awsdatacatalog # default
-    schema: my_database     # in Athena, this is called "database"
-    regionName: eu-central-1
-    stagingDir: s3://my-bucket/athena-results/
-```
+`--staging-dir` is where Athena writes query results; `datacontract test` needs it, so the import asks for it up front and writes it into the contract.
 
 ## 4. Test the actual data
 
@@ -54,6 +53,15 @@ datacontract test datacontract.yaml
 ```
 
 ```
+Testing datacontract.yaml
+Server: athena (type=athena, catalog=awsdatacatalog, schema=my_database, regionName=eu-central-1)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
 🟢 data contract is valid. Run 24 checks. Took 7.8 seconds.
 ```
 

@@ -25,7 +25,7 @@ schema:
     logicalType: integer
   - name: field_three
     physicalType: timestamp
-    logicalType: date
+    logicalType: timestamp
   - name: field_four
     physicalType: decimal
     customProperties:
@@ -82,7 +82,7 @@ schema:
     logicalType: number
   - name: field_thirteen
     physicalType: timestamp
-    logicalType: date
+    logicalType: timestamp
   - name: field_fourteen
     physicalType: date
     logicalType: date
