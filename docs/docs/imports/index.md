@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [MySQL](./mysql.md), [SQL Server](./sqlserver.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Google Cloud Storage](./gcs.md), [Azure Blob / ADLS](./adls.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, MySQL, SQL Server, Athena, S3, GCS, ADLS, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [MySQL](./mysql.md), [SQL Server](./sqlserver.md), [Oracle](./oracle.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Google Cloud Storage](./gcs.md), [Azure Blob / ADLS](./adls.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, MySQL, SQL Server, Oracle, Athena, S3, GCS, ADLS, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -91,6 +91,10 @@ Each import page shows a runnable example: a small source file under [`examples/
   <a className="doc-card" href="/imports/odcs">
     <img src="/img/icons/odcs.svg" alt="" />
     <span><span className="doc-card-title">odcs</span><span className="doc-card-desc">An ODCS data contract file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/oracle">
+    <img src="/img/icons/oracle.svg" alt="" />
+    <span><span className="doc-card-title">oracle</span><span className="doc-card-desc">An Oracle database.</span></span>
   </a>
   <a className="doc-card" href="/imports/parquet">
     <img src="/img/icons/parquet.svg" alt="" />

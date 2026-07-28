@@ -622,6 +622,41 @@ def import_adls(
 
 
 @import_app.command(
+    name="oracle",
+    epilog="Example: datacontract import oracle --source localhost --service-name XEPDB1 --schema ADMIN --output datacontract.yaml",
+)
+def import_oracle(
+    source: Annotated[Optional[str], typer.Option(help="The host of the Oracle database.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The Oracle port (default 1521).")] = None,
+    service_name: Annotated[Optional[str], typer.Option(help="The Oracle service name, e.g. XEPDB1.")] = None,
+    schema: Annotated[
+        Optional[str], typer.Option("--schema", help="The owning schema, e.g. ADMIN (Oracle upper-cases it).")
+    ] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from an Oracle database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="oracle",
+        source=source,
+        port=port,
+        service_name=service_name,
+        schema=schema,
+        oracle_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="sqlserver",
     epilog="Example: datacontract import sqlserver --source localhost --database mydb --output datacontract.yaml",
 )
