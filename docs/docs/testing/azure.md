@@ -32,7 +32,7 @@ DATACONTRACT_AZURE_CLIENT_SECRET=yZK8Q~GWO1MMXXXXXXXXXXXXX
 Import the schema straight from the container. This also generates a ready-to-test `servers` block:
 
 ```bash
-datacontract import azure \
+datacontract import adls \
   --source abfss://my-container/orders/*.json \
   --output datacontract.yaml
 ```

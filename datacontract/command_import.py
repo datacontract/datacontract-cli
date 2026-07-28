@@ -595,10 +595,10 @@ def import_gcs(
 
 
 @import_app.command(
-    name="azure",
-    epilog="Example: datacontract import azure --source abfss://my-container/orders/*.json --output datacontract.yaml",
+    name="adls",
+    epilog="Example: datacontract import adls --source abfss://my-container/orders/*.json --output datacontract.yaml",
 )
-def import_azure(
+def import_adls(
     source: Annotated[
         Optional[str], typer.Option(help="The location of the files, e.g. abfss://my-container/orders/*.json.")
     ] = None,
@@ -613,10 +613,10 @@ def import_azure(
     id: id_option = None,
     debug: debug_option = None,
 ):
-    """Import a data contract from files in Azure Blob Storage."""
+    """Import a data contract from files in Azure Blob Storage / ADLS."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="azure", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
+        format="adls", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
     )
     _write_result(result, output)
 

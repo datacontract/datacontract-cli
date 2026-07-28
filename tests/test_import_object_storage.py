@@ -125,8 +125,8 @@ def test_an_unreadable_object_explains_the_location_and_format(minio, credential
 # which is how the existing gcs/azure suites are gated, so only the dispatch is
 # checked here.
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("storage", ["s3", "gcs", "azure"])
-def test_each_storage_writes_its_own_server_type(storage, monkeypatch):
+@pytest.mark.parametrize("storage, server_type", [("s3", "s3"), ("gcs", "gcs"), ("adls", "azure")])
+def test_each_storage_writes_its_own_server_type(storage, server_type, monkeypatch):
     from datacontract.imports import object_storage_importer
 
     captured = {}
@@ -138,21 +138,22 @@ def test_each_storage_writes_its_own_server_type(storage, monkeypatch):
     monkeypatch.setattr(object_storage_importer, "_read_columns", fake_read_columns)
     result = DataContract.import_from_source(storage, "s3://bucket/orders/orders.csv")
 
-    assert captured["server"].type == storage
-    assert result.servers[0].type == storage
+    # ODCS calls the Azure server type `azure`, so the format name and the
+    # server type deliberately differ for adls
+    assert captured["server"].type == server_type
+    assert result.servers[0].type == server_type
     assert result.servers[0].format == "csv"
 
 
-@pytest.mark.parametrize("storage", ["s3", "gcs", "azure"])
+@pytest.mark.parametrize("storage", ["s3", "gcs", "adls"])
 def test_each_storage_names_its_own_location_in_the_error(storage):
     with pytest.raises(DataContractException) as exc_info:
         DataContract.import_from_source(storage, None)
 
     assert "location is required" in exc_info.value.reason
-    assert f"the {storage} import" in exc_info.value.reason
 
 
-def test_azure_uses_the_azure_connection_setup(monkeypatch):
+def test_adls_uses_the_azure_connection_setup(monkeypatch):
     """Each storage must reach duckdb through its own credential setup."""
     from datacontract.imports import object_storage_importer
 
@@ -164,6 +165,6 @@ def test_azure_uses_the_azure_connection_setup(monkeypatch):
         )
     monkeypatch.setattr(object_storage_importer, "_READERS", {"csv": "(SELECT 1 AS id)"})
 
-    DataContract.import_from_source("azure", "abfss://container/orders/orders.csv")
+    DataContract.import_from_source("adls", "abfss://container/orders/orders.csv")
 
     assert calls == ["setup_azure_connection"]

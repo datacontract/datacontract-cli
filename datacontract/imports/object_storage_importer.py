@@ -29,6 +29,10 @@ FORMATS_BY_SUFFIX = {
 }
 SUPPORTED_FORMATS = {"json", "csv", "parquet", "delta"}
 
+# The import format is the name a user types; the server type is what goes into
+# the contract. They differ for ADLS, which ODCS calls `azure`.
+SERVER_TYPES = {"s3": "s3", "gcs": "gcs", "adls": "azure"}
+
 # duckdb reads GCS through the S3-compatible endpoint, hence the s3:// scheme there.
 _EXAMPLE_LOCATIONS = {
     "s3": "s3://my-bucket/orders/*.json",
@@ -48,8 +52,7 @@ class ObjectStorageImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_object_storage(
             location=source,
-            # registered once per storage, so the format is the server type
-            server_type=self.import_format,
+            server_type=SERVER_TYPES[self.import_format],
             format=import_args.get("file_format"),
             delimiter=import_args.get("delimiter"),
             endpoint_url=import_args.get("endpoint_url"),

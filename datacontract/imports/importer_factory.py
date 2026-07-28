@@ -161,7 +161,7 @@ importer_factory.register_lazy_importer(
 )
 # one importer, registered once per object storage; it reads the server type
 # from the format it was registered under
-for _storage in (ImportFormat.s3, ImportFormat.gcs, ImportFormat.azure):
+for _storage in (ImportFormat.s3, ImportFormat.gcs, ImportFormat.adls):
     importer_factory.register_lazy_importer(
         name=_storage,
         module_path="datacontract.imports.object_storage_importer",
