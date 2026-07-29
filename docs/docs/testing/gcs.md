@@ -6,7 +6,7 @@ description: "Create a data contract from files on Google Cloud Storage and test
 
 # <img className="page-icon" src="/img/icons/gcs.svg" alt="" /> Google Cloud Storage (GCS)
 
-The [Amazon S3](./s3.md) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability). Use `https://storage.googleapis.com` as the endpoint URL and the `s3://` scheme for the location.
+The [Amazon S3](./s3.md) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability). ODCS defines no `gcs` server type, so a GCS contract uses `type: s3` with `https://storage.googleapis.com` as the endpoint URL and the `s3://` scheme for the location — `datacontract import gcs` writes exactly that.
 
 ## 1. Install
 
@@ -36,7 +36,7 @@ datacontract import gcs \
   --output datacontract.yaml
 ```
 
-duckdb reads Google Cloud Storage through its S3-compatible endpoint, so the location uses the `s3://` scheme rather than `gs://`. The format is taken from the file suffix; pass `--format` for Delta tables, which have none.
+duckdb reads Google Cloud Storage through its S3-compatible endpoint, so the location uses the `s3://` scheme rather than `gs://`; a `gs://` source is rewritten for you. The format is taken from the file suffix; pass `--format` for Delta tables, which have none.
 
 ## 4. Test the actual data
 
@@ -46,7 +46,7 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: production (type=gcs, format=json, location=s3://my-bucket/orders/*.json)
+Server: production (type=s3, format=json, location=s3://my-bucket/orders/*.json)
 ╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
 │ Result │ Check                                           │ Field           │ Details │
 ├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤

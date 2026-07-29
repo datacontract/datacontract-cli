@@ -16,7 +16,7 @@ datacontract import gcs \
 
 The format is taken from the file suffix; pass `--format` for Delta tables, which have none, or to override the guess. `--delimiter` pins how a JSON file is laid out (`new_line`, `array`, or `none`) instead of letting it be detected.
 
-duckdb reads Google Cloud Storage through its S3-compatible endpoint, so the location uses the `s3://` scheme rather than `gs://`.
+duckdb reads Google Cloud Storage through its S3-compatible endpoint, so the location uses the `s3://` scheme rather than `gs://`; a `gs://` source is rewritten for you.
 
 The objects are read with duckdb through the same connection the test path uses, so the import authenticates identically and infers the column types from exactly the reader that later verifies them.
 

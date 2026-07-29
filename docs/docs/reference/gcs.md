@@ -11,11 +11,14 @@ Authentication options and data type handling for [GCS connections](../testing/g
 
 ## Server
 
+GCS is an S3-compatible server: ODCS defines no `gcs` server type, so the contract uses `type: s3` pointed at the [interoperability](https://cloud.google.com/storage/docs/interoperability) endpoint.
+
 ```yaml
 servers:
   - server: production
-    type: gcs
-    location: s3://my-bucket/orders/*.json # duckdb reads GCS over the S3-compatible endpoint
+    type: s3
+    endpointUrl: https://storage.googleapis.com
+    location: s3://my-bucket/orders/*.json # the S3 endpoint needs the s3:// scheme, not gs://
     format: json
     delimiter: new_line # new_line, array, or none
 ```
