@@ -143,4 +143,4 @@ Download a file and run the commands below against it to reproduce the output.
   </a>
 </div>
 
-See the [`export` command reference](../commands/export.md) for the common signature.
+See the [`export` command reference](../commands/export/index.md) for the common signature.

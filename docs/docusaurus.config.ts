@@ -161,6 +161,9 @@ const config: Config = {
           'reference/*.md',
           'commands/index.md',
           'commands/*.md',
+          // the import/export/dbt subcommand reference pages
+          'commands/*/index.md',
+          'commands/*/*.md',
           'api.md',
           'python-library.md',
           'best-practices.md',

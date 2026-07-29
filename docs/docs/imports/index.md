@@ -142,4 +142,4 @@ Each import page shows a runnable example: a small source file under [`examples/
   </a>
 </div>
 
-See the [`import` command reference](../commands/import.md) for the common signature.
+See the [`import` command reference](../commands/import/index.md) for the common signature.

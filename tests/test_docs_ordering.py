@@ -82,11 +82,16 @@ def test_the_reference_card_grid_matches_its_sidebar():
 
 @pytest.mark.parametrize("folder, prefix, command", FOLDERS, ids=IDS)
 def test_command_page_lists_every_format_in_order(folder, prefix, command):
-    page = (DOCS / "commands" / f"{command}.md").read_text()
-    listed = re.findall(r"`([^`]+)`", re.search(r"Available formats: (.+?)\.\n", page).group(1))
+    """The command reference is generated, so this guards the guide pages against it.
+
+    The subcommand table may hold more than the guides do: `import unity` is a
+    deprecated alias whose page is unlisted, and `export dbt` has no guide.
+    """
+    index = (DOCS / "commands" / command / "index.md").read_text()
+    listed = re.findall(r"^\| \[`([^`]+)`\]", index, re.M)
 
     assert listed == sorted(listed)
-    assert listed == [page.stem for page in pages(folder)]
+    assert {page.stem for page in pages(folder)} <= set(listed)
 
 
 # The llms.txt plugin emits pages in `includeOrder`, then everything it did not

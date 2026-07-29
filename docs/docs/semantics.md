@@ -75,7 +75,7 @@ An IRI lookup always requires an API key — `/api/semantics` is API-key only. A
 
 ## Turning resolution off
 
-Resolution runs by default on [`lint`](./commands/lint.md), [`test`](./commands/test.md), [`ci`](./commands/ci.md), [`changelog`](./commands/changelog.md), and every [`export`](./commands/export.md) format. Pass `--no-inline-references` to skip it and work with the contract exactly as written:
+Resolution runs by default on [`lint`](./commands/lint.md), [`test`](./commands/test.md), [`ci`](./commands/ci.md), [`changelog`](./commands/changelog.md), and every [`export`](./commands/export/index.md) format. Pass `--no-inline-references` to skip it and work with the contract exactly as written:
 
 ```bash
 datacontract lint --no-inline-references datacontract.yaml

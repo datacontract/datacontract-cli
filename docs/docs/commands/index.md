@@ -16,10 +16,10 @@ The `datacontract` CLI groups its functionality into the following commands. Run
 | [`lint`](./lint.md) | Validate that the contract is correctly formatted. |
 | [`changelog`](./changelog.md) | Show a changelog between two contracts. |
 | [`test`](./test.md) | Run schema and quality tests on configured servers. |
-| [`dbt`](./dbt.md) | Generate dbt tests from a contract and run them (`dbt sync`). |
+| [`dbt`](./dbt/index.md) | Generate dbt tests from a contract and run them (`dbt sync`). |
 | [`ci`](./ci.md) | Run tests for CI/CD pipelines with annotations and summaries. |
-| [`export`](./export.md) | Convert a contract to a target format. |
-| [`import`](./import.md) | Create a contract from a source format. |
+| [`export`](./export/index.md) | Convert a contract to a target format. |
+| [`import`](./import/index.md) | Create a contract from a source format. |
 | [`catalog`](./catalog.md) | Create an HTML catalog of data contracts. |
 | [`publish`](./publish.md) | Publish a contract to Entropy Data. |
 | [`api`](./api.md) | Start the CLI as a web server with a REST API. |
