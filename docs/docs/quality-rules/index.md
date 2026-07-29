@@ -77,3 +77,4 @@ datacontract test --include-failed-samples datacontract.yaml
 ## Learn more
 
 - The full quality syntax is part of the [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/latest/).
+- Promises about *when* the data arrives and how long it is kept are not quality rules — see [Define your Service Levels](../service-levels.md).

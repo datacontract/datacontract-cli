@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 21
 title: "Comparison with other Tools"
 description: "How the Data Contract CLI compares to Great Expectations (GX Core), Soda Core, and dbt contracts — license, governance, contract format, and scope."
 ---

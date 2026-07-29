@@ -104,7 +104,7 @@ Checks fall into categories you can select with `--checks`:
 
 - `schema` — fields are present and have the expected type and nullability.
 - `quality` — the [quality rules](../quality-rules/index.md) defined in the contract.
-- `servicelevel` — service-level expectations (`slaProperties`).
+- `servicelevel` — the [service levels](../service-levels.md) defined in the contract (`slaProperties`).
 - `custom` — custom checks.
 
 Omit `--checks` to run all of them.

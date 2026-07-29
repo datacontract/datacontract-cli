@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 9
 title: "Scheduling and CI/CD"
 description: "Run data contract tests continuously — in CI/CD on every change and on a daily schedule — to catch data drift before your consumers do."
 ---

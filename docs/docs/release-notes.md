@@ -1,5 +1,5 @@
 ---
-sidebar_position: 22
+sidebar_position: 23
 title: "Release Notes"
 description: "What changed in every release of the Data Contract CLI — new importers, exporters, data sources, and fixes, newest first."
 slug: /release-notes

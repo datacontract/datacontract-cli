@@ -1,5 +1,5 @@
 ---
-sidebar_position: 23
+sidebar_position: 24
 title: "Contributing"
 description: "Set up a development environment, run the tests, and open a pull request for the Data Contract CLI."
 ---
@@ -91,10 +91,6 @@ uv run ruff format
 # or run every pre-commit hook at once
 pre-commit run --all-files
 ```
-
-## Adding a data source
-
-A new server `type` for `datacontract test` needs a connection in `datacontract/engines/ibis/connections/connect.py` (or, for file-based sources, `duckdb_connection.py`), an optional dependency in `pyproject.toml`, tests, and two documentation pages: a walkthrough under `docs/docs/testing/` and an authentication and type-mapping page under `docs/docs/reference/`.
 
 ## Documentation
 
