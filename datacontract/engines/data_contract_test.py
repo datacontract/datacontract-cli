@@ -32,6 +32,8 @@ def execute_data_contract_test(
     schema_name: str = "all",
     check_categories: set[str] | None = None,
     dimensions: set[str] | None = None,
+    quality_ids: set[str] | None = None,
+    tags: set[str] | None = None,
     include_failed_samples: bool = False,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -63,6 +65,11 @@ def execute_data_contract_test(
                 engine="datacontract",
             )
 
+    if quality_ids is not None:
+        # A quality rule id is a precise reference, like --schema-name: an id that
+        # matches nothing is a typo, and silently testing nothing would pass.
+        check_that_quality_ids_exist(data_contract, quality_ids, schema_name)
+
     if server.type == "api":
         server = process_api_response(run, server)
 
@@ -77,14 +84,28 @@ def execute_data_contract_test(
         specs = [s for s in specs if s.dimension in dimensions]
         if not specs:
             run.log_warn(f"No checks found for dimensions: {', '.join(sorted(dimensions))}")
+    # Only quality rules carry an id and tags, so these filters exclude the
+    # built-in schema and service level checks entirely.
+    if quality_ids is not None:
+        specs = [s for s in specs if s.quality_id in quality_ids]
+        if not specs:
+            run.log_warn(f"No checks found for quality rule ids: {', '.join(sorted(quality_ids))}")
+    if tags is not None:
+        specs = [s for s in specs if s.tags and not tags.isdisjoint(s.tags)]
+        if not specs:
+            run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
     run.checks.extend(build_check_stubs(specs))
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
-        # The JSON Schema validation emits checks of type "schema" throughout.
-        if (check_categories is None or "schema" in check_categories) and (
-            dimensions is None or default_dimension("schema") in dimensions
+        # The JSON Schema validation emits checks of type "schema" throughout,
+        # so it is out of scope once a quality rule is selected by id or tag.
+        if (
+            (check_categories is None or "schema" in check_categories)
+            and (dimensions is None or default_dimension("schema") in dimensions)
+            and quality_ids is None
+            and tags is None
         ):
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
     # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
@@ -96,6 +117,8 @@ def execute_data_contract_test(
             schema_name=schema_name,
             check_categories=check_categories,
             dimensions=dimensions,
+            quality_ids=quality_ids,
+            tags=tags,
         )
     execute_ibis_checks(
         run,
@@ -106,6 +129,43 @@ def execute_data_contract_test(
         duckdb_connection,
         schema_name=schema_name,
         include_failed_samples=include_failed_samples,
+    )
+
+
+def quality_rule_ids(data_contract: OpenDataContractStandard, schema_name: str = "all") -> set[str]:
+    """The ids declared by the quality rules of the contract, on schemas and properties."""
+    ids: set[str] = set()
+
+    def collect(quality_list) -> None:
+        for quality in quality_list or []:
+            if quality.id is not None:
+                ids.add(quality.id)
+
+    for schema_object in data_contract.schema_ or []:
+        if schema_name != "all" and schema_object.name != schema_name:
+            continue
+        collect(schema_object.quality)
+        for prop in schema_object.properties or []:
+            collect(prop.quality)
+    return ids
+
+
+def check_that_quality_ids_exist(
+    data_contract: OpenDataContractStandard, quality_ids: set[str], schema_name: str = "all"
+) -> None:
+    available = quality_rule_ids(data_contract, schema_name)
+    unknown = sorted(quality_ids - available)
+    if not unknown:
+        return
+    raise DataContractException(
+        type="lint",
+        name="Check that quality rule id exists",
+        result=ResultEnum.failed,
+        reason=(
+            f"Quality rule id(s) not found in data contract: {', '.join(unknown)}. "
+            f"Available quality rule ids: {sorted(available)}"
+        ),
+        engine="datacontract",
     )
 
 

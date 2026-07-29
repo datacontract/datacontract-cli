@@ -117,6 +117,15 @@ class CheckSpec:
     # and for quality rules that do not declare one.
     dimension: Optional[str] = None
 
+    # ODCS quality.id: the author-defined identifier of the quality rule this
+    # check comes from. `test --quality-id` selects a single rule by it.
+    # None for schema and service level checks, and for unidentified rules.
+    quality_id: Optional[str] = None
+
+    # ODCS quality.tags: the author-defined labels of the quality rule this
+    # check comes from. `test --tag` selects rules by them.
+    tags: Optional[List[str]] = None
+
     # --- metric arguments -------------------------------------------------
     missing_values: Optional[List[Any]] = None  # MISSING_COUNT / INVALID_COUNT
     valid_values: Optional[List[Any]] = None  # INVALID_COUNT

@@ -391,3 +391,41 @@ class TestDimensionFilter:
         run = self._run_with_dimensions(None)
         assert _checks_by_type(run, "azure_file_property_required")
         assert _checks_by_type(run, "azure_file_count_quality")
+
+
+class TestQualityIdAndTagFilter:
+    """`--quality-id` and `--tag` also select the Azure blob quality checks."""
+
+    def _run(self, **kwargs) -> Run:
+        data_contract = _load_contract()
+        schema = data_contract.schema_[0]
+        # The fixture identifies no rules; identify two so the filters have
+        # something to select on.
+        schema.quality[0].id = "enough_files"
+        schema.quality[0].tags = ["critical"]
+        size_prop = next(p for p in schema.properties if p.name == "size")
+        size_prop.quality[0].id = "file_size"
+        size_prop.quality[0].tags = ["critical", "cheap"]
+
+        run = _make_run()
+        with patch(
+            "datacontract.engines.datacontract.check_azure_blob_file._build_blob_service_client",
+            return_value=_patched_client([_make_blob("raw/orders/a.json", size=1024)]),
+        ):
+            check_azure_blob_file(run, data_contract, data_contract.servers[0], **kwargs)
+        return run
+
+    def test_quality_id_selects_a_single_rule(self):
+        run = self._run(quality_ids={"enough_files"})
+        assert [c.type for c in run.checks] == ["azure_file_count_quality"]
+        assert run.checks[0].quality_id == "enough_files"
+
+    def test_tag_selects_every_rule_carrying_it(self):
+        run = self._run(tags={"critical"})
+        assert sorted(c.type for c in run.checks) == ["azure_file_count_quality", "azure_file_property_quality"]
+
+    def test_tag_excludes_the_rules_without_it(self):
+        run = self._run(tags={"cheap"})
+        assert [c.type for c in run.checks] == ["azure_file_property_quality"]
+        assert run.checks[0].field == "size"
+        assert run.checks[0].tags == ["critical", "cheap"]

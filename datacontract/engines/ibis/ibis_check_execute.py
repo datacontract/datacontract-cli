@@ -55,6 +55,8 @@ def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
                 name=spec.name,
                 model=spec.model,
                 field=spec.field,
+                quality_id=spec.quality_id,
+                tags=spec.tags,
                 engine="ibis",
                 implementation=_describe(spec),
             )

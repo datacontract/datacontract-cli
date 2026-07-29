@@ -29,6 +29,8 @@ datacontract test [OPTIONS] [LOCATION]
 | `--output-format` | — | The target format for the test results. Accepted values: json, junit. |
 | `--checks` | — | Comma-separated list of check categories to run (available: schema, quality, servicelevel, custom). Omit to enable all. |
 | `--dimension` | — | Comma-separated list of quality dimensions to run (available: accuracy, completeness, conformity, consistency, coverage, timeliness, uniqueness). Runs the quality rules declaring a matching `dimension`, plus the schema and service level checks that measure it. Omit to run everything. |
+| `--quality-id` | — | Comma-separated list of quality rule ids to run, as defined in the `id` of the quality rule. Runs only those rules, no schema or service level checks. Fails if an id is not defined in the data contract. Omit to run everything. |
+| `--tag` | — | Comma-separated list of tags to run. Runs the quality rules declaring a matching tag in their `tags`, no schema or service level checks. Omit to run everything. |
 | `--include-failed-samples` / `--no-include-failed-samples` | `--no-include-failed-samples` | Collect a small sample of rows that failed each missing/invalid/duplicate check (identifier + offending columns; sensitive columns omitted). Off by default. |
 | `--logs` / `--no-logs` | `--no-logs` | Print logs |
 | `--ssl-verification` / `--no-ssl-verification` | `--ssl-verification` | SSL verification when publishing the data contract. |
