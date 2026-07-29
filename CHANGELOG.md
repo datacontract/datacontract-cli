@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CSV and JSON imports now write detected formats (`email`, `uuid`, `date-time`) to `logicalTypeOptions.format` instead of a custom property, so they are validated by `datacontract test`
 - SQL imports now map `TIME` types with precision or time zone (e.g. `TIME(9)`) to `logicalType: time`; previously the logical type was left unset
 - `datacontract test --checks quality` now runs `rowCount` quality rules, which were wrongly categorized as schema checks
+- Snowflake `physicalType` checks: a declared `NUMBER(38,0)` failed against its own column (the catalog reconstruction spells it `NUMBER(38)`, and the comparison did not treat `DECIMAL(p)` as `DECIMAL(p,0)`), and structured `OBJECT`/`ARRAY`/`MAP` types never matched because their fields were compared as rendered strings; structured types are now compared field by field (order-insensitive, alias-aware), a catalog that strips the field list (`INFORMATION_SCHEMA` reports bare `OBJECT`) no longer fails the declaration, and Athena's Hive spellings (`array<string>`) match the Trino names it reports back (`array(varchar)`)
 
 ## [1.0.14] - 2026-07-23
 

@@ -149,6 +149,72 @@ def test_athena_types_match():
     assert physical_type_matches("varchar(255)", "varchar(100)", "athena")[0] is False
 
 
+def test_athena_hive_spellings_match_trino_reports():
+    # Glue stores Hive DDL spellings; Athena reports the Trino names back.
+    # STRING and VARCHAR are the same type there, so an imported contract
+    # (array<string>) must match its own column (array(varchar)).
+    assert physical_type_matches("string", "varchar", "athena")[0] is True
+    assert physical_type_matches("array<string>", "array(varchar)", "athena")[0] is True
+    # the alias belongs to the Trino family of dialects alone
+    assert physical_type_matches("string", "varchar", "postgres")[0] is False
+
+
+def test_snowflake_declared_scale_zero_matches_reconstructed_column():
+    # An INT column reports precision 38 / scale 0; the reconstructed native
+    # type must satisfy a contract declaring the type either way (#1377).
+    reconstructed = reconstruct_native_type("NUMBER", num_precision=38, num_scale=0)
+    assert physical_type_matches("NUMBER(38,0)", reconstructed, "snowflake")[0] is True
+    assert physical_type_matches("NUMBER(38)", reconstructed, "snowflake")[0] is True
+    assert physical_type_matches("NUMBER(12,2)", reconstructed, "snowflake")[0] is False
+
+
+def test_decimal_missing_scale_means_scale_zero():
+    # DECIMAL(p) is DECIMAL(p, 0) in every supported dialect.
+    assert physical_type_matches("NUMERIC(10)", "numeric(10,0)", "postgres")[0] is True
+    assert physical_type_matches("decimal(10,0)", "decimal(10)", "tsql")[0] is True
+    assert physical_type_matches("decimal(10,2)", "decimal(10)", "tsql")[0] is False
+
+
+def test_snowflake_structured_object_matches_show_columns_rendering():
+    # SHOW COLUMNS renders the real structured type with canonical names and
+    # default parameters filled in; the declared aliases must match it (#1377).
+    assert (
+        physical_type_matches("OBJECT(a INT, b TEXT)", "OBJECT(a NUMBER(38,0), b VARCHAR(16777216))", "snowflake")[0]
+        is True
+    )
+    # field order does not matter
+    assert physical_type_matches("OBJECT(b TEXT, a INT)", "OBJECT(a INT, b TEXT)", "snowflake")[0] is True
+    # nested structures recurse
+    assert (
+        physical_type_matches(
+            "OBJECT(a ARRAY(NUMBER), b OBJECT(c TEXT))",
+            "OBJECT(a ARRAY(NUMBER(38,0)), b OBJECT(c VARCHAR(99)))",
+            "snowflake",
+        )[0]
+        is True
+    )
+    # a different field name, element type, or declared precision still fails
+    assert physical_type_matches("OBJECT(a INT, b TEXT)", "OBJECT(a INT, c TEXT)", "snowflake")[0] is False
+    assert physical_type_matches("ARRAY(NUMBER)", "ARRAY(VARCHAR(5))", "snowflake")[0] is False
+    assert physical_type_matches("OBJECT(a NUMBER(5,2))", "OBJECT(a NUMBER(38,0))", "snowflake")[0] is False
+
+
+def test_snowflake_structured_object_matches_stripped_catalog_token():
+    # INFORMATION_SCHEMA reports a structured column as its bare token
+    # (OBJECT(a INT, b TEXT) as OBJECT); the stripped field list cannot
+    # contradict the declaration, so this matches rather than always failing.
+    assert physical_type_matches("OBJECT(a INT, b TEXT)", "OBJECT", "snowflake")[0] is True
+    assert physical_type_matches("ARRAY(NUMBER)", "ARRAY", "snowflake")[0] is True
+    # the base type is still enforced
+    assert physical_type_matches("OBJECT(a INT)", "ARRAY", "snowflake")[0] is False
+
+
+def test_snowflake_array_element_parameters():
+    assert physical_type_matches("ARRAY(NUMBER)", "ARRAY(NUMBER(38,0))", "snowflake")[0] is True
+    assert physical_type_matches("ARRAY(VARCHAR)", "ARRAY(VARCHAR(16777216))", "snowflake")[0] is True
+    assert physical_type_matches("MAP(VARCHAR, NUMBER)", "MAP(VARCHAR(16777216), NUMBER(38,0))", "snowflake")[0] is True
+
+
 # --- supports_native_type_introspection ------------------------------------
 def test_supported_backends():
     for s in ["sqlserver", "postgres", "redshift", "snowflake", "databricks", "trino", "oracle", "athena", "bigquery"]:

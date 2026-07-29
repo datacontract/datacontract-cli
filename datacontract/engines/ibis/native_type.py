@@ -92,6 +92,10 @@ def reconstruct_native_type(
         return f"{base}(max)" if length < 0 else f"{base}({length})"
 
     if base.lower() in _DECIMAL_TYPES and num_precision is not None:
+        # A zero scale is omitted (NUMBER(38), not NUMBER(38,0)): DECIMAL(p)
+        # means DECIMAL(p, 0) everywhere, and the shorter spelling is what a
+        # contract author would declare. The physical type comparison treats
+        # the two as equal.
         if num_scale:
             return f"{base}({int(num_precision)},{int(num_scale)})"
         return f"{base}({int(num_precision)})"

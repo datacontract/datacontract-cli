@@ -62,11 +62,22 @@ _SNOWFLAKE_FAMILIES = (
 )
 
 
-def _is_snowflake(dialect) -> bool:
+def _dialect_name(dialect) -> str:
     if isinstance(dialect, str):
-        return dialect.lower() == "snowflake"
+        return dialect.lower()
     name = getattr(dialect, "__name__", None) or type(dialect).__name__
-    return name.lower() == "snowflake"
+    return name.lower()
+
+
+def _is_snowflake(dialect) -> bool:
+    return _dialect_name(dialect) == "snowflake"
+
+
+# Athena DDL is written in Hive spellings while its catalog reports the Trino
+# names: STRING and VARCHAR are the same type there, and `datacontract import
+# athena` carries the Hive spelling (array<string>) into the contract.
+_TRINO_DIALECTS = {"athena", "trino", "presto"}
+_TRINO_TEXT_FAMILY = {exp.DataType.Type.VARCHAR, exp.DataType.Type.TEXT}
 
 
 def _parse(type_str: str, dialect) -> Optional[exp.DataType]:
@@ -120,6 +131,88 @@ def _base_sql(dtype: exp.DataType, dialect) -> str:
     return exp.DataType(this=dtype.this).sql(dialect=dialect).lower()
 
 
+def _base_compatible(exp_dt: exp.DataType, act_dt: exp.DataType, dialect) -> bool:
+    """Whether two parsed types share a base type, up to dialect aliases."""
+    both_numeric = {exp_dt.this, act_dt.this} <= exp.DataType.NUMERIC_TYPES
+    return (
+        exp_dt.this == act_dt.this
+        or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
+        or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
+        or (_is_snowflake(dialect) and any({exp_dt.this, act_dt.this} <= family for family in _SNOWFLAKE_FAMILIES))
+        or (_dialect_name(dialect) in _TRINO_DIALECTS and {exp_dt.this, act_dt.this} <= _TRINO_TEXT_FAMILY)
+    )
+
+
+# Types whose parameters are nested types or named fields rather than
+# length/precision numbers (Snowflake OBJECT/ARRAY/MAP, BigQuery STRUCT).
+_STRUCTURED_TYPES = {
+    exp.DataType.Type.OBJECT,
+    exp.DataType.Type.STRUCT,
+    exp.DataType.Type.ARRAY,
+    exp.DataType.Type.MAP,
+}
+
+
+def _is_structured(dtype: exp.DataType) -> bool:
+    return dtype.this in _STRUCTURED_TYPES
+
+
+def _scalar_params_equal(exp_dt: exp.DataType, act_dt: exp.DataType) -> bool:
+    """Compare length/precision parameters. ``DECIMAL(p)`` means ``DECIMAL(p, 0)``
+    in every supported dialect, so a missing scale is compared as 0."""
+    expected, actual = _params(exp_dt), _params(act_dt)
+    if {exp_dt.this, act_dt.this} <= exp.DataType.NUMERIC_TYPES:
+        if len(expected) == 1:
+            expected = expected + ["0"]
+        if len(actual) == 1:
+            actual = actual + ["0"]
+    return expected == actual
+
+
+def _fields(dtype: exp.DataType) -> Optional[dict[str, exp.DataType]]:
+    """Named fields of an OBJECT/STRUCT type, or ``None`` if any child is not a
+    plain ``name type`` field definition."""
+    fields: dict[str, exp.DataType] = {}
+    for child in dtype.expressions:
+        if not isinstance(child, exp.ColumnDef) or child.kind is None:
+            return None
+        fields[child.name.lower()] = child.kind
+    return fields
+
+
+def _dtype_matches(exp_dt: exp.DataType, act_dt: exp.DataType, dialect) -> bool:
+    """Structural comparison of two parsed types, for structured types and their
+    children: bases match up to dialect aliases; a side without parameters or
+    fields constrains nothing (a declared bare ``OBJECT`` matches any object
+    column, and a catalog that strips the field list — ``INFORMATION_SCHEMA``
+    reports a structured column as its bare token — cannot contradict the
+    declared fields); OBJECT/STRUCT fields are matched by name, without regard
+    to order, and their types compared recursively."""
+    if not _base_compatible(exp_dt, act_dt, dialect):
+        return False
+
+    exp_children = exp_dt.expressions
+    act_children = act_dt.expressions
+    if not exp_children or not act_children:
+        return True
+
+    if exp_dt.this in (exp.DataType.Type.OBJECT, exp.DataType.Type.STRUCT):
+        exp_fields, act_fields = _fields(exp_dt), _fields(act_dt)
+        if exp_fields is None or act_fields is None:
+            return _params(exp_dt) == _params(act_dt)
+        if set(exp_fields) != set(act_fields):
+            return False
+        return all(_dtype_matches(exp_fields[name], act_fields[name], dialect) for name in exp_fields)
+
+    if all(isinstance(child, exp.DataType) for child in [*exp_children, *act_children]):
+        # ARRAY element / MAP key and value types
+        if len(exp_children) != len(act_children):
+            return False
+        return all(_dtype_matches(e, a, dialect) for e, a in zip(exp_children, act_children))
+
+    return _scalar_params_equal(exp_dt, act_dt)
+
+
 def physical_type_matches(
     expected: Optional[str],
     actual: Optional[str],
@@ -152,19 +245,20 @@ def physical_type_matches(
             f"server under test; skipping the physical type check"
         )
 
-    both_numeric = {exp_dt.this, act_dt.this} <= exp.DataType.NUMERIC_TYPES
-    same_base = (
-        exp_dt.this == act_dt.this
-        or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
-        or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
-        or (_is_snowflake(dialect) and any({exp_dt.this, act_dt.this} <= family for family in _SNOWFLAKE_FAMILIES))
-    )
-    if not same_base:
+    if not _base_compatible(exp_dt, act_dt, dialect):
+        return False, f"expected physical type '{expected}' but the column is '{actual}'"
+
+    # Structured types carry nested types and named fields as their parameters,
+    # so they are compared structurally rather than as rendered strings (field
+    # order and dialect aliases inside the fields must not matter).
+    if _is_structured(exp_dt) or _is_structured(act_dt):
+        if _dtype_matches(exp_dt, act_dt, dialect):
+            return True, ""
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 
     # sqlglot fills in a dialect's default precision (a bare NUMBER parses as
     # DECIMAL(38,0)), so what the contract declares is read off the raw string.
-    if _split_base(_normalize_raw(expected))[1] and _params(exp_dt) != _params(act_dt):
+    if _split_base(_normalize_raw(expected))[1] and not _scalar_params_equal(exp_dt, act_dt):
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 
     return True, ""
