@@ -87,3 +87,34 @@ def test_command_page_lists_every_format_in_order(folder, prefix, command):
 
     assert listed == sorted(listed)
     assert listed == [page.stem for page in pages(folder)]
+
+
+# The llms.txt plugin emits pages in `includeOrder`, then everything it did not
+# match (`includeUnmatchedLast`). A page left out is not an error at build time,
+# it just silently sinks to the bottom of llms.txt -- which is how schema.md,
+# service-levels.md, semantics.md, ci-cd.md, comparison.md, contributing.md, and
+# entropy-data.md ended up out of reading order.
+CONFIG = DOCS.parent / "docusaurus.config.ts"
+
+
+def include_order() -> list[str]:
+    block = re.search(r"includeOrder: \[(.*?)\]", CONFIG.read_text(), re.S).group(1)
+    return re.findall(r"'([^']+)'", block)
+
+
+def top_level_pages():
+    """Every listed page at the docs root, in the order the sidebar renders them."""
+    listed = [page for page in DOCS.glob("*.md") if "unlisted: true" not in page.read_text()]
+    return sorted(listed, key=sidebar_position)
+
+
+def test_llms_txt_lists_every_top_level_page():
+    listed = {entry for entry in include_order() if "/" not in entry}
+
+    assert listed == {page.name for page in top_level_pages()}
+
+
+def test_llms_txt_orders_the_top_level_pages_like_the_sidebar():
+    listed = [entry for entry in include_order() if "/" not in entry]
+
+    assert listed == [page.name for page in top_level_pages()]

@@ -133,18 +133,26 @@ const config: Config = {
         description:
           'An open-source command-line tool for working with data contracts based on the Open Data Contract Standard (ODCS).',
         // Emit the docs in a logical learning order so llms.txt reads as a
-        // coherent guide instead of an arbitrary file listing.
+        // coherent guide instead of an arbitrary file listing. This mirrors the
+        // sidebar (the `sidebar_position` frontmatter and the `_category_.json`
+        // files), which is the curated reading order; keep the two in sync when
+        // adding a page. `tests/test_docs_ordering.py` fails on a page that is
+        // missing here, so it cannot silently fall to the end of llms.txt.
         includeOrder: [
           'intro.md',
           'quickstart.md',
           'open-data-contract-standard.md',
-          'migrate-dcs-to-odcs.md',
           'installation.md',
-          'editor.md',
           'testing/index.md',
           'testing/*.md',
+          'schema.md',
           'quality-rules/index.md',
           'quality-rules/*.md',
+          'service-levels.md',
+          'semantics.md',
+          'ci-cd.md',
+          'dbt.md',
+          'editor.md',
           'imports/index.md',
           'imports/*.md',
           'exports/index.md',
@@ -153,12 +161,16 @@ const config: Config = {
           'reference/*.md',
           'commands/index.md',
           'commands/*.md',
+          'api.md',
           'python-library.md',
           'best-practices.md',
-          'dbt.md',
-          'api.md',
           'extending.md',
+          'migrate-dcs-to-odcs.md',
+          'comparison.md',
+          'entropy-data.md',
           'release-notes.md',
+          'contributing.md',
+          'faq.md',
         ],
         includeUnmatchedLast: true,
       },
