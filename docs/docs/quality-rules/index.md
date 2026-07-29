@@ -51,7 +51,7 @@ ODCS defines four `type`s of quality rule. Each has its own page:
 
 ## Quality dimensions
 
-Any rule can be classified with a `dimension` — the aspect of data quality it protects. It is optional, works with every rule type, and is documentation metadata: it does not change whether or how the rule runs, but it makes the contract's quality coverage readable at a glance.
+Any rule can be classified with a `dimension` — the aspect of data quality it protects. It is optional and works with every rule type. It documents what the contract's quality coverage adds up to, and `datacontract test --dimension` runs one aspect at a time.
 
 ```yaml
 schema:
@@ -91,6 +91,28 @@ Use `--checks` to restrict a run to quality rules:
 ```bash
 datacontract test --checks quality datacontract.yaml
 ```
+
+Use `--dimension` to run one aspect of quality across the whole contract:
+
+```bash
+datacontract test --dimension uniqueness datacontract.yaml
+datacontract test --dimension completeness,accuracy datacontract.yaml
+```
+
+This selects quality rules by their declared `dimension` **and** the built-in checks that measure the same thing — `--dimension uniqueness` runs your `duplicateValues` rules alongside the `unique` and primary-key checks derived from the schema.
+
+Quality rules that declare no `dimension` are never selected: only the author can say what a custom rule measures. If nothing matches, the run executes nothing and reports no checks.
+
+### Dimensions of the built-in checks
+
+[Schema checks](../schema.md) and [service levels](../service-levels.md) have no `dimension` field to set, so the CLI assigns each the dimension it measures:
+
+| Dimension | Built-in checks |
+|---|---|
+| `completeness` | `required` fields, primary key not-null |
+| `uniqueness` | `unique` fields, primary key uniqueness (including composite keys) |
+| `conformity` | field presence, logical and physical types, nested types, `pattern`, `enum`, length and value bounds, JSON Schema validation, `slaProperties` retention |
+| `timeliness` | `slaProperties` freshness |
 
 ## Where quality rules are used
 

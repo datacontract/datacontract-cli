@@ -109,6 +109,8 @@ Checks fall into categories you can select with `--checks`:
 
 Omit `--checks` to run all of them.
 
+`--dimension` cuts across those categories instead: it selects every check that measures one aspect of data quality — the [quality rules](../quality-rules/index.md#quality-dimensions) tagged with that `dimension` plus the schema and service level checks that measure the same thing.
+
 ## Configuring the connection
 
 The connection details (host, catalog, location, …) live in the contract's `servers` block; **credentials are provided as environment variables**.
@@ -135,7 +137,7 @@ The page for each source above lists its `servers` fields and the environment va
 
 ## Options
 
-`--server`, `--schema-name`, and `--checks` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
+`--server`, `--schema-name`, `--checks`, and `--dimension` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
 
 For CI/CD pipelines, use the [`ci`](../commands/ci.md) command, which wraps `test` with annotations, summaries, and exit-code control.
 

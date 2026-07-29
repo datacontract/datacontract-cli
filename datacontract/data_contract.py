@@ -37,6 +37,7 @@ class DataContract:
         publish_test_results: bool = False,
         all_errors: bool = False,
         check_categories: set[str] | None = None,
+        dimensions: set[str] | None = None,
         fastapi_url: str = None,
         include_failed_samples: bool = False,
     ):
@@ -54,6 +55,7 @@ class DataContract:
         self._ssl_verification = ssl_verification
         self._all_errors = all_errors
         self._check_categories = check_categories
+        self._dimensions = dimensions
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
 
@@ -146,6 +148,7 @@ class DataContract:
                 self._duckdb_connection,
                 schema_name=self._schema_name,
                 check_categories=self._check_categories,
+                dimensions=self._dimensions,
                 include_failed_samples=self._include_failed_samples,
             )
 

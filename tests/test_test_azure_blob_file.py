@@ -339,3 +339,55 @@ class TestEndToEndWiring:
         assert run.result == ResultEnum.passed, [
             (c.type, c.name, c.result, c.reason) for c in run.checks if c.result != ResultEnum.passed
         ]
+
+
+class TestDimensionFilter:
+    """`--dimension` also selects the Azure blob quality checks."""
+
+    def _run_with_dimensions(self, dimensions: set[str] | None) -> Run:
+        data_contract = _load_contract()
+        schema = data_contract.schema_[0]
+        # The fixture declares no dimensions; tag two rules so the filter has
+        # something to select on.
+        schema.quality[0].dimension = "coverage"
+        size_prop = next(p for p in schema.properties if p.name == "size")
+        size_prop.quality[0].dimension = "conformity"
+
+        run = _make_run()
+        with patch(
+            "datacontract.engines.datacontract.check_azure_blob_file._build_blob_service_client",
+            return_value=_patched_client([_make_blob("raw/orders/a.json", size=1024)]),
+        ):
+            check_azure_blob_file(run, data_contract, data_contract.servers[0], dimensions=dimensions)
+        return run
+
+    def test_author_dimension_selects_only_that_rule(self):
+        """`coverage` is declared by the file-count rule alone."""
+        run = self._run_with_dimensions({"coverage"})
+        assert [c.type for c in run.checks] == ["azure_file_count_quality"]
+
+    def test_selects_only_the_matching_property_rule(self):
+        run = self._run_with_dimensions({"conformity"})
+        assert [c.type for c in run.checks] == ["azure_file_property_quality"]
+        assert run.checks[0].field == "size"
+
+    def test_required_checks_map_to_completeness(self):
+        run = self._run_with_dimensions({"completeness"})
+        assert _checks_by_type(run, "azure_file_property_required")
+        assert all(c.type == "azure_file_property_required" for c in run.checks)
+
+    def test_rules_without_a_dimension_are_never_selected(self):
+        """The contentType/blobType quality rules declare none, so nothing selects them."""
+        for dimension in ("accuracy", "completeness", "conformity", "coverage", "timeliness", "uniqueness"):
+            run = self._run_with_dimensions({dimension})
+            undimensioned = [
+                c
+                for c in run.checks
+                if c.type == "azure_file_property_quality" and c.field in ("contentType", "blobType")
+            ]
+            assert not undimensioned, dimension
+
+    def test_no_filter_still_runs_everything(self):
+        run = self._run_with_dimensions(None)
+        assert _checks_by_type(run, "azure_file_property_required")
+        assert _checks_by_type(run, "azure_file_count_quality")

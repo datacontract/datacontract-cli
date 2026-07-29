@@ -16,6 +16,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -71,6 +72,7 @@ def check_azure_blob_file(
     server: Server,
     schema_name: str = "all",
     check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
 ) -> None:
     """Run Azure Blob Storage metadata checks for all blob-logicalType schemas.
 
@@ -101,6 +103,7 @@ def check_azure_blob_file(
             result=ResultEnum.failed,
             reason="Server block has no 'location' property. Cannot resolve container and prefix.",
             check_categories=check_categories,
+            dimensions=dimensions,
         )
         return
 
@@ -116,6 +119,7 @@ def check_azure_blob_file(
             result=ResultEnum.error,
             reason=f"Could not connect to Azure Blob Storage: {exc}",
             check_categories=check_categories,
+            dimensions=dimensions,
         )
         return
 
@@ -134,6 +138,7 @@ def check_azure_blob_file(
             "azure://<container>@<account>.blob.core.windows.net/<prefix>, "
             "wasbs://<container>@<account>.blob.core.windows.net/<prefix>.",
             check_categories=check_categories,
+            dimensions=dimensions,
         )
         return
 
@@ -142,7 +147,7 @@ def check_azure_blob_file(
     )
 
     for schema in blob_schemas:
-        _check_schema(run, schema, blob_service_client, container_name, prefix, check_categories)
+        _check_schema(run, schema, blob_service_client, container_name, prefix, check_categories, dimensions)
 
 
 # ---------------------------------------------------------------------------
@@ -157,6 +162,7 @@ def _check_schema(
     container_name: str,
     prefix: str,
     check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
 ) -> None:
     schema_name = schema.name or "unknown"
 
@@ -189,6 +195,7 @@ def _check_schema(
             result=ResultEnum.error,
             reason=reason,
             check_categories=check_categories,
+            dimensions=dimensions,
         )
         return
 
@@ -201,11 +208,11 @@ def _check_schema(
     # ── Per-property checks (driven by schema.properties) ────────────────────
     if schema.properties:
         for prop in schema.properties:
-            _check_property(run, schema_name, prop, blobs, check_categories)
+            _check_property(run, schema_name, prop, blobs, check_categories, dimensions)
 
     # ── Quality file-count thresholds on the schema object ───────────────────
     if schema.quality:
-        _check_file_count_quality(run, schema_name, schema.quality, file_count, check_categories)
+        _check_file_count_quality(run, schema_name, schema.quality, file_count, check_categories, dimensions)
 
 
 # ---------------------------------------------------------------------------
@@ -219,6 +226,7 @@ def _check_property(
     prop: SchemaProperty,
     blobs: List["BlobProperties"],
     check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
 ) -> None:
     """Run required + quality checks for one declared schema property across all blobs."""
     prop_name = prop.name
@@ -243,6 +251,7 @@ def _check_property(
                 reason=f"{len(missing)} blob(s) have no value for '{prop_name}'.",
                 details="; ".join(missing[:5]) + (" …" if len(missing) > 5 else ""),
                 check_categories=check_categories,
+                dimensions=dimensions,
             )
         else:
             _append_check(
@@ -255,6 +264,7 @@ def _check_property(
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) have a value for '{prop_name}'.",
                 check_categories=check_categories,
+                dimensions=dimensions,
             )
 
     # ── quality constraints ────────────────────────────────────────────────────
@@ -291,6 +301,8 @@ def _check_property(
                 reason=f"{len(violations)} blob(s) violate '{prop_name} {constraint_desc}'.",
                 details=details,
                 check_categories=check_categories,
+                dimensions=dimensions,
+                dimension=quality.dimension,
             )
         else:
             _append_check(
@@ -303,6 +315,8 @@ def _check_property(
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) satisfy '{prop_name} {constraint_desc}'.",
                 check_categories=check_categories,
+                dimensions=dimensions,
+                dimension=quality.dimension,
             )
 
 
@@ -410,6 +424,7 @@ def _check_file_count_quality(
     quality_list: List[DataQuality],
     file_count: int,
     check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
 ) -> None:
     """Evaluate schema-level quality thresholds interpreted as file-count constraints."""
     for quality in quality_list:
@@ -426,6 +441,8 @@ def _check_file_count_quality(
             result=ResultEnum.passed if passed else ResultEnum.failed,
             reason=reason,
             check_categories=check_categories,
+            dimensions=dimensions,
+            dimension=quality.dimension,
         )
 
 
@@ -593,8 +610,16 @@ def _append_check(
     field: Optional[str] = None,
     details: Optional[str] = None,
     check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
+    dimension: Optional[str] = None,
 ) -> None:
     if check_categories is not None and category not in check_categories:
+        return
+    # A rule's own ODCS dimension wins; otherwise fall back to the one this
+    # built-in check measures. Checks with neither are dropped by the filter.
+    if dimension is None:
+        dimension = default_dimension(check_type)
+    if dimensions is not None and dimension not in dimensions:
         return
     run.checks.append(
         Check(

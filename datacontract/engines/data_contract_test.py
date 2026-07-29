@@ -7,6 +7,7 @@ import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.checks.create_checks import create_checks
+from datacontract.engines.checks.dimensions import default_dimension
 
 if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
@@ -30,6 +31,7 @@ def execute_data_contract_test(
     duckdb_connection: "DuckDBPyConnection" = None,
     schema_name: str = "all",
     check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
     include_failed_samples: bool = False,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -69,16 +71,32 @@ def execute_data_contract_test(
         specs = [s for s in specs if s.category in check_categories]
         if not specs:
             run.log_warn(f"No checks found for categories: {', '.join(sorted(check_categories))}")
+    # Every check carries a dimension: the rule's own ODCS `quality.dimension`,
+    # or the one the built-in check measures (see checks/dimensions.py).
+    if dimensions is not None:
+        specs = [s for s in specs if s.dimension in dimensions]
+        if not specs:
+            run.log_warn(f"No checks found for dimensions: {', '.join(sorted(dimensions))}")
     run.checks.extend(build_check_stubs(specs))
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
     if server.format == "json" and server.type != "kafka":
-        if check_categories is None or "schema" in check_categories:
+        # The JSON Schema validation emits checks of type "schema" throughout.
+        if (check_categories is None or "schema" in check_categories) and (
+            dimensions is None or default_dimension("schema") in dimensions
+        ):
             check_jsonschema(run, data_contract, server, schema_name=schema_name)
     # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
     if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
-        check_azure_blob_file(run, data_contract, server, schema_name=schema_name, check_categories=check_categories)
+        check_azure_blob_file(
+            run,
+            data_contract,
+            server,
+            schema_name=schema_name,
+            check_categories=check_categories,
+            dimensions=dimensions,
+        )
     execute_ibis_checks(
         run,
         data_contract,

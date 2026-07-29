@@ -21,6 +21,7 @@ datacontract test [LOCATION]
 | `--server` | `all` | Which server to test (the key in the `servers` block), or `all`. |
 | `--schema-name` | `all` | Which schema to test, or `all`. |
 | `--checks` | all | Comma-separated categories: `schema`, `quality`, `servicelevel`, `custom`. |
+| `--dimension` | all | Comma-separated [quality dimensions](../quality-rules/index.md#quality-dimensions): `accuracy`, `completeness`, `conformity`, `consistency`, `coverage`, `timeliness`, `uniqueness`. Runs the quality rules declaring a matching `dimension` plus the [built-in checks](../quality-rules/index.md#dimensions-of-the-built-in-checks) that measure it. |
 | `--publish` | — | URL to publish the results to after the test. |
 | `--output` | — | File path to write results to. |
 | `--output-format` | — | `json` or `junit`. |

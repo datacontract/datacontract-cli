@@ -26,6 +26,36 @@ class CheckCategory(str, Enum):
     custom = "custom"
 
 
+class QualityDimension(str, Enum):
+    """The ODCS `quality.dimension` enum (see the bundled ODCS JSON schema)."""
+
+    accuracy = "accuracy"
+    completeness = "completeness"
+    conformity = "conformity"
+    consistency = "consistency"
+    coverage = "coverage"
+    timeliness = "timeliness"
+    uniqueness = "uniqueness"
+
+
+def _parse_enum_csv(value: str | None, enum_cls: type[Enum], option: str, label: str) -> set[str] | None:
+    """Parse a comma-separated option into a set of enum values, or None if unset."""
+    if value is None:
+        return None
+    allowed = [e.value for e in enum_cls]
+    raw = [v.strip() for v in value.split(",") if v.strip()]
+    if not raw:
+        console.print(f"[red]Empty {option} specified.[/red]")
+        console.print(f"Available {label}: {', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    invalid = sorted(set(raw) - set(allowed))
+    if invalid:
+        console.print(f"[red]Invalid {option} specified: {', '.join(invalid)}[/red]")
+        console.print(f"Available {label}: {', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    return {enum_cls(v).value for v in raw}
+
+
 @app.command(
     name="test",
     epilog="Example: datacontract test datacontract.yaml --server production",
@@ -73,6 +103,15 @@ def test(
             f"(available: {', '.join(c.value for c in CheckCategory)}). Omit to enable all."
         ),
     ] = None,
+    dimension: Annotated[
+        str,
+        typer.Option(
+            help="Comma-separated list of quality dimensions to run "
+            f"(available: {', '.join(d.value for d in QualityDimension)}). "
+            "Runs the quality rules declaring a matching `dimension`, plus the schema "
+            "and service level checks that measure it. Omit to run everything."
+        ),
+    ] = None,
     include_failed_samples: Annotated[
         bool,
         typer.Option(
@@ -100,20 +139,8 @@ def test(
     enable_debug_logging(debug, otherwise_disable_stderr=True)
     validate_publish_url(publish)
 
-    check_categories = None
-    if checks is not None:
-        raw = [c.strip() for c in checks.split(",") if c.strip()]
-        if not raw:
-            console.print("[red]Empty --checks specified.[/red]")
-            console.print(f"Available categories: {', '.join(c.value for c in CheckCategory)}")
-            raise typer.Exit(code=1)
-        try:
-            check_categories = {CheckCategory(c).value for c in raw}
-        except ValueError:
-            invalid = sorted(set(raw) - {c.value for c in CheckCategory})
-            console.print(f"[red]Invalid --checks specified: {', '.join(invalid)}[/red]")
-            console.print(f"Available categories: {', '.join(c.value for c in CheckCategory)}")
-            raise typer.Exit(code=1)
+    check_categories = _parse_enum_csv(checks, CheckCategory, "--checks", "categories")
+    dimensions = _parse_enum_csv(dimension, QualityDimension, "--dimension", "dimensions")
 
     output_format = resolve_output_format(output_format, output)
 
@@ -129,6 +156,7 @@ def test(
         schema_name=schema_name,
         ssl_verification=ssl_verification,
         check_categories=check_categories,
+        dimensions=dimensions,
         inline_references=inline_references,
         include_failed_samples=include_failed_samples,
     ).test()

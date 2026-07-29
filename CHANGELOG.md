@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract test --dimension` runs only the checks measuring one data quality dimension, e.g. `--dimension uniqueness`; it matches the ODCS `quality.dimension` of a rule and the schema and service level checks that measure the same aspect
 - New `dataframe` extra installs just what testing Spark DataFrames needs: `pip install datacontract-cli[dataframe]`
 - `datacontract import trino` creates a data contract from a Trino catalog, including a ready-to-test `servers` block
 - `datacontract import oracle` creates a data contract from a live Oracle database, including a ready-to-test `servers` block

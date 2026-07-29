@@ -111,6 +111,12 @@ class CheckSpec:
     # downgrades a failing check to a warning instead of a failure. None => fail.
     severity: Optional[str] = None
 
+    # ODCS quality.dimension (accuracy, completeness, conformity, consistency,
+    # coverage, timeliness, uniqueness). Documentation metadata that `test`
+    # can filter on (--dimension). None for schema and service level checks,
+    # and for quality rules that do not declare one.
+    dimension: Optional[str] = None
+
     # --- metric arguments -------------------------------------------------
     missing_values: Optional[List[Any]] = None  # MISSING_COUNT / INVALID_COUNT
     valid_values: Optional[List[Any]] = None  # INVALID_COUNT

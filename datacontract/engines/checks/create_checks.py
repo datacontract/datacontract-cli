@@ -22,6 +22,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 
@@ -184,7 +185,13 @@ def create_checks(
             continue
         checks.extend(_to_schema_checks(schema_obj, server))
     checks.extend(_to_servicelevel_checks(data_contract, server))
-    return [c for c in checks if c is not None]
+    checks = [c for c in checks if c is not None]
+    # Schema and service level checks cannot declare an ODCS dimension, so fill
+    # in the one they measure. A rule that declared its own keeps it.
+    for check in checks:
+        if check.dimension is None:
+            check.dimension = default_dimension(check.type)
+    return checks
 
 
 def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server]) -> bool:
@@ -484,6 +491,7 @@ def _missing_count_check(
     missing_values=None,
     threshold_is_percent=False,
     severity=None,
+    dimension=None,
 ) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
@@ -496,11 +504,14 @@ def _missing_count_check(
         threshold=threshold,
         threshold_is_percent=threshold_is_percent,
         severity=severity,
+        dimension=dimension,
         missing_values=missing_values,
     )
 
 
-def _duplicate_count_check(model, field, check_type, threshold, name, category="quality", severity=None) -> CheckSpec:
+def _duplicate_count_check(
+    model, field, check_type, threshold, name, category="quality", severity=None, dimension=None
+) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
         category=category,
@@ -511,6 +522,7 @@ def _duplicate_count_check(model, field, check_type, threshold, name, category="
         metric=MetricType.DUPLICATE_COUNT,
         threshold=threshold,
         severity=severity,
+        dimension=dimension,
         columns=[field],
     )
 
@@ -524,6 +536,7 @@ def _invalid_count_check(
     category="schema",
     threshold_is_percent=False,
     severity=None,
+    dimension=None,
     **kwargs,
 ) -> CheckSpec:
     return CheckSpec(
@@ -537,11 +550,12 @@ def _invalid_count_check(
         threshold=threshold or Threshold(Op.EQ, 0),
         threshold_is_percent=threshold_is_percent,
         severity=severity,
+        dimension=dimension,
         **kwargs,
     )
 
 
-def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
+def _row_count_check(model, threshold: Threshold, severity=None, dimension=None) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__row_count",
         category="quality",
@@ -552,6 +566,7 @@ def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
         metric=MetricType.ROW_COUNT,
         threshold=threshold,
         severity=severity,
+        dimension=dimension,
     )
 
 
@@ -574,6 +589,7 @@ def _quality_checks(
                     model=model,
                     field=field,
                     metric=MetricType.UNSUPPORTED,
+                    dimension=quality.dimension,
                     preset_result="warning",
                     preset_reason=(
                         "Raw SodaCL custom checks (quality.type: custom, engine: soda) are no longer "
@@ -611,6 +627,7 @@ def _quality_checks(
                     query=query,
                     dialect=getattr(quality, "dialect", None),
                     severity=quality.severity,
+                    dimension=quality.dimension,
                 )
             )
         elif quality.metric is not None:
@@ -627,6 +644,7 @@ def _quality_checks(
 def _quality_metric_check(model, field, quality: DataQuality, threshold: Threshold) -> List[CheckSpec]:
     metric = quality.metric
     severity = quality.severity
+    dimension = quality.dimension
     is_percent = is_percent_unit(quality)
 
     # Percent thresholds only make sense for the count-of-bad-rows metrics, where
@@ -637,7 +655,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
         is_percent = False
 
     if metric == "rowCount":
-        return [_row_count_check(model, threshold, severity=severity)]
+        return [_row_count_check(model, threshold, severity=severity, dimension=dimension)]
     if metric == "duplicateValues":
         if field is None:
             cols = quality.arguments.get("properties") if quality.arguments else None
@@ -654,6 +672,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                     threshold=threshold,
                     columns=cols,
                     severity=severity,
+                    dimension=dimension,
                 )
             ]
         return [
@@ -664,6 +683,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 threshold,
                 name=f"Check that field {field} has duplicate_count {threshold.describe()}",
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "nullValues":
@@ -679,6 +699,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 name=f"Check that field {field} has missing_count {threshold.describe()}",
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "invalidValues":
@@ -705,6 +726,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 valid_regex=pattern,
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "missingValues":
@@ -724,6 +746,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 missing_values=missing_values or None,
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     logger.warning(f"Quality check {metric} is not yet supported")
