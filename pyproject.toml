@@ -138,14 +138,15 @@ redshift = [
 # publishes wheels for all platforms including manylinux2014_aarch64, so no
 # platform markers are needed.
 s3 = [
+  "datacontract-cli[duckdb]",
   "s3fs>=2025.2.0,<2027.0.0",
   "duckdb-extension-httpfs>=1.5.0,<1.6.0",
   "duckdb-extension-aws>=1.5.0,<1.6.0",
 ]
 
+# GCS is an S3-compatible server, tested through the same connection setup.
 gcs = [
-  "datacontract-cli[duckdb]",
-  "duckdb-extension-httpfs>=1.5.0,<1.6.0",
+  "datacontract-cli[s3]",
 ]
 
 azure = [

@@ -35,6 +35,16 @@ from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
 
+# Most server types have an install extra of the same name. These do not: they
+# are read with duckdb, so naming the server type would send users to an extra
+# that does not exist (`local`) or to an unrelated one (`api` installs the web
+# server dependencies, not a test backend).
+_INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb"}
+
+
+def install_extra_for(server_type: Optional[str]) -> str:
+    return _INSTALL_EXTRAS.get(server_type, server_type)
+
 
 class _ColumnNotFound(Exception):
     pass
@@ -116,7 +126,7 @@ def execute_ibis_checks(
         server_type = get_server_type(server)
         reason = (
             f"The '{server_type}' backend is not installed. "
-            f"Install it with: pip install 'datacontract-cli[{server_type}]'"
+            f"Install it with: pip install 'datacontract-cli[{install_extra_for(server_type)}]'"
         )
         logger.exception("ibis backend import failed")
         run.log_error(reason)

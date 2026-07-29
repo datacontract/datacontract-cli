@@ -95,7 +95,7 @@ Available extras:
 | Databricks Runtime | `pip install datacontract-cli[databricks-runtime]` (inside Databricks, where the cluster provides PySpark — see [Databricks Notebooks and Jobs](./databricks.md)) |
 | DataFrame (Spark) | `pip install datacontract-cli[dataframe]` |
 | DBML | `pip install datacontract-cli[dbml]` |
-| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
+| DuckDB (local file and API response testing) | `pip install datacontract-cli[duckdb]` |
 | Excel | `pip install datacontract-cli[excel]` |
 | GCS integration | `pip install datacontract-cli[gcs]` |
 | Iceberg | `pip install datacontract-cli[iceberg]` |
