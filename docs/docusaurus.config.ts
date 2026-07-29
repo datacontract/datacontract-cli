@@ -166,6 +166,7 @@ const config: Config = {
           'commands/*/*.md',
           'api.md',
           'python-library.md',
+          'databricks.md',
           'best-practices.md',
           'extending.md',
           'migrate-dcs-to-odcs.md',

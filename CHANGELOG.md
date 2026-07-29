@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New `databricks-runtime` extra for installing inside a Databricks Runtime, where the cluster already provides PySpark: `pip install datacontract-cli[databricks-runtime]` (#1211 @chifu1234)
 - The docs Commands reference documents the global options `--version` and `--system-truststore`, and every import and export guide links to its command page and back
 - `datacontract test --dimension` runs only the checks measuring one data quality dimension, e.g. `--dimension uniqueness`; it matches the ODCS `quality.dimension` of a rule and the schema and service level checks that measure the same aspect
 - New `dataframe` extra installs just what testing Spark DataFrames needs: `pip install datacontract-cli[dataframe]`

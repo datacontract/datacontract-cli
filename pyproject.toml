@@ -75,6 +75,24 @@ databricks = [
   "pyspark>=3.5.0,<5.0.0",
 ]
 
+# `databricks` for installing *inside* a Databricks Runtime: identical, minus
+# pyspark. The cluster already provides Spark, and letting pip pull its own
+# pyspark shadows the runtime's build. ibis ships the pyspark backend module in
+# the base wheel and only declares the pyspark dependency behind its `pyspark`
+# extra, so `ibis.pyspark.connect(session=spark)` still works against the
+# cluster's session without it.
+#
+# Deliberately not part of `all`: that includes `databricks` and `dataframe`,
+# which both pin pyspark, so the two cannot be resolved together.
+databricks-runtime = [
+  "ibis-framework[databricks]>=10.0.0,<13.0.0",
+  "databricks-sql-connector>=3.7.0,<4.5.0",
+  "databricks-sdk<0.123.0",
+  # ibis's pyspark backend imports packaging, which ibis declares only in its
+  # `pyspark` extra — the one deliberately left out above.
+  "packaging>=21.3,<27.0",
+]
+
 iceberg = [
   "pyiceberg==0.11.1"
 ]

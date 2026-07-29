@@ -1,5 +1,5 @@
 ---
-sidebar_position: 26
+sidebar_position: 27
 title: "Contributing"
 description: "Set up a development environment, run the tests, and open a pull request for the Data Contract CLI."
 ---

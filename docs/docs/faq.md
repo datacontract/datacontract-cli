@@ -1,5 +1,5 @@
 ---
-sidebar_position: 27
+sidebar_position: 28
 title: "FAQ"
 description: "Short answers to the questions that come up most often when working with the Data Contract CLI."
 ---

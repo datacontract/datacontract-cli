@@ -96,7 +96,9 @@ run.result
 ```
 
 :::tip[Installing on Databricks compute]
-On Databricks LTS ML runtimes (15.4, 16.4), installing via `%pip install` in notebooks can cause issues. Instead, add `datacontract-cli[databricks]` as a **PyPI library** on the cluster (Compute → your cluster → Libraries → Install new → PyPI), then restart the cluster.
+Use the `databricks-runtime` extra there, not `databricks`: the cluster already provides PySpark, and `databricks` would install its own copy over the runtime's. On the LTS ML runtimes (15.4, 16.4), installing via `%pip install` in notebooks can also cause issues — add `datacontract-cli[databricks-runtime]` as a **PyPI library** on the cluster instead (Compute → your cluster → Libraries → Install new → PyPI), then restart the cluster.
+
+See **[Databricks Notebooks and Jobs](../databricks.md)** for the full walkthrough.
 :::
 
 ## Troubleshooting
