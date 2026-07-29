@@ -31,4 +31,4 @@ datacontract edit [OPTIONS] [LOCATION]
 datacontract edit datacontract.yaml
 ```
 
-Guide: **[Edit your contract](../editor.md)**.
+Guide: **[Edit your Contract](../editor.md)**.

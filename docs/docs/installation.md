@@ -6,7 +6,7 @@ description: "Install the Data Contract CLI with uv, uvx, pip, pipx, or Docker, 
 
 # Installation
 
-Python 3.10, 3.11, and 3.12 are supported. We recommend Python 3.11.
+Python 3.10–3.14 are supported. We recommend Python 3.11.
 
 The `[all]` extra installs every optional data-source dependency. To keep the install small, replace it with just the [extras](#optional-dependencies-extras) you need.
 

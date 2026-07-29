@@ -54,7 +54,7 @@ COMMAND_ORDER = [
 GUIDES = {
     "test": ("Test your Data", "../testing/index.md"),
     "dbt": ("Sync with dbt", "../dbt.md"),
-    "edit": ("Edit your contract", "../editor.md"),
+    "edit": ("Edit your Contract", "../editor.md"),
     "ci": ("Scheduling and CI/CD", "../ci-cd.md"),
     "api": ("Run as a web server", "../api.md"),
     "publish": ("Publish to Entropy Data", "../entropy-data.md"),
