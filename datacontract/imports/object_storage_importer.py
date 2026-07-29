@@ -30,13 +30,18 @@ FORMATS_BY_SUFFIX = {
 SUPPORTED_FORMATS = {"json", "csv", "parquet", "delta"}
 
 # The import format is the name a user types; the server type is what goes into
-# the contract. They differ for ADLS, which ODCS calls `azure`.
-SERVER_TYPES = {"s3": "s3", "gcs": "gcs", "adls": "azure"}
+# the contract. They differ for ADLS, which ODCS calls `azure`, and for GCS,
+# which ODCS has no server type for at all.
+SERVER_TYPES = {"s3": "s3", "gcs": "s3", "adls": "azure"}
 
-# duckdb reads GCS through the S3-compatible endpoint, hence the s3:// scheme there.
+# GCS speaks the S3 protocol through its interoperability endpoint, so a GCS
+# import writes an ODCS `s3` server pinned to that endpoint. Credentials are the
+# bucket's HMAC key, supplied through the DATACONTRACT_S3_* variables.
+GCS_ENDPOINT_URL = "https://storage.googleapis.com"
+DEFAULT_ENDPOINT_URLS = {"gcs": GCS_ENDPOINT_URL}
+
 _EXAMPLE_LOCATIONS = {
     "s3": "s3://my-bucket/orders/*.json",
-    "gcs": "s3://my-bucket/orders/*.json",
     "azure": "abfss://my-container/orders/*.json",
 }
 
@@ -51,11 +56,11 @@ _READERS = {
 class ObjectStorageImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         return import_object_storage(
-            location=source,
+            location=normalize_location(source, self.import_format),
             server_type=SERVER_TYPES[self.import_format],
             format=import_args.get("file_format"),
             delimiter=import_args.get("delimiter"),
-            endpoint_url=import_args.get("endpoint_url"),
+            endpoint_url=import_args.get("endpoint_url") or DEFAULT_ENDPOINT_URLS.get(self.import_format),
         )
 
 
@@ -124,6 +129,15 @@ def import_object_storage(
     return odcs
 
 
+def normalize_location(location: Optional[str], import_format: str) -> Optional[str]:
+    """Rewrite a GCS location to the s3:// scheme duckdb's S3 reader expects."""
+    if location and import_format == "gcs":
+        for scheme in ("gs://", "gcs://"):
+            if location.startswith(scheme):
+                return "s3://" + location[len(scheme) :]
+    return location
+
+
 def detect_format(location: str) -> Optional[str]:
     """Derive the format from the object suffix; delta has none, so it needs --format."""
     match = re.search(r"(\.[A-Za-z0-9]+)(?:\?.*)?$", location)
@@ -143,11 +157,10 @@ def _read_columns(server: Server, location: str, format: str):
     from datacontract.engines.ibis.connections.duckdb_connection import (
         _import_duckdb,
         setup_azure_connection,
-        setup_gcs_connection,
         setup_s3_connection,
     )
 
-    setup = {"s3": setup_s3_connection, "gcs": setup_gcs_connection, "azure": setup_azure_connection}[server.type]
+    setup = {"s3": setup_s3_connection, "azure": setup_azure_connection}[server.type]
     duckdb = _import_duckdb()
     con = duckdb.connect(database=":memory:")
     setup(con, server)

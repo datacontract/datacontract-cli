@@ -45,6 +45,7 @@ marked as such in the entry.
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) ([#1220](https://github.com/datacontract/datacontract-cli/issues/1220) [@DMZ22](https://github.com/DMZ22))
 
 ### Fixed
+- `datacontract import gcs` wrote `type: gcs`, which is not an ODCS server type, so the imported contract failed `datacontract lint` and `datacontract test`; GCS is now written as an `s3` server on the Google interoperability endpoint
 - A data contract could inject SQL into the duckdb session through `endpointUrl`, which is interpolated into the statement that stores the S3, GCS and Azure credentials; every value is escaped now
 - The `datacontract api` server accepted a local file path as the `schema` query parameter, so a caller could have it read files from the server's filesystem; only `http(s)` URLs are accepted now
 - Trino physical type checks were silently skipped: its `information_schema` has no length or precision columns, so the catalog query failed and a wrong `physicalType` still passed

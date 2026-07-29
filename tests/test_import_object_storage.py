@@ -125,24 +125,46 @@ def test_an_unreadable_object_explains_the_location_and_format(minio, credential
 # which is how the existing gcs/azure suites are gated, so only the dispatch is
 # checked here.
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("storage, server_type", [("s3", "s3"), ("gcs", "gcs"), ("adls", "azure")])
+@pytest.mark.parametrize("storage, server_type", [("s3", "s3"), ("gcs", "s3"), ("adls", "azure")])
 def test_each_storage_writes_its_own_server_type(storage, server_type, monkeypatch):
-    from datacontract.imports import object_storage_importer
+    result = _import_with_stubbed_read(monkeypatch, storage, "s3://bucket/orders/orders.csv")
 
-    captured = {}
-
-    def fake_read_columns(server, location, file_format):
-        captured["server"] = server
-        return [("id", "BIGINT")]
-
-    monkeypatch.setattr(object_storage_importer, "_read_columns", fake_read_columns)
-    result = DataContract.import_from_source(storage, "s3://bucket/orders/orders.csv")
-
-    # ODCS calls the Azure server type `azure`, so the format name and the
-    # server type deliberately differ for adls
-    assert captured["server"].type == server_type
+    # ODCS calls the Azure server type `azure` and has no GCS type at all, so
+    # the format name and the server type deliberately differ for adls and gcs
     assert result.servers[0].type == server_type
     assert result.servers[0].format == "csv"
+
+
+def test_gcs_writes_an_odcs_server_the_cli_can_lint_and_test(monkeypatch):
+    """ODCS has no `gcs` server type; GCS is reached as an S3-compatible server."""
+    result = _import_with_stubbed_read(monkeypatch, "gcs", "s3://bucket/orders/orders.csv")
+
+    assert result.servers[0].type == "s3"
+    assert result.servers[0].endpointUrl == "https://storage.googleapis.com"
+    assert DataContract(data_contract_str=result.to_yaml()).lint().result == ResultEnum.passed
+
+
+def test_gcs_accepts_a_gs_location(monkeypatch):
+    """duckdb reads GCS through the S3 endpoint, which needs the s3:// scheme."""
+    result = _import_with_stubbed_read(monkeypatch, "gcs", "gs://bucket/orders/orders.csv")
+
+    assert result.servers[0].location == "s3://bucket/orders/orders.csv"
+
+
+def test_an_explicit_endpoint_url_wins_over_the_gcs_default(monkeypatch):
+    result = _import_with_stubbed_read(
+        monkeypatch, "gcs", "s3://bucket/orders/orders.csv", endpoint_url="https://minio.example.com"
+    )
+
+    assert result.servers[0].endpointUrl == "https://minio.example.com"
+
+
+def _import_with_stubbed_read(monkeypatch, storage, location, **kwargs):
+    """Import without touching object storage — only the server block is of interest."""
+    from datacontract.imports import object_storage_importer
+
+    monkeypatch.setattr(object_storage_importer, "_read_columns", lambda *_: [("id", "BIGINT")])
+    return DataContract.import_from_source(storage, location, **kwargs)
 
 
 @pytest.mark.parametrize("storage", ["s3", "gcs", "adls"])
@@ -158,7 +180,7 @@ def test_adls_uses_the_azure_connection_setup(monkeypatch):
     from datacontract.imports import object_storage_importer
 
     calls = []
-    for name in ("setup_s3_connection", "setup_gcs_connection", "setup_azure_connection"):
+    for name in ("setup_s3_connection", "setup_azure_connection"):
         monkeypatch.setattr(
             "datacontract.engines.ibis.connections.duckdb_connection." + name,
             lambda con, server, _n=name: calls.append(_n),
