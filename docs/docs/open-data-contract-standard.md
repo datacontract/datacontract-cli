@@ -67,11 +67,12 @@ The CLI also accepts the older Data Contract Specification format (which uses `m
 | `id`, `name`, `version`, `status` | Identity and lifecycle of the contract. |
 | `description` | Human-readable purpose, usage, and limitations. |
 | `servers` | Where the data physically lives — the connection details used by [`test`](./commands/test.md). One contract can have several servers. |
-| `schema` | The logical structure: schemas (tables/objects) and their properties (columns/fields), types, constraints, and semantics. |
+| `schema` | The logical structure: schemas (tables/objects) and their properties (columns/fields), types, constraints, and semantics. See [Define your Schema](./schema.md). |
 | `quality` | Data quality rules, attached to the schema or to individual properties. See [Quality Rules](./quality-rules/index.md). |
 | `slaProperties` | Service-level expectations such as freshness, retention, and frequency. See [Service Levels](./service-levels.md). |
 | `team` / `roles` | Ownership and access information. `team` is an object with a `members` array. |
 | `customProperties` | Extension point for backend-specific settings (for example `clickhouseType`, `trinoType`, `avroLogicalType`). |
+| `authoritativeDefinitions` | Links from a property to a shared semantic concept or reusable definition, by URL or IRI. See [Link your Semantics](./semantics.md). |
 
 ## Logical vs. physical types
 

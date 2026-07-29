@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 9
 title: "Define your Service Levels"
 description: "Declare freshness and retention expectations in a data contract with ODCS slaProperties and verify them with datacontract test."
 ---

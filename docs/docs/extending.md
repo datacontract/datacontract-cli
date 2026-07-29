@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 21
 title: "Extending the CLI"
 description: "Register custom exporters and importers to add new output and input formats to the Data Contract CLI."
 ---

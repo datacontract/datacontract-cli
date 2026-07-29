@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 20
 title: "Adopting Data Contracts"
 description: "Best practices for rolling out data contracts across a team: the data-first and contract-first approaches."
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 13
 title: "Edit your contract"
 description: "Author and edit data contracts visually with the bundled Data Contract Editor web UI."
 ---

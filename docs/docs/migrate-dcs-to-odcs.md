@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 22
 title: "Migrate from DCS to ODCS"
 description: "Convert a Data Contract Specification (datacontract.yaml) file to the Open Data Contract Standard with one command, and verify the conversion was lossless."
 ---
