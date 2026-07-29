@@ -6,7 +6,7 @@ description: "Install the Data Contract CLI with uv, uvx, pip, pipx, or Docker, 
 
 # Installation
 
-Python 3.10, 3.11, and 3.12 are supported. We recommend Python 3.11.
+Python 3.10–3.14 are supported. We recommend Python 3.11.
 
 The `[all]` extra installs every optional data-source dependency. To keep the install small, replace it with just the [extras](#optional-dependencies-extras) you need.
 
@@ -92,8 +92,10 @@ Available extras:
 | Google BigQuery | `pip install datacontract-cli[bigquery]` |
 | CSV | `pip install datacontract-cli[csv]` |
 | Databricks integration | `pip install datacontract-cli[databricks]` |
+| Databricks Runtime | `pip install datacontract-cli[databricks-runtime]` (inside Databricks, where the cluster provides PySpark — see [Databricks Notebooks and Jobs](./databricks.md)) |
+| DataFrame (Spark) | `pip install datacontract-cli[dataframe]` |
 | DBML | `pip install datacontract-cli[dbml]` |
-| DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]` |
+| DuckDB (local file and API response testing) | `pip install datacontract-cli[duckdb]` |
 | Excel | `pip install datacontract-cli[excel]` |
 | GCS integration | `pip install datacontract-cli[gcs]` |
 | Iceberg | `pip install datacontract-cli[iceberg]` |

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 9
 title: "Import: Databricks"
 description: "Create a data contract from Databricks Unity Catalog."
 ---
@@ -21,3 +21,5 @@ For the HTTP endpoint, authenticate either with a personal access token (`DATACO
 The generated contract includes a ready-to-test `servers` block (`type: databricks` with catalog and schema). To run `datacontract test` afterwards, additionally set `DATACONTRACT_DATABRICKS_HTTP_PATH` to a running SQL warehouse — see the **[Databricks connection guide](../testing/databricks.md)** for the full 5-minute walkthrough and troubleshooting.
 
 The importer was previously called `unity`. That name still works, so existing scripts keep running.
+
+All options: **[`datacontract import databricks`](../commands/import/databricks.md)**.

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 10
 title: "Kafka Reference"
 sidebar_label: "Kafka"
 description: "All Kafka authentication options and data type mappings."
@@ -8,6 +8,17 @@ description: "All Kafka authentication options and data type mappings."
 # <img className="page-icon" src="/img/icons/kafka.svg" alt="" /> Kafka Reference
 
 Authentication options and data type handling for [Kafka connections](../testing/kafka.md).
+
+## Server
+
+```yaml
+servers:
+  - server: production
+    type: kafka
+    host: abc-12345.eu-central-1.aws.confluent.cloud:9092
+    topic: orders
+    format: json # or avro
+```
 
 ## Authentication
 

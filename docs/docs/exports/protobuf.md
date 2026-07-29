@@ -71,3 +71,5 @@ schema:
 ### Supported Properties
 
 - **`protoPackageName`** (optional) — The package name for the generated Protobuf file. Defaults to `"example"` if not specified.
+
+All options: **[`datacontract export protobuf`](../commands/export/protobuf.md)**.

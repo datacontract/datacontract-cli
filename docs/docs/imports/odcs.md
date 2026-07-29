@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 18
 title: "Import: ODCS"
 description: "Create a data contract from an existing ODCS file."
 ---
@@ -11,3 +11,5 @@ Imports an existing [ODCS](../open-data-contract-standard.md) data contract file
 ```bash
 datacontract import odcs --source other.odcs.yaml --output datacontract.yaml
 ```
+
+All options: **[`datacontract import odcs`](../commands/import/odcs.md)**.

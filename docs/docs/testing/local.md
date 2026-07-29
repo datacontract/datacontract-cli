@@ -72,4 +72,15 @@ invalid_count(order_total) was 1, expected = 0
 
 The command exits with code `1`, so the same call works as a gate in [CI/CD pipelines](../ci-cd.md).
 
+## Reference
+
+No environment variables are needed for local files. Data type inference and the per-format type handling: **[Local Files Reference](../reference/local.md)**.
+
+## Troubleshooting
+
+- **`No files found that match the pattern`** — the `path` is a glob over file paths, not a directory, and it is resolved relative to the working directory rather than to the contract.
+- **No checks run at all** — the `format` in the `servers` block must be one of `csv`, `json`, `parquet`, or `delta`. It is never guessed at test time (only `datacontract import` infers it from the file suffix), so a missing or misspelled `format` leaves the table unreadable.
+- **Every schema reads the same files** — with more than one schema in the contract, put the `{model}` placeholder in the `path` (e.g. `./data/{model}/*.parquet`); it is substituted with each schema's name.
+- **A CSV value fails as a read error instead of a type check** — CSV files are read *as* the contract's types, so a value that cannot be coerced surfaces while reading. See [Data types](../reference/local.md#data-types).
+
 Ready for your real data? Do the same against [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), or [Databricks](./databricks.md).

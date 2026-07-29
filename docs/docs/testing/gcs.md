@@ -6,7 +6,7 @@ description: "Create a data contract from files on Google Cloud Storage and test
 
 # <img className="page-icon" src="/img/icons/gcs.svg" alt="" /> Google Cloud Storage (GCS)
 
-The [Amazon S3](./s3.md) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability). Use `https://storage.googleapis.com` as the endpoint URL and the `s3://` scheme for the location.
+The [Amazon S3](./s3.md) integration also works with files on Google Cloud Storage through its [interoperability](https://cloud.google.com/storage/docs/interoperability). ODCS defines no `gcs` server type, so a GCS contract uses `type: s3` with `https://storage.googleapis.com` as the endpoint URL and the `s3://` scheme for the location — `datacontract import gcs` writes exactly that.
 
 ## 1. Install
 
@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[gcs]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create an [HMAC key](https://cloud.google.com/storage/docs/authentication/hmackeys) for your user or service account, then create a `.env` file in your working directory (or export the variables):
 
@@ -28,24 +28,15 @@ DATACONTRACT_S3_SECRET_ACCESS_KEY=PDWWpbXXXXXXXXXXXXX
 
 ## 3. Create a contract from your files
 
-Download one object and import its schema, then point the generated `servers` block at the bucket:
+Import the schema straight from the bucket. This also generates a ready-to-test `servers` block:
 
 ```bash
-gcloud storage cp gs://my-bucket/orders/orders-2024-01.json .
-datacontract import json --source orders-2024-01.json --output datacontract.yaml
+datacontract import gcs \
+  --source s3://my-bucket/orders/*.json \
+  --output datacontract.yaml
 ```
 
-The import generates a `servers` entry of `type: local`. Replace it with your GCS location:
-
-```yaml
-servers:
-  - server: production
-    type: s3
-    endpointUrl: https://storage.googleapis.com
-    location: s3://my-bucket/orders/*.json # use s3:// instead of gs://
-    format: json
-    delimiter: new_line # new_line, array, or none
-```
+duckdb reads Google Cloud Storage through its S3-compatible endpoint, so the location uses the `s3://` scheme rather than `gs://`; a `gs://` source is rewritten for you. The format is taken from the file suffix; pass `--format` for Delta tables, which have none.
 
 ## 4. Test the actual data
 
@@ -54,7 +45,16 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 17 checks. Took 3.9 seconds.
+Testing datacontract.yaml
+Server: production (type=s3, format=json, location=s3://my-bucket/orders/*.json)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 3.1 seconds.
 ```
 
 ## 5. Let it catch a violation

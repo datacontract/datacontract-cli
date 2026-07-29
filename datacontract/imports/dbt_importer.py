@@ -210,8 +210,12 @@ def import_dbt_manifest(
 ) -> OpenDataContractStandard:
     """Extracts all relevant information from the manifest into an ODCS data contract."""
     metadata = manifest.get("metadata") or {}
-    odcs = create_odcs()
-    odcs.name = metadata.get("project_name")
+    project_name = metadata.get("project_name")
+    # Derive the contract id from the dbt project, mirroring the Power BI
+    # importer. Falls back to the create_odcs() default when the manifest has
+    # no project_name.
+    odcs = create_odcs(id=project_name.lower().replace(" ", "-") if project_name else None)
+    odcs.name = project_name
 
     odcs.customProperties = [CustomProperty(property="dbt_version", value=metadata.get("dbt_version"))]
 

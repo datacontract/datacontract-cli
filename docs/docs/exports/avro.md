@@ -78,3 +78,5 @@ schema:
 
 - `avroLogicalType` — the Avro logical type of the property (here `local-timestamp-micros`).
 - `avroDefault` — the default value for the property in Avro.
+
+All options: **[`datacontract export avro`](../commands/export/avro.md)**.

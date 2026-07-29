@@ -70,7 +70,9 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - Run checks against real data with **[Test your Data](./testing/index.md)**, then keep them running with **[Scheduling and CI/CD](./ci-cd.md)**.
 - Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
-- Evaluating options? See **[Comparison with other Tools](./comparison.md)**.
+- Evaluating options? See **[Comparison with Other Tools](./comparison.md)**.
+- Coming from the older `datacontract.yaml` format? **[Migrate from DCS to ODCS](./migrate-dcs-to-odcs.md)**.
+- Upgrading? See what changed in **[Release Notes](./release-notes.md)**.
 
 ## Frequently asked questions
 
@@ -93,6 +95,8 @@ Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S
 ### Is the Data Contract CLI free to use?
 
 Yes. It is open source under the MIT license and free for commercial use. [Entropy Data](./entropy-data.md) offers a commercial platform that the CLI can publish test results to, but the CLI itself does not require it.
+
+More answers — credentials, check selection, type failures, CI behaviour — are in the **[FAQ](./faq.md)**.
 
 ## Related links
 

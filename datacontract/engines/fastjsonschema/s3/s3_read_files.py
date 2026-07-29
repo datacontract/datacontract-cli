@@ -1,6 +1,6 @@
 import logging
-import os
 
+from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
@@ -27,9 +27,10 @@ def s3_fs(s3_endpoint_url):
             original_exception=e,
         )
 
-    aws_access_key_id = os.getenv("DATACONTRACT_S3_ACCESS_KEY_ID")
-    aws_secret_access_key = os.getenv("DATACONTRACT_S3_SECRET_ACCESS_KEY")
-    aws_session_token = os.getenv("DATACONTRACT_S3_SESSION_TOKEN")
+    configured = aws_credentials.client_kwargs()
+    aws_access_key_id = configured["aws_access_key_id"]
+    aws_secret_access_key = configured["aws_secret_access_key"]
+    aws_session_token = configured["aws_session_token"]
     return s3fs.S3FileSystem(
         key=aws_access_key_id,
         secret=aws_secret_access_key,

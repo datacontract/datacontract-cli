@@ -11,12 +11,12 @@ Test data stored in Azure Blob storage or Azure Data Lake Storage Gen2 (ADLS) in
 ## 1. Install
 
 ```bash
-uv tool install --python python3.11 --upgrade 'datacontract-cli[azure,duckdb]'
+uv tool install --python python3.11 --upgrade 'datacontract-cli[azure]'
 ```
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Authentication uses an Azure Service Principal (App Registration) with a secret. Create a `.env` file in your working directory (or export the variables):
 
@@ -29,23 +29,15 @@ DATACONTRACT_AZURE_CLIENT_SECRET=yZK8Q~GWO1MMXXXXXXXXXXXXX
 
 ## 3. Create a contract from your files
 
-Download one blob and import its schema, then point the generated `servers` block at the storage account:
+Import the schema straight from the container. This also generates a ready-to-test `servers` block:
 
 ```bash
-az storage blob download --account-name myaccount --container-name inventory \
-  --name inventory_events/part-000.parquet --file part-000.parquet
-datacontract import parquet --source part-000.parquet --output datacontract.yaml
+datacontract import adls \
+  --source abfss://my-container/orders/*.json \
+  --output datacontract.yaml
 ```
 
-The import generates a `servers` entry of `type: local`. Replace it with your Azure location:
-
-```yaml
-servers:
-  - server: production
-    type: azure
-    location: abfss://inventory@myaccount.dfs.core.windows.net/inventory_events/*.parquet
-    format: parquet
-```
+The format is taken from the file suffix; pass `--format` for Delta tables, which have none.
 
 ## 4. Test the actual data
 
@@ -54,7 +46,16 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 17 checks. Took 4.1 seconds.
+Testing datacontract.yaml
+Server: production (type=azure, format=parquet, location=abfss://my-container/orders/*.parquet)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 4.5 seconds.
 ```
 
 ## 5. Let it catch a violation

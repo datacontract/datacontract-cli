@@ -45,3 +45,5 @@ Add `--schema-name` to render a single schema. The template then also receives:
 ```bash
 datacontract export custom datacontract.odcs.yaml --template template.sql --schema-name orders
 ```
+
+All options: **[`datacontract export custom`](../commands/export/custom.md)**.

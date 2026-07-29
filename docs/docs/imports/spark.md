@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 25
 title: "Import: Spark"
 description: "Create a data contract from Spark tables or DataFrames (programmatic)."
 ---
@@ -20,3 +20,5 @@ datacontract import spark --source orders
 ```
 
 A table description can be supplied alongside the table or dataframe to enrich the generated contract.
+
+All options: **[`datacontract import spark`](../commands/import/spark.md)**.

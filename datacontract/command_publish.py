@@ -28,7 +28,7 @@ def publish(
     debug: debug_option = None,
 ):
     """
-    Publish the data contract to the Entropy Data.
+    Publish the data contract to Entropy Data.
     """
     enable_debug_logging(debug)
 

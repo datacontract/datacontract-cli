@@ -44,6 +44,13 @@ class ImportFormat(str, Enum):
     redshift = "redshift"
     postgres = "postgres"
     athena = "athena"
+    s3 = "s3"
+    mysql = "mysql"
+    sqlserver = "sqlserver"
+    gcs = "gcs"
+    adls = "adls"
+    oracle = "oracle"
+    trino = "trino"
 
     @classmethod
     def get_supported_formats(cls):

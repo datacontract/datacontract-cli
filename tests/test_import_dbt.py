@@ -3,7 +3,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.imports.dbt_importer import read_dbt_manifest
+from datacontract.imports.dbt_importer import import_dbt_manifest, read_dbt_manifest
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -154,3 +154,29 @@ def test_cli_versioned_filter_v1():
     assert result.exit_code == 0
     parsed = yaml.safe_load(result.output)
     assert parsed.get("schema"), "Expected non-empty schema in CLI output for mart_orders.v1"
+
+
+def test_import_dbt_manifest_id_from_project_name():
+    """The contract id comes from the dbt project, not the placeholder default."""
+    odcs = import_dbt_manifest(read_dbt_manifest(dbt_manifest), [], ["model"])
+
+    assert odcs.id == "jaffle_shop"
+    assert odcs.id != "my-data-contract"
+
+    versioned = import_dbt_manifest(read_dbt_manifest(dbt_manifest_versioned), [], ["model"])
+    assert versioned.id == "test_project"
+
+
+def test_import_dbt_manifest_id_is_slugified():
+    """A project name with spaces or capitals is normalised, as in the Power BI importer."""
+    odcs = import_dbt_manifest({"metadata": {"project_name": "My Jaffle Shop"}, "nodes": {}}, [], ["model"])
+
+    assert odcs.id == "my-jaffle-shop"
+    assert odcs.name == "My Jaffle Shop"
+
+
+def test_import_dbt_manifest_id_falls_back_without_project_name():
+    """A manifest with no project_name keeps the previous default id."""
+    odcs = import_dbt_manifest({"metadata": {}, "nodes": {}}, [], ["model"])
+
+    assert odcs.id == "my-data-contract"

@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[oracle]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 
@@ -28,23 +28,20 @@ DATACONTRACT_ORACLE_PASSWORD=mysecretpassword
 
 ## 3. Create a contract from your tables
 
-Get the DDL of a table (e.g. `SELECT DBMS_METADATA.GET_DDL('TABLE', 'ORDERS') FROM dual;` in SQL*Plus or SQL Developer), save it to a file, and import it:
+Import the table metadata directly from the database. This also generates a ready-to-test `servers` block:
 
 ```bash
-datacontract import sql --source orders.sql --dialect oracle --output datacontract.yaml
+datacontract import oracle \
+  --source localhost \
+  --service-name ORCL \
+  --schema ADMIN \
+  --table ORDERS \
+  --output datacontract.yaml
 ```
 
-The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your server:
+`--source` is the host and `--service-name` the service. Repeat `--table` for multiple tables, or omit it to import every table in the schema; Oracle upper-cases identifiers, so `--schema` is upper-cased for you.
 
-```yaml
-servers:
-  - server: oracle
-    type: oracle
-    host: localhost
-    port: 1521
-    service_name: ORCL
-    schema: ADMIN
-```
+Only have a DDL script? `datacontract import sql --source orders.sql --dialect oracle` works too, but writes a `servers` block with placeholder values that you have to fill in by hand.
 
 ## 4. Test the actual data
 
@@ -53,6 +50,15 @@ datacontract test datacontract.yaml
 ```
 
 ```
+Testing datacontract.yaml
+Server: oracle (type=oracle, host=localhost, port=1521, schema=ADMIN)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
 🟢 data contract is valid. Run 24 checks. Took 3.4 seconds.
 ```
 

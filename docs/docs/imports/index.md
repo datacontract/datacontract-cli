@@ -17,7 +17,7 @@ datacontract import sql --source my_ddl.sql --dialect postgres
 datacontract import sql --source my_ddl.sql --dialect postgres --output datacontract.yaml
 ```
 
-The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [Amazon Athena](./athena.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, Athena, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
+The [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), [Amazon Redshift](./redshift.md), [Postgres](./postgres.md), [MySQL](./mysql.md), [SQL Server](./sqlserver.md), [Oracle](./oracle.md), [Trino](./trino.md), [Amazon Athena](./athena.md), [Amazon S3](./s3.md), [Google Cloud Storage](./gcs.md), [Azure Blob / ADLS](./adls.md), [Databricks](./databricks.md), and [AWS Glue](./glue.md) importers can connect directly to the live system and introspect your tables — no export files needed. Snowflake, BigQuery, Redshift, Postgres, MySQL, SQL Server, Oracle, Trino, Athena, S3, GCS, ADLS, and Databricks also generate a ready-to-test `servers` block, so `datacontract test` works right after the import.
 
 Run `datacontract import <format> --help` to see the format-specific options (e.g. `datacontract import sql --help`). If a format you need is missing, [open an issue on GitHub](https://github.com/datacontract/datacontract-cli/issues).
 
@@ -28,6 +28,10 @@ Each import page shows a runnable example: a small source file under [`examples/
 ## Available importers
 
 <div className="card-grid">
+  <a className="doc-card" href="/imports/adls">
+    <img src="/img/icons/azure.svg" alt="" />
+    <span><span className="doc-card-title">adls</span><span className="doc-card-desc">Files in Azure Blob Storage.</span></span>
+  </a>
   <a className="doc-card" href="/imports/athena">
     <img src="/img/icons/athena.svg" alt="" />
     <span><span className="doc-card-title">athena</span><span className="doc-card-desc">An Amazon Athena database.</span></span>
@@ -60,6 +64,10 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/excel.svg" alt="" />
     <span><span className="doc-card-title">excel</span><span className="doc-card-desc">An ODCS Excel template.</span></span>
   </a>
+  <a className="doc-card" href="/imports/gcs">
+    <img src="/img/icons/gcs.svg" alt="" />
+    <span><span className="doc-card-title">gcs</span><span className="doc-card-desc">Files in Google Cloud Storage.</span></span>
+  </a>
   <a className="doc-card" href="/imports/glue">
     <img src="/img/icons/glue.svg" alt="" />
     <span><span className="doc-card-title">glue</span><span className="doc-card-desc">AWS Glue Data Catalog.</span></span>
@@ -76,9 +84,17 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/jsonschema.svg" alt="" />
     <span><span className="doc-card-title">jsonschema</span><span className="doc-card-desc">A JSON Schema file.</span></span>
   </a>
+  <a className="doc-card" href="/imports/mysql">
+    <img src="/img/icons/mysql.svg" alt="" />
+    <span><span className="doc-card-title">mysql</span><span className="doc-card-desc">A MySQL database.</span></span>
+  </a>
   <a className="doc-card" href="/imports/odcs">
     <img src="/img/icons/odcs.svg" alt="" />
     <span><span className="doc-card-title">odcs</span><span className="doc-card-desc">An ODCS data contract file.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/oracle">
+    <img src="/img/icons/oracle.svg" alt="" />
+    <span><span className="doc-card-title">oracle</span><span className="doc-card-desc">An Oracle database.</span></span>
   </a>
   <a className="doc-card" href="/imports/parquet">
     <img src="/img/icons/parquet.svg" alt="" />
@@ -100,6 +116,10 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/redshift.svg" alt="" />
     <span><span className="doc-card-title">redshift</span><span className="doc-card-desc">An Amazon Redshift schema.</span></span>
   </a>
+  <a className="doc-card" href="/imports/s3">
+    <img src="/img/icons/s3.svg" alt="" />
+    <span><span className="doc-card-title">s3</span><span className="doc-card-desc">Files in an Amazon S3 bucket.</span></span>
+  </a>
   <a className="doc-card" href="/imports/snowflake">
     <img src="/img/icons/snowflake.svg" alt="" />
     <span><span className="doc-card-title">snowflake</span><span className="doc-card-desc">A Snowflake workspace.</span></span>
@@ -112,6 +132,14 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/database.svg" alt="" />
     <span><span className="doc-card-title">sql</span><span className="doc-card-desc">A SQL DDL file.</span></span>
   </a>
+  <a className="doc-card" href="/imports/sqlserver">
+    <img src="/img/icons/sqlserver.svg" alt="" />
+    <span><span className="doc-card-title">sqlserver</span><span className="doc-card-desc">A SQL Server database.</span></span>
+  </a>
+  <a className="doc-card" href="/imports/trino">
+    <img src="/img/icons/trino.svg" alt="" />
+    <span><span className="doc-card-title">trino</span><span className="doc-card-desc">A Trino catalog.</span></span>
+  </a>
 </div>
 
-See the [`import` command reference](../commands/import.md) for the common signature.
+See the [`import` command reference](../commands/import/index.md) for the common signature.

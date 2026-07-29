@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 2
 title: "Amazon Redshift Reference"
 sidebar_label: "Amazon Redshift"
 description: "All Redshift authentication options and data type mappings."

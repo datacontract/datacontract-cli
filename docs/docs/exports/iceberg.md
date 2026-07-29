@@ -35,3 +35,5 @@ Running this against the [example `orders` contract](https://github.com/datacont
   "identifier-field-ids": [1]
 }
 ```
+
+All options: **[`datacontract export iceberg`](../commands/export/iceberg.md)**.

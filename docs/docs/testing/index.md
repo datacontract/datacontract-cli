@@ -102,12 +102,16 @@ The CLI uses different engines based on the server `type`. Internally it connect
 
 Checks fall into categories you can select with `--checks`:
 
-- `schema` — fields are present and have the expected type and nullability.
+- `schema` — the [schema](../schema.md) attributes: presence, types, `required`, `unique`, primary keys, and `logicalTypeOptions`.
 - `quality` — the [quality rules](../quality-rules/index.md) defined in the contract.
-- `servicelevel` — service-level expectations (`slaProperties`).
+- `servicelevel` — the [service levels](../service-levels.md) defined in the contract (`slaProperties`).
 - `custom` — custom checks.
 
 Omit `--checks` to run all of them.
+
+`--dimension` cuts across those categories instead: it selects every check that measures one aspect of data quality — the [quality rules](../quality-rules/index.md#quality-dimensions) tagged with that `dimension` plus the schema and service level checks that measure the same thing.
+
+`--quality-id` and `--tag` go the other way and narrow the run to individual [quality rules](../quality-rules/index.md#identifying-rules): `--quality-id` runs the one rule declaring that `id`, `--tag` runs every rule declaring that tag, and neither runs any schema or service level check.
 
 ## Configuring the connection
 
@@ -135,7 +139,7 @@ The page for each source above lists its `servers` fields and the environment va
 
 ## Options
 
-`--server`, `--schema-name`, and `--checks` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
+`--server`, `--schema-name`, `--checks`, `--dimension`, `--quality-id`, and `--tag` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
 
 For CI/CD pipelines, use the [`ci`](../commands/ci.md) command, which wraps `test` with annotations, summaries, and exit-code control.
 

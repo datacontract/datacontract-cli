@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[kafka]'
 
 Kafka checks run on Spark, which requires a **Java runtime (JDK 17 or 21)** — make sure `java` is on the path or `JAVA_HOME` is set. See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 
@@ -54,7 +54,16 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 14 checks. Took 12.5 seconds.
+Testing datacontract.yaml
+Server: production (type=kafka, format=json, host=abc-12345.eu-central-1.aws.confluent.cloud:9092)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 8.4 seconds.
 ```
 
 ## 5. Let it catch a violation

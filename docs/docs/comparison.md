@@ -1,10 +1,10 @@
 ---
-sidebar_position: 19
-title: "Comparison with other Tools"
+sidebar_position: 24
+title: "Comparison with Other Tools"
 description: "How the Data Contract CLI compares to Great Expectations (GX Core), Soda Core, and dbt contracts — license, governance, contract format, and scope."
 ---
 
-# Comparison with other Tools
+# Comparison with Other Tools
 
 Data quality and data contract tooling changed a lot in 2026: Great Expectations and Soda both changed hands or changed licenses, and dbt Labs merged into Fivetran. This page compares the Data Contract CLI with the three tools it is most often evaluated against — **[Great Expectations (GX Core)](https://greatexpectations.io/)**, **[Soda Core](https://www.soda.io/)**, and **[dbt contracts](https://docs.getdbt.com/docs/collaborate/govern/model-contracts)** — so you can pick the right one, or combine them.
 

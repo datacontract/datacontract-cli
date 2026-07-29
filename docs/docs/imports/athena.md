@@ -27,3 +27,5 @@ The generated contract includes a ready-to-test `servers` block, so you can run 
 Credentials are provided as environment variables and are the same ones `datacontract test` uses: `DATACONTRACT_S3_REGION`, `DATACONTRACT_S3_ACCESS_KEY_ID`, and `DATACONTRACT_S3_SECRET_ACCESS_KEY` — see the [Athena Reference](../reference/athena.md).
 
 Want the Glue Data Catalog itself rather than Athena? Use [`datacontract import glue`](./glue.md).
+
+All options: **[`datacontract import athena`](../commands/import/athena.md)**.

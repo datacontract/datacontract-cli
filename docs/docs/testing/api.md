@@ -10,15 +10,15 @@ Test APIs that return data in JSON format. Currently, only GET requests are supp
 
 ## 1. Install
 
-No extra is required for API connections:
+The response is tested with duckdb, so the `duckdb` extra is required:
 
 ```bash
-uv tool install --python python3.11 --upgrade datacontract-cli
+uv tool install --python python3.11 --upgrade 'datacontract-cli[duckdb]'
 ```
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 If the API requires authentication, set the value for the `authorization` header:
 
@@ -55,7 +55,16 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 12 checks. Took 1.8 seconds.
+Testing datacontract.yaml
+Server: production (type=api, format=json, location=https://api.example.com/orders)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 1.2 seconds.
 ```
 
 ## 5. Let it catch a violation

@@ -21,7 +21,9 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 
 > 📖 **Full documentation: [docs.datacontract.com](https://docs.datacontract.com)**
 >
-> Quick links: [Quickstart](https://docs.datacontract.com/quickstart) · [Commands](https://docs.datacontract.com/commands) · [Best Practices](https://docs.datacontract.com/best-practices) · [Custom Export and Import](https://docs.datacontract.com/extending) · [Development Setup](#development-setup)
+> Quick links: [Quickstart](https://docs.datacontract.com/quickstart) · [Commands](https://docs.datacontract.com/commands) · [Best Practices](https://docs.datacontract.com/best-practices) · [Custom Export and Import](https://docs.datacontract.com/extending) · [Release Notes](https://docs.datacontract.com/release-notes) · [Development Setup](#development-setup)
+>
+> For LLMs: [cli.datacontract.com/llms.txt](https://cli.datacontract.com/llms.txt) · [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt)
 
 ## Getting started
 
@@ -265,6 +267,8 @@ A list of available extras:
 | Google BigQuery                          | `pip install datacontract-cli[bigquery]`   |
 | CSV                                      | `pip install datacontract-cli[csv]`        |
 | Databricks Integration                   | `pip install datacontract-cli[databricks]` |
+| Databricks Runtime                       | `pip install datacontract-cli[databricks-runtime]` (inside Databricks, where the cluster provides PySpark) |
+| DataFrame (Spark)                        | `pip install datacontract-cli[dataframe]`  |
 | DBML                                     | `pip install datacontract-cli[dbml]`       |
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]`     |
 | Excel                                    | `pip install datacontract-cli[excel]`      |

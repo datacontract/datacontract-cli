@@ -22,3 +22,5 @@ The Excel format enables:
 - **Round-trip conversion** back to YAML via [`import excel`](../imports/excel.md).
 
 For the template structure, see the [ODCS Excel Template repository](https://github.com/datacontract/open-data-contract-standard-excel-template).
+
+All options: **[`datacontract export excel`](../commands/export/excel.md)**.

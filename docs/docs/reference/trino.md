@@ -9,6 +9,18 @@ description: "All Trino authentication options and data type handling."
 
 Authentication options and data type handling for [Trino connections](../testing/trino.md).
 
+## Server
+
+```yaml
+servers:
+  - server: trino
+    type: trino
+    host: localhost
+    port: 8080
+    catalog: my_catalog
+    schema: my_schema
+```
+
 ## Authentication
 
 | Variable | Example | Description |

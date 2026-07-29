@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 8
 title: "Google Cloud Storage Reference"
 sidebar_label: "Google Cloud Storage"
 description: "All GCS authentication options and data type handling."
@@ -8,6 +8,20 @@ description: "All GCS authentication options and data type handling."
 # <img className="page-icon" src="/img/icons/gcs.svg" alt="" /> Google Cloud Storage Reference
 
 Authentication options and data type handling for [GCS connections](../testing/gcs.md). GCS is accessed through the S3 interoperability layer (`type: s3` with `endpointUrl: https://storage.googleapis.com`).
+
+## Server
+
+GCS is an S3-compatible server: ODCS defines no `gcs` server type, so the contract uses `type: s3` pointed at the [interoperability](https://cloud.google.com/storage/docs/interoperability) endpoint.
+
+```yaml
+servers:
+  - server: production
+    type: s3
+    endpointUrl: https://storage.googleapis.com
+    location: s3://my-bucket/orders/*.json # the S3 endpoint needs the s3:// scheme, not gs://
+    format: json
+    delimiter: new_line # new_line, array, or none
+```
 
 ## Authentication
 

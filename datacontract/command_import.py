@@ -567,6 +567,229 @@ def import_postgres(
 
 
 @import_app.command(
+    name="gcs",
+    epilog="Example: datacontract import gcs --source s3://my-bucket/orders/*.json --output datacontract.yaml",
+)
+def import_gcs(
+    source: Annotated[
+        Optional[str],
+        typer.Option(help="The location of the files. duckdb reads GCS over the S3-compatible endpoint, so use s3://."),
+    ] = None,
+    format: Annotated[
+        Optional[str], typer.Option(help="File format: json, csv, parquet or delta (inferred from the suffix).")
+    ] = None,
+    delimiter: Annotated[
+        Optional[str], typer.Option(help="For JSON: new_line, array or none. Detected automatically when omitted.")
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from files in Google Cloud Storage."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="gcs", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="adls",
+    epilog="Example: datacontract import adls --source abfss://my-container/orders/*.json --output datacontract.yaml",
+)
+def import_adls(
+    source: Annotated[
+        Optional[str], typer.Option(help="The location of the files, e.g. abfss://my-container/orders/*.json.")
+    ] = None,
+    format: Annotated[
+        Optional[str], typer.Option(help="File format: json, csv, parquet or delta (inferred from the suffix).")
+    ] = None,
+    delimiter: Annotated[
+        Optional[str], typer.Option(help="For JSON: new_line, array or none. Detected automatically when omitted.")
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from files in Azure Blob Storage / ADLS."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="adls", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="trino",
+    epilog="Example: datacontract import trino --source localhost --catalog my_catalog --schema my_schema --output datacontract.yaml",
+)
+def import_trino(
+    source: Annotated[Optional[str], typer.Option(help="The host of the Trino coordinator.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The Trino port (default 8080).")] = None,
+    catalog: Annotated[Optional[str], typer.Option(help="The Trino catalog.")] = None,
+    schema: Annotated[Optional[str], typer.Option("--schema", help="The Trino schema.")] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a Trino catalog."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="trino",
+        source=source,
+        port=port,
+        catalog=catalog,
+        schema=schema,
+        trino_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="oracle",
+    epilog="Example: datacontract import oracle --source localhost --service-name XEPDB1 --schema ADMIN --output datacontract.yaml",
+)
+def import_oracle(
+    source: Annotated[Optional[str], typer.Option(help="The host of the Oracle database.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The Oracle port (default 1521).")] = None,
+    service_name: Annotated[Optional[str], typer.Option(help="The Oracle service name, e.g. XEPDB1.")] = None,
+    schema: Annotated[
+        Optional[str], typer.Option("--schema", help="The owning schema, e.g. ADMIN (Oracle upper-cases it).")
+    ] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from an Oracle database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="oracle",
+        source=source,
+        port=port,
+        service_name=service_name,
+        schema=schema,
+        oracle_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="sqlserver",
+    epilog="Example: datacontract import sqlserver --source localhost --database mydb --output datacontract.yaml",
+)
+def import_sqlserver(
+    source: Annotated[Optional[str], typer.Option(help="The host of the SQL Server instance.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The SQL Server port (default 1433).")] = None,
+    database: database_option = None,
+    schema: Annotated[Optional[str], typer.Option("--schema", help="The schema name (default dbo).")] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a SQL Server database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="sqlserver",
+        source=source,
+        port=port,
+        database=database,
+        schema=schema,
+        sqlserver_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="mysql",
+    epilog="Example: datacontract import mysql --source localhost --database mydb --output datacontract.yaml",
+)
+def import_mysql(
+    source: Annotated[Optional[str], typer.Option(help="The host of the MySQL server.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The MySQL port (default 3306).")] = None,
+    database: database_option = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a MySQL database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="mysql",
+        source=source,
+        port=port,
+        database=database,
+        mysql_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="s3",
+    epilog="Example: datacontract import s3 --source s3://my-bucket/orders/*.json --output datacontract.yaml",
+)
+def import_s3(
+    source: Annotated[
+        Optional[str], typer.Option(help="The S3 location of the files, e.g. s3://my-bucket/orders/*.json.")
+    ] = None,
+    format: Annotated[
+        Optional[str], typer.Option(help="File format: json, csv, parquet or delta (inferred from the suffix).")
+    ] = None,
+    delimiter: Annotated[
+        Optional[str], typer.Option(help="For JSON: new_line, array or none. Detected automatically when omitted.")
+    ] = None,
+    endpoint_url: Annotated[
+        Optional[str], typer.Option(help="Endpoint of an S3-compatible store, e.g. http://localhost:9000.")
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from files in S3."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        format="s3",
+        source=source,
+        file_format=format,
+        delimiter=delimiter,
+        endpoint_url=endpoint_url,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="athena",
     epilog="Example: datacontract import athena --schema my_database --staging-dir s3://my-bucket/athena-results/ --output datacontract.yaml",
 )

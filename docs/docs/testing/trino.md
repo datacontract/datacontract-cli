@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[trino]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 
@@ -30,23 +30,20 @@ The default is `basic` auth; JWT and OAuth2 are also supported — see the [Trin
 
 ## 3. Create a contract from your tables
 
-Get the DDL of a table (`SHOW CREATE TABLE my_catalog.my_schema.orders;`), save it to a file, and import it. Trino's ANSI-style DDL generally parses well with the `postgres` dialect:
+Import the table metadata directly from the catalog. This also generates a ready-to-test `servers` block:
 
 ```bash
-datacontract import sql --source orders.sql --dialect postgres --output datacontract.yaml
+datacontract import trino \
+  --source localhost \
+  --catalog my_catalog \
+  --schema my_schema \
+  --table orders \
+  --output datacontract.yaml
 ```
 
-The SQL import can't know your connection details, so it writes a `servers` block with placeholder values. Open `datacontract.yaml` and fill in your cluster:
+Repeat `--table` for multiple tables, or omit it to import every table in the schema.
 
-```yaml
-servers:
-  - server: trino
-    type: trino
-    host: localhost
-    port: 8080
-    catalog: my_catalog
-    schema: my_schema
-```
+Only have a DDL script? `datacontract import sql --source orders.sql --dialect postgres` works too — Trino's ANSI-style DDL generally parses with that dialect — but writes a `servers` block with placeholder values that you have to fill in by hand.
 
 ## 4. Test the actual data
 
@@ -55,7 +52,16 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 24 checks. Took 4.4 seconds.
+Testing datacontract.yaml
+Server: trino (type=trino, host=localhost, port=8080, catalog=my_catalog, schema=my_schema)
+╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                           │ Field           │ Details │
+├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
+│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
+│  ...   │                                                 │                 │         │
+╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 data contract is valid. Run 24 checks. Took 1.9 seconds.
 ```
 
 ## 5. Let it catch a violation

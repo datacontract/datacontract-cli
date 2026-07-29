@@ -60,9 +60,11 @@ The CLI verified that the YAML itself is valid, that all records comply with the
 The real magic moment is when a contract catches drift in *your* data. Import a contract straight from an existing table — the import generates the schema and a ready-to-test `servers` block — then test the actual data against it:
 
 ```bash
-datacontract import snowflake --source <account> --database ORDER_DB --schema PUBLIC --output datacontract.yaml
+datacontract import postgres --source localhost --database mydb --output datacontract.yaml
 datacontract test datacontract.yaml
 ```
+
+That example uses Postgres because it matches the extra installed above. For another source, install its extra first — `uv tool install --python python3.11 --upgrade 'datacontract-cli[snowflake]'` — and use the matching import, e.g. `datacontract import snowflake`.
 
 Follow the copy-paste guide for your data source, including credentials setup and troubleshooting:
 

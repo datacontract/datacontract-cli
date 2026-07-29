@@ -150,6 +150,34 @@ importer_factory.register_lazy_importer(
     class_name="AthenaImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.trino,
+    module_path="datacontract.imports.trino_importer",
+    class_name="TrinoImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.oracle,
+    module_path="datacontract.imports.oracle_importer",
+    class_name="OracleImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.sqlserver,
+    module_path="datacontract.imports.sqlserver_importer",
+    class_name="SqlServerImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.mysql,
+    module_path="datacontract.imports.mysql_importer",
+    class_name="MysqlImporter",
+)
+# one importer, registered once per object storage; it reads the server type
+# from the format it was registered under
+for _storage in (ImportFormat.s3, ImportFormat.gcs, ImportFormat.adls):
+    importer_factory.register_lazy_importer(
+        name=_storage,
+        module_path="datacontract.imports.object_storage_importer",
+        class_name="ObjectStorageImporter",
+    )
+importer_factory.register_lazy_importer(
     name=ImportFormat.json,
     module_path="datacontract.imports.json_importer",
     class_name="JsonImporter",

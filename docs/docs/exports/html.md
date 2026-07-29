@@ -19,3 +19,5 @@ Running this against the [example `orders` contract](https://github.com/datacont
 - the configured servers, quality checks, and service-level properties.
 
 Open the file in any browser or publish it as static documentation.
+
+All options: **[`datacontract export html`](../commands/export/html.md)**.
