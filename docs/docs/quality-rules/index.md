@@ -49,6 +49,41 @@ ODCS defines four `type`s of quality rule. Each has its own page:
   </a>
 </div>
 
+## Quality dimensions
+
+Any rule can be classified with a `dimension` — the aspect of data quality it protects. It is optional, works with every rule type, and is documentation metadata: it does not change whether or how the rule runs, but it makes the contract's quality coverage readable at a glance.
+
+```yaml
+schema:
+  - name: orders
+    quality:
+      - type: library
+        metric: rowCount
+        mustBeGreaterThan: 0
+        dimension: completeness
+    properties:
+      - name: order_id
+        quality:
+          - type: library
+            metric: duplicateValues
+            mustBe: 0
+            dimension: uniqueness
+```
+
+ODCS defines seven dimensions. `datacontract lint` rejects any other value:
+
+| Dimension | The data… |
+|---|---|
+| `accuracy` | correctly describes the real-world entity or event it represents |
+| `completeness` | contains all the records and values that are expected |
+| `conformity` | follows the agreed format, type, and set of allowed values |
+| `consistency` | agrees with itself and with related data elsewhere |
+| `coverage` | includes the full population it claims to describe |
+| `timeliness` | is available and current when it is needed |
+| `uniqueness` | contains no unintended duplicates |
+
+The [HTML export](../exports/html.md) renders the dimension as a badge next to schema-level rules.
+
 ## Running only quality checks
 
 Use `--checks` to restrict a run to quality rules:
