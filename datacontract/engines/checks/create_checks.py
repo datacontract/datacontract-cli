@@ -22,6 +22,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 
@@ -184,7 +185,13 @@ def create_checks(
             continue
         checks.extend(_to_schema_checks(schema_obj, server))
     checks.extend(_to_servicelevel_checks(data_contract, server))
-    return [c for c in checks if c is not None]
+    checks = [c for c in checks if c is not None]
+    # Schema and service level checks cannot declare an ODCS dimension, so fill
+    # in the one they measure. A rule that declared its own keeps it.
+    for check in checks:
+        if check.dimension is None:
+            check.dimension = default_dimension(check.type)
+    return checks
 
 
 def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server]) -> bool:
@@ -200,6 +207,15 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
     uses_raw_view = (
         server is not None and server.type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
     )
+
+    # A primary key is both not-null and unique. A composite key is unique as a
+    # tuple, not column by column, so its members are checked together after
+    # the loop instead of individually.
+    primary_key_props = sorted(
+        (prop for prop in properties if prop.primaryKey),
+        key=lambda prop: prop.primaryKeyPosition if prop.primaryKeyPosition is not None else 0,
+    )
+    primary_key_is_composite = len(primary_key_props) > 1
 
     for prop in properties:
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
@@ -297,6 +313,31 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                     category="schema",
                 )
             )
+        if prop.primaryKey:
+            # Skip whatever `required` and `unique` have already emitted, so a
+            # property declaring both does not produce two identical checks.
+            if not prop.required:
+                checks.append(
+                    _missing_count_check(
+                        model,
+                        field,
+                        "field_primary_key_required",
+                        Threshold(Op.EQ, 0),
+                        name=f"Check that primary key field {field} has no missing values",
+                        category="schema",
+                    )
+                )
+            if not primary_key_is_composite and not prop.unique:
+                checks.append(
+                    _duplicate_count_check(
+                        model,
+                        field,
+                        "field_primary_key_unique",
+                        Threshold(Op.EQ, 0),
+                        name=f"Check that primary key field {field} has no duplicate values",
+                        category="schema",
+                    )
+                )
 
         min_length = _get_logical_type_option(prop, "minLength")
         if min_length is not None:
@@ -415,6 +456,22 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if prop.quality:
             checks.extend(_quality_checks(model, field, prop.quality, server))
 
+    if primary_key_is_composite:
+        primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]
+        checks.append(
+            CheckSpec(
+                key=f"{model}__primary_key_unique",
+                category="schema",
+                type="primary_key_unique",
+                name=f"Check that primary key ({', '.join(primary_key_fields)}) has no duplicate values",
+                model=model,
+                field=None,
+                metric=MetricType.DUPLICATE_COUNT,
+                threshold=Threshold(Op.EQ, 0),
+                columns=primary_key_fields,
+            )
+        )
+
     if schema_object.quality:
         checks.extend(_quality_checks(model, None, schema_object.quality, server))
 
@@ -434,6 +491,7 @@ def _missing_count_check(
     missing_values=None,
     threshold_is_percent=False,
     severity=None,
+    dimension=None,
 ) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
@@ -446,11 +504,14 @@ def _missing_count_check(
         threshold=threshold,
         threshold_is_percent=threshold_is_percent,
         severity=severity,
+        dimension=dimension,
         missing_values=missing_values,
     )
 
 
-def _duplicate_count_check(model, field, check_type, threshold, name, category="quality", severity=None) -> CheckSpec:
+def _duplicate_count_check(
+    model, field, check_type, threshold, name, category="quality", severity=None, dimension=None
+) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
         category=category,
@@ -461,6 +522,7 @@ def _duplicate_count_check(model, field, check_type, threshold, name, category="
         metric=MetricType.DUPLICATE_COUNT,
         threshold=threshold,
         severity=severity,
+        dimension=dimension,
         columns=[field],
     )
 
@@ -474,6 +536,7 @@ def _invalid_count_check(
     category="schema",
     threshold_is_percent=False,
     severity=None,
+    dimension=None,
     **kwargs,
 ) -> CheckSpec:
     return CheckSpec(
@@ -487,14 +550,15 @@ def _invalid_count_check(
         threshold=threshold or Threshold(Op.EQ, 0),
         threshold_is_percent=threshold_is_percent,
         severity=severity,
+        dimension=dimension,
         **kwargs,
     )
 
 
-def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
+def _row_count_check(model, threshold: Threshold, severity=None, dimension=None) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__row_count",
-        category="schema",
+        category="quality",
         type="row_count",
         name=f"Check that model {model} has row_count {threshold.describe()}",
         model=model,
@@ -502,6 +566,7 @@ def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
         metric=MetricType.ROW_COUNT,
         threshold=threshold,
         severity=severity,
+        dimension=dimension,
     )
 
 
@@ -512,71 +577,83 @@ def _quality_checks(
     model: str, field: Optional[str], quality_list: List[DataQuality], server: Optional[Server]
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
-    count = 0
-    for quality in quality_list:
-        if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
-            checks.append(
-                CheckSpec(
-                    key=f"{model}__quality_custom_{count}",
-                    category="quality",
-                    type="quality_custom_soda",
-                    name=quality.description or "Custom SodaCL Check",
-                    model=model,
-                    field=field,
-                    metric=MetricType.UNSUPPORTED,
-                    preset_result="warning",
-                    preset_reason=(
-                        "Raw SodaCL custom checks (quality.type: custom, engine: soda) are no longer "
-                        "supported since soda-core was removed. Migrate this check to quality.type: sql."
-                    ),
-                )
-            )
-        elif quality.type == "sql":
-            if field is None:
-                check_key = f"{model}__quality_sql_{count}"
-                check_type = "model_quality_sql"
-            else:
-                check_key = f"{model}__{field}__quality_sql_{count}"
-                check_type = "field_quality_sql"
-            threshold = to_threshold(quality)
-            query = prepare_query(quality, model, field, server)
-            if query is None:
-                logger.warning(f"Quality check {check_key} has no query")
-                count += 1
-                continue
-            if threshold is None:
-                logger.warning(f"Quality check {check_key} has no valid threshold")
-                count += 1
-                continue
-            checks.append(
-                CheckSpec(
-                    key=check_key,
-                    category="quality",
-                    type=check_type,
-                    name=quality.description or "Quality Check",
-                    model=model,
-                    field=field,
-                    metric=MetricType.CUSTOM_SQL,
-                    threshold=threshold,
-                    query=query,
-                    dialect=getattr(quality, "dialect", None),
-                    severity=quality.severity,
-                )
-            )
-        elif quality.metric is not None:
-            threshold = to_threshold(quality)
-            if threshold is None:
-                logger.warning(f"Quality metric {quality.metric} has no valid threshold")
-                count += 1
-                continue
-            checks.extend(_quality_metric_check(model, field, quality, threshold))
-        count += 1
+    for count, quality in enumerate(quality_list):
+        rule_checks = _quality_rule_checks(model, field, quality, count, server)
+        # Every check keeps a link back to the rule that declared it, so that
+        # `test --quality-id` / `test --tag` can select it.
+        for check in rule_checks:
+            check.quality_id = quality.id
+            check.tags = list(quality.tags) if quality.tags else None
+        checks.extend(rule_checks)
     return checks
+
+
+def _quality_rule_checks(
+    model: str, field: Optional[str], quality: DataQuality, count: int, server: Optional[Server]
+) -> List[CheckSpec]:
+    """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
+    if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
+        return [
+            CheckSpec(
+                key=f"{model}__quality_custom_{count}",
+                category="quality",
+                type="quality_custom_soda",
+                name=quality.description or "Custom SodaCL Check",
+                model=model,
+                field=field,
+                metric=MetricType.UNSUPPORTED,
+                dimension=quality.dimension,
+                preset_result="warning",
+                preset_reason=(
+                    "Raw SodaCL custom checks (quality.type: custom, engine: soda) are no longer "
+                    "supported since soda-core was removed. Migrate this check to quality.type: sql."
+                ),
+            )
+        ]
+    if quality.type == "sql":
+        if field is None:
+            check_key = f"{model}__quality_sql_{count}"
+            check_type = "model_quality_sql"
+        else:
+            check_key = f"{model}__{field}__quality_sql_{count}"
+            check_type = "field_quality_sql"
+        threshold = to_threshold(quality)
+        query = prepare_query(quality, model, field, server)
+        if query is None:
+            logger.warning(f"Quality check {check_key} has no query")
+            return []
+        if threshold is None:
+            logger.warning(f"Quality check {check_key} has no valid threshold")
+            return []
+        return [
+            CheckSpec(
+                key=check_key,
+                category="quality",
+                type=check_type,
+                name=quality.description or "Quality Check",
+                model=model,
+                field=field,
+                metric=MetricType.CUSTOM_SQL,
+                threshold=threshold,
+                query=query,
+                dialect=getattr(quality, "dialect", None),
+                severity=quality.severity,
+                dimension=quality.dimension,
+            )
+        ]
+    if quality.metric is not None:
+        threshold = to_threshold(quality)
+        if threshold is None:
+            logger.warning(f"Quality metric {quality.metric} has no valid threshold")
+            return []
+        return _quality_metric_check(model, field, quality, threshold)
+    return []
 
 
 def _quality_metric_check(model, field, quality: DataQuality, threshold: Threshold) -> List[CheckSpec]:
     metric = quality.metric
     severity = quality.severity
+    dimension = quality.dimension
     is_percent = is_percent_unit(quality)
 
     # Percent thresholds only make sense for the count-of-bad-rows metrics, where
@@ -587,7 +664,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
         is_percent = False
 
     if metric == "rowCount":
-        return [_row_count_check(model, threshold, severity=severity)]
+        return [_row_count_check(model, threshold, severity=severity, dimension=dimension)]
     if metric == "duplicateValues":
         if field is None:
             cols = quality.arguments.get("properties") if quality.arguments else None
@@ -604,6 +681,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                     threshold=threshold,
                     columns=cols,
                     severity=severity,
+                    dimension=dimension,
                 )
             ]
         return [
@@ -614,6 +692,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 threshold,
                 name=f"Check that field {field} has duplicate_count {threshold.describe()}",
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "nullValues":
@@ -629,6 +708,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 name=f"Check that field {field} has missing_count {threshold.describe()}",
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "invalidValues":
@@ -655,6 +735,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 valid_regex=pattern,
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "missingValues":
@@ -674,6 +755,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 missing_values=missing_values or None,
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     logger.warning(f"Quality check {metric} is not yet supported")

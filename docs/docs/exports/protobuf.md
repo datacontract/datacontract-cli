@@ -1,12 +1,10 @@
 ---
-sidebar_position: 10
+sidebar_position: 21
 title: "Export: Protobuf"
 description: "Export a data contract to a Protobuf schema."
 ---
 
-<img className="page-icon" src="/img/icons/custom.svg" alt="" />
-
-# Export: Protobuf
+# <img className="page-icon" src="/img/icons/custom.svg" alt="" /> Export: Protobuf
 
 Converts the data contract to a [Protocol Buffers](https://protobuf.dev/) schema.
 
@@ -73,3 +71,5 @@ schema:
 ### Supported Properties
 
 - **`protoPackageName`** (optional) — The package name for the generated Protobuf file. Defaults to `"example"` if not specified.
+
+All options: **[`datacontract export protobuf`](../commands/export/protobuf.md)**.

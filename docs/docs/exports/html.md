@@ -1,12 +1,10 @@
 ---
-sidebar_position: 13
+sidebar_position: 15
 title: "Export: HTML"
 description: "Export a data contract to a standalone HTML page."
 ---
 
-<img className="page-icon" src="/img/icons/custom.svg" alt="" />
-
-# Export: HTML
+# <img className="page-icon" src="/img/icons/custom.svg" alt="" /> Export: HTML
 
 Generates a standalone, self-contained HTML page documenting the data contract.
 
@@ -21,3 +19,5 @@ Running this against the [example `orders` contract](https://github.com/datacont
 - the configured servers, quality checks, and service-level properties.
 
 Open the file in any browser or publish it as static documentation.
+
+All options: **[`datacontract export html`](../commands/export/html.md)**.

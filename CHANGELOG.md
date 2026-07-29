@@ -7,7 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` treats a server typed `mssql` as SQL Server, so contracts carrying the ODBC/dbt spelling are testable (ODCS itself only defines `sqlserver`)
+- `datacontract test --quality-id` runs a single quality rule by its ODCS `quality.id`, and `--tag` runs every quality rule declaring one of the given `quality.tags` (#1080)
+- Test results report the `quality_id` and `tags` of the quality rule a check comes from
+- New `databricks-runtime` extra for installing inside a Databricks Runtime, where the cluster already provides PySpark: `pip install datacontract-cli[databricks-runtime]` (#1211 @chifu1234)
+- The docs Commands reference documents the global options `--version` and `--system-truststore`, and every import and export guide links to its command page and back
+- `datacontract test --dimension` runs only the checks measuring one data quality dimension, e.g. `--dimension uniqueness`; it matches the ODCS `quality.dimension` of a rule and the schema and service level checks that measure the same aspect
+- New `dataframe` extra installs just what testing Spark DataFrames needs: `pip install datacontract-cli[dataframe]`
+- `datacontract import trino` creates a data contract from a Trino catalog, including a ready-to-test `servers` block
+- `datacontract import oracle` creates a data contract from a live Oracle database, including a ready-to-test `servers` block
+- `datacontract import gcs` and `datacontract import adls` create a data contract from files in Google Cloud Storage or Azure Blob Storage, including a ready-to-test `servers` block
+- `datacontract import sqlserver` creates a data contract from a live SQL Server database, including a ready-to-test `servers` block
+- `datacontract import mysql` creates a data contract from a live MySQL database, including a ready-to-test `servers` block
+- The documentation has a [Release Notes](https://docs.datacontract.com/release-notes) page, generated from this changelog
+- The documentation has a guide to [migrate contracts from DCS to ODCS](https://docs.datacontract.com/migrate-dcs-to-odcs)
+- `datacontract import s3` creates a data contract from files in an S3 bucket, including a ready-to-test `servers` block
+- `datacontract import athena` creates a data contract from an Amazon Athena database, including a ready-to-test `servers` block
+- `datacontract import unity` is now `datacontract import databricks`; the `unity` format name keeps working
+- Redshift infers the authentication method: a password means a database login, otherwise your AWS session is used for IAM. `DATACONTRACT_REDSHIFT_AUTHENTICATION` is no longer required and remains as an override
+- `datacontract import postgres` creates a data contract from a live Postgres schema, including a ready-to-test `servers` block
+- `datacontract import redshift` creates a data contract from an Amazon Redshift schema, including a ready-to-test `servers` block
+- Redshift supports IAM authentication, using temporary credentials from your AWS session instead of a database password
+- `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
+- `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
+
 ### Fixed
+- `datacontract test` checked `physicalType` against a same-named table in another schema when one existed, because the native column types were read from the catalog without the contract's schema
+- `datacontract test` against SQL Server no longer fails every check with "Could not read model" when `server.schema` differs from the login's default schema
+- `datacontract-cli[s3]` could not run `datacontract test`, and `datacontract-cli[gcs]` was missing the AWS duckdb extension the GCS connection loads; each data source extra now installs everything its guide needs
+- The API testing guide stated that no extra is required, but the response is tested with duckdb; it installs `datacontract-cli[duckdb]` now
+- `datacontract test` told users to install `datacontract-cli[local]`, an extra that does not exist, and `datacontract-cli[api]`, which installs the web server rather than a test backend; both now point at `duckdb`
+- `datacontract import gcs` wrote `type: gcs`, which is not an ODCS server type, so the imported contract failed `datacontract lint` and `datacontract test`; GCS is now written as an `s3` server on the Google interoperability endpoint
+- A data contract could inject SQL into the duckdb session through `endpointUrl`, which is interpolated into the statement that stores the S3, GCS and Azure credentials; every value is escaped now
+- The `datacontract api` server accepted a local file path as the `schema` query parameter, so a caller could have it read files from the server's filesystem; only `http(s)` URLs are accepted now
+- Trino physical type checks were silently skipped: its `information_schema` has no length or precision columns, so the catalog query failed and a wrong `physicalType` still passed
+- `datacontract import athena` and `datacontract import glue` now honour `DATACONTRACT_S3_ACCESS_KEY_ID` and `DATACONTRACT_S3_SECRET_ACCESS_KEY`; the Glue catalog was read with ambient AWS credentials only
+- S3 now uses an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles) when no access key is configured; previously such a setup failed with `403 Forbidden`
+- Documented that Athena authenticates with an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles); static access keys were presented as the only option
+- `regionName` in an Athena `servers` block was ignored, so the region could only be set via `DATACONTRACT_S3_REGION`
+- `datacontract import glue` mapped `timestamp` columns to `logicalType: date` instead of `timestamp`
+- Testing and importing Redshift failed with `codec not available in Python: 'UNICODE'`
+- Error messages no longer drop bracketed text such as `pip install "botocore[crt]"`
+- BigQuery export failed on fields with `logicalType: time`
+- Testing Parquet files failed for `number` fields without a declared precision and scale
+- CSV and JSON imports now write detected formats (`email`, `uuid`, `date-time`) to `logicalTypeOptions.format` instead of a custom property, so they are validated by `datacontract test`
+- SQL imports now map `TIME` types with precision or time zone (e.g. `TIME(9)`) to `logicalType: time`; previously the logical type was left unset
+- `datacontract test --checks quality` now runs `rowCount` quality rules, which were wrongly categorized as schema checks
 - `datacontract import --format dbt` derives the contract `id` from the dbt manifest's `project_name` instead of always emitting the placeholder `my-data-contract` (#1221 @DMZ22)
 
 ## [1.0.14] - 2026-07-23

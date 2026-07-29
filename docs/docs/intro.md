@@ -7,6 +7,17 @@ description: "An open-source command-line tool for working with data contracts b
 
 # What is Data Contract CLI?
 
+<p style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
+  <a href="https://pypistats.org/packages/datacontract-cli">
+    <img alt="PyPI Monthly Downloads" src="https://img.shields.io/badge/downloads-1.4M%2Fmonth-brightgreen" /></a>
+  <a href="https://github.com/datacontract/datacontract-cli">
+    <img alt="GitHub Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
+  <a href="https://github.com/datacontract/datacontract-cli/graphs/contributors">
+    <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/datacontract/datacontract-cli" /></a>
+  <a href="https://hub.docker.com/r/datacontract/cli">
+    <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/datacontract/cli" /></a>
+</p>
+
 The `datacontract` CLI is an open-source command-line tool for working with [data contracts](https://datacontract.com).
 
 It natively supports the [Open Data Contract Standard (ODCS)](https://bitol-io.github.io/open-data-contract-standard/latest/) to:
@@ -18,6 +29,20 @@ It natively supports the [Open Data Contract Standard (ODCS)](https://bitol-io.g
 - **Import** an existing schema (SQL, dbt, BigQuery, Glue, Excel, …) into a data contract.
 
 The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
+
+Three commands take you from an existing warehouse table to a tested data contract:
+
+```bash
+uv tool install --python python3.11 --upgrade 'datacontract-cli[snowflake]'
+datacontract import snowflake --source <account> --database ORDER_DB --schema PUBLIC --output datacontract.yaml
+datacontract test datacontract.yaml
+```
+
+```
+🟢 data contract is valid. Run 24 checks. Took 5.2 seconds.
+```
+
+The same flow works for [BigQuery](./testing/bigquery.md), [Databricks](./testing/databricks.md), [Postgres](./testing/postgres.md), and [15+ other sources](./testing/index.md) — or [try it on a local CSV file](./testing/local.md) without any credentials.
 
 ![Overview of the Data Contract CLI: schemas from SQL DDL, JSON Schema, Iceberg, Protobuf, BigQuery, Unity Catalog, AWS Glue, and Excel are imported into an ODCS data contract, which is linted, tested against S3, BigQuery, Azure, Databricks, Snowflake, and Kafka, and exported to SQL DDL, HTML, dbt, Entropy Data, Avro, SodaCL, Pydantic, and Excel.](/img/datacontractcli.webp)
 
@@ -34,15 +59,20 @@ A typical contract has a `servers` section with endpoint details, a `schema` des
 
 ## How it works
 
-When you run `datacontract test`, the CLI connects to a data source and runs schema and quality tests to verify that the data contract is valid. Internally it uses different engines based on the server `type` — it connects with DuckDB, Spark, or a native connection, executes most checks with [_ibis_](https://ibis-project.org/) (compiling dialect-specific SQL per backend), and validates JSON with [_fastjsonschema_](https://pypi.org/project/fastjsonschema/).
+When you run `datacontract test`, the CLI connects to a data source and runs schema and quality tests to verify that the actual data complies with the contract. It picks a connection engine based on the server `type` — see **[Test your Data](./testing/index.md#how-it-works)**.
 
 ## Next steps
 
 - New here? Start with the **[Quickstart](./quickstart.md)**.
+- Test your own warehouse in 5 minutes: **[Snowflake](./testing/snowflake.md)**, **[BigQuery](./testing/bigquery.md)**, **[Databricks](./testing/databricks.md)**, **[Amazon Redshift](./testing/redshift.md)**, or **[any other source](./testing/index.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
-- Run checks against real data with **[Testing](./testing.md)**.
+- Run checks against real data with **[Test your Data](./testing/index.md)**, then keep them running with **[Scheduling and CI/CD](./ci-cd.md)**.
+- Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
+- Evaluating options? See **[Comparison with Other Tools](./comparison.md)**.
+- Coming from the older `datacontract.yaml` format? **[Migrate from DCS to ODCS](./migrate-dcs-to-odcs.md)**.
+- Upgrading? See what changed in **[Release Notes](./release-notes.md)**.
 
 ## Frequently asked questions
 
@@ -56,15 +86,17 @@ It natively uses the [Open Data Contract Standard (ODCS)](./open-data-contract-s
 
 ### How do I install the Data Contract CLI?
 
-Run `pip install datacontract-cli[all]`, or use `uv tool install "datacontract-cli[all]"`. A Docker image is published as `datacontract/cli`. See [Installation](./installation.md) for all options.
+Run `pip install 'datacontract-cli[postgres]'` (or the extra matching your data source), or use `uv tool install`. `datacontract-cli[all]` installs every optional dependency. A Docker image is published as `datacontract/cli`. See [Installation](./installation.md) for all options.
 
 ### Which data sources can the Data Contract CLI test?
 
-Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Connect your Data](./connect/index.md).
+Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Test your Data](./testing/index.md).
 
 ### Is the Data Contract CLI free to use?
 
 Yes. It is open source under the MIT license and free for commercial use. [Entropy Data](./entropy-data.md) offers a commercial platform that the CLI can publish test results to, but the CLI itself does not require it.
+
+More answers — credentials, check selection, type failures, CI behaviour — are in the **[FAQ](./faq.md)**.
 
 ## Related links
 

@@ -1,12 +1,10 @@
 ---
-sidebar_position: 1
+sidebar_position: 26
 title: "Export: SQL DDL"
 description: "Convert a data contract into a SQL data definition language (DDL) file."
 ---
 
-<img className="page-icon" src="/img/icons/database.svg" alt="" />
-
-# Export: SQL
+# <img className="page-icon" src="/img/icons/database.svg" alt="" /> Export: SQL
 
 Converts a data contract into a SQL data definition language (DDL) file.
 
@@ -78,3 +76,5 @@ datacontract export sql datacontract.yaml --dialect clickhouse \
 | `--clickhouse-order-by` | Comma-separated `ORDER BY` columns. Defaults to primary key columns. |
 
 Override any field's ClickHouse type individually by setting the custom property `clickhouseType` in the data contract.
+
+All options: **[`datacontract export sql`](../commands/export/sql.md)**.

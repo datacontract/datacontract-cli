@@ -1,12 +1,10 @@
 ---
-sidebar_position: 14
+sidebar_position: 25
 title: "Import: Spark"
 description: "Create a data contract from Spark tables or DataFrames (programmatic)."
 ---
 
-<img className="page-icon" src="/img/icons/spark.svg" alt="" />
-
-# Import: Spark
+# <img className="page-icon" src="/img/icons/spark.svg" alt="" /> Import: Spark
 
 Creates a data contract from a Spark schema. This importer is typically used programmatically from within a Spark context.
 
@@ -22,3 +20,5 @@ datacontract import spark --source orders
 ```
 
 A table description can be supplied alongside the table or dataframe to enrich the generated contract.
+
+All options: **[`datacontract import spark`](../commands/import/spark.md)**.

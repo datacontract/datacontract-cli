@@ -100,6 +100,10 @@ schema:
         logicalType: date
         required: false
         description: a simple date field
+      - name: time_field
+        logicalType: time
+        required: false
+        description: a simple time field
       - name: number_field
         logicalType: number
         physicalType: NUMERIC

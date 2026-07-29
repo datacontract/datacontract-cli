@@ -94,7 +94,7 @@ const homepageGraph = [
 /**
  * URL of the clean-markdown twin that docusaurus-plugin-llms emits for a page,
  * so agents that prefer markdown can find it from the HTML.
- * `@site/docs/connect/index.md` is written as `/docs/connect/connect.md`.
+ * `@site/docs/testing/index.md` is written as `/docs/testing/testing.md`.
  */
 function markdownUrl(source: string): string {
   const path = source.replace(/^@site\//, '');

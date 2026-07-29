@@ -1,12 +1,10 @@
 ---
-sidebar_position: 27
+sidebar_position: 12
 title: "Export: Excel"
 description: "Export a data contract to an ODCS Excel template."
 ---
 
-<img className="page-icon" src="/img/icons/excel.svg" alt="" />
-
-# Export: Excel
+# <img className="page-icon" src="/img/icons/excel.svg" alt="" /> Export: Excel
 
 Converts a data contract into an ODCS Excel template — a user-friendly spreadsheet for authoring, sharing, and managing data contracts.
 
@@ -24,3 +22,5 @@ The Excel format enables:
 - **Round-trip conversion** back to YAML via [`import excel`](../imports/excel.md).
 
 For the template structure, see the [ODCS Excel Template repository](https://github.com/datacontract/open-data-contract-standard-excel-template).
+
+All options: **[`datacontract export excel`](../commands/export/excel.md)**.

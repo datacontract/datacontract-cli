@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
+    "release-notes": "node scripts/generate-release-notes.mjs",
+    "prestart": "npm run release-notes",
     "start": "docusaurus start",
+    "prebuild": "npm run release-notes",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
@@ -34,7 +37,9 @@
     "typescript": "~6.0.2"
   },
   "overrides": {
-    "serialize-javascript": "^7.0.3"
+    "serialize-javascript": "^7.0.3",
+    "brace-expansion": "5.0.8",
+    "uuid": "11.1.1"
   },
   "browserslist": {
     "production": [

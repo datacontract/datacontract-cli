@@ -41,7 +41,7 @@
   text-underline-offset: 0.15em;
 }
 
-/* Overview card grids (Connect your Data, Imports, Exports) */
+/* Overview card grids (Test your Data, Imports, Exports) */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -91,9 +91,12 @@
   margin-top: 0.15rem;
 }
 .page-icon {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
+  display: inline-block;
+  vertical-align: -0.12em;
+  margin-right: 0.5rem;
 }
 
 /* GitHub icon in the navbar (theme-adaptive via mask) */

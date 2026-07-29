@@ -71,6 +71,16 @@ const config: Config = {
     locales: ['en'],
   },
 
+  // Injected into the <head> of every page.
+  scripts: [
+    {
+      // Umami: cookie-less, privacy-friendly page analytics.
+      src: 'https://cloud.umami.is/script.js',
+      defer: true,
+      'data-website-id': '3cc8a904-405b-4d1a-b3ef-bd4b484d8645',
+    },
+  ],
+
   presets: [
     [
       'classic',
@@ -123,29 +133,48 @@ const config: Config = {
         description:
           'An open-source command-line tool for working with data contracts based on the Open Data Contract Standard (ODCS).',
         // Emit the docs in a logical learning order so llms.txt reads as a
-        // coherent guide instead of an arbitrary file listing.
+        // coherent guide instead of an arbitrary file listing. This mirrors the
+        // sidebar (the `sidebar_position` frontmatter and the `_category_.json`
+        // files), which is the curated reading order; keep the two in sync when
+        // adding a page. `tests/test_docs_ordering.py` fails on a page that is
+        // missing here, so it cannot silently fall to the end of llms.txt.
         includeOrder: [
           'intro.md',
           'quickstart.md',
           'open-data-contract-standard.md',
           'installation.md',
-          'editor.md',
-          'testing.md',
-          'connect/index.md',
-          'connect/*.md',
+          'testing/index.md',
+          'testing/*.md',
+          'schema.md',
           'quality-rules/index.md',
           'quality-rules/*.md',
+          'service-levels.md',
+          'semantics.md',
+          'ci-cd.md',
+          'dbt.md',
+          'editor.md',
           'imports/index.md',
           'imports/*.md',
           'exports/index.md',
           'exports/*.md',
+          'reference/index.md',
+          'reference/*.md',
           'commands/index.md',
           'commands/*.md',
-          'python-library.md',
-          'best-practices.md',
-          'dbt.md',
+          // the import/export/dbt subcommand reference pages
+          'commands/*/index.md',
+          'commands/*/*.md',
           'api.md',
+          'python-library.md',
+          'databricks.md',
+          'best-practices.md',
           'extending.md',
+          'migrate-dcs-to-odcs.md',
+          'comparison.md',
+          'entropy-data.md',
+          'release-notes.md',
+          'contributing.md',
+          'faq.md',
         ],
         includeUnmatchedLast: true,
       },
@@ -196,6 +225,12 @@ const config: Config = {
           label: 'Documentation',
         },
         {
+          href: 'https://datacontract.com/slack',
+          label: 'Join Community',
+          position: 'right',
+          'aria-label': 'Join the community on Slack',
+        },
+        {
           href: 'https://github.com/datacontract/datacontract-cli',
           label: 'GitHub',
           position: 'right',
@@ -213,6 +248,7 @@ const config: Config = {
             {label: 'What is Data Contract CLI?', to: '/'},
             {label: 'Quickstart', to: '/quickstart'},
             {label: 'Commands', to: '/commands/'},
+            {label: 'Release Notes', to: '/release-notes'},
           ],
         },
         {

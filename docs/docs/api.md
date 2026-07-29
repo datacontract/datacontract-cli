@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 18
 title: "API"
 description: "Run the Data Contract CLI as a web server exposing a REST API for testing, linting, and exporting."
 ---
@@ -74,7 +74,7 @@ curl -X POST "http://localhost:4242/changelog" \
 
 ## Configure server credentials
 
-To connect to a data source, set the required credentials as environment variables **before starting the API** (see [Testing](./testing.md)). For example, for Snowflake:
+To connect to a data source, set the required credentials as environment variables **before starting the API** (see [Test your Data](./testing/index.md#configuring-the-connection)). For example, for Snowflake:
 
 ```bash
 export DATACONTRACT_SNOWFLAKE_USERNAME=123

@@ -12,11 +12,15 @@ on:
       - main
     paths:
       - 'docs/**'
+      # The Release Notes page is generated from the changelog, so a changelog
+      # change has to rebuild the site.
+      - 'CHANGELOG.md'
       - '.github/workflows/azure-static-web-apps-docs.yml'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     paths:
       - 'docs/**'
+      - 'CHANGELOG.md'
       - '.github/workflows/azure-static-web-apps-docs.yml'
 
 permissions:
@@ -41,8 +45,17 @@ jobs:
           cache-dependency-path: docs/package-lock.json
       - run: npm ci
         working-directory: docs
-      - run: npm run build # docusaurus build, fails on broken links
+      - run: npm run build # regenerates the release notes, then docusaurus build, which fails on broken links
         working-directory: docs
+      # The generated page is committed so the Oryx deploy container can fall
+      # back to it when it cannot read CHANGELOG.md. Keep the two in sync.
+      - name: Check the committed Release Notes match CHANGELOG.md
+        run: |
+          # --porcelain rather than `git diff` so an uncommitted (untracked) page fails too.
+          if [ -n "$(git status --porcelain -- docs/docs/release-notes.md)" ]; then
+            echo "::error file=docs/docs/release-notes.md::Out of date. Run 'npm run release-notes' in docs/ and commit the result."
+            exit 1
+          fi
 
   deploy:
     if: >-

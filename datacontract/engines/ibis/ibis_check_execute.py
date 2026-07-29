@@ -35,6 +35,16 @@ from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
 
+# Most server types have an install extra of the same name. These do not: they
+# are read with duckdb, so naming the server type would send users to an extra
+# that does not exist (`local`) or to an unrelated one (`api` installs the web
+# server dependencies, not a test backend).
+_INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb"}
+
+
+def install_extra_for(server_type: Optional[str]) -> str:
+    return _INSTALL_EXTRAS.get(server_type, server_type)
+
 
 class _ColumnNotFound(Exception):
     pass
@@ -55,6 +65,8 @@ def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
                 name=spec.name,
                 model=spec.model,
                 field=spec.field,
+                quality_id=spec.quality_id,
+                tags=spec.tags,
                 engine="ibis",
                 implementation=_describe(spec),
             )
@@ -116,7 +128,7 @@ def execute_ibis_checks(
         server_type = get_server_type(server)
         reason = (
             f"The '{server_type}' backend is not installed. "
-            f"Install it with: pip install 'datacontract-cli[{server_type}]'"
+            f"Install it with: pip install 'datacontract-cli[{install_extra_for(server_type)}]'"
         )
         logger.exception("ibis backend import failed")
         run.log_error(reason)
@@ -1053,6 +1065,9 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     - **Oracle** logs in as one user but the tables may be owned by a different
       schema (``server.schema``). ibis defaults the owner to the login user, so
       an unqualified lookup raises ``TableNotFound``.
+    - **SQL Server** (``mssql`` backend) has no ``schema`` kwarg on
+      ``do_connect()`` either, so it has the same limitation as Oracle: an
+      unqualified lookup falls back to the login's default schema.
     - **Redshift** has no dedicated ibis backend and goes through the Postgres
       backend (``con.name == "postgres"``). When no schema is passed, ibis's
       Postgres introspection resolves the active schema with ``SELECT
@@ -1065,7 +1080,7 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     """
     if server is None or not server.schema_:
         return None
-    if getattr(con, "name", None) == "oracle":
+    if getattr(con, "name", None) in ("oracle", "mssql"):
         return server.schema_
     # Redshift rides the Postgres backend, so detect it by the contract's server
     # type rather than con.name.

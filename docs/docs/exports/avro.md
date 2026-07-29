@@ -1,12 +1,10 @@
 ---
-sidebar_position: 6
+sidebar_position: 1
 title: "Export: Avro"
 description: "Export a data contract to an Avro schema, with custom logicalType and default support."
 ---
 
-<img className="page-icon" src="/img/icons/avro.svg" alt="" />
-
-# Export: Avro
+# <img className="page-icon" src="/img/icons/avro.svg" alt="" /> Export: Avro
 
 Converts the data contract into an Avro schema. It supports specifying custom Avro properties for logical types and default values.
 
@@ -80,3 +78,5 @@ schema:
 
 - `avroLogicalType` — the Avro logical type of the property (here `local-timestamp-micros`).
 - `avroDefault` — the default value for the property in Avro.
+
+All options: **[`datacontract export avro`](../commands/export/avro.md)**.

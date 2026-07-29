@@ -117,6 +117,12 @@
         "description": "a simple date field"
       },
       {
+        "name": "time_field",
+        "type": "TIME",
+        "mode": "NULLABLE",
+        "description": "a simple time field"
+      },
+      {
         "name": "number_field",
         "type": "NUMERIC",
         "mode": "NULLABLE",

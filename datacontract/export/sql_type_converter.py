@@ -199,7 +199,7 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
         return convert_to_databricks(field)
     elif server_type == "local" or server_type == "s3":
         return convert_to_duckdb(field)
-    elif server_type == "sqlserver":
+    elif server_type in ("sqlserver", "mssql"):
         return convert_type_to_sqlserver(field)
     elif server_type == "bigquery":
         return convert_type_to_bigquery(field)
@@ -530,10 +530,13 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
     if "decimal" in base_type or "number" in base_type or "numeric" in base_type:
         precision = _get_precision(field)
         scale = _get_scale(field)
-        if precision and scale:
+        if precision is not None and scale is not None:
             return f"DECIMAL({precision},{scale})"
-        else:
-            return _get_type(field)
+        if precision is not None:
+            return f"DECIMAL({precision})"
+        # no precision declared: DuckDB's default DECIMAL(18,3); the raw
+        # logical type ("number") would not be a valid DuckDB type
+        return "DECIMAL"
 
     # Check list and map
     if base_type == "list" or base_type == "array":
@@ -682,6 +685,8 @@ def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
         return "TIMESTAMP"
     elif logical_type.lower() == "date":
         return "DATE"
+    elif logical_type.lower() == "time":
+        return "TIME"
     elif logical_type.lower() == "timestamp_ntz":
         return "DATETIME"
     elif logical_type.lower() in ["number", "decimal", "numeric"]:

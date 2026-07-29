@@ -60,7 +60,7 @@ def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
 
 
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
-_ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "snowflake", "azure", "s3", "gcs", "local"}
+_ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "mssql", "snowflake", "azure", "s3", "gcs", "local"}
 
 _BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
@@ -84,7 +84,7 @@ def _has_unsupported_databricks_type(prop) -> bool:
     return False
 
 
-_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver"}
+_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver", "mssql"}
 
 
 def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> str:
@@ -617,7 +617,7 @@ def check_row_count(model_name: str, threshold: str, quoting_config: QuotingConf
     return Check(
         id=str(uuid.uuid4()),
         key=check_key,
-        category="schema",
+        category="quality",
         type=check_type,
         name=f"Check that model {model_name} has row_count {threshold}",
         model=model_name,

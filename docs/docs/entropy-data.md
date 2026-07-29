@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 25
 title: "Integrate with Entropy Data"
 description: "Publish data contract test results to Entropy Data, a commercial platform for managing data contracts."
 ---
@@ -22,7 +22,7 @@ datacontract test https://demo.entropy-data.com/demo279750347121/datacontracts/4
   --publish https://api.entropy-data.com/api/test-results
 ```
 
-The same `--publish` option is available on [`ci`](./commands/ci.md) and [`dbt sync`](./commands/dbt.md), so you can report results from CI/CD and scheduled runs — see [Test your contract → Scheduling and CI/CD](./testing.md#scheduling-and-cicd).
+The same `--publish` option is available on [`ci`](./commands/ci.md) and [`dbt sync`](./commands/dbt/sync.md), so you can report results from CI/CD and scheduled runs — see [Scheduling and CI/CD](./ci-cd.md).
 
 ## Publish the contract
 

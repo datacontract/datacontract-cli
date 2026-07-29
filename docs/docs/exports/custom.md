@@ -1,12 +1,10 @@
 ---
-sidebar_position: 28
+sidebar_position: 4
 title: "Export: Custom (Jinja)"
 description: "Export a data contract to any format using a custom Jinja template."
 ---
 
-<img className="page-icon" src="/img/icons/custom.svg" alt="" />
-
-# Export: Custom (Jinja)
+# <img className="page-icon" src="/img/icons/custom.svg" alt="" /> Export: Custom (Jinja)
 
 Converts the data contract into any custom format using a [Jinja](https://jinja.palletsprojects.com/) template. Specify the template path with `--template`.
 
@@ -47,3 +45,5 @@ Add `--schema-name` to render a single schema. The template then also receives:
 ```bash
 datacontract export custom datacontract.odcs.yaml --template template.sql --schema-name orders
 ```
+
+All options: **[`datacontract export custom`](../commands/export/custom.md)**.

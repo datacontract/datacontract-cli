@@ -32,6 +32,7 @@ class ImportFormat(str, Enum):
     bigquery = "bigquery"
     odcs = "odcs"
     unity = "unity"
+    databricks = "databricks"
     spark = "spark"
     iceberg = "iceberg"
     parquet = "parquet"
@@ -40,6 +41,16 @@ class ImportFormat(str, Enum):
     excel = "excel"
     powerbi = "powerbi"
     snowflake = "snowflake"
+    redshift = "redshift"
+    postgres = "postgres"
+    athena = "athena"
+    s3 = "s3"
+    mysql = "mysql"
+    sqlserver = "sqlserver"
+    gcs = "gcs"
+    adls = "adls"
+    oracle = "oracle"
+    trino = "trino"
 
     @classmethod
     def get_supported_formats(cls):

@@ -39,13 +39,14 @@ logger = logging.getLogger(__name__)
 # implemented by the ``_read_*`` readers further down and wired in ``_READERS``.
 _CATALOG_STRATEGY = {
     "sqlserver": "information_schema",
+    "mssql": "information_schema",  # the ODBC/ibis/dbt name for SQL Server
     "postgres": "information_schema",
     "redshift": "information_schema",
     "snowflake": "information_schema",
     "databricks": "information_schema",
-    "trino": "information_schema",
     "oracle": "oracle",
-    "athena": "athena",
+    "athena": "full_type",
+    "trino": "full_type",
     "bigquery": "bigquery",
 }
 
@@ -64,6 +65,13 @@ _DECIMAL_TYPES = {"decimal", "numeric", "number", "dec"}
 # part of the declared type for character and raw types. Appending it elsewhere
 # would corrupt types such as ROWID or DATE (``rowid(10)``).
 _ORACLE_LENGTH_TYPES = {"char", "nchar", "varchar", "varchar2", "nvarchar2", "raw"}
+
+
+def oracle_char_length(data_type: Optional[str], data_length):
+    """Oracle reports DATA_LENGTH for every column, but the length is only part
+    of the declared type for character and raw types; appending it elsewhere
+    would corrupt types such as ROWID or DATE."""
+    return data_length if (data_type or "").strip().lower() in _ORACLE_LENGTH_TYPES else None
 
 
 def reconstruct_native_type(
@@ -155,9 +163,7 @@ def _map_reconstructed(con, query: str, oracle_length: bool = False) -> Optional
         column_name, data_type = row[0], row[1]
         char_len = row[2]
         if oracle_length:
-            # Oracle reports DATA_LENGTH for every column; keep it only for the
-            # types where it is really part of the declared type.
-            char_len = char_len if (data_type or "").strip().lower() in _ORACLE_LENGTH_TYPES else None
+            char_len = oracle_char_length(data_type, char_len)
         native = reconstruct_native_type(data_type, char_len, row[3], row[4])
         if column_name and native:
             result[str(column_name).lower()] = native
@@ -181,12 +187,27 @@ def _map_full_type(con, query: str) -> Optional[dict[str, str]]:
 # ---------------------------------------------------------------------------
 # per-backend catalog readers (one per strategy in _CATALOG_STRATEGY)
 # ---------------------------------------------------------------------------
+def _schema_filter(server: Server, column: str = "table_schema") -> str:
+    """``AND <column> = <server.schema>``, or ``""`` when the contract has no schema.
+
+    A catalog spans every schema in the database, so filtering on the table name
+    alone can pick up a same-named table in another schema and report its column
+    types — silently, since the query still returns rows. Matched
+    case-insensitively, like the table name, so a lowercase contract still
+    matches Snowflake's upper-cased catalog.
+    """
+    if not server.schema_:
+        return ""
+    return f" AND upper({column}) = upper('{_quote(server.schema_)}')"
+
+
 def _read_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
     """Standard ``INFORMATION_SCHEMA.COLUMNS`` with separate length/precision."""
     query = (
         "SELECT column_name, data_type, character_maximum_length, "
         "numeric_precision, numeric_scale "
         f"FROM information_schema.columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"{_schema_filter(server)}"
     )
     return _map_reconstructed(con, query)
 
@@ -196,16 +217,20 @@ def _read_oracle(con, server: Server, model: str) -> Optional[dict[str, str]]:
     query = (
         "SELECT column_name, data_type, data_length, data_precision, data_scale "
         f"FROM all_tab_columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"{_schema_filter(server, 'owner')}"
     )
     return _map_reconstructed(con, query, oracle_length=True)
 
 
-def _read_athena(con, server: Server, model: str) -> Optional[dict[str, str]]:
-    """Athena's information_schema.data_type is already a full type string."""
-    schema_filter = f" AND table_schema = '{_quote(server.schema_)}'" if server.schema_ else ""
+def _read_full_type_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Athena and Trino report a complete type string in ``data_type``.
+
+    Their ``information_schema.columns`` has no length or precision columns at
+    all, so asking for them fails the whole query and silently skips the check.
+    """
     query = (
         "SELECT column_name, data_type FROM information_schema.columns "
-        f"WHERE lower(table_name) = lower('{_quote(model)}'){schema_filter}"
+        f"WHERE lower(table_name) = lower('{_quote(model)}'){_schema_filter(server)}"
     )
     return _map_full_type(con, query)
 
@@ -226,7 +251,7 @@ def _read_bigquery(con, server: Server, model: str) -> Optional[dict[str, str]]:
 _READERS = {
     "information_schema": _read_information_schema,
     "oracle": _read_oracle,
-    "athena": _read_athena,
+    "full_type": _read_full_type_information_schema,
     "bigquery": _read_bigquery,
 }
 

@@ -121,11 +121,6 @@ def import_csv(source: str, include_examples: bool = False) -> OpenDataContractS
             minimum = tallies[("min", field_name)]
             maximum = tallies[("max", field_name)]
 
-        # Build custom properties for format if present
-        custom_props = {}
-        if format_val:
-            custom_props["format"] = format_val
-
         prop = create_property(
             name=field_name,
             logical_type=dc_type,
@@ -135,7 +130,7 @@ def import_csv(source: str, include_examples: bool = False) -> OpenDataContractS
             examples=examples,
             minimum=minimum,
             maximum=maximum,
-            custom_properties=custom_props if custom_props else None,
+            format=format_val if format_val else None,
         )
         properties.append(prop)
 

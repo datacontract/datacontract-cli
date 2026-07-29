@@ -1,6 +1,8 @@
 import os
 import re
+from unittest.mock import MagicMock
 
+import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -126,3 +128,15 @@ def test_changelog_with_changes():
     assert "Removed" in result.output
     assert "Updated" in result.output
     assert "Added" in result.output
+
+
+def test_error_message_keeps_bracketed_text(monkeypatch, capsys):
+    """Rich markup must not eat hints like `pip install "botocore[crt]"`."""
+    from datacontract import cli
+
+    monkeypatch.setattr(cli, "app", MagicMock(side_effect=RuntimeError('run: pip install "botocore[crt]"')))
+
+    with pytest.raises(SystemExit):
+        cli.main()
+
+    assert "botocore[crt]" in capsys.readouterr().out

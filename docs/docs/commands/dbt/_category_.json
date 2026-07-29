@@ -1,0 +1,8 @@
+{
+  "label": "dbt",
+  "position": 6,
+  "link": {
+    "type": "doc",
+    "id": "commands/dbt/index"
+  }
+}

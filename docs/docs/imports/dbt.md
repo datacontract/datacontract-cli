@@ -1,12 +1,10 @@
 ---
-sidebar_position: 2
+sidebar_position: 11
 title: "Import: dbt"
 description: "Create a data contract from a dbt manifest file."
 ---
 
-<img className="page-icon" src="/img/icons/dbt.svg" alt="" />
-
-# Import: dbt
+# <img className="page-icon" src="/img/icons/dbt.svg" alt="" /> Import: dbt
 
 Creates a data contract from a dbt `manifest.json`.
 
@@ -19,3 +17,5 @@ datacontract import dbt --source manifest.json
 ```
 
 See the [dbt Integration](../dbt.md) guide for the full dbt workflow.
+
+All options: **[`datacontract import dbt`](../commands/import/dbt.md)**.

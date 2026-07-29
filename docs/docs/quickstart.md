@@ -6,17 +6,17 @@ description: "Install the Data Contract CLI and test, export, and import your fi
 
 # Quickstart
 
-This guide gets you from zero to a tested data contract in a few minutes.
+This guide gets you from zero to a tested data contract in a few minutes — first against a hosted demo database (60 seconds, nothing to set up), then against your own data warehouse (about 5 minutes).
 
 ## Install
 
-The preferred way to install is [uv](https://docs.astral.sh/uv/):
+The preferred way to install is [uv](https://docs.astral.sh/uv/). Add the extra for the data source you want to test — the demo below uses Postgres:
 
 ```bash
-uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
+uv tool install --python python3.11 --upgrade 'datacontract-cli[postgres]'
 ```
 
-The `[all]` extra installs every optional data-source dependency. See [Installation options](#installation-options) below for `pip`, `pipx`, and Docker.
+Every source has its own extra (`snowflake`, `bigquery`, `databricks`, `s3`, `duckdb` for local files, …), so you only install what you need. `datacontract-cli[all]` pulls in every optional dependency, including Spark — convenient, but a much larger download. See [Installation options](#installation-options) below for `pip`, `pipx`, and Docker.
 
 Verify the installation:
 
@@ -24,7 +24,7 @@ Verify the installation:
 datacontract --version
 ```
 
-## Test your first data contract
+## Test your first data contract (60 seconds)
 
 Let's use the example contract published at
 [`https://datacontract.com/orders-v1.odcs.yaml`](https://datacontract.com/orders-v1.odcs.yaml).
@@ -55,6 +55,28 @@ Server: production (type=postgres, host=..., database=postgres, schema=dp_orders
 
 The CLI verified that the YAML itself is valid, that all records comply with the schema, and that all quality attributes are met.
 
+## Test your own data (5 minutes)
+
+The real magic moment is when a contract catches drift in *your* data. Import a contract straight from an existing table — the import generates the schema and a ready-to-test `servers` block — then test the actual data against it:
+
+```bash
+datacontract import postgres --source localhost --database mydb --output datacontract.yaml
+datacontract test datacontract.yaml
+```
+
+That example uses Postgres because it matches the extra installed above. For another source, install its extra first — `uv tool install --python python3.11 --upgrade 'datacontract-cli[snowflake]'` — and use the matching import, e.g. `datacontract import snowflake`.
+
+Follow the copy-paste guide for your data source, including credentials setup and troubleshooting:
+
+- **[Snowflake](./testing/snowflake.md)** — import from your tables, test in 5 minutes
+- **[Google BigQuery](./testing/bigquery.md)** — import from your tables, test in 5 minutes
+- **[Databricks](./testing/databricks.md)** — import from Unity Catalog, test in 5 minutes
+- **[Amazon Redshift](./testing/redshift.md)** — import from your tables, test in 5 minutes
+- **[Postgres](./testing/postgres.md)**, **[Amazon S3](./testing/s3.md)**, and [15+ other sources](./testing/index.md)
+- **[Local files](./testing/local.md)** — no warehouse or credentials needed, works offline
+
+Each guide ends with the same payoff: tighten an expectation, rerun `datacontract test`, and watch the contract catch the violation with exit code `1` — the exact behavior you'll later use [in CI/CD](./ci-cd.md).
+
 ## Export to another format
 
 You can use the contract metadata to generate downstream artifacts. For example, a SQL DDL:
@@ -67,10 +89,10 @@ datacontract export sql https://datacontract.com/orders-v1.odcs.yaml
 -- Data Contract: orders
 -- SQL Dialect: postgres
 CREATE TABLE orders (
-  order_id uuid not null primary key,
+  order_id UUID not null primary key,
   customer_id text not null,
   order_total integer not null,
-  order_timestamp timestamptz,
+  order_timestamp TIMESTAMPTZ,
   order_status text
 );
 ```
@@ -122,6 +144,12 @@ if not run.has_passed():
     print("Data quality validation failed.")
     # Abort pipeline, alert, or take corrective actions...
 ```
+
+## Next steps
+
+- Keep the tests running automatically: **[Scheduling and CI/CD](./ci-cd.md)** — GitHub Actions, Azure DevOps, cron, and orchestrators.
+- Roll data contracts out across a team: **[Adopting Data Contracts](./best-practices.md)**.
+- Browse everything the CLI can do: **[Commands](./commands/index.md)**.
 
 ## Installation options
 
