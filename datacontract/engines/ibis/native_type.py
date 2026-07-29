@@ -186,12 +186,27 @@ def _map_full_type(con, query: str) -> Optional[dict[str, str]]:
 # ---------------------------------------------------------------------------
 # per-backend catalog readers (one per strategy in _CATALOG_STRATEGY)
 # ---------------------------------------------------------------------------
+def _schema_filter(server: Server, column: str = "table_schema") -> str:
+    """``AND <column> = <server.schema>``, or ``""`` when the contract has no schema.
+
+    A catalog spans every schema in the database, so filtering on the table name
+    alone can pick up a same-named table in another schema and report its column
+    types — silently, since the query still returns rows. Matched
+    case-insensitively, like the table name, so a lowercase contract still
+    matches Snowflake's upper-cased catalog.
+    """
+    if not server.schema_:
+        return ""
+    return f" AND upper({column}) = upper('{_quote(server.schema_)}')"
+
+
 def _read_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
     """Standard ``INFORMATION_SCHEMA.COLUMNS`` with separate length/precision."""
     query = (
         "SELECT column_name, data_type, character_maximum_length, "
         "numeric_precision, numeric_scale "
         f"FROM information_schema.columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"{_schema_filter(server)}"
     )
     return _map_reconstructed(con, query)
 
@@ -201,6 +216,7 @@ def _read_oracle(con, server: Server, model: str) -> Optional[dict[str, str]]:
     query = (
         "SELECT column_name, data_type, data_length, data_precision, data_scale "
         f"FROM all_tab_columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"{_schema_filter(server, 'owner')}"
     )
     return _map_reconstructed(con, query, oracle_length=True)
 
@@ -211,10 +227,9 @@ def _read_full_type_information_schema(con, server: Server, model: str) -> Optio
     Their ``information_schema.columns`` has no length or precision columns at
     all, so asking for them fails the whole query and silently skips the check.
     """
-    schema_filter = f" AND table_schema = '{_quote(server.schema_)}'" if server.schema_ else ""
     query = (
         "SELECT column_name, data_type FROM information_schema.columns "
-        f"WHERE lower(table_name) = lower('{_quote(model)}'){schema_filter}"
+        f"WHERE lower(table_name) = lower('{_quote(model)}'){_schema_filter(server)}"
     )
     return _map_full_type(con, query)
 
