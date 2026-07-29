@@ -56,6 +56,17 @@ def _parse_enum_csv(value: str | None, enum_cls: type[Enum], option: str, label:
     return {enum_cls(v).value for v in raw}
 
 
+def _parse_csv(value: str | None, option: str) -> set[str] | None:
+    """Parse a comma-separated option into a set of values, or None if unset."""
+    if value is None:
+        return None
+    values = {v.strip() for v in value.split(",") if v.strip()}
+    if not values:
+        console.print(f"[red]Empty {option} specified.[/red]")
+        raise typer.Exit(code=1)
+    return values
+
+
 @app.command(
     name="test",
     epilog="Example: datacontract test datacontract.yaml --server production",
@@ -112,6 +123,21 @@ def test(
             "and service level checks that measure it. Omit to run everything."
         ),
     ] = None,
+    quality_id: Annotated[
+        str,
+        typer.Option(
+            help="Comma-separated list of quality rule ids to run, as defined in the `id` of the "
+            "quality rule. Runs only those rules, no schema or service level checks. "
+            "Fails if an id is not defined in the data contract. Omit to run everything."
+        ),
+    ] = None,
+    tag: Annotated[
+        str,
+        typer.Option(
+            help="Comma-separated list of tags to run. Runs the quality rules declaring a matching "
+            "tag in their `tags`, no schema or service level checks. Omit to run everything."
+        ),
+    ] = None,
     include_failed_samples: Annotated[
         bool,
         typer.Option(
@@ -141,6 +167,8 @@ def test(
 
     check_categories = _parse_enum_csv(checks, CheckCategory, "--checks", "categories")
     dimensions = _parse_enum_csv(dimension, QualityDimension, "--dimension", "dimensions")
+    quality_ids = _parse_csv(quality_id, "--quality-id")
+    tags = _parse_csv(tag, "--tag")
 
     output_format = resolve_output_format(output_format, output)
 
@@ -157,6 +185,8 @@ def test(
         ssl_verification=ssl_verification,
         check_categories=check_categories,
         dimensions=dimensions,
+        quality_ids=quality_ids,
+        tags=tags,
         inline_references=inline_references,
         include_failed_samples=include_failed_samples,
     ).test()

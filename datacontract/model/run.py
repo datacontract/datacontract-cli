@@ -32,6 +32,11 @@ class Check(BaseModel):
     name: str | None = None
     model: str | None = None
     field: str | None = None
+    # The ODCS `quality.id` / `quality.tags` of the rule this check comes from,
+    # so a check can be traced back to (and re-run through `test --quality-id`
+    # / `test --tag`) the rule that declared it. Empty for built-in checks.
+    quality_id: str | None = None
+    tags: list[str] | None = None
 
     engine: str | None = None
     language: str | None = None

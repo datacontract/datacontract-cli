@@ -84,6 +84,31 @@ ODCS defines seven dimensions. `datacontract lint` rejects any other value:
 
 The [HTML export](../exports/html.md) renders the dimension as a badge next to schema-level rules.
 
+## Identifying rules
+
+Any rule can carry an `id` and a list of `tags`. Both are optional and work with every rule type. They name a rule so that a pipeline can run it on its own: an `id` addresses exactly one rule, `tags` group rules that belong together — by cost, criticality, or the pipeline step they guard.
+
+```yaml
+schema:
+  - name: orders
+    quality:
+      - id: orders_not_empty
+        type: library
+        metric: rowCount
+        mustBeGreaterThan: 0
+        tags: ["critical", "cheap"]
+    properties:
+      - name: order_id
+        quality:
+          - id: order_id_is_unique
+            type: library
+            metric: duplicateValues
+            mustBe: 0
+            tags: ["critical", "expensive"]
+```
+
+An `id` must be unique within the contract, so that `--quality-id` selects a single rule. Test results report the `id` and `tags` of the rule each check comes from.
+
 ## Running only quality checks
 
 Use `--checks` to restrict a run to quality rules:
@@ -102,6 +127,18 @@ datacontract test --dimension completeness,accuracy datacontract.yaml
 This selects quality rules by their declared `dimension` **and** the built-in checks that measure the same thing — `--dimension uniqueness` runs your `duplicateValues` rules alongside the `unique` and primary-key checks derived from the schema.
 
 Quality rules that declare no `dimension` are never selected: only the author can say what a custom rule measures. If nothing matches, the run executes nothing and reports no checks.
+
+Use `--quality-id` to run a single rule, and `--tag` to run a group of them:
+
+```bash
+datacontract test --quality-id order_id_is_unique datacontract.yaml
+datacontract test --tag critical datacontract.yaml
+datacontract test --tag critical,cheap datacontract.yaml
+```
+
+Both select quality rules only — no schema or service level checks run alongside them. This makes it possible to spread the rules of one contract over a data pipeline: run the cheap rules on ingest, the expensive ones after the nightly load, without splitting the contract into several files.
+
+`--quality-id` matches the `id` of the rule, and fails the run if no rule in the contract declares it — a mistyped id must not pass by testing nothing. `--tag` matches the `tags` of the rule (not the `tags` of a schema or property), and reports no checks when nothing matches. Options combine: `--tag critical --checks quality --server production` runs the critical rules on production.
 
 ### Dimensions of the built-in checks
 

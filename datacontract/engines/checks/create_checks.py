@@ -577,68 +577,77 @@ def _quality_checks(
     model: str, field: Optional[str], quality_list: List[DataQuality], server: Optional[Server]
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
-    count = 0
-    for quality in quality_list:
-        if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
-            checks.append(
-                CheckSpec(
-                    key=f"{model}__quality_custom_{count}",
-                    category="quality",
-                    type="quality_custom_soda",
-                    name=quality.description or "Custom SodaCL Check",
-                    model=model,
-                    field=field,
-                    metric=MetricType.UNSUPPORTED,
-                    dimension=quality.dimension,
-                    preset_result="warning",
-                    preset_reason=(
-                        "Raw SodaCL custom checks (quality.type: custom, engine: soda) are no longer "
-                        "supported since soda-core was removed. Migrate this check to quality.type: sql."
-                    ),
-                )
-            )
-        elif quality.type == "sql":
-            if field is None:
-                check_key = f"{model}__quality_sql_{count}"
-                check_type = "model_quality_sql"
-            else:
-                check_key = f"{model}__{field}__quality_sql_{count}"
-                check_type = "field_quality_sql"
-            threshold = to_threshold(quality)
-            query = prepare_query(quality, model, field, server)
-            if query is None:
-                logger.warning(f"Quality check {check_key} has no query")
-                count += 1
-                continue
-            if threshold is None:
-                logger.warning(f"Quality check {check_key} has no valid threshold")
-                count += 1
-                continue
-            checks.append(
-                CheckSpec(
-                    key=check_key,
-                    category="quality",
-                    type=check_type,
-                    name=quality.description or "Quality Check",
-                    model=model,
-                    field=field,
-                    metric=MetricType.CUSTOM_SQL,
-                    threshold=threshold,
-                    query=query,
-                    dialect=getattr(quality, "dialect", None),
-                    severity=quality.severity,
-                    dimension=quality.dimension,
-                )
-            )
-        elif quality.metric is not None:
-            threshold = to_threshold(quality)
-            if threshold is None:
-                logger.warning(f"Quality metric {quality.metric} has no valid threshold")
-                count += 1
-                continue
-            checks.extend(_quality_metric_check(model, field, quality, threshold))
-        count += 1
+    for count, quality in enumerate(quality_list):
+        rule_checks = _quality_rule_checks(model, field, quality, count, server)
+        # Every check keeps a link back to the rule that declared it, so that
+        # `test --quality-id` / `test --tag` can select it.
+        for check in rule_checks:
+            check.quality_id = quality.id
+            check.tags = list(quality.tags) if quality.tags else None
+        checks.extend(rule_checks)
     return checks
+
+
+def _quality_rule_checks(
+    model: str, field: Optional[str], quality: DataQuality, count: int, server: Optional[Server]
+) -> List[CheckSpec]:
+    """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
+    if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
+        return [
+            CheckSpec(
+                key=f"{model}__quality_custom_{count}",
+                category="quality",
+                type="quality_custom_soda",
+                name=quality.description or "Custom SodaCL Check",
+                model=model,
+                field=field,
+                metric=MetricType.UNSUPPORTED,
+                dimension=quality.dimension,
+                preset_result="warning",
+                preset_reason=(
+                    "Raw SodaCL custom checks (quality.type: custom, engine: soda) are no longer "
+                    "supported since soda-core was removed. Migrate this check to quality.type: sql."
+                ),
+            )
+        ]
+    if quality.type == "sql":
+        if field is None:
+            check_key = f"{model}__quality_sql_{count}"
+            check_type = "model_quality_sql"
+        else:
+            check_key = f"{model}__{field}__quality_sql_{count}"
+            check_type = "field_quality_sql"
+        threshold = to_threshold(quality)
+        query = prepare_query(quality, model, field, server)
+        if query is None:
+            logger.warning(f"Quality check {check_key} has no query")
+            return []
+        if threshold is None:
+            logger.warning(f"Quality check {check_key} has no valid threshold")
+            return []
+        return [
+            CheckSpec(
+                key=check_key,
+                category="quality",
+                type=check_type,
+                name=quality.description or "Quality Check",
+                model=model,
+                field=field,
+                metric=MetricType.CUSTOM_SQL,
+                threshold=threshold,
+                query=query,
+                dialect=getattr(quality, "dialect", None),
+                severity=quality.severity,
+                dimension=quality.dimension,
+            )
+        ]
+    if quality.metric is not None:
+        threshold = to_threshold(quality)
+        if threshold is None:
+            logger.warning(f"Quality metric {quality.metric} has no valid threshold")
+            return []
+        return _quality_metric_check(model, field, quality, threshold)
+    return []
 
 
 def _quality_metric_check(model, field, quality: DataQuality, threshold: Threshold) -> List[CheckSpec]:
