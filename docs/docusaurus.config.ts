@@ -71,6 +71,16 @@ const config: Config = {
     locales: ['en'],
   },
 
+  // Injected into the <head> of every page.
+  scripts: [
+    {
+      // Umami: cookie-less, privacy-friendly page analytics.
+      src: 'https://cloud.umami.is/script.js',
+      defer: true,
+      'data-website-id': '3cc8a904-405b-4d1a-b3ef-bd4b484d8645',
+    },
+  ],
+
   presets: [
     [
       'classic',
