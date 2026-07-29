@@ -35,7 +35,7 @@ class FailOn(str, Enum):
 def ci(
     locations: Annotated[
         Optional[list[str]],
-        typer.Argument(help="The location(s) (url or path) of the data contract yaml file(s)."),
+        typer.Argument(help="The location(s) (url, s3 url, or local path) of the data contract yaml file(s)."),
     ] = None,
     schema: Annotated[
         str,

@@ -1,23 +1,26 @@
 from datacontract.config import Config
-from datacontract.lint.files import read_file
-from datacontract.lint.urls import fetch_resource
+from datacontract.lint import files, s3, urls
 
 
 def read_resource(location: str, config: Config | None = None) -> str:
     """
     Read a resource from a given location.
 
-    If the location is a URL, fetch the resource from the web. API-Keys are supported.
-    Otherwise, read the resource from a local file.
+    Supported locations:
+    - ``http://`` and ``https://`` URLs (API keys are supported)
+    - ``s3://`` URLs
+    - local file paths
 
     Args:
-        location (str): The location of the resource, either a URL or a file path.
+        location (str): The resource location.
         config: Optional credentials for authenticated URLs.
 
     Returns:
         str: The content of the resource.
     """
     if location.startswith("http://") or location.startswith("https://"):
-        return fetch_resource(location, config)
+        return urls.fetch_resource(location, config)
+    elif location.startswith("s3://"):
+        return s3.fetch_resource(location)
     else:
-        return read_file(location)
+        return files.read_file(location)

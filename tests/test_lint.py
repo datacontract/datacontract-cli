@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
@@ -131,3 +133,20 @@ def test_lint_with_references():
     run = data_contract.lint()
 
     assert run.result == "passed"
+
+
+def test_lint_reads_data_contract_from_s3():
+    with open("fixtures/lint/valid_datacontract.yaml", "rb") as f:
+        yaml_bytes = f.read()
+
+    mock_body = MagicMock()
+    mock_body.read.return_value = yaml_bytes
+    mock_s3 = MagicMock()
+    mock_s3.get_object.return_value = {"Body": mock_body}
+
+    with patch("datacontract.lint.s3.boto3.client", return_value=mock_s3):
+        data_contract = DataContract(data_contract_file="s3://my-bucket/contracts/datacontract.yaml")
+        run = data_contract.lint()
+
+    assert run.result == "passed"
+    mock_s3.get_object.assert_called_once_with(Bucket="my-bucket", Key="contracts/datacontract.yaml")

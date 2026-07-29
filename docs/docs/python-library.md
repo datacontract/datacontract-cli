@@ -59,7 +59,7 @@ DataContract(
 
 | Argument | Description |
 |---|---|
-| `data_contract_file` | Path or URL to the contract. |
+| `data_contract_file` | Path, URL, or S3 URL (`s3://bucket/key`) to the contract. |
 | `data_contract_str` | The contract as a YAML string. |
 | `data_contract` | An in-memory `OpenDataContractStandard` object. |
 | `server` | Server to test against (the key in `servers`). |
