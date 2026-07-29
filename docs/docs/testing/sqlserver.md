@@ -91,3 +91,4 @@ All authentication options (SQL logins, Entra ID modes, `az login`) and the data
 - **`Can't open lib 'ODBC Driver 18 for SQL Server'`** — the ODBC driver isn't installed, or its name doesn't match `driver` in the `servers` block / `DATACONTRACT_SQLSERVER_DRIVER`.
 - **`SSL Provider: certificate verify failed`** — for servers with self-signed certificates (local Docker, dev), set `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE=True`.
 - **`Login failed for user`** — check the authentication mode: SQL logins need `DATACONTRACT_SQLSERVER_AUTHENTICATION=sql` (the default); Entra ID users need one of the `ActiveDirectory*` modes or `cli`.
+- **`Could not read model '<table>'`** — the tables must be in the `schema` named in the `servers` block. Without it, the lookup falls back to the login's default schema, usually `dbo`.

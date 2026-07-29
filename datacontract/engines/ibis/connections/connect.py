@@ -179,7 +179,8 @@ def connect_ibis(
             kwargs["credentials"] = credentials
         return ibis.bigquery.connect(**kwargs)
 
-    if server_type == "sqlserver":
+    # `mssql` is what ODBC, ibis and dbt call SQL Server; ODCS spells it `sqlserver`.
+    if server_type in ("sqlserver", "mssql"):
         return _connect_sqlserver(ibis, server)
 
     if server_type == "oracle":

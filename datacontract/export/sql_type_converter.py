@@ -199,7 +199,7 @@ def _convert_base_to_sql_type(field: Union[SchemaProperty, FieldLike], server_ty
         return convert_to_databricks(field)
     elif server_type == "local" or server_type == "s3":
         return convert_to_duckdb(field)
-    elif server_type == "sqlserver":
+    elif server_type in ("sqlserver", "mssql"):
         return convert_type_to_sqlserver(field)
     elif server_type == "bigquery":
         return convert_type_to_bigquery(field)

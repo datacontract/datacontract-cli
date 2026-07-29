@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 # implemented by the ``_read_*`` readers further down and wired in ``_READERS``.
 _CATALOG_STRATEGY = {
     "sqlserver": "information_schema",
+    "mssql": "information_schema",  # the ODBC/ibis/dbt name for SQL Server
     "postgres": "information_schema",
     "redshift": "information_schema",
     "snowflake": "information_schema",
