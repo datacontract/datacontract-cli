@@ -56,6 +56,15 @@ excel = [
 ]
 
 
+# The dataframe server type runs against a caller-provided Spark session, so it
+# only needs the ibis pyspark backend. pyspark itself is included for standalone
+# use; in a Spark runtime (Databricks, EMR) it is already present and the
+# resolver keeps the existing version.
+dataframe = [
+  "ibis-framework[pyspark]>=10.0.0,<13.0.0",
+  "pyspark>=3.5.0,<5.0.0",
+]
+
 databricks = [
   "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.5.0",
@@ -194,7 +203,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version

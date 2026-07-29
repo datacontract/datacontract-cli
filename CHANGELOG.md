@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New `dataframe` extra installs just what testing Spark DataFrames needs: `pip install datacontract-cli[dataframe]`
 - `datacontract import trino` creates a data contract from a Trino catalog, including a ready-to-test `servers` block
 - `datacontract import oracle` creates a data contract from a live Oracle database, including a ready-to-test `servers` block
 - `datacontract import gcs` and `datacontract import adls` create a data contract from files in Google Cloud Storage or Azure Blob Storage, including a ready-to-test `servers` block
