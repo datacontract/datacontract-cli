@@ -51,6 +51,9 @@ marked as such in the entry.
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) ([#1220](https://github.com/datacontract/datacontract-cli/issues/1220) [@DMZ22](https://github.com/DMZ22))
 
 ### Fixed
+- `datacontract-cli[s3]` could not run `datacontract test`, and `datacontract-cli[gcs]` was missing the AWS duckdb extension the GCS connection loads; each data source extra now installs everything its guide needs
+- The API testing guide stated that no extra is required, but the response is tested with duckdb; it installs `datacontract-cli[duckdb]` now
+- `datacontract test` told users to install `datacontract-cli[local]`, an extra that does not exist, and `datacontract-cli[api]`, which installs the web server rather than a test backend; both now point at `duckdb`
 - `datacontract import gcs` wrote `type: gcs`, which is not an ODCS server type, so the imported contract failed `datacontract lint` and `datacontract test`; GCS is now written as an `s3` server on the Google interoperability endpoint
 - A data contract could inject SQL into the duckdb session through `endpointUrl`, which is interpolated into the statement that stores the S3, GCS and Azure credentials; every value is escaped now
 - The `datacontract api` server accepted a local file path as the `schema` query parameter, so a caller could have it read files from the server's filesystem; only `http(s)` URLs are accepted now

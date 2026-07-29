@@ -11,7 +11,7 @@ Test data stored in Azure Blob storage or Azure Data Lake Storage Gen2 (ADLS) in
 ## 1. Install
 
 ```bash
-uv tool install --python python3.11 --upgrade 'datacontract-cli[azure,duckdb]'
+uv tool install --python python3.11 --upgrade 'datacontract-cli[azure]'
 ```
 
 See [Installation](../installation.md) for pip, pipx, and Docker.

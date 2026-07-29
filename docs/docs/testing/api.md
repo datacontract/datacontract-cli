@@ -10,10 +10,10 @@ Test APIs that return data in JSON format. Currently, only GET requests are supp
 
 ## 1. Install
 
-No extra is required for API connections:
+The response is tested with duckdb, so the `duckdb` extra is required:
 
 ```bash
-uv tool install --python python3.11 --upgrade datacontract-cli
+uv tool install --python python3.11 --upgrade 'datacontract-cli[duckdb]'
 ```
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
