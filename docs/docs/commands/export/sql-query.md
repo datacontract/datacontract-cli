@@ -31,3 +31,5 @@ datacontract export sql-query [OPTIONS] [LOCATION]
 ```bash
 datacontract export sql-query datacontract.yaml --dialect snowflake --output query.sql
 ```
+
+Guide: **[Export: SQL Query](../../exports/sql-query.md)**.

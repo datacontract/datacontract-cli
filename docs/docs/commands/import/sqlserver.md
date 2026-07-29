@@ -29,3 +29,5 @@ datacontract import sqlserver [OPTIONS]
 ```bash
 datacontract import sqlserver --source localhost --database mydb --output datacontract.yaml
 ```
+
+Guide: **[Import: SQL Server](../../imports/sqlserver.md)**.

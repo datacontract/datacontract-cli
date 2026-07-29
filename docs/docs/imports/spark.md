@@ -20,3 +20,5 @@ datacontract import spark --source orders
 ```
 
 A table description can be supplied alongside the table or dataframe to enrich the generated contract.
+
+All options: **[`datacontract import spark`](../commands/import/spark.md)**.

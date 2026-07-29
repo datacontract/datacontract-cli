@@ -27,3 +27,5 @@ datacontract import glue [OPTIONS]
 ```bash
 datacontract import glue --database my_database --table orders --output datacontract.yaml
 ```
+
+Guide: **[Import: AWS Glue](../../imports/glue.md)**.

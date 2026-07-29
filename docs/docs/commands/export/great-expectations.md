@@ -32,3 +32,5 @@ datacontract export great-expectations [OPTIONS] [LOCATION]
 ```bash
 datacontract export great-expectations datacontract.yaml --engine sql --dialect postgres --output expectations.json
 ```
+
+Guide: **[Export: Great Expectations](../../exports/great-expectations.md)**.

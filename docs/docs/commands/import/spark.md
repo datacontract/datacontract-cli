@@ -26,3 +26,5 @@ datacontract import spark [OPTIONS]
 ```bash
 datacontract import spark --tables orders,customers --output datacontract.yaml
 ```
+
+Guide: **[Import: Spark](../../imports/spark.md)**.

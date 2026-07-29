@@ -23,3 +23,5 @@ datacontract api [OPTIONS]
 ```bash
 datacontract api --port 4242 --host 0.0.0.0
 ```
+
+Guide: **[Run as a web server](../api.md)**.

@@ -25,3 +25,5 @@ The generated contract includes a ready-to-test `servers` block, so you can run 
 Credentials are the same ones `datacontract test` uses: `DATACONTRACT_ORACLE_USERNAME` and `DATACONTRACT_ORACLE_PASSWORD` — see the [Oracle Reference](../reference/oracle.md).
 
 Only have a DDL script? Use [`datacontract import sql --dialect oracle`](./sql.md).
+
+All options: **[`datacontract import oracle`](../commands/import/oracle.md)**.

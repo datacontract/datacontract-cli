@@ -27,3 +27,5 @@ datacontract import sql [OPTIONS]
 ```bash
 datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
 ```
+
+Guide: **[Import: SQL DDL](../../imports/sql.md)**.

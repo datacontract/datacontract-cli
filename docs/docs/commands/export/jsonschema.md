@@ -30,3 +30,5 @@ datacontract export jsonschema [OPTIONS] [LOCATION]
 ```bash
 datacontract export jsonschema datacontract.yaml --output schema.json
 ```
+
+Guide: **[Export: JSON Schema](../../exports/jsonschema.md)**.

@@ -30,3 +30,5 @@ datacontract export go [OPTIONS] [LOCATION]
 ```bash
 datacontract export go datacontract.yaml --output models.go
 ```
+
+Guide: **[Export: Go](../../exports/go.md)**.

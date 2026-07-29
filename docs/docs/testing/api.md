@@ -18,7 +18,7 @@ uv tool install --python python3.11 --upgrade datacontract-cli
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 If the API requires authentication, set the value for the `authorization` header:
 

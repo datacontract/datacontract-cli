@@ -27,3 +27,5 @@ datacontract import gcs [OPTIONS]
 ```bash
 datacontract import gcs --source s3://my-bucket/orders/*.json --output datacontract.yaml
 ```
+
+Guide: **[Import: Google Cloud Storage](../../imports/gcs.md)**.

@@ -27,3 +27,5 @@ datacontract import dbt [OPTIONS]
 ```bash
 datacontract import dbt --source manifest.json --output datacontract.yaml
 ```
+
+Guide: **[Import: dbt](../../imports/dbt.md)**.

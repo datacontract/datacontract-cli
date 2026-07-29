@@ -30,3 +30,5 @@ datacontract export odcs [OPTIONS] [LOCATION]
 ```bash
 datacontract export odcs datacontract.yaml --output odcs-contract.yaml
 ```
+
+Guide: **[Export: ODCS](../../exports/odcs.md)**.

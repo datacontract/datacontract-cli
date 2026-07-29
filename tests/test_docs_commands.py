@@ -50,6 +50,50 @@ def test_every_option_is_documented(page, cmd):
                 assert opt in text, f"{opt} is missing from {page.relative_to(REPO_ROOT)}"
 
 
+def test_the_global_options_are_documented():
+    """`--version` and `--system-truststore` appear on no other page.
+
+    The root options used to be left out entirely: the generator wrote a page
+    per subcommand but skipped the root `--help`, and `commands/index.md` was
+    hand-written.
+    """
+    text = (COMMANDS / "index.md").read_text()
+    for param in typer.main.get_command(app).params:
+        for opt in param.opts:
+            if opt.startswith("--") and opt != "--help":
+                assert opt in text, f"{opt} is missing from commands/index.md"
+
+
+GUIDES = [
+    (guide, COMMANDS / command / f"{guide.stem}.md")
+    for folder, command in (("imports", "import"), ("exports", "export"))
+    for guide in sorted((DOCS / folder).glob("*.md"))
+    if guide.stem != "index" and "unlisted: true" not in guide.read_text()
+]
+GUIDE_IDS = [str(guide.relative_to(DOCS)) for guide, _ in GUIDES]
+
+
+@pytest.mark.parametrize("guide,page", GUIDES, ids=GUIDE_IDS)
+def test_each_guide_links_to_its_command_page(guide, page):
+    """The generated reference pages arrived with no way in from the prose.
+
+    A reader on `Import: Postgres` could not reach the option table without
+    going back through the sidebar, and the two pages competed in search.
+    """
+    assert page.exists(), f"no command page for {guide.relative_to(REPO_ROOT)}"
+    link = f"({page.relative_to(DOCS).as_posix()}"
+    assert link.replace("commands/", "../commands/") in guide.read_text(), (
+        f"{guide.relative_to(REPO_ROOT)} does not link to {page.relative_to(REPO_ROOT)}"
+    )
+
+
+@pytest.mark.parametrize("guide,page", GUIDES, ids=GUIDE_IDS)
+def test_each_command_page_links_back_to_its_guide(guide, page):
+    assert f"../../{guide.relative_to(DOCS).as_posix()}" in page.read_text(), (
+        f"{page.relative_to(REPO_ROOT)} does not link back to {guide.relative_to(REPO_ROOT)}"
+    )
+
+
 def test_command_docs_are_regenerated():
     """`python update_command_docs.py --check` must be clean."""
     result = subprocess.run(

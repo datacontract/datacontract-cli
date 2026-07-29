@@ -26,3 +26,5 @@ datacontract import powerbi [OPTIONS]
 ```bash
 datacontract import powerbi --source SemanticModel.pbit --output datacontract.yaml
 ```
+
+Guide: **[Import: Power BI](../../imports/powerbi.md)**.

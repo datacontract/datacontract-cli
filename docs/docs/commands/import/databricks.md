@@ -27,3 +27,5 @@ datacontract import databricks [OPTIONS]
 ```bash
 datacontract import databricks --table catalog.schema.my_table --output datacontract.yaml
 ```
+
+Guide: **[Import: Databricks](../../imports/databricks.md)**.

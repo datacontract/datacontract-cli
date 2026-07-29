@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[databricks]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 

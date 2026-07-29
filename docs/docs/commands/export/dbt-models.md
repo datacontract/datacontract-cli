@@ -30,3 +30,5 @@ datacontract export dbt-models [OPTIONS] [LOCATION]
 ```bash
 datacontract export dbt-models datacontract.yaml --output schema.yml
 ```
+
+Guide: **[Export: dbt Models](../../exports/dbt-models.md)**.

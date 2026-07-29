@@ -96,6 +96,8 @@ Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S
 
 Yes. It is open source under the MIT license and free for commercial use. [Entropy Data](./entropy-data.md) offers a commercial platform that the CLI can publish test results to, but the CLI itself does not require it.
 
+More answers — credentials, check selection, type failures, CI behaviour — are in the **[FAQ](./faq.md)**.
+
 ## Related links
 
 - Website: [datacontract.com](https://datacontract.com)

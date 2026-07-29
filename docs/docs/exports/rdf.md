@@ -49,3 +49,5 @@ Running this against the [example `orders` contract](https://github.com/datacont
 ```
 
 The contract is mapped onto concepts of a Data Contract Ontology (`DataContract`, `Server`, `Model`). Having the contract as an RDF graph enables interoperability with other formats, storage in a knowledge graph, semantic search, linking to established ontologies, OWL reasoning, and graph algorithms across multiple contracts.
+
+All options: **[`datacontract export rdf`](../commands/export/rdf.md)**.

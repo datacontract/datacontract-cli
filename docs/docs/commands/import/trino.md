@@ -29,3 +29,5 @@ datacontract import trino [OPTIONS]
 ```bash
 datacontract import trino --source localhost --catalog my_catalog --schema my_schema --output datacontract.yaml
 ```
+
+Guide: **[Import: Trino](../../imports/trino.md)**.

@@ -27,3 +27,5 @@ datacontract import adls [OPTIONS]
 ```bash
 datacontract import adls --source abfss://my-container/orders/*.json --output datacontract.yaml
 ```
+
+Guide: **[Import: Azure Blob / ADLS](../../imports/adls.md)**.

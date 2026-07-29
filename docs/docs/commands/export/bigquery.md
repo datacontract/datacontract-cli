@@ -30,3 +30,5 @@ datacontract export bigquery [OPTIONS] [LOCATION]
 ```bash
 datacontract export bigquery datacontract.yaml --output schema.json
 ```
+
+Guide: **[Export: BigQuery](../../exports/bigquery.md)**.

@@ -30,3 +30,5 @@ datacontract export dbml [OPTIONS] [LOCATION]
 ```bash
 datacontract export dbml datacontract.yaml --output schema.dbml
 ```
+
+Guide: **[Export: DBML](../../exports/dbml.md)**.

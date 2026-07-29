@@ -30,3 +30,5 @@ datacontract edit [OPTIONS] [LOCATION]
 ```bash
 datacontract edit datacontract.yaml
 ```
+
+Guide: **[Edit your contract](../editor.md)**.

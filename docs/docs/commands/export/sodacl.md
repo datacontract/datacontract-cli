@@ -30,3 +30,5 @@ datacontract export sodacl [OPTIONS] [LOCATION]
 ```bash
 datacontract export sodacl datacontract.yaml --output checks.yml
 ```
+
+Guide: **[Export: SodaCL](../../exports/sodacl.md)**.

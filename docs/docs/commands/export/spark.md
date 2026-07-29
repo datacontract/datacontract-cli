@@ -30,3 +30,5 @@ datacontract export spark [OPTIONS] [LOCATION]
 ```bash
 datacontract export spark datacontract.yaml --output schema.py
 ```
+
+Guide: **[Export: Spark](../../exports/spark.md)**.

@@ -30,3 +30,5 @@ datacontract export mermaid [OPTIONS] [LOCATION]
 ```bash
 datacontract export mermaid datacontract.yaml --output diagram.mmd
 ```
+
+Guide: **[Export: Mermaid](../../exports/mermaid.md)**.

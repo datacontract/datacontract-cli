@@ -29,3 +29,5 @@ datacontract import bigquery [OPTIONS]
 ```bash
 datacontract import bigquery --project my-project --dataset my_dataset --output datacontract.yaml
 ```
+
+Guide: **[Import: BigQuery](../../imports/bigquery.md)**.

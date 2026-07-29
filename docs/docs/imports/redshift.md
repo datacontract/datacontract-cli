@@ -21,3 +21,5 @@ datacontract import redshift \
 The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[Redshift connection guide](../testing/redshift.md)** for credentials, the full 5-minute walkthrough, and troubleshooting.
 
 Credentials are provided as environment variables and are the same ones `datacontract test` uses: either IAM (`DATACONTRACT_REDSHIFT_AUTHENTICATION=iam`, which requests temporary credentials from your AWS session) or a database user (`DATACONTRACT_REDSHIFT_USERNAME`, `DATACONTRACT_REDSHIFT_PASSWORD`) — see the [Redshift Reference](../reference/redshift.md).
+
+All options: **[`datacontract import redshift`](../commands/import/redshift.md)**.

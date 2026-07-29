@@ -31,3 +31,5 @@ datacontract export custom [OPTIONS] [LOCATION]
 ```bash
 datacontract export custom datacontract.yaml --template template.j2 --output output.txt
 ```
+
+Guide: **[Export: Custom (Jinja)](../../exports/custom.md)**.

@@ -27,6 +27,7 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Added
+- The docs Commands reference documents the global options `--version` and `--system-truststore`, and every import and export guide links to its command page and back
 - `datacontract test --dimension` runs only the checks measuring one data quality dimension, e.g. `--dimension uniqueness`; it matches the ODCS `quality.dimension` of a rule and the schema and service level checks that measure the same aspect
 - New `dataframe` extra installs just what testing Spark DataFrames needs: `pip install datacontract-cli[dataframe]`
 - `datacontract import trino` creates a data contract from a Trino catalog, including a ready-to-test `servers` block

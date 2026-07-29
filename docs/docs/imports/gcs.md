@@ -23,3 +23,5 @@ The objects are read with duckdb through the same connection the test path uses,
 The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[Google Cloud Storage connection guide](../testing/gcs.md)** for the full 5-minute walkthrough and troubleshooting.
 
 Credentials are the same ones `datacontract test` uses — see the [Google Cloud Storage Reference](../reference/gcs.md).
+
+All options: **[`datacontract import gcs`](../commands/import/gcs.md)**.

@@ -26,3 +26,5 @@ datacontract import odcs [OPTIONS]
 ```bash
 datacontract import odcs --source odcs-contract.yaml --output datacontract.yaml
 ```
+
+Guide: **[Import: ODCS](../../imports/odcs.md)**.

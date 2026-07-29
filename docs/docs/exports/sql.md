@@ -76,3 +76,5 @@ datacontract export sql datacontract.yaml --dialect clickhouse \
 | `--clickhouse-order-by` | Comma-separated `ORDER BY` columns. Defaults to primary key columns. |
 
 Override any field's ClickHouse type individually by setting the custom property `clickhouseType` in the data contract.
+
+All options: **[`datacontract export sql`](../commands/export/sql.md)**.

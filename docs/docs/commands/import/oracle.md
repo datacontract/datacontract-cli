@@ -29,3 +29,5 @@ datacontract import oracle [OPTIONS]
 ```bash
 datacontract import oracle --source localhost --service-name XEPDB1 --schema ADMIN --output datacontract.yaml
 ```
+
+Guide: **[Import: Oracle](../../imports/oracle.md)**.

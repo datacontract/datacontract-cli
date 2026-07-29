@@ -30,3 +30,5 @@ datacontract export sqlalchemy [OPTIONS] [LOCATION]
 ```bash
 datacontract export sqlalchemy datacontract.yaml --output models.py
 ```
+
+Guide: **[Export: SQLAlchemy](../../exports/sqlalchemy.md)**.

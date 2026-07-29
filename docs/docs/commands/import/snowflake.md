@@ -27,3 +27,5 @@ datacontract import snowflake [OPTIONS]
 ```bash
 datacontract import snowflake --source account --database DEMO_DB --schema PUBLIC --output datacontract.yaml
 ```
+
+Guide: **[Import: Snowflake](../../imports/snowflake.md)**.

@@ -31,3 +31,5 @@ datacontract export rdf [OPTIONS] [LOCATION]
 ```bash
 datacontract export rdf datacontract.yaml --base https://example.com/ --output contract.ttl
 ```
+
+Guide: **[Export: RDF](../../exports/rdf.md)**.

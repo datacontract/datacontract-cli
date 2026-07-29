@@ -94,3 +94,5 @@ The export builds expectations from the model definition (with a fixed mapping) 
 - `suite_name` — the name of the expectation suite. Defaults to a name derived from the model name(s).
 - `engine` — the execution engine: `pandas` (in-memory dataframes), `spark` (Spark dataframes), or `sql` (SQL databases).
 - `sql_server_type` — the SQL server type to connect with when `engine` is `sql`. Ensures the correct SQL dialect and connection settings are applied.
+
+All options: **[`datacontract export great-expectations`](../commands/export/great-expectations.md)**.

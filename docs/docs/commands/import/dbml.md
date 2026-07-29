@@ -28,3 +28,5 @@ datacontract import dbml [OPTIONS]
 ```bash
 datacontract import dbml --source schema.dbml --output datacontract.yaml
 ```
+
+Guide: **[Import: DBML](../../imports/dbml.md)**.

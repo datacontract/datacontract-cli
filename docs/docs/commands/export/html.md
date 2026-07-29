@@ -30,3 +30,5 @@ datacontract export html [OPTIONS] [LOCATION]
 ```bash
 datacontract export html datacontract.yaml --output datacontract.html
 ```
+
+Guide: **[Export: HTML](../../exports/html.md)**.

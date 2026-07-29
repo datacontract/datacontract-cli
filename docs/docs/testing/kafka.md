@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[kafka]'
 
 Kafka checks run on Spark, which requires a **Java runtime (JDK 17 or 21)** — make sure `java` is on the path or `JAVA_HOME` is set. See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create a `.env` file in your working directory (or export the variables):
 

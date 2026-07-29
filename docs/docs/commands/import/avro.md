@@ -26,3 +26,5 @@ datacontract import avro [OPTIONS]
 ```bash
 datacontract import avro --source schema.avsc --output datacontract.yaml
 ```
+
+Guide: **[Import: Avro](../../imports/avro.md)**.

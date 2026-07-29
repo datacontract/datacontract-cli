@@ -96,9 +96,6 @@ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 ### Maintenance Scripts
 
 ```bash
-# Regenerate the command help sections in README.md
-python update_help.py
-
 # Update the bundled Data Contract Editor (datacontract/editor_assets/, used by `datacontract edit`)
 # to a specific version of the datacontract-editor npm package (latest if omitted)
 python update_editor_assets.py 0.1.10
@@ -165,4 +162,4 @@ The project uses factory patterns for extensibility:
 - Follows PEP 8 style guidelines with some adjustments (120 character line length)
 - `CHANGELOG.md` entries should be one line each: what changed (user-facing), not how or why. Append the fixed issue, if exists, as `(#NNN)`. No details on mechanism, rationale, or edge cases.
 - The docs list every importer and exporter three times (sidebar, card grid, and the subcommand table on the generated `commands/import/index.md`), all alphabetical, enforced by `tests/test_docs_ordering.py`. The sidebar is ordered by the label it **renders**, not the file name — `Import: AWS Glue` belongs under A, not G.
-- `docs/docs/commands/` is **generated** from the CLI `--help` output by `update_command_docs.py` — never edit those pages by hand (`index.md` and `_category_.json` are the only hand-written files there). Prose guides belong in `docs/docs/imports`, `exports`, or `testing`. `tests/test_docs_commands.py` fails if the pages are stale.
+- `docs/docs/commands/` is **generated** from the CLI `--help` output by `update_command_docs.py` — never edit those pages by hand (`_category_.json`, which holds the section's position in the docs sidebar, is the only hand-written file there). `index.md` is generated too, and is the only page documenting the global options (`--version`, `--system-truststore`). Prose guides belong in `docs/docs/imports`, `exports`, or `testing`; each guide links to its generated command page and each command page links back. `tests/test_docs_commands.py` fails if either is stale.

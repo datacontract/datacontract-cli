@@ -27,3 +27,5 @@ datacontract import iceberg [OPTIONS]
 ```bash
 datacontract import iceberg --source schema.json --table orders --output datacontract.yaml
 ```
+
+Guide: **[Import: Iceberg](../../imports/iceberg.md)**.

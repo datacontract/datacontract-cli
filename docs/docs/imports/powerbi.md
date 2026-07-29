@@ -11,3 +11,5 @@ Creates a data contract from a Power BI semantic model (`.pbit`, `.bim`, or `.js
 ```bash
 datacontract import powerbi --source model.pbit --output datacontract.yaml
 ```
+
+All options: **[`datacontract import powerbi`](../commands/import/powerbi.md)**.

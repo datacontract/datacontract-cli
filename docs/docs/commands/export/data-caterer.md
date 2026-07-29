@@ -30,3 +30,5 @@ datacontract export data-caterer [OPTIONS] [LOCATION]
 ```bash
 datacontract export data-caterer datacontract.yaml --output plan.yaml
 ```
+
+Guide: **[Export: Data Caterer](../../exports/data-caterer.md)**.

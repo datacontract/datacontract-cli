@@ -30,3 +30,5 @@ datacontract export markdown [OPTIONS] [LOCATION]
 ```bash
 datacontract export markdown datacontract.yaml --output datacontract.md
 ```
+
+Guide: **[Export: Markdown](../../exports/markdown.md)**.

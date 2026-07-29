@@ -19,8 +19,6 @@ servers:
     format: parquet   # parquet, json, csv, or delta
 ```
 
-No environment variables are needed for local files. Data type inference and per-format type handling: **[Local Files Reference](../reference/local.md)**.
-
 ## Data types
 
 ### Importing

@@ -30,3 +30,5 @@ datacontract export iceberg [OPTIONS] [LOCATION]
 ```bash
 datacontract export iceberg datacontract.yaml --output schema.json
 ```
+
+Guide: **[Export: Iceberg](../../exports/iceberg.md)**.

@@ -30,3 +30,5 @@ datacontract export dbt-sources [OPTIONS] [LOCATION]
 ```bash
 datacontract export dbt-sources datacontract.yaml --output sources.yml
 ```
+
+Guide: **[Export: dbt Sources](../../exports/dbt-sources.md)**.

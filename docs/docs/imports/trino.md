@@ -25,3 +25,5 @@ The generated contract includes a ready-to-test `servers` block, so you can run 
 Credentials are the same ones `datacontract test` uses — see the [Trino Reference](../reference/trino.md).
 
 Only have a DDL script? Use [`datacontract import sql --dialect postgres`](./sql.md); Trino's ANSI-style DDL generally parses with that dialect.
+
+All options: **[`datacontract import trino`](../commands/import/trino.md)**.

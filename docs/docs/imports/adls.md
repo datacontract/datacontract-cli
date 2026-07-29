@@ -21,3 +21,5 @@ The objects are read with duckdb through the same connection the test path uses,
 The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[Azure Blob / ADLS connection guide](../testing/azure.md)** for the full 5-minute walkthrough and troubleshooting.
 
 Credentials are the same ones `datacontract test` uses — see the [Azure Blob Storage Reference](../reference/azure.md).
+
+All options: **[`datacontract import adls`](../commands/import/adls.md)**.

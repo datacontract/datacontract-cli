@@ -31,3 +31,5 @@ datacontract export excel [OPTIONS] [LOCATION]
 ```bash
 datacontract export excel datacontract.yaml --output datacontract.xlsx
 ```
+
+Guide: **[Export: Excel](../../exports/excel.md)**.

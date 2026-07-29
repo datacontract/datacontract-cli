@@ -45,3 +45,5 @@ datacontract import [OPTIONS] COMMAND [ARGS]...
 | [`sqlserver`](./sqlserver.md) | Import a data contract from a SQL Server database. |
 | [`trino`](./trino.md) | Import a data contract from a Trino catalog. |
 | [`unity`](./unity.md) | Import a data contract from Databricks Unity Catalog (alias of `import databricks`). |
+
+Guide: **[Imports](../../imports/index.md)**.

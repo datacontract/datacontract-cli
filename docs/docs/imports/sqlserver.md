@@ -27,3 +27,5 @@ The generated contract includes a ready-to-test `servers` block, so you can run 
 Credentials are the same ones `datacontract test` uses: `DATACONTRACT_SQLSERVER_USERNAME` and `DATACONTRACT_SQLSERVER_PASSWORD` — see the [SQL Server Reference](../reference/sqlserver.md).
 
 Only have a DDL script? Use [`datacontract import sql --dialect sqlserver`](./sql.md).
+
+All options: **[`datacontract import sqlserver`](../commands/import/sqlserver.md)**.

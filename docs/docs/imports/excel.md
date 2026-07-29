@@ -11,3 +11,5 @@ Creates a data contract from an ODCS Excel template — the round-trip counterpa
 ```bash
 datacontract import excel --source odcs.xlsx --output datacontract.yaml
 ```
+
+All options: **[`datacontract import excel`](../commands/import/excel.md)**.

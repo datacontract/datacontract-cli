@@ -21,3 +21,5 @@ AWS credentials are resolved from the standard AWS environment / configuration (
 :::note
 `datacontract test` cannot connect to Glue directly. To test the actual data, replace the generated `servers` entry with the underlying storage — typically [Amazon S3](../testing/s3.md) or [Amazon Athena](../testing/athena.md).
 :::
+
+All options: **[`datacontract import glue`](../commands/import/glue.md)**.

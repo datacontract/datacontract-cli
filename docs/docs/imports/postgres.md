@@ -23,3 +23,5 @@ The generated contract includes a ready-to-test `servers` block, so you can run 
 Credentials are provided as environment variables and are the same ones `datacontract test` uses: `DATACONTRACT_POSTGRES_USERNAME` and `DATACONTRACT_POSTGRES_PASSWORD` — see the [Postgres Reference](../reference/postgres.md).
 
 Working from a DDL file instead of a live database? Use [`datacontract import sql --dialect postgres`](./sql.md).
+
+All options: **[`datacontract import postgres`](../commands/import/postgres.md)**.

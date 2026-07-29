@@ -33,3 +33,5 @@ datacontract export sql [OPTIONS] [LOCATION]
 ```bash
 datacontract export sql datacontract.yaml --dialect postgres --output ddl.sql
 ```
+
+Guide: **[Export: SQL DDL](../../exports/sql.md)**.

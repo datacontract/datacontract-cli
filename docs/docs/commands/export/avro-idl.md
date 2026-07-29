@@ -30,3 +30,5 @@ datacontract export avro-idl [OPTIONS] [LOCATION]
 ```bash
 datacontract export avro-idl datacontract.yaml --output schema.avdl
 ```
+
+Guide: **[Export: Avro IDL](../../exports/avro-idl.md)**.

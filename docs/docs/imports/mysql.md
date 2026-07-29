@@ -24,3 +24,5 @@ The generated contract includes a ready-to-test `servers` block, so you can run 
 Credentials are provided as environment variables and are the same ones `datacontract test` uses: `DATACONTRACT_MYSQL_USERNAME` and `DATACONTRACT_MYSQL_PASSWORD` — see the [MySQL Reference](../reference/mysql.md).
 
 Only have a DDL file? Use [`datacontract import sql --dialect mysql`](./sql.md).
+
+All options: **[`datacontract import mysql`](../commands/import/mysql.md)**.

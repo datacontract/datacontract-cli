@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[gcs]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Create an [HMAC key](https://cloud.google.com/storage/docs/authentication/hmackeys) for your user or service account, then create a `.env` file in your working directory (or export the variables):
 

@@ -45,3 +45,5 @@ datacontract export [OPTIONS] COMMAND [ARGS]...
 | [`sql`](./sql.md) | Export a data contract to SQL DDL. |
 | [`sql-query`](./sql-query.md) | Export a data contract to a SQL query. |
 | [`sqlalchemy`](./sqlalchemy.md) | Export a data contract to SQLAlchemy models. |
+
+Guide: **[Exports](../../exports/index.md)**.

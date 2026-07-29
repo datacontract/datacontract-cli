@@ -30,3 +30,5 @@ datacontract export dqx [OPTIONS] [LOCATION]
 ```bash
 datacontract export dqx datacontract.yaml --output checks.yaml
 ```
+
+Guide: **[Export: DQX](../../exports/dqx.md)**.

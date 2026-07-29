@@ -30,3 +30,5 @@ datacontract export pydantic-model [OPTIONS] [LOCATION]
 ```bash
 datacontract export pydantic-model datacontract.yaml --output models.py
 ```
+
+Guide: **[Export: Pydantic Model](../../exports/pydantic-model.md)**.

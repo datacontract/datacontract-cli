@@ -38,3 +38,5 @@ datacontract test [OPTIONS] [LOCATION]
 ```bash
 datacontract test datacontract.yaml --server production
 ```
+
+Guide: **[Test your Data](../testing/index.md)**.

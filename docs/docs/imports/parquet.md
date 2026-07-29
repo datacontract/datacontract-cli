@@ -11,3 +11,5 @@ Creates a data contract from the schema of a Parquet file.
 ```bash
 datacontract import parquet --source data.parquet --output datacontract.yaml
 ```
+
+All options: **[`datacontract import parquet`](../commands/import/parquet.md)**.

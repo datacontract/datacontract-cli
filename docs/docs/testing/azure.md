@@ -16,7 +16,7 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[azure,duckdb]'
 
 See [Installation](../installation.md) for pip, pipx, and Docker.
 
-## 2. Set credentials
+## 2. Authenticate
 
 Authentication uses an Azure Service Principal (App Registration) with a secret. Create a `.env` file in your working directory (or export the variables):
 

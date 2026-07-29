@@ -26,3 +26,5 @@ datacontract import parquet [OPTIONS]
 ```bash
 datacontract import parquet --source data.parquet --output datacontract.yaml
 ```
+
+Guide: **[Import: Parquet](../../imports/parquet.md)**.

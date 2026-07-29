@@ -17,3 +17,5 @@ datacontract import dbt --source manifest.json
 ```
 
 See the [dbt Integration](../dbt.md) guide for the full dbt workflow.
+
+All options: **[`datacontract import dbt`](../commands/import/dbt.md)**.

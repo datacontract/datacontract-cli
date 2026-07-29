@@ -26,3 +26,5 @@ datacontract import json [OPTIONS]
 ```bash
 datacontract import json --source data.json --output datacontract.yaml
 ```
+
+Guide: **[Import: JSON](../../imports/json.md)**.

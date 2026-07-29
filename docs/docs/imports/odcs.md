@@ -11,3 +11,5 @@ Imports an existing [ODCS](../open-data-contract-standard.md) data contract file
 ```bash
 datacontract import odcs --source other.odcs.yaml --output datacontract.yaml
 ```
+
+All options: **[`datacontract import odcs`](../commands/import/odcs.md)**.

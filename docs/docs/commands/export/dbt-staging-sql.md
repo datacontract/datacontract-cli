@@ -30,3 +30,5 @@ datacontract export dbt-staging-sql [OPTIONS] [LOCATION]
 ```bash
 datacontract export dbt-staging-sql datacontract.yaml --output stg.sql
 ```
+
+Guide: **[Export: dbt Staging SQL](../../exports/dbt-staging-sql.md)**.

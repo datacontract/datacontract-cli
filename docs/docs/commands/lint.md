@@ -30,3 +30,5 @@ datacontract lint [OPTIONS] [LOCATION]
 ```bash
 datacontract lint datacontract.yaml
 ```
+
+Guide: **[Open Data Contract Standard](../open-data-contract-standard.md)**.

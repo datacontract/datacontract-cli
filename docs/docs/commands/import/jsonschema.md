@@ -26,3 +26,5 @@ datacontract import jsonschema [OPTIONS]
 ```bash
 datacontract import jsonschema --source schema.json --output datacontract.yaml
 ```
+
+Guide: **[Import: JSON Schema](../../imports/jsonschema.md)**.

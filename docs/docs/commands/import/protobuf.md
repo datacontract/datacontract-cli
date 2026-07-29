@@ -26,3 +26,5 @@ datacontract import protobuf [OPTIONS]
 ```bash
 datacontract import protobuf --source schema.proto --output datacontract.yaml
 ```
+
+Guide: **[Import: Protobuf](../../imports/protobuf.md)**.

@@ -29,3 +29,5 @@ datacontract import redshift [OPTIONS]
 ```bash
 datacontract import redshift --source my-cluster.abc123.us-east-1.redshift.amazonaws.com --database dev --schema public --output datacontract.yaml
 ```
+
+Guide: **[Import: Amazon Redshift](../../imports/redshift.md)**.

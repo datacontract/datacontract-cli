@@ -29,3 +29,5 @@ datacontract import athena [OPTIONS]
 ```bash
 datacontract import athena --schema my_database --staging-dir s3://my-bucket/athena-results/ --output datacontract.yaml
 ```
+
+Guide: **[Import: Amazon Athena](../../imports/athena.md)**.

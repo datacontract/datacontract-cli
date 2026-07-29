@@ -26,3 +26,5 @@ datacontract import excel [OPTIONS]
 ```bash
 datacontract import excel --source datacontract.xlsx --output datacontract.yaml
 ```
+
+Guide: **[Import: Excel](../../imports/excel.md)**.

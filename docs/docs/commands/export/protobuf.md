@@ -30,3 +30,5 @@ datacontract export protobuf [OPTIONS] [LOCATION]
 ```bash
 datacontract export protobuf datacontract.yaml --output schema.proto
 ```
+
+Guide: **[Export: Protobuf](../../exports/protobuf.md)**.

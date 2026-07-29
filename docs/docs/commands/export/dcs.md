@@ -30,3 +30,5 @@ datacontract export dcs [OPTIONS] [LOCATION]
 ```bash
 datacontract export dcs datacontract.yaml --output contract.dcs.yaml
 ```
+
+Guide: **[Export: DCS](../../exports/dcs.md)**.

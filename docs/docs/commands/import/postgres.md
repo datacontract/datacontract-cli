@@ -29,3 +29,5 @@ datacontract import postgres [OPTIONS]
 ```bash
 datacontract import postgres --source localhost --database postgres --schema public --output datacontract.yaml
 ```
+
+Guide: **[Import: Postgres](../../imports/postgres.md)**.

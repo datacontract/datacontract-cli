@@ -16,5 +16,7 @@ datacontract dbt [OPTIONS] COMMAND [ARGS]...
 
 | Subcommand | Description |
 |---|---|
-| [`sync`](./sync.md) | Generate dbt tests and model metadata from one or more ODCS contracts. Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files or singular SQL tests if needed. Use `datacontract dbt test` or pass --run-tests to run the generated tests. |
-| [`test`](./test.md) | Run the contract-managed dbt tests that `datacontract dbt sync` generated. Runs `dbt test` scoped to the specified data contract(s), reports the results, and optionally publishes them. Use `datacontract dbt sync` to create and update the tests first. |
+| [`sync`](./sync.md) | Generate dbt tests and model metadata from one or more ODCS contracts. |
+| [`test`](./test.md) | Run the contract-managed dbt tests that `datacontract dbt sync` generated. |
+
+Guide: **[Sync with dbt](../../dbt.md)**.

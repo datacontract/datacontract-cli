@@ -28,3 +28,5 @@ datacontract import mysql [OPTIONS]
 ```bash
 datacontract import mysql --source localhost --database mydb --output datacontract.yaml
 ```
+
+Guide: **[Import: MySQL](../../imports/mysql.md)**.

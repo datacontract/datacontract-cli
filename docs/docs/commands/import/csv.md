@@ -26,3 +26,5 @@ datacontract import csv [OPTIONS]
 ```bash
 datacontract import csv --source data.csv --output datacontract.yaml
 ```
+
+Guide: **[Import: CSV](../../imports/csv.md)**.
