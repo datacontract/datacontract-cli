@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
 
 ### Fixed
+- `datacontract test` against SQL Server no longer fails every check with "Could not read model" when `server.schema` differs from the login's default schema
 - `datacontract-cli[s3]` could not run `datacontract test`, and `datacontract-cli[gcs]` was missing the AWS duckdb extension the GCS connection loads; each data source extra now installs everything its guide needs
 - The API testing guide stated that no extra is required, but the response is tested with duckdb; it installs `datacontract-cli[duckdb]` now
 - `datacontract test` told users to install `datacontract-cli[local]`, an extra that does not exist, and `datacontract-cli[api]`, which installs the web server rather than a test backend; both now point at `duckdb`
@@ -62,7 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract dbt sync` resolves `{object}`/`{property}` placeholders in custom `sql` quality checks to the dbt `ref()` and column name (#1397)
 - SyntaxWarning during installation: `datacontract/lint/resolve.py:72: SyntaxWarning: 'return' in a 'finally' block return except_message` is handled properly (#1384 @Cupprum)
 - `datacontract test` no longer reports "backend is not installed" for Athena and other ibis SQL backends when `packaging` is missing from the environment
-- `datacontract test` against SQL Server no longer fails every check with "Could not read model" when `server.schema` differs from the login's default schema
 
 ## [1.0.13] - 2026-07-14
 
