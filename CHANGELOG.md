@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- An `authoritativeDefinitions` link can reference a file next to the contract, either a property in another contract (`url: business.odcs.yaml#schema/orders/properties/order_id`) or a file that is the definition itself (`url: definitions/order_id.odcs.yaml`), resolved relative to the referencing contract
 - `datacontract test --quality-id` runs a single quality rule by its ODCS `quality.id`, and `--tag` runs every quality rule declaring one of the given `quality.tags` (#1080)
 - Test results report the `quality_id` and `tags` of the quality rule a check comes from
 - New `databricks-runtime` extra for installing inside a Databricks Runtime, where the cluster already provides PySpark: `pip install datacontract-cli[databricks-runtime]` (#1211 @chifu1234)

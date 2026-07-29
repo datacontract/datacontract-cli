@@ -1,0 +1,7 @@
+# A business definition on its own: referenced without a fragment, so this file
+# holds the elements of the property directly.
+businessName: Shipment ID
+description: Unique identifier for each shipment.
+logicalType: string
+examples:
+- "123e4567-e89b-12d3-a456-426614174000"
