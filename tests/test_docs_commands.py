@@ -9,12 +9,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-import click
 import pytest
 import typer.main
 
 from datacontract.cli import app
 from tests.docs_paths import DOCS
+from update_command_docs import is_group
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 COMMANDS = DOCS / "commands"
@@ -24,7 +24,7 @@ def leaves():
     """(page path, command) for every command that should have a reference page."""
     root = typer.main.get_command(app)
     for name, cmd in root.commands.items():
-        if isinstance(cmd, click.Group):
+        if is_group(cmd):
             yield COMMANDS / name / "index.md", cmd
             for sub_name, sub in cmd.commands.items():
                 yield COMMANDS / name / f"{sub_name}.md", sub

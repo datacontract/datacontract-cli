@@ -19,11 +19,15 @@ import json
 import shutil
 import sys
 from pathlib import Path
+from typing import Any
 
-import click
 import typer.main
 
 from datacontract.cli import app
+
+# typer >= 0.27 builds its command tree from a vendored click fork, so the objects
+# below are not instances of the installed `click` classes. Everything here is
+# duck-typed against the click API instead of isinstance-checked.
 
 DOCS = Path("docs/docs/commands")
 
@@ -62,7 +66,12 @@ def escape(text: str | None) -> str:
     return out
 
 
-def format_default(param: click.Parameter) -> str:
+def is_group(cmd: Any) -> bool:
+    """A command group is a command that has subcommands."""
+    return hasattr(cmd, "commands")
+
+
+def format_default(param: Any) -> str:
     default = param.default
     if param.required:
         return "required"
@@ -79,34 +88,39 @@ def format_default(param: click.Parameter) -> str:
     return f"`{value}`"
 
 
-def usage(cmd: click.Command, path: str) -> str:
-    ctx = click.Context(cmd, info_name=path)
-    return f"datacontract {path} " + " ".join(cmd.collect_usage_pieces(ctx))
+def metavar(param: Any) -> str:
+    """`[LOCATION]`, `V1`, `[CONTRACT]...` — how an argument appears in the usage line.
+
+    Spelled out here rather than taken from `make_metavar()`, whose signature and
+    output both changed across click 8.2 and typer 0.27; the pages must render the
+    same whichever version is installed.
+    """
+    name = param.metavar or param.name.upper()
+    if not param.required:
+        name = f"[{name}]"
+    return name if param.nargs == 1 else f"{name}..."
 
 
-def arguments_table(cmd: click.Command) -> list[str]:
-    args = [p for p in cmd.params if isinstance(p, click.Argument)]
+def usage(cmd: Any, path: str) -> str:
+    pieces = [cmd.options_metavar] if cmd.options_metavar else []
+    pieces += [metavar(p) for p in cmd.params if p.param_type_name == "argument"]
+    if is_group(cmd):
+        pieces.append(cmd.subcommand_metavar)
+    return f"datacontract {path} " + " ".join(pieces)
+
+
+def arguments_table(cmd: Any) -> list[str]:
+    args = [p for p in cmd.params if p.param_type_name == "argument"]
     if not args:
         return []
     rows = ["| Argument | Default | Description |", "|---|---|---|"]
     for p in args:
-        name = p.make_metavar(click.Context(cmd)) if _takes_ctx(p.make_metavar) else p.make_metavar()
-        rows.append(f"| `{name}` | {format_default(p)} | {escape(getattr(p, 'help', None))} |")
+        rows.append(f"| `{metavar(p)}` | {format_default(p)} | {escape(getattr(p, 'help', None))} |")
     return rows + [""]
 
 
-def _takes_ctx(fn) -> bool:
-    """click 8.2 added a ctx parameter to make_metavar()."""
-    import inspect
-
-    try:
-        return len(inspect.signature(fn).parameters) > 0
-    except (TypeError, ValueError):  # pragma: no cover - builtin fallback
-        return False
-
-
-def options_table(cmd: click.Command) -> list[str]:
-    opts = [p for p in cmd.params if isinstance(p, click.Option) and not _is_help(p)]
+def options_table(cmd: Any) -> list[str]:
+    opts = [p for p in cmd.params if p.param_type_name == "option" and not _is_help(p)]
     if not opts:
         return []
     rows = ["| Option | Default | Description |", "|---|---|---|"]
@@ -116,7 +130,7 @@ def options_table(cmd: click.Command) -> list[str]:
     return rows + [""]
 
 
-def _is_help(param: click.Parameter) -> bool:
+def _is_help(param: Any) -> bool:
     return "--help" in param.opts
 
 
@@ -140,12 +154,12 @@ def frontmatter(title: str, description: str, position: int) -> list[str]:
     ]
 
 
-def short_help(cmd: click.Command) -> str:
+def short_help(cmd: Any) -> str:
     text = (cmd.help or cmd.short_help or "").strip()
     return " ".join(text.split()) if text else "No description available."
 
 
-def render_command(cmd: click.Command, path: str, position: int) -> str:
+def render_command(cmd: Any, path: str, position: int) -> str:
     """A reference page for one leaf command."""
     lines = frontmatter(path, short_help(cmd), position)
     lines += [f"# `datacontract {path}`", "", BANNER, "", short_help(cmd), ""]
@@ -159,7 +173,7 @@ def render_command(cmd: click.Command, path: str, position: int) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def render_group_index(group: click.Group, name: str, position: int) -> str:
+def render_group_index(group: Any, name: str, position: int) -> str:
     """The landing page for a command group, listing its subcommands."""
     lines = frontmatter(name, short_help(group), position)
     lines += [f"# `datacontract {name}`", "", BANNER, "", short_help(group), ""]
@@ -189,7 +203,7 @@ def generate(changed: list[str]) -> set[Path]:
 
     for name, cmd in root.commands.items():
         position = COMMAND_ORDER.index(name) + 1 if name in COMMAND_ORDER else 99
-        if isinstance(cmd, click.Group):
+        if is_group(cmd):
             folder = DOCS / name
             index = folder / "index.md"
             write(index, render_group_index(cmd, name, position), changed)
