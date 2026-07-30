@@ -27,6 +27,7 @@ from datacontract.integration.dbt_sync import (
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
     _get_test_metadata,
+    _normalize_severity,
     _resolve_contract_paths,
     _resolved_generated_dirs,
     _rewrite_relationships_to_ref,
@@ -424,6 +425,21 @@ def test_attach_config_string_test():
     assert _attach_test_config("not_null", "warn") == {"not_null": {"config": {"severity": "warn"}}}
 
 
+def test_attach_config_no_severity_omits_it():
+    result = _attach_test_config("not_null", check_type="field_required", model="orders", field="order_id")
+    assert result == {
+        "not_null": {"config": {"meta": {"datacontract_cli": {"check": "orders__order_id__field_required"}}}}
+    }
+
+
+def test_normalize_severity():
+    assert _normalize_severity("warning") == "warn"
+    assert _normalize_severity("info") == "warn"
+    assert _normalize_severity("error") is None
+    assert _normalize_severity("medium") is None
+    assert _normalize_severity(None) is None
+
+
 def test_attach_config_dict_test():
     result = _attach_test_config(
         {"accepted_values": {"values": [1, 2]}}, "error", check_type="field_enum", model="orders", field="status"
@@ -608,10 +624,14 @@ def test_generate_outputs_singular_sql_carries_severity_and_meta():
     _, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", Run.create_run())
 
     row_count = next(s for s in singulars if "row_count" in s.filename)
-    # severity=error normalized from `severity: error` in the fixture
-    assert "severity='error'" in row_count.sql
+    # `severity: error` in the fixture is blocking → omitted, dbt's default (error) applies
+    assert "severity=" not in row_count.sql
     assert "tags=[" not in row_count.sql  # no tag emitted — provenance lives in meta
     assert '"check": "orders__custom_sql"' in row_count.sql
+
+    max_total = next(s for s in singulars if "max_total" in s.sql)
+    # `severity: warn` in the fixture is non-blocking → emitted as dbt `severity='warn'`
+    assert "severity='warn'" in max_total.sql
 
 
 def test_build_singular_sql_wraps_query_with_violation_predicate():

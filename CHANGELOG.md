@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
+
 ## [1.0.15] - 2026-07-30
 
 ### Added

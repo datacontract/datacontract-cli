@@ -259,10 +259,16 @@ def _guess_indent(text: str) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 
 
-def _normalize_severity(severity: Optional[str]) -> str:
-    if severity and severity.lower() in {"error", "critical", "high", "fatal"}:
-        return "error"
-    return "warn"
+# Mirrors `_WARNING_SEVERITIES` in engines/ibis/ibis_check_execute.py (not imported — that
+# module pulls in the optional ibis connection stack).
+_NON_BLOCKING_SEVERITIES = {"info", "warning", "warn", "low", "minor", "trivial"}
+
+
+def _normalize_severity(severity: Optional[str]) -> Optional[str]:
+    """`warn` for a declared non-blocking ODCS severity; `None` (omit, dbt defaults to error) otherwise."""
+    if severity and severity.strip().lower() in _NON_BLOCKING_SEVERITIES:
+        return "warn"
+    return None
 
 
 def _check_type_for_generic_test(test: Any) -> Optional[str]:
@@ -292,7 +298,7 @@ def _qualified_check(model: str, field: Optional[str], check_type: str) -> str:
 
 def _attach_test_config(
     test: Any,
-    severity: str,
+    severity: Optional[str] = None,
     description: Optional[str] = None,
     check_type: Optional[str] = None,
     model: Optional[str] = None,
@@ -300,21 +306,25 @@ def _attach_test_config(
 ) -> Any:
     """Wrap a test entry with `config: { severity, meta }` and an optional `description`.
 
-    Strings (`"not_null"`) become single-key dicts so the config can ride along
-    in the same form dbt accepts.
+    A `None` severity is omitted so dbt's default (`error`) applies. Strings
+    (`"not_null"`) become single-key dicts so the config can ride along in the
+    same form dbt accepts.
     """
-    config: dict = {"severity": severity}
+    config: dict = {}
+    if severity:
+        config["severity"] = severity
     if check_type:
         config["meta"] = {META_NAMESPACE: {"check": _qualified_check(model, field, check_type)}}
     if isinstance(test, str):
-        body: dict = {"config": config}
+        body: dict = {"config": config} if config else {}
         if description:
             body["description"] = description
-        return {test: body}
+        return {test: body} if body else test
     if isinstance(test, dict) and len(test) == 1:
         ((name, args),) = test.items()
         merged = dict(args) if isinstance(args, dict) else {"value": args}
-        merged["config"] = config
+        if config:
+            merged["config"] = config
         if description:
             merged["description"] = description
         return {name: merged}
@@ -557,7 +567,7 @@ def _model_ref(model: str, model_version: Optional[str]) -> str:
 def _build_singular_sql(
     query: str,
     violation_predicate: str,
-    severity: str,
+    severity: Optional[str],
     contract_id: str,
     contract_version: str,
     model: str,
@@ -569,9 +579,10 @@ def _build_singular_sql(
     # The ODCS query is expected to yield a single-column scalar metric. We alias that
     # column to `metric_value` via the CTE column list, then return rows only when the
     # bound is violated — dbt singular-test semantics (rows returned = test failed).
+    severity_arg = f"severity='{severity}', " if severity else ""
     return (
         _generated_sql_header(contract_id, contract_version, model)
-        + f"{{{{ config(severity='{severity}', {_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
+        + f"{{{{ config({severity_arg}{_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
         f"WITH _dc_metric (metric_value) AS (\n"
         f"{query.rstrip()}\n"
         f")\n"
@@ -611,8 +622,8 @@ def _composite_pk_singular_test(
     description = f"Check that model {model} has a unique combination of columns {', '.join(pk_cols)}"
     label = "unique_combination"
     sql = (
-        _generated_sql_header(contract_id, contract_version, model, label) + f"{{{{ config(severity='warn', "
-        f"{_format_dc_meta(model, None, description, 'model_unique_combination', contract_version)}) }}}}\n"
+        _generated_sql_header(contract_id, contract_version, model, label)
+        + f"{{{{ config({_format_dc_meta(model, None, description, 'model_unique_combination', contract_version)}) }}}}\n"
         f"SELECT {col_list}\n"
         f"FROM {_model_ref(model, model_version)}\n"
         f"GROUP BY {col_list}\n"
@@ -746,7 +757,7 @@ def _build_row_violation_sql(
     field: str,
     column_null_filter: str,
     violation_predicate: str,
-    severity: str,
+    severity: Optional[str] = None,
     contract_id: str,
     contract_version: str,
     label: str,
@@ -754,9 +765,10 @@ def _build_row_violation_sql(
     description: Optional[str] = None,
     model_version: Optional[str] = None,
 ) -> str:
+    severity_arg = f"severity='{severity}', " if severity else ""
     return (
         _generated_sql_header(contract_id, contract_version, model, label)
-        + f"{{{{ config(severity='{severity}', {_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
+        + f"{{{{ config({severity_arg}{_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
         f"SELECT *\n"
         f"FROM {_model_ref(model, model_version)}\n"
         f"WHERE {column_null_filter} IS NOT NULL\n"
@@ -781,7 +793,6 @@ def _field_singular_tests(
                     field=prop.name,
                     column_null_filter=column,
                     violation_predicate=predicate,
-                    severity="warn",
                     contract_id=contract_id,
                     contract_version=contract_version,
                     label=label,
@@ -909,7 +920,6 @@ def _column_dict(
     tests = [
         _attach_test_config(
             test,
-            severity="warn",
             description=_describe_dbt_test(test, prop.name, model_name),
             check_type=_check_type_for_generic_test(test),
             model=model_name,
