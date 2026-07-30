@@ -24,6 +24,8 @@ from open_data_contract_standard.model import (
 )
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.error import CommentMark
+from ruamel.yaml.tokens import CommentToken
 from ruamel.yaml.util import load_yaml_guess_indent
 
 from datacontract.export.sql_type_converter import _get_config_value, convert_to_sql_type
@@ -252,6 +254,127 @@ def _guess_indent(text: str) -> tuple[int, int]:
     except Exception:
         offset = 2
     return offset + 2, offset
+
+
+def _parse_pure_comment_block(tok: Any) -> Optional[tuple[int, list[str]]]:
+    """Parse a comment token holding only own-line comment lines (plus blank lines) at one shared
+    indentation. Returns `(column, lines)` where a line is `"# ..."` or `""` (blank); None for
+    anything else — inline comments, fused inline+own-line tokens, mixed or tab indentation."""
+    value = getattr(tok, "value", None)
+    if not isinstance(value, str) or not value.startswith("\n") or not value.endswith("\n"):
+        return None
+    column: Optional[int] = None
+    lines: list[str] = []
+    for segment in value.split("\n")[1:-1]:  # drop the anchor line's newline and the final ""
+        if not segment.strip():
+            lines.append("")
+            continue
+        indent = len(segment) - len(segment.lstrip(" "))
+        if not segment[indent:].startswith("#"):
+            return None
+        if column is None:
+            column = indent
+        elif indent != column:
+            return None
+        lines.append(segment[indent:])
+    return (column, lines) if column is not None else None
+
+
+def _line_start_col(container: Any, pos: Any) -> Optional[int]:
+    """Source column where `container[pos]`'s rendered line starts: the `-` of a sequence item
+    (ruamel records the value's column, two past the dash), the key of a mapping entry."""
+    info = (getattr(container.lc, "data", None) or {}).get(pos)
+    if not info:
+        return None
+    return info[1] - 2 if isinstance(container, CommentedSeq) else info[1]
+
+
+def _hoist_own_line_comments(data: Any) -> None:
+    """Re-anchor own-line comments onto the element they visually introduce (their *owner*).
+
+    ruamel physically anchors an own-line comment to the tail of the *preceding* sibling's
+    subtree, so edits there drop or misplace it. This pass moves each pure comment block to a
+    before-comment of the next element in document order — provided that element's line starts
+    at the block's exact column, i.e. the comment visually introduces it. ruamel then keeps the
+    comment glued to its owner: it survives edits of the neighbours and dies with the owner.
+    """
+    # (source ca entry, slot index, owner container, owner pos, comment tokens)
+    moves: list[tuple[list, int, Any, Any, list[CommentToken]]] = []
+
+    def first_element(value: Any) -> Optional[tuple[Any, Any]]:
+        if isinstance(value, CommentedSeq) and len(value):
+            return value, 0
+        if isinstance(value, CommentedMap) and len(value):
+            return value, next(iter(value.keys()))
+        return None
+
+    def next_element(chain: list[tuple[Any, Any]]) -> Optional[tuple[Any, Any]]:
+        """The element following the anchor in document order: the anchor's next sibling, or —
+        ascending only past tail positions — the next sibling of an ancestor."""
+        for container, pos in reversed(chain):
+            if isinstance(container, CommentedSeq):
+                if not isinstance(pos, int) or pos >= len(container) - 1:
+                    continue  # tail (or stale anchor) → ascend
+                return container, pos + 1
+            keys = list(container.keys())
+            if pos not in keys:
+                return None  # stale anchor → leave the comment alone
+            idx = keys.index(pos)
+            if idx >= len(keys) - 1:
+                continue  # tail → ascend
+            return container, keys[idx + 1]
+        return None
+
+    def consider_post(info: Any, slot: int, chain: list[tuple[Any, Any]]) -> None:
+        """A post-comment (after the anchor's value): owned by the next element in document order."""
+        tok = info[slot] if isinstance(info, list) and len(info) > slot else None
+        parsed = _parse_pure_comment_block(tok) if tok is not None else None
+        if parsed is None:
+            return
+        column, lines = parsed
+        owner = next_element(chain)
+        if owner is not None and _line_start_col(*owner) == column:
+            tokens = [CommentToken(line + "\n", CommentMark(column if line else 0), None) for line in lines]
+            moves.append((info, slot, owner[0], owner[1], tokens))
+
+    def consider_after_key(info: Any, container: CommentedMap, key: Any) -> None:
+        """Comments between a key line and its block value (slot 3, a list of one-line tokens):
+        owned by the value's first element. The tokens already have pre-comment shape — move as-is."""
+        tokens = info[3] if isinstance(info, list) and len(info) > 3 else None
+        if not isinstance(tokens, list) or not tokens:
+            return
+        owner = first_element(container.get(key))
+        if owner is None:
+            return
+        owner_col = _line_start_col(*owner)
+        for tok in tokens:
+            value = getattr(tok, "value", None)
+            if not isinstance(value, str) or "\n" in value[:-1]:
+                return
+            if value.strip() and (not value.lstrip(" ").startswith("#") or tok.start_mark.column != owner_col):
+                return
+        moves.append((info, 3, owner[0], owner[1], tokens))
+
+    def walk(node: Any, chain: list[tuple[Any, Any]]) -> None:
+        if isinstance(node, CommentedSeq):
+            for idx, info in list(node.ca.items.items()):
+                consider_post(info, 0, chain + [(node, idx)])
+            for idx, child in enumerate(node):
+                walk(child, chain + [(node, idx)])
+        elif isinstance(node, CommentedMap):
+            for key, info in list(node.ca.items.items()):
+                consider_post(info, 2, chain + [(node, key)])
+                consider_after_key(info, node, key)
+            for key, child in node.items():
+                walk(child, chain + [(node, key)])
+
+    walk(data, [])
+    for info, slot, owner_container, owner_pos, tokens in moves:
+        info[slot] = None
+        entry = owner_container.ca.items.setdefault(owner_pos, [None, None, None, None])
+        if entry[1] is None:
+            entry[1] = []
+        entry[1].extend(tokens)
 
 
 # ---------------------------------------------------------------------------
@@ -1461,6 +1584,7 @@ class _EditSession:
             return None  # unparseable / unreadable → leave the file untouched
         if not isinstance(data, dict):
             return None
+        _hoist_own_line_comments(data)
         self.files[path] = _PlannedFile(path=path, data=data, yaml=y, original_text=text)
         return data
 
@@ -2075,13 +2199,14 @@ def _merge_model_entry(
     _warn_unresolved_types(run, model_dict.get("name") or schema_obj.name, unresolved_types)
 
     # --prune: strict-mirror the contract's column set (drops user columns too).
+    # In place — rebuilding the list would discard its comment table (owners' comments).
     if prune:
         cols = entry.get("columns")
         if isinstance(cols, list):
-            kept = CommentedSeq(c for c in cols if str(c.get("name", "")).lower() in contract_cols)
-            if kept:
-                entry["columns"] = kept
-            else:
+            for i in reversed(range(len(cols))):
+                if str(cols[i].get("name", "")).lower() not in contract_cols:
+                    del cols[i]
+            if not cols:
                 entry.pop("columns", None)
 
 
@@ -2147,24 +2272,22 @@ def _clean_tests_in_container(
     tests = container.get("data_tests")
     if not isinstance(tests, list):
         return
-    survivors = CommentedSeq()
-    for entry in tests:
+    # Edit in place — rebuilding the list would discard its comment table (owners' comments).
+    for i in reversed(range(len(tests))):
+        entry = tests[i]
         if not _meta_block_for_test(entry):
-            survivors.append(entry)
             continue
         name = _test_name(entry)
         if model_required and (column_key, name) in required_keys:
-            survivors.append(entry)  # still required → merge will refresh it
-            continue
+            continue  # still required → merge will refresh it
         if _meta_block_for_test(entry).get("generated") is True:
-            continue  # drop the node we created
+            del tests[i]  # drop the node we created
+            continue
         _strip_managed(entry)  # drop our meta block, keep the user's test
         # Collapse `{name: {}}` back to the bare string `name` if stripping emptied it.
-        collapsed = name if isinstance(entry, dict) and not entry[name] else entry
-        survivors.append(collapsed)
-    if len(survivors):
-        container["data_tests"] = survivors
-    else:
+        if isinstance(entry, dict) and not entry[name]:
+            tests[i] = name
+    if not tests:
         container.pop("data_tests", None)
 
 
@@ -2186,8 +2309,9 @@ def _clean_model_entry(
 
     cols = entry.get("columns")
     if isinstance(cols, list):
-        survivors = CommentedSeq()
-        for col in cols:
+        # Edit in place — rebuilding the list would discard its comment table (owners' comments).
+        for i in reversed(range(len(cols))):
+            col = cols[i]
             if (
                 isinstance(col, dict)
                 and _is_managed_column(col)
@@ -2195,11 +2319,8 @@ def _clean_model_entry(
                 and not col.get("description")
                 and not (col.get("data_type") and model_required)
             ):
-                continue  # drop a managed column that has become empty
-            survivors.append(col)
-        if len(survivors):
-            entry["columns"] = survivors
-        else:
+                del cols[i]  # drop a managed column that has become empty
+        if not cols:
             entry.pop("columns", None)
 
     if not model_required:

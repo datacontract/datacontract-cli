@@ -27,6 +27,9 @@ from datacontract.integration.dbt_sync import (
     _disambiguate_singular_filenames,
     _ensure_dbt_project,
     _get_test_metadata,
+    _guess_indent,
+    _hoist_own_line_comments,
+    _make_yaml,
     _normalize_severity,
     _resolve_contract_paths,
     _resolved_generated_dirs,
@@ -236,6 +239,179 @@ def test_merge_preserves_comments_and_is_idempotent(tmp_path: Path):
 
     sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
     assert schema.read_text() == after_first  # second sync is a no-op
+
+
+def _hoist_roundtrip(text: str) -> str:
+    seq_indent, offset = _guess_indent(text)
+    y = _make_yaml(sequence=seq_indent, offset=offset)
+    data = y.load(text)
+    _hoist_own_line_comments(data)
+    from io import StringIO
+
+    buf = StringIO()
+    y.dump(data, buf)
+    return buf.getvalue()
+
+
+def test_hoist_own_line_comments_is_render_neutral():
+    """Normalizing comment anchors must not change the rendered file at all (no-edit round-trip)."""
+    text = (
+        "# top of file\n"
+        "version: 2\n"
+        "\n"
+        "# between top-level keys\n"
+        "models:\n"
+        "  - name: orders   # inline on item\n"
+        "    # own-line after inline (fused token, left in place)\n"
+        "    description: My desc.\n"
+        "\n"
+        "    # blank line above me\n"
+        "    columns:\n"
+        "      # above the first column\n"
+        "      - name: order_id\n"
+        "        data_tests:\n"
+        "          # above the first test\n"
+        "          - unique\n"
+        "          # between tests\n"
+        "          - not_null\n"
+        "      # trailing in nested block, owner below\n"
+        "      - name: internal_flag\n"
+        "      - name: weird\n"
+        "          # over-indented, matches nothing\n"
+        "        description: x\n"
+        "    # under-indented, matches nothing\n"
+        "      - name: after_odd\n"
+        "# column 0 mid-document\n"
+        "  - name: other\n"
+        "sources:\n"
+        "  - name: raw\n"
+        "    tables:\n"
+        "      - name: t1\n"
+        "      # last comment in file\n"
+    )
+    assert _hoist_roundtrip(text) == text
+
+
+def test_hoist_own_line_comments_is_render_neutral_indentless():
+    """Same guarantee for dbt's common indentless list style (dash at the parent key's column)."""
+    text = (
+        "version: 2\n"
+        "models:\n"
+        "- name: orders\n"
+        "  columns:\n"
+        "  - name: a\n"
+        "    data_tests:\n"
+        "    - unique\n"
+        "  # owner is the next column\n"
+        "  - name: b\n"
+        "    description: x\n"
+    )
+    assert _hoist_roundtrip(text) == text
+
+
+def test_trailing_comment_stays_with_next_column(tmp_path: Path):
+    """An own-line comment above a column survives sync edits to the *previous* column (#anchor
+    mismatch: ruamel hangs it off the tail of the previous column's data_tests)."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    columns:\n"
+        "      - name: order_id\n"
+        "        data_tests:\n"
+        "          - unique\n"
+        "          - not_null\n"
+        "      # Kept for the legacy fulfilment export.\n"
+        "      - name: internal_flag\n"
+        "        data_tests:\n"
+        "          - not_null\n"
+    )
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    after_first = schema.read_text()
+    assert "      # Kept for the legacy fulfilment export.\n      - name: internal_flag\n" in after_first
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    assert schema.read_text() == after_first  # idempotent with the comment in place
+
+
+def test_comment_between_tests_survives_adoption(tmp_path: Path):
+    """A comment above a user test stays above it when sync adopts and expands that test."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    columns:\n"
+        "      - name: order_id\n"
+        "        data_tests:\n"
+        "          - unique\n"
+        "          # keep: legacy check\n"
+        "          - not_null\n"
+    )
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    assert "          # keep: legacy check\n          - not_null:\n" in schema.read_text()
+
+
+def test_prune_drops_comment_with_removed_column(tmp_path: Path):
+    """--prune removes a user column together with the comment that introduces it; a comment owned
+    by a surviving contract column stays."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    columns:\n"
+        "      # only for the legacy export\n"
+        "      - name: extra_user_col\n"
+        "      # the primary key\n"
+        "      - name: order_id\n"
+    )
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True, prune=True)
+    after = schema.read_text()
+    assert "extra_user_col" not in after
+    assert "# only for the legacy export" not in after  # dropped with its owner
+    assert "      # the primary key\n      - name: order_id\n" in after  # owner survived, comment too
+
+
+def test_comment_above_map_key_survives_removal_of_previous_key():
+    """The ownership rule holds inside mappings: popping the key a comment is physically anchored
+    to keeps the comment on the next key (its owner); popping the owner drops it."""
+    text = (
+        "columns:\n"
+        "  - name: a\n"
+        "    description: temp\n"
+        "    # audit hold\n"
+        "    data_tests:\n"
+        "      - not_null\n"
+        "    meta: {x: 1}\n"
+    )
+    seq_indent, offset = _guess_indent(text)
+    y = _make_yaml(sequence=seq_indent, offset=offset)
+    data = y.load(text)
+    _hoist_own_line_comments(data)
+    col = data["columns"][0]
+
+    from io import StringIO
+
+    col.pop("description")
+    buf = StringIO()
+    y.dump(data, buf)
+    assert "    # audit hold\n    data_tests:\n" in buf.getvalue()
+
+    col.pop("data_tests")
+    buf = StringIO()
+    y.dump(data, buf)
+    assert "audit hold" not in buf.getvalue()
 
 
 def test_resync_preserves_user_opt_out_via_include_in_tests(tmp_path: Path):
