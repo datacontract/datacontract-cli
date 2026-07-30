@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.15] - 2026-07-30
+
 ### Added
 - `datacontract test` treats a server typed `mssql` as SQL Server, so contracts carrying the ODBC/dbt spelling are testable (ODCS itself only defines `sqlserver`)
 - `datacontract test --quality-id` runs a single quality rule by its ODCS `quality.id`, and `--tag` runs every quality rule declaring one of the given `quality.tags` (#1080)
