@@ -43,7 +43,7 @@ _CATALOG_STRATEGY = {
     "postgres": "information_schema",
     "redshift": "information_schema",
     "snowflake": "information_schema",
-    "databricks": "information_schema",
+    "databricks": "databricks",
     "oracle": "oracle",
     "athena": "full_type",
     "trino": "full_type",
@@ -67,11 +67,50 @@ _DECIMAL_TYPES = {"decimal", "numeric", "number", "dec"}
 _ORACLE_LENGTH_TYPES = {"char", "nchar", "varchar", "varchar2", "nvarchar2", "raw"}
 
 
-def oracle_char_length(data_type: Optional[str], data_length):
-    """Oracle reports DATA_LENGTH for every column, but the length is only part
-    of the declared type for character and raw types; appending it elsewhere
-    would corrupt types such as ROWID or DATE."""
-    return data_length if (data_type or "").strip().lower() in _ORACLE_LENGTH_TYPES else None
+def oracle_char_length(data_type: Optional[str], data_length, char_length=None):
+    """The length Oracle's declared type carries, or ``None``.
+
+    DATA_LENGTH is only part of the declared type for character and raw types;
+    appending it elsewhere would corrupt types such as ROWID or DATE. It is also
+    measured in *bytes*, so ``NVARCHAR2(50)`` reports 100 and ``VARCHAR2(50
+    CHAR)`` reports up to 200 in a multibyte character set — CHAR_LENGTH is the
+    character count the type was declared with. RAW is declared in bytes and
+    reports CHAR_LENGTH 0, so it keeps DATA_LENGTH.
+    """
+    data_type = (data_type or "").strip().lower()
+    if data_type not in _ORACLE_LENGTH_TYPES:
+        return None
+    if data_type != "raw" and char_length:
+        return char_length
+    return data_length
+
+
+# Temporal types whose fractional-seconds precision is part of the declared type.
+# DATE and the legacy SQL Server DATETIME / SMALLDATETIME also report a
+# datetime_precision, but they take no precision argument (``date(0)`` is not a
+# type), so it is only appended for these.
+_DATETIME_PRECISION_TYPES = {
+    "timestamp",
+    "timestamptz",
+    "timestamp_ntz",
+    "timestamp_ltz",
+    "timestamp_tz",
+    "time",
+    "timetz",
+    "datetime2",
+    "datetimeoffset",
+}
+
+# Postgres and Redshift spell the time zone out as part of data_type, and the
+# precision goes on the leading word: ``timestamp(6) without time zone``.
+_TIME_ZONE_SUFFIXES = (" without time zone", " with time zone", " with local time zone")
+
+
+def _split_time_zone_suffix(base: str) -> tuple[str, str]:
+    for suffix in _TIME_ZONE_SUFFIXES:
+        if base.lower().endswith(suffix):
+            return base[: -len(suffix)].strip(), base[-len(suffix) :]
+    return base, ""
 
 
 def reconstruct_native_type(
@@ -79,12 +118,15 @@ def reconstruct_native_type(
     char_len=None,
     num_precision=None,
     num_scale=None,
+    datetime_precision=None,
 ) -> Optional[str]:
     """Rebuild a parameterized native type string from catalog columns.
 
     ``varchar`` + char_len 255 -> ``varchar(255)`` (``-1`` means SQL Server MAX
     -> ``varchar(max)``); ``decimal`` + precision 10 + scale 2 ->
-    ``decimal(10,2)``. Precision is only attached to genuine decimal types.
+    ``decimal(10,2)``; ``timestamp_ntz`` + datetime_precision 9 ->
+    ``timestamp_ntz(9)``. Precision is only attached to the types that declare
+    one.
     """
     if not data_type:
         return None
@@ -107,6 +149,14 @@ def reconstruct_native_type(
         if num_scale:
             return f"{base}({int(num_precision)},{int(num_scale)})"
         return f"{base}({int(num_precision)})"
+
+    if datetime_precision is not None and "(" not in base:
+        head, time_zone = _split_time_zone_suffix(base)
+        if head.lower() in _DATETIME_PRECISION_TYPES:
+            try:
+                return f"{head}({int(datetime_precision)}){time_zone}"
+            except (TypeError, ValueError):
+                return base
 
     return base
 
@@ -157,18 +207,27 @@ def _rows(con, query: str):
 
 
 def _map_reconstructed(con, query: str, oracle_length: bool = False) -> Optional[dict[str, str]]:
-    """Read ``(column_name, data_type, length, precision, scale)`` rows and
-    reconstruct each parameterized native type string."""
+    """Read ``(column_name, data_type, length, precision, scale, …)`` rows and
+    reconstruct each parameterized native type string.
+
+    The sixth column is the catalog's own: ``datetime_precision`` for
+    information_schema, ``char_length`` for Oracle, which has no
+    datetime_precision (it carries the fractional seconds in data_type itself,
+    as ``TIMESTAMP(6)``).
+    """
     rows = _rows(con, query)
     if not rows:
         return None
     result: dict[str, str] = {}
     for row in rows:
         column_name, data_type = row[0], row[1]
-        char_len = row[2]
+        char_len, extra = row[2], row[5] if len(row) > 5 else None
+        datetime_precision = None
         if oracle_length:
-            char_len = oracle_char_length(data_type, char_len)
-        native = reconstruct_native_type(data_type, char_len, row[3], row[4])
+            char_len = oracle_char_length(data_type, char_len, extra)
+        else:
+            datetime_precision = extra
+        native = reconstruct_native_type(data_type, char_len, row[3], row[4], datetime_precision)
         if column_name and native:
             result[str(column_name).lower()] = native
     return result or None
@@ -206,10 +265,15 @@ def _schema_filter(server: Server, column: str = "table_schema") -> str:
 
 
 def _read_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
-    """Standard ``INFORMATION_SCHEMA.COLUMNS`` with separate length/precision."""
+    """Standard ``INFORMATION_SCHEMA.COLUMNS`` with separate length/precision.
+
+    ``datetime_precision`` is part of the declared type of a timestamp or time
+    column (Snowflake's own importer writes ``TIMESTAMP_NTZ(9)``), so it is read
+    alongside the character and numeric parts.
+    """
     query = (
         "SELECT column_name, data_type, character_maximum_length, "
-        "numeric_precision, numeric_scale "
+        "numeric_precision, numeric_scale, datetime_precision "
         f"FROM information_schema.columns WHERE upper(table_name) = upper('{_quote(model)}')"
         f"{_schema_filter(server)}"
     )
@@ -217,13 +281,32 @@ def _read_information_schema(con, server: Server, model: str) -> Optional[dict[s
 
 
 def _read_oracle(con, server: Server, model: str) -> Optional[dict[str, str]]:
-    """Oracle exposes columns via ``ALL_TAB_COLUMNS`` instead of information_schema."""
+    """Oracle exposes columns via ``ALL_TAB_COLUMNS`` instead of information_schema.
+
+    ``CHAR_LENGTH`` is read next to ``DATA_LENGTH`` because the latter is in
+    bytes, which is not the length ``NVARCHAR2(50)`` was declared with.
+    """
     query = (
-        "SELECT column_name, data_type, data_length, data_precision, data_scale "
+        "SELECT column_name, data_type, data_length, data_precision, data_scale, char_length "
         f"FROM all_tab_columns WHERE upper(table_name) = upper('{_quote(model)}')"
         f"{_schema_filter(server, 'owner')}"
     )
     return _map_reconstructed(con, query, oracle_length=True)
+
+
+def _read_databricks(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Databricks reports a complex column as the bare token in ``data_type``
+    (``array<string>`` as ``ARRAY``), which cannot be checked against the
+    declared element types; ``full_data_type`` carries the whole spelling.
+
+    It only exists in Unity Catalog, so a workspace whose ``information_schema``
+    lacks the column falls back to the reconstructed parts.
+    """
+    query = (
+        "SELECT column_name, full_data_type FROM information_schema.columns "
+        f"WHERE upper(table_name) = upper('{_quote(model)}'){_schema_filter(server)}"
+    )
+    return _map_full_type(con, query) or _read_information_schema(con, server, model)
 
 
 def _read_full_type_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
@@ -255,6 +338,7 @@ def _read_bigquery(con, server: Server, model: str) -> Optional[dict[str, str]]:
 _READERS = {
     "information_schema": _read_information_schema,
     "oracle": _read_oracle,
+    "databricks": _read_databricks,
     "full_type": _read_full_type_information_schema,
     "bigquery": _read_bigquery,
 }

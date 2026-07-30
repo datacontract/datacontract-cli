@@ -55,7 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SQL imports now map `TIME` types with precision or time zone (e.g. `TIME(9)`) to `logicalType: time`; previously the logical type was left unset
 - `datacontract test --checks quality` now runs `rowCount` quality rules, which were wrongly categorized as schema checks
 - `datacontract import dbt` derives the contract `id` from the dbt manifest's `project_name` instead of always emitting the placeholder `my-data-contract` (#1221 @DMZ22)
-- Snowflake `physicalType` checks: a declared `NUMBER(38,0)` failed against its own column (the catalog reconstruction spells it `NUMBER(38)`, and the comparison did not treat `DECIMAL(p)` as `DECIMAL(p,0)`), and structured `OBJECT`/`ARRAY`/`MAP` types never matched because their fields were compared as rendered strings; structured types are now compared field by field (order-insensitive, alias-aware), a catalog that strips the field list (`INFORMATION_SCHEMA` reports bare `OBJECT`) no longer fails the declaration, and Athena's Hive spellings (`array<string>`) match the Trino names it reports back (`array(varchar)`)
+- A `physicalType` declaring a zero scale (`NUMBER(38,0)`, `decimal(18,0)`) failed against its own column on Snowflake, Oracle, SQL Server and Databricks (#1377 @DMZ22)
+- Snowflake `physicalType` checks failed for structured `OBJECT`, `ARRAY` and `MAP` columns, whose fields are now compared field by field instead of as rendered strings (#1377 @DMZ22)
+- `datacontract test` on Athena failed a `physicalType` written in the Hive spelling `datacontract import athena` produces (`array<string>` against the reported `array(varchar)`) (#1377 @DMZ22)
+- A `physicalType` declaring fractional seconds (`TIMESTAMP_NTZ(9)`, `datetime2(7)`, `timestamp(3)`) failed against its own column, so every timestamp column imported from Snowflake failed the first `datacontract test`
+- `datacontract test` and `datacontract import oracle` read Oracle character lengths in bytes, so an `NVARCHAR2(50)` column was reported and checked as `NVARCHAR2(100)`
+- `datacontract test` on Databricks could not check the element types of `ARRAY`, `MAP` and `STRUCT` columns, which the catalog reports as a bare type name
 
 ## [1.0.14] - 2026-07-23
 

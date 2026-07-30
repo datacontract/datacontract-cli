@@ -27,6 +27,7 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Added
+- `datacontract test` treats a server typed `mssql` as SQL Server, so contracts carrying the ODBC/dbt spelling are testable (ODCS itself only defines `sqlserver`)
 - `datacontract test --quality-id` runs a single quality rule by its ODCS `quality.id`, and `--tag` runs every quality rule declaring one of the given `quality.tags` ([#1080](https://github.com/datacontract/datacontract-cli/issues/1080))
 - Test results report the `quality_id` and `tags` of the quality rule a check comes from
 - New `databricks-runtime` extra for installing inside a Databricks Runtime, where the cluster already provides PySpark: `pip install datacontract-cli[databricks-runtime]` ([#1211](https://github.com/datacontract/datacontract-cli/issues/1211) [@chifu1234](https://github.com/chifu1234))
@@ -51,6 +52,8 @@ marked as such in the entry.
 - `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) ([#1220](https://github.com/datacontract/datacontract-cli/issues/1220) [@DMZ22](https://github.com/DMZ22))
 
 ### Fixed
+- `datacontract test` checked `physicalType` against a same-named table in another schema when one existed, because the native column types were read from the catalog without the contract's schema
+- `datacontract test` against SQL Server no longer fails every check with "Could not read model" when `server.schema` differs from the login's default schema
 - `datacontract-cli[s3]` could not run `datacontract test`, and `datacontract-cli[gcs]` was missing the AWS duckdb extension the GCS connection loads; each data source extra now installs everything its guide needs
 - The API testing guide stated that no extra is required, but the response is tested with duckdb; it installs `datacontract-cli[duckdb]` now
 - `datacontract test` told users to install `datacontract-cli[local]`, an extra that does not exist, and `datacontract-cli[api]`, which installs the web server rather than a test backend; both now point at `duckdb`
@@ -70,6 +73,13 @@ marked as such in the entry.
 - CSV and JSON imports now write detected formats (`email`, `uuid`, `date-time`) to `logicalTypeOptions.format` instead of a custom property, so they are validated by `datacontract test`
 - SQL imports now map `TIME` types with precision or time zone (e.g. `TIME(9)`) to `logicalType: time`; previously the logical type was left unset
 - `datacontract test --checks quality` now runs `rowCount` quality rules, which were wrongly categorized as schema checks
+- `datacontract import dbt` derives the contract `id` from the dbt manifest's `project_name` instead of always emitting the placeholder `my-data-contract` ([#1221](https://github.com/datacontract/datacontract-cli/issues/1221) [@DMZ22](https://github.com/DMZ22))
+- A `physicalType` declaring a zero scale (`NUMBER(38,0)`, `decimal(18,0)`) failed against its own column on Snowflake, Oracle, SQL Server and Databricks ([#1377](https://github.com/datacontract/datacontract-cli/issues/1377) [@DMZ22](https://github.com/DMZ22))
+- Snowflake `physicalType` checks failed for structured `OBJECT`, `ARRAY` and `MAP` columns, whose fields are now compared field by field instead of as rendered strings ([#1377](https://github.com/datacontract/datacontract-cli/issues/1377) [@DMZ22](https://github.com/DMZ22))
+- `datacontract test` on Athena failed a `physicalType` written in the Hive spelling `datacontract import athena` produces (`array<string>` against the reported `array(varchar)`) ([#1377](https://github.com/datacontract/datacontract-cli/issues/1377) [@DMZ22](https://github.com/DMZ22))
+- A `physicalType` declaring fractional seconds (`TIMESTAMP_NTZ(9)`, `datetime2(7)`, `timestamp(3)`) failed against its own column, so every timestamp column imported from Snowflake failed the first `datacontract test`
+- `datacontract test` and `datacontract import oracle` read Oracle character lengths in bytes, so an `NVARCHAR2(50)` column was reported and checked as `NVARCHAR2(100)`
+- `datacontract test` on Databricks could not check the element types of `ARRAY`, `MAP` and `STRUCT` columns, which the catalog reports as a bare type name
 
 ## 1.0.14 — 2026-07-23 {#v1-0-14}
 

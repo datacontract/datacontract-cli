@@ -1,10 +1,11 @@
 """Create a data contract from a live Oracle schema.
 
 Reads ``ALL_TAB_COLUMNS``, the same catalog ``datacontract test`` reads back to
-verify physical types, and applies the same rule about which types carry a
-length — Oracle reports ``DATA_LENGTH`` for every column, but it is only part of
-the declared type for character and raw types. An imported contract therefore
-passes on the first run without hand-editing.
+verify physical types, and applies the same length rule — Oracle reports
+``DATA_LENGTH`` for every column, but it is only part of the declared type for
+character and raw types, and it is measured in bytes, so a character type takes
+its length from ``CHAR_LENGTH``. An imported contract therefore passes on the
+first run without hand-editing.
 """
 
 from __future__ import annotations
@@ -30,7 +31,8 @@ _TABLES_QUERY = """
 """
 
 _COLUMNS_QUERY = """
-    SELECT table_name, column_name, data_type, data_length, data_precision, data_scale, nullable
+    SELECT table_name, column_name, data_type, data_length, data_precision, data_scale, nullable,
+           char_length
     FROM all_tab_columns
     WHERE owner = '{schema}'
     ORDER BY table_name, column_id
@@ -226,7 +228,7 @@ def _create_property(row: Dict[str, Any], primary_keys: Dict[str, int]) -> Schem
     precision = _as_int(row.get("data_precision"))
     scale = _as_int(row.get("data_scale"))
     # the same length rule the test path applies when reading this catalog back
-    char_length = _as_int(oracle_char_length(data_type, row.get("data_length")))
+    char_length = _as_int(oracle_char_length(data_type, row.get("data_length"), row.get("char_length")))
     physical_type = reconstruct_native_type(data_type, char_length, precision, scale)
     logical_type, format = map_type_from_sql(physical_type)
     is_decimal = physical_type is not None and physical_type.lower().startswith(("decimal", "numeric", "number"))
