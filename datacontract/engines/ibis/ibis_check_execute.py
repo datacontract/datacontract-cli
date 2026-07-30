@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 import uuid
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
@@ -32,6 +33,7 @@ from datacontract.engines.ibis.snowflake_structured_types import fetch_structure
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
+from datacontract.model.source_config import BaseSourceConfig
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +105,7 @@ def execute_ibis_checks(
     duckdb_connection=None,
     schema_name: str = "all",
     include_failed_samples: bool = False,
+    source_configs: Sequence[BaseSourceConfig] = (),
 ):
     if data_contract is None:
         run.log_warn("Cannot run engine ibis, as data contract is invalid")
@@ -121,7 +124,7 @@ def execute_ibis_checks(
 
     run.log_info("Running engine ibis")
     try:
-        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name)
+        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name, source_configs)
     except DataContractException:
         raise
     except ImportError:

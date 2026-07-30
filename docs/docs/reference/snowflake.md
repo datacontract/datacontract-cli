@@ -52,6 +52,28 @@ Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix st
 
 The `SNOWFLAKE_`-prefixed equivalents work as fallbacks. If no password is set, the import falls back to browser-based SSO (`externalbrowser`).
 
+### Programmatic configuration
+
+Library users can pass credentials directly instead of setting environment variables, which matters in multithreaded services where mutating `os.environ` per request races between threads:
+
+```python
+from datacontract.data_contract import DataContract
+from datacontract.model.source_config import SnowflakeSourceConfig
+
+DataContract(
+    data_contract_file="datacontract.yaml",
+    source_config=SnowflakeSourceConfig(user=tenant_user, password=tenant_password),
+).test()
+```
+
+Fields left unset fall back to their environment variable individually, so you can vary one value per call and leave the rest ambient. Connection parameters that have no field of their own go in `connection_parameters`, which is forwarded to the driver verbatim:
+
+```python
+SnowflakeSourceConfig(user="jakob", connection_parameters={"passcode": "123456"})
+```
+
+`account`, `database`, and `schema` always come from the contract when it declares them; the config only fills what the contract leaves out.
+
 ## Data types
 
 ### Importing

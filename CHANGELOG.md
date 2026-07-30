@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The Python library accepts Databricks and Snowflake credentials programmatically via `source_config=`, so multithreaded callers no longer have to mutate `os.environ` per request (#1250)
+
 ### Fixed
+- `datacontract test` against Snowflake no longer fails with a `TypeError` when `DATACONTRACT_SNOWFLAKE_ACCOUNT`, `..._DATABASE`, or `..._SCHEMA` is set
 - `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
 - `datacontract dbt sync` no longer drops or misplaces YAML comments that introduce the next column, test, or key
 

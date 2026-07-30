@@ -18,6 +18,7 @@ from datacontract.lint import resolve
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.source_config import SourceConfigInput, normalize_source_configs
 
 
 class DataContract:
@@ -42,6 +43,7 @@ class DataContract:
         tags: set[str] | None = None,
         fastapi_url: str = None,
         include_failed_samples: bool = False,
+        source_config: SourceConfigInput = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -62,6 +64,7 @@ class DataContract:
         self._tags = tags
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
+        self._source_configs = normalize_source_configs(source_config)
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -156,6 +159,7 @@ class DataContract:
                 quality_ids=self._quality_ids,
                 tags=self._tags,
                 include_failed_samples=self._include_failed_samples,
+                source_configs=self._source_configs,
             )
 
         except DataContractException as e:
@@ -258,6 +262,7 @@ class DataContract:
         cls,
         format: str,
         source: typing.Optional[str] = None,
+        source_config: SourceConfigInput = None,
         **kwargs,
     ) -> OpenDataContractStandard:
         """Import a data contract from a source in a given format.
@@ -266,6 +271,9 @@ class DataContract:
         """
         id = kwargs.get("id")
         owner = kwargs.get("owner")
+        # Importer.import_source(source, import_args) is the registered plugin ABI,
+        # so the configs travel as a reserved import_args key rather than a parameter.
+        kwargs["source_config"] = normalize_source_configs(source_config)
 
         odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
 

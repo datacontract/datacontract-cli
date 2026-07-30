@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import typing
+from collections.abc import Sequence
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
@@ -21,6 +22,12 @@ from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_c
 from datacontract.model.exceptions import DataContractException, require_env
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
+from datacontract.model.source_config import (
+    BaseSourceConfig,
+    DatabricksSourceConfig,
+    SnowflakeSourceConfig,
+    select_source_config,
+)
 
 if typing.TYPE_CHECKING:
     import ibis
@@ -28,6 +35,7 @@ if typing.TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_DATABRICKS_PREFIX = "DATACONTRACT_DATABRICKS_"
 _FILE_SERVER_TYPES = {"s3", "gcs", "azure", "local"}
 _SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta"}
 
@@ -51,6 +59,7 @@ def connect_ibis(
     spark: "SparkSession" = None,
     duckdb_connection=None,
     schema_name: str = "all",
+    source_configs: Sequence[BaseSourceConfig] = (),
 ) -> "ibis.BaseBackend | None":
     """Return a connected ibis backend, or ``None`` if the server is unsupported.
 
@@ -92,7 +101,7 @@ def connect_ibis(
             if database_name:
                 spark.sql(f"USE {database_name}")
             return ibis.pyspark.connect(session=spark)
-        return _connect_databricks(ibis, server, run)
+        return _connect_databricks(ibis, server, run, select_source_config(source_configs, DatabricksSourceConfig))
 
     if server_type == "postgres":
         return ibis.postgres.connect(
@@ -134,25 +143,17 @@ def connect_ibis(
         return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name)
 
     if server_type == "snowflake":
-        prefix = "DATACONTRACT_SNOWFLAKE_"
-        extra = {k.replace(prefix, "").lower(): v for k, v in os.environ.items() if k.startswith(prefix)}
-        # ibis passes kwargs straight to snowflake-connector-python, which uses
-        # `user` (not soda's `username`). Keep DATACONTRACT_SNOWFLAKE_USERNAME working.
-        if "username" in extra:
-            extra.setdefault("user", extra.pop("username"))
+        config = select_source_config(source_configs, SnowflakeSourceConfig)
+        extra = config.driver_parameters()
+        # The contract owns the connection's identity; config only fills what it omits.
+        for name, value in (("account", server.account), ("database", server.database), ("schema", server.schema_)):
+            if value is not None:
+                extra[name] = value
         # ibis tries to CREATE DATABASE for helper UDFs on connect (create_object_udfs=True).
         # datacontract only reads, and the read-only roles used for testing lack CREATE DATABASE,
         # so this otherwise emits a noisy "Insufficient privileges" warning. Default it off, but
-        # let users opt back in via DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true (env values are
-        # strings, so coerce it; an unset/blank/non-"true" value keeps UDF creation disabled).
-        create_object_udfs = str(extra.pop("create_object_udfs", "")).strip().lower() == "true"
-        return ibis.snowflake.connect(
-            create_object_udfs=create_object_udfs,
-            account=server.account,
-            database=server.database,
-            schema=server.schema_,
-            **extra,
-        )
+        # let users opt back in via DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true.
+        return ibis.snowflake.connect(create_object_udfs=config.create_object_udfs, **extra)
 
     if server_type == "bigquery":
         credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
@@ -222,8 +223,8 @@ def connect_ibis(
     return None
 
 
-def _connect_databricks(ibis, server: Server, run: Run):
-    """Connect to Databricks SQL directly, selecting the auth method from env vars.
+def _connect_databricks(ibis, server: Server, run: Run, config: DatabricksSourceConfig):
+    """Connect to Databricks SQL directly, selecting the auth method from the config.
 
     Auth is resolved in priority order, so an existing token-based setup keeps
     working unchanged:
@@ -240,44 +241,63 @@ def _connect_databricks(ibis, server: Server, run: Run):
     The OAuth credential providers build their SDK ``Config`` lazily, so token
     exchange happens when the connection is opened rather than while reading env.
     """
-    host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+    # The contract owns the connection's identity; config only fills what it omits.
+    host = server.host or config.server_hostname
+    if not host:
+        raise _databricks_missing("server_hostname", "DATACONTRACT_DATABRICKS_SERVER_HOSTNAME")
     kwargs = dict(
         server_hostname=host,
-        http_path=os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH"),
+        http_path=config.http_path,
         catalog=server.catalog,
         schema=server.schema_,
     )
 
-    token = os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
-    client_id = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_ID")
-    client_secret = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET")
-    profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
-    auth_type = os.getenv("DATACONTRACT_DATABRICKS_AUTH_TYPE")
-
-    if token:
+    if config.token:
         run.log_info("Connecting to databricks with a personal access token")
-        return ibis.databricks.connect(access_token=token, **kwargs)
+        _log_credential_source("token")
+        return ibis.databricks.connect(access_token=config.token.get_secret_value(), **kwargs)
 
-    if client_id and client_secret:
+    if config.client_id and config.client_secret:
         run.log_info("Connecting to databricks with an OAuth service principal (M2M)")
+        _log_credential_source("client_id")
         sdk_host = host if host.startswith("http") else f"https://{host}"
         kwargs["credentials_provider"] = _databricks_credentials_provider(
-            host=sdk_host, client_id=client_id, client_secret=client_secret
+            host=sdk_host, client_id=config.client_id, client_secret=config.client_secret.get_secret_value()
         )
         return ibis.databricks.connect(**kwargs)
 
-    if profile:
-        run.log_info(f"Connecting to databricks with config profile '{profile}'")
-        kwargs["credentials_provider"] = _databricks_credentials_provider(profile=profile)
+    if config.profile:
+        run.log_info(f"Connecting to databricks with config profile '{config.profile}'")
+        _log_credential_source("profile")
+        kwargs["credentials_provider"] = _databricks_credentials_provider(profile=config.profile)
         return ibis.databricks.connect(**kwargs)
 
-    if auth_type:
-        run.log_info(f"Connecting to databricks with auth_type '{auth_type}'")
-        return ibis.databricks.connect(auth_type=auth_type, **kwargs)
+    if config.auth_type:
+        run.log_info(f"Connecting to databricks with auth_type '{config.auth_type}'")
+        _log_credential_source("auth_type")
+        return ibis.databricks.connect(auth_type=config.auth_type, **kwargs)
 
-    # Nothing configured: fail with the same clear message as before.
-    token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
-    return ibis.databricks.connect(access_token=token, **kwargs)
+    raise _databricks_missing("token", "DATACONTRACT_DATABRICKS_TOKEN")
+
+
+def _databricks_missing(field: str, env_var: str) -> DataContractException:
+    # Same type/name as require_env produced here before, so existing handlers still match.
+    return DataContractException(
+        type="databricks-connection",
+        name=f"missing_env_{env_var}",
+        reason=f"Set {env_var} (or pass DatabricksSourceConfig({field}=...)) to connect to databricks.",
+        engine="datacontract",
+    )
+
+
+def _log_credential_source(field: str) -> None:
+    """Record which field decided the auth method, and which variables the environment supplied.
+
+    Unset config fields fall back to the environment per field, so an ambient variable can
+    decide the auth method even when the caller passed different credentials. Names only.
+    """
+    present = sorted(name for name, value in os.environ.items() if name.startswith(_DATABRICKS_PREFIX) and value)
+    logger.debug("databricks auth selected on '%s'; environment supplied: %s", field, present or "nothing")
 
 
 def _databricks_credentials_provider(**config_kwargs):

@@ -2,6 +2,7 @@ import atexit
 import os
 import tempfile
 import typing
+from collections.abc import Sequence
 
 import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
@@ -21,6 +22,7 @@ from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschem
 from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
+from datacontract.model.source_config import BaseSourceConfig
 
 
 def execute_data_contract_test(
@@ -35,6 +37,7 @@ def execute_data_contract_test(
     quality_ids: set[str] | None = None,
     tags: set[str] | None = None,
     include_failed_samples: bool = False,
+    source_configs: Sequence[BaseSourceConfig] = (),
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -129,6 +132,7 @@ def execute_data_contract_test(
         duckdb_connection,
         schema_name=schema_name,
         include_failed_samples=include_failed_samples,
+        source_configs=source_configs,
     )
 
 

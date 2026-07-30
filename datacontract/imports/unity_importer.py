@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from typing import List, Optional, Tuple
 
 from databricks.sdk import WorkspaceClient
@@ -16,6 +15,7 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.source_config import DatabricksSourceConfig, select_source_config
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,8 @@ class UnityImporter(Importer):
             return import_unity_from_json(source)
         else:
             unity_table_full_name_list = import_args.get("unity_table_full_name")
-            return import_unity_from_api(unity_table_full_name_list)
+            config = select_source_config(import_args.get("source_config") or (), DatabricksSourceConfig)
+            return import_unity_from_api(unity_table_full_name_list, config)
 
 
 def import_unity_from_json(source: str) -> OpenDataContractStandard:
@@ -55,11 +56,15 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
     return convert_unity_schema(odcs, unity_schema)
 
 
-def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenDataContractStandard:
+def import_unity_from_api(
+    unity_table_full_name_list: List[str] = None,
+    config: "DatabricksSourceConfig | None" = None,
+) -> OpenDataContractStandard:
     """Import data contract specification from Unity Catalog API."""
+    config = config or DatabricksSourceConfig()
     try:
-        profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
-        host, token = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
+        profile = config.profile
+        host, token = config.server_hostname, config.token
         exception = DataContractException(
             type="configuration",
             name="Databricks configuration",
@@ -67,7 +72,7 @@ def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenD
             engine="datacontract",
         )
         if not profile and not host and not token:
-            reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set"
+            reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set (or pass DatabricksSourceConfig)"
             exception.reason = reason
             raise exception
         if token and not host:
@@ -78,7 +83,9 @@ def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenD
             reason = "DATACONTRACT_DATABRICKS_TOKEN environment variable is not set"
             exception.reason = reason
             raise exception
-        workspace_client = WorkspaceClient(profile=profile) if profile else WorkspaceClient(host=host, token=token)
+        workspace_client = (
+            WorkspaceClient(profile=profile) if profile else WorkspaceClient(host=host, token=token.get_secret_value())
+        )
     except Exception as e:
         raise DataContractException(
             type="schema",

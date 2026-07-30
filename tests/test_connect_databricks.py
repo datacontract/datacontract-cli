@@ -1,7 +1,8 @@
 """Unit tests for Databricks auth-method selection in connect_ibis.
 
 These do not hit Databricks: ``ibis.databricks.connect`` is patched and we only
-assert which auth kwargs the dispatch passes for a given set of env vars.
+assert which auth kwargs the dispatch passes for a given set of env vars, or for
+a ``DatabricksSourceConfig`` passed programmatically.
 """
 
 import ibis
@@ -10,6 +11,7 @@ from open_data_contract_standard.model import Server
 
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.model.run import Run
+from datacontract.model.source_config import DatabricksSourceConfig
 
 DATABRICKS_ENV_VARS = [
     "DATACONTRACT_DATABRICKS_TOKEN",
@@ -46,8 +48,8 @@ def _server():
     return Server(type="databricks", host="dbc-x.cloud.databricks.com", catalog="cat", schema="sch")
 
 
-def _connect(server=None):
-    return connect_ibis(Run.create_run(), data_contract=None, server=server or _server())
+def _connect(server=None, source_configs=()):
+    return connect_ibis(Run.create_run(), data_contract=None, server=server or _server(), source_configs=source_configs)
 
 
 def test_personal_access_token_is_default(clean_databricks_env, captured_connect):
@@ -119,3 +121,64 @@ def test_missing_auth_raises(clean_databricks_env, captured_connect):
 
     with pytest.raises(DataContractException):
         _connect()
+
+
+def test_missing_auth_names_the_config_field_too(clean_databricks_env, captured_connect):
+    from datacontract.model.exceptions import DataContractException
+
+    with pytest.raises(DataContractException, match="DatabricksSourceConfig"):
+        _connect()
+
+
+# --- the same dispatch, driven by a config passed programmatically ------------
+
+
+def test_token_from_config(clean_databricks_env, captured_connect):
+    configs = (DatabricksSourceConfig(token="dapiPASSED", http_path="/sql/1.0/warehouses/abc"),)
+
+    assert _connect(source_configs=configs) == "connection"
+    assert captured_connect["access_token"] == "dapiPASSED"
+    assert captured_connect["http_path"] == "/sql/1.0/warehouses/abc"
+
+
+def test_service_principal_from_config(clean_databricks_env, captured_connect):
+    configs = (DatabricksSourceConfig(client_id="cid", client_secret="csec"),)
+
+    _connect(source_configs=configs)
+
+    assert "access_token" not in captured_connect
+    assert callable(captured_connect["credentials_provider"])
+
+
+def test_config_field_beats_env(clean_databricks_env, captured_connect):
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_TOKEN", "dapiFROM_ENV")
+
+    _connect(source_configs=(DatabricksSourceConfig(token="dapiPASSED"),))
+
+    assert captured_connect["access_token"] == "dapiPASSED"
+
+
+def test_unset_config_field_still_falls_back_to_env(clean_databricks_env, captured_connect):
+    """The per-tenant loop: vary http_path per call, keep the token ambient."""
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_TOKEN", "dapiFROM_ENV")
+
+    _connect(source_configs=(DatabricksSourceConfig(http_path="/sql/1.0/warehouses/tenant-a"),))
+
+    assert captured_connect["access_token"] == "dapiFROM_ENV"
+    assert captured_connect["http_path"] == "/sql/1.0/warehouses/tenant-a"
+
+
+def test_hostname_from_config_when_the_contract_omits_it(clean_databricks_env, captured_connect):
+    configs = (DatabricksSourceConfig(token="dapi", server_hostname="from-config.databricks.com"),)
+
+    _connect(Server(type="databricks", catalog="cat", schema="sch"), source_configs=configs)
+
+    assert captured_connect["server_hostname"] == "from-config.databricks.com"
+
+
+def test_contract_host_wins_over_config(clean_databricks_env, captured_connect):
+    configs = (DatabricksSourceConfig(token="dapi", server_hostname="from-config.databricks.com"),)
+
+    _connect(source_configs=configs)
+
+    assert captured_connect["server_hostname"] == "dbc-x.cloud.databricks.com"
