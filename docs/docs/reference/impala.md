@@ -31,7 +31,7 @@ servers:
 | `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT` | `true` | Whether to use HTTP transport (defaults to true) |
 | `DATACONTRACT_IMPALA_HTTP_PATH` | `cliservice` | HTTP path for the Impala service (defaults to cliservice) |
 
-`host`, `port`, and `database` come from the contract's `servers` block.
+`host`, `port`, and `database` come from the contract's `servers` block. Without an explicit `port`, the default follows the transport: `443` with HTTP transport (the default), `21050` with the binary thrift protocol.
 
 ## Data types
 

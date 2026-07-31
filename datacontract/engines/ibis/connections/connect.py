@@ -155,13 +155,7 @@ def connect_ibis(
         )
 
     if server_type == "bigquery":
-        credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
-        credentials = None
-        if credentials_path:
-            from google.oauth2 import service_account
-
-            credentials = service_account.Credentials.from_service_account_file(credentials_path)
-
+        credentials = _bigquery_credentials()
         billing_project = os.getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
 
         if billing_project and billing_project != server.project:
@@ -209,14 +203,7 @@ def connect_ibis(
         return _connect_athena(ibis, server)
 
     if server_type == "impala":
-        return ibis.impala.connect(
-            host=server.host,
-            port=int(server.port) if server.port else 21050,
-            user=os.getenv("DATACONTRACT_IMPALA_USERNAME"),
-            password=os.getenv("DATACONTRACT_IMPALA_PASSWORD"),
-            database=getattr(server, "database", None),
-            use_ssl=_get_bool_env("DATACONTRACT_IMPALA_USE_SSL", True),
-        )
+        return _connect_impala(ibis, server)
 
     _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
     return None
@@ -295,6 +282,71 @@ def _databricks_credentials_provider(**config_kwargs):
         return Config(**config_kwargs).authenticate
 
     return credentials_provider
+
+
+_BIGQUERY_SCOPES = ["https://www.googleapis.com/auth/bigquery"]
+
+
+def _bigquery_credentials():
+    """Resolve the BigQuery credentials, or ``None`` to let ibis use ADC/WIF.
+
+    ``DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH`` selects a service account key
+    file. ``DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT`` then impersonates that
+    service account, using the key file (or the ambient default credentials) as the
+    source principal — the caller needs ``roles/iam.serviceAccountTokenCreator`` on
+    the target.
+    """
+    credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
+    credentials = None
+    if credentials_path:
+        from google.oauth2 import service_account
+
+        credentials = service_account.Credentials.from_service_account_file(credentials_path)
+
+    impersonation_account = os.getenv("DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT")
+    if impersonation_account:
+        import google.auth
+        from google.auth import impersonated_credentials
+
+        source_credentials = credentials
+        if source_credentials is None:
+            source_credentials, _ = google.auth.default(scopes=_BIGQUERY_SCOPES)
+        credentials = impersonated_credentials.Credentials(
+            source_credentials=source_credentials,
+            target_principal=impersonation_account,
+            target_scopes=_BIGQUERY_SCOPES,
+        )
+
+    return credentials
+
+
+def _connect_impala(ibis, server: Server):
+    """Connect to Impala, defaulting to LDAP over HTTPS (the Cloudera setup).
+
+    ``auth_mechanism`` is a native ``ibis.impala.connect`` argument; ``use_http_transport``
+    and ``http_path`` are forwarded verbatim by ibis to ``impyla.connect``. Without them a
+    Cloudera Virtual Warehouse (HTTPS on 443) fails the thrift handshake with
+    ``TSocket read 0 bytes``. impyla's own defaults (``NOSASL``, binary transport, no SSL)
+    are the opposite, so every option has to be passed explicitly.
+
+    The port default follows the transport: 443 for HTTP(S), 21050 — Impala's binary
+    thrift port — otherwise. The pre-ibis soda connection defaulted to 443 for both,
+    which could never work for a binary-protocol cluster.
+    """
+    use_http_transport = _get_bool_env("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", True)
+    kwargs = dict(
+        host=server.host,
+        port=int(server.port) if server.port else (443 if use_http_transport else 21050),
+        user=os.getenv("DATACONTRACT_IMPALA_USERNAME"),
+        password=os.getenv("DATACONTRACT_IMPALA_PASSWORD"),
+        database=getattr(server, "database", None),
+        use_ssl=_get_bool_env("DATACONTRACT_IMPALA_USE_SSL", True),
+        auth_mechanism=os.getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "LDAP"),
+        use_http_transport=use_http_transport,
+    )
+    if use_http_transport:
+        kwargs["http_path"] = os.getenv("DATACONTRACT_IMPALA_HTTP_PATH", "cliservice")
+    return ibis.impala.connect(**kwargs)
 
 
 def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str):
@@ -446,7 +498,7 @@ def _connect_athena(ibis, server: Server):
             reason="S3 staging directory is required for Athena connection.",
             engine="datacontract",
         )
-    return ibis.athena.connect(
+    kwargs = dict(
         s3_staging_dir=server.stagingDir,
         aws_access_key_id=credentials["aws_access_key_id"],
         aws_secret_access_key=credentials["aws_secret_access_key"],
@@ -454,6 +506,10 @@ def _connect_athena(ibis, server: Server):
         region_name=credentials["region_name"],
         schema_name=server.schema_,
     )
+    # Optional data source / catalog; pyathena defaults it to `awsdatacatalog`.
+    if server.catalog:
+        kwargs["catalog_name"] = server.catalog
+    return ibis.athena.connect(**kwargs)
 
 
 def _connect_trino(ibis, server: Server):

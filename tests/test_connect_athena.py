@@ -63,6 +63,20 @@ def test_staging_dir_and_schema_are_passed(env):
     assert kwargs["schema_name"] == "my_database"
 
 
+def test_catalog_comes_from_the_server_block(env):
+    """catalog is documented as part of the servers block, so it must be used."""
+    kwargs = _connect(_server(catalog="my_catalog"))
+
+    assert kwargs["catalog_name"] == "my_catalog"
+
+
+def test_catalog_is_omitted_when_not_set(env):
+    """Without a catalog, pyathena's own `awsdatacatalog` default applies."""
+    kwargs = _connect(_server())
+
+    assert "catalog_name" not in kwargs
+
+
 def test_credentials_come_from_the_s3_variables(env):
     env.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "AKIA_TEST")
     env.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "secret")
