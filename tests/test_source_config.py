@@ -314,3 +314,14 @@ def test_import_hands_no_config_to_an_importer_that_declares_no_family(clean_env
     DataContract.import_from_source("sql", source="some.sql", source_config=SnowflakeSourceConfig(password="pw"))
 
     assert "source_config" not in captured["import_args"]
+
+
+def test_unity_import_without_credentials_says_what_to_set(clean_env):
+    """The actionable reason has to survive to the message the user sees, not just the attribute."""
+    from datacontract.model.exceptions import DataContractException
+
+    with pytest.raises(DataContractException) as excinfo:
+        DataContract.import_from_source("unity", unity_table_full_name=["a.b.c"])
+
+    assert "DATACONTRACT_DATABRICKS_TOKEN" in str(excinfo.value)
+    assert "DatabricksSourceConfig" in str(excinfo.value)

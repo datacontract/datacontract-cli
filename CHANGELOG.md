@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` against Snowflake no longer fails with a `TypeError` when `DATACONTRACT_SNOWFLAKE_ACCOUNT`, `..._DATABASE`, or `..._SCHEMA` is set
+- `datacontract import databricks` now names a missing environment variable instead of the generic "Failed to connect to unity catalog schema"
 - `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
 - `datacontract dbt sync` no longer drops or misplaces YAML comments that introduce the next column, test, or key
 

@@ -57,6 +57,16 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
     return convert_unity_schema(odcs, unity_schema)
 
 
+def _missing_databricks_configuration(reason: str) -> DataContractException:
+    # DataContractException renders its message at construction, so the reason has to be passed in.
+    return DataContractException(
+        type="configuration",
+        name="Databricks configuration",
+        reason=reason,
+        engine="datacontract",
+    )
+
+
 def import_unity_from_api(
     unity_table_full_name_list: List[str] = None,
     config: "DatabricksSourceConfig | None" = None,
@@ -66,27 +76,21 @@ def import_unity_from_api(
     try:
         profile = config.profile
         host, token = config.server_hostname, config.token
-        exception = DataContractException(
-            type="configuration",
-            name="Databricks configuration",
-            reason="",
-            engine="datacontract",
-        )
         if not profile and not host and not token:
-            reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set (or pass DatabricksSourceConfig)"
-            exception.reason = reason
-            raise exception
+            raise _missing_databricks_configuration(
+                "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set (or pass DatabricksSourceConfig)"
+            )
         if token and not host:
-            reason = "DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set"
-            exception.reason = reason
-            raise exception
+            raise _missing_databricks_configuration(
+                "DATACONTRACT_DATABRICKS_SERVER_HOSTNAME environment variable is not set"
+            )
         if host and not token:
-            reason = "DATACONTRACT_DATABRICKS_TOKEN environment variable is not set"
-            exception.reason = reason
-            raise exception
+            raise _missing_databricks_configuration("DATACONTRACT_DATABRICKS_TOKEN environment variable is not set")
         workspace_client = (
             WorkspaceClient(profile=profile) if profile else WorkspaceClient(host=host, token=token.get_secret_value())
         )
+    except DataContractException:
+        raise
     except Exception as e:
         raise DataContractException(
             type="schema",
