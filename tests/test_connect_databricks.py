@@ -119,15 +119,10 @@ def test_hostname_falls_back_to_env(clean_databricks_env, captured_connect):
 def test_missing_auth_raises(clean_databricks_env, captured_connect):
     from datacontract.model.exceptions import DataContractException
 
-    with pytest.raises(DataContractException):
+    with pytest.raises(DataContractException, match="DATACONTRACT_DATABRICKS_TOKEN") as excinfo:
         _connect()
 
-
-def test_missing_auth_names_the_config_field_too(clean_databricks_env, captured_connect):
-    from datacontract.model.exceptions import DataContractException
-
-    with pytest.raises(DataContractException, match="DatabricksSourceConfig"):
-        _connect()
+    assert "DatabricksSourceConfig" in excinfo.value.reason
 
 
 # --- the same dispatch, driven by a config passed programmatically ------------

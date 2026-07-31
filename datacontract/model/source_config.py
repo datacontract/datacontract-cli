@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import typing
 
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr, ValidationError, field_serializer
 from pydantic_settings import BaseSettings, EnvSettingsSource, SettingsConfigDict
 
 
@@ -18,6 +18,22 @@ class BaseSourceConfig(BaseSettings):
     # populate_by_name is load-bearing: a field with a validation_alias is otherwise
     # settable only by its environment variable name, which breaks the Python API.
     model_config = SettingsConfigDict(extra="forbid", env_ignore_empty=True, populate_by_name=True)
+
+    def __init__(__pydantic_self__, **values):
+        # A rejected value is often a secret under a mistyped field name, and pydantic echoes
+        # the input into the error. Re-raise with locations and messages only.
+        try:
+            super().__init__(**values)
+        except ValidationError as e:
+            details = "; ".join(
+                f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
+                for error in e.errors(include_url=False)
+            )
+        else:
+            return
+        # raised outside the handler so the pydantic error, which still holds the rejected
+        # value, is not attached as this exception's __context__
+        raise ValueError(f"invalid {type(__pydantic_self__).__name__}: {details}")
 
 
 class DatabricksSourceConfig(BaseSourceConfig):
@@ -43,12 +59,18 @@ class _SnowflakeEnvSource(EnvSettingsSource):
 
     def __call__(self) -> dict[str, typing.Any]:
         data = super().__call__()
-        declared = {
-            env_name.lower()
-            for name, field in self.settings_cls.model_fields.items()
-            for _, env_name, _ in self._extract_field_info(field, name)
-        }
         prefix = self.env_prefix
+        # A field's environment variable is its validation_alias if it has one (already a full
+        # name, the prefix is not applied on top), otherwise the prefix plus the field name.
+        declared = set()
+        for name, field in self.settings_cls.model_fields.items():
+            alias = field.validation_alias
+            if alias is None:
+                declared.add(f"{prefix}{name}".lower())
+            elif isinstance(alias, str):
+                declared.add(alias.lower())
+            else:
+                declared.update(choice.lower() for choice in alias.choices if isinstance(choice, str))
         swept = {
             name[len(prefix) :].lower(): value
             for name, value in os.environ.items()
@@ -95,8 +117,18 @@ class SnowflakeSourceConfig(BaseSourceConfig):
     # ibis opens the connection with helper UDF creation enabled; datacontract only reads.
     create_object_udfs: bool = False
 
-    # Connector parameters we do not declare, forwarded verbatim to the driver.
-    connection_parameters: dict[str, str] = Field(default_factory=dict)
+    # Connector parameters we do not declare, forwarded verbatim to the driver. Values can be
+    # secrets the driver accepts without a field here (passcode, oauth_client_secret, ...), so
+    # they are masked everywhere the declared SecretStr fields are: repr, str, and dumps.
+    connection_parameters: dict[str, typing.Any] = Field(default_factory=dict)
+
+    @field_serializer("connection_parameters")
+    def _mask_connection_parameters(self, value: dict[str, typing.Any]) -> dict[str, str]:
+        return dict.fromkeys(value, "**********")
+
+    def __repr_args__(self):
+        for name, value in super().__repr_args__():
+            yield name, self._mask_connection_parameters(value) if name == "connection_parameters" else value
 
     @classmethod
     def settings_customise_sources(

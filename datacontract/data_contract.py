@@ -18,7 +18,7 @@ from datacontract.lint import resolve
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.model.source_config import SourceConfigInput, normalize_source_configs
+from datacontract.model.source_config import SourceConfigInput, normalize_source_configs, select_source_config
 
 
 class DataContract:
@@ -271,11 +271,15 @@ class DataContract:
         """
         id = kwargs.get("id")
         owner = kwargs.get("owner")
-        # Importer.import_source(source, import_args) is the registered plugin ABI,
-        # so the configs travel as a reserved import_args key rather than a parameter.
-        kwargs["source_config"] = normalize_source_configs(source_config)
+        # Importer.import_source(source, import_args) is the registered plugin ABI, so the config
+        # travels as a reserved import_args key rather than a parameter. Only the family the
+        # importer declares is handed over, so it never sees another source's credentials.
+        configs = normalize_source_configs(source_config)
+        importer = importer_factory.create(format)
+        if importer.source_config_type is not None:
+            kwargs["source_config"] = select_source_config(configs, importer.source_config_type)
 
-        odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
+        odcs_imported = importer.import_source(source=source, import_args=kwargs)
 
         cls._overwrite_id_in_odcs(odcs_imported, id)
         cls._overwrite_owner_in_odcs(odcs_imported, owner)

@@ -15,13 +15,15 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.source_config import DatabricksSourceConfig, select_source_config
+from datacontract.model.source_config import DatabricksSourceConfig
 
 logger = logging.getLogger(__name__)
 
 
 class UnityImporter(Importer):
     """UnityImporter class for importing data contract specifications from Unity Catalog."""
+
+    source_config_type = DatabricksSourceConfig
 
     def import_source(
         self,
@@ -33,8 +35,7 @@ class UnityImporter(Importer):
             return import_unity_from_json(source)
         else:
             unity_table_full_name_list = import_args.get("unity_table_full_name")
-            config = select_source_config(import_args.get("source_config") or (), DatabricksSourceConfig)
-            return import_unity_from_api(unity_table_full_name_list, config)
+            return import_unity_from_api(unity_table_full_name_list, import_args.get("source_config"))
 
 
 def import_unity_from_json(source: str) -> OpenDataContractStandard:

@@ -14,6 +14,7 @@ from open_data_contract_standard.model import Server
 
 from datacontract.data_contract import DataContract
 from datacontract.engines.ibis.connections.connect import connect_ibis
+from datacontract.imports.importer import Importer
 from datacontract.model.run import Run
 from datacontract.model.source_config import (
     DatabricksSourceConfig,
@@ -68,9 +69,24 @@ def test_secrets_are_not_exposed_by_repr(clean_env):
     assert "dapiSECRET" not in str(config.model_dump())
 
 
-def test_unknown_field_is_rejected(clean_env):
-    with pytest.raises(Exception, match="tokne"):
-        DatabricksSourceConfig(tokne="typo")
+def test_undeclared_parameters_are_masked_but_still_reach_the_driver(clean_env):
+    config = SnowflakeSourceConfig(connection_parameters={"oauth_client_secret": "sekret"})
+
+    assert "sekret" not in repr(config)
+    assert "sekret" not in str(config)
+    assert "sekret" not in config.model_dump_json()
+    assert config.driver_parameters()["oauth_client_secret"] == "sekret"
+
+
+def test_unknown_field_is_rejected_without_echoing_its_value(clean_env):
+    """A mistyped field name is usually a secret's; the rejected value must stay out of the error."""
+    with pytest.raises(ValueError, match="tokne") as excinfo:
+        DatabricksSourceConfig(tokne="dapiSECRET")
+
+    assert "dapiSECRET" not in str(excinfo.value)
+    # the chained pydantic error would carry it back into the traceback
+    assert excinfo.value.__cause__ is None
+    assert excinfo.value.__context__ is None
 
 
 def test_aliased_field_is_settable_by_its_own_name(clean_env):
@@ -101,6 +117,32 @@ def test_undeclared_variables_are_swept_into_connection_parameters(clean_env):
     assert config.connection_parameters == {"passcode": "123456"}
 
 
+def test_no_declared_variable_is_swept(clean_env):
+    """A declared variable swept as well would reach the driver twice, under two spellings."""
+    for name in (
+        "USER",
+        "USERNAME",
+        "PASSWORD",
+        "ROLE",
+        "WAREHOUSE",
+        "AUTHENTICATOR",
+        "CONNECTION_TIMEOUT",
+        "PRIVATE_KEY",
+        "PRIVATE_KEY_PASSPHRASE",
+        "PRIVATE_KEY_PATH",
+        "PRIVATE_KEY_FILE",
+        "PRIVATE_KEY_FILE_PWD",
+        "HOME",
+        "CONNECTIONS_FILE",
+        "DEFAULT_CONNECTION_NAME",
+    ):
+        clean_env.setenv(f"DATACONTRACT_SNOWFLAKE_{name}", "x")
+    clean_env.setenv("DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS", "true")
+    clean_env.setenv("DATACONTRACT_SNOWFLAKE_CONNECTION_PARAMETERS", "{}")
+
+    assert SnowflakeSourceConfig().connection_parameters == {}
+
+
 def test_importer_only_variables_are_not_driver_parameters(clean_env):
     clean_env.setenv("DATACONTRACT_SNOWFLAKE_HOME", "/home/jakob/.snowflake")
 
@@ -108,6 +150,14 @@ def test_importer_only_variables_are_not_driver_parameters(clean_env):
 
     assert config.home == "/home/jakob/.snowflake"
     assert "home" not in config.driver_parameters()
+
+
+def test_connection_parameters_keep_non_string_values(clean_env):
+    """The driver takes bools and ints for several parameters; forwarding must not stringify them."""
+    config = SnowflakeSourceConfig(connection_parameters={"insecure_mode": True, "login_timeout": 30})
+
+    assert config.driver_parameters()["insecure_mode"] is True
+    assert config.driver_parameters()["login_timeout"] == 30
 
 
 def test_bare_snowflake_home_variable_is_honoured(clean_env):
@@ -221,7 +271,7 @@ def test_test_passes_the_config_down_to_the_connector(clean_env, monkeypatch):
     assert captured["source_configs"] == (config,)
 
 
-def test_import_passes_the_config_to_the_importer(clean_env, monkeypatch):
+def test_import_passes_only_the_importers_own_family_to_it(clean_env, monkeypatch):
     captured = {}
 
     def fake_import(unity_table_full_name_list, config):
@@ -233,6 +283,27 @@ def test_import_passes_the_config_to_the_importer(clean_env, monkeypatch):
     monkeypatch.setattr("datacontract.imports.unity_importer.import_unity_from_api", fake_import)
     config = DatabricksSourceConfig(token="dapiPASSED", server_hostname="h")
 
-    DataContract.import_from_source("unity", unity_table_full_name=["a.b.c"], source_config=config)
+    DataContract.import_from_source(
+        "unity",
+        unity_table_full_name=["a.b.c"],
+        source_config=[config, SnowflakeSourceConfig(password="pw")],
+    )
 
     assert captured["config"] is config
+
+
+def test_import_hands_no_config_to_an_importer_that_declares_no_family(clean_env, monkeypatch):
+    captured = {}
+
+    class FakeImporter(Importer):
+        def import_source(self, source, import_args):
+            captured["import_args"] = import_args
+            from datacontract.imports.odcs_helper import create_odcs
+
+            return create_odcs()
+
+    monkeypatch.setattr("datacontract.data_contract.importer_factory.create", lambda format: FakeImporter(format))
+
+    DataContract.import_from_source("sql", source="some.sql", source_config=SnowflakeSourceConfig(password="pw"))
+
+    assert "source_config" not in captured["import_args"]

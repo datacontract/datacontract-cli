@@ -5,6 +5,10 @@ from open_data_contract_standard.model import OpenDataContractStandard
 
 
 class Importer(ABC):
+    # The source config family this importer accepts. Declaring one makes the caller's config for
+    # that family arrive as import_args["source_config"]; importers never see another family's.
+    source_config_type: type | None = None
+
     def __init__(self, import_format) -> None:
         self.import_format = import_format
 

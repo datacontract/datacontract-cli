@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- The Python library accepts Databricks and Snowflake credentials programmatically via `source_config=`, so multithreaded callers no longer have to mutate `os.environ` per request (#1250)
+- The Python library accepts Databricks and Snowflake credentials programmatically via `source_config=` (#1250)
 
 ### Fixed
 - `datacontract test` against Snowflake no longer fails with a `TypeError` when `DATACONTRACT_SNOWFLAKE_ACCOUNT`, `..._DATABASE`, or `..._SCHEMA` is set

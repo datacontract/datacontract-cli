@@ -18,17 +18,19 @@ from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.source_config import SnowflakeSourceConfig, select_source_config
+from datacontract.model.source_config import SnowflakeSourceConfig
 
 
 class SnowflakeImporter(Importer):
+    source_config_type = SnowflakeSourceConfig
+
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
         if source is not None:
             return import_snowflake_from_connector(
                 account=source,
                 database=import_args.get("database"),
                 schema=import_args.get("schema"),
-                config=select_source_config(import_args.get("source_config") or (), SnowflakeSourceConfig),
+                config=import_args.get("source_config"),
             )
         else:
             raise DataContractException(

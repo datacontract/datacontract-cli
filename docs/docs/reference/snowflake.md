@@ -22,11 +22,11 @@ servers:
 
 ## Authentication
 
-Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver. Set the variables required by your workspace's `authenticator` mode.
+Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver, except the import-specific ones listed below and `DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS`. Set the variables required by your workspace's `authenticator` mode.
 
 | Connection parameter | Environment variable |
 |---|---|
-| `username` | `DATACONTRACT_SNOWFLAKE_USERNAME` |
+| `user` | `DATACONTRACT_SNOWFLAKE_USER` (or `DATACONTRACT_SNOWFLAKE_USERNAME`) |
 | `password` | `DATACONTRACT_SNOWFLAKE_PASSWORD` |
 | `warehouse` | `DATACONTRACT_SNOWFLAKE_WAREHOUSE` |
 | `role` | `DATACONTRACT_SNOWFLAKE_ROLE` |
@@ -37,6 +37,8 @@ Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix st
 | `private_key_path` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH` |
 
 `account`, `database`, and `schema` come from the contract's `servers` block.
+
+The driver creates helper UDFs on connect, which needs `CREATE DATABASE` and is not used for reading. It is therefore disabled; set `DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true` to enable it.
 
 ### Import-specific options
 
@@ -54,25 +56,20 @@ The `SNOWFLAKE_`-prefixed equivalents work as fallbacks. If no password is set, 
 
 ### Programmatic configuration
 
-Library users can pass credentials directly instead of setting environment variables, which matters in multithreaded services where mutating `os.environ` per request races between threads:
+Library users can pass credentials directly instead of setting environment variables. Connection parameters without a field of their own go in `connection_parameters`, forwarded to the driver verbatim.
 
 ```python
-from datacontract.data_contract import DataContract
 from datacontract.model.source_config import SnowflakeSourceConfig
 
 DataContract(
     data_contract_file="datacontract.yaml",
-    source_config=SnowflakeSourceConfig(user=tenant_user, password=tenant_password),
+    source_config=SnowflakeSourceConfig(
+        user=tenant_user, password=tenant_password, connection_parameters={"passcode": "123456"}
+    ),
 ).test()
 ```
 
-Fields left unset fall back to their environment variable individually, so you can vary one value per call and leave the rest ambient. Connection parameters that have no field of their own go in `connection_parameters`, which is forwarded to the driver verbatim:
-
-```python
-SnowflakeSourceConfig(user="jakob", connection_parameters={"passcode": "123456"})
-```
-
-`account`, `database`, and `schema` always come from the contract when it declares them; the config only fills what the contract leaves out.
+Unset fields fall back to their environment variable individually.
 
 ## Data types
 

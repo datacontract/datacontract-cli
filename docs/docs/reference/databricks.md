@@ -37,25 +37,18 @@ The authentication method is selected from the variables you set, in this order:
 
 ### Programmatic configuration
 
-Library users can pass credentials directly instead of setting environment variables, which matters in multithreaded services where mutating `os.environ` per request races between threads:
+Library users can pass credentials directly instead of setting environment variables.
 
 ```python
-from datacontract.data_contract import DataContract
 from datacontract.model.source_config import DatabricksSourceConfig
 
 DataContract(
     data_contract_file="datacontract.yaml",
     source_config=DatabricksSourceConfig(token=tenant_token, http_path=tenant_path),
 ).test()
-
-DataContract.import_from_source(
-    "unity",
-    unity_table_full_name=["acme.orders.latest"],
-    source_config=DatabricksSourceConfig(server_hostname=host, token=tenant_token),
-)
 ```
 
-Fields left unset fall back to their environment variable individually, so you can vary one value per call and leave the rest ambient. Note that this also means an environment variable can decide the authentication method when the matching field is unset — passing only `client_id` and `client_secret` while `DATACONTRACT_DATABRICKS_TOKEN` is set still connects with the token, because the token has priority. Run with `--debug` to see which variables the environment supplied.
+Unset fields fall back to their environment variable individually.
 
 ## Data types
 
