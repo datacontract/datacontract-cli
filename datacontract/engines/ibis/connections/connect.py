@@ -140,6 +140,7 @@ def connect_ibis(
         # `user` (not soda's `username`). Keep DATACONTRACT_SNOWFLAKE_USERNAME working.
         if "username" in extra:
             extra.setdefault("user", extra.pop("username"))
+        _rename_deprecated_snowflake_params(extra, prefix, run)
         # ibis tries to CREATE DATABASE for helper UDFs on connect (create_object_udfs=True).
         # datacontract only reads, and the read-only roles used for testing lack CREATE DATABASE,
         # so this otherwise emits a noisy "Insufficient privileges" warning. Default it off, but
@@ -347,6 +348,31 @@ def _connect_impala(ibis, server: Server):
     if use_http_transport:
         kwargs["http_path"] = os.getenv("DATACONTRACT_IMPALA_HTTP_PATH", "cliservice")
     return ibis.impala.connect(**kwargs)
+
+
+# Names this CLI documented for key-pair auth and timeouts that snowflake-connector-python
+# has never accepted. The driver ignores unknown parameters instead of raising, so setting
+# one of these used to do nothing at all and surfaced as an unrelated authentication error.
+# They are kept as synonyms for the real parameters, with a deprecation warning.
+_SNOWFLAKE_DEPRECATED_PARAMS = {
+    "private_key_path": "private_key_file",
+    "private_key_passphrase": "private_key_file_pwd",
+    "connection_timeout": "login_timeout",
+}
+
+
+def _rename_deprecated_snowflake_params(extra: dict, prefix: str, run: Run):
+    """Map deprecated connection parameter names onto the ones the driver accepts."""
+    for deprecated, replacement in _SNOWFLAKE_DEPRECATED_PARAMS.items():
+        if deprecated not in extra:
+            continue
+        value = extra.pop(deprecated)
+        run.log_warn(
+            f"{prefix}{deprecated.upper()} is deprecated and will be removed in a future release, "
+            f"use {prefix}{replacement.upper()} instead"
+        )
+        # An explicitly set replacement wins over the deprecated synonym.
+        extra.setdefault(replacement, value)
 
 
 def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str):
