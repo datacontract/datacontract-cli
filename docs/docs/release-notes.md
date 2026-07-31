@@ -26,6 +26,8 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+## 1.0.16 — 2026-07-31 {#v1-0-16}
+
 ### Added
 - `datacontract test` reads the Avro schema of a Kafka topic from the Confluent Schema Registry via `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`, `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME`, and `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` ([#1347](https://github.com/datacontract/datacontract-cli/issues/1347))
 

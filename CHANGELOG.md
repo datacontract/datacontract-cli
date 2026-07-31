@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.16] - 2026-07-31
+
 ### Added
 - `datacontract test` reads the Avro schema of a Kafka topic from the Confluent Schema Registry via `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`, `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME`, and `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` (#1347)
 
