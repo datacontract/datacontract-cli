@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 - `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`, and `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`: use `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD`, and `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` instead
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`: use `DATACONTRACT_SQLSERVER_AUTHENTICATION=windows` instead
 
 ### Fixed
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` no longer overrides an explicitly set `DATACONTRACT_SQLSERVER_AUTHENTICATION`, so a leftover flag cannot silently downgrade an Entra ID login to Windows authentication
 - `datacontract test` passes `DATACONTRACT_IMPALA_AUTH_MECHANISM`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`, and `DATACONTRACT_IMPALA_HTTP_PATH` to Impala again, so a Cloudera Virtual Warehouse can be reached instead of failing with `TSocket read 0 bytes`
 - `datacontract test` passes the `servers` block `catalog` to Athena again, instead of always querying `awsdatacatalog`
 - `datacontract test` supports `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` again to impersonate a service account

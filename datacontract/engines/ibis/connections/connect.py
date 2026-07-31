@@ -451,16 +451,34 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
     - ``cli`` — reuse an ``az login`` session via the Azure default credential chain
 
     The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
-    ``windows`` and takes precedence. Extra keys (``Authentication``,
+    ``windows``, and applies only when ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` is
+    unset — an explicitly chosen mode always wins. Extra keys (``Authentication``,
     ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) are forwarded
     verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
     so they use the ODBC spellings.
     """
     driver = _get_custom_property(server, "driver") or os.getenv("DATACONTRACT_SQLSERVER_DRIVER")
 
-    authentication = os.getenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "sql").lower()
-    if _get_bool_env("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", False):
-        authentication = "windows"
+    # TRUSTED_CONNECTION predates the AUTHENTICATION variable, so it only fills in when no
+    # mode was chosen. Letting it override instead would mean a leftover flag silently
+    # downgrades a configured Entra ID login to Windows auth, with no error to explain it.
+    authentication = os.getenv("DATACONTRACT_SQLSERVER_AUTHENTICATION")
+    trusted_connection = _get_bool_env("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", False)
+    if trusted_connection:
+        logger.warning(
+            "DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION is deprecated and will be removed in a "
+            "future release, use DATACONTRACT_SQLSERVER_AUTHENTICATION=windows instead."
+        )
+    if authentication is None:
+        authentication = "windows" if trusted_connection else "sql"
+    else:
+        authentication = authentication.strip().lower()
+        if trusted_connection and authentication != "windows":
+            logger.warning(
+                "DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION is ignored because "
+                "DATACONTRACT_SQLSERVER_AUTHENTICATION=%s is set.",
+                authentication,
+            )
 
     kwargs = dict(
         host=server.host,

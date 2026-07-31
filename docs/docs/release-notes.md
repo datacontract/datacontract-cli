@@ -26,6 +26,19 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Deprecated
+- `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`, and `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`: use `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD`, and `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` instead
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`: use `DATACONTRACT_SQLSERVER_AUTHENTICATION=windows` instead
+
+### Fixed
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` no longer overrides an explicitly set `DATACONTRACT_SQLSERVER_AUTHENTICATION`, so a leftover flag cannot silently downgrade an Entra ID login to Windows authentication
+- `datacontract test` passes `DATACONTRACT_IMPALA_AUTH_MECHANISM`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`, and `DATACONTRACT_IMPALA_HTTP_PATH` to Impala again, so a Cloudera Virtual Warehouse can be reached instead of failing with `TSocket read 0 bytes`
+- `datacontract test` passes the `servers` block `catalog` to Athena again, instead of always querying `awsdatacatalog`
+- `datacontract test` supports `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` again to impersonate a service account
+- `datacontract test` applies the documented Snowflake key-pair and timeout variables instead of silently ignoring them: the names they were documented under are not accepted by the Snowflake driver, and now map to the ones that are
+- `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
+- `datacontract dbt sync` no longer drops or misplaces YAML comments that introduce the next column, test, or key
+
 ## 1.0.15 — 2026-07-30 {#v1-0-15}
 
 ### Added
