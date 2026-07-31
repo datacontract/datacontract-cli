@@ -26,6 +26,14 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Added
+- The Python library accepts Databricks and Snowflake credentials programmatically via `source_config=` ([#1250](https://github.com/datacontract/datacontract-cli/issues/1250))
+
+### Fixed
+- `datacontract test` against Snowflake no longer fails with a `TypeError` when `DATACONTRACT_SNOWFLAKE_ACCOUNT`, `..._DATABASE`, or `..._SCHEMA` is set
+- `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
+- `datacontract dbt sync` no longer drops or misplaces YAML comments that introduce the next column, test, or key
+
 ## 1.0.15 — 2026-07-30 {#v1-0-15}
 
 ### Added
