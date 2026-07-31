@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `datacontract test` passes `DATACONTRACT_IMPALA_AUTH_MECHANISM`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`, and `DATACONTRACT_IMPALA_HTTP_PATH` to Impala again, so Cloudera Virtual Warehouses no longer fail with `TSocket read 0 bytes`; the port now defaults to 443 with HTTP transport and 21050 with the binary protocol
+- `datacontract test` passes the `servers` block `catalog` to Athena again, instead of always querying `awsdatacatalog`
+- `datacontract test` supports `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` again to impersonate a service account
 - `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
 - `datacontract dbt sync` no longer drops or misplaces YAML comments that introduce the next column, test, or key
 
