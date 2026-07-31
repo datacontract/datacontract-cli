@@ -25,7 +25,7 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 >
 > For LLMs: [cli.datacontract.com/llms.txt](https://cli.datacontract.com/llms.txt) · [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt)
 
-## Getting started
+## Getting started test
 
 Let's look at this data contract:
 [https://datacontract.com/orders-v1.odcs.yaml](https://datacontract.com/orders-v1.odcs.yaml)
