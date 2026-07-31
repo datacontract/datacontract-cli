@@ -78,6 +78,13 @@ def test_undeclared_parameters_are_masked_but_still_reach_the_driver(clean_env):
     assert config.driver_parameters()["oauth_client_secret"] == "sekret"
 
 
+def test_a_config_survives_a_model_dump_round_trip(clean_env):
+    """Masking the dump would silently turn every connection parameter into the mask itself."""
+    config = SnowflakeSourceConfig(user="u", connection_parameters={"passcode": "123456", "login_timeout": 30})
+
+    assert SnowflakeSourceConfig(**config.model_dump()).driver_parameters() == config.driver_parameters()
+
+
 def test_unknown_field_is_rejected_without_echoing_its_value(clean_env):
     """A mistyped field name is usually a secret's; the rejected value must stay out of the error."""
     with pytest.raises(ValueError, match="tokne") as excinfo:

@@ -119,10 +119,11 @@ class SnowflakeSourceConfig(BaseSourceConfig):
 
     # Connector parameters we do not declare, forwarded verbatim to the driver. Values can be
     # secrets the driver accepts without a field here (passcode, oauth_client_secret, ...), so
-    # they are masked everywhere the declared SecretStr fields are: repr, str, and dumps.
+    # they are masked wherever SecretStr is: repr, str, and JSON dumps. Like SecretStr, a
+    # python-mode model_dump() keeps the real values, so a config survives a dump round-trip.
     connection_parameters: dict[str, typing.Any] = Field(default_factory=dict)
 
-    @field_serializer("connection_parameters")
+    @field_serializer("connection_parameters", when_used="json")
     def _mask_connection_parameters(self, value: dict[str, typing.Any]) -> dict[str, str]:
         return dict.fromkeys(value, "**********")
 
