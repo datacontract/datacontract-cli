@@ -42,6 +42,29 @@ def captured_connect(monkeypatch):
     return calls
 
 
+@pytest.fixture
+def patched_databricks_sdk(monkeypatch):
+    """Stand in for the Databricks SDK, whose ``Config`` authenticates on construction."""
+    from databricks.sdk import core
+
+    recorded = {"oauth_service_principal_result": "service-principal-header-factory"}
+
+    class FakeConfig:
+        def __init__(self, **kwargs):
+            recorded["config_kwargs"] = kwargs
+
+        def authenticate(self):
+            return "unified-auth-header-factory"
+
+    def fake_oauth_service_principal(config):
+        assert isinstance(config, FakeConfig)
+        return recorded["oauth_service_principal_result"]
+
+    monkeypatch.setattr(core, "Config", FakeConfig)
+    monkeypatch.setattr(core, "oauth_service_principal", fake_oauth_service_principal)
+    return recorded
+
+
 def _server():
     return Server(type="databricks", host="dbc-x.cloud.databricks.com", catalog="cat", schema="sch")
 
@@ -73,6 +96,50 @@ def test_oauth_service_principal_m2m(clean_databricks_env, captured_connect):
 
     assert "access_token" not in captured_connect
     assert callable(captured_connect["credentials_provider"])
+
+
+def test_oauth_service_principal_uses_the_sdk_service_principal_provider(
+    clean_databricks_env, captured_connect, patched_databricks_sdk
+):
+    """Unified auth may resolve M2M credentials to a token the connector's token federation
+    then rejects, so the M2M path asks for the service principal provider by name (#1389)."""
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_CLIENT_ID", "client-id")
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET", "client-secret")
+
+    _connect()
+    header_factory = captured_connect["credentials_provider"]()
+
+    assert header_factory == "service-principal-header-factory"
+    assert patched_databricks_sdk["config_kwargs"] == {
+        "host": "https://dbc-x.cloud.databricks.com",
+        "client_id": "client-id",
+        "client_secret": "client-secret",
+    }
+
+
+def test_oauth_service_principal_falls_back_without_oidc_endpoints(
+    clean_databricks_env, captured_connect, patched_databricks_sdk
+):
+    """No OIDC endpoints means no service principal provider, so unified auth stays in charge."""
+    patched_databricks_sdk["oauth_service_principal_result"] = None
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_CLIENT_ID", "client-id")
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET", "client-secret")
+
+    _connect()
+    header_factory = captured_connect["credentials_provider"]()
+
+    assert header_factory() == "unified-auth-header-factory"
+
+
+def test_config_profile_uses_unified_auth(clean_databricks_env, captured_connect, patched_databricks_sdk):
+    """The profile resolves to any of the SDK's auth methods, so it keeps using unified auth."""
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_PROFILE", "my-profile")
+
+    _connect()
+    header_factory = captured_connect["credentials_provider"]()
+
+    assert header_factory() == "unified-auth-header-factory"
+    assert patched_databricks_sdk["config_kwargs"] == {"profile": "my-profile"}
 
 
 def test_token_wins_over_service_principal(clean_databricks_env, captured_connect):

@@ -250,7 +250,7 @@ def _connect_databricks(ibis, server: Server, run: Run):
         run.log_info("Connecting to databricks with an OAuth service principal (M2M)")
         sdk_host = host if host.startswith("http") else f"https://{host}"
         kwargs["credentials_provider"] = _databricks_credentials_provider(
-            host=sdk_host, client_id=client_id, client_secret=client_secret
+            service_principal=True, host=sdk_host, client_id=client_id, client_secret=client_secret
         )
         return ibis.databricks.connect(**kwargs)
 
@@ -268,19 +268,32 @@ def _connect_databricks(ibis, server: Server, run: Run):
     return ibis.databricks.connect(access_token=token, **kwargs)
 
 
-def _databricks_credentials_provider(**config_kwargs):
+def _databricks_credentials_provider(service_principal: bool = False, **config_kwargs):
     """Return a ``credentials_provider`` callable for the Databricks SQL connector.
 
     The connector expects a zero-arg callable returning a header factory. We
     build the SDK ``Config`` lazily inside that callable so authentication (and
     any OAuth token exchange) happens at connect time, with credential resolution
     delegated to the Databricks SDK's unified auth.
+
+    ``service_principal`` hands over the SDK's OAuth service-principal provider
+    rather than the generic ``Config.authenticate`` header factory. Since
+    databricks-sql-connector 4.3.0 every provider is wrapped in a token-federation
+    layer, and a token that unified auth resolved through some other issuer (Azure
+    AD, say) sends it into a token exchange that fails, so ``OpenSession`` is
+    rejected with HTTP 400 (#1389). We already know these credentials name a
+    service principal, so we ask for that provider by name; falling back to
+    ``authenticate`` when the host publishes no OIDC endpoints and there is
+    therefore no such provider to hand over.
     """
 
     def credentials_provider():
-        from databricks.sdk.core import Config
+        from databricks.sdk.core import Config, oauth_service_principal
 
-        return Config(**config_kwargs).authenticate
+        config = Config(**config_kwargs)
+        if service_principal:
+            return oauth_service_principal(config) or config.authenticate
+        return config.authenticate
 
     return credentials_provider
 
