@@ -133,6 +133,12 @@ def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Ser
             )
 
 
+# Messages serialized through the Confluent Schema Registry are framed with a 5-byte
+# prefix: magic byte 0x00 followed by the 4-byte big-endian id of the schema they were
+# written with. Plain Avro messages carry no such prefix.
+_IS_CONFLUENT_FRAMED = "substring(value, 1, 1) = X'00'"
+
+
 def process_avro_format(df, model_name: str, schema_obj: SchemaObject):
     try:
         from pyspark.sql.avro.functions import from_avro
@@ -147,20 +153,133 @@ def process_avro_format(df, model_name: str, schema_obj: SchemaObject):
             original_exception=e,
         )
 
-    avro_schema = to_avro_schema_json(model_name, schema_obj)
-    # Messages serialized through the Confluent Schema Registry are framed with a
-    # 5-byte prefix (magic byte 0x00 + 4-byte schema id) that must be stripped
-    # before Avro decoding. Plain Avro messages carry no such prefix, so strip it
-    # only when the magic byte is present; otherwise stripping 5 bytes would
-    # corrupt every record and from_avro (PERMISSIVE) would silently null them out.
-    df2 = df.withColumn(
+    contract_schema = to_avro_schema_json(model_name, schema_obj)
+    # Strip the Confluent prefix only when the magic byte is present; otherwise
+    # stripping 5 bytes would corrupt every plain Avro record (#1344).
+    framed = df.withColumn(
         "fixedValue",
-        expr("CASE WHEN substring(value, 1, 1) = X'00' THEN substring(value, 6, length(value)-5) ELSE value END"),
+        expr(f"CASE WHEN {_IS_CONFLUENT_FRAMED} THEN substring(value, 6, length(value)-5) ELSE value END"),
+    ).withColumn(
+        "schemaId",
+        expr(f"CASE WHEN {_IS_CONFLUENT_FRAMED} THEN conv(hex(substring(value, 2, 4)), 16, 10) END").cast("long"),
     )
-    options = {"mode": "PERMISSIVE"}
-    df2.select(from_avro(col("fixedValue"), avro_schema, options).alias("avro")).select(
-        col("avro.*")
-    ).createOrReplaceTempView(model_name)
+
+    registry = get_schema_registry_config()
+    decoded = None
+    for schema_id, part in _partition_by_writer_schema(framed, registry):
+        if schema_id is None:
+            source, avro_schema = "the data contract", contract_schema
+        else:
+            source = f"schema id {schema_id} in the schema registry at {registry['url']}"
+            avro_schema = fetch_writer_schema(registry, schema_id)
+        # Avro is positionally encoded, so from_avro must be given the schema the
+        # messages were *written* with, not one that merely looks like it. FAILFAST
+        # surfaces a mismatch as an error; PERMISSIVE would decode every message to a
+        # record with all fields null, which then shows up as missing values on data
+        # that is not null at all (#1347).
+        rows = part.select(from_avro(col("fixedValue"), avro_schema, {"mode": "FAILFAST"}).alias("avro"))
+        _check_messages_are_decodable(rows, source, registry is not None)
+        flat = rows.select(col("avro.*"))
+        decoded = flat if decoded is None else decoded.unionByName(flat, allowMissingColumns=True)
+
+    decoded.createOrReplaceTempView(model_name)
+
+
+def _partition_by_writer_schema(framed, registry: Optional[dict]) -> list:
+    """Split the messages into groups that share one Avro writer schema.
+
+    Without a schema registry there is only one candidate schema — the one derived from
+    the data contract — so everything stays in a single group (schema id ``None``). With
+    a registry, each distinct schema id in the Confluent prefix forms its own group, so a
+    topic whose schema evolved still decodes.
+    """
+    from pyspark.sql.functions import col
+
+    if registry is None:
+        return [(None, framed)]
+
+    schema_ids = [row[0] for row in framed.select("schemaId").distinct().collect()]
+    schema_ids.sort(key=lambda schema_id: (schema_id is None, schema_id))
+    if not schema_ids:  # empty topic
+        return [(None, framed)]
+    return [
+        (schema_id, framed.filter(col("schemaId").isNull() if schema_id is None else col("schemaId") == schema_id))
+        for schema_id in schema_ids
+    ]
+
+
+def _check_messages_are_decodable(rows, source: str, registry_configured: bool):
+    """Decode the messages eagerly so a schema mismatch is reported as a schema mismatch."""
+    try:
+        rows.write.format("noop").mode("overwrite").save()
+    except Exception as e:
+        hint = (
+            ""
+            if registry_configured
+            else (
+                " If the topic is written through the Confluent Schema Registry, set "
+                "DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL so that the schema the messages were written "
+                "with is read from the registry instead of being derived from the data contract."
+            )
+        )
+        raise DataContractException(
+            type="test",
+            name="Configuring Kafka checks",
+            result=ResultEnum.failed,
+            reason=(
+                f"Cannot decode the Avro messages of the topic with the schema from {source}. "
+                f"Avro is positionally encoded, so it must be the exact schema the messages "
+                f"were written with.{hint}"
+            ),
+            engine="datacontract",
+            original_exception=e,
+        )
+
+
+def get_schema_registry_config() -> Optional[dict]:
+    """Confluent Schema Registry settings from the environment, or None if not configured."""
+    url = os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL")
+    if not url:
+        return None
+    return {
+        "url": url.rstrip("/"),
+        "username": os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME"),
+        "password": os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD"),
+    }
+
+
+def fetch_writer_schema(registry: dict, schema_id: int) -> str:
+    """Fetch the Avro schema the Confluent-framed messages with this schema id were written with."""
+    import requests
+
+    url = f"{registry['url']}/schemas/ids/{schema_id}"
+    auth = (registry["username"], registry["password"]) if registry["username"] else None
+    try:
+        response = requests.get(url, auth=auth, timeout=30)
+        response.raise_for_status()
+        body = response.json()
+    except (requests.RequestException, ValueError) as e:
+        raise DataContractException(
+            type="test",
+            name="Configuring Kafka checks",
+            result=ResultEnum.failed,
+            reason=f"Cannot fetch Avro schema id {schema_id} from the schema registry at {registry['url']}: {e}",
+            engine="datacontract",
+            original_exception=e,
+        )
+    schema_type = body.get("schemaType", "AVRO")
+    if schema_type != "AVRO":
+        raise DataContractException(
+            type="test",
+            name="Configuring Kafka checks",
+            result=ResultEnum.failed,
+            reason=(
+                f"Schema id {schema_id} in the schema registry at {registry['url']} is a {schema_type} schema, "
+                f"but the server format is avro."
+            ),
+            engine="datacontract",
+        )
+    return body["schema"]
 
 
 def process_json_format(df, model_name: str, schema_obj: SchemaObject):

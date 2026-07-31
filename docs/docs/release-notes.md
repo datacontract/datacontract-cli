@@ -26,11 +26,15 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Added
+- `datacontract test` reads the Avro schema of a Kafka topic from the Confluent Schema Registry via `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`, `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME`, and `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` ([#1347](https://github.com/datacontract/datacontract-cli/issues/1347))
+
 ### Deprecated
 - `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`, and `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`: use `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD`, and `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` instead
 - `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`: use `DATACONTRACT_SQLSERVER_AUTHENTICATION=windows` instead
 
 ### Fixed
+- `datacontract test` against a Kafka topic reports Avro messages it cannot decode as such, instead of reading every field as null ([#1347](https://github.com/datacontract/datacontract-cli/issues/1347))
 - `datacontract test` connects to Databricks with an OAuth service principal again, instead of failing with `Error during request to server` on databricks-sql-connector 4.3.0 and later ([#1389](https://github.com/datacontract/datacontract-cli/issues/1389))
 - `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` no longer overrides an explicitly set `DATACONTRACT_SQLSERVER_AUTHENTICATION`, so a leftover flag cannot silently downgrade an Entra ID login to Windows authentication
 - `datacontract test` passes `DATACONTRACT_IMPALA_AUTH_MECHANISM`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`, and `DATACONTRACT_IMPALA_HTTP_PATH` to Impala again, so a Cloudera Virtual Warehouse can be reached instead of failing with `TSocket read 0 bytes`
