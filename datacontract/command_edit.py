@@ -1,10 +1,14 @@
+import html
 import json
 import mimetypes
 import os
+import re
 import webbrowser
 from importlib import metadata
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote, unquote, urlparse
+
+_SAFE_ASSET_PATH_RE = re.compile(r'^[a-zA-Z0-9._/\-]+$')
 
 import typer
 from typing_extensions import Annotated
@@ -89,7 +93,7 @@ def _generate_index_html(filename: str) -> str:
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{filename} - Data Contract Editor</title>
+    <title>{html.escape(filename)} - Data Contract Editor</title>
     <link rel="icon" type="image/svg+xml" href="{EDITOR_ASSETS_PATH}/logo_fuchsia_v2.svg" />
     <link href="{EDITOR_ASSETS_PATH}/datacontract-editor.css" rel="stylesheet">
     <style>
