@@ -31,6 +31,7 @@ marked as such in the entry.
 - `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`: use `DATACONTRACT_SQLSERVER_AUTHENTICATION=windows` instead
 
 ### Fixed
+- `datacontract test` connects to Databricks with an OAuth service principal again, instead of failing with `Error during request to server` on databricks-sql-connector 4.3.0 and later ([#1389](https://github.com/datacontract/datacontract-cli/issues/1389))
 - `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` no longer overrides an explicitly set `DATACONTRACT_SQLSERVER_AUTHENTICATION`, so a leftover flag cannot silently downgrade an Entra ID login to Windows authentication
 - `datacontract test` passes `DATACONTRACT_IMPALA_AUTH_MECHANISM`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`, and `DATACONTRACT_IMPALA_HTTP_PATH` to Impala again, so a Cloudera Virtual Warehouse can be reached instead of failing with `TSocket read 0 bytes`
 - `datacontract test` passes the `servers` block `catalog` to Athena again, instead of always querying `awsdatacatalog`
