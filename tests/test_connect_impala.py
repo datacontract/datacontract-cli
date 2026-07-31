@@ -50,7 +50,8 @@ def _connect(server=None):
     return connect_ibis(Run.create_run(), data_contract=None, server=server or _server())
 
 
-def test_ldap_over_https_is_default(env, captured_connect):
+def test_unconfigured_connection_uses_the_impyla_defaults(env, captured_connect):
+    """Nothing configured must behave exactly as before these options were passed."""
     env.setenv("DATACONTRACT_IMPALA_USERNAME", "analytics_user")
     env.setenv("DATACONTRACT_IMPALA_PASSWORD", "secret")
 
@@ -58,14 +59,15 @@ def test_ldap_over_https_is_default(env, captured_connect):
 
     assert result == "connection"
     assert captured_connect["host"] == "my-impala-host"
-    assert captured_connect["port"] == 443
+    assert captured_connect["port"] == 21050
     assert captured_connect["user"] == "analytics_user"
     assert captured_connect["password"] == "secret"
     assert captured_connect["database"] == "my_database"
+    assert captured_connect["auth_mechanism"] == "NOSASL"
+    assert captured_connect["use_http_transport"] is False
+    assert captured_connect["http_path"] == ""
+    # The one option that has never followed impyla, whose default is False.
     assert captured_connect["use_ssl"] is True
-    assert captured_connect["auth_mechanism"] == "LDAP"
-    assert captured_connect["use_http_transport"] is True
-    assert captured_connect["http_path"] == "cliservice"
 
 
 def test_server_port_wins_over_the_default(env, captured_connect):
@@ -74,14 +76,19 @@ def test_server_port_wins_over_the_default(env, captured_connect):
     assert captured_connect["port"] == 28000
 
 
-def test_binary_transport_defaults_to_the_impala_port(env, captured_connect):
-    env.setenv("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", "false")
+def test_cloudera_virtual_warehouse_setup(env, captured_connect):
+    """LDAP over HTTPS, the setup that failed with `TSocket read 0 bytes`."""
+    env.setenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "LDAP")
+    env.setenv("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", "true")
+    env.setenv("DATACONTRACT_IMPALA_HTTP_PATH", "cliservice")
 
-    _connect()
+    _connect(_server(port=443))
 
-    assert captured_connect["port"] == 21050
-    assert captured_connect["use_http_transport"] is False
-    assert "http_path" not in captured_connect
+    assert captured_connect["port"] == 443
+    assert captured_connect["auth_mechanism"] == "LDAP"
+    assert captured_connect["use_http_transport"] is True
+    assert captured_connect["http_path"] == "cliservice"
+    assert captured_connect["use_ssl"] is True
 
 
 def test_options_are_overridable(env, captured_connect):

@@ -26,6 +26,8 @@ DATACONTRACT_IMPALA_USERNAME=analytics_user
 DATACONTRACT_IMPALA_PASSWORD=mysecretpassword
 ```
 
+On a Cloudera Virtual Warehouse, or any cluster reached over HTTPS, also set the transport options listed in the [reference](../reference/impala.md#cloudera-virtual-warehouse).
+
 ## 3. Create a contract from your tables
 
 Get the DDL of a table (`SHOW CREATE TABLE orders;` in impala-shell or Hue), save it to a file, and import it. Impala DDL is Hive-compatible, so use the `spark` dialect:
@@ -41,7 +43,7 @@ servers:
   - server: impala
     type: impala
     host: my-impala-host
-    port: 443
+    port: 21050 # 443 for a Cloudera Virtual Warehouse
     database: my_database # optional default database
 ```
 
@@ -87,5 +89,5 @@ All authentication options (SSL, transport, auth mechanism) and the data type ma
 
 ## Troubleshooting
 
-- **Connection errors** — the defaults assume LDAP auth over SSL and HTTP transport (port 443, e.g. behind a load balancer). For a plain binary-protocol cluster, set `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT=false` and use port `21050`.
+- **`TSocket read 0 bytes`** — the client is speaking binary thrift to an HTTPS endpoint. On a Cloudera Virtual Warehouse (or anything else behind an HTTPS load balancer) set `DATACONTRACT_IMPALA_AUTH_MECHANISM=LDAP`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT=true`, and `DATACONTRACT_IMPALA_HTTP_PATH=cliservice`, with `port: 443` in the `servers` block. See the [reference](../reference/impala.md#cloudera-virtual-warehouse).
 - **`AuthorizationException`** — the user lacks `SELECT` on the table or the Ranger/Sentry policy doesn't cover the database in the `servers` block.

@@ -322,32 +322,29 @@ def _bigquery_credentials():
 
 
 def _connect_impala(ibis, server: Server):
-    """Connect to Impala, defaulting to LDAP over HTTPS (the Cloudera setup).
+    """Connect to Impala, making the transport and auth options configurable.
 
     ``auth_mechanism`` is a native ``ibis.impala.connect`` argument; ``use_http_transport``
-    and ``http_path`` are forwarded verbatim by ibis to ``impyla.connect``. Without them a
-    Cloudera Virtual Warehouse (HTTPS on 443) fails the thrift handshake with
-    ``TSocket read 0 bytes``. impyla's own defaults (``NOSASL``, binary transport, no SSL)
-    are the opposite, so every option has to be passed explicitly.
+    and ``http_path`` are forwarded verbatim by ibis to ``impyla.connect``. None of the
+    three used to be passed at all, so a Cloudera Virtual Warehouse (LDAP over HTTPS on
+    443) fell back to impyla's binary NOSASL defaults and failed the thrift handshake with
+    ``TSocket read 0 bytes``.
 
-    The port default follows the transport: 443 for HTTP(S), 21050 — Impala's binary
-    thrift port — otherwise. The pre-ibis soda connection defaulted to 443 for both,
-    which could never work for a binary-protocol cluster.
+    Each option defaults to impyla's own default, so an unconfigured connection behaves
+    exactly as it did before. The one exception is ``use_ssl``, which has defaulted to
+    true since Impala support landed and stays that way.
     """
-    use_http_transport = _get_bool_env("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", True)
-    kwargs = dict(
+    return ibis.impala.connect(
         host=server.host,
-        port=int(server.port) if server.port else (443 if use_http_transport else 21050),
+        port=int(server.port) if server.port else 21050,
         user=os.getenv("DATACONTRACT_IMPALA_USERNAME"),
         password=os.getenv("DATACONTRACT_IMPALA_PASSWORD"),
         database=getattr(server, "database", None),
         use_ssl=_get_bool_env("DATACONTRACT_IMPALA_USE_SSL", True),
-        auth_mechanism=os.getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "LDAP"),
-        use_http_transport=use_http_transport,
+        auth_mechanism=os.getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "NOSASL"),
+        use_http_transport=_get_bool_env("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", False),
+        http_path=os.getenv("DATACONTRACT_IMPALA_HTTP_PATH", ""),
     )
-    if use_http_transport:
-        kwargs["http_path"] = os.getenv("DATACONTRACT_IMPALA_HTTP_PATH", "cliservice")
-    return ibis.impala.connect(**kwargs)
 
 
 # Names this CLI documented for key-pair auth and timeouts that snowflake-connector-python
