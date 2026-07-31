@@ -26,17 +26,35 @@ Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix st
 
 | Connection parameter | Environment variable |
 |---|---|
-| `username` | `DATACONTRACT_SNOWFLAKE_USERNAME` |
+| `user` | `DATACONTRACT_SNOWFLAKE_USERNAME` (also `..._USER`) |
 | `password` | `DATACONTRACT_SNOWFLAKE_PASSWORD` |
 | `warehouse` | `DATACONTRACT_SNOWFLAKE_WAREHOUSE` |
 | `role` | `DATACONTRACT_SNOWFLAKE_ROLE` |
-| `connection_timeout` | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` |
 | `authenticator` | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR` |
+| `private_key_file` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` |
+| `private_key_file_pwd` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD` |
 | `private_key` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY` |
-| `private_key_passphrase` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` |
-| `private_key_path` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH` |
+| `login_timeout` | `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` |
+| `network_timeout` | `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT` |
+| `socket_timeout` | `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT` |
 
 `account`, `database`, and `schema` come from the contract's `servers` block.
+
+For key-pair auth, set `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` to the path of the key file and `..._PRIVATE_KEY_FILE_PWD` to its passphrase, if it has one. `..._PRIVATE_KEY` takes the key itself rather than a path.
+
+:::warning
+The variable name after the prefix must match the driver's parameter name exactly. The driver ignores parameters it does not recognise without raising, so a misspelled variable is silently dropped and the connection then fails for an unrelated-looking reason — a mistyped key-pair variable surfaces as an authentication error, not as a bad-parameter error.
+:::
+
+### Deprecated variables
+
+Earlier versions documented three names the driver has never accepted, so setting them had no effect. They now work as synonyms and log a deprecation warning; set the replacement instead. If both are set, the replacement wins.
+
+| Deprecated | Use instead |
+|---|---|
+| `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` |
+| `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD` |
+| `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` | `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` |
 
 ### Import-specific options
 
@@ -44,8 +62,6 @@ Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix st
 
 | Variable | Description |
 |---|---|
-| `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` | Path to a private key file (key-pair auth) |
-| `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD` | Passphrase for the private key file |
 | `DATACONTRACT_SNOWFLAKE_HOME` | Directory containing a [connections.toml](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect#connecting-using-the-connections-toml-file) |
 | `DATACONTRACT_SNOWFLAKE_CONNECTIONS_FILE` | Path to a connections.toml file |
 | `DATACONTRACT_SNOWFLAKE_DEFAULT_CONNECTION_NAME` | Connection name within connections.toml |
