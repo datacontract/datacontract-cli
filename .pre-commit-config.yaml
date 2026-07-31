@@ -8,3 +8,19 @@ repos:
       args: [ --fix ]
     # Run the formatter.
     - id: ruff-format
+
+# Regenerate the committed generated docs, so CI never fails on stale ones.
+- repo: local
+  hooks:
+    - id: command-docs
+      name: Regenerate docs/docs/commands from the CLI --help output
+      entry: python update_command_docs.py
+      language: system
+      pass_filenames: false
+      files: ^(datacontract/|update_command_docs\.py$)
+    - id: release-notes
+      name: Regenerate docs/docs/release-notes.md from CHANGELOG.md
+      entry: node docs/scripts/generate-release-notes.mjs
+      language: system
+      pass_filenames: false
+      files: ^(CHANGELOG\.md|docs/scripts/generate-release-notes\.mjs)$
