@@ -17,7 +17,7 @@ from datacontract.output.test_results_writer import write_test_result
 def lint(
     location: Annotated[
         str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
+        typer.Argument(help="The location (url, s3 url, or local path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
         str,

@@ -18,7 +18,10 @@ export_app = typer.Typer(cls=OrderedCommandsWithMigrationHints, no_args_is_help=
 # ---------------------------------------------------------------------------
 # Shared option type aliases
 # ---------------------------------------------------------------------------
-location_arg = Annotated[str, typer.Argument(help="The location (url or path) of the data contract yaml.")]
+location_arg = Annotated[
+    str,
+    typer.Argument(help="The location (url, s3 url, or local path) of the data contract yaml."),
+]
 output_option = Annotated[
     Optional[Path],
     typer.Option(

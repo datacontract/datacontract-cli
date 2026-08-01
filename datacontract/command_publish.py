@@ -16,7 +16,7 @@ from datacontract.lint.resolve import resolve_data_contract_dict
 def publish(
     location: Annotated[
         str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
+        typer.Argument(help="The location (url, s3 url, or local path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
         str,

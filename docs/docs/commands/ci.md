@@ -16,7 +16,7 @@ datacontract ci [OPTIONS] [LOCATIONS]...
 
 | Argument | Default | Description |
 |---|---|---|
-| `[LOCATIONS]...` | — | The location(s) (url or path) of the data contract yaml file(s). |
+| `[LOCATIONS]...` | — | The location(s) (url, s3 url, or local path) of the data contract yaml file(s). |
 
 | Option | Default | Description |
 |---|---|---|

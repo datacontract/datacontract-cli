@@ -16,8 +16,8 @@ datacontract changelog [OPTIONS] V1 V2
 
 | Argument | Default | Description |
 |---|---|---|
-| `V1` | required | The location (url or path) of the source (before) data contract YAML. |
-| `V2` | required | The location (url or path) of the target (after) data contract YAML. |
+| `V1` | required | The location (url, s3 url, or local path) of the source (before) data contract YAML. |
+| `V2` | required | The location (url, s3 url, or local path) of the target (after) data contract YAML. |
 
 | Option | Default | Description |
 |---|---|---|

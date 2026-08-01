@@ -4,6 +4,7 @@ import requests
 
 from datacontract.config import Config
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum
 
 
 def fetch_resource(url: str, config: Config | None = None):
@@ -22,7 +23,7 @@ def fetch_resource(url: str, config: Config | None = None):
             name=f"Reading data contract from {url}",
             reason=f"Cannot read resource from URL {url}. Response status is {response.status_code}",
             engine="datacontract",
-            result="error",
+            result=ResultEnum.error,
         )
 
 
@@ -41,7 +42,7 @@ def _set_api_key(headers, url, config: Config):
                 name=f"Reading data contract from {url}",
                 reason="Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.",
                 engine="datacontract",
-                result="error",
+                result=ResultEnum.error,
             )
         headers["x-api-key"] = entropy_data_api_key
     elif hostname == "datamesh-manager.com" or hostname.endswith(".datamesh-manager.com"):
@@ -52,7 +53,7 @@ def _set_api_key(headers, url, config: Config):
                 name=f"Reading data contract from {url}",
                 reason="Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
                 engine="datacontract",
-                result="error",
+                result=ResultEnum.error,
             )
         headers["x-api-key"] = datamesh_manager_api_key
     elif hostname == "datacontract-manager.com" or hostname.endswith(".datacontract-manager.com"):
@@ -63,7 +64,7 @@ def _set_api_key(headers, url, config: Config):
                 name=f"Reading data contract from {url}",
                 reason="Error: Data Contract Manager API key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.",
                 engine="datacontract",
-                result="error",
+                result=ResultEnum.error,
             )
         headers["x-api-key"] = datacontract_manager_api_key
 

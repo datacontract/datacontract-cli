@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Credentials and connection options can be provided in a YAML config file, via `--config-file` (defaults to `./datacontract-config.yaml` or `~/.datacontract/config.yaml`) or `Config.from_yaml()`, with `${VAR}` references resolved from the environment
 - New Snowflake connection options: `DATACONTRACT_SNOWFLAKE_TOKEN`, `DATACONTRACT_SNOWFLAKE_PASSCODE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`, `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_HOST`, `DATACONTRACT_SNOWFLAKE_PORT`
 - Config options to override the server details from the data contract (host, port, database, schema, catalog, project, dataset, account, service name, staging directory) for Postgres, MySQL, SQL Server, Oracle, Redshift, Snowflake, BigQuery, Databricks, Trino, Athena, and Impala, e.g. `DATACONTRACT_POSTGRES_HOST` (#1076)
+- Data contract locations now support `s3://` URLs for commands that read contracts, including `lint`, `test`, `export`, `publish`, `changelog`, and `ci`
 
 ### Changed
 - `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning

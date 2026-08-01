@@ -16,7 +16,7 @@ datacontract export sql-query [OPTIONS] [LOCATION]
 
 | Argument | Default | Description |
 |---|---|---|
-| `[LOCATION]` | `datacontract.yaml` | The location (url or path) of the data contract yaml. |
+| `[LOCATION]` | `datacontract.yaml` | The location (url, s3 url, or local path) of the data contract yaml. |
 
 | Option | Default | Description |
 |---|---|---|
