@@ -60,6 +60,13 @@ def write_junit_test_results(run: Run, output_path: Path):
                 type=check.category if check.category else "General",
             )
             skipped.text = to_failure_text(check)
+        elif check.result == ResultEnum.skipped:
+            ET.SubElement(
+                testcase,
+                "skipped",
+                message=check.reason if check.reason else "Skipped",
+                type=check.category if check.category else "General",
+            )
         else:
             ET.SubElement(
                 testcase,
@@ -137,4 +144,4 @@ def count_failed(run):
 
 
 def count_skipped(run):
-    return sum(1 for check in run.checks if check.result is None)
+    return sum(1 for check in run.checks if check.result is None or check.result == ResultEnum.skipped)

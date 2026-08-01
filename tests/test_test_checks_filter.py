@@ -90,6 +90,8 @@ def test_checks_cli_invalid_category():
     )
     assert result.exit_code == 1
     assert "Invalid --checks specified" in result.stdout
+    assert "properties, quality, slaProperties, custom" in result.stdout
+    assert "schema, servicelevel" in result.stdout
 
 
 def test_checks_cli_empty_category():
@@ -106,6 +108,22 @@ def test_checks_cli_multiple_categories():
     result = runner.invoke(
         app,
         ["test", "--checks", "schema,quality", "./fixtures/parquet/datacontract.yaml"],
+    )
+    assert result.exit_code == 0
+
+
+def test_checks_cli_odcs_aliases():
+    result = runner.invoke(
+        app,
+        ["test", "--checks", "properties,slaProperties", "./fixtures/parquet/datacontract.yaml"],
+    )
+    assert result.exit_code == 0
+
+
+def test_checks_cli_case_insensitive():
+    result = runner.invoke(
+        app,
+        ["test", "--checks", "SLAProperties,Schema", "./fixtures/parquet/datacontract.yaml"],
     )
     assert result.exit_code == 0
 

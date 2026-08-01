@@ -115,7 +115,7 @@ def execute_ibis_checks(
     executable: List[CheckSpec] = []
     for spec in specs:
         if spec.metric == MetricType.UNSUPPORTED:
-            _set_result(run, spec.key, ResultEnum(spec.preset_result or "warning"), spec.preset_reason)
+            set_result(run, spec.key, ResultEnum(spec.preset_result or "warning"), spec.preset_reason)
         else:
             executable.append(spec)
 
@@ -290,10 +290,10 @@ def _run_model(
                 _record_sql(run, spec, t.aggregate([named]))
                 agg_exprs.append((spec, named))
         except _ColumnNotFound as e:
-            _set_result(run, spec.key, ResultEnum.failed, str(e))
+            set_result(run, spec.key, ResultEnum.failed, str(e))
         except Exception as e:
             logger.warning("Check '%s' errored: %s", spec.key, e)
-            _set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
+            set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
 
     if agg_exprs:
         _run_aggregation(run, t, agg_exprs)
@@ -314,7 +314,7 @@ def _run_aggregation(run: Run, t, agg_exprs):
     except Exception as e:
         logger.warning("Aggregation query failed: %s", e)
         for spec, _ in agg_exprs:
-            _set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
+            set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
         return
 
     row = df.iloc[0]
@@ -664,7 +664,7 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
             pass
     ok = spec.field.lower() in present
     _set_diagnostics(run, spec.key, _diag(metric="field_present", field=spec.field, present=ok))
-    _set_result(
+    set_result(
         run,
         spec.key,
         ResultEnum.passed if ok else ResultEnum.failed,
@@ -682,7 +682,7 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types: dict
     actual_col = columns.get(spec.field.lower())
     if actual_col is None:
         _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label))
-        _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
     dtype = schema[actual_col]
     # Snowflake structured types come back collapsed from ibis; prefer the nested
@@ -700,10 +700,10 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types: dict
         ),
     )
     if schema_property_matches(spec.expected_schema_property, actual_prop):
-        _set_result(run, spec.key, ResultEnum.passed, None)
+        set_result(run, spec.key, ResultEnum.passed, None)
     else:
         reason = schema_property_mismatch_reason(spec.expected_schema_property, actual_prop)
-        _set_result(
+        set_result(
             run,
             spec.key,
             ResultEnum.failed,
@@ -739,7 +739,7 @@ def _run_physical_type(
         _set_diagnostics(
             run, spec.key, _diag(metric="field_physical_type", field=spec.field, expected=spec.expected_physical_type)
         )
-        _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
 
     # The catalog reports a structured OBJECT/ARRAY as its bare token, dropping the
@@ -767,10 +767,10 @@ def _run_physical_type(
         reason = f"Could not read the native type of '{spec.field}' from the {get_server_type(server)} catalog"
 
     if result is True:
-        _set_result(run, spec.key, ResultEnum.passed, None)
+        set_result(run, spec.key, ResultEnum.passed, None)
         return
     if result is False:
-        _set_result(run, spec.key, ResultEnum.failed, reason)
+        set_result(run, spec.key, ResultEnum.failed, reason)
         return
 
     # result is None: the physical type could not be evaluated. Fall back to the
@@ -779,11 +779,11 @@ def _run_physical_type(
     if fallback is not None and fallback.logicalType is not None:
         actual_prop = structured_prop or ibis_dtype_to_schema_property(schema[actual_col])
         if schema_property_matches(fallback, actual_prop):
-            _set_result(run, spec.key, ResultEnum.passed, None)
+            set_result(run, spec.key, ResultEnum.passed, None)
         else:
             mismatch = schema_property_mismatch_reason(fallback, actual_prop)
             actual_label = actual_native or schema[actual_col]
-            _set_result(
+            set_result(
                 run,
                 spec.key,
                 ResultEnum.failed,
@@ -791,7 +791,7 @@ def _run_physical_type(
             )
         return
 
-    _set_result(run, spec.key, ResultEnum.warning, f"{reason}; skipping the physical type check")
+    set_result(run, spec.key, ResultEnum.warning, f"{reason}; skipping the physical type check")
 
 
 def _run_nested_type(
@@ -810,7 +810,7 @@ def _run_nested_type(
     actual_col = columns.get(spec.field.lower())
     if actual_col is None:
         _set_diagnostics(run, spec.key, _diag(metric=metric, field=spec.field, expected=spec.expected_type_label))
-        _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
 
     dtype = schema[actual_col]
@@ -829,7 +829,7 @@ def _run_nested_type(
     if actual_base is None:
         # A dynamically-typed column (json / variant / jsonb) holds a different
         # structure per row, so there is nothing to compare the children against.
-        _set_result(
+        set_result(
             run,
             spec.key,
             ResultEnum.warning,
@@ -840,7 +840,7 @@ def _run_nested_type(
     if expected_base != actual_base:
         # The base type check names the actual type; repeating it here would print
         # the column's whole rendered structure.
-        _set_result(
+        set_result(
             run,
             spec.key,
             ResultEnum.failed,
@@ -850,11 +850,11 @@ def _run_nested_type(
 
     errors = schema_property_mismatch_reasons(expected, actual_prop, spec.field, dialect)
     if not errors:
-        _set_result(run, spec.key, ResultEnum.passed, None)
+        set_result(run, spec.key, ResultEnum.passed, None)
         return
     _update_diagnostics(run, spec.key, {"errors": [error.message for error in errors]})
     verified = any(error.verifiable for error in errors)
-    _set_result(
+    set_result(
         run,
         spec.key,
         ResultEnum.failed if verified else ResultEnum.warning,
@@ -873,7 +873,7 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
         _set_diagnostics(
             run, spec.key, _diag(metric=spec.metric.value, field=spec.field, threshold_seconds=spec.seconds)
         )
-        _set_result(run, spec.key, ResultEnum.failed, f"No timestamp value found in '{spec.field}'")
+        set_result(run, spec.key, ResultEnum.failed, f"No timestamp value found in '{spec.field}'")
         return
     ts = pd.Timestamp(raw)
     if ts.tzinfo is None:
@@ -895,7 +895,7 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
             **{ts_key: ts.isoformat()},
         ),
     )
-    _set_result(
+    set_result(
         run,
         spec.key,
         ResultEnum.passed if ok else ResultEnum.failed,
@@ -973,7 +973,7 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
     _set_diagnostics(run, spec.key, diag)
 
     if spec.threshold is None:
-        _set_result(run, spec.key, ResultEnum.passed, None)
+        set_result(run, spec.key, ResultEnum.passed, None)
         return
     ok = spec.threshold.passes(compare_value)
     target = spec.field or spec.model
@@ -986,7 +986,7 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
         )
     else:
         reason = f"Actual {spec.metric.value}({target}) was {value}, expected {spec.threshold.describe()}"
-    _set_result(run, spec.key, ResultEnum.passed if ok else _fail_result(spec), reason)
+    set_result(run, spec.key, ResultEnum.passed if ok else _fail_result(spec), reason)
 
 
 # Severities (ODCS quality.severity) that downgrade a failing check to a warning
@@ -1006,7 +1006,8 @@ def _fail_result(spec: CheckSpec) -> ResultEnum:
     return ResultEnum.failed
 
 
-def _set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]):
+def set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]) -> None:
+    """Set the result of the pre-registered check identified by ``key``."""
     check = next((c for c in run.checks if c.key == key), None)
     if check is None:
         return
@@ -1071,7 +1072,7 @@ def _to_sql(expr) -> Optional[str]:
 
 def _fail_all(run: Run, specs: List[CheckSpec], result: ResultEnum, reason: str):
     for spec in specs:
-        _set_result(run, spec.key, result, reason)
+        set_result(run, spec.key, result, reason)
 
 
 def _resolve_col(columns: dict, field: str) -> str:
