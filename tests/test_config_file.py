@@ -121,3 +121,20 @@ def test_missing_config_file_fails_with_a_clear_message(tmp_path):
 
     assert result.exit_code != 0
     assert "does not exist" in result.output
+
+
+def test_from_yaml_names_the_file_on_invalid_yaml(tmp_path):
+    path = _write_config(tmp_path, "snowflake: [unclosed\n")
+
+    with pytest.raises(ValueError, match="datacontract-config.yaml"):
+        Config.from_yaml(path)
+
+
+def test_config_file_works_despite_unrelated_malformed_env_var(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT", "not-a-number")
+    path = _write_config(tmp_path, "postgres:\n  username: reader\n")
+
+    result = runner.invoke(app, ["--config-file", str(path), "lint", "fixtures/lint/valid_datacontract.yaml"])
+
+    assert result.exit_code == 0, result.output
+    assert cli_config().get_postgres_username() == "reader"

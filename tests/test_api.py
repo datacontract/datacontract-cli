@@ -219,3 +219,21 @@ def test_test_endpoint_uses_config_from_headers():
 
     config = mock.call_args.kwargs["config"]
     assert config.get_postgres_password() == "pw"
+
+
+def test_entropy_data_api_key_header_is_accepted():
+    from datacontract.api import config_from_headers
+
+    config = config_from_headers({"entropy-data-api-key": "key", "entropy-data-host": "https://dc.example.com"})
+
+    assert config.get_entropy_data_api_key() == "key"
+    assert config.get_entropy_data_host() == "https://dc.example.com"
+
+
+def test_config_headers_work_despite_unrelated_malformed_env_var(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT", "not-a-number")
+    from datacontract.api import config_from_headers
+
+    config = config_from_headers({"datacontract-postgres-username": "u"})
+
+    assert config.get_postgres_username() == "u"

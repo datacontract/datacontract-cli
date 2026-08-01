@@ -56,7 +56,8 @@ def process_exceptions(run, exceptions: List[DataContractException], config: Con
 
     # Define the maximum number of errors to process (can be adjusted via configuration).
     try:
-        error_limit = Config.resolve(config).get_max_errors() or 500
+        configured_limit = Config.resolve(config).get_max_errors()
+        error_limit = 500 if configured_limit is None else configured_limit
     except DataContractException:
         # Fallback to default if the configured value is invalid.
         error_limit = 500

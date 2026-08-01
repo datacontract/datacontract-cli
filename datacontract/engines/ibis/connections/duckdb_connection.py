@@ -46,7 +46,7 @@ def get_duckdb_connection(
         path = server.path
     if server.type == "s3":
         path = server.location
-        setup_s3_connection(con, server)
+        setup_s3_connection(con, server, config)
     if server.type == "gcs":
         path = server.location
         setup_gcs_connection(con, server, config)
@@ -250,10 +250,10 @@ def _sql_literal(value) -> str:
     return str(value).replace("'", "''") if value is not None else ""
 
 
-def setup_s3_connection(con, server: Server):
+def setup_s3_connection(con, server: Server, config: Config | None = None):
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
-    configured = aws_credentials.client_kwargs()
+    configured = aws_credentials.client_kwargs(config=config)
     s3_region = configured["region_name"]
     s3_access_key_id = configured["aws_access_key_id"]
     s3_secret_access_key = configured["aws_secret_access_key"]
