@@ -26,6 +26,9 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Added
+- `datacontract test --filter` and `--filters` test only the rows matching a SQL predicate, e.g., the latest partition ([#1463](https://github.com/datacontract/datacontract-cli/issues/1463))
+
 ## 1.0.16 — 2026-07-31 {#v1-0-16}
 
 ### Added
