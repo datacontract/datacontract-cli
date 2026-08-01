@@ -31,8 +31,8 @@ schema:
 """
 
 
-def test_where_filters_rows():
-    run = DataContract(data_contract_file=CONTRACT, where="order_id <= 2").test()
+def test_filter_filters_rows():
+    run = DataContract(data_contract_file=CONTRACT, filter="order_id <= 2").test()
     print(run.pretty())
     assert run.result == "passed"
     assert run.filters == {"orders": "order_id <= 2"}
@@ -47,67 +47,66 @@ def test_without_filter_fails():
     assert run.filters is None
 
 
-def test_filter_scopes_predicate_to_schema():
+def test_filters_scopes_predicate_to_schema():
     run = DataContract(data_contract_file=CONTRACT, filters={"orders": "order_id <= 2"}).test()
     print(run.pretty())
     assert run.result == "passed"
     assert run.filters == {"orders": "order_id <= 2"}
 
 
-def test_where_with_multiple_schemas_fails():
-    run = DataContract(data_contract_str=TWO_SCHEMA_CONTRACT, where="order_id <= 2").test()
+def test_filter_with_multiple_schemas_fails():
+    run = DataContract(data_contract_str=TWO_SCHEMA_CONTRACT, filter="order_id <= 2").test()
     print(run.pretty())
     assert run.result == "failed"
-    assert any("--where is ambiguous" in str(check.reason) for check in run.checks)
+    assert any("--filter is ambiguous" in str(check.reason) for check in run.checks)
 
 
-def test_where_with_multiple_schemas_and_schema_name():
-    run = DataContract(data_contract_str=TWO_SCHEMA_CONTRACT, schema_name="orders", where="order_id <= 2").test()
+def test_filter_with_multiple_schemas_and_schema_name():
+    run = DataContract(data_contract_str=TWO_SCHEMA_CONTRACT, schema_name="orders", filter="order_id <= 2").test()
     print(run.pretty())
     assert run.filters == {"orders": "order_id <= 2"}
 
 
-def test_filter_unknown_schema_fails():
+def test_filters_unknown_schema_fails():
     run = DataContract(data_contract_file=CONTRACT, filters={"unknown": "order_id <= 2"}).test()
     print(run.pretty())
     assert run.result == "failed"
-    assert any("Filter schema(s) not found in data contract: unknown" in str(check.reason) for check in run.checks)
-
-
-def test_cli_where():
-    result = runner.invoke(app, ["test", CONTRACT, "--where", "order_id <= 2"])
-    assert result.exit_code == 0
-    assert "Row filter: orders WHERE order_id <= 2" in result.stdout
+    assert any("Filter schema(s) not found" in str(check.reason) for check in run.checks)
 
 
 def test_cli_filter():
-    result = runner.invoke(app, ["test", CONTRACT, "--filter", "orders=order_id <= 2"])
+    result = runner.invoke(app, ["test", CONTRACT, "--filter", "order_id <= 2"])
     assert result.exit_code == 0
     assert "Row filter: orders WHERE order_id <= 2" in result.stdout
 
 
-def test_cli_filter_without_predicate():
-    result = runner.invoke(app, ["test", CONTRACT, "--filter", "orders"])
+def test_cli_filters():
+    result = runner.invoke(app, ["test", CONTRACT, "--filters", '{"orders": "order_id <= 2"}'])
+    assert result.exit_code == 0
+    assert "Row filter: orders WHERE order_id <= 2" in result.stdout
+
+
+def test_cli_filters_invalid_json():
+    result = runner.invoke(app, ["test", CONTRACT, "--filters", "orders=order_id <= 2"])
     assert result.exit_code == 1
-    assert "Invalid --filter specified" in result.stdout
+    assert "Invalid --filters specified: not valid JSON" in result.stdout
 
 
-def test_cli_filter_forgotten_schema_prefix():
-    # "amount=50" parses as schema "amount", which does not exist in the contract.
-    result = runner.invoke(app, ["test", CONTRACT, "--filter", "amount=50"])
+def test_cli_filters_not_an_object():
+    result = runner.invoke(app, ["test", CONTRACT, "--filters", '["order_id <= 2"]'])
+    assert result.exit_code == 1
+    assert "Invalid --filters specified" in result.stdout
+
+
+def test_cli_filters_unknown_schema():
+    result = runner.invoke(app, ["test", CONTRACT, "--filters", '{"unknown": "order_id <= 2"}'])
     assert result.exit_code == 1
     assert "Filter schema(s) not found" in result.stdout
 
 
-def test_cli_filter_duplicate_schema():
+def test_cli_filter_and_filters_conflict():
     result = runner.invoke(
-        app, ["test", CONTRACT, "--filter", "orders=order_id <= 2", "--filter", "orders=order_id > 0"]
+        app, ["test", CONTRACT, "--filter", "order_id <= 2", "--filters", '{"orders": "order_id <= 2"}']
     )
     assert result.exit_code == 1
-    assert "Duplicate --filter for schema 'orders'" in result.stdout
-
-
-def test_cli_where_and_filter_conflict():
-    result = runner.invoke(app, ["test", CONTRACT, "--where", "order_id <= 2", "--filter", "orders=order_id <= 2"])
-    assert result.exit_code == 1
-    assert "Use either --where or --filter, not both." in result.stdout
+    assert "Use either --filter or --filters, not both." in result.stdout

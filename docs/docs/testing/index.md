@@ -145,22 +145,21 @@ For CI/CD pipelines, use the [`ci`](../commands/ci.md) command, which wraps `tes
 
 ## Testing only a subset of rows
 
-On large tables, a full scan for every test run is slow and expensive. `--where` restricts the checks to the rows matching a SQL predicate, written in the dialect of the server:
+On large tables, a full scan for every test run is slow and expensive. `--filter` restricts the checks to the rows matching a SQL predicate, written in the dialect of the server:
 
 ```bash
 # Test only the rows ingested in the last 24 hours
-datacontract test datacontract.yaml --server production --where "ingested_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'"
+datacontract test datacontract.yaml --server production --filter "ingested_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'"
 
 # Test a specific partition
-datacontract test datacontract.yaml --server production --where "batch_id = '2026-07-31'"
+datacontract test datacontract.yaml --server production --filter "batch_id = '2026-07-31'"
 ```
 
-`--where` requires that a single schema is tested. If the contract defines several schemas, either select one with `--schema-name` or scope each predicate with `--filter <schema>=<predicate>`, which can be repeated:
+`--filter` requires that a single schema is tested. If the contract defines several schemas, either select one with `--schema-name` or pass `--filters` with a JSON object mapping schema name to predicate:
 
 ```bash
 datacontract test datacontract.yaml --server production \
-  --filter "orders=ingested_at >= CURRENT_DATE - 1" \
-  --filter "line_items=ingested_at >= CURRENT_DATE - 1"
+  --filters '{"orders": "ingested_at >= CURRENT_DATE - 1", "line_items": "ingested_at >= CURRENT_DATE - 1"}'
 ```
 
 The predicate references the columns of the schema unqualified. It applies to all row-based checks: row counts, missing/invalid values, duplicates, freshness, retention, and failed-row samples. Schema checks (column presence and types) read metadata, not rows, so a filter does not change them. Custom SQL quality checks (`quality.type: sql`) and JSON schema validation of files run the query or file as-is and are not filtered.

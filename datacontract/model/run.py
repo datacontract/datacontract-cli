@@ -66,7 +66,7 @@ class Run(BaseModel):
     dataProductId: str | None = None
     outputPortId: str | None = None
     server: str | None = None
-    # The row filters applied to this run (--where / --filter), keyed by the
+    # The row filters applied to this run (--filter / --filters), keyed by the
     # contract's schema name. None when the whole dataset was tested.
     filters: dict[str, str] | None = None
     timestampStart: datetime | None
