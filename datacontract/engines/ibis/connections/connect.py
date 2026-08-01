@@ -11,11 +11,11 @@ with the ibis duckdb / pyspark backend.
 from __future__ import annotations
 
 import logging
-import os
 import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.config import getenv, unknown_snowflake_env_names
 from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException, require_env
@@ -134,30 +134,11 @@ def connect_ibis(
         return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name)
 
     if server_type == "snowflake":
-        prefix = "DATACONTRACT_SNOWFLAKE_"
-        extra = {k.replace(prefix, "").lower(): v for k, v in os.environ.items() if k.startswith(prefix)}
-        # ibis passes kwargs straight to snowflake-connector-python, which uses
-        # `user` (not soda's `username`). Keep DATACONTRACT_SNOWFLAKE_USERNAME working.
-        if "username" in extra:
-            extra.setdefault("user", extra.pop("username"))
-        _rename_deprecated_snowflake_params(extra, prefix, run)
-        # ibis tries to CREATE DATABASE for helper UDFs on connect (create_object_udfs=True).
-        # datacontract only reads, and the read-only roles used for testing lack CREATE DATABASE,
-        # so this otherwise emits a noisy "Insufficient privileges" warning. Default it off, but
-        # let users opt back in via DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true (env values are
-        # strings, so coerce it; an unset/blank/non-"true" value keeps UDF creation disabled).
-        create_object_udfs = str(extra.pop("create_object_udfs", "")).strip().lower() == "true"
-        return ibis.snowflake.connect(
-            create_object_udfs=create_object_udfs,
-            account=server.account,
-            database=server.database,
-            schema=server.schema_,
-            **extra,
-        )
+        return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run))
 
     if server_type == "bigquery":
         credentials = _bigquery_credentials()
-        billing_project = os.getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
+        billing_project = getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
 
         if billing_project and billing_project != server.project:
             from google.cloud import bigquery as bq_client_lib
@@ -182,7 +163,7 @@ def connect_ibis(
         from datacontract.engines.ibis.connections.oracle_patch import apply_oracle_compatibility_patch
 
         service_name = server.serviceName or server.database
-        oracle_client_dir = os.getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
+        oracle_client_dir = getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
         if oracle_client_dir:
             import oracledb
 
@@ -231,16 +212,16 @@ def _connect_databricks(ibis, server: Server, run: Run):
     host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
     kwargs = dict(
         server_hostname=host,
-        http_path=os.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH"),
+        http_path=getenv("DATACONTRACT_DATABRICKS_HTTP_PATH"),
         catalog=server.catalog,
         schema=server.schema_,
     )
 
-    token = os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
-    client_id = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_ID")
-    client_secret = os.getenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET")
-    profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
-    auth_type = os.getenv("DATACONTRACT_DATABRICKS_AUTH_TYPE")
+    token = getenv("DATACONTRACT_DATABRICKS_TOKEN")
+    client_id = getenv("DATACONTRACT_DATABRICKS_CLIENT_ID")
+    client_secret = getenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET")
+    profile = getenv("DATACONTRACT_DATABRICKS_PROFILE")
+    auth_type = getenv("DATACONTRACT_DATABRICKS_AUTH_TYPE")
 
     if token:
         run.log_info("Connecting to databricks with a personal access token")
@@ -310,14 +291,14 @@ def _bigquery_credentials():
     source principal — the caller needs ``roles/iam.serviceAccountTokenCreator`` on
     the target.
     """
-    credentials_path = os.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
+    credentials_path = getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
     credentials = None
     if credentials_path:
         from google.oauth2 import service_account
 
         credentials = service_account.Credentials.from_service_account_file(credentials_path)
 
-    impersonation_account = os.getenv("DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT")
+    impersonation_account = getenv("DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT")
     if impersonation_account:
         import google.auth
         from google.auth import impersonated_credentials
@@ -350,39 +331,108 @@ def _connect_impala(ibis, server: Server):
     return ibis.impala.connect(
         host=server.host,
         port=int(server.port) if server.port else 21050,
-        user=os.getenv("DATACONTRACT_IMPALA_USERNAME"),
-        password=os.getenv("DATACONTRACT_IMPALA_PASSWORD"),
+        user=getenv("DATACONTRACT_IMPALA_USERNAME"),
+        password=getenv("DATACONTRACT_IMPALA_PASSWORD"),
         database=getattr(server, "database", None),
         use_ssl=_get_bool_env("DATACONTRACT_IMPALA_USE_SSL", True),
-        auth_mechanism=os.getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "NOSASL"),
+        auth_mechanism=getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "NOSASL"),
         use_http_transport=_get_bool_env("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", False),
-        http_path=os.getenv("DATACONTRACT_IMPALA_HTTP_PATH", ""),
+        http_path=getenv("DATACONTRACT_IMPALA_HTTP_PATH", ""),
     )
 
 
+# Snowflake connection parameters, one entry per supported option: connector parameter
+# name → DATACONTRACT_SNOWFLAKE_* suffix. Every option is enumerated; the old behavior of
+# forwarding any DATACONTRACT_SNOWFLAKE_* variable verbatim is gone (unknown names are
+# warned about instead — see unknown_snowflake_env_names). The driver's `user` parameter
+# keeps its DATACONTRACT_SNOWFLAKE_USERNAME spelling.
+_SNOWFLAKE_STR_PARAMS = {
+    "user": "USERNAME",
+    "password": "PASSWORD",
+    "authenticator": "AUTHENTICATOR",
+    "role": "ROLE",
+    "token": "TOKEN",
+    "passcode": "PASSCODE",
+    "private_key": "PRIVATE_KEY",
+    "private_key_file": "PRIVATE_KEY_FILE",
+    "private_key_file_pwd": "PRIVATE_KEY_FILE_PWD",
+    "warehouse": "WAREHOUSE",
+    "host": "HOST",
+}
+_SNOWFLAKE_INT_PARAMS = {
+    "login_timeout": "LOGIN_TIMEOUT",
+    "network_timeout": "NETWORK_TIMEOUT",
+    "socket_timeout": "SOCKET_TIMEOUT",
+    "port": "PORT",
+}
 # Names this CLI documented for key-pair auth and timeouts that snowflake-connector-python
 # has never accepted. The driver ignores unknown parameters instead of raising, so setting
 # one of these used to do nothing at all and surfaced as an unrelated authentication error.
 # They are kept as synonyms for the real parameters, with a deprecation warning.
 _SNOWFLAKE_DEPRECATED_PARAMS = {
-    "private_key_path": "private_key_file",
-    "private_key_passphrase": "private_key_file_pwd",
-    "connection_timeout": "login_timeout",
+    "PRIVATE_KEY_PATH": "private_key_file",
+    "PRIVATE_KEY_PASSPHRASE": "private_key_file_pwd",
+    "CONNECTION_TIMEOUT": "login_timeout",
 }
+_SNOWFLAKE_INT_DEPRECATED = {"CONNECTION_TIMEOUT"}
 
 
-def _rename_deprecated_snowflake_params(extra: dict, prefix: str, run: Run):
-    """Map deprecated connection parameter names onto the ones the driver accepts."""
-    for deprecated, replacement in _SNOWFLAKE_DEPRECATED_PARAMS.items():
-        if deprecated not in extra:
-            continue
-        value = extra.pop(deprecated)
+def _snowflake_connection_kwargs(server: Server, run: Run) -> dict:
+    """Build the ``ibis.snowflake.connect`` kwargs from the enumerated options.
+
+    ``account``, ``database`` and ``schema`` always come from the ODCS server object.
+    """
+    for name in unknown_snowflake_env_names():
         run.log_warn(
-            f"{prefix}{deprecated.upper()} is deprecated and will be removed in a future release, "
-            f"use {prefix}{replacement.upper()} instead"
+            f"{name} is not a supported Snowflake option and is ignored. Arbitrary "
+            f"DATACONTRACT_SNOWFLAKE_* variables are no longer forwarded to the connector; "
+            f"use a connections.toml for parameters the CLI does not support directly."
+        )
+
+    kwargs = {}
+    for param, suffix in _SNOWFLAKE_STR_PARAMS.items():
+        value = getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
+        if value:
+            kwargs[param] = value
+    for param, suffix in _SNOWFLAKE_INT_PARAMS.items():
+        value = getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
+        if value:
+            kwargs[param] = _snowflake_int(suffix, value)
+
+    for suffix, replacement in _SNOWFLAKE_DEPRECATED_PARAMS.items():
+        value = getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
+        if not value:
+            continue
+        run.log_warn(
+            f"DATACONTRACT_SNOWFLAKE_{suffix} is deprecated and will be removed in a future release, "
+            f"use DATACONTRACT_SNOWFLAKE_{replacement.upper()} instead"
         )
         # An explicitly set replacement wins over the deprecated synonym.
-        extra.setdefault(replacement, value)
+        kwargs.setdefault(replacement, _snowflake_int(suffix, value) if suffix in _SNOWFLAKE_INT_DEPRECATED else value)
+
+    # ibis tries to CREATE DATABASE for helper UDFs on connect (create_object_udfs=True).
+    # datacontract only reads, and the read-only roles used for testing lack CREATE DATABASE,
+    # so this otherwise emits a noisy "Insufficient privileges" warning. Default it off, but
+    # let users opt back in via DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true.
+    return dict(
+        create_object_udfs=_get_bool_env("DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS", False),
+        account=server.account,
+        database=server.database,
+        schema=server.schema_,
+        **kwargs,
+    )
+
+
+def _snowflake_int(suffix: str, value: str) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        raise DataContractException(
+            type="snowflake-connection",
+            name="invalid_connection_parameter",
+            reason=f"DATACONTRACT_SNOWFLAKE_{suffix} must be a whole number, got {value!r}.",
+            engine="datacontract",
+        )
 
 
 def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str):
@@ -470,12 +520,12 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
     verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
     so they use the ODBC spellings.
     """
-    driver = _get_custom_property(server, "driver") or os.getenv("DATACONTRACT_SQLSERVER_DRIVER")
+    driver = _get_custom_property(server, "driver") or getenv("DATACONTRACT_SQLSERVER_DRIVER")
 
     # TRUSTED_CONNECTION predates the AUTHENTICATION variable, so it only fills in when no
     # mode was chosen. Letting it override instead would mean a leftover flag silently
     # downgrades a configured Entra ID login to Windows auth, with no error to explain it.
-    authentication = os.getenv("DATACONTRACT_SQLSERVER_AUTHENTICATION")
+    authentication = getenv("DATACONTRACT_SQLSERVER_AUTHENTICATION")
     trusted_connection = _get_bool_env("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", False)
     if trusted_connection:
         logger.warning(
@@ -525,7 +575,7 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
     elif authentication == "activedirectoryinteractive":
         kwargs["Authentication"] = "ActiveDirectoryInteractive"
         kwargs["Trusted_Connection"] = "no"
-        username = os.getenv("DATACONTRACT_SQLSERVER_USERNAME")
+        username = getenv("DATACONTRACT_SQLSERVER_USERNAME")
         if username:
             kwargs["user"] = username  # login hint; no password for the browser flow
     else:
@@ -567,7 +617,7 @@ def _connect_athena(ibis, server: Server):
 
 
 def _connect_trino(ibis, server: Server):
-    authentication = os.getenv("DATACONTRACT_TRINO_AUTHENTICATION", "basic").strip().lower()
+    authentication = getenv("DATACONTRACT_TRINO_AUTHENTICATION", "basic").strip().lower()
 
     kwargs = dict(
         host=server.host,
@@ -581,7 +631,7 @@ def _connect_trino(ibis, server: Server):
         user = require_env("DATACONTRACT_TRINO_USERNAME", server_type="trino")
         kwargs["user"] = user
 
-        password = os.getenv("DATACONTRACT_TRINO_PASSWORD")
+        password = getenv("DATACONTRACT_TRINO_PASSWORD")
         if password:
             import trino as trino_pkg
 
@@ -623,7 +673,7 @@ def _get_custom_property(server: Server, name: str):
 
 
 def _get_bool_env(name: str, default: bool) -> bool:
-    value = os.getenv(name)
+    value = getenv(name)
     if value is None:
         return default
     return value.strip().lower() in ("1", "true", "yes", "y", "on")

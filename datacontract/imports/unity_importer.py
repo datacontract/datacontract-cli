@@ -1,12 +1,12 @@
 import json
 import logging
-import os
 from typing import List, Optional, Tuple
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
+from datacontract.config import getenv
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -58,8 +58,8 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
 def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenDataContractStandard:
     """Import data contract specification from Unity Catalog API."""
     try:
-        profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
-        host, token = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
+        profile = getenv("DATACONTRACT_DATABRICKS_PROFILE")
+        host, token = getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), getenv("DATACONTRACT_DATABRICKS_TOKEN")
         exception = DataContractException(
             type="configuration",
             name="Databricks configuration",

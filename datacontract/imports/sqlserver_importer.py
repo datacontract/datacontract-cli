@@ -9,7 +9,6 @@ SQL logins, Windows integrated auth, the Entra ID modes and ``az login``.
 
 from __future__ import annotations
 
-import os
 from typing import Any, Dict, List, Optional
 
 from open_data_contract_standard.model import (
@@ -20,6 +19,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.config import getenv
 from datacontract.engines.ibis.native_type import reconstruct_native_type
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
@@ -95,7 +95,7 @@ def import_sqlserver(
 
     port = int(port) if port else DEFAULT_PORT
     schema = schema or DEFAULT_SCHEMA
-    driver = os.getenv("DATACONTRACT_SQLSERVER_DRIVER", DEFAULT_DRIVER)
+    driver = getenv("DATACONTRACT_SQLSERVER_DRIVER", DEFAULT_DRIVER)
     server = create_server(
         name="production",
         server_type="sqlserver",

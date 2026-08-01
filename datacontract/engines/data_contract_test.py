@@ -1,11 +1,11 @@
 import atexit
-import os
 import tempfile
 import typing
 
 import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.config import getenv
 from datacontract.engines.checks.create_checks import create_checks
 from datacontract.engines.checks.dimensions import default_dimension
 
@@ -196,8 +196,8 @@ def process_api_response(run, server):
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract_cli_api_")
     atexit.register(tmp_dir.cleanup)
     headers = {}
-    if os.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION") is not None:
-        headers["Authorization"] = os.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION")
+    if getenv("DATACONTRACT_API_HEADER_AUTHORIZATION") is not None:
+        headers["Authorization"] = getenv("DATACONTRACT_API_HEADER_AUTHORIZATION")
     try:
         response = requests.get(server.location, headers=headers)
         response.raise_for_status()

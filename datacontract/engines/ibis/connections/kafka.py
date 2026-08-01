@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
+from datacontract.config import getenv
 from datacontract.export.avro_exporter import to_avro_schema_json
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
@@ -238,13 +239,13 @@ def _check_messages_are_decodable(rows, source: str, registry_configured: bool):
 
 def get_schema_registry_config() -> Optional[dict]:
     """Confluent Schema Registry settings from the environment, or None if not configured."""
-    url = os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL")
+    url = getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL")
     if not url:
         return None
     return {
         "url": url.rstrip("/"),
-        "username": os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME"),
-        "password": os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD"),
+        "username": getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME"),
+        "password": getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD"),
     }
 
 
@@ -303,9 +304,9 @@ def process_json_format(df, model_name: str, schema_obj: SchemaObject):
 
 def get_auth_options():
     """Retrieve Kafka authentication options from environment variables."""
-    kafka_sasl_username = os.getenv("DATACONTRACT_KAFKA_SASL_USERNAME")
-    kafka_sasl_password = os.getenv("DATACONTRACT_KAFKA_SASL_PASSWORD")
-    kafka_sasl_mechanism = os.getenv("DATACONTRACT_KAFKA_SASL_MECHANISM", "PLAIN").upper()
+    kafka_sasl_username = getenv("DATACONTRACT_KAFKA_SASL_USERNAME")
+    kafka_sasl_password = getenv("DATACONTRACT_KAFKA_SASL_PASSWORD")
+    kafka_sasl_mechanism = getenv("DATACONTRACT_KAFKA_SASL_MECHANISM", "PLAIN").upper()
 
     # Skip authentication if credentials are not provided
     if not kafka_sasl_username or not kafka_sasl_password:

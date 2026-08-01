@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import re
 import uuid
 from datetime import datetime, timezone
@@ -16,6 +15,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.config import getenv
 from datacontract.engines.checks.check_filter import CheckFilter
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -458,7 +458,7 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
         )
 
     # 1. Connection string
-    conn_str = os.getenv("DATACONTRACT_AZURE_CONNECTION_STRING")
+    conn_str = getenv("DATACONTRACT_AZURE_CONNECTION_STRING")
     if conn_str:
         return BlobServiceClient.from_connection_string(conn_str)
 
@@ -466,14 +466,14 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
     account_url = _account_url_from_location(location)
 
     # 2. Storage account key
-    account_key = os.getenv("DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY")
+    account_key = getenv("DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY")
     if account_key and account_url:
         return BlobServiceClient(account_url=account_url, credential=account_key)
 
     # 3. Service principal
-    tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
-    client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
-    client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
+    tenant_id = getenv("DATACONTRACT_AZURE_TENANT_ID")
+    client_id = getenv("DATACONTRACT_AZURE_CLIENT_ID")
+    client_secret = getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
     if tenant_id and client_id and client_secret:
         try:
             from azure.identity import ClientSecretCredential

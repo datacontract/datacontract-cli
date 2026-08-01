@@ -1,8 +1,8 @@
-import os
 from urllib.parse import urlparse
 
 import requests
 
+from datacontract.config import getenv
 from datacontract.model.exceptions import DataContractException
 
 
@@ -28,9 +28,9 @@ def fetch_resource(url: str):
 def _set_api_key(headers, url):
     hostname = urlparse(url).hostname
 
-    entropy_data_api_key = os.getenv("ENTROPY_DATA_API_KEY")
-    datamesh_manager_api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
-    datacontract_manager_api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
+    entropy_data_api_key = getenv("ENTROPY_DATA_API_KEY")
+    datamesh_manager_api_key = getenv("DATAMESH_MANAGER_API_KEY")
+    datacontract_manager_api_key = getenv("DATACONTRACT_MANAGER_API_KEY")
 
     if hostname == "entropy-data.com" or hostname.endswith(".entropy-data.com"):
         if entropy_data_api_key is None or entropy_data_api_key == "":

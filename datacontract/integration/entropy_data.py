@@ -1,8 +1,8 @@
-import os
 from urllib.parse import urlparse
 
 import requests
 
+from datacontract.config import getenv
 from datacontract.model.run import Run
 
 # used to retrieve the HTML location of the published data contract or test results
@@ -99,9 +99,7 @@ def _get_api_key_or_none() -> str | None:
     """Same lookup as `_get_api_key` but returns None instead of raising;
     for callers that may legitimately fall back to anonymous requests."""
     return (
-        os.getenv("ENTROPY_DATA_API_KEY")
-        or os.getenv("DATAMESH_MANAGER_API_KEY")
-        or os.getenv("DATACONTRACT_MANAGER_API_KEY")
+        getenv("ENTROPY_DATA_API_KEY") or getenv("DATAMESH_MANAGER_API_KEY") or getenv("DATACONTRACT_MANAGER_API_KEY")
     )
 
 
@@ -113,11 +111,11 @@ def _get_host() -> str:
     3. DATACONTRACT_MANAGER_HOST
     4. Default: https://api.entropy-data.com
     """
-    host = os.getenv("ENTROPY_DATA_HOST")
+    host = getenv("ENTROPY_DATA_HOST")
     if host is None:
-        host = os.getenv("DATAMESH_MANAGER_HOST")
+        host = getenv("DATAMESH_MANAGER_HOST")
     if host is None:
-        host = os.getenv("DATACONTRACT_MANAGER_HOST")
+        host = getenv("DATACONTRACT_MANAGER_HOST")
     if host is None:
         host = "https://api.entropy-data.com"
     return host

@@ -8,6 +8,7 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+from datacontract.config import Config, config_context
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
@@ -42,6 +43,7 @@ class DataContract:
         tags: set[str] | None = None,
         fastapi_url: str = None,
         include_failed_samples: bool = False,
+        config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -62,6 +64,7 @@ class DataContract:
         self._tags = tags
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
+        self._config = config
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -70,6 +73,10 @@ class DataContract:
 
     def lint(self) -> Run:
         """Lint the data contract by validating it against the JSON schema."""
+        with config_context(self._config):
+            return self._lint()
+
+    def _lint(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -132,6 +139,10 @@ class DataContract:
         return f"Data Contract CLI {version} {execution}"
 
     def test(self) -> Run:
+        with config_context(self._config):
+            return self._test()
+
+    def _test(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
@@ -191,13 +202,14 @@ class DataContract:
         return run
 
     def get_data_contract(self) -> OpenDataContractStandard:
-        return resolve.resolve_data_contract(
-            data_contract_location=self._data_contract_file,
-            data_contract_str=self._data_contract_str,
-            data_contract=self._data_contract,
-            schema_location=self._schema_location,
-            inline_references=self._inline_references,
-        )
+        with config_context(self._config):
+            return resolve.resolve_data_contract(
+                data_contract_location=self._data_contract_file,
+                data_contract_str=self._data_contract_str,
+                data_contract=self._data_contract,
+                schema_location=self._schema_location,
+                inline_references=self._inline_references,
+            )
 
     def get_data_contract_file(self) -> str | None:
         return self._data_contract_file
@@ -205,21 +217,22 @@ class DataContract:
     def export(
         self, export_format: ExportFormat, schema_name: str = "all", sql_server_type: str = "auto", **kwargs
     ) -> str | bytes:
-        data_contract = resolve.resolve_data_contract(
-            self._data_contract_file,
-            self._data_contract_str,
-            self._data_contract,
-            schema_location=self._schema_location,
-            inline_references=self._inline_references,
-        )
+        with config_context(self._config):
+            data_contract = resolve.resolve_data_contract(
+                self._data_contract_file,
+                self._data_contract_str,
+                self._data_contract,
+                schema_location=self._schema_location,
+                inline_references=self._inline_references,
+            )
 
-        return exporter_factory.create(export_format).export(
-            data_contract=data_contract,
-            schema_name=schema_name,
-            server=self._server,
-            sql_server_type=sql_server_type,
-            export_args=kwargs,
-        )
+            return exporter_factory.create(export_format).export(
+                data_contract=data_contract,
+                schema_name=schema_name,
+                server=self._server,
+                sql_server_type=sql_server_type,
+                export_args=kwargs,
+            )
 
     def changelog(self, other: "DataContract") -> ChangelogResult:
         """Generate a changelog between this data contract and another, returning a ChangelogResult."""
@@ -258,16 +271,19 @@ class DataContract:
         cls,
         format: str,
         source: typing.Optional[str] = None,
+        config: "Config | dict[str, str] | None" = None,
         **kwargs,
     ) -> OpenDataContractStandard:
         """Import a data contract from a source in a given format.
 
         All imports now return OpenDataContractStandard (ODCS) format.
+        Credentials and connection options can be passed via ``config``.
         """
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
+        with config_context(config):
+            odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
 
         cls._overwrite_id_in_odcs(odcs_imported, id)
         cls._overwrite_owner_in_odcs(odcs_imported, owner)

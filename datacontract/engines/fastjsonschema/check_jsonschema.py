@@ -9,6 +9,7 @@ import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.config import getenv
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_exporter import to_jsonschema
 from datacontract.model.exceptions import DataContractException
@@ -55,7 +56,7 @@ def process_exceptions(run, exceptions: List[DataContractException]):
 
     # Define the maximum number of errors to process (can be adjusted by defining an ENV variable).
     try:
-        error_limit = int(os.getenv("DATACONTRACT_MAX_ERRORS", 500))
+        error_limit = int(getenv("DATACONTRACT_MAX_ERRORS", 500))
     except ValueError:
         # Fallback to default if environment variable is invalid.
         error_limit = 500

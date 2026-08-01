@@ -15,11 +15,11 @@ login``, ``AWS_PROFILE``, instance/task roles, GitHub OIDC.
 from __future__ import annotations
 
 import logging
-import os
 import re
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+from datacontract.config import getenv
 from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.model.exceptions import DataContractException, require_env
 
@@ -51,13 +51,13 @@ def resolve_redshift_login(host: Optional[str], database: Optional[str]) -> Reds
     override for when the inference guesses wrong, matching the equivalent
     variables on Databricks, Snowflake, SQL Server and Trino.
     """
-    authentication = os.getenv("DATACONTRACT_REDSHIFT_AUTHENTICATION", "").strip().lower() or _infer_authentication()
+    authentication = getenv("DATACONTRACT_REDSHIFT_AUTHENTICATION", "").strip().lower() or _infer_authentication()
 
     if authentication == "password":
         return RedshiftLogin(
             user=require_env("DATACONTRACT_REDSHIFT_USERNAME", server_type="redshift"),
-            password=os.getenv("DATACONTRACT_REDSHIFT_PASSWORD"),
-            sslmode=os.getenv("DATACONTRACT_REDSHIFT_SSLMODE"),
+            password=getenv("DATACONTRACT_REDSHIFT_PASSWORD"),
+            sslmode=getenv("DATACONTRACT_REDSHIFT_SSLMODE"),
         )
 
     if authentication == "iam":
@@ -68,7 +68,7 @@ def resolve_redshift_login(host: Optional[str], database: Optional[str]) -> Reds
             # Temporary credentials are only meaningful over TLS, and every
             # Redshift endpoint supports it; psycopg would otherwise default to
             # `prefer` and silently accept a plaintext connection.
-            sslmode=os.getenv("DATACONTRACT_REDSHIFT_SSLMODE", "require"),
+            sslmode=getenv("DATACONTRACT_REDSHIFT_SSLMODE", "require"),
         )
 
     raise DataContractException(
@@ -89,7 +89,7 @@ def _infer_authentication() -> str:
     reads ``DATACONTRACT_REDSHIFT_USERNAME`` as the database user, so a set
     username says nothing about which method was intended.
     """
-    if os.getenv("DATACONTRACT_REDSHIFT_PASSWORD"):
+    if getenv("DATACONTRACT_REDSHIFT_PASSWORD"):
         return "password"
     if _aws_credentials_available():
         return "iam"
@@ -134,7 +134,7 @@ def _mint_iam_credentials(host: Optional[str], database: Optional[str]) -> Tuple
         return response["dbUser"], response["dbPassword"]
 
     client = _aws_client("redshift", region)
-    db_user = os.getenv("DATACONTRACT_REDSHIFT_DB_USER") or os.getenv("DATACONTRACT_REDSHIFT_USERNAME")
+    db_user = getenv("DATACONTRACT_REDSHIFT_DB_USER") or getenv("DATACONTRACT_REDSHIFT_USERNAME")
     duration = _duration_seconds()
 
     if not db_user:
@@ -155,9 +155,7 @@ def _mint_iam_credentials(host: Optional[str], database: Optional[str]) -> Tuple
         kwargs["DurationSeconds"] = duration
     if _get_bool_env("DATACONTRACT_REDSHIFT_AUTO_CREATE", False):
         kwargs["AutoCreate"] = True
-    db_groups = [
-        group.strip() for group in os.getenv("DATACONTRACT_REDSHIFT_DB_GROUPS", "").split(",") if group.strip()
-    ]
+    db_groups = [group.strip() for group in getenv("DATACONTRACT_REDSHIFT_DB_GROUPS", "").split(",") if group.strip()]
     if db_groups:
         kwargs["DbGroups"] = db_groups
     response = _call_aws(client.get_cluster_credentials, kwargs, "redshift:GetClusterCredentials")
@@ -171,9 +169,9 @@ def _resolve_endpoint(host: Optional[str]) -> Tuple[str, str, Optional[str]]:
     no extra configuration. Custom domains and VPC endpoints don't follow that
     shape, hence the explicit overrides.
     """
-    workgroup = os.getenv("DATACONTRACT_REDSHIFT_WORKGROUP")
-    cluster = os.getenv("DATACONTRACT_REDSHIFT_CLUSTER_IDENTIFIER")
-    region = os.getenv("DATACONTRACT_REDSHIFT_REGION") or os.getenv("DATACONTRACT_S3_REGION")
+    workgroup = getenv("DATACONTRACT_REDSHIFT_WORKGROUP")
+    cluster = getenv("DATACONTRACT_REDSHIFT_CLUSTER_IDENTIFIER")
+    region = getenv("DATACONTRACT_REDSHIFT_REGION") or getenv("DATACONTRACT_S3_REGION")
 
     match = _ENDPOINT_PATTERN.match(host.strip()) if host else None
     if match:
@@ -223,7 +221,7 @@ def _call_aws(operation, kwargs: dict, api_name: str) -> dict:
 
 
 def _duration_seconds() -> Optional[int]:
-    value = os.getenv("DATACONTRACT_REDSHIFT_DURATION_SECONDS")
+    value = getenv("DATACONTRACT_REDSHIFT_DURATION_SECONDS")
     if not value:
         return None
     try:
@@ -238,7 +236,7 @@ def _duration_seconds() -> Optional[int]:
 
 
 def _get_bool_env(name: str, default: bool) -> bool:
-    value = os.getenv(name)
+    value = getenv(name)
     if value is None:
         return default
     return value.strip().lower() in ("1", "true", "yes", "y", "on")

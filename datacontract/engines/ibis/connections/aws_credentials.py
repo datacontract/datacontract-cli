@@ -12,9 +12,10 @@ AWS connection that cannot use the chain directly.
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
+
+from datacontract.config import getenv
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ REGION = "DATACONTRACT_S3_REGION"
 
 
 def configured_region(default: Optional[str] = None) -> Optional[str]:
-    return os.getenv(REGION) or default
+    return getenv(REGION) or default
 
 
 def client_kwargs(region: Optional[str] = None) -> Dict[str, Any]:
@@ -37,10 +38,10 @@ def client_kwargs(region: Optional[str] = None) -> Dict[str, Any]:
     chain, so an `aws sso login` session works without any variable.
     """
     return {
-        "region_name": region or os.getenv(REGION),
-        "aws_access_key_id": os.getenv(ACCESS_KEY_ID),
-        "aws_secret_access_key": os.getenv(SECRET_ACCESS_KEY),
-        "aws_session_token": os.getenv(SESSION_TOKEN),
+        "region_name": region or getenv(REGION),
+        "aws_access_key_id": getenv(ACCESS_KEY_ID),
+        "aws_secret_access_key": getenv(SECRET_ACCESS_KEY),
+        "aws_session_token": getenv(SESSION_TOKEN),
     }
 
 
