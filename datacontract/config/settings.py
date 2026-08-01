@@ -1,54 +1,15 @@
-"""Programmatic configuration for credentials and connection options.
-
-All connection credentials and options the CLI reads from ``DATACONTRACT_*``
-environment variables can also be provided programmatically through
-:class:`Config` (or a plain dict keyed by the env var names) via
-``DataContract(config=...)``.
-
-Resolution: an active config is held in a :class:`~contextvars.ContextVar`
-keyed by the env var names, and :func:`getenv` checks it before falling back
-to the process environment. ContextVars propagate per thread and per asyncio
-task, so concurrent operations with different credentials do not interfere.
-"""
+"""The typed Config class: one field per supported ``DATACONTRACT_*`` option."""
 
 from __future__ import annotations
 
 import os
-from contextlib import contextmanager
-from contextvars import ContextVar
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from datacontract.config.resolution import _context_config
+
 _ENV_PREFIX = "DATACONTRACT_"
-
-_context_config: ContextVar[dict[str, str]] = ContextVar("datacontract_config", default={})
-
-
-def getenv(key: str, default: str | None = None) -> str | None:
-    """Return a config value: active programmatic config first, then the environment."""
-    value = _context_config.get().get(key)
-    if value is not None:
-        return value
-    return os.environ.get(key, default)
-
-
-@contextmanager
-def config_context(config: "Config | dict[str, str] | None"):
-    """Activate ``config`` for the duration of the block.
-
-    Accepts a :class:`Config` (flattened via :meth:`Config.to_env_dict`), a plain
-    dict keyed by env var names (used as-is, unvalidated), or ``None`` (no-op).
-    """
-    if config is None:
-        yield
-        return
-    values = config.to_env_dict() if isinstance(config, Config) else dict(config)
-    token = _context_config.set(values)
-    try:
-        yield
-    finally:
-        _context_config.reset(token)
 
 
 class Config(BaseSettings):
