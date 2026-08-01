@@ -14,7 +14,7 @@ def publish_test_results_to_entropy_data(
 ) -> bool:
     """Publish `run` to the Entropy Data instance. Returns True on success, False otherwise."""
     try:
-        config = Config.from_input(config)
+        config = Config.resolve(config)
         host = publish_url
         if publish_url is None:
             # this url supports Data Mesh Manager and Data Contract Manager
@@ -59,7 +59,7 @@ def publish_data_contract_to_entropy_data(
     data_contract_dict: dict, ssl_verification: bool, config: Config | None = None
 ):
     try:
-        config = Config.from_input(config)
+        config = Config.resolve(config)
         api_key = _get_api_key(config)
         host = _get_host(config)
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
@@ -104,11 +104,11 @@ def _get_api_key(config: Config) -> str:
 def _get_api_key_or_none(config: Config | None = None) -> str | None:
     """Same lookup as `_get_api_key` but returns None instead of raising;
     for callers that may legitimately fall back to anonymous requests."""
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     return (
-        config.getenv("ENTROPY_DATA_API_KEY")
-        or config.getenv("DATAMESH_MANAGER_API_KEY")
-        or config.getenv("DATACONTRACT_MANAGER_API_KEY")
+        config.get_entropy_data_api_key()
+        or config.get_datamesh_manager_api_key()
+        or config.get_datacontract_manager_api_key()
     )
 
 
@@ -120,12 +120,12 @@ def _get_host(config: Config | None = None) -> str:
     3. DATACONTRACT_MANAGER_HOST
     4. Default: https://api.entropy-data.com
     """
-    config = Config.from_input(config)
-    host = config.getenv("ENTROPY_DATA_HOST")
+    config = Config.resolve(config)
+    host = config.get_entropy_data_host()
     if host is None:
-        host = config.getenv("DATAMESH_MANAGER_HOST")
+        host = config.get_datamesh_manager_host()
     if host is None:
-        host = config.getenv("DATACONTRACT_MANAGER_HOST")
+        host = config.get_datacontract_manager_host()
     if host is None:
         host = "https://api.entropy-data.com"
     return host

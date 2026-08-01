@@ -7,7 +7,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 def fetch_resource(url: str, config: Config | None = None):
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     headers = {
         "accept": "application/yaml",
     }
@@ -29,9 +29,9 @@ def fetch_resource(url: str, config: Config | None = None):
 def _set_api_key(headers, url, config: Config):
     hostname = urlparse(url).hostname
 
-    entropy_data_api_key = config.getenv("ENTROPY_DATA_API_KEY")
-    datamesh_manager_api_key = config.getenv("DATAMESH_MANAGER_API_KEY")
-    datacontract_manager_api_key = config.getenv("DATACONTRACT_MANAGER_API_KEY")
+    entropy_data_api_key = config.get_entropy_data_api_key()
+    datamesh_manager_api_key = config.get_datamesh_manager_api_key()
+    datacontract_manager_api_key = config.get_datacontract_manager_api_key()
 
     if hostname == "entropy-data.com" or hostname.endswith(".entropy-data.com"):
         if entropy_data_api_key is None or entropy_data_api_key == "":

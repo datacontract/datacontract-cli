@@ -19,14 +19,9 @@ from datacontract.config import Config
 
 logger = logging.getLogger(__name__)
 
-ACCESS_KEY_ID = "DATACONTRACT_S3_ACCESS_KEY_ID"
-SECRET_ACCESS_KEY = "DATACONTRACT_S3_SECRET_ACCESS_KEY"
-SESSION_TOKEN = "DATACONTRACT_S3_SESSION_TOKEN"
-REGION = "DATACONTRACT_S3_REGION"
-
 
 def configured_region(default: Optional[str] = None, config: Optional[Config] = None) -> Optional[str]:
-    return Config.from_input(config).getenv(REGION) or default
+    return Config.resolve(config).get_s3_region() or default
 
 
 def client_kwargs(region: Optional[str] = None, config: Optional[Config] = None) -> Dict[str, Any]:
@@ -37,12 +32,12 @@ def client_kwargs(region: Optional[str] = None, config: Optional[Config] = None)
     values stay ``None``, which is how boto3 is told to fall back to its own
     chain, so an `aws sso login` session works without any variable.
     """
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     return {
-        "region_name": region or config.getenv(REGION),
-        "aws_access_key_id": config.getenv(ACCESS_KEY_ID),
-        "aws_secret_access_key": config.getenv(SECRET_ACCESS_KEY),
-        "aws_session_token": config.getenv(SESSION_TOKEN),
+        "region_name": region or config.get_s3_region(),
+        "aws_access_key_id": config.get_s3_access_key_id(),
+        "aws_secret_access_key": config.get_s3_secret_access_key(),
+        "aws_session_token": config.get_s3_session_token(),
     }
 
 

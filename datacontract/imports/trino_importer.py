@@ -122,7 +122,7 @@ def trino_connection(server: Server, config=None):
     try:
         from datacontract.config import Config
 
-        return _connect_trino(ibis, server, Config.from_input(config))
+        return _connect_trino(ibis, server, Config.resolve(config))
     except Exception as e:
         raise DataContractException(
             type="schema",

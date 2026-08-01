@@ -60,12 +60,12 @@ def import_unity_from_api(
     unity_table_full_name_list: List[str] = None, config: "Config | None" = None
 ) -> OpenDataContractStandard:
     """Import data contract specification from Unity Catalog API."""
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     try:
-        profile = config.getenv("DATACONTRACT_DATABRICKS_PROFILE")
+        profile = config.get_databricks_profile()
         host, token = (
-            config.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"),
-            config.getenv("DATACONTRACT_DATABRICKS_TOKEN"),
+            config.get_databricks_server_hostname(),
+            config.get_databricks_token(),
         )
         exception = DataContractException(
             type="configuration",

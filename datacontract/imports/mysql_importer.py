@@ -100,7 +100,7 @@ def import_mysql(
 
 
 def _attach(host: str, port: int, database: str, config: Optional[Config] = None):
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     """ATTACH the database exactly as the test path does."""
     try:
         import duckdb
@@ -116,8 +116,8 @@ def _attach(host: str, port: int, database: str, config: Optional[Config] = None
 
     from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
 
-    user = config.require("DATACONTRACT_MYSQL_USERNAME", server_type="mysql")
-    password = config.require("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql")
+    user = config.get_mysql_username(required=True)
+    password = config.get_mysql_password(required=True)
 
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")

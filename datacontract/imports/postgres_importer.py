@@ -148,7 +148,7 @@ def import_postgres_from_connector(
 
 
 def postgres_connection(host: str, port: int, database: str, config: Optional[Config] = None):
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     """Open a psycopg connection using the same DATACONTRACT_POSTGRES_* env vars as `datacontract test`."""
     try:
         import psycopg
@@ -166,8 +166,8 @@ def postgres_connection(host: str, port: int, database: str, config: Optional[Co
         host=host,
         port=port,
         dbname=database,
-        user=config.require("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres"),
-        password=config.require("DATACONTRACT_POSTGRES_PASSWORD", server_type="postgres"),
+        user=config.get_postgres_username(required=True),
+        password=config.get_postgres_password(required=True),
     )
 
 

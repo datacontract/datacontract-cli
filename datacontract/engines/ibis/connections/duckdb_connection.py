@@ -35,7 +35,7 @@ def get_duckdb_connection(
     config: Config | None = None,
 ) -> "duckdb.DuckDBPyConnection":
     duckdb = _import_duckdb()
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     if duckdb_connection is None:
         con = duckdb.connect(database=":memory:")
     else:
@@ -331,8 +331,8 @@ def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style
 
 def setup_gcs_connection(con, server: Server, config: Config):
     _load_extension(con, "httpfs", "gcs")
-    key_id = config.require("DATACONTRACT_GCS_KEY_ID", server_type="gcs")
-    secret = config.require("DATACONTRACT_GCS_SECRET", server_type="gcs")
+    key_id = config.get_gcs_key_id(required=True)
+    secret = config.get_gcs_secret(required=True)
 
     con.sql(f"""
     CREATE SECRET gcs_secret (
@@ -344,9 +344,9 @@ def setup_gcs_connection(con, server: Server, config: Config):
 
 
 def setup_azure_connection(con, server: Server, config: Config):
-    tenant_id = config.require("DATACONTRACT_AZURE_TENANT_ID", server_type="azure")
-    client_id = config.require("DATACONTRACT_AZURE_CLIENT_ID", server_type="azure")
-    client_secret = config.require("DATACONTRACT_AZURE_CLIENT_SECRET", server_type="azure")
+    tenant_id = config.get_azure_tenant_id(required=True)
+    client_id = config.get_azure_client_id(required=True)
+    client_secret = config.get_azure_client_secret(required=True)
     storage_account = (
         to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
     )

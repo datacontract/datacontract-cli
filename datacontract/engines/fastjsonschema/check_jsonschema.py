@@ -56,9 +56,9 @@ def process_exceptions(run, exceptions: List[DataContractException], config: Con
 
     # Define the maximum number of errors to process (can be adjusted via configuration).
     try:
-        error_limit = int(Config.from_input(config).getenv("DATACONTRACT_MAX_ERRORS", 500))
-    except ValueError:
-        # Fallback to default if environment variable is invalid.
+        error_limit = Config.resolve(config).get_max_errors() or 500
+    except DataContractException:
+        # Fallback to default if the configured value is invalid.
         error_limit = 500
 
     # Calculate the effective limit to avoid index out of range

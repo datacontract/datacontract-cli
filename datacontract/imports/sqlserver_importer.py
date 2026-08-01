@@ -97,8 +97,8 @@ def import_sqlserver(
 
     port = int(port) if port else DEFAULT_PORT
     schema = schema or DEFAULT_SCHEMA
-    config = Config.from_input(config)
-    driver = config.getenv("DATACONTRACT_SQLSERVER_DRIVER", DEFAULT_DRIVER)
+    config = Config.resolve(config)
+    driver = config.get_sqlserver_driver() or DEFAULT_DRIVER
     server = create_server(
         name="production",
         server_type="sqlserver",
@@ -156,7 +156,7 @@ def sqlserver_connection(server: Server, config: Optional[Config] = None):
     from datacontract.engines.ibis.connections.connect import _connect_sqlserver
 
     try:
-        return _connect_sqlserver(ibis, server, Config.from_input(config))
+        return _connect_sqlserver(ibis, server, Config.resolve(config))
     except Exception as e:
         raise DataContractException(
             type="schema",

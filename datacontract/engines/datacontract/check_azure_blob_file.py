@@ -112,7 +112,7 @@ def check_azure_blob_file(
         return
 
     try:
-        blob_service_client = _build_blob_service_client(location, Config.from_input(config))
+        blob_service_client = _build_blob_service_client(location, Config.resolve(config))
     except Exception as exc:
         _append_check(
             run,
@@ -459,7 +459,7 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
         )
 
     # 1. Connection string
-    conn_str = config.getenv("DATACONTRACT_AZURE_CONNECTION_STRING")
+    conn_str = config.get_azure_connection_string()
     if conn_str:
         return BlobServiceClient.from_connection_string(conn_str)
 
@@ -467,14 +467,14 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
     account_url = _account_url_from_location(location)
 
     # 2. Storage account key
-    account_key = config.getenv("DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY")
+    account_key = config.get_azure_storage_account_key()
     if account_key and account_url:
         return BlobServiceClient(account_url=account_url, credential=account_key)
 
     # 3. Service principal
-    tenant_id = config.getenv("DATACONTRACT_AZURE_TENANT_ID")
-    client_id = config.getenv("DATACONTRACT_AZURE_CLIENT_ID")
-    client_secret = config.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
+    tenant_id = config.get_azure_tenant_id()
+    client_id = config.get_azure_client_id()
+    client_secret = config.get_azure_client_secret()
     if tenant_id and client_id and client_secret:
         try:
             from azure.identity import ClientSecretCredential

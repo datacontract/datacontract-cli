@@ -18,7 +18,7 @@ from datacontract.model.exceptions import DataContractException
 
 
 def _sqlserver_connection_kwargs(server):
-    return _kwargs_with_config(server, Config.from_input(None))
+    return _kwargs_with_config(server, Config.resolve(None))
 
 
 SQLSERVER_ENV_VARS = [

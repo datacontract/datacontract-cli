@@ -346,7 +346,7 @@ def property_customs_ordinal_position_sort(col: SchemaProperty) -> Any:
 def import_snowflake_from_connector(
     account: str, database: str, schema: str, config: "Config | None" = None
 ) -> OpenDataContractStandard:
-    config = Config.from_input(config)
+    config = Config.resolve(config)
 
     try:
         # Verify the snowflake extra is fully installed
@@ -453,7 +453,7 @@ def import_snowflake_from_connector(
 
 
 def snowflake_cursor(account: str, database: str, schema: str, config: "Config | None" = None):
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     try:
         from snowflake.connector import connect
     except ImportError as e:
@@ -471,33 +471,27 @@ def snowflake_cursor(account: str, database: str, schema: str, config: "Config |
     ## https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect
     ###
     # gather connection parameters from environment variables
-    user_connect = config.getenv("DATACONTRACT_SNOWFLAKE_USERNAME", None)
-    password_connect = config.getenv("DATACONTRACT_SNOWFLAKE_PASSWORD", None)
+    user_connect = config.get_snowflake_username()
+    password_connect = config.get_snowflake_password()
     account_connect = account
-    role_connect = config.getenv("DATACONTRACT_SNOWFLAKE_ROLE", None)
+    role_connect = config.get_snowflake_role()
     authenticator_connect = (
-        "externalbrowser"
-        if password_connect is None
-        else config.getenv("DATACONTRACT_SNOWFLAKE_AUTHENTICATOR", "snowflake")
+        "externalbrowser" if password_connect is None else (config.get_snowflake_authenticator() or "snowflake")
     )
-    warehouse_connect = config.getenv("DATACONTRACT_SNOWFLAKE_WAREHOUSE", None)
+    warehouse_connect = config.get_snowflake_warehouse()
     database_connect = database
     schema_connect = schema
-    snowflake_home = config.getenv("DATACONTRACT_SNOWFLAKE_HOME") or config.getenv("SNOWFLAKE_HOME")
-    snowflake_connections_file = config.getenv("DATACONTRACT_SNOWFLAKE_CONNECTIONS_FILE") or config.getenv(
-        "SNOWFLAKE_CONNECTIONS_FILE"
-    )
+    snowflake_home = config.get_snowflake_home() or os.environ.get("SNOWFLAKE_HOME")
+    snowflake_connections_file = config.get_snowflake_connections_file() or os.environ.get("SNOWFLAKE_CONNECTIONS_FILE")
     if not snowflake_connections_file and snowflake_home:
         snowflake_connections_file = os.path.join(snowflake_home, "connections.toml")
 
-    default_connection = config.getenv("DATACONTRACT_SNOWFLAKE_DEFAULT_CONNECTION_NAME") or config.getenv(
+    default_connection = config.get_snowflake_default_connection_name() or os.environ.get(
         "SNOWFLAKE_DEFAULT_CONNECTION_NAME"
     )
 
-    private_key_file = config.getenv("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE") or config.getenv(
-        "SNOWFLAKE_PRIVATE_KEY_FILE"
-    )
-    private_key_file_pwd = config.getenv("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD") or config.getenv(
+    private_key_file = config.get_snowflake_private_key_file() or os.environ.get("SNOWFLAKE_PRIVATE_KEY_FILE")
+    private_key_file_pwd = config.get_snowflake_private_key_file_pwd() or os.environ.get(
         "SNOWFLAKE_PRIVATE_KEY_FILE_PWD"
     )
 

@@ -94,7 +94,7 @@ def create_spark_session():
 
 
 def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Server, config: Config | None = None):
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     """Read and process data from a Kafka topic based on the server configuration."""
 
     if not data_contract.schema_ or len(data_contract.schema_) == 0:
@@ -240,14 +240,14 @@ def _check_messages_are_decodable(rows, source: str, registry_configured: bool):
 
 def get_schema_registry_config(config: Config | None = None) -> Optional[dict]:
     """Confluent Schema Registry settings from the config or environment, or None if not configured."""
-    config = Config.from_input(config)
-    url = config.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL")
+    config = Config.resolve(config)
+    url = config.get_kafka_schema_registry_url()
     if not url:
         return None
     return {
         "url": url.rstrip("/"),
-        "username": config.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME"),
-        "password": config.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD"),
+        "username": config.get_kafka_schema_registry_username(),
+        "password": config.get_kafka_schema_registry_password(),
     }
 
 
@@ -306,10 +306,10 @@ def process_json_format(df, model_name: str, schema_obj: SchemaObject):
 
 def get_auth_options(config: Config | None = None):
     """Retrieve Kafka authentication options from the config or environment variables."""
-    config = Config.from_input(config)
-    kafka_sasl_username = config.getenv("DATACONTRACT_KAFKA_SASL_USERNAME")
-    kafka_sasl_password = config.getenv("DATACONTRACT_KAFKA_SASL_PASSWORD")
-    kafka_sasl_mechanism = config.getenv("DATACONTRACT_KAFKA_SASL_MECHANISM", "PLAIN").upper()
+    config = Config.resolve(config)
+    kafka_sasl_username = config.get_kafka_sasl_username()
+    kafka_sasl_password = config.get_kafka_sasl_password()
+    kafka_sasl_mechanism = (config.get_kafka_sasl_mechanism() or "PLAIN").upper()
 
     # Skip authentication if credentials are not provided
     if not kafka_sasl_username or not kafka_sasl_password:

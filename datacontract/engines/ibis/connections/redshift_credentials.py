@@ -53,16 +53,14 @@ def resolve_redshift_login(
     override for when the inference guesses wrong, matching the equivalent
     variables on Databricks, Snowflake, SQL Server and Trino.
     """
-    config = Config.from_input(config)
-    authentication = config.getenv("DATACONTRACT_REDSHIFT_AUTHENTICATION", "").strip().lower() or _infer_authentication(
-        config
-    )
+    config = Config.resolve(config)
+    authentication = (config.get_redshift_authentication() or "").strip().lower() or _infer_authentication(config)
 
     if authentication == "password":
         return RedshiftLogin(
-            user=config.require("DATACONTRACT_REDSHIFT_USERNAME", server_type="redshift"),
-            password=config.getenv("DATACONTRACT_REDSHIFT_PASSWORD"),
-            sslmode=config.getenv("DATACONTRACT_REDSHIFT_SSLMODE"),
+            user=config.get_redshift_username(required=True),
+            password=config.get_redshift_password(),
+            sslmode=config.get_redshift_sslmode(),
         )
 
     if authentication == "iam":
@@ -73,7 +71,7 @@ def resolve_redshift_login(
             # Temporary credentials are only meaningful over TLS, and every
             # Redshift endpoint supports it; psycopg would otherwise default to
             # `prefer` and silently accept a plaintext connection.
-            sslmode=config.getenv("DATACONTRACT_REDSHIFT_SSLMODE", "require"),
+            sslmode=(config.get_redshift_sslmode() or "require"),
         )
 
     raise DataContractException(
@@ -94,7 +92,7 @@ def _infer_authentication(config: Config) -> str:
     reads ``DATACONTRACT_REDSHIFT_USERNAME`` as the database user, so a set
     username says nothing about which method was intended.
     """
-    if config.getenv("DATACONTRACT_REDSHIFT_PASSWORD"):
+    if config.get_redshift_password():
         return "password"
     if _aws_credentials_available(config):
         return "iam"
@@ -139,7 +137,7 @@ def _mint_iam_credentials(host: Optional[str], database: Optional[str], config: 
         return response["dbUser"], response["dbPassword"]
 
     client = _aws_client("redshift", region, config)
-    db_user = config.getenv("DATACONTRACT_REDSHIFT_DB_USER") or config.getenv("DATACONTRACT_REDSHIFT_USERNAME")
+    db_user = config.get_redshift_db_user() or config.get_redshift_username()
     duration = _duration_seconds(config)
 
     if not db_user:
@@ -158,11 +156,9 @@ def _mint_iam_credentials(host: Optional[str], database: Optional[str], config: 
         kwargs["DbName"] = database
     if duration:
         kwargs["DurationSeconds"] = duration
-    if config.get_bool("DATACONTRACT_REDSHIFT_AUTO_CREATE", False):
+    if config.get_redshift_auto_create(default=False):
         kwargs["AutoCreate"] = True
-    db_groups = [
-        group.strip() for group in config.getenv("DATACONTRACT_REDSHIFT_DB_GROUPS", "").split(",") if group.strip()
-    ]
+    db_groups = [group.strip() for group in (config.get_redshift_db_groups() or "").split(",") if group.strip()]
     if db_groups:
         kwargs["DbGroups"] = db_groups
     response = _call_aws(client.get_cluster_credentials, kwargs, "redshift:GetClusterCredentials")
@@ -176,9 +172,9 @@ def _resolve_endpoint(host: Optional[str], config: Config) -> Tuple[str, str, Op
     no extra configuration. Custom domains and VPC endpoints don't follow that
     shape, hence the explicit overrides.
     """
-    workgroup = config.getenv("DATACONTRACT_REDSHIFT_WORKGROUP")
-    cluster = config.getenv("DATACONTRACT_REDSHIFT_CLUSTER_IDENTIFIER")
-    region = config.getenv("DATACONTRACT_REDSHIFT_REGION") or config.getenv("DATACONTRACT_S3_REGION")
+    workgroup = config.get_redshift_workgroup()
+    cluster = config.get_redshift_cluster_identifier()
+    region = config.get_redshift_region() or config.get_s3_region()
 
     match = _ENDPOINT_PATTERN.match(host.strip()) if host else None
     if match:
@@ -228,15 +224,5 @@ def _call_aws(operation, kwargs: dict, api_name: str) -> dict:
 
 
 def _duration_seconds(config: Config) -> Optional[int]:
-    value = config.getenv("DATACONTRACT_REDSHIFT_DURATION_SECONDS")
-    if not value:
-        return None
-    try:
-        return int(value)
-    except ValueError:
-        raise DataContractException(
-            type="redshift-connection",
-            name="invalid_duration_seconds",
-            reason=f"DATACONTRACT_REDSHIFT_DURATION_SECONDS must be a whole number of seconds, got {value!r}.",
-            engine="datacontract",
-        )
+    # get_redshift_duration_seconds raises a DataContractException for non-numeric values.
+    return config.get_redshift_duration_seconds()

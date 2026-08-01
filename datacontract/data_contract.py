@@ -65,7 +65,7 @@ class DataContract:
         self._tags = tags
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
-        self._config = Config.from_input(config)
+        self._config = Config.resolve(config)
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -282,7 +282,7 @@ class DataContract:
         # Third-party importers registered before the config parameter existed may
         # still implement the two-argument signature; only pass config where declared.
         if "config" in inspect.signature(importer.import_source).parameters:
-            odcs_imported = importer.import_source(source=source, import_args=kwargs, config=Config.from_input(config))
+            odcs_imported = importer.import_source(source=source, import_args=kwargs, config=Config.resolve(config))
         else:
             odcs_imported = importer.import_source(source=source, import_args=kwargs)
 

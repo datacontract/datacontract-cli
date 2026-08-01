@@ -1,4 +1,4 @@
-"""Tests for Config.require, the required-configuration lookup used by the connection builders."""
+"""Tests for required config accessors (get_<option>(required=True)), used by the connection builders."""
 
 import pytest
 
@@ -6,25 +6,25 @@ from datacontract import Config
 from datacontract.model.exceptions import DataContractException
 
 
-def test_require_returns_value_when_set_in_the_environment(monkeypatch):
+def test_required_accessor_returns_value_when_set_in_the_environment(monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", "hello")
 
-    assert Config.from_input(None).require("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres") == "hello"
+    assert Config.resolve(None).get_postgres_username(required=True) == "hello"
 
 
-def test_require_returns_value_when_set_programmatically(monkeypatch):
+def test_required_accessor_returns_value_when_set_programmatically(monkeypatch):
     monkeypatch.delenv("DATACONTRACT_POSTGRES_USERNAME", raising=False)
 
     config = Config(postgres_username="hello")
 
-    assert config.require("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres") == "hello"
+    assert config.get_postgres_username(required=True) == "hello"
 
 
-def test_require_raises_when_unset(monkeypatch):
+def test_required_accessor_raises_when_unset(monkeypatch):
     monkeypatch.delenv("DATACONTRACT_POSTGRES_USERNAME", raising=False)
 
     with pytest.raises(DataContractException) as exc_info:
-        Config.from_input(None).require("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres")
+        Config.resolve(None).get_postgres_username(required=True)
 
     reason = exc_info.value.reason
     assert "DATACONTRACT_POSTGRES_USERNAME" in reason
@@ -32,8 +32,8 @@ def test_require_raises_when_unset(monkeypatch):
     assert exc_info.value.type == "postgres-connection"
 
 
-def test_require_raises_when_empty(monkeypatch):
+def test_required_accessor_raises_when_empty(monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", "")
 
     with pytest.raises(DataContractException):
-        Config.from_input(None).require("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres")
+        Config.resolve(None).get_postgres_username(required=True)

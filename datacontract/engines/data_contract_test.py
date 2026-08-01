@@ -37,7 +37,7 @@ def execute_data_contract_test(
     include_failed_samples: bool = False,
     config: Config | None = None,
 ):
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
             type="lint",
@@ -197,12 +197,12 @@ def get_server(data_contract: OpenDataContractStandard, server_name: str = None)
 
 
 def process_api_response(run, server, config: Config | None = None):
-    config = Config.from_input(config)
+    config = Config.resolve(config)
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract_cli_api_")
     atexit.register(tmp_dir.cleanup)
     headers = {}
-    if config.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION") is not None:
-        headers["Authorization"] = config.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION")
+    if config.get_api_header_authorization() is not None:
+        headers["Authorization"] = config.get_api_header_authorization()
     try:
         response = requests.get(server.location, headers=headers)
         response.raise_for_status()
