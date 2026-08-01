@@ -241,7 +241,7 @@ def test(
     if logs:
         _print_logs(run)
     try:
-        data_contract = resolve_data_contract(location, schema_location=schema)
+        data_contract = resolve_data_contract(location, schema_location=schema, config=cli_config())
     except Exception:
         data_contract = None
     write_test_result(run, console, output_format, output, data_contract)

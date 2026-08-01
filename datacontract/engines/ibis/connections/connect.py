@@ -15,7 +15,7 @@ import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
-from datacontract.config import Config, unknown_snowflake_env_names
+from datacontract.config import DEPRECATED_OPTIONS, Config, unknown_snowflake_env_names
 from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException
@@ -345,6 +345,48 @@ def _connect_impala(ibis, server: Server, config: Config):
     )
 
 
+def _snowflake_private_key(value: str | None):
+    """Normalize DATACONTRACT_SNOWFLAKE_PRIVATE_KEY to DER bytes.
+
+    The connector accepts the private key as DER bytes on every supported
+    version; the base64-DER string form only works from connector 3.13 on, and
+    PEM text never does. Accept both PEM (converted) and base64-DER (decoded),
+    so the option works regardless of the pinned connector version.
+    """
+    if not value:
+        return None
+    if "-----BEGIN" in value:
+        try:
+            from cryptography.hazmat.primitives import serialization
+
+            key = serialization.load_pem_private_key(value.encode(), password=None)
+            return key.private_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+        except Exception as e:
+            raise DataContractException(
+                type="snowflake-connection",
+                name="invalid_private_key",
+                reason=f"DATACONTRACT_SNOWFLAKE_PRIVATE_KEY could not be read as an unencrypted PEM private key: {e}. "
+                f"For encrypted keys, use DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE with "
+                f"DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD.",
+                engine="datacontract",
+            )
+    import base64
+
+    try:
+        return base64.b64decode(value, validate=True)
+    except Exception:
+        raise DataContractException(
+            type="snowflake-connection",
+            name="invalid_private_key",
+            reason="DATACONTRACT_SNOWFLAKE_PRIVATE_KEY must be a PEM private key or base64-encoded DER.",
+            engine="datacontract",
+        )
+
+
 def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> dict:
     """Build the ``ibis.snowflake.connect`` kwargs, one line per supported option.
 
@@ -373,7 +415,7 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     put("role", config.get_snowflake_role())
     put("token", config.get_snowflake_token())
     put("passcode", config.get_snowflake_passcode())
-    put("private_key", config.get_snowflake_private_key())
+    put("private_key", _snowflake_private_key(config.get_snowflake_private_key()))
     put("private_key_file", config.get_snowflake_private_key_file())
     put("private_key_file_pwd", config.get_snowflake_private_key_file_pwd())
     put("warehouse", config.get_snowflake_warehouse())
@@ -387,14 +429,16 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     # has never accepted. The driver ignores unknown parameters instead of raising, so setting
     # one of these used to do nothing at all and surfaced as an unrelated authentication error.
     # They are kept as synonyms for the real parameters, with a deprecation warning; an
-    # explicitly set replacement wins over the deprecated synonym.
-    for value, deprecated, replacement in (
-        (config.get_snowflake_private_key_path(), "PRIVATE_KEY_PATH", "private_key_file"),
-        (config.get_snowflake_private_key_passphrase(), "PRIVATE_KEY_PASSPHRASE", "private_key_file_pwd"),
-        (config.get_snowflake_connection_timeout(), "CONNECTION_TIMEOUT", "login_timeout"),
-    ):
+    # explicitly set replacement wins over the deprecated synonym. The mapping lives in
+    # DEPRECATED_OPTIONS, shared with the accessor warnings and the generated docs.
+    for deprecated_field, replacement_field in DEPRECATED_OPTIONS.items():
+        if not deprecated_field.startswith("snowflake_"):
+            continue
+        value = getattr(config, f"get_{deprecated_field}")()
         if not value:
             continue
+        deprecated = deprecated_field.removeprefix("snowflake_").upper()
+        replacement = replacement_field.removeprefix("snowflake_")
         run.log_warn(
             f"DATACONTRACT_SNOWFLAKE_{deprecated} is deprecated and will be removed in a future release, "
             f"use DATACONTRACT_SNOWFLAKE_{replacement.upper()} instead"

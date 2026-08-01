@@ -11,9 +11,16 @@ values the config does not set.
 """
 
 from datacontract.config.cli_context import cli_config, set_cli_config
-from datacontract.config.settings import Config, env_name, known_env_names, unknown_snowflake_env_names
+from datacontract.config.settings import (
+    DEPRECATED_OPTIONS,
+    Config,
+    env_name,
+    known_env_names,
+    unknown_snowflake_env_names,
+)
 
 __all__ = [
+    "DEPRECATED_OPTIONS",
     "Config",
     "cli_config",
     "set_cli_config",

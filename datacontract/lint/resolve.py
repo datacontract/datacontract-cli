@@ -112,7 +112,9 @@ def resolve_data_contract(
             data_contract_location, schema_location, inline_references, all_errors, config
         )
     elif data_contract_str is not None:
-        return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
+        return _resolve_data_contract_from_str(
+            data_contract_str, schema_location, inline_references, all_errors, config
+        )
     elif data_contract is not None:
         return data_contract
     else:
@@ -133,7 +135,7 @@ def resolve_data_contract_from_location(
     config: "Config | None" = None,
 ) -> OpenDataContractStandard:
     data_contract_str = read_resource(location, config)
-    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
+    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors, config)
 
 
 # Precedence-ordered: a property with both semantics and definition references
@@ -156,7 +158,7 @@ def clear_definition_cache() -> None:
     _definition_cache.clear()
 
 
-def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard):
+def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard, config: "Config | None" = None):
     """Resolve `authoritativeDefinitions[type in {semantics, definition}]` on
     every property.
 
@@ -169,23 +171,23 @@ def inline_definitions_into_data_contract(data_contract: OpenDataContractStandar
     for schema_obj in data_contract.schema_:
         if schema_obj.properties:
             for prop in schema_obj.properties:
-                inline_definition_into_property(prop)
+                inline_definition_into_property(prop, config)
 
 
-def inline_definition_into_property(prop: SchemaProperty):
+def inline_definition_into_property(prop: SchemaProperty, config: "Config | None" = None):
     """Resolve and inline; recurse into nested properties and array items."""
     if prop.items is not None:
-        inline_definition_into_property(prop.items)
+        inline_definition_into_property(prop.items, config)
     if prop.properties is not None:
         for nested_prop in prop.properties:
-            inline_definition_into_property(nested_prop)
+            inline_definition_into_property(nested_prop, config)
 
     resolved = _resolvable_reference(prop)
     if resolved is None:
         return
 
     type_, url = resolved
-    definition = _resolve_definition(url, type_)
+    definition = _resolve_definition(url, type_, config)
     _apply_definition_to_property(prop, definition)
 
 
@@ -199,7 +201,7 @@ def _resolvable_reference(prop: SchemaProperty) -> tuple[str, str] | None:
     return None
 
 
-def _resolve_definition(url: str, type_: str) -> SchemaProperty:
+def _resolve_definition(url: str, type_: str, config: "Config | None" = None) -> SchemaProperty:
     """Fetch and parse the definition or semantic concept at `url`.
 
     `type_` controls how an absolute URL on a different host is handled:
@@ -214,7 +216,7 @@ def _resolve_definition(url: str, type_: str) -> SchemaProperty:
     if url in _definition_cache:
         return _definition_cache[url]
 
-    target_url, headers, host_hint = _build_request(url, type_)
+    target_url, headers, host_hint = _build_request(url, type_, config)
 
     try:
         response = requests.get(target_url, headers=headers, timeout=10)
@@ -238,7 +240,7 @@ def _resolve_definition(url: str, type_: str) -> SchemaProperty:
     return definition
 
 
-def _build_request(url: str, type_: str) -> tuple[str, dict[str, str], str | None]:
+def _build_request(url: str, type_: str, config: "Config | None" = None) -> tuple[str, dict[str, str], str | None]:
     """Return the URL to fetch, the headers to use, and an optional host hint.
 
     The third element is a copy-pasteable ENTROPY_DATA_HOST suggestion that
@@ -258,14 +260,14 @@ def _build_request(url: str, type_: str) -> tuple[str, dict[str, str], str | Non
     """
     from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
 
-    configured_host = _get_host()
+    configured_host = _get_host(config)
     # urljoin keeps absolute URLs as-is and joins leading-slash paths onto
     # the host -- covers both shapes ODCS allows for `url`.
     direct_url = urljoin(configured_host, url)
     headers = {"Accept": "application/vnd.entropydata.odcs+json"}
 
     if _hosts_match(direct_url, configured_host):
-        api_key = _get_api_key_or_none()
+        api_key = _get_api_key_or_none(config)
         if api_key is not None:
             headers["x-api-key"] = api_key
         return direct_url, headers, None
@@ -276,7 +278,7 @@ def _build_request(url: str, type_: str) -> tuple[str, dict[str, str], str | Non
 
     # Off-host semantics reference: IRI lookup against the configured host.
     host_hint = _host_mismatch_hint(url, configured_host)
-    api_key = _get_api_key_or_none()
+    api_key = _get_api_key_or_none(config)
     if api_key is None:
         raise _definition_resolution_error(
             url,
@@ -343,7 +345,11 @@ def _definition_resolution_error(
 
 
 def _resolve_data_contract_from_str(
-    data_contract_str, schema_location: str = None, inline_references: bool = False, all_errors: bool = False
+    data_contract_str,
+    schema_location: str = None,
+    inline_references: bool = False,
+    all_errors: bool = False,
+    config: "Config | None" = None,
 ) -> OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 
@@ -378,7 +384,7 @@ def _resolve_data_contract_from_str(
 
         odcs = _parse_odcs_from_dict(yaml_dict, lax=custom_schema)
         if inline_references:
-            inline_definitions_into_data_contract(odcs)
+            inline_definitions_into_data_contract(odcs, config)
         return odcs
 
     # For DCS format, we need to convert it to ODCS
@@ -388,7 +394,7 @@ def _resolve_data_contract_from_str(
     dcs = parse_dcs_from_dict(yaml_dict)
     odcs = convert_dcs_to_odcs(dcs)
     if inline_references:
-        inline_definitions_into_data_contract(odcs)
+        inline_definitions_into_data_contract(odcs, config)
     return odcs
 
 

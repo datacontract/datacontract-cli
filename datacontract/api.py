@@ -13,7 +13,7 @@ from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, ValidationError
 
-from datacontract.config import Config
+from datacontract.config import Config, known_env_names
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
@@ -276,19 +276,22 @@ _CONFIG_HEADER_PREFIX = "datacontract-"
 
 
 def config_from_headers(headers) -> "Config | None":
-    """Build a per-request Config from ``datacontract-*`` headers.
+    """Build a per-request Config from configuration option headers.
 
     Header names are matched case-insensitively and map mechanically to the env
     var names: uppercase, dashes to underscores — ``datacontract-snowflake-password``
-    → ``DATACONTRACT_SNOWFLAKE_PASSWORD``. Returns None when no config headers
-    are present, so env-var-configured deployments behave exactly as before.
-    Unknown option names are rejected with a 400.
+    → ``DATACONTRACT_SNOWFLAKE_PASSWORD``, ``entropy-data-api-key`` →
+    ``ENTROPY_DATA_API_KEY``. Returns None when no config headers are present,
+    so env-var-configured deployments behave exactly as before. Unknown
+    ``datacontract-*`` option names are rejected with a 400.
     """
+    known = known_env_names()
     values = {}
     for name, value in headers.items():
         lowered = name.lower()
-        if lowered.startswith(_CONFIG_HEADER_PREFIX):
-            values[lowered.upper().replace("-", "_")] = value
+        env = lowered.upper().replace("-", "_")
+        if lowered.startswith(_CONFIG_HEADER_PREFIX) or env in known:
+            values[env] = value
     if not values:
         return None
     try:

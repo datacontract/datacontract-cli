@@ -9,7 +9,7 @@ committed page is stale.
 
 from pathlib import Path
 
-from datacontract.config import Config, env_name
+from datacontract.config import DEPRECATED_OPTIONS, Config, env_name
 
 DOCS_PAGE = Path(__file__).parent / "docs" / "docs" / "configuration.md"
 
@@ -40,17 +40,6 @@ GROUPS = {
     "trino": "Trino",
 }
 
-# deprecated option -> replacement, mirrored from the accessor/connect warnings
-DEPRECATED = {
-    "datamesh_manager_api_key": "entropy_data_api_key",
-    "datamesh_manager_host": "entropy_data_host",
-    "datacontract_manager_api_key": "entropy_data_api_key",
-    "datacontract_manager_host": "entropy_data_host",
-    "snowflake_private_key_path": "snowflake_private_key_file",
-    "snowflake_private_key_passphrase": "snowflake_private_key_file_pwd",
-    "snowflake_connection_timeout": "snowflake_login_timeout",
-}
-
 
 def _group(field_name: str) -> str:
     for prefix, heading in GROUPS.items():
@@ -75,8 +64,8 @@ def render_options_block() -> str:
     for name, field in Config.model_fields.items():
         heading = _group(name)
         notes = ""
-        if name in DEPRECATED:
-            replacement = DEPRECATED[name]
+        if name in DEPRECATED_OPTIONS:
+            replacement = DEPRECATED_OPTIONS[name]
             replacement_env = env_name(replacement, Config.model_fields[replacement])
             notes = f"Deprecated, use `{replacement_env}`"
         row = f"| `{env_name(name, field)}` | `{name}` | {_type_label(field.annotation)} | {notes} |"

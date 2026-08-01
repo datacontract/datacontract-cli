@@ -94,8 +94,8 @@ def create_spark_session():
 
 
 def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Server, config: Config | None = None):
-    config = Config.resolve(config)
     """Read and process data from a Kafka topic based on the server configuration."""
+    config = Config.resolve(config)
 
     if not data_contract.schema_ or len(data_contract.schema_) == 0:
         raise DataContractException(

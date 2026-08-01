@@ -7,14 +7,14 @@ from datacontract.model.exceptions import DataContractException
 
 
 class OdcsImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_odcs(source)
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
+        return import_odcs(source, config)
 
 
-def import_odcs(source: str) -> OpenDataContractStandard:
+def import_odcs(source: str, config=None) -> OpenDataContractStandard:
     """Import an ODCS file directly - since ODCS is now the internal format, this is simpler."""
     try:
-        odcs_yaml = yaml.safe_load(read_resource(source))
+        odcs_yaml = yaml.safe_load(read_resource(source, config))
     except Exception as e:
         raise DataContractException(
             type="schema",

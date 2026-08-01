@@ -181,9 +181,11 @@ def test_adls_uses_the_azure_connection_setup(monkeypatch):
 
     calls = []
     for name in ("setup_s3_connection", "setup_azure_connection"):
+        # The fake must match the real signature, so a call-shape regression in
+        # _read_columns fails here instead of only in the real command.
         monkeypatch.setattr(
             "datacontract.engines.ibis.connections.duckdb_connection." + name,
-            lambda con, server, _n=name: calls.append(_n),
+            lambda con, server, config, _n=name: calls.append(_n),
         )
     monkeypatch.setattr(object_storage_importer, "_READERS", {"csv": "(SELECT 1 AS id)"})
 
