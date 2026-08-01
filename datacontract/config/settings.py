@@ -110,6 +110,11 @@ class Config(BaseSettings):
     # postgres
     postgres_username: str | None = None
     postgres_password: SecretStr | None = None
+    # overrides for the contract's servers block
+    postgres_host: str | None = None
+    postgres_port: int | None = None
+    postgres_database: str | None = None
+    postgres_schema: str | None = None
 
     # redshift
     redshift_authentication: str | None = None
@@ -463,6 +468,18 @@ class Config(BaseSettings):
 
     def get_postgres_password(self, required: bool = False) -> str | None:
         return self._str_option("postgres_password", required)
+
+    def get_postgres_host(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_host", required)
+
+    def get_postgres_port(self) -> int | None:
+        return self._int_option("postgres_port")
+
+    def get_postgres_database(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_database", required)
+
+    def get_postgres_schema(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_schema", required)
 
     # --- redshift ---
     def get_redshift_authentication(self, required: bool = False) -> str | None:

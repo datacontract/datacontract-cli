@@ -100,12 +100,12 @@ def connect_ibis(
 
     if server_type == "postgres":
         return ibis.postgres.connect(
-            host=server.host,
-            port=int(server.port) if server.port else 5432,
+            host=config.get_postgres_host() or server.host,
+            port=config.get_postgres_port() or (int(server.port) if server.port else 5432),
             user=config.get_postgres_username(required=True),
             password=config.get_postgres_password(required=True),
-            database=server.database,
-            schema=server.schema_,
+            database=config.get_postgres_database() or server.database,
+            schema=config.get_postgres_schema() or server.schema_,
         )
 
     if server_type == "redshift":

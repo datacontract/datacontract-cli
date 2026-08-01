@@ -197,6 +197,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 |---|---|---|---|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres_username` | string |  |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `postgres_password` | string (secret) |  |
+| `DATACONTRACT_POSTGRES_HOST` | `postgres_host` | string |  |
+| `DATACONTRACT_POSTGRES_PORT` | `postgres_port` | integer |  |
+| `DATACONTRACT_POSTGRES_DATABASE` | `postgres_database` | string |  |
+| `DATACONTRACT_POSTGRES_SCHEMA` | `postgres_schema` | string |  |
 
 ### Redshift
 
