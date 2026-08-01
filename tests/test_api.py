@@ -164,14 +164,14 @@ def test_an_http_url_is_still_accepted():
     assert response.status_code == 200
 
 
-def test_config_headers_resolve_to_a_config():
+def test_config_headers_resolve_to_a_config_case_insensitively():
     from datacontract.api import config_from_headers
 
     config = config_from_headers(
         {
-            "X-Datacontract-Snowflake-Username": "svc_test",
-            "X-Datacontract-Snowflake-Password": "super-secret-value",
-            "X-Datacontract-Snowflake-Login-Timeout": "30",
+            "datacontract-snowflake-username": "svc_test",
+            "Datacontract-Snowflake-Password": "super-secret-value",
+            "DATACONTRACT-SNOWFLAKE-LOGIN-TIMEOUT": "30",
             "x-api-key": "not-a-config-header",
             "content-type": "application/yaml",
         }
@@ -196,7 +196,7 @@ def test_unknown_config_header_is_rejected():
     response = client.post(
         url="/test",
         content=data_contract_str,
-        headers={"Content-Type": "application/yaml", "X-Datacontract-Snowflake-Typo": "x"},
+        headers={"Content-Type": "application/yaml", "datacontract-snowflake-typo": "x"},
     )
 
     assert response.status_code == 400
@@ -214,7 +214,7 @@ def test_test_endpoint_uses_config_from_headers():
         client.post(
             url="/test",
             content=data_contract_str,
-            headers={"Content-Type": "application/yaml", "X-Datacontract-Postgres-Password": "pw"},
+            headers={"Content-Type": "application/yaml", "datacontract-postgres-password": "pw"},
         )
 
     config = mock.call_args.kwargs["config"]

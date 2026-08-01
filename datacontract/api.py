@@ -271,24 +271,23 @@ api_key_header = APIKeyHeader(
 )
 
 
-_CONFIG_HEADER_PREFIX = "x-datacontract-"
+_CONFIG_HEADER_PREFIX = "datacontract-"
 
 
 def config_from_headers(headers) -> "Config | None":
-    """Build a per-request Config from ``X-Datacontract-*`` headers.
+    """Build a per-request Config from ``datacontract-*`` headers.
 
-    Header names map mechanically to the env var names: strip the prefix,
-    uppercase, dashes to underscores — ``X-Datacontract-Snowflake-Password`` →
-    ``DATACONTRACT_SNOWFLAKE_PASSWORD``. Returns None when no config headers are
-    present, so env-var-configured deployments behave exactly as before.
+    Header names are matched case-insensitively and map mechanically to the env
+    var names: uppercase, dashes to underscores — ``datacontract-snowflake-password``
+    → ``DATACONTRACT_SNOWFLAKE_PASSWORD``. Returns None when no config headers
+    are present, so env-var-configured deployments behave exactly as before.
     Unknown option names are rejected with a 400.
     """
     values = {}
     for name, value in headers.items():
         lowered = name.lower()
         if lowered.startswith(_CONFIG_HEADER_PREFIX):
-            env = "DATACONTRACT_" + lowered[len(_CONFIG_HEADER_PREFIX) :].upper().replace("-", "_")
-            values[env] = value
+            values[lowered.upper().replace("-", "_")] = value
     if not values:
         return None
     try:
@@ -296,7 +295,7 @@ def config_from_headers(headers) -> "Config | None":
     except (ValueError, ValidationError) as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid X-Datacontract-* configuration header: {e}",
+            detail=f"Invalid datacontract-* configuration header: {e}",
         )
 
 
@@ -329,8 +328,8 @@ def check_api_key(api_key_header: str | None):
               Run schema and quality tests. Data Contract CLI connects to the data sources configured in the server section.
               This usually requires credentials to access the data sources.
               Credentials can be provided via environment variables when running the web server, or per request
-              via X-Datacontract-* headers, which map to the environment variable names
-              (e.g. X-Datacontract-Snowflake-Password sets DATACONTRACT_SNOWFLAKE_PASSWORD for this request only).
+              via datacontract-* headers (case-insensitive), which map to the environment variable names
+              (e.g. datacontract-snowflake-password sets DATACONTRACT_SNOWFLAKE_PASSWORD for this request only).
               POST the data contract YAML as payload.
             """,
     responses={
