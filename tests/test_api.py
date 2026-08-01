@@ -162,3 +162,60 @@ def test_an_http_url_is_still_accepted():
         response = _lint_with_schema("https://example.com/schema.json")
 
     assert response.status_code == 200
+
+
+def test_config_headers_resolve_to_a_config():
+    from datacontract.api import config_from_headers
+
+    config = config_from_headers(
+        {
+            "X-Datacontract-Snowflake-Username": "svc_test",
+            "X-Datacontract-Snowflake-Password": "super-secret-value",
+            "X-Datacontract-Snowflake-Login-Timeout": "30",
+            "x-api-key": "not-a-config-header",
+            "content-type": "application/yaml",
+        }
+    )
+
+    assert config.get_snowflake_username() == "svc_test"
+    assert config.get_snowflake_password() == "super-secret-value"
+    assert config.get_snowflake_login_timeout() == 30
+    assert "super-secret-value" not in repr(config)
+
+
+def test_no_config_headers_means_no_config():
+    from datacontract.api import config_from_headers
+
+    assert config_from_headers({"x-api-key": "k", "content-type": "application/yaml"}) is None
+
+
+def test_unknown_config_header_is_rejected():
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
+        data_contract_str = f.read()
+
+    response = client.post(
+        url="/test",
+        content=data_contract_str,
+        headers={"Content-Type": "application/yaml", "X-Datacontract-Snowflake-Typo": "x"},
+    )
+
+    assert response.status_code == 400
+    assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
+
+
+def test_test_endpoint_uses_config_from_headers():
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
+        data_contract_str = f.read()
+
+    from datacontract.model.run import Run
+
+    with patch("datacontract.api.DataContract") as mock:
+        mock.return_value.test.return_value = Run.create_run()
+        client.post(
+            url="/test",
+            content=data_contract_str,
+            headers={"Content-Type": "application/yaml", "X-Datacontract-Postgres-Password": "pw"},
+        )
+
+    config = mock.call_args.kwargs["config"]
+    assert config.get_postgres_password() == "pw"
