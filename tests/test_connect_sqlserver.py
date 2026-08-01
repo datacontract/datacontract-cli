@@ -12,8 +12,14 @@ import logging
 import pytest
 from open_data_contract_standard.model import Server
 
-from datacontract.engines.ibis.connections.connect import _sqlserver_connection_kwargs
+from datacontract.config import Config
+from datacontract.engines.ibis.connections.connect import _sqlserver_connection_kwargs as _kwargs_with_config
 from datacontract.model.exceptions import DataContractException
+
+
+def _sqlserver_connection_kwargs(server):
+    return _kwargs_with_config(server, Config.resolve(None))
+
 
 SQLSERVER_ENV_VARS = [
     "DATACONTRACT_SQLSERVER_AUTHENTICATION",

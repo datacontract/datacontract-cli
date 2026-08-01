@@ -135,7 +135,7 @@ DATACONTRACT_POSTGRES_USERNAME=postgres
 DATACONTRACT_POSTGRES_PASSWORD=postgres
 ```
 
-The page for each source above lists its `servers` fields and the environment variables it expects.
+The page for each source above lists its `servers` fields and the environment variables it expects. Credentials can also come from a YAML config file (`--config-file`), the Python `Config` class, or per-request API headers; see [Configuration](../configuration.md) for all mechanisms and their precedence.
 
 ## Options
 

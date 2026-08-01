@@ -1,12 +1,13 @@
 import logging
 
+from datacontract.config import Config
 from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
 
-def yield_s3_files(s3_endpoint_url, s3_location):
-    fs = s3_fs(s3_endpoint_url)
+def yield_s3_files(s3_endpoint_url, s3_location, config: Config | None = None):
+    fs = s3_fs(s3_endpoint_url, config)
     files = fs.glob(s3_location)
     for file in files:
         with fs.open(file) as f:
@@ -14,7 +15,7 @@ def yield_s3_files(s3_endpoint_url, s3_location):
             yield f.read()
 
 
-def s3_fs(s3_endpoint_url):
+def s3_fs(s3_endpoint_url, config: Config | None = None):
     try:
         import s3fs
     except ImportError as e:
@@ -27,7 +28,7 @@ def s3_fs(s3_endpoint_url):
             original_exception=e,
         )
 
-    configured = aws_credentials.client_kwargs()
+    configured = aws_credentials.client_kwargs(config=config)
     aws_access_key_id = configured["aws_access_key_id"]
     aws_secret_access_key = configured["aws_secret_access_key"]
     aws_session_token = configured["aws_session_token"]

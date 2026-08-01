@@ -21,6 +21,7 @@ datacontract [OPTIONS] COMMAND [ARGS]...
 |---|---|---|
 | `--version` | — | Prints the current version. |
 | `--system-truststore` | off | Verify TLS using the operating system's certificate trust store instead of the bundled CA certificates (e.g. behind a corporate proxy or internal CA). |
+| `--config-file` | — | Path to a YAML file with credentials and connection options (sections per data source, $\{VAR\} references resolve from the environment). Defaults to ./datacontract-config.yaml or ~/.datacontract/config.yaml if present. |
 
 Most commands additionally accept `--debug` for verbose logging.
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import re
 import uuid
 from datetime import datetime, timezone
@@ -16,6 +15,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.config import Config
 from datacontract.engines.checks.check_filter import CheckFilter
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -75,6 +75,7 @@ def check_azure_blob_file(
     dimensions: set[str] | None = None,
     quality_ids: set[str] | None = None,
     tags: set[str] | None = None,
+    config: Config | None = None,
 ) -> None:
     """Run Azure Blob Storage metadata checks for all blob-logicalType schemas.
 
@@ -111,7 +112,7 @@ def check_azure_blob_file(
         return
 
     try:
-        blob_service_client = _build_blob_service_client(location)
+        blob_service_client = _build_blob_service_client(location, Config.resolve(config))
     except Exception as exc:
         _append_check(
             run,
@@ -443,7 +444,7 @@ def _check_file_count_quality(
 # ---------------------------------------------------------------------------
 
 
-def _build_blob_service_client(location: str) -> "BlobServiceClient":
+def _build_blob_service_client(location: str, config: Config) -> "BlobServiceClient":
     """Create a ``BlobServiceClient`` using available credentials."""
     try:
         from azure.storage.blob import BlobServiceClient
@@ -458,7 +459,7 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
         )
 
     # 1. Connection string
-    conn_str = os.getenv("DATACONTRACT_AZURE_CONNECTION_STRING")
+    conn_str = config.get_azure_connection_string()
     if conn_str:
         return BlobServiceClient.from_connection_string(conn_str)
 
@@ -466,14 +467,14 @@ def _build_blob_service_client(location: str) -> "BlobServiceClient":
     account_url = _account_url_from_location(location)
 
     # 2. Storage account key
-    account_key = os.getenv("DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY")
+    account_key = config.get_azure_storage_account_key()
     if account_key and account_url:
         return BlobServiceClient(account_url=account_url, credential=account_key)
 
     # 3. Service principal
-    tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
-    client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
-    client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
+    tenant_id = config.get_azure_tenant_id()
+    client_id = config.get_azure_client_id()
+    client_secret = config.get_azure_client_secret()
     if tenant_id and client_id and client_secret:
         try:
             from azure.identity import ClientSecretCredential

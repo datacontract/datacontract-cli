@@ -14,6 +14,7 @@ from datacontract.cli import (
     enable_debug_logging,
     validate_publish_url,
 )
+from datacontract.config import cli_config
 from datacontract.integration.dbt_sync import (
     ModelResolution,
     _ensure_dbt_project,
@@ -120,7 +121,7 @@ def _maybe_publish(run: Run, odcs, publish: Optional[str], ssl_verification: boo
                 f"Pass --server to identify the run.[/yellow]"
             )
         return False
-    return not publish_test_results_to_entropy_data(run, publish, ssl_verification)
+    return not publish_test_results_to_entropy_data(run, publish, ssl_verification, config=cli_config())
 
 
 def _report_run(run: Run, *, run_only: bool, publish_failed: bool, ctx: _ContractCtx) -> bool:

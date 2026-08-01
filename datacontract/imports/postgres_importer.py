@@ -17,11 +17,12 @@ from typing import Any, Dict, List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
+from datacontract.config import Config
 from datacontract.engines.ibis.native_type import reconstruct_native_type
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
 from datacontract.imports.sql_importer import map_type_from_sql
-from datacontract.model.exceptions import DataContractException, require_env
+from datacontract.model.exceptions import DataContractException
 
 DEFAULT_PORT = 5432
 DEFAULT_SCHEMA = "public"
@@ -72,7 +73,7 @@ _PRIMARY_KEYS_QUERY = """
 
 
 class PostgresImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config: "Config | None" = None) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
                 type="source",
@@ -86,6 +87,7 @@ class PostgresImporter(Importer):
             database=import_args.get("database"),
             schema=import_args.get("schema"),
             tables=import_args.get("postgres_table"),
+            config=config,
         )
 
 
@@ -95,6 +97,7 @@ def import_postgres_from_connector(
     schema: Optional[str] = None,
     port: Optional[int] = None,
     tables: Optional[List[str]] = None,
+    config: Optional[Config] = None,
 ) -> OpenDataContractStandard:
     if not database:
         raise DataContractException(
@@ -106,7 +109,7 @@ def import_postgres_from_connector(
 
     port = int(port) if port else DEFAULT_PORT
     schema = schema or DEFAULT_SCHEMA
-    connection = postgres_connection(host=host, port=port, database=database)
+    connection = postgres_connection(host=host, port=port, database=database, config=config)
     try:
         table_rows = _fetch(connection, _TABLES_QUERY, (schema,))
         column_rows = _fetch(connection, _COLUMNS_QUERY, (schema,))
@@ -144,7 +147,8 @@ def import_postgres_from_connector(
     return odcs
 
 
-def postgres_connection(host: str, port: int, database: str):
+def postgres_connection(host: str, port: int, database: str, config: Optional[Config] = None):
+    config = Config.resolve(config)
     """Open a psycopg connection using the same DATACONTRACT_POSTGRES_* env vars as `datacontract test`."""
     try:
         import psycopg
@@ -162,8 +166,8 @@ def postgres_connection(host: str, port: int, database: str):
         host=host,
         port=port,
         dbname=database,
-        user=require_env("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres"),
-        password=require_env("DATACONTRACT_POSTGRES_PASSWORD", server_type="postgres"),
+        user=config.get_postgres_username(required=True),
+        password=config.get_postgres_password(required=True),
     )
 
 

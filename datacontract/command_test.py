@@ -13,6 +13,7 @@ from datacontract.cli import (
     resolve_output_format,
     validate_publish_url,
 )
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.lint.resolve import resolve_data_contract
 from datacontract.output.output_format import OutputFormat
@@ -176,6 +177,7 @@ def test(
     if server == "all":
         server = None
     run = DataContract(
+        config=cli_config(),
         data_contract_file=location,
         schema_location=schema,
         publish_test_results=publish_test_results,

@@ -6,6 +6,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat, SqlServerType
 from datacontract.export.great_expectations_exporter import GreatExpectationsEngine
@@ -64,6 +65,7 @@ def _export(
     clickhouse_order_by: Optional[str] = None,
 ):
     result = DataContract(
+        config=cli_config(),
         data_contract_file=location,
         schema_location=schema,
         server=server,

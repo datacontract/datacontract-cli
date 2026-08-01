@@ -1,3 +1,4 @@
+import inspect
 import logging
 import typing
 from importlib import metadata
@@ -8,6 +9,7 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+from datacontract.config import Config
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
@@ -42,6 +44,7 @@ class DataContract:
         tags: set[str] | None = None,
         fastapi_url: str = None,
         include_failed_samples: bool = False,
+        config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -62,6 +65,7 @@ class DataContract:
         self._tags = tags
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
+        self._config = Config.resolve(config)
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -80,6 +84,7 @@ class DataContract:
                 self._schema_location,
                 inline_references=self._inline_references,
                 all_errors=self._all_errors,
+                config=self._config,
             )
             run.checks.append(
                 Check(
@@ -142,6 +147,7 @@ class DataContract:
                 self._data_contract,
                 self._schema_location,
                 inline_references=self._inline_references,
+                config=self._config,
             )
 
             execute_data_contract_test(
@@ -156,6 +162,7 @@ class DataContract:
                 quality_ids=self._quality_ids,
                 tags=self._tags,
                 include_failed_samples=self._include_failed_samples,
+                config=self._config,
             )
 
         except DataContractException as e:
@@ -186,7 +193,7 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None or self._publish_test_results:
-            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification)
+            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification, config=self._config)
 
         return run
 
@@ -197,6 +204,7 @@ class DataContract:
             data_contract=self._data_contract,
             schema_location=self._schema_location,
             inline_references=self._inline_references,
+            config=self._config,
         )
 
     def get_data_contract_file(self) -> str | None:
@@ -211,6 +219,7 @@ class DataContract:
             self._data_contract,
             schema_location=self._schema_location,
             inline_references=self._inline_references,
+            config=self._config,
         )
 
         return exporter_factory.create(export_format).export(
@@ -258,16 +267,24 @@ class DataContract:
         cls,
         format: str,
         source: typing.Optional[str] = None,
+        config: "Config | dict[str, str] | None" = None,
         **kwargs,
     ) -> OpenDataContractStandard:
         """Import a data contract from a source in a given format.
 
         All imports now return OpenDataContractStandard (ODCS) format.
+        Credentials and connection options can be passed via ``config``.
         """
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
+        importer = importer_factory.create(format)
+        # Third-party importers registered before the config parameter existed may
+        # still implement the two-argument signature; only pass config where declared.
+        if "config" in inspect.signature(importer.import_source).parameters:
+            odcs_imported = importer.import_source(source=source, import_args=kwargs, config=Config.resolve(config))
+        else:
+            odcs_imported = importer.import_source(source=source, import_args=kwargs)
 
         cls._overwrite_id_in_odcs(odcs_imported, id)
         cls._overwrite_owner_in_odcs(odcs_imported, owner)
