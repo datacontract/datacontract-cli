@@ -13,7 +13,7 @@ def read_resource(location: str, config: Config | None = None) -> str:
 
     Args:
         location (str): The resource location.
-        config: Optional credentials for authenticated URLs.
+        config: Optional credentials for authenticated URLs and ``s3://`` locations.
 
     Returns:
         str: The content of the resource.
@@ -21,6 +21,6 @@ def read_resource(location: str, config: Config | None = None) -> str:
     if location.startswith("http://") or location.startswith("https://"):
         return urls.fetch_resource(location, config)
     elif location.startswith("s3://"):
-        return s3.fetch_resource(location)
+        return s3.fetch_resource(location, config)
     else:
         return files.read_file(location)

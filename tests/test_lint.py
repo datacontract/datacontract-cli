@@ -4,6 +4,7 @@ from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
+from datacontract.config import Config
 from datacontract.data_contract import DataContract
 
 # logging.basicConfig(level=logging.INFO, force=True)
@@ -135,18 +136,46 @@ def test_lint_with_references():
     assert run.result == "passed"
 
 
-def test_lint_reads_data_contract_from_s3():
-    with open("fixtures/lint/valid_datacontract.yaml", "rb") as f:
-        yaml_bytes = f.read()
-
+def _mock_s3_client_returning(yaml_bytes: bytes) -> MagicMock:
     mock_body = MagicMock()
     mock_body.read.return_value = yaml_bytes
     mock_s3 = MagicMock()
     mock_s3.get_object.return_value = {"Body": mock_body}
+    return mock_s3
 
-    with patch("datacontract.lint.s3.boto3.client", return_value=mock_s3):
+
+def test_lint_reads_data_contract_from_s3():
+    with open("fixtures/lint/valid_datacontract.yaml", "rb") as f:
+        yaml_bytes = f.read()
+    mock_s3 = _mock_s3_client_returning(yaml_bytes)
+
+    with patch("boto3.client", return_value=mock_s3):
         data_contract = DataContract(data_contract_file="s3://my-bucket/contracts/datacontract.yaml")
         run = data_contract.lint()
 
     assert run.result == "passed"
     mock_s3.get_object.assert_called_once_with(Bucket="my-bucket", Key="contracts/datacontract.yaml")
+
+
+def test_lint_reads_data_contract_from_s3_with_configured_credentials():
+    with open("fixtures/lint/valid_datacontract.yaml", "rb") as f:
+        yaml_bytes = f.read()
+    mock_s3 = _mock_s3_client_returning(yaml_bytes)
+    config = Config(
+        s3_access_key_id="my-access-key",
+        s3_secret_access_key="my-secret-key",
+        s3_region="eu-central-1",
+    )
+
+    with patch("boto3.client", return_value=mock_s3) as mock_client:
+        data_contract = DataContract(data_contract_file="s3://my-bucket/contracts/datacontract.yaml", config=config)
+        run = data_contract.lint()
+
+    assert run.result == "passed"
+    mock_client.assert_called_once_with(
+        "s3",
+        region_name="eu-central-1",
+        aws_access_key_id="my-access-key",
+        aws_secret_access_key="my-secret-key",
+        aws_session_token=None,
+    )

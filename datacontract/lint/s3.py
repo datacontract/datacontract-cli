@@ -1,17 +1,18 @@
 from urllib.parse import urlparse
 
-import boto3
-
+from datacontract.config import Config
+from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
 
-def fetch_resource(url: str) -> str:
+def fetch_resource(url: str, config: Config | None = None) -> str:
     parsed_url = urlparse(url)
     bucket = parsed_url.netloc
     key = parsed_url.path.lstrip("/")
     try:
-        response = boto3.client("s3").get_object(Bucket=bucket, Key=key)
+        s3_client = aws_credentials.client("s3", config=config)
+        response = s3_client.get_object(Bucket=bucket, Key=key)
         body = response["Body"].read()
         return body.decode("utf-8")
     except Exception as e:
