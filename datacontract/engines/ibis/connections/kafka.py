@@ -6,6 +6,7 @@ from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
+from datacontract.config import Config
 from datacontract.export.avro_exporter import to_avro_schema_json
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
@@ -92,7 +93,8 @@ def create_spark_session():
     return spark
 
 
-def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Server):
+def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Server, config: Config | None = None):
+    config = Config.resolve(config)
     """Read and process data from a Kafka topic based on the server configuration."""
 
     if not data_contract.schema_ or len(data_contract.schema_) == 0:
@@ -111,7 +113,7 @@ def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Ser
     logging.info("Reading data from Kafka server %s topic %s", server.host, topic)
     df = (
         spark.read.format("kafka")
-        .options(**get_auth_options())
+        .options(**get_auth_options(config))
         .option("kafka.bootstrap.servers", server.host)
         .option("subscribe", topic)
         .option("startingOffsets", "earliest")
@@ -120,7 +122,7 @@ def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Ser
 
     match server.format:
         case "avro":
-            process_avro_format(df, model_name, schema_obj)
+            process_avro_format(df, model_name, schema_obj, config)
         case "json":
             process_json_format(df, model_name, schema_obj)
         case _:
@@ -139,7 +141,7 @@ def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Ser
 _IS_CONFLUENT_FRAMED = "substring(value, 1, 1) = X'00'"
 
 
-def process_avro_format(df, model_name: str, schema_obj: SchemaObject):
+def process_avro_format(df, model_name: str, schema_obj: SchemaObject, config: Config | None = None):
     try:
         from pyspark.sql.avro.functions import from_avro
         from pyspark.sql.functions import col, expr
@@ -164,7 +166,7 @@ def process_avro_format(df, model_name: str, schema_obj: SchemaObject):
         expr(f"CASE WHEN {_IS_CONFLUENT_FRAMED} THEN conv(hex(substring(value, 2, 4)), 16, 10) END").cast("long"),
     )
 
-    registry = get_schema_registry_config()
+    registry = get_schema_registry_config(config)
     decoded = None
     for schema_id, part in _partition_by_writer_schema(framed, registry):
         if schema_id is None:
@@ -236,15 +238,16 @@ def _check_messages_are_decodable(rows, source: str, registry_configured: bool):
         )
 
 
-def get_schema_registry_config() -> Optional[dict]:
-    """Confluent Schema Registry settings from the environment, or None if not configured."""
-    url = os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL")
+def get_schema_registry_config(config: Config | None = None) -> Optional[dict]:
+    """Confluent Schema Registry settings from the config or environment, or None if not configured."""
+    config = Config.resolve(config)
+    url = config.get_kafka_schema_registry_url()
     if not url:
         return None
     return {
         "url": url.rstrip("/"),
-        "username": os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME"),
-        "password": os.getenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD"),
+        "username": config.get_kafka_schema_registry_username(),
+        "password": config.get_kafka_schema_registry_password(),
     }
 
 
@@ -301,11 +304,12 @@ def process_json_format(df, model_name: str, schema_obj: SchemaObject):
     ).select(col("json.*")).createOrReplaceTempView(model_name)
 
 
-def get_auth_options():
-    """Retrieve Kafka authentication options from environment variables."""
-    kafka_sasl_username = os.getenv("DATACONTRACT_KAFKA_SASL_USERNAME")
-    kafka_sasl_password = os.getenv("DATACONTRACT_KAFKA_SASL_PASSWORD")
-    kafka_sasl_mechanism = os.getenv("DATACONTRACT_KAFKA_SASL_MECHANISM", "PLAIN").upper()
+def get_auth_options(config: Config | None = None):
+    """Retrieve Kafka authentication options from the config or environment variables."""
+    config = Config.resolve(config)
+    kafka_sasl_username = config.get_kafka_sasl_username()
+    kafka_sasl_password = config.get_kafka_sasl_password()
+    kafka_sasl_mechanism = (config.get_kafka_sasl_mechanism() or "PLAIN").upper()
 
     # Skip authentication if credentials are not provided
     if not kafka_sasl_username or not kafka_sasl_password:

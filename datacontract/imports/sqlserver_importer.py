@@ -9,7 +9,6 @@ SQL logins, Windows integrated auth, the Entra ID modes and ``az login``.
 
 from __future__ import annotations
 
-import os
 from typing import Any, Dict, List, Optional
 
 from open_data_contract_standard.model import (
@@ -20,6 +19,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.config import Config
 from datacontract.engines.ibis.native_type import reconstruct_native_type
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
@@ -61,7 +61,7 @@ _PRIMARY_KEYS_QUERY = """
 
 
 class SqlServerImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config: "Config | None" = None) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
                 type="source",
@@ -75,6 +75,7 @@ class SqlServerImporter(Importer):
             database=import_args.get("database"),
             schema=import_args.get("schema"),
             tables=import_args.get("sqlserver_table"),
+            config=config,
         )
 
 
@@ -84,6 +85,7 @@ def import_sqlserver(
     schema: Optional[str] = None,
     port: Optional[int] = None,
     tables: Optional[List[str]] = None,
+    config: Optional[Config] = None,
 ) -> OpenDataContractStandard:
     if not database:
         raise DataContractException(
@@ -95,7 +97,8 @@ def import_sqlserver(
 
     port = int(port) if port else DEFAULT_PORT
     schema = schema or DEFAULT_SCHEMA
-    driver = os.getenv("DATACONTRACT_SQLSERVER_DRIVER", DEFAULT_DRIVER)
+    config = Config.resolve(config)
+    driver = config.get_sqlserver_driver() or DEFAULT_DRIVER
     server = create_server(
         name="production",
         server_type="sqlserver",
@@ -107,7 +110,7 @@ def import_sqlserver(
     # the driver is a custom property, which is how the test path reads it back
     server.customProperties = [CustomProperty(property="driver", value=driver)]
 
-    connection = sqlserver_connection(server)
+    connection = sqlserver_connection(server, config)
     try:
         table_rows = _fetch(connection, _TABLES_QUERY.format(schema=_escape(schema)))
         column_rows = _fetch(connection, _COLUMNS_QUERY.format(schema=_escape(schema)))
@@ -136,7 +139,7 @@ def import_sqlserver(
     return odcs
 
 
-def sqlserver_connection(server: Server):
+def sqlserver_connection(server: Server, config: Optional[Config] = None):
     """Connect exactly as `datacontract test` does, so both support the same auth modes."""
     try:
         import ibis  # noqa: F401
@@ -153,7 +156,7 @@ def sqlserver_connection(server: Server):
     from datacontract.engines.ibis.connections.connect import _connect_sqlserver
 
     try:
-        return _connect_sqlserver(ibis, server)
+        return _connect_sqlserver(ibis, server, Config.resolve(config))
     except Exception as e:
         raise DataContractException(
             type="schema",

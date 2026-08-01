@@ -15,6 +15,7 @@ from datacontract.cli import (
     resolve_output_format,
     validate_publish_url,
 )
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
@@ -111,6 +112,7 @@ def ci(
     for location in locations:
         out.print(f"Testing {location}")
         run = DataContract(
+            config=cli_config(),
             data_contract_file=location,
             schema_location=schema,
             publish_url=publish,

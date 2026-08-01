@@ -74,7 +74,7 @@ curl -X POST "http://localhost:4242/changelog" \
 
 ## Configure server credentials
 
-To connect to a data source, set the required credentials as environment variables **before starting the API** (see [Test your Data](./testing/index.md#configuring-the-connection)). For example, for Snowflake:
+To connect to a data source, set the required credentials as environment variables **before starting the API** (see [Configuration](./configuration.md)). For example, for Snowflake:
 
 ```bash
 export DATACONTRACT_SNOWFLAKE_USERNAME=123
@@ -82,6 +82,8 @@ export DATACONTRACT_SNOWFLAKE_PASSWORD=
 export DATACONTRACT_SNOWFLAKE_WAREHOUSE=
 export DATACONTRACT_SNOWFLAKE_ROLE=
 ```
+
+Alternatively, `POST /test` accepts credentials per request via `datacontract-*` headers (e.g. `datacontract-snowflake-password`), matched case-insensitively and applied to that request only. This allows one server to test contracts for different tenants without sharing credentials through the process environment. Serve the API over HTTPS when sending credential headers.
 
 ## Secure the API
 

@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+- `DATAMESH_MANAGER_API_KEY`, `DATAMESH_MANAGER_HOST`, `DATACONTRACT_MANAGER_API_KEY`, and `DATACONTRACT_MANAGER_HOST` (and the matching `Config` fields): use `ENTROPY_DATA_API_KEY` and `ENTROPY_DATA_HOST` instead
+
 ### Added
 - `datacontract test --filter` and `--filters` test only the rows matching a SQL predicate, e.g., the latest partition (#1463)
+- Credentials and connection options can be passed programmatically via `DataContract(config=...)` and `DataContract.import_from_source(..., config=...)`, using the typed `datacontract.Config` class or a dict keyed by the environment variable names
+- The API server accepts per-request credentials on `POST /test` via `datacontract-*` headers (e.g. `datacontract-snowflake-password`)
+- Credentials and connection options can be provided in a YAML config file, via `--config-file` (defaults to `./datacontract-config.yaml` or `~/.datacontract/config.yaml`) or `Config.from_yaml()`, with `${VAR}` references resolved from the environment
+- New Snowflake connection options: `DATACONTRACT_SNOWFLAKE_TOKEN`, `DATACONTRACT_SNOWFLAKE_PASSCODE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`, `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_HOST`, `DATACONTRACT_SNOWFLAKE_PORT`
+
+### Changed
+- `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning instead of being passed through (use a connections.toml for connector parameters the CLI does not support directly)
+
+### Fixed
+- `datacontract dbt sync` writes a description on all dbt tests, not only newly-generated ones
 
 ## [1.0.16] - 2026-07-31
 

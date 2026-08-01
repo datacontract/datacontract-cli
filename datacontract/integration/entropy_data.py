@@ -1,26 +1,29 @@
-import os
 from urllib.parse import urlparse
 
 import requests
 
+from datacontract.config import Config
 from datacontract.model.run import Run
 
 # used to retrieve the HTML location of the published data contract or test results
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
 
 
-def publish_test_results_to_entropy_data(run: Run, publish_url: str, ssl_verification: bool) -> bool:
+def publish_test_results_to_entropy_data(
+    run: Run, publish_url: str, ssl_verification: bool, config: Config | None = None
+) -> bool:
     """Publish `run` to the Entropy Data instance. Returns True on success, False otherwise."""
     try:
+        config = Config.resolve(config)
         host = publish_url
         if publish_url is None:
             # this url supports Data Mesh Manager and Data Contract Manager
-            host = _get_host()
+            host = _get_host(config)
             url = "%s/api/test-results" % host
         else:
             url = publish_url
 
-        api_key = _get_api_key()
+        api_key = _get_api_key(config)
 
         if run.dataContractId is None:
             raise Exception("Cannot publish run results for unknown data contract ID")
@@ -52,10 +55,13 @@ def publish_test_results_to_entropy_data(run: Run, publish_url: str, ssl_verific
         return False
 
 
-def publish_data_contract_to_entropy_data(data_contract_dict: dict, ssl_verification: bool):
+def publish_data_contract_to_entropy_data(
+    data_contract_dict: dict, ssl_verification: bool, config: Config | None = None
+):
     try:
-        api_key = _get_api_key()
-        host = _get_host()
+        config = Config.resolve(config)
+        api_key = _get_api_key(config)
+        host = _get_host(config)
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
         id = data_contract_dict["id"]
         url = f"{host}/api/datacontracts/{id}"
@@ -80,14 +86,14 @@ def publish_data_contract_to_entropy_data(data_contract_dict: dict, ssl_verifica
         print(f"Failed publishing data contract. Error: {str(e)}")
 
 
-def _get_api_key() -> str:
+def _get_api_key(config: Config) -> str:
     """
-    Get API key from environment variables with fallback priority:
+    Get API key from the config or environment variables with fallback priority:
     1. ENTROPY_DATA_API_KEY
     2. DATAMESH_MANAGER_API_KEY
     3. DATACONTRACT_MANAGER_API_KEY
     """
-    api_key = _get_api_key_or_none()
+    api_key = _get_api_key_or_none(config)
     if api_key is None:
         raise Exception(
             "Cannot publish, as neither ENTROPY_DATA_API_KEY, DATAMESH_MANAGER_API_KEY, nor DATACONTRACT_MANAGER_API_KEY is set"
@@ -95,29 +101,31 @@ def _get_api_key() -> str:
     return api_key
 
 
-def _get_api_key_or_none() -> str | None:
+def _get_api_key_or_none(config: Config | None = None) -> str | None:
     """Same lookup as `_get_api_key` but returns None instead of raising;
     for callers that may legitimately fall back to anonymous requests."""
+    config = Config.resolve(config)
     return (
-        os.getenv("ENTROPY_DATA_API_KEY")
-        or os.getenv("DATAMESH_MANAGER_API_KEY")
-        or os.getenv("DATACONTRACT_MANAGER_API_KEY")
+        config.get_entropy_data_api_key()
+        or config.get_datamesh_manager_api_key()
+        or config.get_datacontract_manager_api_key()
     )
 
 
-def _get_host() -> str:
+def _get_host(config: Config | None = None) -> str:
     """
-    Get host from environment variables with fallback priority:
+    Get host from the config or environment variables with fallback priority:
     1. ENTROPY_DATA_HOST
     2. DATAMESH_MANAGER_HOST
     3. DATACONTRACT_MANAGER_HOST
     4. Default: https://api.entropy-data.com
     """
-    host = os.getenv("ENTROPY_DATA_HOST")
+    config = Config.resolve(config)
+    host = config.get_entropy_data_host()
     if host is None:
-        host = os.getenv("DATAMESH_MANAGER_HOST")
+        host = config.get_datamesh_manager_host()
     if host is None:
-        host = os.getenv("DATACONTRACT_MANAGER_HOST")
+        host = config.get_datacontract_manager_host()
     if host is None:
         host = "https://api.entropy-data.com"
     return host

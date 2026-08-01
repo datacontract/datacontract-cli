@@ -2,6 +2,7 @@ import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import app, console, debug_option, enable_debug_logging
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.text_changelog_results import write_text_changelog_results
 
@@ -24,7 +25,7 @@ def changelog(
 ):
     """Show a changelog between two data contracts."""
     enable_debug_logging(debug)
-    result = DataContract(data_contract_file=v1, inline_references=inline_references).changelog(
-        DataContract(data_contract_file=v2, inline_references=inline_references)
+    result = DataContract(config=cli_config(), data_contract_file=v1, inline_references=inline_references).changelog(
+        DataContract(config=cli_config(), data_contract_file=v2, inline_references=inline_references)
     )
     write_text_changelog_results(result, console)

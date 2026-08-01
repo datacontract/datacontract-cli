@@ -1,7 +1,11 @@
+import typing
 from abc import ABC, abstractmethod
 from enum import Enum
 
 from open_data_contract_standard.model import OpenDataContractStandard
+
+if typing.TYPE_CHECKING:
+    from datacontract.config import Config
 
 
 class Importer(ABC):
@@ -13,10 +17,15 @@ class Importer(ABC):
         self,
         source: str,
         import_args: dict,
+        config: "Config | None" = None,
     ) -> OpenDataContractStandard:
         """Import a data contract from a source.
 
         All importers now return OpenDataContractStandard (ODCS) format.
+        ``config`` carries credentials and connection options; implementations
+        that do not need credentials can ignore it. Importers registered with
+        the two-argument signature keep working: the caller only passes
+        ``config`` when the implementation declares the parameter.
         """
         pass
 

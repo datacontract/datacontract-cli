@@ -105,6 +105,7 @@ def execute_ibis_checks(
     schema_name: str = "all",
     include_failed_samples: bool = False,
     model_filters: Optional[dict[str, str]] = None,
+    config=None,
 ):
     if data_contract is None:
         run.log_warn("Cannot run engine ibis, as data contract is invalid")
@@ -123,7 +124,7 @@ def execute_ibis_checks(
 
     run.log_info("Running engine ibis")
     try:
-        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name)
+        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name, config)
     except DataContractException:
         raise
     except ImportError:

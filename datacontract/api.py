@@ -10,8 +10,9 @@ from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, statu
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
+from datacontract.config import Config
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
@@ -270,6 +271,34 @@ api_key_header = APIKeyHeader(
 )
 
 
+_CONFIG_HEADER_PREFIX = "datacontract-"
+
+
+def config_from_headers(headers) -> "Config | None":
+    """Build a per-request Config from ``datacontract-*`` headers.
+
+    Header names are matched case-insensitively and map mechanically to the env
+    var names: uppercase, dashes to underscores — ``datacontract-snowflake-password``
+    → ``DATACONTRACT_SNOWFLAKE_PASSWORD``. Returns None when no config headers
+    are present, so env-var-configured deployments behave exactly as before.
+    Unknown option names are rejected with a 400.
+    """
+    values = {}
+    for name, value in headers.items():
+        lowered = name.lower()
+        if lowered.startswith(_CONFIG_HEADER_PREFIX):
+            values[lowered.upper().replace("-", "_")] = value
+    if not values:
+        return None
+    try:
+        return Config.resolve(values)
+    except (ValueError, ValidationError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid datacontract-* configuration header: {e}",
+        )
+
+
 def check_api_key(api_key_header: str | None):
     correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
@@ -298,7 +327,9 @@ def check_api_key(api_key_header: str | None):
     description="""
               Run schema and quality tests. Data Contract CLI connects to the data sources configured in the server section.
               This usually requires credentials to access the data sources.
-              Credentials must be provided via environment variables when running the web server.
+              Credentials can be provided via environment variables when running the web server, or per request
+              via datacontract-* headers (case-insensitive), which map to the environment variable names
+              (e.g. datacontract-snowflake-password sets DATACONTRACT_SNOWFLAKE_PASSWORD for this request only).
               POST the data contract YAML as payload.
             """,
     responses={
@@ -353,7 +384,11 @@ async def test(
     logging.info("Testing data contract...")
     logging.info(body)
     return DataContract(
-        data_contract_str=body, server=server, publish_url=publish_url, fastapi_url=str(request.url)
+        data_contract_str=body,
+        server=server,
+        publish_url=publish_url,
+        fastapi_url=str(request.url),
+        config=config_from_headers(request.headers),
     ).test()
 
 

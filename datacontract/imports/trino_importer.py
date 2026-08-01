@@ -34,7 +34,7 @@ _COLUMNS_QUERY = """
 
 
 class TrinoImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
                 type="source",
@@ -48,6 +48,7 @@ class TrinoImporter(Importer):
             catalog=import_args.get("catalog"),
             schema=import_args.get("schema"),
             tables=import_args.get("trino_table"),
+            config=config,
         )
 
 
@@ -57,6 +58,7 @@ def import_trino(
     schema: Optional[str] = None,
     port: Optional[int] = None,
     tables: Optional[List[str]] = None,
+    config=None,
 ) -> OpenDataContractStandard:
     if not catalog:
         raise DataContractException(
@@ -76,7 +78,7 @@ def import_trino(
     port = int(port) if port else DEFAULT_PORT
     server = create_server(name="trino", server_type="trino", host=host, port=port, catalog=catalog, schema=schema)
 
-    connection = trino_connection(server)
+    connection = trino_connection(server, config)
     try:
         table_rows = _fetch(connection, _TABLES_QUERY.format(catalog=_identifier(catalog), schema=_escape(schema)))
         column_rows = _fetch(connection, _COLUMNS_QUERY.format(catalog=_identifier(catalog), schema=_escape(schema)))
@@ -101,7 +103,7 @@ def import_trino(
     return odcs
 
 
-def trino_connection(server: Server):
+def trino_connection(server: Server, config=None):
     """Connect exactly as `datacontract test` does, so both support the same auth modes."""
     try:
         import ibis  # noqa: F401
@@ -118,7 +120,9 @@ def trino_connection(server: Server):
     from datacontract.engines.ibis.connections.connect import _connect_trino
 
     try:
-        return _connect_trino(ibis, server)
+        from datacontract.config import Config
+
+        return _connect_trino(ibis, server, Config.resolve(config))
     except Exception as e:
         raise DataContractException(
             type="schema",

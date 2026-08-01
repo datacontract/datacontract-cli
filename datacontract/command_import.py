@@ -6,6 +6,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.imports.sql_importer import SqlDialect
 
@@ -69,6 +70,7 @@ def import_sql(
     """Import a data contract from a SQL DDL file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="sql",
         source=source,
         schema=schema,
@@ -93,7 +95,9 @@ def import_avro(
 ):
     """Import a data contract from an Avro schema file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="avro", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="avro", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -118,7 +122,7 @@ def import_dbt(
     """Import a data contract from a dbt manifest file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="dbt", source=source, schema=schema, dbt_model=model, owner=owner, id=id
+        config=cli_config(), format="dbt", source=source, schema=schema, dbt_model=model, owner=owner, id=id
     )
     _write_result(result, output)
 
@@ -154,6 +158,7 @@ def import_dbml(
     """Import a data contract from a DBML file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="dbml",
         source=source,
         schema=odcs_schema,
@@ -186,7 +191,7 @@ def import_glue(
     """Import a data contract from AWS Glue."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="glue", source=database, schema=schema, glue_table=table, owner=owner, id=id
+        config=cli_config(), format="glue", source=database, schema=schema, glue_table=table, owner=owner, id=id
     )
     _write_result(result, output)
 
@@ -219,6 +224,7 @@ def import_bigquery(
     """Import a data contract from BigQuery."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="bigquery",
         source=source,
         schema=schema,
@@ -259,7 +265,13 @@ def import_databricks(
     """Import a data contract from Databricks Unity Catalog."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="databricks", source=source, schema=schema, unity_table_full_name=table, owner=owner, id=id
+        config=cli_config(),
+        format="databricks",
+        source=source,
+        schema=schema,
+        unity_table_full_name=table,
+        owner=owner,
+        id=id,
     )
     _write_result(result, output)
 
@@ -298,7 +310,9 @@ def import_jsonschema(
 ):
     """Import a data contract from a JSON Schema file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="jsonschema", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="jsonschema", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -316,7 +330,9 @@ def import_json(
 ):
     """Import a data contract from a JSON file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="json", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="json", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -334,7 +350,9 @@ def import_odcs(
 ):
     """Import a data contract from an ODCS file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="odcs", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="odcs", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -352,7 +370,9 @@ def import_parquet(
 ):
     """Import a data contract from a Parquet file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="parquet", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="parquet", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -370,7 +390,9 @@ def import_csv(
 ):
     """Import a data contract from a CSV file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="csv", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="csv", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -388,7 +410,9 @@ def import_protobuf(
 ):
     """Import a data contract from a Protobuf schema file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="protobuf", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="protobuf", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -409,7 +433,9 @@ def import_spark(
 ):
     """Import a data contract from a Spark schema."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="spark", source=tables, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="spark", source=tables, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -432,7 +458,7 @@ def import_iceberg(
     """Import a data contract from an Iceberg schema."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="iceberg", source=source, schema=schema, iceberg_table=table, owner=owner, id=id
+        config=cli_config(), format="iceberg", source=source, schema=schema, iceberg_table=table, owner=owner, id=id
     )
     _write_result(result, output)
 
@@ -451,7 +477,9 @@ def import_excel(
 ):
     """Import a data contract from an Excel file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="excel", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="excel", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -471,7 +499,9 @@ def import_powerbi(
 ):
     """Import a data contract from a Power BI semantic model (.pbit, .bim, or .json) file."""
     enable_debug_logging(debug)
-    result = DataContract.import_from_source(format="powerbi", source=source, schema=schema, owner=owner, id=id)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="powerbi", source=source, schema=schema, owner=owner, id=id
+    )
     _write_result(result, output)
 
 
@@ -491,7 +521,7 @@ def import_snowflake(
     """Import a data contract from a Snowflake workspace."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id
+        config=cli_config(), format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id
     )
     _write_result(result, output)
 
@@ -519,6 +549,7 @@ def import_redshift(
     """Import a data contract from an Amazon Redshift schema."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="redshift",
         source=source,
         port=port,
@@ -554,6 +585,7 @@ def import_postgres(
     """Import a data contract from a Postgres schema."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="postgres",
         source=source,
         port=port,
@@ -589,7 +621,7 @@ def import_gcs(
     """Import a data contract from files in Google Cloud Storage."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="gcs", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
+        config=cli_config(), format="gcs", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
     )
     _write_result(result, output)
 
@@ -616,7 +648,7 @@ def import_adls(
     """Import a data contract from files in Azure Blob Storage / ADLS."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        format="adls", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
+        config=cli_config(), format="adls", source=source, file_format=format, delimiter=delimiter, owner=owner, id=id
     )
     _write_result(result, output)
 
@@ -642,6 +674,7 @@ def import_trino(
     """Import a data contract from a Trino catalog."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="trino",
         source=source,
         port=port,
@@ -677,6 +710,7 @@ def import_oracle(
     """Import a data contract from an Oracle database."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="oracle",
         source=source,
         port=port,
@@ -710,6 +744,7 @@ def import_sqlserver(
     """Import a data contract from a SQL Server database."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="sqlserver",
         source=source,
         port=port,
@@ -742,6 +777,7 @@ def import_mysql(
     """Import a data contract from a MySQL database."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="mysql",
         source=source,
         port=port,
@@ -778,6 +814,7 @@ def import_s3(
     """Import a data contract from files in S3."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="s3",
         source=source,
         file_format=format,
@@ -815,6 +852,7 @@ def import_athena(
     """Import a data contract from an Amazon Athena database."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
+        config=cli_config(),
         format="athena",
         schema=schema,
         staging_dir=staging_dir,

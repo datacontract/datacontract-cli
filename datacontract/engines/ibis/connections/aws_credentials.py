@@ -12,23 +12,19 @@ AWS connection that cannot use the chain directly.
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
+from datacontract.config import Config
+
 logger = logging.getLogger(__name__)
 
-ACCESS_KEY_ID = "DATACONTRACT_S3_ACCESS_KEY_ID"
-SECRET_ACCESS_KEY = "DATACONTRACT_S3_SECRET_ACCESS_KEY"
-SESSION_TOKEN = "DATACONTRACT_S3_SESSION_TOKEN"
-REGION = "DATACONTRACT_S3_REGION"
+
+def configured_region(default: Optional[str] = None, config: Optional[Config] = None) -> Optional[str]:
+    return Config.resolve(config).get_s3_region() or default
 
 
-def configured_region(default: Optional[str] = None) -> Optional[str]:
-    return os.getenv(REGION) or default
-
-
-def client_kwargs(region: Optional[str] = None) -> Dict[str, Any]:
+def client_kwargs(region: Optional[str] = None, config: Optional[Config] = None) -> Dict[str, Any]:
     """boto3 client kwargs for the configured credentials.
 
     A region passed by the caller wins: it comes from a `--region` flag or from
@@ -36,15 +32,16 @@ def client_kwargs(region: Optional[str] = None) -> Dict[str, Any]:
     values stay ``None``, which is how boto3 is told to fall back to its own
     chain, so an `aws sso login` session works without any variable.
     """
+    config = Config.resolve(config)
     return {
-        "region_name": region or os.getenv(REGION),
-        "aws_access_key_id": os.getenv(ACCESS_KEY_ID),
-        "aws_secret_access_key": os.getenv(SECRET_ACCESS_KEY),
-        "aws_session_token": os.getenv(SESSION_TOKEN),
+        "region_name": region or config.get_s3_region(),
+        "aws_access_key_id": config.get_s3_access_key_id(),
+        "aws_secret_access_key": config.get_s3_secret_access_key(),
+        "aws_session_token": config.get_s3_session_token(),
     }
 
 
-def client(service: str, region: Optional[str] = None):
+def client(service: str, region: Optional[str] = None, config: Optional[Config] = None):
     """A boto3 client that honours the DATACONTRACT_S3_* variables.
 
     Every AWS service the CLI talks to reads the same variables, so they are
@@ -52,7 +49,7 @@ def client(service: str, region: Optional[str] = None):
     """
     import boto3
 
-    return boto3.client(service, **client_kwargs(region))
+    return boto3.client(service, **client_kwargs(region, config))
 
 
 @dataclass(frozen=True)

@@ -12,6 +12,7 @@ from jsonschema import validators
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 from pydantic import ConfigDict
 
+from datacontract.config import Config
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
@@ -77,10 +78,11 @@ def resolve_data_contract_dict(
     data_contract_location: str = None,
     data_contract_str: str = None,
     data_contract: OpenDataContractStandard = None,
+    config: "Config | None" = None,
 ) -> dict:
     """Resolve a data contract and return it as a dictionary."""
     if data_contract_location is not None:
-        return _to_yaml(read_resource(data_contract_location))
+        return _to_yaml(read_resource(data_contract_location, config))
     elif data_contract_str is not None:
         return _to_yaml(data_contract_str)
     elif data_contract is not None:
@@ -102,11 +104,12 @@ def resolve_data_contract(
     schema_location: str = None,
     inline_references: bool = False,
     all_errors: bool = False,
+    config: "Config | None" = None,
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
     if data_contract_location is not None:
         return resolve_data_contract_from_location(
-            data_contract_location, schema_location, inline_references, all_errors
+            data_contract_location, schema_location, inline_references, all_errors, config
         )
     elif data_contract_str is not None:
         return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
@@ -123,9 +126,13 @@ def resolve_data_contract(
 
 
 def resolve_data_contract_from_location(
-    location, schema_location: str = None, inline_references: bool = False, all_errors: bool = False
+    location,
+    schema_location: str = None,
+    inline_references: bool = False,
+    all_errors: bool = False,
+    config: "Config | None" = None,
 ) -> OpenDataContractStandard:
-    data_contract_str = read_resource(location)
+    data_contract_str = read_resource(location, config)
     return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors)
 
 

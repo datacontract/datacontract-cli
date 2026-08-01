@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
+from datacontract.config import Config
 from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
-from datacontract.model.exceptions import require_env
 from datacontract.model.run import Run
 
 if TYPE_CHECKING:
@@ -32,8 +32,10 @@ def get_duckdb_connection(
     run: Run,
     duckdb_connection: "duckdb.DuckDBPyConnection | None" = None,
     schema_name: str = "all",
+    config: Config | None = None,
 ) -> "duckdb.DuckDBPyConnection":
     duckdb = _import_duckdb()
+    config = Config.resolve(config)
     if duckdb_connection is None:
         con = duckdb.connect(database=":memory:")
     else:
@@ -47,10 +49,10 @@ def get_duckdb_connection(
         setup_s3_connection(con, server)
     if server.type == "gcs":
         path = server.location
-        setup_gcs_connection(con, server)
+        setup_gcs_connection(con, server, config)
     if server.type == "azure":
         path = server.location
-        setup_azure_connection(con, server)
+        setup_azure_connection(con, server, config)
 
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
@@ -327,10 +329,10 @@ def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style
     """)
 
 
-def setup_gcs_connection(con, server: Server):
+def setup_gcs_connection(con, server: Server, config: Config):
     _load_extension(con, "httpfs", "gcs")
-    key_id = require_env("DATACONTRACT_GCS_KEY_ID", server_type="gcs")
-    secret = require_env("DATACONTRACT_GCS_SECRET", server_type="gcs")
+    key_id = config.get_gcs_key_id(required=True)
+    secret = config.get_gcs_secret(required=True)
 
     con.sql(f"""
     CREATE SECRET gcs_secret (
@@ -341,10 +343,10 @@ def setup_gcs_connection(con, server: Server):
     """)
 
 
-def setup_azure_connection(con, server: Server):
-    tenant_id = require_env("DATACONTRACT_AZURE_TENANT_ID", server_type="azure")
-    client_id = require_env("DATACONTRACT_AZURE_CLIENT_ID", server_type="azure")
-    client_secret = require_env("DATACONTRACT_AZURE_CLIENT_SECRET", server_type="azure")
+def setup_azure_connection(con, server: Server, config: Config):
+    tenant_id = config.get_azure_tenant_id(required=True)
+    client_id = config.get_azure_client_id(required=True)
+    client_secret = config.get_azure_client_secret(required=True)
     storage_account = (
         to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
     )

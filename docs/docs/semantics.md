@@ -68,8 +68,8 @@ Resolution recurses into nested `properties` and array `items`, so a link on a d
 
 | Environment variable | Purpose |
 |---|---|
-| `ENTROPY_DATA_HOST` | The host that resolves references. Defaults to `https://api.entropy-data.com`. Falls back to `DATAMESH_MANAGER_HOST`, then `DATACONTRACT_MANAGER_HOST`. |
-| `ENTROPY_DATA_API_KEY` | Sent as `x-api-key`, and **only** to the configured host. Falls back to `DATAMESH_MANAGER_API_KEY`, then `DATACONTRACT_MANAGER_API_KEY`. |
+| `ENTROPY_DATA_HOST` | The host that resolves references. Defaults to `https://api.entropy-data.com`. Falls back to the deprecated `DATAMESH_MANAGER_HOST`, then `DATACONTRACT_MANAGER_HOST`. |
+| `ENTROPY_DATA_API_KEY` | Sent as `x-api-key`, and **only** to the configured host. Falls back to the deprecated `DATAMESH_MANAGER_API_KEY`, then `DATACONTRACT_MANAGER_API_KEY`. |
 
 An IRI lookup always requires an API key — `/api/semantics` is API-key only. A REST URL on the configured host uses the key when one is set.
 

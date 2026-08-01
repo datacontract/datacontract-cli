@@ -1,11 +1,11 @@
 import atexit
-import os
 import tempfile
 import typing
 
 import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.config import Config
 from datacontract.engines.checks.create_checks import create_checks, to_schema_name
 from datacontract.engines.checks.dimensions import default_dimension
 
@@ -37,7 +37,9 @@ def execute_data_contract_test(
     include_failed_samples: bool = False,
     filter: str | None = None,
     filters: dict[str, str] | None = None,
+    config: Config | None = None,
 ):
+    config = Config.resolve(config)
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
             type="lint",
@@ -73,7 +75,7 @@ def execute_data_contract_test(
         check_that_quality_ids_exist(data_contract, quality_ids, schema_name)
 
     if server.type == "api":
-        server = process_api_response(run, server)
+        server = process_api_response(run, server, config)
 
     model_filters = resolve_row_filters(data_contract, server, run, filter, filters, schema_name)
 
@@ -111,7 +113,7 @@ def execute_data_contract_test(
             and quality_ids is None
             and tags is None
         ):
-            check_jsonschema(run, data_contract, server, schema_name=schema_name)
+            check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
     # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
     if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
         check_azure_blob_file(
@@ -123,6 +125,7 @@ def execute_data_contract_test(
             dimensions=dimensions,
             quality_ids=quality_ids,
             tags=tags,
+            config=config,
         )
     execute_ibis_checks(
         run,
@@ -134,6 +137,7 @@ def execute_data_contract_test(
         schema_name=schema_name,
         include_failed_samples=include_failed_samples,
         model_filters=model_filters,
+        config=config,
     )
 
 
@@ -254,12 +258,13 @@ def get_server(data_contract: OpenDataContractStandard, server_name: str = None)
     return server
 
 
-def process_api_response(run, server):
+def process_api_response(run, server, config: Config | None = None):
+    config = Config.resolve(config)
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract_cli_api_")
     atexit.register(tmp_dir.cleanup)
     headers = {}
-    if os.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION") is not None:
-        headers["Authorization"] = os.getenv("DATACONTRACT_API_HEADER_AUTHORIZATION")
+    if config.get_api_header_authorization() is not None:
+        headers["Authorization"] = config.get_api_header_authorization()
     try:
         response = requests.get(server.location, headers=headers)
         response.raise_for_status()

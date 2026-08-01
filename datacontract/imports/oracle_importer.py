@@ -51,7 +51,7 @@ _PRIMARY_KEYS_QUERY = """
 
 
 class OracleImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
                 type="source",
@@ -65,6 +65,7 @@ class OracleImporter(Importer):
             service_name=import_args.get("service_name"),
             schema=import_args.get("schema"),
             tables=import_args.get("oracle_table"),
+            config=config,
         )
 
 
@@ -74,6 +75,7 @@ def import_oracle(
     schema: Optional[str] = None,
     port: Optional[int] = None,
     tables: Optional[List[str]] = None,
+    config=None,
 ) -> OpenDataContractStandard:
     if not service_name:
         raise DataContractException(
@@ -102,7 +104,7 @@ def import_oracle(
         service_name=service_name,
     )
 
-    connection = oracle_connection(server)
+    connection = oracle_connection(server, config)
     try:
         table_rows = _fetch(connection, _TABLES_QUERY.format(schema=_escape(schema)))
         column_rows = _fetch(connection, _COLUMNS_QUERY.format(schema=_escape(schema)))
@@ -131,7 +133,7 @@ def import_oracle(
     return odcs
 
 
-def oracle_connection(server: Server):
+def oracle_connection(server: Server, config=None):
     """Connect exactly as `datacontract test` does, including the compatibility patch."""
     try:
         import ibis  # noqa: F401
@@ -149,7 +151,7 @@ def oracle_connection(server: Server):
     from datacontract.model.run import Run
 
     try:
-        return connect_ibis(Run.create_run(), None, server)
+        return connect_ibis(Run.create_run(), None, server, config=config)
     except Exception as e:
         raise DataContractException(
             type="schema",

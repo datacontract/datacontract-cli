@@ -1,0 +1,660 @@
+"""The typed Config class: one field per supported ``DATACONTRACT_*`` option."""
+
+from __future__ import annotations
+
+import logging
+import os
+import re
+from pathlib import Path
+
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
+
+_ENV_PREFIX = "DATACONTRACT_"
+_TRUTHY = ("1", "true", "yes", "y", "on")
+
+
+class Config(BaseSettings):
+    """All defined config options, one typed field per ``DATACONTRACT_*`` env var.
+
+    Field names map to env var names by upper-casing and prefixing with
+    ``DATACONTRACT_`` (``snowflake_username`` ↔ ``DATACONTRACT_SNOWFLAKE_USERNAME``),
+    except where a ``validation_alias`` says otherwise. Instantiation reads the
+    environment, so ``Config()`` is a snapshot of the current env and constructor
+    keyword arguments override it. Unknown keyword arguments raise immediately;
+    unrelated environment variables are ignored.
+    """
+
+    # populate_by_name lets the aliased fields (validation_alias, e.g.
+    # ENTROPY_DATA_API_KEY) also be set via their field name in the constructor.
+    model_config = SettingsConfigDict(env_prefix=_ENV_PREFIX, extra="ignore", populate_by_name=True)
+
+    # Entropy Data / Data Mesh Manager / Data Contract Manager (publishing, contract URLs)
+    entropy_data_api_key: SecretStr | None = Field(None, validation_alias="ENTROPY_DATA_API_KEY")
+    entropy_data_host: str | None = Field(None, validation_alias="ENTROPY_DATA_HOST")
+    # deprecated synonyms for the entropy_data_* options (pre-rebrand product names);
+    # a warning is emitted when one of them supplies a value
+    datamesh_manager_api_key: SecretStr | None = Field(None, validation_alias="DATAMESH_MANAGER_API_KEY")
+    datamesh_manager_host: str | None = Field(None, validation_alias="DATAMESH_MANAGER_HOST")
+    datacontract_manager_api_key: SecretStr | None = Field(None, validation_alias="DATACONTRACT_MANAGER_API_KEY")
+    datacontract_manager_host: str | None = Field(None, validation_alias="DATACONTRACT_MANAGER_HOST")
+
+    # general
+    api_header_authorization: SecretStr | None = None
+    max_errors: int | None = None
+
+    # azure
+    azure_connection_string: SecretStr | None = None
+    azure_storage_account_key: SecretStr | None = None
+    azure_tenant_id: str | None = None
+    azure_client_id: str | None = None
+    azure_client_secret: SecretStr | None = None
+
+    # bigquery
+    bigquery_account_info_json_path: str | None = None
+    bigquery_billing_project: str | None = None
+    bigquery_impersonation_account: str | None = None
+
+    # databricks
+    databricks_server_hostname: str | None = None
+    databricks_http_path: str | None = None
+    databricks_token: SecretStr | None = None
+    databricks_client_id: str | None = None
+    databricks_client_secret: SecretStr | None = None
+    databricks_profile: str | None = None
+    databricks_auth_type: str | None = None
+
+    # gcs
+    gcs_key_id: str | None = None
+    gcs_secret: SecretStr | None = None
+
+    # impala
+    impala_username: str | None = None
+    impala_password: SecretStr | None = None
+    impala_auth_mechanism: str | None = None
+    impala_http_path: str | None = None
+    impala_use_ssl: bool | None = None
+    impala_use_http_transport: bool | None = None
+
+    # kafka
+    kafka_sasl_username: str | None = None
+    kafka_sasl_password: SecretStr | None = None
+    kafka_sasl_mechanism: str | None = None
+    kafka_schema_registry_url: str | None = None
+    kafka_schema_registry_username: str | None = None
+    kafka_schema_registry_password: SecretStr | None = None
+
+    # mysql
+    mysql_username: str | None = None
+    mysql_password: SecretStr | None = None
+
+    # oracle
+    oracle_username: str | None = None
+    oracle_password: SecretStr | None = None
+    oracle_client_dir: str | None = None
+
+    # postgres
+    postgres_username: str | None = None
+    postgres_password: SecretStr | None = None
+
+    # redshift
+    redshift_authentication: str | None = None
+    redshift_username: str | None = None
+    redshift_password: SecretStr | None = None
+    redshift_sslmode: str | None = None
+    redshift_db_user: str | None = None
+    redshift_db_groups: str | None = None
+    redshift_auto_create: bool | None = None
+    redshift_workgroup: str | None = None
+    redshift_cluster_identifier: str | None = None
+    redshift_region: str | None = None
+    redshift_duration_seconds: int | None = None
+
+    # s3 (also used for Athena and Redshift IAM as the AWS credential set)
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: SecretStr | None = None
+    s3_session_token: SecretStr | None = None
+    s3_region: str | None = None
+
+    # snowflake
+    snowflake_username: str | None = None
+    snowflake_password: SecretStr | None = None
+    snowflake_authenticator: str | None = None
+    snowflake_role: str | None = None
+    snowflake_token: SecretStr | None = None
+    snowflake_passcode: SecretStr | None = None
+    snowflake_private_key: SecretStr | None = None
+    snowflake_private_key_file: str | None = None
+    snowflake_private_key_file_pwd: SecretStr | None = None
+    snowflake_warehouse: str | None = None
+    snowflake_create_object_udfs: bool | None = None
+    snowflake_login_timeout: int | None = None
+    snowflake_network_timeout: int | None = None
+    snowflake_socket_timeout: int | None = None
+    snowflake_host: str | None = None
+    snowflake_port: int | None = None
+    snowflake_home: str | None = None
+    snowflake_connections_file: str | None = None
+    snowflake_default_connection_name: str | None = None
+    # deprecated synonyms, mapped (with a warning) where they are consumed
+    snowflake_private_key_path: str | None = None
+    snowflake_private_key_passphrase: SecretStr | None = None
+    snowflake_connection_timeout: int | None = None
+
+    # sqlserver
+    sqlserver_authentication: str | None = None
+    sqlserver_username: str | None = None
+    sqlserver_password: SecretStr | None = None
+    sqlserver_client_id: str | None = None
+    sqlserver_client_secret: SecretStr | None = None
+    sqlserver_driver: str | None = None
+    sqlserver_encrypted_connection: bool | None = None
+    sqlserver_trust_server_certificate: bool | None = None
+    sqlserver_trusted_connection: bool | None = None
+
+    # trino
+    trino_authentication: str | None = None
+    trino_username: str | None = None
+    trino_password: SecretStr | None = None
+    trino_jwt_token: SecretStr | None = None
+
+    def __init__(self, **data):
+        # extra="ignore" keeps unrelated env vars from breaking instantiation, but
+        # programmatic typos must not be silently dropped with them.
+        unknown = set(data) - set(type(self).model_fields)
+        if unknown:
+            raise ValueError(f"Unknown config option(s): {', '.join(sorted(unknown))}. See datacontract.Config.")
+        super().__init__(**data)
+
+    @classmethod
+    def resolve(cls, config: "Config | dict[str, str] | None") -> "Config":
+        """Normalize the ``config=`` argument to a Config instance.
+
+        ``None`` becomes an empty Config (every read falls back to the
+        environment); a dict is keyed by the env var names and validated
+        against the declared fields.
+        """
+        if config is None:
+            return cls.model_construct()
+        if isinstance(config, cls):
+            return config
+        if isinstance(config, dict):
+            reverse = {env_name(name, field): name for name, field in cls.model_fields.items()}
+            fields = {}
+            unknown = []
+            for key, value in config.items():
+                if key in reverse:
+                    fields[reverse[key]] = value
+                else:
+                    unknown.append(key)
+            if unknown:
+                raise ValueError(f"Unknown config option(s): {', '.join(sorted(unknown))}. See datacontract.Config.")
+            return cls(**fields)
+        raise TypeError(f"config must be a Config, dict, or None, got {type(config).__name__}")
+
+    @classmethod
+    def from_yaml(cls, path: "str | Path") -> "Config":
+        """Load a Config from a YAML file with per-source sections.
+
+        Nested keys join with ``_`` to form the field name (``snowflake.username``
+        → ``snowflake_username``); top-level scalars address the general options
+        (``max_errors``). ``${VAR}`` references in string values are replaced with
+        the environment variable's value at load time, so files can be committed
+        without holding secrets. Unknown option names raise a ValueError.
+        """
+        import yaml
+
+        path = Path(path)
+        data = yaml.safe_load(path.read_text())
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            raise ValueError(f"Config file {path} must contain a YAML mapping.")
+
+        flat: dict[str, object] = {}
+
+        def walk(prefix: str, node: dict):
+            for key, value in node.items():
+                name = f"{prefix}_{key}" if prefix else str(key)
+                if isinstance(value, dict):
+                    walk(name, value)
+                else:
+                    flat[name] = _interpolate_env(value, path)
+
+        walk("", data)
+        unknown = sorted(set(flat) - set(cls.model_fields))
+        if unknown:
+            raise ValueError(f"Unknown config option(s) in {path}: {', '.join(unknown)}. See datacontract.Config.")
+        return cls(**flat)
+
+    # ------------------------------------------------------------------
+    # Value resolution: one typed accessor per option (get_<field>()).
+    # An accessor returns the field value if set, falling back to the process
+    # environment; SecretStr values are unwrapped. ``required=True`` raises a
+    # DataContractException naming the env var when the value is missing.
+    # ------------------------------------------------------------------
+
+    def _raw_option(self, field_name: str):
+        value = getattr(self, field_name)
+        if value is None:
+            value = os.environ.get(env_name(field_name, type(self).model_fields[field_name]))
+        if isinstance(value, SecretStr):
+            value = value.get_secret_value()
+        return value
+
+    def _str_option(self, field_name: str, required: bool = False) -> str | None:
+        value = self._raw_option(field_name)
+        value = str(value) if value is not None else None
+        if required and not value:
+            key = env_name(field_name, type(self).model_fields[field_name])
+            server_type = field_name.split("_")[0]
+            from datacontract.model.exceptions import DataContractException
+
+            raise DataContractException(
+                type=f"{server_type}-connection",
+                name=f"missing_env_{key}",
+                reason=f"Required configuration {key} is not set. Set the environment variable "
+                f"or pass it via DataContract(config=...) to connect to {server_type}.",
+                engine="datacontract",
+            )
+        return value
+
+    def _deprecated_str_option(self, field_name: str, replacement: str, required: bool = False) -> str | None:
+        """A str option kept as a deprecated synonym: warns when it supplies a value."""
+        value = self._str_option(field_name, required)
+        if value:
+            deprecated_env = env_name(field_name, type(self).model_fields[field_name])
+            replacement_env = env_name(replacement, type(self).model_fields[replacement])
+            logger.warning(
+                "%s is deprecated and will be removed in a future release, use %s instead.",
+                deprecated_env,
+                replacement_env,
+            )
+        return value
+
+    def _int_option(self, field_name: str) -> int | None:
+        value = self._raw_option(field_name)
+        if value is None or value == "":
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            key = env_name(field_name, type(self).model_fields[field_name])
+            from datacontract.model.exceptions import DataContractException
+
+            raise DataContractException(
+                type="configuration",
+                name=f"invalid_{key}",
+                reason=f"{key} must be a whole number, got {value!r}.",
+                engine="datacontract",
+            )
+
+    def _bool_option(self, field_name: str, default: bool) -> bool:
+        value = self._raw_option(field_name)
+        if value is None or value == "":
+            return default
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in _TRUTHY
+
+    # --- entropy ---
+    def get_entropy_data_api_key(self, required: bool = False) -> str | None:
+        return self._str_option("entropy_data_api_key", required)
+
+    def get_entropy_data_host(self, required: bool = False) -> str | None:
+        return self._str_option("entropy_data_host", required)
+
+    # --- datamesh ---
+    def get_datamesh_manager_api_key(self, required: bool = False) -> str | None:
+        return self._deprecated_str_option("datamesh_manager_api_key", "entropy_data_api_key", required)
+
+    def get_datamesh_manager_host(self, required: bool = False) -> str | None:
+        return self._deprecated_str_option("datamesh_manager_host", "entropy_data_host", required)
+
+    # --- datacontract ---
+    def get_datacontract_manager_api_key(self, required: bool = False) -> str | None:
+        return self._deprecated_str_option("datacontract_manager_api_key", "entropy_data_api_key", required)
+
+    def get_datacontract_manager_host(self, required: bool = False) -> str | None:
+        return self._deprecated_str_option("datacontract_manager_host", "entropy_data_host", required)
+
+    # --- api ---
+    def get_api_header_authorization(self, required: bool = False) -> str | None:
+        return self._str_option("api_header_authorization", required)
+
+    # --- max ---
+    def get_max_errors(self) -> int | None:
+        return self._int_option("max_errors")
+
+    # --- azure ---
+    def get_azure_connection_string(self, required: bool = False) -> str | None:
+        return self._str_option("azure_connection_string", required)
+
+    def get_azure_storage_account_key(self, required: bool = False) -> str | None:
+        return self._str_option("azure_storage_account_key", required)
+
+    def get_azure_tenant_id(self, required: bool = False) -> str | None:
+        return self._str_option("azure_tenant_id", required)
+
+    def get_azure_client_id(self, required: bool = False) -> str | None:
+        return self._str_option("azure_client_id", required)
+
+    def get_azure_client_secret(self, required: bool = False) -> str | None:
+        return self._str_option("azure_client_secret", required)
+
+    # --- bigquery ---
+    def get_bigquery_account_info_json_path(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_account_info_json_path", required)
+
+    def get_bigquery_billing_project(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_billing_project", required)
+
+    def get_bigquery_impersonation_account(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_impersonation_account", required)
+
+    # --- databricks ---
+    def get_databricks_server_hostname(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_server_hostname", required)
+
+    def get_databricks_http_path(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_http_path", required)
+
+    def get_databricks_token(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_token", required)
+
+    def get_databricks_client_id(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_client_id", required)
+
+    def get_databricks_client_secret(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_client_secret", required)
+
+    def get_databricks_profile(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_profile", required)
+
+    def get_databricks_auth_type(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_auth_type", required)
+
+    # --- gcs ---
+    def get_gcs_key_id(self, required: bool = False) -> str | None:
+        return self._str_option("gcs_key_id", required)
+
+    def get_gcs_secret(self, required: bool = False) -> str | None:
+        return self._str_option("gcs_secret", required)
+
+    # --- impala ---
+    def get_impala_username(self, required: bool = False) -> str | None:
+        return self._str_option("impala_username", required)
+
+    def get_impala_password(self, required: bool = False) -> str | None:
+        return self._str_option("impala_password", required)
+
+    def get_impala_auth_mechanism(self, required: bool = False) -> str | None:
+        return self._str_option("impala_auth_mechanism", required)
+
+    def get_impala_http_path(self, required: bool = False) -> str | None:
+        return self._str_option("impala_http_path", required)
+
+    def get_impala_use_ssl(self, default: bool = False) -> bool:
+        return self._bool_option("impala_use_ssl", default)
+
+    def get_impala_use_http_transport(self, default: bool = False) -> bool:
+        return self._bool_option("impala_use_http_transport", default)
+
+    # --- kafka ---
+    def get_kafka_sasl_username(self, required: bool = False) -> str | None:
+        return self._str_option("kafka_sasl_username", required)
+
+    def get_kafka_sasl_password(self, required: bool = False) -> str | None:
+        return self._str_option("kafka_sasl_password", required)
+
+    def get_kafka_sasl_mechanism(self, required: bool = False) -> str | None:
+        return self._str_option("kafka_sasl_mechanism", required)
+
+    def get_kafka_schema_registry_url(self, required: bool = False) -> str | None:
+        return self._str_option("kafka_schema_registry_url", required)
+
+    def get_kafka_schema_registry_username(self, required: bool = False) -> str | None:
+        return self._str_option("kafka_schema_registry_username", required)
+
+    def get_kafka_schema_registry_password(self, required: bool = False) -> str | None:
+        return self._str_option("kafka_schema_registry_password", required)
+
+    # --- mysql ---
+    def get_mysql_username(self, required: bool = False) -> str | None:
+        return self._str_option("mysql_username", required)
+
+    def get_mysql_password(self, required: bool = False) -> str | None:
+        return self._str_option("mysql_password", required)
+
+    # --- oracle ---
+    def get_oracle_username(self, required: bool = False) -> str | None:
+        return self._str_option("oracle_username", required)
+
+    def get_oracle_password(self, required: bool = False) -> str | None:
+        return self._str_option("oracle_password", required)
+
+    def get_oracle_client_dir(self, required: bool = False) -> str | None:
+        return self._str_option("oracle_client_dir", required)
+
+    # --- postgres ---
+    def get_postgres_username(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_username", required)
+
+    def get_postgres_password(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_password", required)
+
+    # --- redshift ---
+    def get_redshift_authentication(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_authentication", required)
+
+    def get_redshift_username(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_username", required)
+
+    def get_redshift_password(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_password", required)
+
+    def get_redshift_sslmode(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_sslmode", required)
+
+    def get_redshift_db_user(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_db_user", required)
+
+    def get_redshift_db_groups(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_db_groups", required)
+
+    def get_redshift_auto_create(self, default: bool = False) -> bool:
+        return self._bool_option("redshift_auto_create", default)
+
+    def get_redshift_workgroup(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_workgroup", required)
+
+    def get_redshift_cluster_identifier(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_cluster_identifier", required)
+
+    def get_redshift_region(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_region", required)
+
+    def get_redshift_duration_seconds(self) -> int | None:
+        return self._int_option("redshift_duration_seconds")
+
+    # --- s3 ---
+    def get_s3_access_key_id(self, required: bool = False) -> str | None:
+        return self._str_option("s3_access_key_id", required)
+
+    def get_s3_secret_access_key(self, required: bool = False) -> str | None:
+        return self._str_option("s3_secret_access_key", required)
+
+    def get_s3_session_token(self, required: bool = False) -> str | None:
+        return self._str_option("s3_session_token", required)
+
+    def get_s3_region(self, required: bool = False) -> str | None:
+        return self._str_option("s3_region", required)
+
+    # --- snowflake ---
+    def get_snowflake_username(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_username", required)
+
+    def get_snowflake_password(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_password", required)
+
+    def get_snowflake_authenticator(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_authenticator", required)
+
+    def get_snowflake_role(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_role", required)
+
+    def get_snowflake_token(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_token", required)
+
+    def get_snowflake_passcode(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_passcode", required)
+
+    def get_snowflake_private_key(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_private_key", required)
+
+    def get_snowflake_private_key_file(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_private_key_file", required)
+
+    def get_snowflake_private_key_file_pwd(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_private_key_file_pwd", required)
+
+    def get_snowflake_warehouse(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_warehouse", required)
+
+    def get_snowflake_create_object_udfs(self, default: bool = False) -> bool:
+        return self._bool_option("snowflake_create_object_udfs", default)
+
+    def get_snowflake_login_timeout(self) -> int | None:
+        return self._int_option("snowflake_login_timeout")
+
+    def get_snowflake_network_timeout(self) -> int | None:
+        return self._int_option("snowflake_network_timeout")
+
+    def get_snowflake_socket_timeout(self) -> int | None:
+        return self._int_option("snowflake_socket_timeout")
+
+    def get_snowflake_host(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_host", required)
+
+    def get_snowflake_port(self) -> int | None:
+        return self._int_option("snowflake_port")
+
+    def get_snowflake_home(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_home", required)
+
+    def get_snowflake_connections_file(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_connections_file", required)
+
+    def get_snowflake_default_connection_name(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_default_connection_name", required)
+
+    def get_snowflake_private_key_path(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_private_key_path", required)
+
+    def get_snowflake_private_key_passphrase(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_private_key_passphrase", required)
+
+    def get_snowflake_connection_timeout(self) -> int | None:
+        return self._int_option("snowflake_connection_timeout")
+
+    # --- sqlserver ---
+    def get_sqlserver_authentication(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_authentication", required)
+
+    def get_sqlserver_username(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_username", required)
+
+    def get_sqlserver_password(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_password", required)
+
+    def get_sqlserver_client_id(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_client_id", required)
+
+    def get_sqlserver_client_secret(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_client_secret", required)
+
+    def get_sqlserver_driver(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_driver", required)
+
+    def get_sqlserver_encrypted_connection(self, default: bool = False) -> bool:
+        return self._bool_option("sqlserver_encrypted_connection", default)
+
+    def get_sqlserver_trust_server_certificate(self, default: bool = False) -> bool:
+        return self._bool_option("sqlserver_trust_server_certificate", default)
+
+    def get_sqlserver_trusted_connection(self, default: bool = False) -> bool:
+        return self._bool_option("sqlserver_trusted_connection", default)
+
+    # --- trino ---
+    def get_trino_authentication(self, required: bool = False) -> str | None:
+        return self._str_option("trino_authentication", required)
+
+    def get_trino_username(self, required: bool = False) -> str | None:
+        return self._str_option("trino_username", required)
+
+    def get_trino_password(self, required: bool = False) -> str | None:
+        return self._str_option("trino_password", required)
+
+    def get_trino_jwt_token(self, required: bool = False) -> str | None:
+        return self._str_option("trino_jwt_token", required)
+
+    def to_env_dict(self) -> dict[str, str]:
+        """Flatten to a dict keyed by the env var names."""
+        values: dict[str, str] = {}
+        for name, field in type(self).model_fields.items():
+            value = getattr(self, name)
+            if value is None:
+                continue
+            values[env_name(name, field)] = _as_env_value(value)
+        return values
+
+
+def env_name(field_name: str, field) -> str:
+    alias = field.validation_alias
+    if isinstance(alias, str):
+        return alias
+    return _ENV_PREFIX + field_name.upper()
+
+
+def _as_env_value(value) -> str:
+    if isinstance(value, SecretStr):
+        return value.get_secret_value()
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def known_env_names() -> set[str]:
+    """All env var names that map to a Config field."""
+    return {env_name(name, field) for name, field in Config.model_fields.items()}
+
+
+def unknown_snowflake_env_names() -> list[str]:
+    """``DATACONTRACT_SNOWFLAKE_*`` environment variables that no Config field declares.
+
+    Until v1.0.16 every such variable was forwarded verbatim to the Snowflake
+    connector; now only declared options are. Callers use this to warn instead
+    of silently ignoring them. Programmatic config cannot contain unknown names
+    (Config validates them), so only the environment is scanned.
+    """
+    known = known_env_names()
+    return sorted(name for name in os.environ if name.startswith("DATACONTRACT_SNOWFLAKE_") and name not in known)
+
+
+_ENV_REFERENCE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def _interpolate_env(value, path):
+    """Replace ``${VAR}`` references in string values with environment variable values."""
+    if not isinstance(value, str):
+        return value
+
+    def replace(match):
+        name = match.group(1)
+        if name not in os.environ:
+            raise ValueError(f"Environment variable {name} referenced in {path} is not set.")
+        return os.environ[name]
+
+    return _ENV_REFERENCE.sub(replace, value)
