@@ -29,6 +29,7 @@ servers:
 |---|---|---|
 | `DATACONTRACT_REDSHIFT_AUTHENTICATION` | `iam` | `password` or `iam`; only needed to override what is inferred |
 | `DATACONTRACT_REDSHIFT_USERNAME` | `awsuser` | Database user. Required for `password`; in `iam` mode it selects the legacy API (see below) |
+| `DATACONTRACT_REDSHIFT_DB_USER` | `analytics_user` | Database user for `iam` mode only, taking precedence over `DATACONTRACT_REDSHIFT_USERNAME` |
 | `DATACONTRACT_REDSHIFT_PASSWORD` | `mysecretpassword` | Password (`password` mode only) |
 | `DATACONTRACT_REDSHIFT_SSLMODE` | `verify-full` | TLS mode passed to the driver. Defaults to `require` in `iam` mode, and to the driver's own default (`prefer`) otherwise |
 
@@ -36,13 +37,15 @@ servers:
 
 The method is inferred: setting `DATACONTRACT_REDSHIFT_PASSWORD` selects a database login, otherwise resolvable AWS credentials select IAM. Set `DATACONTRACT_REDSHIFT_AUTHENTICATION` explicitly only to override that. With IAM, the CLI asks AWS for temporary database credentials and uses them to log in — no database password anywhere. The AWS credentials themselves come from the same variables Athena uses (`DATACONTRACT_S3_ACCESS_KEY_ID`, `DATACONTRACT_S3_SECRET_ACCESS_KEY`, `DATACONTRACT_S3_SESSION_TOKEN`, `DATACONTRACT_S3_REGION`), and fall back to the standard AWS chain: `aws sso login`, `AWS_PROFILE`, EC2/ECS/EKS instance roles, or GitHub OIDC in CI.
 
-Which AWS API is called depends on the endpoint and whether a username is set:
+Which AWS API is called depends on the endpoint and whether a database user is set — either `DATACONTRACT_REDSHIFT_DB_USER` or, failing that, `DATACONTRACT_REDSHIFT_USERNAME`:
 
-| Endpoint | Username set | API |
+| Endpoint | Database user set | API |
 |---|---|---|
 | Serverless | — | `redshift-serverless:GetCredentials` |
 | Provisioned | no | `redshift:GetClusterCredentialsWithIAM` — the database user is derived from your IAM identity |
 | Provisioned | yes | `redshift:GetClusterCredentials` — credentials are requested for that database user |
+
+Use `DATACONTRACT_REDSHIFT_DB_USER` when `DATACONTRACT_REDSHIFT_USERNAME` is already set for something else, such as a database login used by a different environment: it names the IAM database user explicitly, rather than inheriting a username that was never meant to select the legacy API.
 
 The workgroup or cluster identifier and the region are derived from the endpoint host in the `servers` block, so a standard endpoint needs no extra configuration. Custom domains and VPC endpoints don't follow that naming, so they need an override:
 

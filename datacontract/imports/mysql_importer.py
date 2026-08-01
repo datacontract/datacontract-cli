@@ -17,10 +17,11 @@ from typing import Any, Dict, List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
+from datacontract.config import Config
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
 from datacontract.imports.sql_importer import map_type_from_sql
-from datacontract.model.exceptions import DataContractException, require_env
+from datacontract.model.exceptions import DataContractException
 
 DEFAULT_PORT = 3306
 
@@ -40,7 +41,7 @@ _COLUMNS_QUERY = """
 
 
 class MysqlImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config: "Config | None" = None) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
                 type="source",
@@ -53,6 +54,7 @@ class MysqlImporter(Importer):
             port=import_args.get("port"),
             database=import_args.get("database"),
             tables=import_args.get("mysql_table"),
+            config=config,
         )
 
 
@@ -61,6 +63,7 @@ def import_mysql(
     database: Optional[str],
     port: Optional[int] = None,
     tables: Optional[List[str]] = None,
+    config: Optional[Config] = None,
 ) -> OpenDataContractStandard:
     if not database:
         raise DataContractException(
@@ -71,7 +74,7 @@ def import_mysql(
         )
 
     port = int(port) if port else DEFAULT_PORT
-    con = _attach(host, port, database)
+    con = _attach(host, port, database, config)
     try:
         table_rows = _query(con, _TABLES_QUERY.format(database=_escape(database)))
         column_rows = _query(con, _COLUMNS_QUERY.format(database=_escape(database)))
@@ -96,8 +99,9 @@ def import_mysql(
     return odcs
 
 
-def _attach(host: str, port: int, database: str):
+def _attach(host: str, port: int, database: str, config: Optional[Config] = None):
     """ATTACH the database exactly as the test path does."""
+    config = Config.resolve(config)
     try:
         import duckdb
     except ImportError as e:
@@ -112,8 +116,8 @@ def _attach(host: str, port: int, database: str):
 
     from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
 
-    user = require_env("DATACONTRACT_MYSQL_USERNAME", server_type="mysql")
-    password = require_env("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql")
+    user = config.get_mysql_username(required=True)
+    password = config.get_mysql_password(required=True)
 
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")

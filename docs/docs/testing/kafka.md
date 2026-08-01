@@ -28,6 +28,14 @@ DATACONTRACT_KAFKA_SASL_PASSWORD=mysecret
 
 If no username/password is set, the CLI connects without authentication (e.g. a local broker).
 
+If the topic is Avro-encoded through the Confluent Schema Registry, add the registry as well, so the messages are decoded with the schema they were actually written with:
+
+```bash
+DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL=https://psrc-12345.eu-central-1.aws.confluent.cloud
+DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME=myregistrykey
+DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD=myregistrysecret
+```
+
 ## 3. Create a contract for your topic
 
 If you have an Avro schema for the topic (e.g. from a schema registry), import it:
@@ -79,3 +87,4 @@ All authentication options (SASL mechanisms) and the Avro data type mappings: **
 - **`JAVA_HOME is not set` / `Unable to locate a Java Runtime`** — install a JDK (17 or 21) and set `JAVA_HOME`; the Kafka checks run on Spark.
 - **Authentication failures against Confluent Cloud** — use an API key/secret as `SASL_USERNAME`/`SASL_PASSWORD` with the default `PLAIN` mechanism.
 - **The test reads no messages** — the check consumes the topic from the beginning; verify the topic name in the `servers` block and that the topic contains messages in the declared `format`.
+- **`Cannot decode the Avro messages of the topic`** — the schema used for decoding is not the one the messages were written with. For a topic produced through the Confluent Schema Registry, set `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`; otherwise re-import the contract from the topic's Avro schema with `datacontract import avro`.

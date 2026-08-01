@@ -30,12 +30,12 @@ logger = logging.getLogger(__name__)
 class DcsImporter(Importer):
     """Importer for Data Contract Specification (DCS) format."""
 
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
         import yaml
 
         from datacontract.lint.resources import read_resource
 
-        source_str = read_resource(source)
+        source_str = read_resource(source, config)
         dcs_dict = yaml.safe_load(source_str)
         dcs = parse_dcs_from_dict(dcs_dict)
         return convert_dcs_to_odcs(dcs)

@@ -1176,6 +1176,34 @@ def test_resync_drops_generated_but_unmanages_adopted_when_test_removed(tmp_path
     assert "not_null" in remaining
 
 
+def test_adopted_test_gets_contract_description_without_clobbering_the_users(tmp_path: Path):
+    """Adopted tests need the same description generated ones get — it's the name results publish under."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    columns:\n"
+        "      - name: order_id\n"
+        "        data_tests:\n"
+        "          - not_null\n"
+        "          - unique:\n"
+        "              description: My own words\n"
+    )
+    contract = _write(tmp_path, "tagged.odcs.yaml", _TAGGED_CONTRACT)
+    sync(contract=str(contract), project_dir=project, skip_tests=True)
+
+    tests = {next(iter(t)): next(iter(t.values())) for t in _model_entry(schema)["columns"][0]["data_tests"]}
+    assert tests["not_null"]["description"] == "Check that field order_id has no missing values"
+    assert tests["unique"]["description"] == "My own words"
+
+    after_first = schema.read_text()
+    sync(contract=str(contract), project_dir=project, skip_tests=True)
+    assert schema.read_text() == after_first  # writing the description stays idempotent
+
+
 def test_resync_preserves_user_edits_to_generated_yaml(tmp_path: Path):
     """A file sync generated is a plain schema file: a later sync merges into it additively, so a
     column the user hand-added (not declared by the contract) survives — same as any user file."""
@@ -1791,7 +1819,7 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
 
     captured: dict = {}
 
-    def fake_publish(run, publish_url, ssl_verification):
+    def fake_publish(run, publish_url, ssl_verification, config=None):
         captured["url"] = publish_url
         captured["ssl"] = ssl_verification
         run.log_info("Published test results successfully")
@@ -1897,7 +1925,7 @@ def test_cli_server_flag_overrides_target(monkeypatch, tmp_path: Path):
 
     captured: dict = {}
 
-    def fake_publish(run, publish_url, ssl_verification):
+    def fake_publish(run, publish_url, ssl_verification, config=None):
         captured["server"] = run.server
         return True
 
@@ -1935,7 +1963,7 @@ def test_cli_server_defaults_to_single_contract_server(monkeypatch, tmp_path: Pa
 
     captured: dict = {}
 
-    def fake_publish(run, publish_url, ssl_verification):
+    def fake_publish(run, publish_url, ssl_verification, config=None):
         captured["server"] = run.server
         return True
 

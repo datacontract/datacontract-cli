@@ -26,6 +26,42 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Deprecated
+- `DATAMESH_MANAGER_API_KEY`, `DATAMESH_MANAGER_HOST`, `DATACONTRACT_MANAGER_API_KEY`, and `DATACONTRACT_MANAGER_HOST` (and the matching `Config` fields): use `ENTROPY_DATA_API_KEY` and `ENTROPY_DATA_HOST` instead
+
+### Added
+- `datacontract export html` fits to datacontract-editor visualization
+- Credentials and connection options can be passed programmatically via `DataContract(config=...)` and `DataContract.import_from_source(..., config=...)`, using the typed `datacontract.Config` class or a dict keyed by the environment variable names
+- The API server accepts per-request credentials on `POST /test` via `datacontract-*` headers (e.g. `datacontract-snowflake-password`)
+- Credentials and connection options can be provided in a YAML config file, via `--config-file` (defaults to `./datacontract-config.yaml` or `~/.datacontract/config.yaml`) or `Config.from_yaml()`, with `${VAR}` references resolved from the environment
+- New Snowflake connection options: `DATACONTRACT_SNOWFLAKE_TOKEN`, `DATACONTRACT_SNOWFLAKE_PASSCODE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`, `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_HOST`, `DATACONTRACT_SNOWFLAKE_PORT`
+
+### Changed
+- `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning
+
+### Fixed
+- `datacontract dbt sync` writes a description on all dbt tests, not only newly-generated ones
+
+## 1.0.16 — 2026-07-31 {#v1-0-16}
+
+### Added
+- `datacontract test` reads the Avro schema of a Kafka topic from the Confluent Schema Registry via `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`, `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME`, and `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` ([#1347](https://github.com/datacontract/datacontract-cli/issues/1347))
+
+### Deprecated
+- `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`, and `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`: use `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD`, and `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` instead
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`: use `DATACONTRACT_SQLSERVER_AUTHENTICATION=windows` instead
+
+### Fixed
+- `datacontract test` against a Kafka topic reports Avro messages it cannot decode as such, instead of reading every field as null ([#1347](https://github.com/datacontract/datacontract-cli/issues/1347))
+- `datacontract test` connects to Databricks with an OAuth service principal again, instead of failing with `Error during request to server` on databricks-sql-connector 4.3.0 and later ([#1389](https://github.com/datacontract/datacontract-cli/issues/1389))
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` no longer overrides an explicitly set `DATACONTRACT_SQLSERVER_AUTHENTICATION`, so a leftover flag cannot silently downgrade an Entra ID login to Windows authentication
+- `datacontract test` passes `DATACONTRACT_IMPALA_AUTH_MECHANISM`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`, and `DATACONTRACT_IMPALA_HTTP_PATH` to Impala again, so a Cloudera Virtual Warehouse can be reached instead of failing with `TSocket read 0 bytes`
+- `datacontract test` passes the `servers` block `catalog` to Athena again, instead of always querying `awsdatacatalog`
+- `datacontract test` supports `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` again to impersonate a service account
+- `datacontract test` applies the documented Snowflake key-pair and timeout variables instead of silently ignoring them: the names they were documented under are not accepted by the Snowflake driver, and now map to the ones that are
+- `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
+- `datacontract dbt sync` no longer drops or misplaces YAML comments that introduce the next column, test, or key
+
 ## 1.0.15 — 2026-07-30 {#v1-0-15}
 
 ### Added

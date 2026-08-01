@@ -16,7 +16,7 @@ servers:
   - server: production
     type: impala
     host: my-impala-host
-    port: 443
+    port: 21050 # 443 for a Cloudera Virtual Warehouse
     database: my_database # optional default database
 ```
 
@@ -26,12 +26,29 @@ servers:
 |---|---|---|
 | `DATACONTRACT_IMPALA_USERNAME` | `analytics_user` | Username |
 | `DATACONTRACT_IMPALA_PASSWORD` | `mysecretpassword` | Password |
-| `DATACONTRACT_IMPALA_USE_SSL` | `true` | Whether to use SSL (defaults to true) |
-| `DATACONTRACT_IMPALA_AUTH_MECHANISM` | `LDAP` | Authentication mechanism (defaults to LDAP) |
-| `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT` | `true` | Whether to use HTTP transport (defaults to true) |
-| `DATACONTRACT_IMPALA_HTTP_PATH` | `cliservice` | HTTP path for the Impala service (defaults to cliservice) |
+| `DATACONTRACT_IMPALA_USE_SSL` | `true` | Whether to use SSL. Defaults to `true` |
+| `DATACONTRACT_IMPALA_AUTH_MECHANISM` | `LDAP` | `NOSASL` (default), `PLAIN`, `GSSAPI`, or `LDAP` |
+| `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT` | `true` | Whether to use HTTP transport instead of binary thrift. Defaults to `false` |
+| `DATACONTRACT_IMPALA_HTTP_PATH` | `cliservice` | HTTP path for the Impala service. Defaults to empty |
 
-`host`, `port`, and `database` come from the contract's `servers` block.
+Apart from `use_ssl`, these default to the same values as the underlying [impyla](https://github.com/cloudera/impyla) driver.
+
+`host`, `port`, and `database` come from the contract's `servers` block. `port` defaults to `21050`, Impala's binary thrift port.
+
+### Cloudera Virtual Warehouse
+
+A Cloudera Virtual Warehouse terminates LDAP over HTTPS on port 443, so all three transport options need setting — otherwise the client speaks binary thrift to an HTTPS endpoint and the handshake fails with `TSocket read 0 bytes`:
+
+```bash
+# .env
+DATACONTRACT_IMPALA_USERNAME=analytics_user
+DATACONTRACT_IMPALA_PASSWORD=mysecretpassword
+DATACONTRACT_IMPALA_AUTH_MECHANISM=LDAP
+DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT=true
+DATACONTRACT_IMPALA_HTTP_PATH=cliservice
+```
+
+with `port: 443` in the contract's `servers` block.
 
 ## Data types
 

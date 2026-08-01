@@ -37,6 +37,14 @@ servers:
 
 The `cli` mode reuses an `az login` session through the Azure default credential chain and requires ODBC Driver 18.1 or newer. `host`, `port`, `database`, `schema`, and `driver` come from the contract's `servers` block.
 
+### Deprecated variables
+
+| Deprecated | Use instead |
+|---|---|
+| `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` | `DATACONTRACT_SQLSERVER_AUTHENTICATION=windows` |
+
+`DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true` predates `DATACONTRACT_SQLSERVER_AUTHENTICATION` and selects the same Windows integrated auth. It applies only when `DATACONTRACT_SQLSERVER_AUTHENTICATION` is unset; setting a mode explicitly always wins, and the ignored flag is logged as a warning.
+
 ## Data types
 
 ### Importing

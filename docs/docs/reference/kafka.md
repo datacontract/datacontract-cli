@@ -30,6 +30,18 @@ servers:
 
 If no username/password is set, the CLI connects without authentication (e.g. a local broker). `host`, `topic`, and `format` come from the contract's `servers` block. Kafka checks run on Spark and require a JDK (17 or 21).
 
+## Schema Registry
+
+For `format: avro`, the messages have to be decoded with the exact Avro schema they were _written_ with — Avro is positionally encoded, so a schema that merely looks similar decodes to garbage. Topics written through the Confluent Schema Registry carry the id of that schema in a 5-byte prefix on every message. Point the CLI at the registry so it resolves the id, instead of falling back to the schema derived from the data contract:
+
+| Variable | Example | Description |
+|---|---|---|
+| `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL` | `https://psrc-12345.eu-central-1.aws.confluent.cloud` | The schema registry base URL |
+| `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME` | `xxx` | The registry API key (optional) |
+| `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` | `xxx` | The registry API secret (optional) |
+
+Messages without the prefix (plain Avro) are decoded with the schema derived from the data contract, so a topic that mixes both still works, as does a topic whose schema evolved across several registry ids.
+
 ## Data types
 
 ### Importing
@@ -52,4 +64,4 @@ Avro logical type annotations take precedence: `decimal` → `number` (with prec
 
 ### Testing
 
-Messages are read via Spark. For `format: json` and `format: avro`, no type checks are generated — messages are decoded as the contract's types, and violations surface as decode errors or value-check failures from `logicalTypeOptions`.
+Messages are read via Spark. For `format: json` and `format: avro`, no type checks are generated — messages are decoded as the contract's types, and violations surface as decode errors or value-check failures from `logicalTypeOptions`. For Avro, the decoding schema comes from the [schema registry](#schema-registry) when the message carries a schema id.
