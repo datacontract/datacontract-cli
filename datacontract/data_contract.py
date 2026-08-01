@@ -44,6 +44,8 @@ class DataContract:
         tags: set[str] | None = None,
         fastapi_url: str = None,
         include_failed_samples: bool = False,
+        filter: str = None,
+        filters: dict[str, str] | None = None,
         config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
@@ -65,6 +67,8 @@ class DataContract:
         self._tags = tags
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
+        self._filter = filter
+        self._filters = filters
         self._config = Config.resolve(config)
 
     @classmethod
@@ -162,6 +166,8 @@ class DataContract:
                 quality_ids=self._quality_ids,
                 tags=self._tags,
                 include_failed_samples=self._include_failed_samples,
+                filter=self._filter,
+                filters=self._filters,
                 config=self._config,
             )
 

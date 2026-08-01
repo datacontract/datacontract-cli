@@ -31,6 +31,7 @@ marked as such in the entry.
 
 ### Added
 - `datacontract export html` fits to datacontract-editor visualization
+- `datacontract test --filter` and `--filters` test only the rows matching a SQL predicate, e.g., the latest partition; also available as `filter`/`filters` query parameters on the API server's `POST /test` ([#1463](https://github.com/datacontract/datacontract-cli/issues/1463))
 - Credentials and connection options can be passed programmatically via `DataContract(config=...)` and `DataContract.import_from_source(..., config=...)`, using the typed `datacontract.Config` class or a dict keyed by the environment variable names
 - The API server accepts per-request credentials on `POST /test` via `datacontract-*` headers (e.g. `datacontract-snowflake-password`)
 - Credentials and connection options can be provided in a YAML config file, via `--config-file` (defaults to `./datacontract-config.yaml` or `~/.datacontract/config.yaml`) or `Config.from_yaml()`, with `${VAR}` references resolved from the environment
