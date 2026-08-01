@@ -164,6 +164,8 @@ datacontract test datacontract.yaml --server production \
 
 The predicate references the columns of the schema unqualified. It applies to all row-based checks: row counts, missing/invalid values, duplicates, freshness, retention, and failed-row samples. Schema checks (column presence and types) read metadata, not rows, so a filter does not change them. Custom SQL quality checks (`quality.type: sql`) and JSON schema validation of files run the query or file as-is and are not filtered.
 
+The [API server](../api.md)'s `POST /test` accepts the same `filter` and `filters` as query parameters.
+
 A filtered run only makes a statement about the tested subset. So the applied filters are recorded in the test results: the `Run` carries a `filters` field (per schema), the console output prints a `Row filter:` line, and the recorded SQL of each check contains the `WHERE` clause.
 
 ## Next steps

@@ -246,7 +246,9 @@ def _run_model(
             t = _apply_row_filter(t, model, row_filter)
         except Exception as e:
             logger.warning("Could not apply row filter to model '%s': %s", model, e)
-            _fail_all(run, specs, ResultEnum.failed, f"Could not apply row filter '{row_filter}': {e}")
+            # A predicate that does not compile is a configuration problem, not a
+            # data violation, so the checks error rather than fail.
+            _fail_all(run, specs, ResultEnum.error, f"Could not apply row filter '{row_filter}': {e}")
             return
 
     agg_exprs = []  # list[(spec, named_expr)]

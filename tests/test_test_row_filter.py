@@ -110,3 +110,11 @@ def test_cli_filter_and_filters_conflict():
     )
     assert result.exit_code == 1
     assert "Use either --filter or --filters, not both." in result.stdout
+
+
+def test_invalid_filter_predicate_errors_instead_of_failing():
+    """A predicate that does not compile is a configuration problem, not a data violation."""
+    run = DataContract(data_contract_file=CONTRACT, filter="no_such_column <= 2").test()
+    print(run.pretty())
+    assert run.result == "error"
+    assert any("Could not apply row filter" in str(check.reason) for check in run.checks)

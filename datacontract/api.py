@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import tempfile
@@ -299,6 +300,27 @@ def config_from_headers(headers) -> "Config | None":
         )
 
 
+def _parse_filters_query(filters: str | None) -> dict[str, str] | None:
+    """Parse the `filters` query parameter (JSON object mapping schema name to predicate)."""
+    if filters is None:
+        return None
+    detail = (
+        "The filters parameter must be a JSON object mapping schema name to a SQL predicate, "
+        'e.g., {"orders": "ingested_at >= CURRENT_DATE - 1"}.'
+    )
+    try:
+        parsed = json.loads(filters)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+    if (
+        not isinstance(parsed, dict)
+        or not parsed
+        or not all(isinstance(predicate, str) and predicate.strip() for predicate in parsed.values())
+    ):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+    return {schema_name: predicate.strip() for schema_name, predicate in parsed.items()}
+
+
 def check_api_key(api_key_header: str | None):
     correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
@@ -379,8 +401,31 @@ async def test(
             examples=["https://api.datamesh-manager.com/api/test-results"],
         ),
     ] = None,
+    filter: Annotated[
+        str | None,
+        Query(
+            description="A SQL predicate to filter the rows under test, in the dialect of the server. "
+            "Only works if a single schema is tested; for contracts with multiple schemas, use filters. "
+            "Schema checks and custom SQL queries are not filtered.",
+            examples=["ingested_at >= CURRENT_DATE - 1"],
+        ),
+    ] = None,
+    filters: Annotated[
+        str | None,
+        Query(
+            description="Row filters per schema, as a JSON object mapping schema name to SQL predicate. "
+            "Schema checks and custom SQL queries are not filtered.",
+            examples=['{"orders": "ingested_at >= CURRENT_DATE - 1"}'],
+        ),
+    ] = None,
 ) -> Run:
     check_api_key(api_key)
+    parsed_filters = _parse_filters_query(filters)
+    if filter is not None and parsed_filters is not None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Use either the filter or the filters parameter, not both.",
+        )
     logging.info("Testing data contract...")
     logging.info(body)
     return DataContract(
@@ -389,6 +434,8 @@ async def test(
         publish_url=publish_url,
         fastapi_url=str(request.url),
         config=config_from_headers(request.headers),
+        filter=filter,
+        filters=parsed_filters,
     ).test()
 
 
