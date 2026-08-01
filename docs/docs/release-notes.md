@@ -26,6 +26,9 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Added
+- The documentation now supports raw Markdown access by adding a `.md` extension in url ([#1464](https://github.com/datacontract/datacontract-cli/issues/1464))
+
 ## 1.0.16 — 2026-07-31 {#v1-0-16}
 
 ### Added

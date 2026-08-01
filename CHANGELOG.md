@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The documentation now supports raw Markdown access by adding a `.md` extension in url (#1464)
+
 ## [1.0.16] - 2026-07-31
 
 ### Added
