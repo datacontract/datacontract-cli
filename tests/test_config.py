@@ -198,3 +198,32 @@ def test_every_env_var_the_code_reads_is_a_config_field():
         f"Env vars read in code but not declared as Config fields: {sorted(unknown)}. "
         "Add a field to datacontract.config.Config or list the name in _NON_CONFIG_ENV_VARS."
     )
+
+
+def test_deprecated_manager_options_warn_when_they_supply_a_value(caplog):
+    config = Config(datamesh_manager_api_key="legacy-key")
+
+    with caplog.at_level("WARNING"):
+        value = config.get_datamesh_manager_api_key()
+
+    assert value == "legacy-key"
+    messages = [record.getMessage() for record in caplog.records]
+    assert any("DATAMESH_MANAGER_API_KEY is deprecated" in m and "ENTROPY_DATA_API_KEY" in m for m in messages)
+
+
+def test_deprecated_manager_options_stay_silent_when_unset(caplog, monkeypatch):
+    for name in ("DATAMESH_MANAGER_API_KEY", "DATACONTRACT_MANAGER_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+
+    with caplog.at_level("WARNING"):
+        assert Config.model_construct().get_datamesh_manager_api_key() is None
+        assert Config.model_construct().get_datacontract_manager_api_key() is None
+
+    assert not caplog.records
+
+
+def test_entropy_data_options_do_not_warn(caplog):
+    with caplog.at_level("WARNING"):
+        assert Config(entropy_data_api_key="key").get_entropy_data_api_key() == "key"
+
+    assert not caplog.records

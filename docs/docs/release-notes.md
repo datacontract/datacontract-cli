@@ -26,6 +26,9 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Deprecated
+- `DATAMESH_MANAGER_API_KEY`, `DATAMESH_MANAGER_HOST`, `DATACONTRACT_MANAGER_API_KEY`, and `DATACONTRACT_MANAGER_HOST` (and the matching `Config` fields): use `ENTROPY_DATA_API_KEY` and `ENTROPY_DATA_HOST` instead
+
 ### Added
 - Credentials and connection options can be passed programmatically via `DataContract(config=...)` and `DataContract.import_from_source(..., config=...)`, using the typed `datacontract.Config` class or a dict keyed by the environment variable names
 - The API server accepts per-request credentials on `POST /test` via `datacontract-*` headers (e.g. `datacontract-snowflake-password`)
