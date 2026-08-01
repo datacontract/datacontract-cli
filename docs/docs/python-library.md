@@ -154,7 +154,7 @@ See [Spark DataFrame](./testing/dataframe.md) and [Databricks](./testing/databri
 
 ## Credentials
 
-Server credentials are read from environment variables (or a `.env` file), exactly as with the CLI — see [Test your Data](./testing/index.md).
+Server credentials are read from environment variables (or a `.env` file), exactly as with the CLI — see [Configuration](./configuration.md) for all mechanisms and their precedence.
 
 They can also be passed programmatically via the `config` argument, without touching the process environment. The typed `Config` class declares every supported option; field names match the environment variable names (`snowflake_username` ↔ `DATACONTRACT_SNOWFLAKE_USERNAME`), unset fields fall back to the environment, and secrets are held as `SecretStr` so they stay out of logs and reprs:
 
