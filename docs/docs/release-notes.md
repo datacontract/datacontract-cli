@@ -35,6 +35,9 @@ marked as such in the entry.
 ### Changed
 - `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning instead of being passed through (use a connections.toml for connector parameters the CLI does not support directly)
 
+### Fixed
+- `datacontract dbt sync` writes a description on all dbt tests, not only newly-generated ones
+
 ## 1.0.16 — 2026-07-31 {#v1-0-16}
 
 ### Added
