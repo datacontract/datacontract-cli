@@ -2,6 +2,7 @@ import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import app, debug_option, enable_debug_logging
+from datacontract.config import cli_config
 from datacontract.integration.entropy_data import (
     publish_data_contract_to_entropy_data,
 )
@@ -15,7 +16,7 @@ from datacontract.lint.resolve import resolve_data_contract_dict
 def publish(
     location: Annotated[
         str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
+        typer.Argument(help="The location (url, s3 url, or local path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
@@ -33,6 +34,7 @@ def publish(
     enable_debug_logging(debug)
 
     publish_data_contract_to_entropy_data(
-        data_contract_dict=resolve_data_contract_dict(location),
+        config=cli_config(),
+        data_contract_dict=resolve_data_contract_dict(location, config=cli_config()),
         ssl_verification=ssl_verification,
     )

@@ -165,6 +165,7 @@ const config: Config = {
           // the import/export/dbt subcommand reference pages
           'commands/*/index.md',
           'commands/*/*.md',
+          'configuration.md',
           'api.md',
           'python-library.md',
           'databricks.md',

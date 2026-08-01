@@ -467,6 +467,8 @@ def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) ->
         return None
     if isinstance(test, dict) and len(test) == 1:
         ((name, args),) = test.items()
+        if name in ("not_null", "unique"):
+            return _describe_dbt_test(name, field_name, model_name)
         if not isinstance(args, dict):
             return None
         if name == "accepted_values":
@@ -1232,16 +1234,22 @@ def _ensure_membership(
         block["generated"] = False
 
 
-def _strip_managed(entry: dict) -> bool:
-    """Remove the CLI's `config.meta.datacontract_cli` block from a test, leaving the user's test. True if modified."""
+def _strip_managed(entry: dict, described_as: Optional[str] = None) -> bool:
+    """Remove the CLI's `config.meta.datacontract_cli` block from a test, leaving the user's test. True if modified.
+
+    A `description` equal to `described_as` is one we wrote and goes too; a user's stays.
+    """
     name = _test_name(entry)
     if name is None or isinstance(entry, str):
         return False
     body = entry[name]
+    changed = False
+    if described_as and body.get("description") == described_as:
+        body.pop("description", None)
+        changed = True
     config = body.get("config")
     if not isinstance(config, dict):
-        return False
-    changed = False
+        return changed
     meta = config.get("meta")
     if isinstance(meta, dict) and META_NAMESPACE in meta:
         meta.pop(META_NAMESPACE, None)
@@ -1280,6 +1288,10 @@ def _reconcile_test(
         del body[k]
     for k, v in desired_args.items():
         body[k] = v
+    # Adopt the contract's description, but never overwrite one already in the YAML.
+    desired_description = _test_body(desired).get("description")
+    if desired_description and not body.get("description"):
+        body["description"] = desired_description
     _ensure_membership(entry, dc_check, generated=False, contract_version=contract_version, versioned=versioned)
     return entry
 
@@ -2268,6 +2280,7 @@ def _clean_tests_in_container(
     required_keys: set[tuple[Optional[str], str]],
     *,
     model_required: bool,
+    model_name: str,
 ) -> None:
     tests = container.get("data_tests")
     if not isinstance(tests, list):
@@ -2283,7 +2296,9 @@ def _clean_tests_in_container(
         if _meta_block_for_test(entry).get("generated") is True:
             del tests[i]  # drop the node we created
             continue
-        _strip_managed(entry)  # drop our meta block, keep the user's test
+        field_name = str(container.get("name", "")) if column_key is not None else None
+        # drop our meta block and our description, keep the user's test
+        _strip_managed(entry, _describe_dbt_test(entry, field_name, model_name))
         # Collapse `{name: {}}` back to the bare string `name` if stripping emptied it.
         if isinstance(entry, dict) and not entry[name]:
             tests[i] = name
@@ -2297,7 +2312,8 @@ def _clean_model_entry(
     required_keys: set[tuple[Optional[str], str]],
     model_required: bool,
 ) -> None:
-    _clean_tests_in_container(entry, None, required_keys, model_required=model_required)
+    model_name = str(entry.get("name", ""))
+    _clean_tests_in_container(entry, None, required_keys, model_required=model_required, model_name=model_name)
     for col in entry.get("columns") or []:
         if isinstance(col, dict):
             _clean_tests_in_container(
@@ -2305,6 +2321,7 @@ def _clean_model_entry(
                 str(col.get("name", "")).lower(),
                 required_keys,
                 model_required=model_required,
+                model_name=model_name,
             )
 
     cols = entry.get("columns")

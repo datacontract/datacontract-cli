@@ -135,13 +135,38 @@ DATACONTRACT_POSTGRES_USERNAME=postgres
 DATACONTRACT_POSTGRES_PASSWORD=postgres
 ```
 
-The page for each source above lists its `servers` fields and the environment variables it expects.
+The page for each source above lists its `servers` fields and the environment variables it expects. Credentials can also come from a YAML config file (`--config-file`), the Python `Config` class, or per-request API headers; see [Configuration](../configuration.md) for all mechanisms and their precedence.
 
 ## Options
 
 `--server`, `--schema-name`, `--checks`, `--dimension`, `--quality-id`, and `--tag` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
 
 For CI/CD pipelines, use the [`ci`](../commands/ci.md) command, which wraps `test` with annotations, summaries, and exit-code control.
+
+## Testing only a subset of rows
+
+On large tables, a full scan for every test run is slow and expensive. `--filter` restricts the checks to the rows matching a SQL predicate, written in the dialect of the server:
+
+```bash
+# Test only the rows ingested in the last 24 hours
+datacontract test datacontract.yaml --server production --filter "ingested_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'"
+
+# Test a specific partition
+datacontract test datacontract.yaml --server production --filter "batch_id = '2026-07-31'"
+```
+
+`--filter` requires that a single schema is tested. If the contract defines several schemas, either select one with `--schema-name` or pass `--filters` with a JSON object mapping schema name to predicate:
+
+```bash
+datacontract test datacontract.yaml --server production \
+  --filters '{"orders": "ingested_at >= CURRENT_DATE - 1", "line_items": "ingested_at >= CURRENT_DATE - 1"}'
+```
+
+The predicate references the columns of the schema unqualified. It applies to all row-based checks: row counts, missing/invalid values, duplicates, freshness, retention, and failed-row samples. Schema checks (column presence and types) read metadata, not rows, so a filter does not change them. Custom SQL quality checks (`quality.type: sql`) and JSON schema validation of files run the query or file as-is and are not filtered.
+
+The [API server](../api.md)'s `POST /test` accepts the same `filter` and `filters` as query parameters.
+
+A filtered run only makes a statement about the tested subset. So the applied filters are recorded in the test results: the `Run` carries a `filters` field (per schema), the console output prints a `Row filter:` line, and the recorded SQL of each check contains the `WHERE` clause.
 
 ## Next steps
 

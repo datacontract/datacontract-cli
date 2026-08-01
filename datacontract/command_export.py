@@ -6,6 +6,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat, SqlServerType
 from datacontract.export.great_expectations_exporter import GreatExpectationsEngine
@@ -17,7 +18,10 @@ export_app = typer.Typer(cls=OrderedCommandsWithMigrationHints, no_args_is_help=
 # ---------------------------------------------------------------------------
 # Shared option type aliases
 # ---------------------------------------------------------------------------
-location_arg = Annotated[str, typer.Argument(help="The location (url or path) of the data contract yaml.")]
+location_arg = Annotated[
+    str,
+    typer.Argument(help="The location (url, s3 url, or local path) of the data contract yaml."),
+]
 output_option = Annotated[
     Optional[Path],
     typer.Option(
@@ -64,6 +68,7 @@ def _export(
     clickhouse_order_by: Optional[str] = None,
 ):
     result = DataContract(
+        config=cli_config(),
         data_contract_file=location,
         schema_location=schema,
         server=server,

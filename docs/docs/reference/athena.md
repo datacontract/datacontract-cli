@@ -34,7 +34,7 @@ Set the variables below only to override that with static keys:
 | `DATACONTRACT_S3_SECRET_ACCESS_KEY` | `93S7LRrJ...` | AWS Secret Access Key |
 | `DATACONTRACT_S3_SESSION_TOKEN` | `AQoDYXdzEJr...` | AWS temporary session token (optional) |
 
-`catalog`, `schema` (the Athena database), `regionName`, and `stagingDir` (required, for query results) come from the contract's `servers` block; `DATACONTRACT_S3_REGION` takes precedence over `regionName` when both are set. The credentials need `athena:StartQueryExecution` plus read access to the data and write access to `stagingDir`, and `glue:GetTables` to import.
+`catalog`, `schema` (the Athena database), `regionName`, and `stagingDir` (required, for query results) come from the contract's `servers` block; they can be overridden with `DATACONTRACT_ATHENA_CATALOG`, `DATACONTRACT_ATHENA_SCHEMA`, `DATACONTRACT_S3_REGION` (takes precedence over `regionName`), and `DATACONTRACT_ATHENA_STAGING_DIR`. The credentials need `athena:StartQueryExecution` plus read access to the data and write access to `stagingDir`, and `glue:GetTables` to import.
 
 ## Data types
 

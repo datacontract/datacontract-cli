@@ -1,17 +1,19 @@
-import os
 from urllib.parse import urlparse
 
 import requests
 
+from datacontract.config import Config
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum
 
 
-def fetch_resource(url: str):
+def fetch_resource(url: str, config: Config | None = None):
+    config = Config.resolve(config)
     headers = {
         "accept": "application/yaml",
     }
 
-    _set_api_key(headers, url)
+    _set_api_key(headers, url, config)
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         return response.text
@@ -21,16 +23,16 @@ def fetch_resource(url: str):
             name=f"Reading data contract from {url}",
             reason=f"Cannot read resource from URL {url}. Response status is {response.status_code}",
             engine="datacontract",
-            result="error",
+            result=ResultEnum.error,
         )
 
 
-def _set_api_key(headers, url):
+def _set_api_key(headers, url, config: Config):
     hostname = urlparse(url).hostname
 
-    entropy_data_api_key = os.getenv("ENTROPY_DATA_API_KEY")
-    datamesh_manager_api_key = os.getenv("DATAMESH_MANAGER_API_KEY")
-    datacontract_manager_api_key = os.getenv("DATACONTRACT_MANAGER_API_KEY")
+    entropy_data_api_key = config.get_entropy_data_api_key()
+    datamesh_manager_api_key = config.get_datamesh_manager_api_key()
+    datacontract_manager_api_key = config.get_datacontract_manager_api_key()
 
     if hostname == "entropy-data.com" or hostname.endswith(".entropy-data.com"):
         if entropy_data_api_key is None or entropy_data_api_key == "":
@@ -40,7 +42,7 @@ def _set_api_key(headers, url):
                 name=f"Reading data contract from {url}",
                 reason="Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.",
                 engine="datacontract",
-                result="error",
+                result=ResultEnum.error,
             )
         headers["x-api-key"] = entropy_data_api_key
     elif hostname == "datamesh-manager.com" or hostname.endswith(".datamesh-manager.com"):
@@ -51,7 +53,7 @@ def _set_api_key(headers, url):
                 name=f"Reading data contract from {url}",
                 reason="Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
                 engine="datacontract",
-                result="error",
+                result=ResultEnum.error,
             )
         headers["x-api-key"] = datamesh_manager_api_key
     elif hostname == "datacontract-manager.com" or hostname.endswith(".datacontract-manager.com"):
@@ -62,7 +64,7 @@ def _set_api_key(headers, url):
                 name=f"Reading data contract from {url}",
                 reason="Error: Data Contract Manager API key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.",
                 engine="datacontract",
-                result="error",
+                result=ResultEnum.error,
             )
         headers["x-api-key"] = datacontract_manager_api_key
 

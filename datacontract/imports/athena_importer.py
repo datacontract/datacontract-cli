@@ -34,13 +34,14 @@ HIVE_TO_ATHENA_TYPES = {
 
 
 class AthenaImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
         return import_athena(
             schema=import_args.get("schema"),
             staging_dir=import_args.get("staging_dir"),
             region=import_args.get("region"),
             catalog=import_args.get("catalog"),
             tables=import_args.get("athena_table"),
+            config=config,
         )
 
 
@@ -50,6 +51,7 @@ def import_athena(
     region: Optional[str] = None,
     catalog: Optional[str] = None,
     tables: Optional[List[str]] = None,
+    config=None,
 ) -> OpenDataContractStandard:
     if not schema:
         raise DataContractException(
@@ -69,7 +71,7 @@ def import_athena(
             engine="datacontract",
         )
 
-    selected = _select_tables(get_glue_tables(schema, region), tables)
+    selected = _select_tables(get_glue_tables(schema, region, config), tables)
     if not selected:
         raise DataContractException(
             type="schema",
@@ -90,7 +92,7 @@ def import_athena(
             staging_dir=staging_dir,
         )
     ]
-    odcs.schema_ = create_schema_objects(schema, selected, region)
+    odcs.schema_ = create_schema_objects(schema, selected, region, config)
     for schema_object in odcs.schema_:
         for prop in schema_object.properties or []:
             _to_athena_types(prop)

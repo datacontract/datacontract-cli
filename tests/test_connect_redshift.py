@@ -23,6 +23,10 @@ REDSHIFT_ENV_VARS = [
     "DATACONTRACT_REDSHIFT_PASSWORD",
     "DATACONTRACT_REDSHIFT_SSLMODE",
     "DATACONTRACT_S3_REGION",
+    "DATACONTRACT_REDSHIFT_HOST",
+    "DATACONTRACT_REDSHIFT_PORT",
+    "DATACONTRACT_REDSHIFT_DATABASE",
+    "DATACONTRACT_REDSHIFT_SCHEMA",
 ]
 
 
@@ -78,3 +82,20 @@ def test_iam_authentication_uses_temporary_credentials(env, captured_connect):
     assert captured_connect["password"] == "temporary"
     assert captured_connect["sslmode"] == "require"
     client.get_credentials.assert_called_once_with(workgroupName="my-workgroup", dbName="dev")
+
+
+def test_env_variables_override_the_contract_server_details(env, captured_connect):
+    other_host = "other-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com"
+    env.setenv("DATACONTRACT_REDSHIFT_USERNAME", "awsuser")
+    env.setenv("DATACONTRACT_REDSHIFT_PASSWORD", "mysecret")
+    env.setenv("DATACONTRACT_REDSHIFT_HOST", other_host)
+    env.setenv("DATACONTRACT_REDSHIFT_PORT", "5440")
+    env.setenv("DATACONTRACT_REDSHIFT_DATABASE", "env_db")
+    env.setenv("DATACONTRACT_REDSHIFT_SCHEMA", "env_schema")
+
+    connect_ibis(Run.create_run(), None, _server())
+
+    assert captured_connect["host"] == other_host
+    assert captured_connect["port"] == 5440
+    assert captured_connect["database"] == "env_db"
+    assert captured_connect["schema"] == "env_schema"

@@ -10,6 +10,7 @@ import ibis
 import pytest
 from open_data_contract_standard.model import Server
 
+from datacontract import Config
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.model.run import Run
 
@@ -18,7 +19,7 @@ KEY_FILE = "/keys/rsa_key.p8"
 
 @pytest.fixture
 def env(monkeypatch):
-    """Every DATACONTRACT_SNOWFLAKE_ variable is forwarded, so start from a clean slate."""
+    """The tests assert the exact kwargs, so start from a clean slate."""
     for name in list(os.environ):
         if name.startswith("DATACONTRACT_SNOWFLAKE_"):
             monkeypatch.delenv(name, raising=False)
@@ -41,8 +42,8 @@ def _server():
     return Server(server="snowflake", type="snowflake", account="abc-xy123", database="ORDER_DB", schema="ORDERS")
 
 
-def _connect(run=None):
-    return connect_ibis(run or Run.create_run(), data_contract=None, server=_server())
+def _connect(run=None, config=None):
+    return connect_ibis(run or Run.create_run(), data_contract=None, server=_server(), config=config)
 
 
 def test_username_maps_to_the_drivers_user_parameter(env, captured_connect):
@@ -79,7 +80,7 @@ def test_deprecated_connection_timeout_maps_to_login_timeout(env, captured_conne
 
     _connect()
 
-    assert captured_connect["login_timeout"] == "30"
+    assert captured_connect["login_timeout"] == 30
     assert "connection_timeout" not in captured_connect
 
 
@@ -102,3 +103,71 @@ def test_current_names_are_passed_through_without_a_warning(env, captured_connec
     assert captured_connect["private_key_file"] == KEY_FILE
     assert captured_connect["private_key_file_pwd"] == "secret"
     assert not any("deprecated" in log.message for log in run.logs)
+
+
+def test_timeouts_are_passed_as_integers(env, captured_connect):
+    env.setenv("DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT", "45")
+    env.setenv("DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT", "120")
+
+    _connect()
+
+    assert captured_connect["login_timeout"] == 45
+    assert captured_connect["network_timeout"] == 120
+
+
+def test_create_object_udfs_defaults_off_and_can_be_enabled(env, captured_connect):
+    _connect()
+    assert captured_connect["create_object_udfs"] is False
+
+    env.setenv("DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS", "true")
+    _connect()
+    assert captured_connect["create_object_udfs"] is True
+
+
+def test_unknown_snowflake_variables_are_ignored_with_a_warning(env, captured_connect):
+    env.setenv("DATACONTRACT_SNOWFLAKE_SESSION_PARAMETERS", '{"QUERY_TAG": "dc"}')
+    run = Run.create_run()
+
+    _connect(run)
+
+    assert "session_parameters" not in captured_connect
+    assert any("DATACONTRACT_SNOWFLAKE_SESSION_PARAMETERS" in log.message for log in run.logs)
+
+
+def test_programmatic_config_reaches_the_connector(env, captured_connect):
+    config = Config(
+        snowflake_username="svc_test",
+        snowflake_password="secret",
+        snowflake_role="TESTER",
+        snowflake_warehouse="COMPUTE_WH",
+    )
+
+    _connect(config=config)
+
+    assert captured_connect["user"] == "svc_test"
+    assert captured_connect["password"] == "secret"
+    assert captured_connect["role"] == "TESTER"
+    assert captured_connect["warehouse"] == "COMPUTE_WH"
+
+
+def test_programmatic_config_wins_over_the_environment(env, captured_connect):
+    env.setenv("DATACONTRACT_SNOWFLAKE_USERNAME", "from_env")
+
+    _connect(config=Config(snowflake_username="from_config"))
+
+    assert captured_connect["user"] == "from_config"
+
+
+def test_env_variables_override_the_contract_server_details(env, captured_connect):
+    """Setting DATACONTRACT_SNOWFLAKE_ACCOUNT alongside a server account used to raise
+    ``TypeError: got multiple values for keyword argument 'account'``, then warn-and-ignore;
+    it is a supported override now."""
+    env.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "env-account")
+    env.setenv("DATACONTRACT_SNOWFLAKE_DATABASE", "ENV_DB")
+    env.setenv("DATACONTRACT_SNOWFLAKE_SCHEMA", "ENV_SCHEMA")
+
+    _connect()
+
+    assert captured_connect["account"] == "env-account"
+    assert captured_connect["database"] == "ENV_DB"
+    assert captured_connect["schema"] == "ENV_SCHEMA"

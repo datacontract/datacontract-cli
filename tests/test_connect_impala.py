@@ -18,6 +18,9 @@ IMPALA_ENV_VARS = [
     "DATACONTRACT_IMPALA_AUTH_MECHANISM",
     "DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT",
     "DATACONTRACT_IMPALA_HTTP_PATH",
+    "DATACONTRACT_IMPALA_HOST",
+    "DATACONTRACT_IMPALA_PORT",
+    "DATACONTRACT_IMPALA_DATABASE",
 ]
 
 
@@ -101,3 +104,15 @@ def test_options_are_overridable(env, captured_connect):
     assert captured_connect["use_ssl"] is False
     assert captured_connect["auth_mechanism"] == "GSSAPI"
     assert captured_connect["http_path"] == "impala/cliservice"
+
+
+def test_env_variables_override_the_contract_server_details(env, captured_connect):
+    env.setenv("DATACONTRACT_IMPALA_HOST", "env-host")
+    env.setenv("DATACONTRACT_IMPALA_PORT", "28000")
+    env.setenv("DATACONTRACT_IMPALA_DATABASE", "env_db")
+
+    _connect()
+
+    assert captured_connect["host"] == "env-host"
+    assert captured_connect["port"] == 28000
+    assert captured_connect["database"] == "env_db"

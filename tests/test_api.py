@@ -162,3 +162,129 @@ def test_an_http_url_is_still_accepted():
         response = _lint_with_schema("https://example.com/schema.json")
 
     assert response.status_code == 200
+
+
+def test_config_headers_resolve_to_a_config_case_insensitively():
+    from datacontract.api import config_from_headers
+
+    config = config_from_headers(
+        {
+            "datacontract-snowflake-username": "svc_test",
+            "Datacontract-Snowflake-Password": "super-secret-value",
+            "DATACONTRACT-SNOWFLAKE-LOGIN-TIMEOUT": "30",
+            "x-api-key": "not-a-config-header",
+            "content-type": "application/yaml",
+        }
+    )
+
+    assert config.get_snowflake_username() == "svc_test"
+    assert config.get_snowflake_password() == "super-secret-value"
+    assert config.get_snowflake_login_timeout() == 30
+    assert "super-secret-value" not in repr(config)
+
+
+def test_no_config_headers_means_no_config():
+    from datacontract.api import config_from_headers
+
+    assert config_from_headers({"x-api-key": "k", "content-type": "application/yaml"}) is None
+
+
+def test_unknown_config_header_is_rejected():
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
+        data_contract_str = f.read()
+
+    response = client.post(
+        url="/test",
+        content=data_contract_str,
+        headers={"Content-Type": "application/yaml", "datacontract-snowflake-typo": "x"},
+    )
+
+    assert response.status_code == 400
+    assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
+
+
+def test_test_endpoint_uses_config_from_headers():
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
+        data_contract_str = f.read()
+
+    from datacontract.model.run import Run
+
+    with patch("datacontract.api.DataContract") as mock:
+        mock.return_value.test.return_value = Run.create_run()
+        client.post(
+            url="/test",
+            content=data_contract_str,
+            headers={"Content-Type": "application/yaml", "datacontract-postgres-password": "pw"},
+        )
+
+    config = mock.call_args.kwargs["config"]
+    assert config.get_postgres_password() == "pw"
+
+
+def _row_filter_contract():
+    with open("fixtures/row-filter/datacontract.yaml", "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def test_test_endpoint_filter_param():
+    response = client.post(
+        url="/test?filter=order_id <= 2",
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["result"] == "passed"
+    assert response.json()["filters"] == {"orders": "order_id <= 2"}
+
+
+def test_test_endpoint_filters_param():
+    response = client.post(
+        url='/test?filters={"orders": "order_id <= 2"}',
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["result"] == "passed"
+    assert response.json()["filters"] == {"orders": "order_id <= 2"}
+
+
+def test_test_endpoint_rejects_invalid_filters_json():
+    response = client.post(
+        url="/test?filters=orders=order_id",
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 422
+    assert "JSON object" in response.json()["detail"]
+
+
+def test_test_endpoint_rejects_filter_and_filters_together():
+    response = client.post(
+        url='/test?filter=order_id <= 2&filters={"orders": "order_id <= 2"}',
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 422
+    assert "not both" in response.json()["detail"]
+
+
+def test_entropy_data_api_key_header_is_accepted():
+    from datacontract.api import config_from_headers
+
+    config = config_from_headers({"entropy-data-api-key": "key", "entropy-data-host": "https://dc.example.com"})
+
+    assert config.get_entropy_data_api_key() == "key"
+    assert config.get_entropy_data_host() == "https://dc.example.com"
+
+
+def test_config_headers_work_despite_unrelated_malformed_env_var(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT", "not-a-number")
+    from datacontract.api import config_from_headers
+
+    config = config_from_headers({"datacontract-postgres-username": "u"})
+
+    assert config.get_postgres_username() == "u"

@@ -1,0 +1,69 @@
+{% set custom_props = datacontract.customProperties if datacontract.customProperties is defined and datacontract.customProperties is not callable else [] %}
+{% if custom_props is mapping %}
+  {% set custom_props = custom_props.items() | list %}
+  {% set is_mapping = true %}
+{% else %}
+  {% set is_mapping = false %}
+{% endif %}
+
+{% set has_props = (is_mapping and custom_props|length > 0) or (not is_mapping and custom_props is sequence and custom_props is not string and custom_props|length > 0) %}
+
+{% if has_props %}
+<section id="custom-properties" class="print:break-before-page">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900" id="customProperties">Custom Properties</h1>
+    <p class="text-sm text-gray-500">This section covers other properties you may find in a data contract.</p>
+  </div>
+
+  <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+    <div class="border-t border-gray-100">
+      <dl class="divide-y divide-gray-100 text-sm break-all print:break-inside-avoid">
+        {% if is_mapping %}
+          {% for key, value in custom_props %}
+          <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dt class="text-sm font-medium text-gray-900">{{ key }}</dt>
+            <dd class="mt-1 break-all text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
+              {% if value is mapping or (value is sequence and value is not string) %}
+                {{ value | tojson }}
+              {% elif value is sameas true %}
+                true
+              {% elif value is sameas false %}
+                false
+              {% else %}
+                {{ value }}
+              {% endif %}
+            </dd>
+          </div>
+          {% endfor %}
+        {% else %}
+          {% for prop in custom_props %}
+            {% if prop.property is defined %}
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt class="text-sm font-medium text-gray-900">
+                {{ prop.property }}
+                {% if prop.description is defined and prop.description %}
+                  <span class="ml-1 text-gray-400 cursor-help" title="{{ prop.description }}">ⓘ</span>
+                {% endif %}
+              </dt>
+              <dd class="mt-1 break-all text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
+                {% if prop.value is defined %}
+                  {% if prop.value is mapping or (prop.value is sequence and prop.value is not string) %}
+                    {{ prop.value | tojson }}
+                  {% elif prop.value is sameas true %}
+                    true
+                  {% elif prop.value is sameas false %}
+                    false
+                  {% else %}
+                    {{ prop.value }}
+                  {% endif %}
+                {% endif %}
+              </dd>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</section>
+{% endif %}

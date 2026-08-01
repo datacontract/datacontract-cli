@@ -15,6 +15,7 @@ from datacontract.cli import (
     resolve_output_format,
     validate_publish_url,
 )
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
@@ -34,7 +35,7 @@ class FailOn(str, Enum):
 def ci(
     locations: Annotated[
         Optional[list[str]],
-        typer.Argument(help="The location(s) (url or path) of the data contract yaml file(s)."),
+        typer.Argument(help="The location(s) (url, s3 url, or local path) of the data contract yaml file(s)."),
     ] = None,
     schema: Annotated[
         str,
@@ -111,6 +112,7 @@ def ci(
     for location in locations:
         out.print(f"Testing {location}")
         run = DataContract(
+            config=cli_config(),
             data_contract_file=location,
             schema_location=schema,
             publish_url=publish,

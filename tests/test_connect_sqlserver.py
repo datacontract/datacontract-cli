@@ -12,8 +12,14 @@ import logging
 import pytest
 from open_data_contract_standard.model import Server
 
-from datacontract.engines.ibis.connections.connect import _sqlserver_connection_kwargs
+from datacontract.config import Config
+from datacontract.engines.ibis.connections.connect import _sqlserver_connection_kwargs as _kwargs_with_config
 from datacontract.model.exceptions import DataContractException
+
+
+def _sqlserver_connection_kwargs(server):
+    return _kwargs_with_config(server, Config.resolve(None))
+
 
 SQLSERVER_ENV_VARS = [
     "DATACONTRACT_SQLSERVER_AUTHENTICATION",
@@ -25,6 +31,9 @@ SQLSERVER_ENV_VARS = [
     "DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION",
     "DATACONTRACT_SQLSERVER_DRIVER",
     "DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION",
+    "DATACONTRACT_SQLSERVER_HOST",
+    "DATACONTRACT_SQLSERVER_PORT",
+    "DATACONTRACT_SQLSERVER_DATABASE",
 ]
 
 
@@ -201,3 +210,17 @@ def test_server_fields_and_driver(env):
     assert kwargs["port"] == 1433
     assert kwargs["database"] == "mydb"
     assert kwargs["driver"] == "ODBC Driver 18 for SQL Server"
+
+
+def test_env_variables_override_the_contract_server_details(env):
+    env.setenv("DATACONTRACT_SQLSERVER_USERNAME", "sa")
+    env.setenv("DATACONTRACT_SQLSERVER_PASSWORD", "secret")
+    env.setenv("DATACONTRACT_SQLSERVER_HOST", "env-host")
+    env.setenv("DATACONTRACT_SQLSERVER_PORT", "1444")
+    env.setenv("DATACONTRACT_SQLSERVER_DATABASE", "env_db")
+
+    kwargs = _sqlserver_connection_kwargs(_server())
+
+    assert kwargs["host"] == "env-host"
+    assert kwargs["port"] == 1444
+    assert kwargs["database"] == "env_db"

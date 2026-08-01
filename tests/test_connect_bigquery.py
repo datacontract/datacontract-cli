@@ -16,6 +16,8 @@ BIGQUERY_ENV_VARS = [
     "DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH",
     "DATACONTRACT_BIGQUERY_BILLING_PROJECT",
     "DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT",
+    "DATACONTRACT_BIGQUERY_PROJECT",
+    "DATACONTRACT_BIGQUERY_DATASET",
 ]
 
 SERVICE_ACCOUNT = "runner@my-project.iam.gserviceaccount.com"
@@ -93,3 +95,13 @@ def test_billing_project_client_uses_the_impersonated_credentials(env):
     assert client.call_args.kwargs["project"] == "my-billing-project"
     assert client.call_args.kwargs["credentials"] is impersonated.return_value
     assert kwargs["client"] is client.return_value
+
+
+def test_env_variables_override_the_contract_project_and_dataset(env):
+    env.setenv("DATACONTRACT_BIGQUERY_PROJECT", "env-project")
+    env.setenv("DATACONTRACT_BIGQUERY_DATASET", "env_dataset")
+
+    kwargs = _connect()
+
+    assert kwargs["project_id"] == "env-project"
+    assert kwargs["dataset_id"] == "env_dataset"

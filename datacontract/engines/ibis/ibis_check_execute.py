@@ -10,6 +10,7 @@ onto the pre-registered ``Check`` objects in the run.
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from collections import defaultdict
 from typing import List, Optional
@@ -103,6 +104,8 @@ def execute_ibis_checks(
     duckdb_connection=None,
     schema_name: str = "all",
     include_failed_samples: bool = False,
+    model_filters: Optional[dict[str, str]] = None,
+    config=None,
 ):
     if data_contract is None:
         run.log_warn("Cannot run engine ibis, as data contract is invalid")
@@ -121,7 +124,7 @@ def execute_ibis_checks(
 
     run.log_info("Running engine ibis")
     try:
-        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name)
+        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name, config)
     except DataContractException:
         raise
     except ImportError:
@@ -167,7 +170,16 @@ def execute_ibis_checks(
 
     try:
         for model, model_specs in by_model.items():
-            _run_model(run, con, model, model_specs, data_contract, server, include_failed_samples)
+            _run_model(
+                run,
+                con,
+                model,
+                model_specs,
+                data_contract,
+                server,
+                include_failed_samples,
+                row_filter=(model_filters or {}).get(model),
+            )
     finally:
         _maybe_disconnect(con, spark, duckdb_connection)
 
@@ -200,6 +212,7 @@ def _run_model(
     data_contract: Optional[OpenDataContractStandard] = None,
     server: Optional[Server] = None,
     include_failed_samples: bool = False,
+    row_filter: Optional[str] = None,
 ):
     try:
         t = _resolve_table(con, model, _table_database(con, server))
@@ -225,6 +238,18 @@ def _run_model(
         for spec in specs
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
+
+    # Applied after the catalog reads above: those need the real table name, and
+    # the schema/type checks compare declared types, which no row filter changes.
+    if row_filter:
+        try:
+            t = _apply_row_filter(t, model, row_filter)
+        except Exception as e:
+            logger.warning("Could not apply row filter to model '%s': %s", model, e)
+            # A predicate that does not compile is a configuration problem, not a
+            # data violation, so the checks error rather than fail.
+            _fail_all(run, specs, ResultEnum.error, f"Could not apply row filter '{row_filter}': {e}")
+            return
 
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
@@ -1087,6 +1112,22 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     if get_server_type(server) == "redshift":
         return server.schema_
     return None
+
+
+_SIMPLE_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _apply_row_filter(t, model: str, predicate: str):
+    """Restrict a bound table to the rows matching a raw SQL predicate.
+
+    The predicate is written in the backend's dialect and references columns
+    unqualified. Wrapping the aliased relation via ``Table.sql`` keeps the
+    result a regular table expression, so every downstream query (batched
+    aggregation, duplicates, freshness, failed samples) compiles with the
+    WHERE clause included and the recorded per-check SQL shows it.
+    """
+    alias = f"{model}_filtered" if _SIMPLE_IDENTIFIER.match(model) else "filtered_rows"
+    return t.alias(alias).sql(f"SELECT * FROM {alias} WHERE {predicate}")
 
 
 def _resolve_table(con, model: str, database: Optional[str] = None):

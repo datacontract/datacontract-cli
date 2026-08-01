@@ -38,7 +38,7 @@ Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix st
 | `network_timeout` | `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT` |
 | `socket_timeout` | `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT` |
 
-`account`, `database`, and `schema` come from the contract's `servers` block.
+`account`, `database`, and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_SNOWFLAKE_ACCOUNT`, `DATACONTRACT_SNOWFLAKE_DATABASE`, and `DATACONTRACT_SNOWFLAKE_SCHEMA`.
 
 For key-pair auth, set `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` to the path of the key file and `..._PRIVATE_KEY_FILE_PWD` to its passphrase, if it has one. `..._PRIVATE_KEY` takes the key itself rather than a path.
 
