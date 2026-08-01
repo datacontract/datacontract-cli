@@ -38,6 +38,16 @@ class MetricType(str, Enum):
     UNSUPPORTED = "unsupported"
 
 
+# Metrics answered from schema introspection alone, without reading row values.
+# A positive allowlist: any future metric defaults conservatively to data-reading.
+_METADATA_METRICS = {
+    MetricType.FIELD_PRESENT,
+    MetricType.FIELD_TYPE,
+    MetricType.FIELD_PHYSICAL_TYPE,
+    MetricType.FIELD_NESTED_TYPE,
+}
+
+
 class Op(str, Enum):
     EQ = "="
     NE = "!="
@@ -153,6 +163,12 @@ class CheckSpec:
     # Preset result/reason for checks that are not executed (UNSUPPORTED).
     preset_result: Optional[str] = None
     preset_reason: Optional[str] = None
+
+    @property
+    def requires_data_read(self) -> bool:
+        if self.metric == MetricType.UNSUPPORTED:
+            return False
+        return self.metric not in _METADATA_METRICS
 
     def has_validity_constraints(self) -> bool:
         return any(

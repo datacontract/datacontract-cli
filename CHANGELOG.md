@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test --metadata-only` runs only checks that read the schema (field presence and types) and reports checks that read row values as skipped
+- `datacontract test --checks` accepts the ODCS terms `properties` and `slaProperties`, keeping `schema` and `servicelevel` as legacy aliases
+
 ## [1.0.17] - 2026-08-01
 
 ### Deprecated

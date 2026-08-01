@@ -27,12 +27,13 @@ datacontract test [OPTIONS] [LOCATION]
 | `--publish` | — | The url to publish the results after the test. |
 | `--output` | — | Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml'). |
 | `--output-format` | — | The target format for the test results. Accepted values: json, junit. |
-| `--checks` | — | Comma-separated list of check categories to run (available: schema, quality, servicelevel, custom). Omit to enable all. |
+| `--checks` | — | Comma-separated list of check categories to run (available: properties, quality, slaProperties, custom; legacy aliases: schema, servicelevel). Omit to enable all. |
 | `--dimension` | — | Comma-separated list of quality dimensions to run (available: accuracy, completeness, conformity, consistency, coverage, timeliness, uniqueness). Runs the quality rules declaring a matching `dimension`, plus the schema and service level checks that measure it. Omit to run everything. |
 | `--quality-id` | — | Comma-separated list of quality rule ids to run, as defined in the `id` of the quality rule. Runs only those rules, no schema or service level checks. Fails if an id is not defined in the data contract. Omit to run everything. |
 | `--tag` | — | Comma-separated list of tags to run. Runs the quality rules declaring a matching tag in their `tags`, no schema or service level checks. Omit to run everything. |
 | `--filter` | — | A SQL predicate to filter the rows under test, in the dialect of the server, e.g., "ingested_at \>= CURRENT_DATE - 1". Only works if a single schema is tested; for contracts with multiple schemas, combine with --schema-name or use --filters. Schema checks and custom SQL queries are not filtered. |
 | `--filters` | — | Row filters per schema, as a JSON object mapping schema name to SQL predicate, e.g., '\{"orders": "ingested_at \>= CURRENT_DATE - 1"\}'. Schema checks and custom SQL queries are not filtered. |
+| `--metadata-only` / `--no-metadata-only` | `--no-metadata-only` | Run only checks that read the schema (field presence and types). Checks that read row values are skipped. |
 | `--include-failed-samples` / `--no-include-failed-samples` | `--no-include-failed-samples` | Collect a small sample of rows that failed each missing/invalid/duplicate check (identifier + offending columns; sensitive columns omitted). Off by default. |
 | `--logs` / `--no-logs` | `--no-logs` | Print logs |
 | `--ssl-verification` / `--no-ssl-verification` | `--ssl-verification` | SSL verification when publishing the data contract. |

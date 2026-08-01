@@ -25,6 +25,7 @@ datacontract ci [OPTIONS] [LOCATIONS]...
 | `--publish` | — | The url to publish the results after the test. |
 | `--output` | — | Specify the file path where the test results should be written to (e.g., './test-results/TEST-datacontract.xml'). |
 | `--output-format` | — | The target format for the test results. Accepted values: json, junit. |
+| `--metadata-only` / `--no-metadata-only` | `--no-metadata-only` | Run only checks that read the schema (field presence and types). Checks that read row values are skipped. |
 | `--logs` / `--no-logs` | `--no-logs` | Print logs |
 | `--json` | off | Print test results as JSON to stdout. |
 | `--fail-on` | `error` | Minimum severity that causes a non-zero exit code. |
