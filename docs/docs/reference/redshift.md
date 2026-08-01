@@ -23,7 +23,7 @@ servers:
 
 ## Authentication
 
-`datacontract test` and `datacontract import redshift` authenticate identically. `host`, `port` (default 5439), `database`, and `schema` come from the contract's `servers` block; for the import they are passed as `--source`, `--port`, `--database`, and `--schema`.
+`datacontract test` and `datacontract import redshift` authenticate identically. `host`, `port` (default 5439), `database`, and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_REDSHIFT_HOST`, `DATACONTRACT_REDSHIFT_PORT`, `DATACONTRACT_REDSHIFT_DATABASE`, and `DATACONTRACT_REDSHIFT_SCHEMA`; for the import they are passed as `--source`, `--port`, `--database`, and `--schema`.
 
 | Variable | Example | Description |
 |---|---|---|

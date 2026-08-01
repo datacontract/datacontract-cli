@@ -19,6 +19,8 @@ DATABRICKS_ENV_VARS = [
     "DATACONTRACT_DATABRICKS_CLIENT_SECRET",
     "DATACONTRACT_DATABRICKS_PROFILE",
     "DATACONTRACT_DATABRICKS_AUTH_TYPE",
+    "DATACONTRACT_DATABRICKS_CATALOG",
+    "DATACONTRACT_DATABRICKS_SCHEMA",
 ]
 
 
@@ -186,3 +188,16 @@ def test_missing_auth_raises(clean_databricks_env, captured_connect):
 
     with pytest.raises(DataContractException):
         _connect()
+
+
+def test_env_variables_override_the_contract_server_details(clean_databricks_env, captured_connect):
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_TOKEN", "dapi-token")
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", "from-env.cloud.databricks.com")
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_CATALOG", "env_catalog")
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_SCHEMA", "env_schema")
+
+    _connect()
+
+    assert captured_connect["server_hostname"] == "from-env.cloud.databricks.com"
+    assert captured_connect["catalog"] == "env_catalog"
+    assert captured_connect["schema"] == "env_schema"

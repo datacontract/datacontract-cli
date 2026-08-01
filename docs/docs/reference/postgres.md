@@ -27,12 +27,8 @@ servers:
 |---|---|---|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres` | Username |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `mysecretpassword` | Password |
-| `DATACONTRACT_POSTGRES_HOST` | `localhost` | Overrides `host` from the `servers` block |
-| `DATACONTRACT_POSTGRES_PORT` | `5432` | Overrides `port` from the `servers` block |
-| `DATACONTRACT_POSTGRES_DATABASE` | `postgres` | Overrides `database` from the `servers` block |
-| `DATACONTRACT_POSTGRES_SCHEMA` | `public` | Overrides `schema` from the `servers` block |
 
-`host`, `port` (default 5432), `database`, and `schema` come from the contract's `servers` block, unless overridden with the variables above. For `datacontract import postgres`, they come from `--source`, `--port`, `--database`, and `--schema`.
+`host`, `port` (default 5432), `database`, and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_POSTGRES_HOST`, `DATACONTRACT_POSTGRES_PORT`, `DATACONTRACT_POSTGRES_DATABASE`, and `DATACONTRACT_POSTGRES_SCHEMA`. For `datacontract import postgres`, they come from `--source`, `--port`, `--database`, and `--schema`.
 
 ## Data types
 

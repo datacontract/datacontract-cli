@@ -35,7 +35,7 @@ servers:
 | `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `True` | Use SSL |
 | `DATACONTRACT_SQLSERVER_DRIVER` | `ODBC Driver 18 for SQL Server` | ODBC driver name |
 
-The `cli` mode reuses an `az login` session through the Azure default credential chain and requires ODBC Driver 18.1 or newer. `host`, `port`, `database`, `schema`, and `driver` come from the contract's `servers` block.
+The `cli` mode reuses an `az login` session through the Azure default credential chain and requires ODBC Driver 18.1 or newer. `host`, `port`, `database`, `schema`, and `driver` come from the contract's `servers` block; `host`, `port`, and `database` can be overridden with `DATACONTRACT_SQLSERVER_HOST`, `DATACONTRACT_SQLSERVER_PORT`, and `DATACONTRACT_SQLSERVER_DATABASE`.
 
 ### Deprecated variables
 

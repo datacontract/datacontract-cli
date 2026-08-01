@@ -13,6 +13,7 @@ values the config does not set.
 from datacontract.config.cli_context import cli_config, set_cli_config
 from datacontract.config.settings import (
     DEPRECATED_OPTIONS,
+    SERVER_OVERRIDE_OPTIONS,
     Config,
     env_name,
     known_env_names,
@@ -21,6 +22,7 @@ from datacontract.config.settings import (
 
 __all__ = [
     "DEPRECATED_OPTIONS",
+    "SERVER_OVERRIDE_OPTIONS",
     "Config",
     "cli_config",
     "set_cli_config",

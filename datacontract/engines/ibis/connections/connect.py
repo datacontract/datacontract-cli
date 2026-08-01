@@ -112,13 +112,15 @@ def connect_ibis(
         from datacontract.engines.ibis.connections.redshift_credentials import resolve_redshift_login
         from datacontract.engines.ibis.connections.redshift_patch import CLIENT_ENCODING
 
-        login = resolve_redshift_login(server.host, server.database, config)
+        host = config.get_redshift_host() or server.host
+        database = config.get_redshift_database() or server.database
+        login = resolve_redshift_login(host, database, config)
         kwargs = dict(
-            host=server.host,
-            port=int(server.port) if server.port else 5439,
+            host=host,
+            port=config.get_redshift_port() or (int(server.port) if server.port else 5439),
             user=login.user,
-            database=server.database,
-            schema=server.schema_,
+            database=database,
+            schema=config.get_redshift_schema() or server.schema_,
             client_encoding=CLIENT_ENCODING,
         )
         if login.password:
@@ -143,18 +145,20 @@ def connect_ibis(
     if server_type == "bigquery":
         credentials = _bigquery_credentials(config)
         billing_project = config.get_bigquery_billing_project()
+        project = config.get_bigquery_project() or server.project
+        dataset = config.get_bigquery_dataset() or server.dataset
 
-        if billing_project and billing_project != server.project:
+        if billing_project and billing_project != project:
             from google.cloud import bigquery as bq_client_lib
 
             client = bq_client_lib.Client(project=billing_project, credentials=credentials)
             return ibis.bigquery.connect(
-                project_id=server.project,
-                dataset_id=server.dataset,
+                project_id=project,
+                dataset_id=dataset,
                 client=client,
             )
 
-        kwargs = dict(project_id=server.project, dataset_id=server.dataset)
+        kwargs = dict(project_id=project, dataset_id=dataset)
         if credentials:
             kwargs["credentials"] = credentials
         return ibis.bigquery.connect(**kwargs)
@@ -166,15 +170,15 @@ def connect_ibis(
     if server_type == "oracle":
         from datacontract.engines.ibis.connections.oracle_patch import apply_oracle_compatibility_patch
 
-        service_name = server.serviceName or server.database
+        service_name = config.get_oracle_service_name() or server.serviceName or server.database
         oracle_client_dir = config.get_oracle_client_dir()
         if oracle_client_dir:
             import oracledb
 
             oracledb.init_oracle_client(lib_dir=oracle_client_dir)
         con = ibis.oracle.connect(
-            host=server.host,
-            port=int(server.port) if server.port else 1521,
+            host=config.get_oracle_host() or server.host,
+            port=config.get_oracle_port() or (int(server.port) if server.port else 1521),
             user=config.get_oracle_username(required=True),
             password=config.get_oracle_password(required=True),
             service_name=service_name,
@@ -213,12 +217,15 @@ def _connect_databricks(ibis, server: Server, run: Run, config: Config):
     The OAuth credential providers build their SDK ``Config`` lazily, so token
     exchange happens when the connection is opened rather than while reading env.
     """
-    host = server.host or config.get_databricks_server_hostname(required=True)
+    # the config option wins over the contract, like the other server-detail overrides
+    host = (
+        config.get_databricks_server_hostname() or server.host or config.get_databricks_server_hostname(required=True)
+    )
     kwargs = dict(
         server_hostname=host,
         http_path=config.get_databricks_http_path(),
-        catalog=server.catalog,
-        schema=server.schema_,
+        catalog=config.get_databricks_catalog() or server.catalog,
+        schema=config.get_databricks_schema() or server.schema_,
     )
 
     token = config.get_databricks_token()
@@ -333,11 +340,11 @@ def _connect_impala(ibis, server: Server, config: Config):
     true since Impala support landed and stays that way.
     """
     return ibis.impala.connect(
-        host=server.host,
-        port=int(server.port) if server.port else 21050,
+        host=config.get_impala_host() or server.host,
+        port=config.get_impala_port() or (int(server.port) if server.port else 21050),
         user=config.get_impala_username(),
         password=config.get_impala_password(),
-        database=getattr(server, "database", None),
+        database=config.get_impala_database() or getattr(server, "database", None),
         use_ssl=config.get_impala_use_ssl(default=True),
         auth_mechanism=(config.get_impala_auth_mechanism() or "NOSASL"),
         use_http_transport=config.get_impala_use_http_transport(default=False),
@@ -393,8 +400,9 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     Every option is enumerated; the old behavior of forwarding any
     DATACONTRACT_SNOWFLAKE_* variable verbatim is gone (unknown names are warned
     about instead — see unknown_snowflake_env_names). ``account``, ``database``
-    and ``schema`` always come from the ODCS server object; the driver's ``user``
-    parameter keeps its DATACONTRACT_SNOWFLAKE_USERNAME spelling.
+    and ``schema`` come from the ODCS server object unless the matching config
+    option overrides them; the driver's ``user`` parameter keeps its
+    DATACONTRACT_SNOWFLAKE_USERNAME spelling.
     """
     for name in unknown_snowflake_env_names():
         run.log_warn(
@@ -451,9 +459,9 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     # let users opt back in via DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true.
     return dict(
         create_object_udfs=config.get_snowflake_create_object_udfs(default=False),
-        account=server.account,
-        database=server.database,
-        schema=server.schema_,
+        account=config.get_snowflake_account() or server.account,
+        database=config.get_snowflake_database() or server.database,
+        schema=config.get_snowflake_schema() or server.schema_,
         **kwargs,
     )
 
@@ -473,9 +481,9 @@ def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, sch
 
     user = config.get_mysql_username(required=True)
     password = config.get_mysql_password(required=True)
-    host = server.host or "localhost"
-    port = int(server.port) if server.port else 3306
-    database = server.database
+    host = config.get_mysql_host() or server.host or "localhost"
+    port = config.get_mysql_port() or (int(server.port) if server.port else 3306)
+    database = config.get_mysql_database() or server.database
 
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")
@@ -567,9 +575,9 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
             )
 
     kwargs = dict(
-        host=server.host,
-        port=int(server.port) if server.port else 1433,
-        database=server.database,
+        host=config.get_sqlserver_host() or server.host,
+        port=config.get_sqlserver_port() or (int(server.port) if server.port else 1433),
+        database=config.get_sqlserver_database() or server.database,
         driver=driver,
         user=None,
         password=None,
@@ -611,14 +619,17 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
 def _connect_athena(ibis, server: Server, config: Config):
     # regionName is a contract value, so the variable still wins over it
     credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName, config), config)
-    if not server.schema_:
+    schema = config.get_athena_schema() or server.schema_
+    staging_dir = config.get_athena_staging_dir() or getattr(server, "stagingDir", None)
+    catalog = config.get_athena_catalog() or server.catalog
+    if not schema:
         raise DataContractException(
             type="athena-connection",
             name="missing_schema",
             reason="Schema is required for Athena connection.",
             engine="datacontract",
         )
-    if not getattr(server, "stagingDir", None):
+    if not staging_dir:
         raise DataContractException(
             type="athena-connection",
             name="missing_s3_staging_dir",
@@ -626,16 +637,16 @@ def _connect_athena(ibis, server: Server, config: Config):
             engine="datacontract",
         )
     kwargs = dict(
-        s3_staging_dir=server.stagingDir,
+        s3_staging_dir=staging_dir,
         aws_access_key_id=credentials["aws_access_key_id"],
         aws_secret_access_key=credentials["aws_secret_access_key"],
         aws_session_token=credentials["aws_session_token"],
         region_name=credentials["region_name"],
-        schema_name=server.schema_,
+        schema_name=schema,
     )
     # Optional data source / catalog; pyathena defaults it to `awsdatacatalog`.
-    if server.catalog:
-        kwargs["catalog_name"] = server.catalog
+    if catalog:
+        kwargs["catalog_name"] = catalog
     return ibis.athena.connect(**kwargs)
 
 
@@ -643,11 +654,11 @@ def _connect_trino(ibis, server: Server, config: Config):
     authentication = (config.get_trino_authentication() or "basic").strip().lower()
 
     kwargs = dict(
-        host=server.host,
-        port=int(server.port) if server.port else 8080,
+        host=config.get_trino_host() or server.host,
+        port=config.get_trino_port() or (int(server.port) if server.port else 8080),
         user=None,
-        database=server.catalog,
-        schema=server.schema_,
+        database=config.get_trino_catalog() or server.catalog,
+        schema=config.get_trino_schema() or server.schema_,
     )
 
     if authentication == "basic":

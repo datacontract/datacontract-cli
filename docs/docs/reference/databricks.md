@@ -31,7 +31,7 @@ servers:
 | `DATACONTRACT_DATABRICKS_PROFILE` | `my-profile` | A profile from `~/.databrickscfg` (Databricks SDK unified auth) |
 | `DATACONTRACT_DATABRICKS_AUTH_TYPE` | `databricks-oauth` | Explicit connector auth type, e.g. for interactive U2M browser login |
 
-The authentication method is selected from the variables you set, in this order: PAT → OAuth service principal (`CLIENT_ID` + `CLIENT_SECRET`) → config profile → explicit `AUTH_TYPE`. `catalog` and `schema` come from the contract's `servers` block.
+The authentication method is selected from the variables you set, in this order: PAT → OAuth service principal (`CLIENT_ID` + `CLIENT_SECRET`) → config profile → explicit `AUTH_TYPE`. `catalog` and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_DATABRICKS_CATALOG` and `DATACONTRACT_DATABRICKS_SCHEMA`; `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` overrides the contract's `host`.
 
 `datacontract import unity` needs only the hostname plus a PAT or profile; `datacontract test` additionally needs `DATACONTRACT_DATABRICKS_HTTP_PATH`. When a `spark` session is passed programmatically (notebook/pipeline), no credentials are needed at all.
 
