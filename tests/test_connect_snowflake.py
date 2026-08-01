@@ -11,7 +11,6 @@ import pytest
 from open_data_contract_standard.model import Server
 
 from datacontract import Config
-from datacontract.config import config_context
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.model.run import Run
 
@@ -43,8 +42,8 @@ def _server():
     return Server(server="snowflake", type="snowflake", account="abc-xy123", database="ORDER_DB", schema="ORDERS")
 
 
-def _connect(run=None):
-    return connect_ibis(run or Run.create_run(), data_contract=None, server=_server())
+def _connect(run=None, config=None):
+    return connect_ibis(run or Run.create_run(), data_contract=None, server=_server(), config=config)
 
 
 def test_username_maps_to_the_drivers_user_parameter(env, captured_connect):
@@ -154,8 +153,7 @@ def test_programmatic_config_reaches_the_connector(env, captured_connect):
         snowflake_warehouse="COMPUTE_WH",
     )
 
-    with config_context(config):
-        _connect()
+    _connect(config=config)
 
     assert captured_connect["user"] == "svc_test"
     assert captured_connect["password"] == "secret"
@@ -166,7 +164,6 @@ def test_programmatic_config_reaches_the_connector(env, captured_connect):
 def test_programmatic_config_wins_over_the_environment(env, captured_connect):
     env.setenv("DATACONTRACT_SNOWFLAKE_USERNAME", "from_env")
 
-    with config_context(Config(snowflake_username="from_config")):
-        _connect()
+    _connect(config=Config(snowflake_username="from_config"))
 
     assert captured_connect["user"] == "from_config"

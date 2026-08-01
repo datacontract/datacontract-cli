@@ -6,7 +6,7 @@ from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
-from datacontract.config import getenv
+from datacontract.config import Config
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -27,13 +27,14 @@ class UnityImporter(Importer):
         self,
         source: str,
         import_args: dict,
+        config: "Config | None" = None,
     ) -> OpenDataContractStandard:
         """Import data contract specification from a source."""
         if source is not None:
             return import_unity_from_json(source)
         else:
             unity_table_full_name_list = import_args.get("unity_table_full_name")
-            return import_unity_from_api(unity_table_full_name_list)
+            return import_unity_from_api(unity_table_full_name_list, config)
 
 
 def import_unity_from_json(source: str) -> OpenDataContractStandard:
@@ -55,11 +56,17 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
     return convert_unity_schema(odcs, unity_schema)
 
 
-def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenDataContractStandard:
+def import_unity_from_api(
+    unity_table_full_name_list: List[str] = None, config: "Config | None" = None
+) -> OpenDataContractStandard:
     """Import data contract specification from Unity Catalog API."""
+    config = Config.from_input(config)
     try:
-        profile = getenv("DATACONTRACT_DATABRICKS_PROFILE")
-        host, token = getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), getenv("DATACONTRACT_DATABRICKS_TOKEN")
+        profile = config.getenv("DATACONTRACT_DATABRICKS_PROFILE")
+        host, token = (
+            config.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"),
+            config.getenv("DATACONTRACT_DATABRICKS_TOKEN"),
+        )
         exception = DataContractException(
             type="configuration",
             name="Databricks configuration",

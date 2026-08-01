@@ -2,16 +2,17 @@ from urllib.parse import urlparse
 
 import requests
 
-from datacontract.config import getenv
+from datacontract.config import Config
 from datacontract.model.exceptions import DataContractException
 
 
-def fetch_resource(url: str):
+def fetch_resource(url: str, config: Config | None = None):
+    config = Config.from_input(config)
     headers = {
         "accept": "application/yaml",
     }
 
-    _set_api_key(headers, url)
+    _set_api_key(headers, url, config)
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         return response.text
@@ -25,12 +26,12 @@ def fetch_resource(url: str):
         )
 
 
-def _set_api_key(headers, url):
+def _set_api_key(headers, url, config: Config):
     hostname = urlparse(url).hostname
 
-    entropy_data_api_key = getenv("ENTROPY_DATA_API_KEY")
-    datamesh_manager_api_key = getenv("DATAMESH_MANAGER_API_KEY")
-    datacontract_manager_api_key = getenv("DATACONTRACT_MANAGER_API_KEY")
+    entropy_data_api_key = config.getenv("ENTROPY_DATA_API_KEY")
+    datamesh_manager_api_key = config.getenv("DATAMESH_MANAGER_API_KEY")
+    datacontract_manager_api_key = config.getenv("DATACONTRACT_MANAGER_API_KEY")
 
     if hostname == "entropy-data.com" or hostname.endswith(".entropy-data.com"):
         if entropy_data_api_key is None or entropy_data_api_key == "":

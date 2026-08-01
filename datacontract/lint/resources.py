@@ -1,8 +1,9 @@
+from datacontract.config import Config
 from datacontract.lint.files import read_file
 from datacontract.lint.urls import fetch_resource
 
 
-def read_resource(location: str) -> str:
+def read_resource(location: str, config: Config | None = None) -> str:
     """
     Read a resource from a given location.
 
@@ -11,11 +12,12 @@ def read_resource(location: str) -> str:
 
     Args:
         location (str): The location of the resource, either a URL or a file path.
+        config: Optional credentials for authenticated URLs.
 
     Returns:
         str: The content of the resource.
     """
     if location.startswith("http://") or location.startswith("https://"):
-        return fetch_resource(location)
+        return fetch_resource(location, config)
     else:
         return read_file(location)

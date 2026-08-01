@@ -1,19 +1,18 @@
 """Unit tests for programmatic configuration (datacontract.config).
 
-Covers the Config class (env snapshot, overrides, validation, secrets), the
-ContextVar resolution (precedence, scoping, thread isolation), and the drift
-guard that keeps Config in sync with the env vars the code actually reads.
+Covers the Config class (env snapshot, overrides, validation, secrets), value
+resolution (config wins over env, env fallback), input normalization, and the
+drift guard that keeps Config in sync with the env vars the code actually reads.
 """
 
 import re
-import threading
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
 from datacontract import Config
-from datacontract.config import config_context, getenv, known_env_names, unknown_snowflake_env_names
+from datacontract.config import known_env_names, unknown_snowflake_env_names
 
 
 def test_field_names_map_to_env_var_names():
@@ -81,46 +80,63 @@ def test_unrelated_environment_variables_are_ignored(monkeypatch):
     Config()  # must not raise
 
 
-def test_getenv_prefers_the_active_config_over_the_environment(monkeypatch):
+def test_getenv_prefers_config_values_over_the_environment(monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", "from_env")
 
-    with config_context({"DATACONTRACT_POSTGRES_USERNAME": "from_config"}):
-        assert getenv("DATACONTRACT_POSTGRES_USERNAME") == "from_config"
+    config = Config(postgres_username="from_config")
 
-    assert getenv("DATACONTRACT_POSTGRES_USERNAME") == "from_env"
+    assert config.getenv("DATACONTRACT_POSTGRES_USERNAME") == "from_config"
 
 
-def test_getenv_falls_back_to_the_environment_inside_a_context(monkeypatch):
+def test_getenv_falls_back_to_the_environment_for_unset_values(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_MYSQL_USERNAME", raising=False)
+    config = Config.model_construct()  # empty: nothing read from env at construction
+
     monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", "from_env")
 
-    with config_context({"DATACONTRACT_POSTGRES_USERNAME": "x"}):
-        assert getenv("DATACONTRACT_MYSQL_USERNAME") == "from_env"
+    assert config.getenv("DATACONTRACT_MYSQL_USERNAME") == "from_env"
+    assert config.getenv("DATACONTRACT_MYSQL_PASSWORD", "default") == "default"
 
 
-def test_config_context_accepts_a_config_instance():
-    with config_context(Config(snowflake_username="svc_test")):
-        assert getenv("DATACONTRACT_SNOWFLAKE_USERNAME") == "svc_test"
+def test_require_raises_a_datacontract_exception_for_missing_values(monkeypatch):
+    from datacontract.model.exceptions import DataContractException
+
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_PASSWORD", raising=False)
+
+    with pytest.raises(DataContractException, match="DATACONTRACT_POSTGRES_PASSWORD"):
+        Config.model_construct().require("DATACONTRACT_POSTGRES_PASSWORD", server_type="postgres")
 
 
-def test_config_context_is_isolated_between_threads():
-    results = {}
-    barrier = threading.Barrier(2)
+def test_get_bool_parses_config_and_env_values(monkeypatch):
+    assert (
+        Config(sqlserver_encrypted_connection=False).get_bool("DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION", True)
+        is False
+    )
 
-    def worker(name: str, value: str):
-        with config_context({"DATACONTRACT_POSTGRES_PASSWORD": value}):
-            barrier.wait(timeout=5)  # both threads hold their context at the same time
-            results[name] = getenv("DATACONTRACT_POSTGRES_PASSWORD")
+    monkeypatch.setenv("DATACONTRACT_IMPALA_USE_SSL", "yes")
+    assert Config.model_construct().get_bool("DATACONTRACT_IMPALA_USE_SSL", False) is True
 
-    threads = [
-        threading.Thread(target=worker, args=("a", "password-a")),
-        threading.Thread(target=worker, args=("b", "password-b")),
-    ]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    monkeypatch.delenv("DATACONTRACT_IMPALA_USE_SSL")
+    assert Config.model_construct().get_bool("DATACONTRACT_IMPALA_USE_SSL", True) is True
 
-    assert results == {"a": "password-a", "b": "password-b"}
+
+def test_from_input_accepts_a_dict_keyed_by_env_var_names():
+    config = Config.from_input({"DATACONTRACT_SNOWFLAKE_USERNAME": "svc_test", "ENTROPY_DATA_API_KEY": "key"})
+
+    assert config.snowflake_username == "svc_test"
+    assert config.entropy_data_api_key.get_secret_value() == "key"
+
+
+def test_from_input_rejects_unknown_env_var_names():
+    with pytest.raises(ValueError, match="DATACONTRACT_SNOWFLAKE_TYPO"):
+        Config.from_input({"DATACONTRACT_SNOWFLAKE_TYPO": "x"})
+
+
+def test_from_input_passes_through_config_and_normalizes_none():
+    config = Config(postgres_username="u")
+
+    assert Config.from_input(config) is config
+    assert Config.from_input(None).to_env_dict() == {}
 
 
 def test_unknown_snowflake_env_names_reports_undeclared_variables(monkeypatch):

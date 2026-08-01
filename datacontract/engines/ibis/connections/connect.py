@@ -15,10 +15,10 @@ import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
-from datacontract.config import getenv, unknown_snowflake_env_names
+from datacontract.config import Config, unknown_snowflake_env_names
 from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
-from datacontract.model.exceptions import DataContractException, require_env
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
 
@@ -51,6 +51,7 @@ def connect_ibis(
     spark: "SparkSession" = None,
     duckdb_connection=None,
     schema_name: str = "all",
+    config: Config | None = None,
 ) -> "ibis.BaseBackend | None":
     """Return a connected ibis backend, or ``None`` if the server is unsupported.
 
@@ -58,6 +59,7 @@ def connect_ibis(
     appended to ``run`` (mirroring the previous soda behaviour).
     """
     ibis = _import_ibis()
+    config = Config.from_input(config)
     server_type = get_server_type(server)
 
     if server_type in _FILE_SERVER_TYPES:
@@ -65,7 +67,9 @@ def connect_ibis(
             _unsupported(run, f"Format {server.format} not yet supported by datacontract CLI")
             return None
         run.log_info(f"Connecting to {server_type} {server.format} via duckdb")
-        con = get_duckdb_connection(data_contract, server, run, duckdb_connection, schema_name=schema_name)
+        con = get_duckdb_connection(
+            data_contract, server, run, duckdb_connection, schema_name=schema_name, config=config
+        )
         return ibis.duckdb.from_connection(con)
 
     if server_type == "kafka":
@@ -73,7 +77,7 @@ def connect_ibis(
 
         if spark is None:
             spark = create_spark_session()
-        read_kafka_topic(spark, data_contract, server)
+        read_kafka_topic(spark, data_contract, server, config)
         return ibis.pyspark.connect(session=spark)
 
     if server_type == "dataframe":
@@ -92,14 +96,14 @@ def connect_ibis(
             if database_name:
                 spark.sql(f"USE {database_name}")
             return ibis.pyspark.connect(session=spark)
-        return _connect_databricks(ibis, server, run)
+        return _connect_databricks(ibis, server, run, config)
 
     if server_type == "postgres":
         return ibis.postgres.connect(
             host=server.host,
             port=int(server.port) if server.port else 5432,
-            user=require_env("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres"),
-            password=require_env("DATACONTRACT_POSTGRES_PASSWORD", server_type="postgres"),
+            user=config.require("DATACONTRACT_POSTGRES_USERNAME", server_type="postgres"),
+            password=config.require("DATACONTRACT_POSTGRES_PASSWORD", server_type="postgres"),
             database=server.database,
             schema=server.schema_,
         )
@@ -108,7 +112,7 @@ def connect_ibis(
         from datacontract.engines.ibis.connections.redshift_credentials import resolve_redshift_login
         from datacontract.engines.ibis.connections.redshift_patch import CLIENT_ENCODING
 
-        login = resolve_redshift_login(server.host, server.database)
+        login = resolve_redshift_login(server.host, server.database, config)
         kwargs = dict(
             host=server.host,
             port=int(server.port) if server.port else 5439,
@@ -131,14 +135,14 @@ def connect_ibis(
         return con
 
     if server_type == "mysql":
-        return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name)
+        return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name, config)
 
     if server_type == "snowflake":
-        return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run))
+        return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run, config))
 
     if server_type == "bigquery":
-        credentials = _bigquery_credentials()
-        billing_project = getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
+        credentials = _bigquery_credentials(config)
+        billing_project = config.getenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT")
 
         if billing_project and billing_project != server.project:
             from google.cloud import bigquery as bq_client_lib
@@ -157,13 +161,13 @@ def connect_ibis(
 
     # `mssql` is what ODBC, ibis and dbt call SQL Server; ODCS spells it `sqlserver`.
     if server_type in ("sqlserver", "mssql"):
-        return _connect_sqlserver(ibis, server)
+        return _connect_sqlserver(ibis, server, config)
 
     if server_type == "oracle":
         from datacontract.engines.ibis.connections.oracle_patch import apply_oracle_compatibility_patch
 
         service_name = server.serviceName or server.database
-        oracle_client_dir = getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
+        oracle_client_dir = config.getenv("DATACONTRACT_ORACLE_CLIENT_DIR")
         if oracle_client_dir:
             import oracledb
 
@@ -171,27 +175,27 @@ def connect_ibis(
         con = ibis.oracle.connect(
             host=server.host,
             port=int(server.port) if server.port else 1521,
-            user=require_env("DATACONTRACT_ORACLE_USERNAME", server_type="oracle"),
-            password=require_env("DATACONTRACT_ORACLE_PASSWORD", server_type="oracle"),
+            user=config.require("DATACONTRACT_ORACLE_USERNAME", server_type="oracle"),
+            password=config.require("DATACONTRACT_ORACLE_PASSWORD", server_type="oracle"),
             service_name=service_name,
         )
         apply_oracle_compatibility_patch(con)
         return con
 
     if server_type == "trino":
-        return _connect_trino(ibis, server)
+        return _connect_trino(ibis, server, config)
 
     if server_type == "athena":
-        return _connect_athena(ibis, server)
+        return _connect_athena(ibis, server, config)
 
     if server_type == "impala":
-        return _connect_impala(ibis, server)
+        return _connect_impala(ibis, server, config)
 
     _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
     return None
 
 
-def _connect_databricks(ibis, server: Server, run: Run):
+def _connect_databricks(ibis, server: Server, run: Run, config: Config):
     """Connect to Databricks SQL directly, selecting the auth method from env vars.
 
     Auth is resolved in priority order, so an existing token-based setup keeps
@@ -209,19 +213,19 @@ def _connect_databricks(ibis, server: Server, run: Run):
     The OAuth credential providers build their SDK ``Config`` lazily, so token
     exchange happens when the connection is opened rather than while reading env.
     """
-    host = server.host or require_env("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
+    host = server.host or config.require("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", server_type="databricks")
     kwargs = dict(
         server_hostname=host,
-        http_path=getenv("DATACONTRACT_DATABRICKS_HTTP_PATH"),
+        http_path=config.getenv("DATACONTRACT_DATABRICKS_HTTP_PATH"),
         catalog=server.catalog,
         schema=server.schema_,
     )
 
-    token = getenv("DATACONTRACT_DATABRICKS_TOKEN")
-    client_id = getenv("DATACONTRACT_DATABRICKS_CLIENT_ID")
-    client_secret = getenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET")
-    profile = getenv("DATACONTRACT_DATABRICKS_PROFILE")
-    auth_type = getenv("DATACONTRACT_DATABRICKS_AUTH_TYPE")
+    token = config.getenv("DATACONTRACT_DATABRICKS_TOKEN")
+    client_id = config.getenv("DATACONTRACT_DATABRICKS_CLIENT_ID")
+    client_secret = config.getenv("DATACONTRACT_DATABRICKS_CLIENT_SECRET")
+    profile = config.getenv("DATACONTRACT_DATABRICKS_PROFILE")
+    auth_type = config.getenv("DATACONTRACT_DATABRICKS_AUTH_TYPE")
 
     if token:
         run.log_info("Connecting to databricks with a personal access token")
@@ -245,7 +249,7 @@ def _connect_databricks(ibis, server: Server, run: Run):
         return ibis.databricks.connect(auth_type=auth_type, **kwargs)
 
     # Nothing configured: fail with the same clear message as before.
-    token = require_env("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
+    token = config.require("DATACONTRACT_DATABRICKS_TOKEN", server_type="databricks")
     return ibis.databricks.connect(access_token=token, **kwargs)
 
 
@@ -282,7 +286,7 @@ def _databricks_credentials_provider(service_principal: bool = False, **config_k
 _BIGQUERY_SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 
 
-def _bigquery_credentials():
+def _bigquery_credentials(config: Config):
     """Resolve the BigQuery credentials, or ``None`` to let ibis use ADC/WIF.
 
     ``DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH`` selects a service account key
@@ -291,14 +295,14 @@ def _bigquery_credentials():
     source principal — the caller needs ``roles/iam.serviceAccountTokenCreator`` on
     the target.
     """
-    credentials_path = getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
+    credentials_path = config.getenv("DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH")
     credentials = None
     if credentials_path:
         from google.oauth2 import service_account
 
         credentials = service_account.Credentials.from_service_account_file(credentials_path)
 
-    impersonation_account = getenv("DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT")
+    impersonation_account = config.getenv("DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT")
     if impersonation_account:
         import google.auth
         from google.auth import impersonated_credentials
@@ -315,7 +319,7 @@ def _bigquery_credentials():
     return credentials
 
 
-def _connect_impala(ibis, server: Server):
+def _connect_impala(ibis, server: Server, config: Config):
     """Connect to Impala, making the transport and auth options configurable.
 
     ``auth_mechanism`` is a native ``ibis.impala.connect`` argument; ``use_http_transport``
@@ -331,13 +335,13 @@ def _connect_impala(ibis, server: Server):
     return ibis.impala.connect(
         host=server.host,
         port=int(server.port) if server.port else 21050,
-        user=getenv("DATACONTRACT_IMPALA_USERNAME"),
-        password=getenv("DATACONTRACT_IMPALA_PASSWORD"),
+        user=config.getenv("DATACONTRACT_IMPALA_USERNAME"),
+        password=config.getenv("DATACONTRACT_IMPALA_PASSWORD"),
         database=getattr(server, "database", None),
-        use_ssl=_get_bool_env("DATACONTRACT_IMPALA_USE_SSL", True),
-        auth_mechanism=getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "NOSASL"),
-        use_http_transport=_get_bool_env("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", False),
-        http_path=getenv("DATACONTRACT_IMPALA_HTTP_PATH", ""),
+        use_ssl=config.get_bool("DATACONTRACT_IMPALA_USE_SSL", True),
+        auth_mechanism=config.getenv("DATACONTRACT_IMPALA_AUTH_MECHANISM", "NOSASL"),
+        use_http_transport=config.get_bool("DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT", False),
+        http_path=config.getenv("DATACONTRACT_IMPALA_HTTP_PATH", ""),
     )
 
 
@@ -377,7 +381,7 @@ _SNOWFLAKE_DEPRECATED_PARAMS = {
 _SNOWFLAKE_INT_DEPRECATED = {"CONNECTION_TIMEOUT"}
 
 
-def _snowflake_connection_kwargs(server: Server, run: Run) -> dict:
+def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> dict:
     """Build the ``ibis.snowflake.connect`` kwargs from the enumerated options.
 
     ``account``, ``database`` and ``schema`` always come from the ODCS server object.
@@ -391,16 +395,16 @@ def _snowflake_connection_kwargs(server: Server, run: Run) -> dict:
 
     kwargs = {}
     for param, suffix in _SNOWFLAKE_STR_PARAMS.items():
-        value = getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
+        value = config.getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
         if value:
             kwargs[param] = value
     for param, suffix in _SNOWFLAKE_INT_PARAMS.items():
-        value = getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
+        value = config.getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
         if value:
             kwargs[param] = _snowflake_int(suffix, value)
 
     for suffix, replacement in _SNOWFLAKE_DEPRECATED_PARAMS.items():
-        value = getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
+        value = config.getenv(f"DATACONTRACT_SNOWFLAKE_{suffix}")
         if not value:
             continue
         run.log_warn(
@@ -415,7 +419,7 @@ def _snowflake_connection_kwargs(server: Server, run: Run) -> dict:
     # so this otherwise emits a noisy "Insufficient privileges" warning. Default it off, but
     # let users opt back in via DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS=true.
     return dict(
-        create_object_udfs=_get_bool_env("DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS", False),
+        create_object_udfs=config.get_bool("DATACONTRACT_SNOWFLAKE_CREATE_OBJECT_UDFS", False),
         account=server.account,
         database=server.database,
         schema=server.schema_,
@@ -435,7 +439,7 @@ def _snowflake_int(suffix: str, value: str) -> int:
         )
 
 
-def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str):
+def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str, config: Config):
     """Connect to MySQL through DuckDB's ``mysql`` extension.
 
     ibis's native MySQL backend requires ``mysqlclient`` (a C extension with no
@@ -448,8 +452,8 @@ def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, sch
 
     from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
 
-    user = require_env("DATACONTRACT_MYSQL_USERNAME", server_type="mysql")
-    password = require_env("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql")
+    user = config.require("DATACONTRACT_MYSQL_USERNAME", server_type="mysql")
+    password = config.require("DATACONTRACT_MYSQL_PASSWORD", server_type="mysql")
     host = server.host or "localhost"
     port = int(server.port) if server.port else 3306
     database = server.database
@@ -497,11 +501,11 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
         logger.warning("Could not read MySQL table '%s': %s", model, last_error)
 
 
-def _connect_sqlserver(ibis, server: Server):
-    return ibis.mssql.connect(**_sqlserver_connection_kwargs(server))
+def _connect_sqlserver(ibis, server: Server, config: Config):
+    return ibis.mssql.connect(**_sqlserver_connection_kwargs(server, config))
 
 
-def _sqlserver_connection_kwargs(server: Server) -> dict:
+def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     """Build the ``ibis.mssql.connect`` kwargs, selecting the auth mode from env vars.
 
     ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` picks the mode (default ``sql``):
@@ -520,13 +524,13 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
     verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
     so they use the ODBC spellings.
     """
-    driver = _get_custom_property(server, "driver") or getenv("DATACONTRACT_SQLSERVER_DRIVER")
+    driver = _get_custom_property(server, "driver") or config.getenv("DATACONTRACT_SQLSERVER_DRIVER")
 
     # TRUSTED_CONNECTION predates the AUTHENTICATION variable, so it only fills in when no
     # mode was chosen. Letting it override instead would mean a leftover flag silently
     # downgrades a configured Entra ID login to Windows auth, with no error to explain it.
-    authentication = getenv("DATACONTRACT_SQLSERVER_AUTHENTICATION")
-    trusted_connection = _get_bool_env("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", False)
+    authentication = config.getenv("DATACONTRACT_SQLSERVER_AUTHENTICATION")
+    trusted_connection = config.get_bool("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", False)
     if trusted_connection:
         logger.warning(
             "DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION is deprecated and will be removed in a "
@@ -553,8 +557,8 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
     )
 
     # ODBC Driver 18 encrypts and verifies the server certificate by default.
-    kwargs["Encrypt"] = "yes" if _get_bool_env("DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION", True) else "no"
-    if _get_bool_env("DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE", False):
+    kwargs["Encrypt"] = "yes" if config.get_bool("DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION", True) else "no"
+    if config.get_bool("DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE", False):
         kwargs["TrustServerCertificate"] = "yes"
 
     if authentication == "windows":
@@ -566,28 +570,28 @@ def _sqlserver_connection_kwargs(server: Server) -> dict:
         kwargs["Trusted_Connection"] = "no"
     elif authentication == "activedirectoryserviceprincipal":
         kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
-        kwargs["user"] = require_env("DATACONTRACT_SQLSERVER_CLIENT_ID", server_type="sqlserver")
-        kwargs["password"] = require_env("DATACONTRACT_SQLSERVER_CLIENT_SECRET", server_type="sqlserver")
+        kwargs["user"] = config.require("DATACONTRACT_SQLSERVER_CLIENT_ID", server_type="sqlserver")
+        kwargs["password"] = config.require("DATACONTRACT_SQLSERVER_CLIENT_SECRET", server_type="sqlserver")
     elif authentication == "activedirectorypassword":
         kwargs["Authentication"] = "ActiveDirectoryPassword"
-        kwargs["user"] = require_env("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver")
-        kwargs["password"] = require_env("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver")
+        kwargs["user"] = config.require("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver")
+        kwargs["password"] = config.require("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver")
     elif authentication == "activedirectoryinteractive":
         kwargs["Authentication"] = "ActiveDirectoryInteractive"
         kwargs["Trusted_Connection"] = "no"
-        username = getenv("DATACONTRACT_SQLSERVER_USERNAME")
+        username = config.getenv("DATACONTRACT_SQLSERVER_USERNAME")
         if username:
             kwargs["user"] = username  # login hint; no password for the browser flow
     else:
-        kwargs["user"] = require_env("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver")
-        kwargs["password"] = require_env("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver")
+        kwargs["user"] = config.require("DATACONTRACT_SQLSERVER_USERNAME", server_type="sqlserver")
+        kwargs["password"] = config.require("DATACONTRACT_SQLSERVER_PASSWORD", server_type="sqlserver")
 
     return kwargs
 
 
-def _connect_athena(ibis, server: Server):
+def _connect_athena(ibis, server: Server, config: Config):
     # regionName is a contract value, so the variable still wins over it
-    credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName))
+    credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName, config), config)
     if not server.schema_:
         raise DataContractException(
             type="athena-connection",
@@ -616,8 +620,8 @@ def _connect_athena(ibis, server: Server):
     return ibis.athena.connect(**kwargs)
 
 
-def _connect_trino(ibis, server: Server):
-    authentication = getenv("DATACONTRACT_TRINO_AUTHENTICATION", "basic").strip().lower()
+def _connect_trino(ibis, server: Server, config: Config):
+    authentication = config.getenv("DATACONTRACT_TRINO_AUTHENTICATION", "basic").strip().lower()
 
     kwargs = dict(
         host=server.host,
@@ -628,10 +632,10 @@ def _connect_trino(ibis, server: Server):
     )
 
     if authentication == "basic":
-        user = require_env("DATACONTRACT_TRINO_USERNAME", server_type="trino")
+        user = config.require("DATACONTRACT_TRINO_USERNAME", server_type="trino")
         kwargs["user"] = user
 
-        password = getenv("DATACONTRACT_TRINO_PASSWORD")
+        password = config.getenv("DATACONTRACT_TRINO_PASSWORD")
         if password:
             import trino as trino_pkg
 
@@ -642,7 +646,7 @@ def _connect_trino(ibis, server: Server):
         import trino as trino_pkg
 
         kwargs["auth"] = trino_pkg.auth.JWTAuthentication(
-            require_env("DATACONTRACT_TRINO_JWT_TOKEN", server_type="trino")
+            config.require("DATACONTRACT_TRINO_JWT_TOKEN", server_type="trino")
         )
         kwargs["http_scheme"] = "https"
         return ibis.trino.connect(**kwargs)
@@ -670,13 +674,6 @@ def _get_custom_property(server: Server, name: str):
             if prop.property == name:
                 return prop.value
     return None
-
-
-def _get_bool_env(name: str, default: bool) -> bool:
-    value = getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in ("1", "true", "yes", "y", "on")
 
 
 def _unsupported(run: Run, reason: str):

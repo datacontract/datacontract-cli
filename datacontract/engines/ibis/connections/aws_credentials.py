@@ -15,7 +15,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from datacontract.config import getenv
+from datacontract.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +25,11 @@ SESSION_TOKEN = "DATACONTRACT_S3_SESSION_TOKEN"
 REGION = "DATACONTRACT_S3_REGION"
 
 
-def configured_region(default: Optional[str] = None) -> Optional[str]:
-    return getenv(REGION) or default
+def configured_region(default: Optional[str] = None, config: Optional[Config] = None) -> Optional[str]:
+    return Config.from_input(config).getenv(REGION) or default
 
 
-def client_kwargs(region: Optional[str] = None) -> Dict[str, Any]:
+def client_kwargs(region: Optional[str] = None, config: Optional[Config] = None) -> Dict[str, Any]:
     """boto3 client kwargs for the configured credentials.
 
     A region passed by the caller wins: it comes from a `--region` flag or from
@@ -37,15 +37,16 @@ def client_kwargs(region: Optional[str] = None) -> Dict[str, Any]:
     values stay ``None``, which is how boto3 is told to fall back to its own
     chain, so an `aws sso login` session works without any variable.
     """
+    config = Config.from_input(config)
     return {
-        "region_name": region or getenv(REGION),
-        "aws_access_key_id": getenv(ACCESS_KEY_ID),
-        "aws_secret_access_key": getenv(SECRET_ACCESS_KEY),
-        "aws_session_token": getenv(SESSION_TOKEN),
+        "region_name": region or config.getenv(REGION),
+        "aws_access_key_id": config.getenv(ACCESS_KEY_ID),
+        "aws_secret_access_key": config.getenv(SECRET_ACCESS_KEY),
+        "aws_session_token": config.getenv(SESSION_TOKEN),
     }
 
 
-def client(service: str, region: Optional[str] = None):
+def client(service: str, region: Optional[str] = None, config: Optional[Config] = None):
     """A boto3 client that honours the DATACONTRACT_S3_* variables.
 
     Every AWS service the CLI talks to reads the same variables, so they are
@@ -53,7 +54,7 @@ def client(service: str, region: Optional[str] = None):
     """
     import boto3
 
-    return boto3.client(service, **client_kwargs(region))
+    return boto3.client(service, **client_kwargs(region, config))
 
 
 @dataclass(frozen=True)

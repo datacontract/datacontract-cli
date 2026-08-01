@@ -1,3 +1,4 @@
+import inspect
 import logging
 import typing
 from importlib import metadata
@@ -8,7 +9,7 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
-from datacontract.config import Config, config_context
+from datacontract.config import Config
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
@@ -64,7 +65,7 @@ class DataContract:
         self._tags = tags
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
-        self._config = config
+        self._config = Config.from_input(config)
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -73,10 +74,6 @@ class DataContract:
 
     def lint(self) -> Run:
         """Lint the data contract by validating it against the JSON schema."""
-        with config_context(self._config):
-            return self._lint()
-
-    def _lint(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
@@ -87,6 +84,7 @@ class DataContract:
                 self._schema_location,
                 inline_references=self._inline_references,
                 all_errors=self._all_errors,
+                config=self._config,
             )
             run.checks.append(
                 Check(
@@ -139,10 +137,6 @@ class DataContract:
         return f"Data Contract CLI {version} {execution}"
 
     def test(self) -> Run:
-        with config_context(self._config):
-            return self._test()
-
-    def _test(self) -> Run:
         run = Run.create_run()
         try:
             run.log_info("Testing data contract")
@@ -153,6 +147,7 @@ class DataContract:
                 self._data_contract,
                 self._schema_location,
                 inline_references=self._inline_references,
+                config=self._config,
             )
 
             execute_data_contract_test(
@@ -167,6 +162,7 @@ class DataContract:
                 quality_ids=self._quality_ids,
                 tags=self._tags,
                 include_failed_samples=self._include_failed_samples,
+                config=self._config,
             )
 
         except DataContractException as e:
@@ -197,19 +193,19 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None or self._publish_test_results:
-            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification)
+            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification, config=self._config)
 
         return run
 
     def get_data_contract(self) -> OpenDataContractStandard:
-        with config_context(self._config):
-            return resolve.resolve_data_contract(
-                data_contract_location=self._data_contract_file,
-                data_contract_str=self._data_contract_str,
-                data_contract=self._data_contract,
-                schema_location=self._schema_location,
-                inline_references=self._inline_references,
-            )
+        return resolve.resolve_data_contract(
+            data_contract_location=self._data_contract_file,
+            data_contract_str=self._data_contract_str,
+            data_contract=self._data_contract,
+            schema_location=self._schema_location,
+            inline_references=self._inline_references,
+            config=self._config,
+        )
 
     def get_data_contract_file(self) -> str | None:
         return self._data_contract_file
@@ -217,22 +213,22 @@ class DataContract:
     def export(
         self, export_format: ExportFormat, schema_name: str = "all", sql_server_type: str = "auto", **kwargs
     ) -> str | bytes:
-        with config_context(self._config):
-            data_contract = resolve.resolve_data_contract(
-                self._data_contract_file,
-                self._data_contract_str,
-                self._data_contract,
-                schema_location=self._schema_location,
-                inline_references=self._inline_references,
-            )
+        data_contract = resolve.resolve_data_contract(
+            self._data_contract_file,
+            self._data_contract_str,
+            self._data_contract,
+            schema_location=self._schema_location,
+            inline_references=self._inline_references,
+            config=self._config,
+        )
 
-            return exporter_factory.create(export_format).export(
-                data_contract=data_contract,
-                schema_name=schema_name,
-                server=self._server,
-                sql_server_type=sql_server_type,
-                export_args=kwargs,
-            )
+        return exporter_factory.create(export_format).export(
+            data_contract=data_contract,
+            schema_name=schema_name,
+            server=self._server,
+            sql_server_type=sql_server_type,
+            export_args=kwargs,
+        )
 
     def changelog(self, other: "DataContract") -> ChangelogResult:
         """Generate a changelog between this data contract and another, returning a ChangelogResult."""
@@ -282,8 +278,13 @@ class DataContract:
         id = kwargs.get("id")
         owner = kwargs.get("owner")
 
-        with config_context(config):
-            odcs_imported = importer_factory.create(format).import_source(source=source, import_args=kwargs)
+        importer = importer_factory.create(format)
+        # Third-party importers registered before the config parameter existed may
+        # still implement the two-argument signature; only pass config where declared.
+        if "config" in inspect.signature(importer.import_source).parameters:
+            odcs_imported = importer.import_source(source=source, import_args=kwargs, config=Config.from_input(config))
+        else:
+            odcs_imported = importer.import_source(source=source, import_args=kwargs)
 
         cls._overwrite_id_in_odcs(odcs_imported, id)
         cls._overwrite_owner_in_odcs(odcs_imported, owner)

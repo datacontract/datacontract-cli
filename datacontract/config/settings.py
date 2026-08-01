@@ -7,9 +7,8 @@ import os
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from datacontract.config.resolution import _context_config
-
 _ENV_PREFIX = "DATACONTRACT_"
+_TRUTHY = ("1", "true", "yes", "y", "on")
 
 
 class Config(BaseSettings):
@@ -23,7 +22,9 @@ class Config(BaseSettings):
     unrelated environment variables are ignored.
     """
 
-    model_config = SettingsConfigDict(env_prefix=_ENV_PREFIX, extra="ignore")
+    # populate_by_name lets the aliased fields (validation_alias, e.g.
+    # ENTROPY_DATA_API_KEY) also be set via their field name in the constructor.
+    model_config = SettingsConfigDict(env_prefix=_ENV_PREFIX, extra="ignore", populate_by_name=True)
 
     # Entropy Data / Data Mesh Manager / Data Contract Manager (publishing, contract URLs)
     entropy_data_api_key: SecretStr | None = Field(None, validation_alias="ENTROPY_DATA_API_KEY")
@@ -160,8 +161,66 @@ class Config(BaseSettings):
             raise ValueError(f"Unknown config option(s): {', '.join(sorted(unknown))}. See datacontract.Config.")
         super().__init__(**data)
 
+    @classmethod
+    def from_input(cls, config: "Config | dict[str, str] | None") -> "Config":
+        """Normalize the ``config=`` argument to a Config instance.
+
+        ``None`` becomes an empty Config (every read falls back to the
+        environment); a dict is keyed by the env var names and validated
+        against the declared fields.
+        """
+        if config is None:
+            return cls.model_construct()
+        if isinstance(config, cls):
+            return config
+        if isinstance(config, dict):
+            reverse = {env_name(name, field): name for name, field in cls.model_fields.items()}
+            fields = {}
+            unknown = []
+            for key, value in config.items():
+                if key in reverse:
+                    fields[reverse[key]] = value
+                else:
+                    unknown.append(key)
+            if unknown:
+                raise ValueError(f"Unknown config option(s): {', '.join(sorted(unknown))}. See datacontract.Config.")
+            return cls(**fields)
+        raise TypeError(f"config must be a Config, dict, or None, got {type(config).__name__}")
+
+    def getenv(self, key: str, default: str | None = None) -> str | None:
+        """Return a config value by env var name: this Config first, then the environment."""
+        value = self.to_env_dict().get(key)
+        if value is not None:
+            return value
+        return os.environ.get(key, default)
+
+    def get_bool(self, key: str, default: bool) -> bool:
+        value = self.getenv(key)
+        if value is None:
+            return default
+        return value.strip().lower() in _TRUTHY
+
+    def require(self, key: str, *, server_type: str) -> str:
+        """Return the value for ``key`` or raise a DataContractException.
+
+        Empty strings count as missing — drivers typically reject them the same
+        way they reject None.
+        """
+        from datacontract.model.exceptions import DataContractException
+
+        value = self.getenv(key)
+        if not value:
+            raise DataContractException(
+                type=f"{server_type}-connection",
+                name=f"missing_env_{key}",
+                reason=f"Required configuration {key} is not set. Set the environment variable "
+                f"or pass it via DataContract(config=...) to connect to {server_type}.",
+                engine="datacontract",
+            )
+        return value
+
     def to_env_dict(self) -> dict[str, str]:
-        """Flatten to a dict keyed by the env var names, for the resolution context."""
+        """Flatten to a dict keyed by the env var names."""
         values: dict[str, str] = {}
         for name, field in type(self).model_fields.items():
             value = getattr(self, name)
@@ -192,13 +251,12 @@ def known_env_names() -> set[str]:
 
 
 def unknown_snowflake_env_names() -> list[str]:
-    """``DATACONTRACT_SNOWFLAKE_*`` names in the active config or environment
-    that no Config field declares.
+    """``DATACONTRACT_SNOWFLAKE_*`` environment variables that no Config field declares.
 
     Until v1.0.16 every such variable was forwarded verbatim to the Snowflake
     connector; now only declared options are. Callers use this to warn instead
-    of silently ignoring them.
+    of silently ignoring them. Programmatic config cannot contain unknown names
+    (Config validates them), so only the environment is scanned.
     """
     known = known_env_names()
-    candidates = set(os.environ) | set(_context_config.get())
-    return sorted(name for name in candidates if name.startswith("DATACONTRACT_SNOWFLAKE_") and name not in known)
+    return sorted(name for name in os.environ if name.startswith("DATACONTRACT_SNOWFLAKE_") and name not in known)

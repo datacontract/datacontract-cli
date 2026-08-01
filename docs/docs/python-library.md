@@ -173,4 +173,4 @@ run = DataContract(
 ).test()
 ```
 
-A plain dict keyed by the environment variable names is accepted as well: `config={"DATACONTRACT_SNOWFLAKE_PASSWORD": "..."}`. `DataContract.import_from_source()` takes the same `config` argument. The active config is scoped to the operation (a `ContextVar` under the hood), so concurrent tests with different credentials in one process do not interfere.
+A plain dict keyed by the environment variable names is accepted as well: `config={"DATACONTRACT_SNOWFLAKE_PASSWORD": "..."}`. `DataContract.import_from_source()` takes the same `config` argument. The config object is passed explicitly through the connection layer, so concurrent tests with different credentials in one process do not interfere.

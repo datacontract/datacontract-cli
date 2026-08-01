@@ -65,7 +65,7 @@ _PRIMARY_KEYS_QUERY = """
 
 
 class RedshiftImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
         if source is None:
             raise DataContractException(
                 type="source",
@@ -82,6 +82,7 @@ class RedshiftImporter(Importer):
             database=import_args.get("database"),
             schema=import_args.get("schema"),
             tables=import_args.get("redshift_table"),
+            config=config,
         )
 
 
@@ -91,6 +92,7 @@ def import_redshift_from_connector(
     schema: Optional[str],
     port: Optional[int] = None,
     tables: Optional[List[str]] = None,
+    config=None,
 ) -> OpenDataContractStandard:
     if not database:
         raise DataContractException(
@@ -108,7 +110,7 @@ def import_redshift_from_connector(
         )
 
     port = int(port) if port else DEFAULT_PORT
-    connection = redshift_connection(host=host, port=port, database=database)
+    connection = redshift_connection(host=host, port=port, database=database, config=config)
     try:
         table_rows = _fetch(connection, _TABLES_QUERY, (schema,))
         column_rows = _fetch(connection, _COLUMNS_QUERY, (schema,))
@@ -146,7 +148,7 @@ def import_redshift_from_connector(
     return odcs
 
 
-def redshift_connection(host: str, port: int, database: str):
+def redshift_connection(host: str, port: int, database: str, config=None):
     """Open a psycopg connection to Redshift using the DATACONTRACT_REDSHIFT_* env vars."""
     try:
         import psycopg
@@ -160,7 +162,7 @@ def redshift_connection(host: str, port: int, database: str):
             original_exception=e,
         )
 
-    login = resolve_redshift_login(host, database)
+    login = resolve_redshift_login(host, database, config)
     kwargs = dict(
         host=host,
         port=port,
