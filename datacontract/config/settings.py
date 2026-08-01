@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import re
+from pathlib import Path
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -186,6 +188,41 @@ class Config(BaseSettings):
                 raise ValueError(f"Unknown config option(s): {', '.join(sorted(unknown))}. See datacontract.Config.")
             return cls(**fields)
         raise TypeError(f"config must be a Config, dict, or None, got {type(config).__name__}")
+
+    @classmethod
+    def from_yaml(cls, path: "str | Path") -> "Config":
+        """Load a Config from a YAML file with per-source sections.
+
+        Nested keys join with ``_`` to form the field name (``snowflake.username``
+        → ``snowflake_username``); top-level scalars address the general options
+        (``max_errors``). ``${VAR}`` references in string values are replaced with
+        the environment variable's value at load time, so files can be committed
+        without holding secrets. Unknown option names raise a ValueError.
+        """
+        import yaml
+
+        path = Path(path)
+        data = yaml.safe_load(path.read_text())
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            raise ValueError(f"Config file {path} must contain a YAML mapping.")
+
+        flat: dict[str, object] = {}
+
+        def walk(prefix: str, node: dict):
+            for key, value in node.items():
+                name = f"{prefix}_{key}" if prefix else str(key)
+                if isinstance(value, dict):
+                    walk(name, value)
+                else:
+                    flat[name] = _interpolate_env(value, path)
+
+        walk("", data)
+        unknown = sorted(set(flat) - set(cls.model_fields))
+        if unknown:
+            raise ValueError(f"Unknown config option(s) in {path}: {', '.join(unknown)}. See datacontract.Config.")
+        return cls(**flat)
 
     # ------------------------------------------------------------------
     # Value resolution: one typed accessor per option (get_<field>()).
@@ -586,3 +623,20 @@ def unknown_snowflake_env_names() -> list[str]:
     """
     known = known_env_names()
     return sorted(name for name in os.environ if name.startswith("DATACONTRACT_SNOWFLAKE_") and name not in known)
+
+
+_ENV_REFERENCE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def _interpolate_env(value, path):
+    """Replace ``${VAR}`` references in string values with environment variable values."""
+    if not isinstance(value, str):
+        return value
+
+    def replace(match):
+        name = match.group(1)
+        if name not in os.environ:
+            raise ValueError(f"Environment variable {name} referenced in {path} is not set.")
+        return os.environ[name]
+
+    return _ENV_REFERENCE.sub(replace, value)

@@ -5,6 +5,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
 
+import pydantic
 import typer
 from click import Context
 from dotenv import find_dotenv, load_dotenv
@@ -13,6 +14,7 @@ from rich.markup import escape
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
+from datacontract.config import Config, set_cli_config
 from datacontract.output.output_format import OutputFormat
 
 console = Console()
@@ -151,6 +153,13 @@ def common(
         "instead of the bundled CA certificates (e.g. behind a corporate proxy or internal CA).",
         envvar="DATACONTRACT_SYSTEM_TRUSTSTORE",
     ),
+    config_file: Optional[Path] = typer.Option(
+        None,
+        "--config-file",
+        help="Path to a YAML file with credentials and connection options "
+        "(sections per data source, ${VAR} references resolve from the environment). "
+        "Defaults to ./datacontract-config.yaml or ~/.datacontract/config.yaml if present.",
+    ),
 ):
     """
     The datacontract CLI is an open source command-line tool for working with Data Contracts (https://datacontract.com).
@@ -164,8 +173,28 @@ def common(
     # Already-set environment variables take precedence.
     load_dotenv(dotenv_path=find_dotenv(usecwd=True), override=False)
 
+    set_cli_config(_load_config_file(config_file))
+
     if system_truststore:
         inject_system_truststore()
+
+
+def _load_config_file(config_file: "Optional[Path]"):
+    """Load the --config-file, or the first default location that exists."""
+    candidates = (
+        [config_file]
+        if config_file
+        else [Path("datacontract-config.yaml"), Path.home() / ".datacontract" / "config.yaml"]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            try:
+                return Config.from_yaml(candidate)
+            except (ValueError, pydantic.ValidationError) as e:
+                raise typer.BadParameter(str(e), param_hint="--config-file")
+    if config_file:
+        raise typer.BadParameter(f"Config file {config_file} does not exist.", param_hint="--config-file")
+    return None
 
 
 def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):

@@ -1791,7 +1791,7 @@ def test_cli_publish_flag_forwards_url_and_ssl(monkeypatch, tmp_path: Path):
 
     captured: dict = {}
 
-    def fake_publish(run, publish_url, ssl_verification):
+    def fake_publish(run, publish_url, ssl_verification, config=None):
         captured["url"] = publish_url
         captured["ssl"] = ssl_verification
         run.log_info("Published test results successfully")
@@ -1897,7 +1897,7 @@ def test_cli_server_flag_overrides_target(monkeypatch, tmp_path: Path):
 
     captured: dict = {}
 
-    def fake_publish(run, publish_url, ssl_verification):
+    def fake_publish(run, publish_url, ssl_verification, config=None):
         captured["server"] = run.server
         return True
 
@@ -1935,7 +1935,7 @@ def test_cli_server_defaults_to_single_contract_server(monkeypatch, tmp_path: Pa
 
     captured: dict = {}
 
-    def fake_publish(run, publish_url, ssl_verification):
+    def fake_publish(run, publish_url, ssl_verification, config=None):
         captured["server"] = run.server
         return True
 

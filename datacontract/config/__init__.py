@@ -10,10 +10,13 @@ through :meth:`Config.getenv`, which falls back to the process environment for
 values the config does not set.
 """
 
+from datacontract.config.cli_context import cli_config, set_cli_config
 from datacontract.config.settings import Config, env_name, known_env_names, unknown_snowflake_env_names
 
 __all__ = [
     "Config",
+    "cli_config",
+    "set_cli_config",
     "env_name",
     "known_env_names",
     "unknown_snowflake_env_names",

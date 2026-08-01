@@ -174,3 +174,14 @@ run = DataContract(
 ```
 
 A plain dict keyed by the environment variable names is accepted as well: `config={"DATACONTRACT_SNOWFLAKE_PASSWORD": "..."}`. `DataContract.import_from_source()` takes the same `config` argument. The config object is passed explicitly through the connection layer, so concurrent tests with different credentials in one process do not interfere.
+
+A YAML config file works for both the CLI (`--config-file`, defaulting to `./datacontract-config.yaml` or `~/.datacontract/config.yaml`) and the library (`Config.from_yaml(path)`). Sections map to option names, and `${VAR}` references resolve from the environment at load time, so the file can be committed without holding secrets:
+
+```yaml
+# datacontract-config.yaml
+snowflake:
+  username: svc_test
+  password: ${SNOWFLAKE_PASSWORD}
+  role: TESTER
+max_errors: 10
+```
