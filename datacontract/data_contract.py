@@ -42,6 +42,8 @@ class DataContract:
         tags: set[str] | None = None,
         fastapi_url: str = None,
         include_failed_samples: bool = False,
+        where: str = None,
+        filters: dict[str, str] | None = None,
     ):
         self._data_contract_file = data_contract_file
         self._data_contract_str = data_contract_str
@@ -62,6 +64,8 @@ class DataContract:
         self._tags = tags
         self._fastapi_url = fastapi_url
         self._include_failed_samples = include_failed_samples
+        self._where = where
+        self._filters = filters
 
     @classmethod
     def init(cls, template: typing.Optional[str], schema: typing.Optional[str] = None) -> OpenDataContractStandard:
@@ -156,6 +160,8 @@ class DataContract:
                 quality_ids=self._quality_ids,
                 tags=self._tags,
                 include_failed_samples=self._include_failed_samples,
+                where=self._where,
+                filters=self._filters,
             )
 
         except DataContractException as e:

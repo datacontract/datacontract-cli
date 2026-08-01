@@ -56,6 +56,26 @@ def _parse_enum_csv(value: str | None, enum_cls: type[Enum], option: str, label:
     return {enum_cls(v).value for v in raw}
 
 
+def _parse_filters(values: list[str] | None) -> dict[str, str] | None:
+    """Parse repeated `--filter <schema>=<predicate>` options into a dict, or None if unset."""
+    if not values:
+        return None
+    filters: dict[str, str] = {}
+    for value in values:
+        schema_name, sep, predicate = value.partition("=")
+        schema_name = schema_name.strip()
+        predicate = predicate.strip()
+        if not sep or not schema_name or not predicate:
+            console.print(f"[red]Invalid --filter specified: {value!r}[/red]")
+            console.print('Expected format: --filter "<schema>=<predicate>", e.g., --filter "orders=order_id > 100"')
+            raise typer.Exit(code=1)
+        if schema_name in filters:
+            console.print(f"[red]Duplicate --filter for schema '{schema_name}'.[/red]")
+            raise typer.Exit(code=1)
+        filters[schema_name] = predicate
+    return filters
+
+
 def _parse_csv(value: str | None, option: str) -> set[str] | None:
     """Parse a comma-separated option into a set of values, or None if unset."""
     if value is None:
@@ -138,6 +158,23 @@ def test(
             "tag in their `tags`, no schema or service level checks. Omit to run everything."
         ),
     ] = None,
+    where: Annotated[
+        str,
+        typer.Option(
+            help="A SQL predicate to filter the rows under test, in the dialect of the server, "
+            'e.g., "ingested_at >= CURRENT_DATE - 1". Only works if a single schema is tested; '
+            "for contracts with multiple schemas, combine with --schema-name or use --filter. "
+            "Schema checks and custom SQL queries are not filtered."
+        ),
+    ] = None,
+    filter: Annotated[
+        list[str],
+        typer.Option(
+            help="A row filter for one schema, as <schema>=<predicate>, "
+            'e.g., "orders=ingested_at >= CURRENT_DATE - 1". Repeat the option to filter '
+            "multiple schemas. Schema checks and custom SQL queries are not filtered."
+        ),
+    ] = None,
     include_failed_samples: Annotated[
         bool,
         typer.Option(
@@ -169,6 +206,10 @@ def test(
     dimensions = _parse_enum_csv(dimension, QualityDimension, "--dimension", "dimensions")
     quality_ids = _parse_csv(quality_id, "--quality-id")
     tags = _parse_csv(tag, "--tag")
+    filters = _parse_filters(filter)
+    if where is not None and filters is not None:
+        console.print("[red]Use either --where or --filter, not both.[/red]")
+        raise typer.Exit(code=1)
 
     output_format = resolve_output_format(output_format, output)
 
@@ -189,6 +230,8 @@ def test(
         tags=tags,
         inline_references=inline_references,
         include_failed_samples=include_failed_samples,
+        where=where,
+        filters=filters,
     ).test()
     if logs:
         _print_logs(run)

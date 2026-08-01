@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test --where` and `--filter` test only the rows matching a SQL predicate, e.g., the latest partition (#1463)
+
 ## [1.0.16] - 2026-07-31
 
 ### Added

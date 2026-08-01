@@ -6,7 +6,7 @@ import typing
 import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
-from datacontract.engines.checks.create_checks import create_checks
+from datacontract.engines.checks.create_checks import create_checks, to_schema_name
 from datacontract.engines.checks.dimensions import default_dimension
 
 if typing.TYPE_CHECKING:
@@ -35,6 +35,8 @@ def execute_data_contract_test(
     quality_ids: set[str] | None = None,
     tags: set[str] | None = None,
     include_failed_samples: bool = False,
+    where: str | None = None,
+    filters: dict[str, str] | None = None,
 ):
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
@@ -72,6 +74,8 @@ def execute_data_contract_test(
 
     if server.type == "api":
         server = process_api_response(run, server)
+
+    model_filters = resolve_row_filters(data_contract, server, run, where, filters, schema_name)
 
     specs = create_checks(data_contract, server, schema_name=schema_name)
     if check_categories is not None:
@@ -129,7 +133,65 @@ def execute_data_contract_test(
         duckdb_connection,
         schema_name=schema_name,
         include_failed_samples=include_failed_samples,
+        model_filters=model_filters,
     )
+
+
+def resolve_row_filters(
+    data_contract: OpenDataContractStandard,
+    server: Server,
+    run: Run,
+    where: str | None,
+    filters: dict[str, str] | None,
+    schema_name: str = "all",
+) -> dict[str, str] | None:
+    """Normalize --where/--filter into a mapping of physical model name to predicate.
+
+    Filters are given per contract schema name; the engine addresses tables by
+    their physical name. Records the applied filters on the run.
+    """
+    if where is not None and where.strip() == "":
+        where = None
+    if where is not None and filters:
+        raise DataContractException(
+            type="lint",
+            name="Check row filter arguments",
+            result=ResultEnum.failed,
+            reason="Use either a where predicate or per-schema filters, not both.",
+            engine="datacontract",
+        )
+    schema_objects = data_contract.schema_ or []
+    if where is not None:
+        candidates = [s for s in schema_objects if schema_name == "all" or s.name == schema_name]
+        if len(candidates) != 1:
+            raise DataContractException(
+                type="lint",
+                name="Check row filter arguments",
+                result=ResultEnum.failed,
+                reason=f"--where is ambiguous, as the data contract has multiple schemas: "
+                f"{sorted(s.name for s in candidates)}. "
+                f"Use --filter <schema>=<predicate> or select a single schema with --schema-name.",
+                engine="datacontract",
+            )
+        filters = {candidates[0].name: where.strip()}
+    if not filters:
+        return None
+    schema_by_name = {s.name: s for s in schema_objects}
+    unknown = sorted(set(filters) - set(schema_by_name))
+    if unknown:
+        raise DataContractException(
+            type="lint",
+            name="Check that filter schema exists",
+            result=ResultEnum.failed,
+            reason=f"Filter schema(s) not found in data contract: {', '.join(unknown)}. "
+            f"Available schemas: {sorted(schema_by_name)}",
+            engine="datacontract",
+        )
+    run.filters = dict(filters)
+    for name, predicate in filters.items():
+        run.log_info(f"Applying row filter to schema {name}: {predicate}")
+    server_type = server.type if server else None
+    return {to_schema_name(schema_by_name[name], server_type): predicate for name, predicate in filters.items()}
 
 
 def quality_rule_ids(data_contract: OpenDataContractStandard, schema_name: str = "all") -> set[str]:
