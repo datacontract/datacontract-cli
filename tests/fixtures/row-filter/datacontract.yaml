@@ -1,0 +1,23 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: row-filter-test
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    quality:
+      - type: library
+        metric: rowCount
+        mustBe: 3
+    properties:
+      - name: order_id
+        logicalType: integer
+      - name: email
+        logicalType: string
+      - name: amount
+        logicalType: integer

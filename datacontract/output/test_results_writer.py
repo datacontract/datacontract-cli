@@ -62,6 +62,10 @@ def write_test_result(
             if details_str:
                 console.print(f"Server: {run.server} ({details_str})")
 
+    if run.filters:
+        for schema_name, predicate in run.filters.items():
+            console.print(f"Row filter: {schema_name} WHERE {escape(predicate)}")
+
     print_test_results_table(run, console)
     if run.result == "passed":
         console.print(

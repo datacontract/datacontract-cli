@@ -221,6 +221,57 @@ def test_test_endpoint_uses_config_from_headers():
     assert config.get_postgres_password() == "pw"
 
 
+def _row_filter_contract():
+    with open("fixtures/row-filter/datacontract.yaml", "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def test_test_endpoint_filter_param():
+    response = client.post(
+        url="/test?filter=order_id <= 2",
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["result"] == "passed"
+    assert response.json()["filters"] == {"orders": "order_id <= 2"}
+
+
+def test_test_endpoint_filters_param():
+    response = client.post(
+        url='/test?filters={"orders": "order_id <= 2"}',
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["result"] == "passed"
+    assert response.json()["filters"] == {"orders": "order_id <= 2"}
+
+
+def test_test_endpoint_rejects_invalid_filters_json():
+    response = client.post(
+        url="/test?filters=orders=order_id",
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 422
+    assert "JSON object" in response.json()["detail"]
+
+
+def test_test_endpoint_rejects_filter_and_filters_together():
+    response = client.post(
+        url='/test?filter=order_id <= 2&filters={"orders": "order_id <= 2"}',
+        content=_row_filter_contract(),
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 422
+    assert "not both" in response.json()["detail"]
+
+
 def test_entropy_data_api_key_header_is_accepted():
     from datacontract.api import config_from_headers
 
