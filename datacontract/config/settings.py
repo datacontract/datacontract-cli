@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from pathlib import Path
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 _ENV_PREFIX = "DATACONTRACT_"
 _TRUTHY = ("1", "true", "yes", "y", "on")
@@ -31,6 +34,8 @@ class Config(BaseSettings):
     # Entropy Data / Data Mesh Manager / Data Contract Manager (publishing, contract URLs)
     entropy_data_api_key: SecretStr | None = Field(None, validation_alias="ENTROPY_DATA_API_KEY")
     entropy_data_host: str | None = Field(None, validation_alias="ENTROPY_DATA_HOST")
+    # deprecated synonyms for the entropy_data_* options (pre-rebrand product names);
+    # a warning is emitted when one of them supplies a value
     datamesh_manager_api_key: SecretStr | None = Field(None, validation_alias="DATAMESH_MANAGER_API_KEY")
     datamesh_manager_host: str | None = Field(None, validation_alias="DATAMESH_MANAGER_HOST")
     datacontract_manager_api_key: SecretStr | None = Field(None, validation_alias="DATACONTRACT_MANAGER_API_KEY")
@@ -256,6 +261,19 @@ class Config(BaseSettings):
             )
         return value
 
+    def _deprecated_str_option(self, field_name: str, replacement: str, required: bool = False) -> str | None:
+        """A str option kept as a deprecated synonym: warns when it supplies a value."""
+        value = self._str_option(field_name, required)
+        if value:
+            deprecated_env = env_name(field_name, type(self).model_fields[field_name])
+            replacement_env = env_name(replacement, type(self).model_fields[replacement])
+            logger.warning(
+                "%s is deprecated and will be removed in a future release, use %s instead.",
+                deprecated_env,
+                replacement_env,
+            )
+        return value
+
     def _int_option(self, field_name: str) -> int | None:
         value = self._raw_option(field_name)
         if value is None or value == "":
@@ -290,17 +308,17 @@ class Config(BaseSettings):
 
     # --- datamesh ---
     def get_datamesh_manager_api_key(self, required: bool = False) -> str | None:
-        return self._str_option("datamesh_manager_api_key", required)
+        return self._deprecated_str_option("datamesh_manager_api_key", "entropy_data_api_key", required)
 
     def get_datamesh_manager_host(self, required: bool = False) -> str | None:
-        return self._str_option("datamesh_manager_host", required)
+        return self._deprecated_str_option("datamesh_manager_host", "entropy_data_host", required)
 
     # --- datacontract ---
     def get_datacontract_manager_api_key(self, required: bool = False) -> str | None:
-        return self._str_option("datacontract_manager_api_key", required)
+        return self._deprecated_str_option("datacontract_manager_api_key", "entropy_data_api_key", required)
 
     def get_datacontract_manager_host(self, required: bool = False) -> str | None:
-        return self._str_option("datacontract_manager_host", required)
+        return self._deprecated_str_option("datacontract_manager_host", "entropy_data_host", required)
 
     # --- api ---
     def get_api_header_authorization(self, required: bool = False) -> str | None:
