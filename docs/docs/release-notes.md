@@ -26,6 +26,9 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Fixed
+- `datacontract dbt sync` writes a description on all dbt tests, not only newly-generated ones
+
 ## 1.0.16 — 2026-07-31 {#v1-0-16}
 
 ### Added
