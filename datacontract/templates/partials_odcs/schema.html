@@ -1,0 +1,123 @@
+{% import 'macros/schema.html' as schema_macros %}
+
+{% set schemas = datacontract.schema_ if datacontract.schema_ is defined and datacontract.schema_ is not callable else [] %}
+{% if schemas is mapping %}
+  {% set schemas = [schemas] %}
+{% elif schemas is not sequence or schemas is string %}
+  {% set schemas = [] %}
+{% endif %}
+
+{% if schemas and schemas|length > 0 %}
+<section id="schema">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900">Schema</h1>
+    <p class="text-sm text-gray-500">Schema supports both a business representation and physical implementation</p>
+  </div>
+
+  {% for schema in schemas %}
+    {% set schema_name = schema.name if schema.name is defined and schema.name else "schema" %}
+    {% set schema_business_name = schema.businessName if schema.businessName is defined and schema.businessName else none %}
+    {% set schema_description = schema.description if schema.description is defined and schema.description else none %}
+    {% set schema_type = schema.type if schema.type is defined and schema.type else (schema.physicalType if schema.physicalType is defined and schema.physicalType else none) %}
+    {% set schema_physical_name = schema.physicalName if schema.physicalName is defined and schema.physicalName else none %}
+    {% set schema_properties = schema.properties if schema.properties is defined and schema.properties is not callable else [] %}
+    {% set schema_tags = schema.tags if schema.tags is defined and schema.tags and schema.tags is sequence and schema.tags is not string else [] %}
+    {% set schema_custom_properties = schema.customProperties if schema.customProperties is defined else none %}
+    {% set schema_quality = schema.quality if schema.quality is defined and schema.quality and schema.quality is sequence and schema.quality is not string else [] %}
+
+    <div class="mt-2 print:block">
+      <div class="overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
+        <table class="min-w-full divide-y divide-gray-300 print:relative print:break-inside-auto">
+          <thead class="bg-gray-50 print:table-header-group">
+            <tr class="print:break-inside-avoid-page">
+              <th scope="colgroup" colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
+                {% if schema_business_name and schema_business_name != schema_name %}
+                  <span>{{ schema_business_name }}</span>
+                {% endif %}
+
+                <span class="font-mono font-medium {% if schema_business_name and schema_business_name != schema_name %}ml-1{% endif %}">
+                  {{ schema_name }}
+                </span>
+
+                {% if schema_physical_name %}
+                  <span class="ml-1 text-gray-400 cursor-help" title="{{ schema_physical_name }}">ⓘ</span>
+                {% endif %}
+
+                {% if schema_type %}
+                  <span class="ml-2 inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                    {{ schema_type }}
+                  </span>
+                {% endif %}
+
+                {% if schema_description %}
+                  <div class="text-sm font-normal text-gray-500 mt-1">{{ schema_description }}</div>
+                {% else %}
+                  <div class="text-sm font-normal text-gray-400 mt-1">No description</div>
+                {% endif %}
+
+                {% if schema_custom_properties %}
+                  <div class="mt-2 flex flex-wrap gap-1">
+                    {% if schema_custom_properties is mapping %}
+                      {% for key, value in schema_custom_properties.items() %}
+                        <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                          {{ key }}:{{ value }}
+                        </span>
+                      {% endfor %}
+                    {% elif schema_custom_properties is sequence and schema_custom_properties is not string %}
+                      {% for cp in schema_custom_properties %}
+                        {% if cp.property is defined and cp.value is defined %}
+                          <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                            {{ cp.property }}:{{ cp.value }}
+                          </span>
+                        {% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                {% if schema_tags and schema_tags|length > 0 %}
+                  <div class="mt-2 flex flex-wrap gap-1">
+                    {% for tag in schema_tags %}
+                      <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
+                        {{ tag }}
+                      </span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                {% if schema_quality and schema_quality|length > 0 %}
+                  <div class="mt-2 flex flex-wrap gap-1">
+                    {% for q in schema_quality %}
+                      {% set q_title = "" %}
+                      {% if q.description is defined and q.description %}{% set q_title = q.description %}{% endif %}
+                      {% if q.type is defined and q.type %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "type: " ~ q.type %}{% endif %}
+                      {% if q.dimension is defined and q.dimension %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "dimension: " ~ q.dimension %}{% endif %}
+                      {% if q.metric is defined and q.metric %}{% set q_title = q_title ~ ("\n" if q_title else "") ~ "metric: " ~ q.metric %}{% endif %}
+                      <span
+                        class="inline-flex items-center rounded-md bg-fuchsia-50 px-2 py-1 text-xs font-medium text-fuchsia-700 ring-1 ring-inset ring-fuchsia-600/20"
+                        {% if q_title %}title="{{ q_title }}"{% endif %}
+                      >
+                        {{ q.name if q.name is defined and q.name else "qualityCheck" }}
+                      </span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </th>
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-gray-200 bg-white">
+            {% if schema_properties and schema_properties|length > 0 %}
+              {{ schema_macros.render_nested_properties(schema_properties, schema_name, 0) }}
+            {% else %}
+              <tr>
+                <td colspan="3" class="px-4 py-3 text-sm text-gray-400 sm:pl-6">No properties</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}

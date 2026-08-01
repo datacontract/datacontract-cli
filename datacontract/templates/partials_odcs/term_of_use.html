@@ -1,0 +1,101 @@
+{% import 'macros/authoritative_definitions.html' as ad_macros %}
+
+{% set description = datacontract.description %}
+{% if description %}
+  {% set has_authoritative_definitions = description.authoritativeDefinitions and description.authoritativeDefinitions|length > 0 %}
+  {% set has_custom_properties = description.customProperties and ((description.customProperties is mapping and description.customProperties|length > 0) or (description.customProperties is sequence and description.customProperties is not string and description.customProperties|length > 0)) %}
+  {% set has_content = description.purpose or description.usage or description.limitations or has_authoritative_definitions or has_custom_properties %}
+
+  {% if has_content %}
+  <section id="terms-of-use">
+    <div class="px-4 sm:px-0">
+      <h1 class="text-base font-semibold leading-6 text-gray-900" id="terms-of-use">Terms of Use</h1>
+      <p class="text-sm text-gray-500">High level description of the dataset including purpose, usage guidelines, and limitations</p>
+    </div>
+
+    <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+      <div class="px-4 py-4 sm:px-6">
+
+        {% if has_authoritative_definitions %}
+        <div class="flex flex-wrap gap-2 mb-6">
+          {% for definition in description.authoritativeDefinitions %}
+          <a
+            id="description-authoritative-definition-{{ loop.index0 }}"
+            href="{{ definition.url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex flex-col text-center rounded-md bg-white px-3 py-3 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:ring-indigo-300 transition-colors"
+            style="min-width: 120px"
+            title="{{ definition.description }}"
+          >
+            <div class="mx-auto w-8 h-8 mb-2 text-gray-500">{{ ad_macros.icon_for(definition) }}</div>
+            <div class="text-xs font-medium">{{ definition.type }}</div>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="flex flex-col gap-3">
+          {% if description.purpose %}
+          <div id="description-purpose">
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Purpose</div>
+            <div class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ description.purpose }}</div>
+          </div>
+          {% endif %}
+
+          {% if description.usage %}
+          <div id="description-usage">
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Usage</div>
+            <div class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ description.usage }}</div>
+          </div>
+          {% endif %}
+
+          {% if description.limitations %}
+          <div id="description-limitations">
+            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Limitations</div>
+            <div class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ description.limitations }}</div>
+          </div>
+          {% endif %}
+
+          {% if has_custom_properties %}
+          <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">Custom Properties</div>
+            <div class="flex flex-wrap gap-x-4 gap-y-2">
+              {% if description.customProperties is mapping %}
+                {% for key, value in description.customProperties.items() %}
+                <div class="min-w-0">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide inline-flex items-center gap-1">{{ key }}</div>
+                  <div class="text-sm text-gray-900 whitespace-pre-wrap">
+                    {% if value is mapping or (value is sequence and value is not string) %}
+                      {{ value | tojson }}
+                    {% else %}
+                      {{ value }}
+                    {% endif %}
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                {% for custom_property in description.customProperties %}
+                <div class="min-w-0">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide inline-flex items-center gap-1">
+                    {{ custom_property.property }}
+                  </div>
+                  <div class="text-sm text-gray-900 whitespace-pre-wrap">
+                    {% if custom_property.value is mapping or (custom_property.value is sequence and custom_property.value is not string) %}
+                      {{ custom_property.value | tojson }}
+                    {% else %}
+                      {{ custom_property.value }}
+                    {% endif %}
+                  </div>
+                </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+{% endif %}

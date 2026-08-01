@@ -30,6 +30,7 @@ marked as such in the entry.
 - `DATAMESH_MANAGER_API_KEY`, `DATAMESH_MANAGER_HOST`, `DATACONTRACT_MANAGER_API_KEY`, and `DATACONTRACT_MANAGER_HOST` (and the matching `Config` fields): use `ENTROPY_DATA_API_KEY` and `ENTROPY_DATA_HOST` instead
 
 ### Added
+- `datacontract export html` fits to datacontract-editor visualization
 - `datacontract test --filter` and `--filters` test only the rows matching a SQL predicate, e.g., the latest partition; also available as `filter`/`filters` query parameters on the API server's `POST /test` ([#1463](https://github.com/datacontract/datacontract-cli/issues/1463))
 - Credentials and connection options can be passed programmatically via `DataContract(config=...)` and `DataContract.import_from_source(..., config=...)`, using the typed `datacontract.Config` class or a dict keyed by the environment variable names
 - The API server accepts per-request credentials on `POST /test` via `datacontract-*` headers (e.g. `datacontract-snowflake-password`)
