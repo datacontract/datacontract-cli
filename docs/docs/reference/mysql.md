@@ -27,7 +27,7 @@ servers:
 | `DATACONTRACT_MYSQL_USERNAME` | `root` | Username |
 | `DATACONTRACT_MYSQL_PASSWORD` | `mysecretpassword` | Password |
 
-`host`, `port` (default 3306), and `database` come from the contract's `servers` block.
+`host`, `port` (default 3306), and `database` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_MYSQL_HOST`, `DATACONTRACT_MYSQL_PORT`, and `DATACONTRACT_MYSQL_DATABASE`.
 
 ## Data types
 

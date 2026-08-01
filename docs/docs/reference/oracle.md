@@ -29,7 +29,7 @@ servers:
 | `DATACONTRACT_ORACLE_PASSWORD` | `0x162e53` | Password |
 | `DATACONTRACT_ORACLE_CLIENT_DIR` | `C:\oracle\client` | Path to an Oracle Instant Client installation (required for thick mode) |
 
-`host`, `port` (default 1521), `service_name`, and `schema` come from the contract's `servers` block.
+`host`, `port` (default 1521), `service_name`, and `schema` come from the contract's `servers` block; `host`, `port`, and `service_name` can be overridden with `DATACONTRACT_ORACLE_HOST`, `DATACONTRACT_ORACLE_PORT`, and `DATACONTRACT_ORACLE_SERVICE_NAME`.
 
 ## Data types
 

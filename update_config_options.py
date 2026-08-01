@@ -9,7 +9,7 @@ committed page is stale.
 
 from pathlib import Path
 
-from datacontract.config import DEPRECATED_OPTIONS, Config, env_name
+from datacontract.config import DEPRECATED_OPTIONS, SERVER_OVERRIDE_OPTIONS, Config, env_name
 
 DOCS_PAGE = Path(__file__).parent / "docs" / "docs" / "configuration.md"
 
@@ -24,6 +24,7 @@ GROUPS = {
     "datacontract_manager": "Entropy Data (publishing, remote contracts)",
     "api_header": "General",
     "max_errors": "General",
+    "athena": "Athena",
     "azure": "Azure",
     "bigquery": "BigQuery",
     "databricks": "Databricks",
@@ -68,6 +69,8 @@ def render_options_block() -> str:
             replacement = DEPRECATED_OPTIONS[name]
             replacement_env = env_name(replacement, Config.model_fields[replacement])
             notes = f"Deprecated, use `{replacement_env}`"
+        elif name in SERVER_OVERRIDE_OPTIONS:
+            notes = f"Overrides `{SERVER_OVERRIDE_OPTIONS[name]}` from the contract's `servers` block"
         row = f"| `{env_name(name, field)}` | `{name}` | {_type_label(field.annotation)} | {notes} |"
         sections.setdefault(heading, []).append(row)
 

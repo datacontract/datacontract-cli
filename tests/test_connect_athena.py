@@ -19,6 +19,9 @@ ATHENA_ENV_VARS = [
     "DATACONTRACT_S3_ACCESS_KEY_ID",
     "DATACONTRACT_S3_SECRET_ACCESS_KEY",
     "DATACONTRACT_S3_SESSION_TOKEN",
+    "DATACONTRACT_ATHENA_CATALOG",
+    "DATACONTRACT_ATHENA_SCHEMA",
+    "DATACONTRACT_ATHENA_STAGING_DIR",
 ]
 
 STAGING_DIR = "s3://my-bucket/athena-results/"
@@ -105,3 +108,15 @@ def test_missing_schema_is_rejected(env):
         _connect(server)
 
     assert "Schema is required" in exc_info.value.reason
+
+
+def test_env_variables_override_the_contract_server_details(env, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_ATHENA_CATALOG", "env_catalog")
+    monkeypatch.setenv("DATACONTRACT_ATHENA_SCHEMA", "env_schema")
+    monkeypatch.setenv("DATACONTRACT_ATHENA_STAGING_DIR", "s3://env-bucket/results/")
+
+    kwargs = _connect(_server(regionName="eu-central-1", catalog="contract_catalog"))
+
+    assert kwargs["catalog_name"] == "env_catalog"
+    assert kwargs["schema_name"] == "env_schema"
+    assert kwargs["s3_staging_dir"] == "s3://env-bucket/results/"

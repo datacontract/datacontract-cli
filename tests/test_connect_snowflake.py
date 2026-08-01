@@ -134,17 +134,6 @@ def test_unknown_snowflake_variables_are_ignored_with_a_warning(env, captured_co
     assert any("DATACONTRACT_SNOWFLAKE_SESSION_PARAMETERS" in log.message for log in run.logs)
 
 
-def test_account_env_var_no_longer_collides_with_the_server_account(env, captured_connect):
-    """Used to raise ``TypeError: got multiple values for keyword argument 'account'``."""
-    env.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "other-account")
-    run = Run.create_run()
-
-    _connect(run)
-
-    assert captured_connect["account"] == "abc-xy123"
-    assert any("DATACONTRACT_SNOWFLAKE_ACCOUNT" in log.message for log in run.logs)
-
-
 def test_programmatic_config_reaches_the_connector(env, captured_connect):
     config = Config(
         snowflake_username="svc_test",
@@ -167,3 +156,18 @@ def test_programmatic_config_wins_over_the_environment(env, captured_connect):
     _connect(config=Config(snowflake_username="from_config"))
 
     assert captured_connect["user"] == "from_config"
+
+
+def test_env_variables_override_the_contract_server_details(env, captured_connect):
+    """Setting DATACONTRACT_SNOWFLAKE_ACCOUNT alongside a server account used to raise
+    ``TypeError: got multiple values for keyword argument 'account'``, then warn-and-ignore;
+    it is a supported override now."""
+    env.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "env-account")
+    env.setenv("DATACONTRACT_SNOWFLAKE_DATABASE", "ENV_DB")
+    env.setenv("DATACONTRACT_SNOWFLAKE_SCHEMA", "ENV_SCHEMA")
+
+    _connect()
+
+    assert captured_connect["account"] == "env-account"
+    assert captured_connect["database"] == "ENV_DB"
+    assert captured_connect["schema"] == "ENV_SCHEMA"

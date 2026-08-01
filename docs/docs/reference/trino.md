@@ -30,7 +30,7 @@ servers:
 | `DATACONTRACT_TRINO_AUTHENTICATION` | `oauth2` | `basic` (default), `jwt`, or `oauth2` |
 | `DATACONTRACT_TRINO_JWT_TOKEN` | `eyJhbGciOi...` | JWT bearer token for `jwt` auth |
 
-`host`, `port`, `catalog`, and `schema` come from the contract's `servers` block.
+`host`, `port`, `catalog`, and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_TRINO_HOST`, `DATACONTRACT_TRINO_PORT`, `DATACONTRACT_TRINO_CATALOG`, and `DATACONTRACT_TRINO_SCHEMA`.
 
 ## Data types
 

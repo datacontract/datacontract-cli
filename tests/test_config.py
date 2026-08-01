@@ -12,7 +12,12 @@ import pytest
 from pydantic import ValidationError
 
 from datacontract import Config
-from datacontract.config import known_env_names, unknown_snowflake_env_names
+from datacontract.config import SERVER_OVERRIDE_OPTIONS, known_env_names, unknown_snowflake_env_names
+
+
+def test_server_override_options_name_real_config_fields():
+    unknown = set(SERVER_OVERRIDE_OPTIONS) - set(Config.model_fields)
+    assert not unknown, f"SERVER_OVERRIDE_OPTIONS names undeclared Config fields: {sorted(unknown)}"
 
 
 def test_field_names_map_to_env_var_names():

@@ -36,9 +36,12 @@ marked as such in the entry.
 - The API server accepts per-request credentials on `POST /test` via `datacontract-*` headers (e.g. `datacontract-snowflake-password`)
 - Credentials and connection options can be provided in a YAML config file, via `--config-file` (defaults to `./datacontract-config.yaml` or `~/.datacontract/config.yaml`) or `Config.from_yaml()`, with `${VAR}` references resolved from the environment
 - New Snowflake connection options: `DATACONTRACT_SNOWFLAKE_TOKEN`, `DATACONTRACT_SNOWFLAKE_PASSCODE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`, `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_HOST`, `DATACONTRACT_SNOWFLAKE_PORT`
+- Config options to override the server details from the data contract (host, port, database, schema, catalog, project, dataset, account, service name, staging directory) for Postgres, MySQL, SQL Server, Oracle, Redshift, Snowflake, BigQuery, Databricks, Trino, Athena, and Impala, e.g. `DATACONTRACT_POSTGRES_HOST` ([#1076](https://github.com/datacontract/datacontract-cli/issues/1076))
 
 ### Changed
 - `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning
+- `DATACONTRACT_SNOWFLAKE_ACCOUNT` overrides the contract's `account` instead of being ignored with a warning
+- `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` overrides the contract's `host`; previously the contract value won when both were set
 
 ### Fixed
 - `datacontract dbt sync` writes a description on all dbt tests, not only newly-generated ones

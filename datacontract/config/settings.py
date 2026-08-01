@@ -27,6 +27,46 @@ DEPRECATED_OPTIONS = {
 }
 _TRUTHY = ("1", "true", "yes", "y", "on")
 
+# Config option (field name) -> the property in the contract's ``servers`` block
+# it overrides when set. Single source for the generated docs notes.
+SERVER_OVERRIDE_OPTIONS = {
+    "athena_catalog": "catalog",
+    "athena_schema": "schema",
+    "athena_staging_dir": "stagingDir",
+    "bigquery_project": "project",
+    "bigquery_dataset": "dataset",
+    "databricks_server_hostname": "host",
+    "databricks_catalog": "catalog",
+    "databricks_schema": "schema",
+    "impala_host": "host",
+    "impala_port": "port",
+    "impala_database": "database",
+    "mysql_host": "host",
+    "mysql_port": "port",
+    "mysql_database": "database",
+    "oracle_host": "host",
+    "oracle_port": "port",
+    "oracle_service_name": "serviceName",
+    "postgres_host": "host",
+    "postgres_port": "port",
+    "postgres_database": "database",
+    "postgres_schema": "schema",
+    "redshift_host": "host",
+    "redshift_port": "port",
+    "redshift_database": "database",
+    "redshift_schema": "schema",
+    "snowflake_account": "account",
+    "snowflake_database": "database",
+    "snowflake_schema": "schema",
+    "sqlserver_host": "host",
+    "sqlserver_port": "port",
+    "sqlserver_database": "database",
+    "trino_host": "host",
+    "trino_port": "port",
+    "trino_catalog": "catalog",
+    "trino_schema": "schema",
+}
+
 
 class Config(BaseSettings):
     """All defined config options, one typed field per ``DATACONTRACT_*`` env var.
@@ -57,6 +97,12 @@ class Config(BaseSettings):
     api_header_authorization: SecretStr | None = None
     max_errors: int | None = None
 
+    # athena (credentials come from the s3_* options)
+    # overrides for the contract's servers block
+    athena_catalog: str | None = None
+    athena_schema: str | None = None
+    athena_staging_dir: str | None = None
+
     # azure
     azure_connection_string: SecretStr | None = None
     azure_storage_account_key: SecretStr | None = None
@@ -68,6 +114,9 @@ class Config(BaseSettings):
     bigquery_account_info_json_path: str | None = None
     bigquery_billing_project: str | None = None
     bigquery_impersonation_account: str | None = None
+    # overrides for the contract's servers block
+    bigquery_project: str | None = None
+    bigquery_dataset: str | None = None
 
     # databricks
     databricks_server_hostname: str | None = None
@@ -77,6 +126,9 @@ class Config(BaseSettings):
     databricks_client_secret: SecretStr | None = None
     databricks_profile: str | None = None
     databricks_auth_type: str | None = None
+    # overrides for the contract's servers block
+    databricks_catalog: str | None = None
+    databricks_schema: str | None = None
 
     # gcs
     gcs_key_id: str | None = None
@@ -89,6 +141,10 @@ class Config(BaseSettings):
     impala_http_path: str | None = None
     impala_use_ssl: bool | None = None
     impala_use_http_transport: bool | None = None
+    # overrides for the contract's servers block
+    impala_host: str | None = None
+    impala_port: int | None = None
+    impala_database: str | None = None
 
     # kafka
     kafka_sasl_username: str | None = None
@@ -101,15 +157,28 @@ class Config(BaseSettings):
     # mysql
     mysql_username: str | None = None
     mysql_password: SecretStr | None = None
+    # overrides for the contract's servers block
+    mysql_host: str | None = None
+    mysql_port: int | None = None
+    mysql_database: str | None = None
 
     # oracle
     oracle_username: str | None = None
     oracle_password: SecretStr | None = None
     oracle_client_dir: str | None = None
+    # overrides for the contract's servers block
+    oracle_host: str | None = None
+    oracle_port: int | None = None
+    oracle_service_name: str | None = None
 
     # postgres
     postgres_username: str | None = None
     postgres_password: SecretStr | None = None
+    # overrides for the contract's servers block
+    postgres_host: str | None = None
+    postgres_port: int | None = None
+    postgres_database: str | None = None
+    postgres_schema: str | None = None
 
     # redshift
     redshift_authentication: str | None = None
@@ -123,6 +192,11 @@ class Config(BaseSettings):
     redshift_cluster_identifier: str | None = None
     redshift_region: str | None = None
     redshift_duration_seconds: int | None = None
+    # overrides for the contract's servers block
+    redshift_host: str | None = None
+    redshift_port: int | None = None
+    redshift_database: str | None = None
+    redshift_schema: str | None = None
 
     # s3 (also used for Athena and Redshift IAM as the AWS credential set)
     s3_access_key_id: str | None = None
@@ -154,6 +228,10 @@ class Config(BaseSettings):
     snowflake_private_key_path: str | None = None
     snowflake_private_key_passphrase: SecretStr | None = None
     snowflake_connection_timeout: int | None = None
+    # overrides for the contract's servers block
+    snowflake_account: str | None = None
+    snowflake_database: str | None = None
+    snowflake_schema: str | None = None
 
     # sqlserver
     sqlserver_authentication: str | None = None
@@ -165,12 +243,21 @@ class Config(BaseSettings):
     sqlserver_encrypted_connection: bool | None = None
     sqlserver_trust_server_certificate: bool | None = None
     sqlserver_trusted_connection: bool | None = None
+    # overrides for the contract's servers block
+    sqlserver_host: str | None = None
+    sqlserver_port: int | None = None
+    sqlserver_database: str | None = None
 
     # trino
     trino_authentication: str | None = None
     trino_username: str | None = None
     trino_password: SecretStr | None = None
     trino_jwt_token: SecretStr | None = None
+    # overrides for the contract's servers block
+    trino_host: str | None = None
+    trino_port: int | None = None
+    trino_catalog: str | None = None
+    trino_schema: str | None = None
 
     def __init__(self, **data):
         # extra="ignore" keeps unrelated env vars from breaking instantiation, but
@@ -347,6 +434,16 @@ class Config(BaseSettings):
     def get_max_errors(self) -> int | None:
         return self._int_option("max_errors")
 
+    # --- athena ---
+    def get_athena_catalog(self, required: bool = False) -> str | None:
+        return self._str_option("athena_catalog", required)
+
+    def get_athena_schema(self, required: bool = False) -> str | None:
+        return self._str_option("athena_schema", required)
+
+    def get_athena_staging_dir(self, required: bool = False) -> str | None:
+        return self._str_option("athena_staging_dir", required)
+
     # --- azure ---
     def get_azure_connection_string(self, required: bool = False) -> str | None:
         return self._str_option("azure_connection_string", required)
@@ -373,6 +470,12 @@ class Config(BaseSettings):
     def get_bigquery_impersonation_account(self, required: bool = False) -> str | None:
         return self._str_option("bigquery_impersonation_account", required)
 
+    def get_bigquery_project(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_project", required)
+
+    def get_bigquery_dataset(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_dataset", required)
+
     # --- databricks ---
     def get_databricks_server_hostname(self, required: bool = False) -> str | None:
         return self._str_option("databricks_server_hostname", required)
@@ -394,6 +497,12 @@ class Config(BaseSettings):
 
     def get_databricks_auth_type(self, required: bool = False) -> str | None:
         return self._str_option("databricks_auth_type", required)
+
+    def get_databricks_catalog(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_catalog", required)
+
+    def get_databricks_schema(self, required: bool = False) -> str | None:
+        return self._str_option("databricks_schema", required)
 
     # --- gcs ---
     def get_gcs_key_id(self, required: bool = False) -> str | None:
@@ -421,6 +530,15 @@ class Config(BaseSettings):
     def get_impala_use_http_transport(self, default: bool = False) -> bool:
         return self._bool_option("impala_use_http_transport", default)
 
+    def get_impala_host(self, required: bool = False) -> str | None:
+        return self._str_option("impala_host", required)
+
+    def get_impala_port(self) -> int | None:
+        return self._int_option("impala_port")
+
+    def get_impala_database(self, required: bool = False) -> str | None:
+        return self._str_option("impala_database", required)
+
     # --- kafka ---
     def get_kafka_sasl_username(self, required: bool = False) -> str | None:
         return self._str_option("kafka_sasl_username", required)
@@ -447,6 +565,15 @@ class Config(BaseSettings):
     def get_mysql_password(self, required: bool = False) -> str | None:
         return self._str_option("mysql_password", required)
 
+    def get_mysql_host(self, required: bool = False) -> str | None:
+        return self._str_option("mysql_host", required)
+
+    def get_mysql_port(self) -> int | None:
+        return self._int_option("mysql_port")
+
+    def get_mysql_database(self, required: bool = False) -> str | None:
+        return self._str_option("mysql_database", required)
+
     # --- oracle ---
     def get_oracle_username(self, required: bool = False) -> str | None:
         return self._str_option("oracle_username", required)
@@ -457,12 +584,33 @@ class Config(BaseSettings):
     def get_oracle_client_dir(self, required: bool = False) -> str | None:
         return self._str_option("oracle_client_dir", required)
 
+    def get_oracle_host(self, required: bool = False) -> str | None:
+        return self._str_option("oracle_host", required)
+
+    def get_oracle_port(self) -> int | None:
+        return self._int_option("oracle_port")
+
+    def get_oracle_service_name(self, required: bool = False) -> str | None:
+        return self._str_option("oracle_service_name", required)
+
     # --- postgres ---
     def get_postgres_username(self, required: bool = False) -> str | None:
         return self._str_option("postgres_username", required)
 
     def get_postgres_password(self, required: bool = False) -> str | None:
         return self._str_option("postgres_password", required)
+
+    def get_postgres_host(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_host", required)
+
+    def get_postgres_port(self) -> int | None:
+        return self._int_option("postgres_port")
+
+    def get_postgres_database(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_database", required)
+
+    def get_postgres_schema(self, required: bool = False) -> str | None:
+        return self._str_option("postgres_schema", required)
 
     # --- redshift ---
     def get_redshift_authentication(self, required: bool = False) -> str | None:
@@ -497,6 +645,18 @@ class Config(BaseSettings):
 
     def get_redshift_duration_seconds(self) -> int | None:
         return self._int_option("redshift_duration_seconds")
+
+    def get_redshift_host(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_host", required)
+
+    def get_redshift_port(self) -> int | None:
+        return self._int_option("redshift_port")
+
+    def get_redshift_database(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_database", required)
+
+    def get_redshift_schema(self, required: bool = False) -> str | None:
+        return self._str_option("redshift_schema", required)
 
     # --- s3 ---
     def get_s3_access_key_id(self, required: bool = False) -> str | None:
@@ -578,6 +738,15 @@ class Config(BaseSettings):
     def get_snowflake_connection_timeout(self) -> int | None:
         return self._int_option("snowflake_connection_timeout")
 
+    def get_snowflake_account(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_account", required)
+
+    def get_snowflake_database(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_database", required)
+
+    def get_snowflake_schema(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_schema", required)
+
     # --- sqlserver ---
     def get_sqlserver_authentication(self, required: bool = False) -> str | None:
         return self._str_option("sqlserver_authentication", required)
@@ -606,6 +775,15 @@ class Config(BaseSettings):
     def get_sqlserver_trusted_connection(self, default: bool = False) -> bool:
         return self._bool_option("sqlserver_trusted_connection", default)
 
+    def get_sqlserver_host(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_host", required)
+
+    def get_sqlserver_port(self) -> int | None:
+        return self._int_option("sqlserver_port")
+
+    def get_sqlserver_database(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_database", required)
+
     # --- trino ---
     def get_trino_authentication(self, required: bool = False) -> str | None:
         return self._str_option("trino_authentication", required)
@@ -618,6 +796,18 @@ class Config(BaseSettings):
 
     def get_trino_jwt_token(self, required: bool = False) -> str | None:
         return self._str_option("trino_jwt_token", required)
+
+    def get_trino_host(self, required: bool = False) -> str | None:
+        return self._str_option("trino_host", required)
+
+    def get_trino_port(self) -> int | None:
+        return self._int_option("trino_port")
+
+    def get_trino_catalog(self, required: bool = False) -> str | None:
+        return self._str_option("trino_catalog", required)
+
+    def get_trino_schema(self, required: bool = False) -> str | None:
+        return self._str_option("trino_schema", required)
 
     def to_env_dict(self) -> dict[str, str]:
         """Flatten to a dict keyed by the env var names."""

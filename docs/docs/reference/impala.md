@@ -33,7 +33,7 @@ servers:
 
 Apart from `use_ssl`, these default to the same values as the underlying [impyla](https://github.com/cloudera/impyla) driver.
 
-`host`, `port`, and `database` come from the contract's `servers` block. `port` defaults to `21050`, Impala's binary thrift port.
+`host`, `port`, and `database` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_IMPALA_HOST`, `DATACONTRACT_IMPALA_PORT`, and `DATACONTRACT_IMPALA_DATABASE`. `port` defaults to `21050`, Impala's binary thrift port.
 
 ### Cloudera Virtual Warehouse
 

@@ -117,6 +117,14 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `api_header_authorization` | string (secret) |  |
 | `DATACONTRACT_MAX_ERRORS` | `max_errors` | integer |  |
 
+### Athena
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_ATHENA_CATALOG` | `athena_catalog` | string | Overrides `catalog` from the contract's `servers` block |
+| `DATACONTRACT_ATHENA_SCHEMA` | `athena_schema` | string | Overrides `schema` from the contract's `servers` block |
+| `DATACONTRACT_ATHENA_STAGING_DIR` | `athena_staging_dir` | string | Overrides `stagingDir` from the contract's `servers` block |
+
 ### Azure
 
 | Environment variable | `Config` field | Type | Notes |
@@ -134,18 +142,22 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `bigquery_account_info_json_path` | string |  |
 | `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `bigquery_billing_project` | string |  |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `bigquery_impersonation_account` | string |  |
+| `DATACONTRACT_BIGQUERY_PROJECT` | `bigquery_project` | string | Overrides `project` from the contract's `servers` block |
+| `DATACONTRACT_BIGQUERY_DATASET` | `bigquery_dataset` | string | Overrides `dataset` from the contract's `servers` block |
 
 ### Databricks
 
 | Environment variable | `Config` field | Type | Notes |
 |---|---|---|---|
-| `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `databricks_server_hostname` | string |  |
+| `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` | `databricks_server_hostname` | string | Overrides `host` from the contract's `servers` block |
 | `DATACONTRACT_DATABRICKS_HTTP_PATH` | `databricks_http_path` | string |  |
 | `DATACONTRACT_DATABRICKS_TOKEN` | `databricks_token` | string (secret) |  |
 | `DATACONTRACT_DATABRICKS_CLIENT_ID` | `databricks_client_id` | string |  |
 | `DATACONTRACT_DATABRICKS_CLIENT_SECRET` | `databricks_client_secret` | string (secret) |  |
 | `DATACONTRACT_DATABRICKS_PROFILE` | `databricks_profile` | string |  |
 | `DATACONTRACT_DATABRICKS_AUTH_TYPE` | `databricks_auth_type` | string |  |
+| `DATACONTRACT_DATABRICKS_CATALOG` | `databricks_catalog` | string | Overrides `catalog` from the contract's `servers` block |
+| `DATACONTRACT_DATABRICKS_SCHEMA` | `databricks_schema` | string | Overrides `schema` from the contract's `servers` block |
 
 ### GCS
 
@@ -164,6 +176,9 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_IMPALA_HTTP_PATH` | `impala_http_path` | string |  |
 | `DATACONTRACT_IMPALA_USE_SSL` | `impala_use_ssl` | boolean |  |
 | `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT` | `impala_use_http_transport` | boolean |  |
+| `DATACONTRACT_IMPALA_HOST` | `impala_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_IMPALA_PORT` | `impala_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_IMPALA_DATABASE` | `impala_database` | string | Overrides `database` from the contract's `servers` block |
 
 ### Kafka
 
@@ -182,6 +197,9 @@ Every option, by its environment variable name and the matching `Config` field. 
 |---|---|---|---|
 | `DATACONTRACT_MYSQL_USERNAME` | `mysql_username` | string |  |
 | `DATACONTRACT_MYSQL_PASSWORD` | `mysql_password` | string (secret) |  |
+| `DATACONTRACT_MYSQL_HOST` | `mysql_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_MYSQL_PORT` | `mysql_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_MYSQL_DATABASE` | `mysql_database` | string | Overrides `database` from the contract's `servers` block |
 
 ### Oracle
 
@@ -190,6 +208,9 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_ORACLE_USERNAME` | `oracle_username` | string |  |
 | `DATACONTRACT_ORACLE_PASSWORD` | `oracle_password` | string (secret) |  |
 | `DATACONTRACT_ORACLE_CLIENT_DIR` | `oracle_client_dir` | string |  |
+| `DATACONTRACT_ORACLE_HOST` | `oracle_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_ORACLE_PORT` | `oracle_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_ORACLE_SERVICE_NAME` | `oracle_service_name` | string | Overrides `serviceName` from the contract's `servers` block |
 
 ### Postgres
 
@@ -197,6 +218,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 |---|---|---|---|
 | `DATACONTRACT_POSTGRES_USERNAME` | `postgres_username` | string |  |
 | `DATACONTRACT_POSTGRES_PASSWORD` | `postgres_password` | string (secret) |  |
+| `DATACONTRACT_POSTGRES_HOST` | `postgres_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_POSTGRES_PORT` | `postgres_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_POSTGRES_DATABASE` | `postgres_database` | string | Overrides `database` from the contract's `servers` block |
+| `DATACONTRACT_POSTGRES_SCHEMA` | `postgres_schema` | string | Overrides `schema` from the contract's `servers` block |
 
 ### Redshift
 
@@ -213,6 +238,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_REDSHIFT_CLUSTER_IDENTIFIER` | `redshift_cluster_identifier` | string |  |
 | `DATACONTRACT_REDSHIFT_REGION` | `redshift_region` | string |  |
 | `DATACONTRACT_REDSHIFT_DURATION_SECONDS` | `redshift_duration_seconds` | integer |  |
+| `DATACONTRACT_REDSHIFT_HOST` | `redshift_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_REDSHIFT_PORT` | `redshift_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_REDSHIFT_DATABASE` | `redshift_database` | string | Overrides `database` from the contract's `servers` block |
+| `DATACONTRACT_REDSHIFT_SCHEMA` | `redshift_schema` | string | Overrides `schema` from the contract's `servers` block |
 
 ### S3 / AWS (also Athena, Redshift IAM, Glue)
 
@@ -249,6 +278,9 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH` | `snowflake_private_key_path` | string | Deprecated, use `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` |
 | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` | `snowflake_private_key_passphrase` | string (secret) | Deprecated, use `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD` |
 | `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT` | `snowflake_connection_timeout` | integer | Deprecated, use `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` |
+| `DATACONTRACT_SNOWFLAKE_ACCOUNT` | `snowflake_account` | string | Overrides `account` from the contract's `servers` block |
+| `DATACONTRACT_SNOWFLAKE_DATABASE` | `snowflake_database` | string | Overrides `database` from the contract's `servers` block |
+| `DATACONTRACT_SNOWFLAKE_SCHEMA` | `snowflake_schema` | string | Overrides `schema` from the contract's `servers` block |
 
 ### SQL Server
 
@@ -263,6 +295,9 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `sqlserver_encrypted_connection` | boolean |  |
 | `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `sqlserver_trust_server_certificate` | boolean |  |
 | `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` | `sqlserver_trusted_connection` | boolean |  |
+| `DATACONTRACT_SQLSERVER_HOST` | `sqlserver_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_SQLSERVER_PORT` | `sqlserver_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_SQLSERVER_DATABASE` | `sqlserver_database` | string | Overrides `database` from the contract's `servers` block |
 
 ### Trino
 
@@ -272,6 +307,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_TRINO_USERNAME` | `trino_username` | string |  |
 | `DATACONTRACT_TRINO_PASSWORD` | `trino_password` | string (secret) |  |
 | `DATACONTRACT_TRINO_JWT_TOKEN` | `trino_jwt_token` | string (secret) |  |
+| `DATACONTRACT_TRINO_HOST` | `trino_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_TRINO_PORT` | `trino_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_TRINO_CATALOG` | `trino_catalog` | string | Overrides `catalog` from the contract's `servers` block |
+| `DATACONTRACT_TRINO_SCHEMA` | `trino_schema` | string | Overrides `schema` from the contract's `servers` block |
 
 {/* END AUTOGENERATED CONFIG OPTIONS */}
 
