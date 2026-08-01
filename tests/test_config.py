@@ -227,3 +227,17 @@ def test_entropy_data_options_do_not_warn(caplog):
         assert Config(entropy_data_api_key="key").get_entropy_data_api_key() == "key"
 
     assert not caplog.records
+
+
+def test_explicit_config_is_immune_to_unrelated_malformed_env_vars(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT", "not-a-number")
+
+    config = Config.resolve({"DATACONTRACT_POSTGRES_USERNAME": "u"})
+
+    assert config.get_postgres_username() == "u"
+
+
+def test_bool_accessor_treats_set_but_empty_env_var_as_false(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_IMPALA_USE_SSL", "")
+
+    assert Config.model_construct().get_impala_use_ssl(default=True) is False

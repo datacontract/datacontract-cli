@@ -54,13 +54,14 @@ _READERS = {
 
 
 class ObjectStorageImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
         return import_object_storage(
             location=normalize_location(source, self.import_format),
             server_type=SERVER_TYPES[self.import_format],
             format=import_args.get("file_format"),
             delimiter=import_args.get("delimiter"),
             endpoint_url=import_args.get("endpoint_url") or DEFAULT_ENDPOINT_URLS.get(self.import_format),
+            config=config,
         )
 
 
@@ -70,6 +71,7 @@ def import_object_storage(
     format: Optional[str] = None,
     delimiter: Optional[str] = None,
     endpoint_url: Optional[str] = None,
+    config=None,
 ) -> OpenDataContractStandard:
     if not location:
         raise DataContractException(
@@ -105,7 +107,7 @@ def import_object_storage(
     if endpoint_url:
         server.endpointUrl = endpoint_url
 
-    columns = _read_columns(server, location, format)
+    columns = _read_columns(server, location, format, config)
     if not columns:
         raise DataContractException(
             type="schema",
@@ -153,7 +155,7 @@ def schema_name(location: str) -> str:
     return re.sub(r"[^0-9A-Za-z_]+", "_", segment).strip("_") or "data"
 
 
-def _read_columns(server: Server, location: str, format: str):
+def _read_columns(server: Server, location: str, format: str, config=None):
     from datacontract.engines.ibis.connections.duckdb_connection import (
         _import_duckdb,
         setup_azure_connection,
@@ -163,7 +165,7 @@ def _read_columns(server: Server, location: str, format: str):
     setup = {"s3": setup_s3_connection, "azure": setup_azure_connection}[server.type]
     duckdb = _import_duckdb()
     con = duckdb.connect(database=":memory:")
-    setup(con, server)
+    setup(con, server, config)
     if format == "delta":
         con.sql("update extensions;")
     reader = _READERS[format].format(location=location)

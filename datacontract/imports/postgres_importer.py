@@ -148,8 +148,8 @@ def import_postgres_from_connector(
 
 
 def postgres_connection(host: str, port: int, database: str, config: Optional[Config] = None):
-    config = Config.resolve(config)
     """Open a psycopg connection using the same DATACONTRACT_POSTGRES_* env vars as `datacontract test`."""
+    config = Config.resolve(config)
     try:
         import psycopg
     except ImportError as e:

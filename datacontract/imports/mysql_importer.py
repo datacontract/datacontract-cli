@@ -100,8 +100,8 @@ def import_mysql(
 
 
 def _attach(host: str, port: int, database: str, config: Optional[Config] = None):
-    config = Config.resolve(config)
     """ATTACH the database exactly as the test path does."""
+    config = Config.resolve(config)
     try:
         import duckdb
     except ImportError as e:

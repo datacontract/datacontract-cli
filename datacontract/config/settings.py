@@ -13,6 +13,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 logger = logging.getLogger(__name__)
 
 _ENV_PREFIX = "DATACONTRACT_"
+
+# Deprecated option (field name) -> replacement (field name). Single source for
+# the accessor warnings, the Snowflake connect synonyms, and the generated docs.
+DEPRECATED_OPTIONS = {
+    "datamesh_manager_api_key": "entropy_data_api_key",
+    "datamesh_manager_host": "entropy_data_host",
+    "datacontract_manager_api_key": "entropy_data_api_key",
+    "datacontract_manager_host": "entropy_data_host",
+    "snowflake_private_key_path": "snowflake_private_key_file",
+    "snowflake_private_key_passphrase": "snowflake_private_key_file_pwd",
+    "snowflake_connection_timeout": "snowflake_login_timeout",
+}
 _TRUTHY = ("1", "true", "yes", "y", "on")
 
 
@@ -191,7 +203,7 @@ class Config(BaseSettings):
                     unknown.append(key)
             if unknown:
                 raise ValueError(f"Unknown config option(s): {', '.join(sorted(unknown))}. See datacontract.Config.")
-            return cls(**fields)
+            return _ExplicitConfig(**fields)
         raise TypeError(f"config must be a Config, dict, or None, got {type(config).__name__}")
 
     @classmethod
@@ -207,7 +219,10 @@ class Config(BaseSettings):
         import yaml
 
         path = Path(path)
-        data = yaml.safe_load(path.read_text())
+        try:
+            data = yaml.safe_load(path.read_text())
+        except yaml.YAMLError as e:
+            raise ValueError(f"Config file {path} is not valid YAML: {e}")
         if data is None:
             data = {}
         if not isinstance(data, dict):
@@ -227,7 +242,7 @@ class Config(BaseSettings):
         unknown = sorted(set(flat) - set(cls.model_fields))
         if unknown:
             raise ValueError(f"Unknown config option(s) in {path}: {', '.join(unknown)}. See datacontract.Config.")
-        return cls(**flat)
+        return _ExplicitConfig(**flat)
 
     # ------------------------------------------------------------------
     # Value resolution: one typed accessor per option (get_<field>()).
@@ -261,8 +276,11 @@ class Config(BaseSettings):
             )
         return value
 
-    def _deprecated_str_option(self, field_name: str, replacement: str, required: bool = False) -> str | None:
+    def _deprecated_str_option(
+        self, field_name: str, replacement: str | None = None, required: bool = False
+    ) -> str | None:
         """A str option kept as a deprecated synonym: warns when it supplies a value."""
+        replacement = replacement or DEPRECATED_OPTIONS[field_name]
         value = self._str_option(field_name, required)
         if value:
             deprecated_env = env_name(field_name, type(self).model_fields[field_name])
@@ -293,10 +311,11 @@ class Config(BaseSettings):
 
     def _bool_option(self, field_name: str, default: bool) -> bool:
         value = self._raw_option(field_name)
-        if value is None or value == "":
+        if value is None:
             return default
         if isinstance(value, bool):
             return value
+        # A set-but-empty variable counts as false, matching pre-Config parsing.
         return str(value).strip().lower() in _TRUTHY
 
     # --- entropy ---
@@ -609,6 +628,23 @@ class Config(BaseSettings):
                 continue
             values[env_name(name, field)] = _as_env_value(value)
         return values
+
+
+class _ExplicitConfig(Config):
+    """Config built only from explicitly provided values.
+
+    Skips the environment settings source, so an unrelated malformed
+    DATACONTRACT_* variable in the process cannot fail construction of a config
+    file, dict, or per-request header config. Unset options still fall back to
+    the environment lazily through the accessors, which parse each value at the
+    point of use.
+    """
+
+    @classmethod
+    def settings_customise_sources(
+        cls, settings_cls, init_settings, env_settings, dotenv_settings, file_secret_settings
+    ):
+        return (init_settings,)
 
 
 def env_name(field_name: str, field) -> str:
