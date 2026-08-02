@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract test` for Databricks no longer creates ibis's memtable staging volume, so read-only service principals without `CREATE VOLUME` permission can run tests
+
 ## [1.0.17] - 2026-08-01
 
 ### Deprecated
