@@ -11,7 +11,7 @@ The **[Data Contract Provider for Apache Airflow](https://github.com/datacontrac
 - `DataContractTestOperator` tests a contract against real data and fails the task when the contract is violated, so bad data stops before it propagates downstream.
 - Per-check results are rendered in the task log (pass/fail, reason, model/field).
 - The full run report is pushed to XCom in the test-results API model, so downstream tasks can branch on the outcome.
-- On Airflow 3, a "Data Contract Results" view in the UI shows recent test runs across all DAGs, with filters, per-check details, and diagnostics.
+- On Airflow 3, a "Data Contract Results" view in the UI shows the state of all tested contracts, with run history, per-contract stats, and per-check details.
 - A "Test Results" button on the task instance links to the published results, e.g. in Entropy Data.
 
 ## Installation
@@ -148,13 +148,13 @@ The operator itself fails the task when the run result is `failed` or `error` (a
 
 ## Results in the Airflow UI
 
-On Airflow 3.1+, the provider adds a **Data Contract Results** entry to the navigation. It renders the most recent test runs across all DAGs, collected from XCom:
+On Airflow 3.1+, the provider adds a **Data Contract Results** entry to the navigation: a status board with one row per data contract, showing the latest result, a clickable run-history strip, and the check summary (a Runs tab keeps the raw run log):
 
-![Data Contract Results view in the Airflow UI, listing recent test runs with result badges and check counts](/img/airflow-results.png)
+![Data Contract Results view in the Airflow UI, one row per data contract with result badge, run history, and check counts](/img/airflow-results.png)
 
-Each run expands into a detail view with the contract id and version, server, duration, result counts as clickable filters, a text filter, checks grouped by model, per-check diagnostics and failed samples, and the run logs:
+Each contract expands into stats (pass rate over the tracked runs, failing checks, last passed, average duration) and the run detail: result counts as clickable filters, a text filter, checks grouped by model, per-check diagnostics and failed samples, and the run logs. Runs with problems open filtered to the not-passed checks, and each failure is annotated as new in this run or failing for several runs:
 
-![Expanded test run in the Data Contract Results view, showing run metadata and the per-check results grouped by model](/img/airflow-results-details.png)
+![Expanded data contract in the Data Contract Results view, showing per-contract stats, run metadata, and the per-check results grouped by model](/img/airflow-results-details.png)
 
 With `results_web_url` set, the task instance additionally shows a "Test Results" button that deep-links to the published results, e.g. in Entropy Data.
 
