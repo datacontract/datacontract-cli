@@ -1,16 +1,16 @@
 ---
 sidebar_position: 11
-title: "Scheduling and CI/CD"
-description: "Run data contract tests continuously — in CI/CD on every change and on a daily schedule — to catch data drift before your consumers do."
+title: "CI/CD"
+description: "Run data contract tests in CI/CD on every change, with CI-friendly annotations, summaries, and exit-code control."
 ---
 
-# Scheduling and CI/CD
+# CI/CD
 
-Data contracts deliver the most value when they are checked **continuously**, not just once. The recommended practice is to test contracts in CI/CD on every change and, in addition, to run them on a recurring schedule (for example daily) so you detect data drift and quality regressions in production data over time.
+Data contracts deliver the most value when they are checked **continuously**, not just once. Test contracts in CI/CD on every change so a breaking change is caught in the pull request that introduces it. In addition, run them on a recurring schedule to detect data drift in production over time, see [Scheduling](./scheduling/index.md).
 
-The [`ci`](./commands/ci.md) command is purpose-built for this: it wraps [`test`](./commands/test.md) with CI-friendly annotations, a markdown summary, machine-readable output, and exit-code control via `--fail-on`.
+The [`ci`](./commands/ci.md) command is purpose-built for pipelines: it wraps [`test`](./commands/test.md) with CI-friendly annotations, a markdown summary, machine-readable output, and exit-code control via `--fail-on`.
 
-## GitHub Actions (on change and scheduled)
+## GitHub Actions
 
 The quickest route is the ready-made **[datacontract/datacontract-action](https://github.com/datacontract/datacontract-action/)**. To run the CLI directly:
 
@@ -22,9 +22,6 @@ on:
   push:
     branches: [main]
   pull_request:
-  schedule:
-    # Run every day at 06:00 UTC to catch data drift in production
-    - cron: "0 6 * * *"
 
 jobs:
   datacontract-ci:
@@ -42,6 +39,8 @@ jobs:
           DATACONTRACT_POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
 ```
 
+To also run this workflow nightly, add a `schedule` trigger, see [Scheduling](./scheduling/index.md).
+
 ## Azure DevOps
 
 ```yaml
@@ -50,13 +49,6 @@ trigger:
   branches:
     include:
       - main
-
-schedules:
-  - cron: "0 6 * * *"
-    displayName: Daily data contract tests
-    branches:
-      include: [main]
-    always: true
 
 pool:
   vmImage: "ubuntu-latest"
@@ -71,35 +63,9 @@ steps:
     displayName: "Run data contract tests"
 ```
 
-## Plain cron with Docker
-
-If you don't have a CI system, schedule the Docker image with cron:
-
-```cron
-# Run every day at 06:00 — /etc/crontab or `crontab -e`
-0 6 * * *  docker run --rm -v "/path/to/contracts:/home/datacontract" \
-  -e DATACONTRACT_POSTGRES_USERNAME -e DATACONTRACT_POSTGRES_PASSWORD \
-  datacontract/cli:latest ci datacontract.yaml
-```
-
-## Orchestrators (Airflow, Databricks, …)
-
-Because the CLI is also a [Python library](./python-library.md), you can call it from any orchestrator task:
-
-```python
-from datacontract.data_contract import DataContract
-
-def test_orders_contract():
-    run = DataContract(data_contract_file="orders.odcs.yaml").test()
-    if not run.has_passed():
-        raise RuntimeError("Data contract tests failed")
-```
-
-Wrap this in an Airflow `PythonOperator`, a Databricks job, a Dagster op, or a Prefect task and schedule it with your orchestrator's native scheduler.
-
 ## Controlling failure behavior
 
-Use `--fail-on` to decide when a scheduled run should be marked as failed:
+Use `--fail-on` to decide when a pipeline should be marked as failed:
 
 ```bash
 # Fail the job on errors only (default)
@@ -108,13 +74,13 @@ datacontract ci --fail-on error datacontract.yaml
 # Also fail on warnings
 datacontract ci --fail-on warning datacontract.yaml
 
-# Never fail (e.g. report-only schedules)
+# Never fail (e.g. report-only runs)
 datacontract ci --fail-on never datacontract.yaml
 ```
 
-## Publishing scheduled results
+## Publishing results
 
-A scheduled run tells you whether the data is compliant *today*. Once several contracts run on a schedule, the next question is usually how they behave *over time*, and across teams — which a CI log can't answer. Publish each run to track results centrally:
+Publish each run to track results centrally, over time and across teams:
 
 ```bash
 datacontract ci datacontract.yaml --publish https://api.entropy-data.com/api/test-results
@@ -124,5 +90,6 @@ See [Integrate with Entropy Data](./entropy-data.md).
 
 ## Next steps
 
+- Catch data drift between changes: **[Scheduling](./scheduling/index.md)**, e.g. with the [Airflow provider](./scheduling/airflow.md).
 - Roll this out beyond a single contract: **[Adopting Data Contracts](./best-practices.md)**.
 - Share the current state with your team: `datacontract export html` and the [`catalog`](./commands/catalog.md) command.

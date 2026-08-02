@@ -147,7 +147,7 @@ if not run.has_passed():
 
 ## Next steps
 
-- Keep the tests running automatically: **[Scheduling and CI/CD](./ci-cd.md)** — GitHub Actions, Azure DevOps, cron, and orchestrators.
+- Keep the tests running automatically: **[CI/CD](./ci-cd.md)** (GitHub Actions, Azure DevOps) and **[Scheduling](./scheduling/index.md)** (Airflow, cron, orchestrators).
 - Roll data contracts out across a team: **[Adopting Data Contracts](./best-practices.md)**.
 - Browse everything the CLI can do: **[Commands](./commands/index.md)**.
 
