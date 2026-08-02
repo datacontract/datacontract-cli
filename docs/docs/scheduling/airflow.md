@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 title: "Apache Airflow"
 description: "Set up the Data Contract Provider for Apache Airflow: run datacontract test as a DAG task, manage credentials via connections, branch on results, and view them in the Airflow UI."
 ---
@@ -148,7 +148,13 @@ The operator itself fails the task when the run result is `failed` or `error` (a
 
 ## Results in the Airflow UI
 
-On Airflow 3.1+, the provider adds a **Data Contract Results** entry to the navigation. It renders the most recent test runs across all DAGs, collected from XCom: each run expands into a detail view with the contract id and version, server, duration, result counts as clickable filters, a text filter, checks grouped by model, per-check diagnostics and failed samples, and the run logs.
+On Airflow 3.1+, the provider adds a **Data Contract Results** entry to the navigation. It renders the most recent test runs across all DAGs, collected from XCom:
+
+![Data Contract Results view in the Airflow UI, listing recent test runs with result badges and check counts](/img/airflow-results.png)
+
+Each run expands into a detail view with the contract id and version, server, duration, result counts as clickable filters, a text filter, checks grouped by model, per-check diagnostics and failed samples, and the run logs:
+
+![Expanded test run in the Data Contract Results view, showing run metadata and the per-check results grouped by model](/img/airflow-results-details.png)
 
 With `results_web_url` set, the task instance additionally shows a "Test Results" button that deep-links to the published results, e.g. in Entropy Data.
 

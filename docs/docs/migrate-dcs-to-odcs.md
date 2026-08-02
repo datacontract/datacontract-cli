@@ -43,7 +43,7 @@ datacontract changelog datacontract.yaml datacontract.odcs.yaml
 datacontract test datacontract.odcs.yaml
 ```
 
-Once all three pass, delete the DCS file and point your [CI/CD pipeline](./ci-cd.md) at the new
+Once all three pass, delete the DCS file and point your [CI/CD pipeline](./scheduling/index.md) at the new
 one.
 
 ## Three things to fix by hand

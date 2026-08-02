@@ -1,51 +1,48 @@
 ---
 sidebar_position: 1
 title: "Scheduling"
-description: "Run data contract tests on a recurring schedule to detect data drift and quality regressions in production data."
+description: "Run data contract tests continuously: in CI/CD on every change and on a recurring schedule to catch data drift before your consumers do."
 ---
 
 # Scheduling
 
-A test in [CI/CD](../ci-cd.md) tells you a change is safe at the moment it ships. Data can still drift afterwards: an upstream system changes a format, a pipeline stops loading, quality degrades slowly. Running contract tests on a recurring schedule (for example daily) catches these regressions in production data before your consumers do.
+Data contracts deliver the most value when they are checked **continuously**, not just once. The recommended practice is to test contracts in CI/CD on every change and, in addition, to run them on a recurring schedule (for example daily) so you detect data drift and quality regressions in production data over time.
 
-## Apache Airflow
+The [`ci`](../commands/ci.md) command is purpose-built for automated runs: it wraps [`test`](../commands/test.md) with CI-friendly annotations, a markdown summary, machine-readable output, and exit-code control via `--fail-on`.
 
-If you run Airflow, use the **[Data Contract Provider for Apache Airflow](./airflow.md)**. It ships a `DataContractTestOperator` that runs the tests as a task, fails the task when the contract is violated, resolves credentials through Airflow connections, pushes the full run report to XCom, and adds a results view to the Airflow UI.
+Two setups are covered in detail:
 
-```python
-from datetime import datetime
-from airflow.sdk import dag
-from datacontract_provider.operators.datacontract import DataContractTestOperator
+- **[GitHub Actions](./github-actions.md)**: test contracts in pull requests and on a cron schedule with the same workflow.
+- **[Apache Airflow](./airflow.md)**: run tests as DAG tasks with the Data Contract provider, including credentials via connections, XCom results, and a results view in the Airflow UI.
 
-
-@dag(schedule="0 2 * * *", start_date=datetime(2026, 1, 1), catchup=False)
-def nightly_datacontract_test():
-    DataContractTestOperator(
-        task_id="test_orders_contract",
-        data_contract_file="https://demo.datacontract.com/orders-latest/datacontract.yaml",
-        server="production",
-    )
-
-
-nightly_datacontract_test()
-```
-
-See the full guide: **[Apache Airflow](./airflow.md)**.
-
-## Scheduled CI pipelines
-
-CI systems can run pipelines on a cron schedule, so the same pipeline that tests contracts on every change can also run nightly. In GitHub Actions, add a `schedule` trigger to the workflow from the [CI/CD guide](../ci-cd.md):
+## Azure DevOps
 
 ```yaml
-on:
-  push:
-    branches: [main]
-  schedule:
-    # Run every day at 06:00 UTC to catch data drift in production
-    - cron: "0 6 * * *"
-```
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+      - main
 
-Azure DevOps has the same concept with the `schedules` keyword. The [`ci`](../commands/ci.md) command's `--fail-on` option controls when a scheduled run is marked as failed, e.g. `--fail-on never` for report-only schedules.
+schedules:
+  - cron: "0 6 * * *"
+    displayName: Daily data contract tests
+    branches:
+      include: [main]
+    always: true
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.11"
+  - script: pip install datacontract-cli
+    displayName: "Install datacontract-cli"
+  - script: datacontract ci datacontract.yaml
+    displayName: "Run data contract tests"
+```
 
 ## Plain cron with Docker
 
@@ -71,20 +68,34 @@ def test_orders_contract():
         raise RuntimeError("Data contract tests failed")
 ```
 
-Wrap this in a Databricks job, a Dagster op, or a Prefect task and schedule it with the orchestrator's native scheduler.
+Wrap this in a Databricks job, a Dagster op, or a Prefect task and schedule it with the orchestrator's native scheduler. For Airflow, prefer the [provider](./airflow.md).
 
-## Publishing scheduled results
+## Controlling failure behavior
 
-A scheduled run tells you whether the data is compliant *today*. Once several contracts run on a schedule, the next question is usually how they behave *over time*, and across teams. Publish each run to track results centrally:
+Use `--fail-on` to decide when a run should be marked as failed:
+
+```bash
+# Fail the job on errors only (default)
+datacontract ci --fail-on error datacontract.yaml
+
+# Also fail on warnings
+datacontract ci --fail-on warning datacontract.yaml
+
+# Never fail (e.g. report-only schedules)
+datacontract ci --fail-on never datacontract.yaml
+```
+
+## Publishing results
+
+A run tells you whether the data is compliant *today*. Once several contracts run on a schedule, the next question is usually how they behave *over time*, and across teams. Publish each run to track results centrally:
 
 ```bash
 datacontract ci datacontract.yaml --publish https://api.entropy-data.com/api/test-results
 ```
 
-The Airflow provider publishes automatically when an Entropy Data connection is configured. See [Integrate with Entropy Data](../entropy-data.md).
+The [Airflow provider](./airflow.md) publishes automatically when an Entropy Data connection is configured. See [Integrate with Entropy Data](../entropy-data.md).
 
 ## Next steps
 
-- Set up the Airflow provider: **[Apache Airflow](./airflow.md)**.
-- Test on every change, too: **[CI/CD](../ci-cd.md)**.
 - Roll this out beyond a single contract: **[Adopting Data Contracts](../best-practices.md)**.
+- Share the current state with your team: `datacontract export html` and the [`catalog`](../commands/catalog.md) command.

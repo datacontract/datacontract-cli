@@ -70,7 +70,7 @@ Actual duplicate_count(customer_id) was 1, expected = 0
 invalid_count(order_total) was 1, expected = 0
 ```
 
-The command exits with code `1`, so the same call works as a gate in [CI/CD pipelines](../ci-cd.md).
+The command exits with code `1`, so the same call works as a gate in [CI/CD pipelines](../scheduling/index.md).
 
 ## Reference
 

@@ -75,7 +75,7 @@ Follow the copy-paste guide for your data source, including credentials setup an
 - **[Postgres](./testing/postgres.md)**, **[Amazon S3](./testing/s3.md)**, and [15+ other sources](./testing/index.md)
 - **[Local files](./testing/local.md)** — no warehouse or credentials needed, works offline
 
-Each guide ends with the same payoff: tighten an expectation, rerun `datacontract test`, and watch the contract catch the violation with exit code `1` — the exact behavior you'll later use [in CI/CD](./ci-cd.md).
+Each guide ends with the same payoff: tighten an expectation, rerun `datacontract test`, and watch the contract catch the violation with exit code `1` — the exact behavior you'll later use [in CI/CD](./scheduling/github-actions.md).
 
 ## Export to another format
 
@@ -147,7 +147,7 @@ if not run.has_passed():
 
 ## Next steps
 
-- Keep the tests running automatically: **[CI/CD](./ci-cd.md)** (GitHub Actions, Azure DevOps) and **[Scheduling](./scheduling/index.md)** (Airflow, cron, orchestrators).
+- Keep the tests running automatically: **[Scheduling](./scheduling/index.md)** with GitHub Actions, Airflow, cron, or your orchestrator.
 - Roll data contracts out across a team: **[Adopting Data Contracts](./best-practices.md)**.
 - Browse everything the CLI can do: **[Commands](./commands/index.md)**.
 

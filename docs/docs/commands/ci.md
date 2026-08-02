@@ -36,4 +36,4 @@ datacontract ci [OPTIONS] [LOCATIONS]...
 datacontract ci datacontract.yaml --output test-results.xml --output-format junit
 ```
 
-Guide: **[CI/CD](../ci-cd.md)**.
+Guide: **[Scheduling](../scheduling/index.md)**.

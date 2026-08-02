@@ -150,7 +150,6 @@ const config: Config = {
           'quality-rules/*.md',
           'service-levels.md',
           'semantics.md',
-          'ci-cd.md',
           'scheduling/index.md',
           'scheduling/*.md',
           'dbt.md',
