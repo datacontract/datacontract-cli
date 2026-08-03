@@ -79,7 +79,7 @@ if not run.has_passed():
 
 Raising marks the task failed, which is what you want for a quality gate between two steps of a Databricks Workflow. To record results instead of stopping the pipeline, inspect `run.checks` and write them somewhere, or [publish them](./entropy-data.md).
 
-For scheduling this outside Databricks, see [Scheduling and CI/CD](./ci-cd.md).
+For scheduling this outside Databricks, see [Scheduling](./scheduling/index.md).
 
 ## Which extra do I want?
 

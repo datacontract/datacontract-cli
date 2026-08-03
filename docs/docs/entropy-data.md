@@ -22,7 +22,7 @@ datacontract test https://demo.entropy-data.com/demo279750347121/datacontracts/4
   --publish https://api.entropy-data.com/api/test-results
 ```
 
-The same `--publish` option is available on [`ci`](./commands/ci.md) and [`dbt sync`](./commands/dbt/sync.md), so you can report results from CI/CD and scheduled runs — see [Scheduling and CI/CD](./ci-cd.md).
+The same `--publish` option is available on [`ci`](./commands/ci.md) and [`dbt sync`](./commands/dbt/sync.md), so you can report results from CI/CD and scheduled runs — see [Scheduling](./scheduling/index.md).
 
 ## Publish the contract
 

@@ -26,6 +26,9 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Fixed
+- `datacontract test` for Databricks no longer creates ibis's memtable staging volume, so read-only service principals without `CREATE VOLUME` permission can run tests
+
 ## 1.0.17 — 2026-08-01 {#v1-0-17}
 
 ### Deprecated

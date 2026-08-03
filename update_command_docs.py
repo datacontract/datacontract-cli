@@ -55,7 +55,7 @@ GUIDES = {
     "test": ("Test your Data", "../testing/index.md"),
     "dbt": ("Sync with dbt", "../dbt.md"),
     "edit": ("Edit your Contract", "../editor.md"),
-    "ci": ("Scheduling and CI/CD", "../ci-cd.md"),
+    "ci": ("Scheduling", "../scheduling/index.md"),
     "api": ("Run as a web server", "../api.md"),
     "publish": ("Publish to Entropy Data", "../entropy-data.md"),
     "lint": ("Open Data Contract Standard", "../open-data-contract-standard.md"),
