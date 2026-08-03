@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `DATACONTRACT_KAFKA_MAX_MESSAGES` limits how many messages `datacontract test` reads from a topic, and `DATACONTRACT_KAFKA_TIMEOUT` how long it waits for one
+
+### Changed
+- `datacontract test` for Kafka no longer needs PySpark or a Java runtime: `datacontract-cli[kafka]` now installs confluent-kafka, fastavro, and DuckDB instead
+- `datacontract-cli[databricks]` and `datacontract-cli[dataframe]` no longer install PySpark, so they can no longer shadow the build a Databricks Runtime or EMR cluster provides; supply your own PySpark for the Spark session these server types take, and `databricks-runtime` is now an alias of `databricks`
+- `datacontract-cli[all]` installs no PySpark at all, and so needs no Java runtime
+- The Docker image ships no JRE and uses a shell-less base image, halving its size (2.47 GB to 1.28 GB)
+- `datacontract import unity` resolves struct and array columns into nested properties without PySpark installed
+- `spark_exporter.to_spark_schema()`, `to_struct_type()`, `to_struct_field()`, and `to_spark_data_type()` return the exporter's own `SparkDataType` instead of `pyspark.sql.types` objects; use `to_spark_dict()` or the new `to_pyspark_schema()` for real PySpark schemas
+- Kafka topics with an Avro union of more than one non-null type are now reported as an error instead of being decoded into a struct of the union's members
+- Kafka messages without a value (compaction tombstones) are skipped instead of being checked as a row of nulls
+
 ### Fixed
+- `datacontract export spark` and `datacontract export great-expectations --engine spark` no longer require PySpark to be installed
+- `spark_exporter.to_spark_dict()` reports which PySpark version lacks a type instead of raising a bare `AttributeError`, e.g. `VariantType` before PySpark 4.0
 - `datacontract test` for Databricks no longer creates ibis's memtable staging volume, so read-only service principals without `CREATE VOLUME` permission can run tests
 
 ## [1.0.17] - 2026-08-01

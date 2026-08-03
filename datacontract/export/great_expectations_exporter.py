@@ -194,7 +194,7 @@ def add_field_expectations(
         if engine == GreatExpectationsEngine.spark.value:
             from datacontract.export.spark_exporter import to_spark_data_type
 
-            field_type = to_spark_data_type(prop).__class__.__name__
+            field_type = to_spark_data_type(prop).name
         elif engine == GreatExpectationsEngine.pandas.value:
             from datacontract.export.pandas_type_converter import convert_to_pandas_type
 

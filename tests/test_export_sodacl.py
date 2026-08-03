@@ -1,6 +1,9 @@
-import yaml
+import logging
 
-from datacontract.export.sodacl_check_builder import _retention_value_to_seconds
+import yaml
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+
+from datacontract.export.sodacl_check_builder import _retention_value_to_seconds, check_property_type, create_checks
 from datacontract.export.sodacl_exporter import SodaExporter
 from datacontract.lint.resolve import resolve_data_contract_from_location
 
@@ -127,3 +130,33 @@ def test_retention_value_to_seconds_iso8601():
 def test_retention_value_to_seconds_none():
     """Test _retention_value_to_seconds with None value."""
     assert _retention_value_to_seconds(None, None) is None
+
+
+def test_check_property_type_refuses_none_expected_type(caplog):
+    """If expected_type is None, check_property_type should log a warning and return None."""
+    with caplog.at_level(logging.WARNING, logger="datacontract.export.sodacl_check_builder"):
+        result = check_property_type("model", "field", None)
+    assert result is None
+    assert any("None" in r.message and "field" in r.message for r in caplog.records)
+
+
+def test_create_checks_uses_unmapped_physical_type_verbatim(caplog):
+    """An unmapped physicalType is used verbatim in the SodaCL check with a warning."""
+    contract = OpenDataContractStandard(
+        version="1.0.0",
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="t",
+        name="t",
+    )
+    schema = SchemaObject(name="m")
+    schema.properties = [SchemaProperty(name="f", physicalType="UnknownType", logicalType="string")]
+    contract.schema_ = [schema]
+    server = Server(server="s", type="databricks")
+    with caplog.at_level(logging.WARNING, logger="datacontract.export.sql_type_converter"):
+        checks = create_checks(contract, server)
+    type_checks = [c for c in checks if c.type == "field_type"]
+    assert len(type_checks) == 1, "Type check should be emitted with verbatim physicalType"
+    assert "UnknownType" in type_checks[0].implementation
+    # Warning logged so users notice the dialect can't translate the type.
+    assert any("UnknownType" in r.message for r in caplog.records)

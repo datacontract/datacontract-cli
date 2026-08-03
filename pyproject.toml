@@ -57,35 +57,32 @@ excel = [
 ]
 
 
-# The dataframe server type runs against a caller-provided Spark session, so it
-# only needs the ibis pyspark backend. pyspark itself is included for standalone
-# use; in a Spark runtime (Databricks, EMR) it is already present and the
-# resolver keeps the existing version.
-dataframe = [
-  "ibis-framework[pyspark]>=10.0.0,<13.0.0",
-  "pyspark>=3.5.0,<5.0.0",
-]
-
-databricks = [
-  "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
-  "databricks-sql-connector>=3.7.0,<4.5.0",
-  "databricks-sdk<0.123.0",
-  # Not capped to Spark 3.5.x like older builds were: the databricks path uses a
-  # caller-provided Spark session (or the databricks SQL connector) and never
-  # loads the Kafka/Avro connector jars, so it isn't tied to a Scala/Spark line.
-  "pyspark>=3.5.0,<5.0.0",
-]
-
-# `databricks` for installing *inside* a Databricks Runtime: identical, minus
-# pyspark. The cluster already provides Spark, and letting pip pull its own
-# pyspark shadows the runtime's build. ibis ships the pyspark backend module in
-# the base wheel and only declares the pyspark dependency behind its `pyspark`
-# extra, so `ibis.pyspark.connect(session=spark)` still works against the
-# cluster's session without it.
+# The dataframe server type runs against a Spark session the caller passes to
+# `DataContract(spark=...)`, so pyspark is necessarily importable in that process
+# already. Declaring it here would only risk pip shadowing the build a Spark
+# runtime (Databricks, EMR) provides, so it is left to the caller.
 #
-# Deliberately not part of `all`: that includes `databricks` and `dataframe`,
-# which both pin pyspark, so the two cannot be resolved together.
-databricks-runtime = [
+# ibis ships the pyspark backend module in its base wheel but declares that
+# backend's dependencies behind its `pyspark` extra, so what is listed here is
+# that extra minus pyspark itself.
+dataframe = [
+  "ibis-framework>=10.0.0,<13.0.0",
+  "numpy>=1.23.2,<3",
+  "packaging>=21.3,<27.0",
+  "pandas>=1.5.3,<4",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "rich>=12.4.4",
+]
+
+# No pyspark: the SQL-connector path never needs it, and the Spark path runs
+# against a session the caller passes to `DataContract(spark=...)` — which they
+# cannot have built without pyspark already importable. Declaring it here only
+# risks pip shadowing the build a Databricks Runtime or EMR cluster provides.
+# ibis ships the pyspark backend module in its base wheel and declares the
+# pyspark dependency only behind its `pyspark` extra, so
+# `ibis.pyspark.connect(session=spark)` still works against that session.
+databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.5.0",
   "databricks-sdk<0.123.0",
@@ -94,18 +91,26 @@ databricks-runtime = [
   "packaging>=21.3,<27.0",
 ]
 
+# Kept as an alias of `databricks`, which no longer installs pyspark either.
+# Existing `datacontract-cli[databricks-runtime]` installs keep working.
+databricks-runtime = [
+  "datacontract-cli[databricks]",
+]
+
 iceberg = [
   "pyiceberg==0.11.1"
 ]
 
+# Kafka needs no JVM: the topic is consumed with confluent-kafka, decoded in
+# Python, and checked in DuckDB (see engines/ibis/connections/kafka.py).
 kafka = [
-  "datacontract-cli[avro]",
-  "ibis-framework[pyspark]>=10.0.0,<13.0.0",
-  # kafka.py derives the Kafka/Avro connector jar coordinates (Spark version and
-  # Scala binary version) from the installed pyspark at runtime, so both 3.5.x
-  # (Scala 2.12) and 4.x (Scala 2.13) work. ibis-framework[pyspark] currently
-  # caps pyspark to <4.1, so this resolves to the 4.0.x line.
-  "pyspark>=3.5.0,<5.0.0",
+  "datacontract-cli[duckdb,parquet]",
+  "confluent-kafka>=2.6.0,<3.0.0",
+  # fastavro rather than the `avro` reference implementation the avro importer
+  # uses: schemaless_reader decodes a bare message against the writer schema,
+  # which is exactly the operation here, and it is an order of magnitude faster
+  # per message.
+  "fastavro>=1.9.7,<2.0.0",
 ]
 
 # MySQL is tested through DuckDB's `mysql` extension (ATTACH), not ibis's
@@ -223,7 +228,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version

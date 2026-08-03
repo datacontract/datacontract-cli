@@ -11,21 +11,19 @@ Running the CLI **inside** Databricks is different from running it against Datab
 
 If you are connecting to Databricks *from outside*, you want the [Databricks connection guide](./testing/databricks.md) instead.
 
-## Install the `databricks-runtime` extra
+## Install the `databricks` extra
 
 ```bash
-pip install 'datacontract-cli[databricks-runtime]'
+pip install 'datacontract-cli[databricks]'
 ```
 
-`databricks-runtime` is the `databricks` extra **minus PySpark**. That difference matters: the regular `databricks` extra declares `pyspark>=3.5.0,<5.0.0`, so pip is free to install PySpark 4.x on top of a cluster whose runtime ships 3.5.x. The installed copy then shadows the runtime's, and Spark breaks in ways that are hard to trace back to the install.
+The extra installs no PySpark of its own, so it cannot shadow the build your cluster ships. It contains the Databricks SQL connector and SDK as well, so the SQL-warehouse path keeps working if you use it from the same notebook.
 
-The extra still contains the Databricks SQL connector and SDK, so the SQL-warehouse path keeps working if you use it from the same notebook.
+`databricks-runtime` still resolves, as an alias of `databricks`. It used to be the way to get the same set without PySpark; nothing needs the distinction now.
 
 :::tip[Install it as a cluster library, not with `%pip`]
-On the Databricks LTS ML runtimes (15.4, 16.4), `%pip install` inside a notebook can fail or leave the environment inconsistent. Add `datacontract-cli[databricks-runtime]` as a **PyPI library** on the cluster instead — Compute → your cluster → Libraries → Install new → PyPI — then restart the cluster.
+On the Databricks LTS ML runtimes (15.4, 16.4), `%pip install` inside a notebook can fail or leave the environment inconsistent. Add `datacontract-cli[databricks]` as a **PyPI library** on the cluster instead — Compute → your cluster → Libraries → Install new → PyPI — then restart the cluster.
 :::
-
-`databricks-runtime` is deliberately **not** part of the `all` extra: `all` pulls in `databricks` and `dataframe`, which both pin PySpark, so the two cannot be installed together. Ask for it by name.
 
 ## Test a table in a notebook
 
@@ -80,13 +78,6 @@ if not run.has_passed():
 Raising marks the task failed, which is what you want for a quality gate between two steps of a Databricks Workflow. To record results instead of stopping the pipeline, inspect `run.checks` and write them somewhere, or [publish them](./entropy-data.md).
 
 For scheduling this outside Databricks, see [Scheduling](./scheduling/index.md).
-
-## Which extra do I want?
-
-| Where the CLI runs | Extra | Why |
-|---|---|---|
-| Inside a Databricks notebook or job | `databricks-runtime` | The cluster provides Spark; installing another copy shadows it. |
-| Your laptop or CI, against a SQL warehouse | `databricks` | Nothing provides Spark, so the CLI brings its own. |
 
 ## Learn more
 

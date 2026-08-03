@@ -2,10 +2,11 @@
 
 Replaces the per-source soda configuration builders. Each branch maps the
 ``Server`` fields and the same ``DATACONTRACT_*`` environment variables the soda
-connections used onto an ``ibis.<backend>.connect(...)`` call. File sources
-reuse the DuckDB view builder (``duckdb_connection.py``) and Spark sources reuse
-the Spark/Kafka helpers (``kafka.py``), wrapping the resulting connection/session
-with the ibis duckdb / pyspark backend.
+connections used onto an ``ibis.<backend>.connect(...)`` call. File sources reuse
+the DuckDB view builder (``duckdb_connection.py``) and Kafka reuses the topic
+reader (``kafka.py``), which likewise loads its messages into DuckDB; both are
+wrapped with the ibis duckdb backend. Only the Spark-session server types
+(``dataframe``, ``databricks``) use the ibis pyspark backend.
 """
 
 from __future__ import annotations
@@ -73,12 +74,11 @@ def connect_ibis(
         return ibis.duckdb.from_connection(con)
 
     if server_type == "kafka":
-        from datacontract.engines.ibis.connections.kafka import create_spark_session, read_kafka_topic
+        from datacontract.engines.ibis.connections.kafka import read_kafka_topic
 
-        if spark is None:
-            spark = create_spark_session()
-        read_kafka_topic(spark, data_contract, server, config)
-        return ibis.pyspark.connect(session=spark)
+        run.log_info(f"Connecting to kafka {server.format} via duckdb")
+        con = read_kafka_topic(data_contract, server, run, config, duckdb_connection)
+        return ibis.duckdb.from_connection(con)
 
     if server_type == "dataframe":
         if spark is None:

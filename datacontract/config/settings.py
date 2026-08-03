@@ -153,6 +153,8 @@ class Config(BaseSettings):
     kafka_schema_registry_url: str | None = None
     kafka_schema_registry_username: str | None = None
     kafka_schema_registry_password: SecretStr | None = None
+    kafka_max_messages: int | None = None
+    kafka_timeout: int | None = None
 
     # mysql
     mysql_username: str | None = None
@@ -557,6 +559,12 @@ class Config(BaseSettings):
 
     def get_kafka_schema_registry_password(self, required: bool = False) -> str | None:
         return self._str_option("kafka_schema_registry_password", required)
+
+    def get_kafka_max_messages(self) -> int | None:
+        return self._int_option("kafka_max_messages")
+
+    def get_kafka_timeout(self) -> int | None:
+        return self._int_option("kafka_timeout")
 
     # --- mysql ---
     def get_mysql_username(self, required: bool = False) -> str | None:
