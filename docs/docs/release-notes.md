@@ -43,6 +43,7 @@ marked as such in the entry.
 - New Snowflake connection options: `DATACONTRACT_SNOWFLAKE_TOKEN`, `DATACONTRACT_SNOWFLAKE_PASSCODE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`, `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_HOST`, `DATACONTRACT_SNOWFLAKE_PORT`
 - Config options to override the server details from the data contract (host, port, database, schema, catalog, project, dataset, account, service name, staging directory) for Postgres, MySQL, SQL Server, Oracle, Redshift, Snowflake, BigQuery, Databricks, Trino, Athena, and Impala, e.g. `DATACONTRACT_POSTGRES_HOST` ([#1076](https://github.com/datacontract/datacontract-cli/issues/1076))
 - Data contract locations now support `s3://` URLs for commands that read contracts, including `lint`, `test`, `export`, `publish`, `changelog`, and `ci`
+- The documentation now supports raw Markdown access by adding a `.md` extension in url ([#1464](https://github.com/datacontract/datacontract-cli/issues/1464))
 
 ### Changed
 - `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning

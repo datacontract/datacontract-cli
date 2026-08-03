@@ -118,6 +118,7 @@ const config: Config = {
   ],
 
   plugins: [
+    'docusaurus-markdown-source-plugin',
     [
       'docusaurus-plugin-llms',
       {
