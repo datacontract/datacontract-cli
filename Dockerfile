@@ -5,7 +5,7 @@
 # tighter CVE patch SLAs than upstream Debian, and `pip` / `uv` installs are
 # proxied through Socket Firewall to block malicious dependencies at build time.
 # Requires `docker login dhi.io` with a Docker Hub account that has DHI access.
-FROM dhi.io/python:3.11-debian13-sfw-dev AS builder
+FROM dhi.io/python:3.13-debian13-sfw-dev AS builder
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -31,7 +31,7 @@ RUN sfw uv pip install --no-cache-dir ".[all]"
 # ---------- Runtime ----------
 # The minimal DHI variant: no shell, no package manager, no perl. Nothing in
 # `.[all]` shells out.
-FROM dhi.io/python:3.11-debian13 AS runtime
+FROM dhi.io/python:3.13-debian13 AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
