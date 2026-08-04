@@ -3,3 +3,49 @@ plugins:
 markdown: kramdown
 name: "Data Contract CLI"
 title: null
+
+# GitHub Pages builds this site with Jekyll from the repository root, so Jekyll
+# walks the whole repo — not just the files meant to be a website. Any file with
+# YAML front matter gets rendered through _layouts/default.html and published.
+#
+# Docusaurus page files under docs/docs/ open with `---\ntitle: …\n---`, which is
+# valid Jekyll front matter, so every one of the 199 doc pages was being rendered
+# a second time here (e.g. /docs/docs/imports/adls.html), each self-canonicalising
+# to cli.datacontract.com and listed in this site's sitemap.xml. That duplicated
+# the entire docs.datacontract.com content set onto a second domain, competing
+# with it on identical titles. The same walk also published the Jinja templates
+# under datacontract/templates/, test fixtures, and the internal AGENTS/CLAUDE
+# instruction files.
+#
+# Only README.md (the landing page) and _layouts/ should feed this site.
+#
+# NOTE: setting `exclude` REPLACES Jekyll's default list rather than extending
+# it, so the defaults worth keeping (node_modules, Gemfile, vendor/) are repeated
+# here. Paths starting with `.` or `_` are filtered by a separate mechanism and
+# stay excluded regardless — `_layouts/` is a Jekyll special directory and must
+# NOT be listed.
+exclude:
+  # The Docusaurus site — built and deployed separately to docs.datacontract.com.
+  - docs/
+  # The Python package: Jinja HTML templates for `datacontract export --format html`
+  # and the bundled editor assets are not web pages.
+  - datacontract/
+  - tests/
+  - examples/
+  # Internal or duplicated root documents. CHANGELOG.md is republished as
+  # docs.datacontract.com/release-notes, API.md as docs.datacontract.com/api.
+  - AGENTS.md
+  - API.md
+  - CHANGELOG.md
+  - CLAUDE.md
+  # Build artefacts (gitignored, so local builds only).
+  - build/
+  - datacontract_cli.egg-info/
+  # Jekyll defaults, restored because `exclude` overrides rather than extends.
+  - node_modules
+  - Gemfile
+  - Gemfile.lock
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
