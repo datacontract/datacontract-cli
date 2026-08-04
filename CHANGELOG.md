@@ -12,6 +12,7 @@ This removes the JVM dependency, makes the images much, much smaller (Docker ima
 
 ### Added
 - `DATACONTRACT_KAFKA_MAX_MESSAGES` limits how many messages `datacontract test` reads from a topic, and `DATACONTRACT_KAFKA_TIMEOUT` how long it waits for one
+- Released Docker images are signed with cosign keyless signing, on Docker Hub and the Amazon ECR Public mirror; see [Installation](https://docs.datacontract.com/installation#verifying-the-image) for how to verify them
 
 ### Changed
 - `datacontract test` for Kafka no longer needs PySpark or a Java runtime: `datacontract-cli[kafka]` now installs confluent-kafka, fastavro, and DuckDB instead
