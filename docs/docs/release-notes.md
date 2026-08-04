@@ -27,7 +27,7 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Added
-- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection
+- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection ([#1482](https://github.com/datacontract/datacontract-cli/issues/1482))
 
 ## 1.1.0 — 2026-08-04 {#v1-1-0}
 
