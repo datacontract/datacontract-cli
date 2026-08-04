@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased - targeting for 1.1.0]
 
 This release drops the pyspark compile-time dependency. The server types `dataframe` and `databricks` still work with a provided Spark session.
-This removes the JVM dependency, makes the images much, much smaller (Docker image from 777 GB to 277 GB), and many CVEs are resolved.
+This removes the JVM dependency, makes the images much, much smaller (Docker image from 777 MB to 277 MB), and many CVEs are resolved.
 
 ### Added
 - `DATACONTRACT_KAFKA_MAX_MESSAGES` limits how many messages `datacontract test` reads from a topic, and `DATACONTRACT_KAFKA_TIMEOUT` how long it waits for one
