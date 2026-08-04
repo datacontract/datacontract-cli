@@ -92,8 +92,8 @@ Available extras:
 | Google BigQuery | `pip install datacontract-cli[bigquery]` |
 | CSV | `pip install datacontract-cli[csv]` |
 | Databricks integration | `pip install datacontract-cli[databricks]` |
-| Databricks Runtime | `pip install datacontract-cli[databricks-runtime]` (inside Databricks, where the cluster provides PySpark — see [Databricks Notebooks and Jobs](./databricks.md)) |
-| DataFrame (Spark) | `pip install datacontract-cli[dataframe]` |
+| Databricks Runtime | `pip install datacontract-cli[databricks]` (also inside Databricks, using the cluster's own Spark session — see [Databricks Notebooks and Jobs](./databricks.md)) |
+| DataFrame (Spark) | `pip install datacontract-cli[dataframe]` (PySpark not included — you supply the Spark session) |
 | DBML | `pip install datacontract-cli[dbml]` |
 | DuckDB (local file and API response testing) | `pip install datacontract-cli[duckdb]` |
 | Excel | `pip install datacontract-cli[excel]` |

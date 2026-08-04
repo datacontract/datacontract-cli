@@ -14,7 +14,7 @@ Test data in Kafka topics. Kafka support is currently considered **experimental*
 uv tool install --python python3.11 --upgrade 'datacontract-cli[kafka]'
 ```
 
-Kafka checks run on Spark, which requires a **Java runtime (JDK 17 or 21)** — make sure `java` is on the path or `JAVA_HOME` is set. See [Installation](../installation.md) for pip, pipx, and Docker.
+No Java runtime is needed: the topic is consumed and decoded in Python, and the checks run in DuckDB. See [Installation](../installation.md) for pip, pipx, and Docker.
 
 ## 2. Authenticate
 
@@ -84,7 +84,7 @@ All authentication options (SASL mechanisms) and the Avro data type mappings: **
 
 ## Troubleshooting
 
-- **`JAVA_HOME is not set` / `Unable to locate a Java Runtime`** — install a JDK (17 or 21) and set `JAVA_HOME`; the Kafka checks run on Spark.
 - **Authentication failures against Confluent Cloud** — use an API key/secret as `SASL_USERNAME`/`SASL_PASSWORD` with the default `PLAIN` mechanism.
 - **The test reads no messages** — the check consumes the topic from the beginning; verify the topic name in the `servers` block and that the topic contains messages in the declared `format`.
+- **The test runs out of memory on a large topic** — every message is held in memory. Set `DATACONTRACT_KAFKA_MAX_MESSAGES` to check a sample of the topic instead; the run then reports that it read only part of it.
 - **`Cannot decode the Avro messages of the topic`** — the schema used for decoding is not the one the messages were written with. For a topic produced through the Confluent Schema Registry, set `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`; otherwise re-import the contract from the topic's Avro schema with `datacontract import avro`.

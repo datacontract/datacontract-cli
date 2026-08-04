@@ -190,6 +190,8 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL` | `kafka_schema_registry_url` | string |  |
 | `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME` | `kafka_schema_registry_username` | string |  |
 | `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` | `kafka_schema_registry_password` | string (secret) |  |
+| `DATACONTRACT_KAFKA_MAX_MESSAGES` | `kafka_max_messages` | integer |  |
+| `DATACONTRACT_KAFKA_TIMEOUT` | `kafka_timeout` | integer |  |
 
 ### MySQL
 

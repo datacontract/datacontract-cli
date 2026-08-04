@@ -29,31 +29,17 @@ RUN sfw uv pip install --no-cache-dir ".[all]"
 
 
 # ---------- Runtime ----------
-# NOTE: the `-dev` suffix is intentional. In Docker Hardened Images, `-dev`
-# names a hardened production variant that ships bash + coreutils + apt — it is
-# NOT a development-only image. It's signed, ships SBOM/VEX, and is on the same
-# DHI patch SLAs as the minimal variant.
-#
-# We picked `-dev` over the minimal `3.11-debian13` (no shell, no apt) because
-# PySpark's `spark-submit` is a bash script. Without bash, Kafka/Spark engines
-# can't even start. The `-dev` variant adds bash + coreutils + apt at ~60 MB
-# cost. Default user is root; switched to nonroot via the USER directive at
-# the bottom.
-FROM dhi.io/python:3.11-debian13-dev AS runtime
+# The minimal DHI variant: no shell, no package manager, no perl. Nothing in
+# `.[all]` shells out.
+FROM dhi.io/python:3.11-debian13 AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     VIRTUAL_ENV=/opt/venv \
-    JAVA_HOME=/opt/java/openjdk/21-jre \
-    PATH=/opt/venv/bin:/opt/java/openjdk/21-jre/bin:$PATH
+    PATH=/opt/venv/bin:$PATH
 
 # copy the pre-built venv (readable+executable by the nonroot user)
 COPY --from=builder --chown=65532:65532 /opt/venv /opt/venv
-
-# Eclipse Temurin JRE 21 — required by PySpark-backed engines (Kafka, Spark).
-# Spark 4.0 (what `.[all]` resolves to) supports Java 17 and 21. Without Java,
-# those engines fail at SparkSession startup.
-COPY --from=dhi.io/eclipse-temurin:21-debian13 /opt/java/openjdk /opt/java/openjdk
 
 USER nonroot:nonroot
 WORKDIR /home/datacontract

@@ -41,18 +41,6 @@ Install the pre-commit hooks so linting and formatting run on every commit:
 pre-commit install
 ```
 
-### Java (required for the PySpark tests)
-
-Tests that use PySpark — Kafka, Delta, and DataFrame tests, and the Spark importer — need **Java 21**. Set `JAVA_HOME` before running them:
-
-```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)
-
-# or with SDKMAN
-source ~/.sdkman/bin/sdkman-init.sh
-sdk use java 21-open
-```
-
 ## Running the tests
 
 ```bash

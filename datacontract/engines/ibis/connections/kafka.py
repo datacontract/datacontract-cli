@@ -1,100 +1,82 @@
-import atexit
+"""Read a Kafka topic into an in-memory DuckDB database.
+
+The topic is consumed with confluent-kafka, every message is decoded in Python
+(fastavro for Avro, the standard library for JSON), and the records are
+registered as a DuckDB table named after the contract's schema object. From
+there the ibis check engine queries it like any other DuckDB source.
+
+This used to run on Spark: the ``spark-sql-kafka-0-10`` connector did the
+consuming, ``from_avro`` / ``from_json`` the decoding, and the checks ran
+through ``ibis.pyspark`` against a temp view. Nothing about that needed a
+cluster — a CLI run is single-process either way — while pyspark pulled ~320
+JARs and a JDK into every install. The Python stack does the same work with
+wheels only, and no Java.
+
+Two behaviours differ from the Spark implementation, both deliberate:
+
+- Avro unions of more than one non-null type are rejected with an explicit
+  error instead of being decoded into a struct of members.
+- Messages with a null value (compaction tombstones) are skipped rather than
+  decoded into a row of nulls.
+"""
+
+from __future__ import annotations
+
+import io
+import json
 import logging
-import os
-import tempfile
-from typing import List, Optional
+import time
+import uuid
+from typing import Any, List, Optional, Tuple
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.config import Config
 from datacontract.export.avro_exporter import to_avro_schema_json
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import ResultEnum
+from datacontract.model.run import ResultEnum, Run
+
+logger = logging.getLogger(__name__)
+
+# Messages serialized through the Confluent Schema Registry are framed with a 5-byte
+# prefix: magic byte 0x00 followed by the 4-byte big-endian id of the schema they were
+# written with. Plain Avro messages carry no such prefix.
+_CONFLUENT_MAGIC_BYTE = 0x00
+_CONFLUENT_PREFIX_LENGTH = 5
+
+# Consuming stops once every partition reports EOF, so this only bounds the wait
+# for a broker that accepts the connection but never answers. It is an *idle*
+# timeout: it resets on every message, so a slow but progressing read is never cut off.
+_DEFAULT_TIMEOUT_SECONDS = 30
+
+# Timeout for the metadata and watermark-offset lookups that precede the read.
+_METADATA_TIMEOUT_SECONDS = 30
+
+_SASL_MECHANISMS = ("PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512")
 
 
-def _scala_binary_version() -> str:
-    """Return the Scala binary version the installed PySpark was built against.
-
-    The bundled ``spark-core_<scala>-<version>.jar`` is the source of truth; if
-    it can't be located, fall back to the Spark major version (4.x ships Scala
-    2.13, earlier lines ship 2.12).
-    """
-    import pyspark
-
-    jars_dir = os.path.join(os.path.dirname(pyspark.__file__), "jars")
+def _import(module: str):
     try:
-        for name in os.listdir(jars_dir):
-            if name.startswith("spark-core_") and name.endswith(".jar"):
-                # spark-core_<scala>-<version>.jar
-                return name[len("spark-core_") :].split("-", 1)[0]
-    except OSError:
-        pass
-    major = int(pyspark.__version__.split(".", 1)[0])
-    return "2.13" if major >= 4 else "2.12"
-
-
-def spark_connector_packages() -> str:
-    """Maven coordinates for the Kafka and Avro Spark connectors.
-
-    Derived from the installed PySpark runtime so the fetched JARs always match
-    the running Spark version and its Scala binary version. Resolving these
-    against a mismatched runtime (e.g. 3.5 JARs on a Spark 4 / Scala 2.13
-    runtime) fails at session startup.
-    """
-    import pyspark
-
-    spark_version = pyspark.__version__
-    scala_version = _scala_binary_version()
-    return (
-        f"org.apache.spark:spark-sql-kafka-0-10_{scala_version}:{spark_version},"
-        f"org.apache.spark:spark-avro_{scala_version}:{spark_version}"
-    )
-
-
-def create_spark_session():
-    """Create and configure a Spark session."""
-
-    try:
-        from pyspark.sql import SparkSession
+        return __import__(module, fromlist=["_"])
     except ImportError as e:
         raise DataContractException(
             type="schema",
             result=ResultEnum.failed,
-            name="pyspark is missing",
+            name=f"{module} is missing",
             reason="Install the extra datacontract-cli[kafka] to use kafka",
             engine="datacontract",
             original_exception=e,
         )
 
-    tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract-cli-spark")
-    atexit.register(tmp_dir.cleanup)
 
-    # Make Spark's Python workers use the same interpreter as the driver. Without
-    # this, PySpark launches workers from the `python3` on PATH, which fails with
-    # PYTHON_VERSION_MISMATCH when it differs from the running interpreter (common
-    # on Python 3.13, where Spark 3.5 isn't available and Spark 4.x is used).
-    import sys
-
-    os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
-    os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
-
-    spark = (
-        SparkSession.builder.appName("datacontract")
-        .config("spark.sql.warehouse.dir", f"{tmp_dir.name}/spark-warehouse")
-        .config("spark.streaming.stopGracefullyOnShutdown", "true")
-        .config("spark.ui.enabled", "false")
-        .config("spark.driver.bindAddress", "127.0.0.1")
-        .config("spark.driver.host", "127.0.0.1")
-        .config("spark.jars.packages", spark_connector_packages())
-        .getOrCreate()
-    )
-    spark.sparkContext.setLogLevel("WARN")
-    print(f"Using PySpark version {spark.version}")
-    return spark
-
-
-def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Server, config: Config | None = None):
-    """Read and process data from a Kafka topic based on the server configuration."""
+def read_kafka_topic(
+    data_contract: OpenDataContractStandard,
+    server: Server,
+    run: Run | None = None,
+    config: Config | None = None,
+    duckdb_connection=None,
+):
+    """Consume a Kafka topic and return a DuckDB connection holding its messages."""
     config = Config.resolve(config)
 
     if not data_contract.schema_ or len(data_contract.schema_) == 0:
@@ -110,132 +92,267 @@ def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Ser
     model_name = schema_obj.name
     topic = schema_obj.physicalName or schema_obj.name
 
-    logging.info("Reading data from Kafka server %s topic %s", server.host, topic)
-    df = (
-        spark.read.format("kafka")
-        .options(**get_auth_options(config))
-        .option("kafka.bootstrap.servers", server.host)
-        .option("subscribe", topic)
-        .option("startingOffsets", "earliest")
-        .load()
-    )
-
-    match server.format:
-        case "avro":
-            process_avro_format(df, model_name, schema_obj, config)
-        case "json":
-            process_json_format(df, model_name, schema_obj)
-        case _:
-            raise DataContractException(
-                type="test",
-                name="Configuring Kafka checks",
-                result="warning",
-                reason=f"Kafka format '{server.format}' is not supported. Skip executing tests.",
-                engine="datacontract",
-            )
-
-
-# Messages serialized through the Confluent Schema Registry are framed with a 5-byte
-# prefix: magic byte 0x00 followed by the 4-byte big-endian id of the schema they were
-# written with. Plain Avro messages carry no such prefix.
-_IS_CONFLUENT_FRAMED = "substring(value, 1, 1) = X'00'"
-
-
-def process_avro_format(df, model_name: str, schema_obj: SchemaObject, config: Config | None = None):
-    try:
-        from pyspark.sql.avro.functions import from_avro
-        from pyspark.sql.functions import col, expr
-    except ImportError as e:
+    if server.format not in ("avro", "json"):
         raise DataContractException(
-            type="schema",
-            result="failed",
-            name="pyspark is missing",
-            reason="Install the extra datacontract-cli[kafka] to use kafka",
+            type="test",
+            name="Configuring Kafka checks",
+            result="warning",
+            reason=f"Kafka format '{server.format}' is not supported. Skip executing tests.",
             engine="datacontract",
-            original_exception=e,
         )
 
-    contract_schema = to_avro_schema_json(model_name, schema_obj)
-    # Strip the Confluent prefix only when the magic byte is present; otherwise
-    # stripping 5 bytes would corrupt every plain Avro record (#1344).
-    framed = df.withColumn(
-        "fixedValue",
-        expr(f"CASE WHEN {_IS_CONFLUENT_FRAMED} THEN substring(value, 6, length(value)-5) ELSE value END"),
-    ).withColumn(
-        "schemaId",
-        expr(f"CASE WHEN {_IS_CONFLUENT_FRAMED} THEN conv(hex(substring(value, 2, 4)), 16, 10) END").cast("long"),
-    )
+    logger.info("Reading data from Kafka server %s topic %s", server.host, topic)
+    values = consume_topic(topic, server, run, config)
 
+    if server.format == "avro":
+        table = _decode_avro(values, model_name, schema_obj, config)
+    else:
+        table = _decode_json(values, schema_obj)
+
+    duckdb = _import("duckdb")
+    con = duckdb_connection if duckdb_connection is not None else duckdb.connect(database=":memory:")
+    con.register("_datacontract_kafka_messages", table)
+    try:
+        con.sql(
+            f"CREATE OR REPLACE TABLE {_quoted(model_name)} AS SELECT * FROM _datacontract_kafka_messages"  # noqa: S608
+        )
+    finally:
+        con.unregister("_datacontract_kafka_messages")
+    if run is not None:
+        run.log_info(f"Read {table.num_rows} messages from topic {topic} into table {model_name}")
+    return con
+
+
+def _quoted(identifier: str) -> str:
+    """Quote a duckdb identifier, escaping any embedded double quote."""
+    return '"{}"'.format(identifier.replace('"', '""'))
+
+
+# ---------------------------------------------------------------------------
+# consuming
+# ---------------------------------------------------------------------------
+def consume_topic(topic: str, server: Server, run: Run | None, config: Config | None = None) -> List[bytes]:
+    """Read a topic from its earliest to its current latest offset.
+
+    Equivalent to the batch read Spark did with ``startingOffsets=earliest``:
+    the end offsets are resolved once up front, so messages produced while the
+    read is running are not part of the result.
+    """
+    config = Config.resolve(config)
+    confluent_kafka = _import("confluent_kafka")
+    from confluent_kafka import KafkaError, KafkaException, TopicPartition
+
+    max_messages = config.get_kafka_max_messages()
+    idle_timeout = config.get_kafka_timeout() or _DEFAULT_TIMEOUT_SECONDS
+
+    consumer = confluent_kafka.Consumer(_consumer_config(server, config))
+    try:
+        assignments, expected = _resolve_offsets(consumer, topic, server, TopicPartition)
+        if not assignments:
+            return []
+        consumer.assign(assignments)
+
+        limit = min(expected, max_messages) if max_messages else expected
+        values: List[bytes] = []
+        finished: set = set()
+        skipped_tombstones = 0
+        deadline = time.monotonic() + idle_timeout
+
+        while len(values) < limit and len(finished) < len(assignments):
+            message = consumer.poll(1.0)
+            if message is None:
+                if time.monotonic() > deadline:
+                    break
+                continue
+            deadline = time.monotonic() + idle_timeout
+            error = message.error()
+            if error is not None:
+                if error.code() == KafkaError._PARTITION_EOF:
+                    finished.add(message.partition())
+                    continue
+                raise KafkaException(error)
+            if message.value() is None:
+                # A compaction tombstone carries no payload to check.
+                skipped_tombstones += 1
+                continue
+            values.append(message.value())
+
+        if run is not None:
+            if skipped_tombstones:
+                run.log_info(f"Skipped {skipped_tombstones} messages without a value (tombstones)")
+            if max_messages and len(values) >= max_messages and max_messages < expected:
+                run.log_warn(
+                    f"Only the first {len(values)} of {expected} messages in topic {topic} were read, "
+                    f"as limited by DATACONTRACT_KAFKA_MAX_MESSAGES. The checks describe that sample, "
+                    f"not the whole topic."
+                )
+        return values
+    finally:
+        consumer.close()
+
+
+def _resolve_offsets(consumer, topic: str, server: Server, TopicPartition) -> Tuple[list, int]:
+    """Assign every partition of the topic at its earliest offset.
+
+    Returns the assignments and how many messages they span, so the read can
+    stop once the topic has been consumed rather than idling on an open poll.
+    """
+    metadata = consumer.list_topics(topic, timeout=_METADATA_TIMEOUT_SECONDS)
+    topic_metadata = metadata.topics.get(topic)
+    if topic_metadata is None or topic_metadata.error is not None:
+        reason = topic_metadata.error if topic_metadata is not None else "topic not found"
+        raise DataContractException(
+            type="test",
+            name="Configuring Kafka checks",
+            result=ResultEnum.failed,
+            reason=f"Cannot read topic {topic} from the Kafka server {server.host}: {reason}",
+            engine="datacontract",
+        )
+
+    assignments, expected = [], 0
+    for partition in sorted(topic_metadata.partitions):
+        low, high = consumer.get_watermark_offsets(
+            TopicPartition(topic, partition), timeout=_METADATA_TIMEOUT_SECONDS, cached=False
+        )
+        if high > low:
+            assignments.append(TopicPartition(topic, partition, low))
+            expected += high - low
+    return assignments, expected
+
+
+def _consumer_config(server: Server, config: Config) -> dict:
+    """librdkafka settings for a one-off, read-only, non-committing consumer."""
+    settings = {
+        "bootstrap.servers": server.host,
+        # A fresh group id per run, with commits off, so a test run never
+        # interferes with the offsets of a real consumer group.
+        "group.id": f"datacontract-cli-{uuid.uuid4()}",
+        "enable.auto.commit": False,
+        "auto.offset.reset": "earliest",
+        # Report end-of-partition so the read knows when the topic is exhausted.
+        "enable.partition.eof": True,
+    }
+    settings.update(get_auth_options(config))
+    return settings
+
+
+def get_auth_options(config: Config | None = None) -> dict:
+    """Retrieve Kafka authentication options from the config or environment variables."""
+    config = Config.resolve(config)
+    kafka_sasl_username = config.get_kafka_sasl_username()
+    kafka_sasl_password = config.get_kafka_sasl_password()
+    kafka_sasl_mechanism = (config.get_kafka_sasl_mechanism() or "PLAIN").upper()
+
+    # Skip authentication if credentials are not provided
+    if not kafka_sasl_username or not kafka_sasl_password:
+        return {}
+
+    if kafka_sasl_mechanism not in _SASL_MECHANISMS:
+        raise ValueError(f"Unsupported SASL mechanism: {kafka_sasl_mechanism}")
+
+    return {
+        "security.protocol": "SASL_SSL",
+        "sasl.mechanism": kafka_sasl_mechanism,
+        "sasl.username": kafka_sasl_username,
+        "sasl.password": kafka_sasl_password,
+    }
+
+
+# ---------------------------------------------------------------------------
+# avro
+# ---------------------------------------------------------------------------
+def _decode_avro(values: List[bytes], model_name: str, schema_obj: SchemaObject, config: Config | None = None):
+    """Decode Avro messages, each with the schema it was written with."""
+    pa = _import("pyarrow")
+    fastavro = _import("fastavro")
+
+    contract_schema = json.loads(to_avro_schema_json(model_name, schema_obj))
     registry = get_schema_registry_config(config)
-    decoded = None
-    for schema_id, part in _partition_by_writer_schema(framed, registry):
+
+    tables = []
+    for schema_id, payloads in _group_by_writer_schema(values, registry):
         if schema_id is None:
             source, avro_schema = "the data contract", contract_schema
         else:
             source = f"schema id {schema_id} in the schema registry at {registry['url']}"
-            avro_schema = fetch_writer_schema(registry, schema_id)
-        # Avro is positionally encoded, so from_avro must be given the schema the
-        # messages were *written* with, not one that merely looks like it. FAILFAST
-        # surfaces a mismatch as an error; PERMISSIVE would decode every message to a
-        # record with all fields null, which then shows up as missing values on data
-        # that is not null at all (#1347).
-        rows = part.select(from_avro(col("fixedValue"), avro_schema, {"mode": "FAILFAST"}).alias("avro"))
-        _check_messages_are_decodable(rows, source, registry is not None)
-        flat = rows.select(col("avro.*"))
-        decoded = flat if decoded is None else decoded.unionByName(flat, allowMissingColumns=True)
+            avro_schema = json.loads(fetch_writer_schema(registry, schema_id))
 
-    decoded.createOrReplaceTempView(model_name)
+        parsed = fastavro.parse_schema(avro_schema)
+        records = []
+        for payload in payloads:
+            # Avro is positionally encoded, so the messages must be read with the schema
+            # they were *written* with, not one that merely looks like it. Decoding with
+            # the wrong schema either raises or yields records of nulls, which shows up as
+            # missing values on data that is not null at all (#1347).
+            try:
+                records.append(fastavro.schemaless_reader(io.BytesIO(payload), parsed))
+            except Exception as e:
+                raise _undecodable(source, registry is not None, e)
+        tables.append(_records_to_arrow(pa, records, _avro_schema_to_arrow(pa, avro_schema)))
+
+    if not tables:
+        return _records_to_arrow(pa, [], _avro_schema_to_arrow(pa, contract_schema))
+    # A topic whose schema evolved decodes into one table per writer schema;
+    # `permissive` unions them by name, filling in the columns a table lacks.
+    return pa.concat_tables(tables, promote_options="permissive")
 
 
-def _partition_by_writer_schema(framed, registry: Optional[dict]) -> list:
+def _group_by_writer_schema(values: List[bytes], registry: Optional[dict]) -> List[Tuple[Optional[int], List[bytes]]]:
     """Split the messages into groups that share one Avro writer schema.
 
-    Without a schema registry there is only one candidate schema — the one derived from
-    the data contract — so everything stays in a single group (schema id ``None``). With
-    a registry, each distinct schema id in the Confluent prefix forms its own group, so a
-    topic whose schema evolved still decodes.
+    Confluent-framed messages are grouped by the schema id in their prefix, with
+    the prefix stripped; unframed messages form the ``None`` group and are read
+    with the schema derived from the data contract. Stripping the 5 bytes only
+    where the magic byte is present keeps plain Avro records intact (#1344).
     """
-    from pyspark.sql.functions import col
+    groups: dict[Optional[int], List[bytes]] = {}
+    for value in values:
+        if len(value) > _CONFLUENT_PREFIX_LENGTH and value[0] == _CONFLUENT_MAGIC_BYTE:
+            schema_id = int.from_bytes(value[1:_CONFLUENT_PREFIX_LENGTH], "big")
+            payload = value[_CONFLUENT_PREFIX_LENGTH:]
+        else:
+            schema_id, payload = None, value
+        groups.setdefault(schema_id, []).append(payload)
 
-    if registry is None:
-        return [(None, framed)]
-
-    schema_ids = [row[0] for row in framed.select("schemaId").distinct().collect()]
-    schema_ids.sort(key=lambda schema_id: (schema_id is None, schema_id))
-    if not schema_ids:  # empty topic
-        return [(None, framed)]
-    return [
-        (schema_id, framed.filter(col("schemaId").isNull() if schema_id is None else col("schemaId") == schema_id))
-        for schema_id in schema_ids
-    ]
-
-
-def _check_messages_are_decodable(rows, source: str, registry_configured: bool):
-    """Decode the messages eagerly so a schema mismatch is reported as a schema mismatch."""
-    try:
-        rows.write.format("noop").mode("overwrite").save()
-    except Exception as e:
-        hint = (
-            ""
-            if registry_configured
-            else (
-                " If the topic is written through the Confluent Schema Registry, set "
-                "DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL so that the schema the messages were written "
-                "with is read from the registry instead of being derived from the data contract."
-            )
-        )
+    if registry is None and any(schema_id is not None for schema_id in groups):
         raise DataContractException(
             type="test",
             name="Configuring Kafka checks",
             result=ResultEnum.failed,
             reason=(
-                f"Cannot decode the Avro messages of the topic with the schema from {source}. "
-                f"Avro is positionally encoded, so it must be the exact schema the messages "
-                f"were written with.{hint}"
+                "Cannot decode the Avro messages of the topic: they are framed with a Confluent "
+                "Schema Registry schema id, so the schema they were written with is held in the "
+                "registry rather than derivable from the data contract. Set "
+                "DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL so it can be read from there."
             ),
             engine="datacontract",
-            original_exception=e,
         )
+
+    return sorted(groups.items(), key=lambda item: (item[0] is not None, item[0]))
+
+
+def _undecodable(source: str, registry_configured: bool, cause: Exception) -> DataContractException:
+    hint = (
+        ""
+        if registry_configured
+        else (
+            " If the topic is written through the Confluent Schema Registry, set "
+            "DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL so that the schema the messages were written "
+            "with is read from the registry instead of being derived from the data contract."
+        )
+    )
+    return DataContractException(
+        type="test",
+        name="Configuring Kafka checks",
+        result=ResultEnum.failed,
+        reason=(
+            f"Cannot decode the Avro messages of the topic with the schema from {source}. "
+            f"Avro is positionally encoded, so it must be the exact schema the messages "
+            f"were written with.{hint}"
+        ),
+        engine="datacontract",
+        original_exception=cause,
+    )
 
 
 def get_schema_registry_config(config: Config | None = None) -> Optional[dict]:
@@ -285,63 +402,68 @@ def fetch_writer_schema(registry: dict, schema_id: int) -> str:
     return body["schema"]
 
 
-def process_json_format(df, model_name: str, schema_obj: SchemaObject):
+# ---------------------------------------------------------------------------
+# json
+# ---------------------------------------------------------------------------
+def _decode_json(values: List[bytes], schema_obj: SchemaObject):
+    """Decode JSON messages into the column types the data contract declares.
+
+    A message that is not a JSON object becomes a row of nulls rather than an
+    error, matching the permissive mode the Spark reader used: the checks then
+    report it as missing values, which is what it is.
+    """
+    pa = _import("pyarrow")
+
+    records = []
+    for value in values:
+        try:
+            record = json.loads(value.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            record = None
+        records.append(record if isinstance(record, dict) else {})
+
+    return _records_to_arrow(pa, records, to_arrow_schema(pa, schema_obj.properties or []))
+
+
+# ---------------------------------------------------------------------------
+# arrow conversion
+# ---------------------------------------------------------------------------
+def _records_to_arrow(pa, records: List[dict], schema):
+    """Build an arrow table of ``records`` shaped by ``schema``."""
+    arrays = [_arrow_column(pa, [record.get(field.name) for record in records], field.type) for field in schema]
+    return pa.Table.from_arrays(arrays, schema=schema)
+
+
+def _arrow_column(pa, values: List[Any], arrow_type):
+    """Convert a column of decoded values to ``arrow_type``, nulling what does not fit."""
     try:
-        from pyspark.sql.functions import col, from_json
-    except ImportError as e:
-        raise DataContractException(
-            type="schema",
-            result="failed",
-            name="pyspark is missing",
-            reason="Install the extra datacontract-cli[kafka] to use kafka",
-            engine="datacontract",
-            original_exception=e,
-        )
+        return pa.array(values, type=arrow_type)
+    except (pa.ArrowInvalid, pa.ArrowTypeError, pa.ArrowNotImplementedError, ValueError, TypeError, OverflowError):
+        pass
+    try:
+        # Values that need parsing rather than conversion, e.g. an ISO 8601 string
+        # for a field the contract declares as a timestamp.
+        return pa.array(values).cast(arrow_type, safe=False)
+    except (pa.ArrowInvalid, pa.ArrowTypeError, pa.ArrowNotImplementedError, ValueError, TypeError, OverflowError):
+        pass
+    coerced = []
+    for value in values:
+        try:
+            pa.array([value], type=arrow_type)
+            coerced.append(value)
+        except Exception:
+            coerced.append(None)
+    return pa.array(coerced, type=arrow_type)
 
-    struct_type = to_struct_type(schema_obj.properties or [])
-    df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").select(
-        from_json(col("value"), struct_type, {"mode": "PERMISSIVE"}).alias("json")
-    ).select(col("json.*")).createOrReplaceTempView(model_name)
 
+def to_arrow_schema(pa, properties: List[SchemaProperty]):
+    """Arrow schema for the properties a data contract declares.
 
-def get_auth_options(config: Config | None = None):
-    """Retrieve Kafka authentication options from the config or environment variables."""
-    config = Config.resolve(config)
-    kafka_sasl_username = config.get_kafka_sasl_username()
-    kafka_sasl_password = config.get_kafka_sasl_password()
-    kafka_sasl_mechanism = (config.get_kafka_sasl_mechanism() or "PLAIN").upper()
-
-    # Skip authentication if credentials are not provided
-    if not kafka_sasl_username or not kafka_sasl_password:
-        return {}
-
-    # SASL mechanisms supported by Kafka
-    jaas_config = {
-        "PLAIN": (
-            f"org.apache.kafka.common.security.plain.PlainLoginModule required "
-            f'username="{kafka_sasl_username}" password="{kafka_sasl_password}";'
-        ),
-        "SCRAM-SHA-256": (
-            f"org.apache.kafka.common.security.scram.ScramLoginModule required "
-            f'username="{kafka_sasl_username}" password="{kafka_sasl_password}";'
-        ),
-        "SCRAM-SHA-512": (
-            f"org.apache.kafka.common.security.scram.ScramLoginModule required "
-            f'username="{kafka_sasl_username}" password="{kafka_sasl_password}";'
-        ),
-        # Add more mechanisms as needed
-    }
-
-    # Validate SASL mechanism
-    if kafka_sasl_mechanism not in jaas_config:
-        raise ValueError(f"Unsupported SASL mechanism: {kafka_sasl_mechanism}")
-
-    # Return config
-    return {
-        "kafka.sasl.mechanism": kafka_sasl_mechanism,
-        "kafka.security.protocol": "SASL_SSL",
-        "kafka.sasl.jaas.config": jaas_config[kafka_sasl_mechanism],
-    }
+    Every field is nullable: whether a value may be missing is what the required
+    checks report on, so rejecting nulls here would turn a check result into a
+    read error.
+    """
+    return pa.schema([pa.field(prop.name, to_arrow_type(pa, prop), nullable=True) for prop in properties])
 
 
 def _get_type(prop: SchemaProperty) -> Optional[str]:
@@ -353,89 +475,135 @@ def _get_type(prop: SchemaProperty) -> Optional[str]:
     return None
 
 
-def to_struct_type(properties: List[SchemaProperty]):
-    try:
-        from pyspark.sql.types import StructType
-    except ImportError as e:
-        raise DataContractException(
-            type="schema",
-            result="failed",
-            name="pyspark is missing",
-            reason="Install the extra datacontract-cli[kafka] to use kafka",
-            engine="datacontract",
-            original_exception=e,
-        )
-
-    """Convert field definitions to Spark StructType."""
-    return StructType([to_struct_field(prop.name, prop) for prop in properties])
+def _decimal_params(prop: SchemaProperty) -> Tuple[int, int]:
+    options = prop.logicalTypeOptions or {}
+    precision = options.get("precision")
+    scale = options.get("scale")
+    # Wide enough to hold what a contract that says nothing about precision may carry.
+    return int(precision) if precision else 38, int(scale) if scale is not None else 9
 
 
-def to_struct_field(field_name: str, prop: SchemaProperty):
-    try:
-        from pyspark.sql.types import (
-            ArrayType,
-            BinaryType,
-            BooleanType,
-            DataType,
-            DateType,
-            DecimalType,
-            DoubleType,
-            IntegerType,
-            LongType,
-            NullType,
-            StringType,
-            StructField,
-            StructType,
-            TimestampNTZType,
-            TimestampType,
-        )
-    except ImportError as e:
-        raise DataContractException(
-            type="schema",
-            result="failed",
-            name="pyspark is missing",
-            reason="Install the extra datacontract-cli[kafka] to use kafka",
-            engine="datacontract",
-            original_exception=e,
-        )
-
-    """Map field definitions to Spark StructField using match-case."""
-    field_type = _get_type(prop)
-    match field_type:
+def to_arrow_type(pa, prop: SchemaProperty):
+    """Map a data contract property to the arrow type its values are read as."""
+    match _get_type(prop):
         case "string" | "varchar" | "text":
-            data_type = StringType()
+            return pa.string()
         case "number" | "decimal" | "numeric":
-            data_type = DecimalType()
-        case "float" | "double":
-            data_type = DoubleType()
+            return pa.decimal128(*_decimal_params(prop))
+        case "float":
+            return pa.float32()
+        case "double":
+            return pa.float64()
         case "integer" | "int":
-            data_type = IntegerType()
+            return pa.int32()
         case "long" | "bigint":
-            data_type = LongType()
+            return pa.int64()
         case "boolean":
-            data_type = BooleanType()
+            return pa.bool_()
         case "timestamp" | "timestamp_tz":
-            data_type = TimestampType()
+            return pa.timestamp("us", tz="UTC")
         case "timestamp_ntz":
-            data_type = TimestampNTZType()
+            return pa.timestamp("us")
         case "date":
-            data_type = DateType()
+            return pa.date32()
         case "time":
-            data_type = DataType()  # Specific handling for time type
+            return pa.time64("us")
         case "object" | "record" | "struct":
-            nested_props = prop.properties or []
-            data_type = StructType([to_struct_field(p.name, p) for p in nested_props])
+            return pa.struct(to_arrow_schema(pa, prop.properties or []))
         case "binary":
-            data_type = BinaryType()
+            return pa.binary()
         case "array":
-            if prop.items and prop.items.properties:
-                element_type = StructType([to_struct_field(p.name, p) for p in prop.items.properties])
-            else:
-                element_type = DataType()
-            data_type = ArrayType(element_type)
+            items = prop.items
+            if items is None:
+                return pa.list_(pa.string())
+            if items.properties:
+                return pa.list_(pa.struct(to_arrow_schema(pa, items.properties)))
+            return pa.list_(to_arrow_type(pa, items))
         case "null":
-            data_type = NullType()
+            return pa.null()
         case _:
-            data_type = DataType()  # Fallback generic DataType
+            return pa.string()
 
-    return StructField(field_name, data_type, nullable=not prop.required)
+
+_AVRO_PRIMITIVES = {
+    "null": "null",
+    "boolean": "bool_",
+    "int": "int32",
+    "long": "int64",
+    "float": "float32",
+    "double": "float64",
+    "bytes": "binary",
+    "string": "string",
+}
+
+# fastavro decodes these into the Python objects arrow expects for the matching type
+# (datetime, date, time, Decimal), so the mapping is all that is needed.
+_AVRO_LOGICAL_TYPES = {
+    ("int", "date"): lambda pa, t: pa.date32(),
+    ("int", "time-millis"): lambda pa, t: pa.time32("ms"),
+    ("long", "time-micros"): lambda pa, t: pa.time64("us"),
+    ("long", "timestamp-millis"): lambda pa, t: pa.timestamp("ms", tz="UTC"),
+    ("long", "timestamp-micros"): lambda pa, t: pa.timestamp("us", tz="UTC"),
+    ("long", "local-timestamp-millis"): lambda pa, t: pa.timestamp("ms"),
+    ("long", "local-timestamp-micros"): lambda pa, t: pa.timestamp("us"),
+    ("bytes", "decimal"): lambda pa, t: pa.decimal128(t.get("precision", 38), t.get("scale", 0)),
+    ("fixed", "decimal"): lambda pa, t: pa.decimal128(t.get("precision", 38), t.get("scale", 0)),
+}
+
+
+def _avro_schema_to_arrow(pa, avro_schema: dict):
+    return pa.schema(
+        [
+            pa.field(field["name"], _avro_type_to_arrow(pa, field["type"]), nullable=True)
+            for field in avro_schema["fields"]
+        ]
+    )
+
+
+def _avro_type_to_arrow(pa, avro_type):
+    """Map an Avro schema node to the arrow type fastavro decodes it into."""
+    if isinstance(avro_type, list):
+        members = [member for member in avro_type if member != "null"]
+        if not members:
+            return pa.null()
+        if len(members) == 1:
+            return _avro_type_to_arrow(pa, members[0])
+        raise DataContractException(
+            type="test",
+            name="Configuring Kafka checks",
+            result=ResultEnum.failed,
+            reason=(
+                f"Avro unions of more than one non-null type are not supported: {avro_type}. "
+                f"A column has one type, and which of the union's types a message carries is only "
+                f"known per message."
+            ),
+            engine="datacontract",
+        )
+
+    if isinstance(avro_type, dict):
+        base = avro_type.get("type")
+        logical = avro_type.get("logicalType")
+        if (base, logical) in _AVRO_LOGICAL_TYPES:
+            return _AVRO_LOGICAL_TYPES[(base, logical)](pa, avro_type)
+        if base == "record":
+            return pa.struct(_avro_schema_to_arrow(pa, avro_type))
+        if base == "array":
+            return pa.list_(_avro_type_to_arrow(pa, avro_type["items"]))
+        if base == "map":
+            return pa.map_(pa.string(), _avro_type_to_arrow(pa, avro_type["values"]))
+        if base == "enum":
+            return pa.string()
+        if base == "fixed":
+            return pa.binary(avro_type["size"])
+        return _avro_type_to_arrow(pa, base)
+
+    factory = _AVRO_PRIMITIVES.get(avro_type)
+    if factory is None:
+        raise DataContractException(
+            type="test",
+            name="Configuring Kafka checks",
+            result=ResultEnum.failed,
+            reason=f"Unsupported Avro type '{avro_type}' in the schema of the topic.",
+            engine="datacontract",
+        )
+    return getattr(pa, factory)()
