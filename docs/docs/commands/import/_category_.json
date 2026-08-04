@@ -1,6 +1,6 @@
 {
   "label": "import",
-  "position": 9,
+  "position": 10,
   "link": {
     "type": "doc",
     "id": "commands/import/index"

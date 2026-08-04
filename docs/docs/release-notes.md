@@ -26,6 +26,9 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Added
+- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection
+
 ## 1.1.0 — 2026-08-04 {#v1-1-0}
 
 This release drops the pyspark compile-time dependency. The server types `dataframe` and `databricks` still work with a provided Spark session.

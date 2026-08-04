@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 12
 title: "publish"
 description: "Publish the data contract to Entropy Data."
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 title: "catalog"
 description: "Create an HTML catalog of data contracts."
 ---

@@ -1,6 +1,6 @@
 {
   "label": "export",
-  "position": 8,
+  "position": 9,
   "link": {
     "type": "doc",
     "id": "commands/export/index"

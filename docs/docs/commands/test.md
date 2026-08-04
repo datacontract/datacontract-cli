@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: "test"
 description: "Run schema and quality tests on configured servers."
 ---

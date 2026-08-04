@@ -38,6 +38,7 @@ COMMAND_ORDER = [
     "edit",
     "lint",
     "changelog",
+    "breaking",
     "test",
     "dbt",
     "ci",

@@ -141,6 +141,9 @@ $ datacontract lint odcs.yaml
 # show a changelog between two data contracts
 $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 
+# fail when a contract change is backward-incompatible
+$ datacontract breaking v1.odcs.yaml v2.odcs.yaml
+
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
 

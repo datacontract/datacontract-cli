@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection
+
 ## [1.1.0] - 2026-08-04
 
 This release drops the pyspark compile-time dependency. The server types `dataframe` and `databricks` still work with a provided Spark session.
