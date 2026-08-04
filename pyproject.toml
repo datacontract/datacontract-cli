@@ -5,13 +5,45 @@ description = "The datacontract CLI is an open source command-line tool for work
 license = "MIT"
 readme = "README.md"
 authors = [
-  { name = "Jochen Christ", email = "jochen.christ@innoq.com" },
+  { name = "Jochen Christ", email = "jochen.christ@entropy-data.com" },
   { name = "Stefan Negele", email = "stefan.negele@innoq.com" },
-  { name = "Simon Harrer", email = "simon.harrer@innoq.com" },
+  { name = "Simon Harrer", email = "simon.harrer@entropy-data.com" },
 ]
+# No "License :: OSI Approved :: MIT License" classifier: PEP 639 makes the SPDX
+# `license` expression above and the License classifiers mutually exclusive, and
+# setuptools >= 77 errors out when both are present.
 classifiers = [
-  "Programming Language :: Python :: 3",
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
   "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  # Keep in sync with `requires-python` below.
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Database",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+]
+keywords = [
+  "data-contract",
+  "data-contracts",
+  "odcs",
+  "open-data-contract-standard",
+  "data-quality",
+  "data-governance",
+  "data-mesh",
+  "data-product",
+  "data-engineering",
+  "schema",
+  "dbt",
+  "snowflake",
+  "databricks",
+  "bigquery",
 ]
 requires-python = ">=3.10,<3.15"
 dependencies = [
@@ -253,9 +285,14 @@ dev = [
   "trino==0.338.0",
 ]
 
+# PyPI special-cases these exact names (icon + prominent placement in the
+# "Project links" sidebar); unrecognised names render as plain bullets.
 [project.urls]
 Homepage = "https://cli.datacontract.com"
+Documentation = "https://docs.datacontract.com"
+Repository = "https://github.com/datacontract/datacontract-cli"
 Issues = "https://github.com/datacontract/datacontract-cli/issues"
+Changelog = "https://docs.datacontract.com/release-notes"
 
 [project.scripts]
 datacontract = "datacontract.cli:main"
