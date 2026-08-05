@@ -442,6 +442,10 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
     if base_type is None:
         return None
 
+    if base_type in ["varchar", "char"] and _get_params(field):
+        # Databricks has VARCHAR(n) / CHAR(n); collapsing them to STRING would
+        # drop the declared length.
+        return _attach_params_if_present(base_type.upper(), field)
     if base_type in ["string", "varchar", "text"]:
         return "STRING"
     if base_type in ["timestamp", "timestamp_tz"]:
@@ -488,8 +492,11 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "ARRAY<STRING>"
     if base_type in ["variant"]:
         return "VARIANT"
-    if _get_params(field):
-        return _get_type(field)
+    # A parameterized type with no mapping (map<string,int>, geography(4326)) is
+    # already spelled the way Databricks declares it, so pass it through.
+    field_type = _get_type(field)
+    if field_type and ("(" in field_type or "<" in field_type):
+        return field_type
     return _warn_cannot_map_type(field, "databricks")
 
 

@@ -39,7 +39,7 @@ The authentication method is selected from the variables you set, in this order:
 
 ### Importing
 
-`datacontract import unity` keeps the full Unity Catalog type text as `physicalType` (e.g. `decimal(10,2)`, `struct<x:int>`, `map<string,int>`) — also duplicated in the `databricksType` custom property — and maps to `logicalType`:
+`datacontract import unity` keeps the full Unity Catalog type text as `physicalType` (e.g. `decimal(10,2)`, `struct<x:int>`, `map<string,int>`) and maps to `logicalType`:
 
 | Databricks type | `logicalType` |
 |---|---|

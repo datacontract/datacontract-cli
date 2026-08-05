@@ -205,10 +205,28 @@ def test_decimal_10_2_bigquery():
 
 
 def test_varchar_100_databricks():
-    """VARCHAR(100) on databricks: 'varchar' -> 'STRING'."""
+    """VARCHAR(100) on databricks: 'varchar' accepts params -> 'VARCHAR(100)'.
+
+    Databricks has VARCHAR(n) and enforces the length; collapsing it to STRING
+    would drop the length the contract declares.
+    """
     field = SchemaProperty(name="col", physicalType="VARCHAR(100)")
     result = convert_to_sql_type(field, "databricks")
+    assert result == "VARCHAR(100)"
+
+
+def test_varchar_without_length_databricks():
+    """A VARCHAR with no length has nothing to preserve -> 'STRING'."""
+    field = SchemaProperty(name="col", physicalType="VARCHAR")
+    result = convert_to_sql_type(field, "databricks")
     assert result == "STRING"
+
+
+def test_map_databricks():
+    """MAP has no databricks mapping, but the declared type is already Databricks SQL."""
+    field = SchemaProperty(name="col", physicalType="map<string,bigint>")
+    result = convert_to_sql_type(field, "databricks")
+    assert result == "map<string,bigint>"
 
 
 def test_decimal_18_4_trino():
