@@ -418,7 +418,7 @@ class TestQualityIdAndTagFilter:
     def test_quality_id_selects_a_single_rule(self):
         run = self._run(quality_ids={"enough_files"})
         assert [c.type for c in run.checks] == ["azure_file_count_quality"]
-        assert run.checks[0].quality_id == "enough_files"
+        assert run.checks[0].qualityId == "enough_files"
 
     def test_tag_selects_every_rule_carrying_it(self):
         run = self._run(tags={"critical"})
