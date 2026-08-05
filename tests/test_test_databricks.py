@@ -38,6 +38,97 @@ def test_connect_skips_memtable_volume_creation():
     assert Backend._post_connect is original
 
 
+def test_connect_applies_the_type_compatibility_patch(monkeypatch):
+    # Databricks-only column types (GEOGRAPHY(4326)) break ibis's schema
+    # reflection, which fails every check of the model, so the patch must be in
+    # place before the first table is read.
+    from datacontract.engines.ibis.connections.connect import _databricks_connect
+
+    applied = []
+    monkeypatch.setattr(
+        "datacontract.engines.ibis.connections.databricks_patch.apply_databricks_compatibility_patch",
+        lambda: applied.append(True),
+    )
+
+    class StubIbis:
+        class databricks:
+            @staticmethod
+            def connect(**kwargs):
+                return "connection"
+
+    assert _databricks_connect(StubIbis(), server_hostname="example") == "connection"
+    assert applied == [True]
+
+
+@pytest.fixture
+def databricks_type_patch():
+    """Apply the Databricks type patch, restoring ibis's originals afterwards."""
+    from ibis.backends import databricks as databricks_backend
+    from ibis.backends.sql.datatypes import DatabricksType
+
+    from datacontract.engines.ibis.connections.databricks_patch import apply_databricks_compatibility_patch
+
+    geo_methods = ("_from_sqlglot_GEOGRAPHY", "_from_sqlglot_GEOMETRY")
+    # not defined on DatabricksType itself, so None means "restore by removing"
+    originals = {name: DatabricksType.__dict__.get(name) for name in geo_methods}
+    original_schema_reader = databricks_backend._databricks_schema_to_ibis
+
+    apply_databricks_compatibility_patch()
+    try:
+        yield
+    finally:
+        for name, method in originals.items():
+            if method is None:
+                delattr(DatabricksType, name)
+            else:
+                setattr(DatabricksType, name, method)
+        databricks_backend._databricks_schema_to_ibis = original_schema_reader
+
+
+def test_geospatial_type_with_srid(databricks_type_patch):
+    # Databricks declares a geospatial column as GEOGRAPHY(<srid>), while ibis
+    # reads the first type parameter as a geometry subtype (PostGIS's
+    # GEOGRAPHY(POINT, 4326)) and fails with KeyError: '4326'.
+    from ibis.backends.sql.datatypes import DatabricksType
+
+    geography = DatabricksType.from_string("geography(4326)")
+    assert geography.geotype == "geography"
+    assert geography.srid == 4326
+
+    geometry = DatabricksType.from_string("geometry(4326)")
+    assert geometry.geotype == "geometry"
+    assert geometry.srid == 4326
+
+
+def test_geospatial_type_without_srid_and_with_subtype(databricks_type_patch):
+    # The subtype spellings ibis already understood must keep working.
+    import ibis.expr.datatypes as dt
+    from ibis.backends.sql.datatypes import DatabricksType
+
+    assert DatabricksType.from_string("geography").srid is None
+    assert DatabricksType.from_string("geometry(point,4326)") == dt.Point(geotype="geometry", srid=4326)
+    assert DatabricksType.from_string("int") == dt.int32
+
+
+def test_unconvertible_column_does_not_affect_the_other_columns(databricks_type_patch):
+    # One column ibis cannot represent must not fail the whole model: it becomes
+    # unknown (its type checks fail), every other column keeps its real type.
+    import ibis.expr.datatypes as dt
+    from ibis.backends import databricks as databricks_backend
+
+    schema = databricks_backend._databricks_schema_to_ibis(
+        [
+            {"name": "id", "type": {"name": "int"}, "nullable": False},
+            {"name": "geo", "type": {"name": "geography(4326)"}, "nullable": True},
+            {"name": "mystery", "type": {"name": "geography(OGC:CRS84)"}, "nullable": True},
+        ]
+    )
+
+    assert schema["id"] == dt.Int32(nullable=False)
+    assert schema["geo"].srid == 4326
+    assert schema["mystery"] == dt.unknown
+
+
 @pytest.mark.skipif(
     os.environ.get("DATACONTRACT_DATABRICKS_TOKEN") is None, reason="Requires DATACONTRACT_DATABRICKS_TOKEN to be set"
 )
