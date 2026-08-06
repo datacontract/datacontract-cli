@@ -32,6 +32,8 @@ Use the [`publish`](./commands/publish.md) command to push a data contract itsel
 datacontract publish datacontract.yaml
 ```
 
+The same is available programmatically as `DataContract.publish()`, see [Python Library](./python-library.md#publish-a-data-contract).
+
 ## TLS behind a corporate proxy or internal CA
 
 By default the CLI verifies TLS certificates against the bundled CA certificates (`certifi`). In a corporate network with a TLS-inspecting proxy or an internal certificate authority, this can fail with `CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`, because the root CA is installed in the operating system's trust store but not in the bundled list.

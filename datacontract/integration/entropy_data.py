@@ -3,7 +3,8 @@ from urllib.parse import urlparse
 import requests
 
 from datacontract.config import Config
-from datacontract.model.run import Run
+from datacontract.model.exceptions import DataContractException
+from datacontract.model.run import ResultEnum, Run
 
 # used to retrieve the HTML location of the published data contract or test results
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
@@ -56,34 +57,47 @@ def publish_test_results_to_entropy_data(
 
 
 def publish_data_contract_to_entropy_data(
-    data_contract_dict: dict, ssl_verification: bool, config: Config | None = None
-):
+    data_contract_dict: dict, ssl_verification: bool = True, config: Config | None = None
+) -> str | None:
+    """Publish the data contract to the Entropy Data instance.
+
+    Returns the HTML location of the published data contract, if the server reports one.
+    Raises a DataContractException if publishing failed, so that callers (the CLI as well
+    as library users) can handle the failure themselves.
+    """
+    config = Config.resolve(config)
+    api_key = _get_api_key(config)
+    host = _get_host(config)
+    display_host = _extract_hostname(host)
+    headers = {"Content-Type": "application/json", "x-api-key": api_key}
+    id = data_contract_dict.get("id")
+    if not id:
+        raise _publish_error("Cannot publish a data contract without an id")
+    url = f"{host}/api/datacontracts/{id}"
     try:
-        config = Config.resolve(config)
-        api_key = _get_api_key(config)
-        host = _get_host(config)
-        headers = {"Content-Type": "application/json", "x-api-key": api_key}
-        id = data_contract_dict["id"]
-        url = f"{host}/api/datacontracts/{id}"
         response = requests.put(
             url=url,
             json=data_contract_dict,
             headers=headers,
             verify=ssl_verification,
         )
-        if response.status_code != 200:
-            display_host = _extract_hostname(host)
-            print(f"Error publishing data contract to {display_host}: {response.text}")
-            exit(1)
-
-        print("✅ Published data contract successfully")
-
-        location_html = response.headers.get(RESPONSE_HEADER_LOCATION_HTML)
-        if location_html is not None and len(location_html) > 0:
-            print(f"🚀 Open {location_html}")
-
     except Exception as e:
-        print(f"Failed publishing data contract. Error: {str(e)}")
+        raise _publish_error(f"Failed publishing data contract to {display_host}: {str(e)}", e)
+
+    if response.status_code != 200:
+        raise _publish_error(f"Error publishing data contract to {display_host}: {response.text}")
+
+    return response.headers.get(RESPONSE_HEADER_LOCATION_HTML) or None
+
+
+def _publish_error(reason: str, original_exception: Exception | None = None) -> DataContractException:
+    return DataContractException(
+        type="publish",
+        name="Publish data contract",
+        reason=reason,
+        result=ResultEnum.error,
+        original_exception=original_exception,
+    )
 
 
 def _get_api_key(config: Config) -> str:
@@ -95,7 +109,7 @@ def _get_api_key(config: Config) -> str:
     """
     api_key = _get_api_key_or_none(config)
     if api_key is None:
-        raise Exception(
+        raise _publish_error(
             "Cannot publish, as neither ENTROPY_DATA_API_KEY, DATAMESH_MANAGER_API_KEY, nor DATACONTRACT_MANAGER_API_KEY is set"
         )
     return api_key

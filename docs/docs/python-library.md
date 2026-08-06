@@ -68,6 +68,7 @@ DataContract(
 | `spark` | A `SparkSession`, for the `dataframe` / Databricks engines. |
 | `duckdb_connection` | An existing DuckDB connection. |
 | `publish_url` | URL to publish test results to. |
+| `ssl_verification` | Verify TLS certificates when publishing (default `True`). |
 | `inline_references` | Resolve external references (default `True`). |
 | `include_failed_samples` | Collect a sample of failing rows (default `False`). |
 | `config` | Credentials and connection options, as a `Config` object or dict (see [Credentials](#credentials)). |
@@ -120,6 +121,34 @@ print(data_contract.export("odcs"))
 ```
 
 See [Imports](./imports/index.md) for the full list of formats.
+
+## Publish a data contract
+
+`publish()` uploads the contract to Entropy Data (or a Data Mesh Manager / Data Contract Manager instance), the same as `datacontract publish`. It returns the URL of the published contract, if the server reports one, and raises a `DataContractException` if publishing fails.
+
+```python
+from datacontract.data_contract import DataContract
+from datacontract.model.exceptions import DataContractException
+
+data_contract = DataContract(data_contract_file="datacontract.yaml")
+
+try:
+    url = data_contract.publish()
+    print(f"Published to {url}")
+except DataContractException as e:
+    print(f"Publishing failed: {e.reason}")
+```
+
+The host and the API key are read from `ENTROPY_DATA_HOST` and `ENTROPY_DATA_API_KEY`, or can be passed explicitly:
+
+```python
+from datacontract import Config
+
+DataContract(
+    data_contract_file="datacontract.yaml",
+    config=Config(entropy_data_api_key=get_secret("entropy-data")),
+).publish()
+```
 
 ## Compare two contracts (changelog)
 

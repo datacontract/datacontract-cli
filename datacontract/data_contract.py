@@ -15,7 +15,10 @@ from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
 from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
-from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
+from datacontract.integration.entropy_data import (
+    publish_data_contract_to_entropy_data,
+    publish_test_results_to_entropy_data,
+)
 from datacontract.lint import resolve
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
@@ -202,6 +205,27 @@ class DataContract:
             publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification, config=self._config)
 
         return run
+
+    def publish(self) -> str | None:
+        """Publish the data contract to Entropy Data (or a Data Mesh Manager / Data Contract Manager).
+
+        The host and the API key are taken from the config, or from the environment
+        (ENTROPY_DATA_HOST / ENTROPY_DATA_API_KEY and their legacy equivalents).
+
+        Returns the URL of the published data contract, if the server reports one.
+        Raises a DataContractException if publishing failed.
+        """
+        data_contract_dict = resolve.resolve_data_contract_dict(
+            self._data_contract_file,
+            self._data_contract_str,
+            self._data_contract,
+            config=self._config,
+        )
+        return publish_data_contract_to_entropy_data(
+            data_contract_dict=data_contract_dict,
+            ssl_verification=self._ssl_verification,
+            config=self._config,
+        )
 
     def get_data_contract(self) -> OpenDataContractStandard:
         return resolve.resolve_data_contract(

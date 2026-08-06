@@ -1,12 +1,9 @@
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import app, debug_option, enable_debug_logging
+from datacontract.cli import app, console, debug_option, enable_debug_logging
 from datacontract.config import cli_config
-from datacontract.integration.entropy_data import (
-    publish_data_contract_to_entropy_data,
-)
-from datacontract.lint.resolve import resolve_data_contract_dict
+from datacontract.data_contract import DataContract
 
 
 @app.command(
@@ -33,8 +30,13 @@ def publish(
     """
     enable_debug_logging(debug)
 
-    publish_data_contract_to_entropy_data(
-        config=cli_config(),
-        data_contract_dict=resolve_data_contract_dict(location, config=cli_config()),
+    location_html = DataContract(
+        data_contract_file=location,
+        schema_location=schema,
         ssl_verification=ssl_verification,
-    )
+        config=cli_config(),
+    ).publish()
+
+    console.print("✅ Published data contract successfully")
+    if location_html is not None:
+        console.print(f"🚀 Open {location_html}")
