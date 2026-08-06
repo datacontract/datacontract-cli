@@ -276,6 +276,12 @@ def _databricks_connect(ibis, **kwargs):
     """
     from ibis.backends.databricks import Backend
 
+    from datacontract.engines.ibis.connections.databricks_patch import apply_databricks_compatibility_patch
+
+    # Databricks-only column types (GEOGRAPHY(4326), …) otherwise fail the whole
+    # model when ibis reflects the table.
+    apply_databricks_compatibility_patch()
+
     original_post_connect = Backend._post_connect
     Backend._post_connect = lambda self, *, memtable_volume=None: None
     try:

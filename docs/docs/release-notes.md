@@ -29,6 +29,13 @@ marked as such in the entry.
 ### Added
 - `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection ([#1482](https://github.com/datacontract/datacontract-cli/issues/1482))
 
+### Changed
+- `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`
+- `datacontract export sql --server databricks` keeps the declared length of `varchar(n)` and `char(n)` instead of exporting `STRING`
+
+### Fixed
+- `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column ([#1483](https://github.com/datacontract/datacontract-cli/issues/1483))
+
 ## 1.1.0 — 2026-08-04 {#v1-1-0}
 
 This release drops the pyspark compile-time dependency. The server types `dataframe` and `databricks` still work with a provided Spark session.

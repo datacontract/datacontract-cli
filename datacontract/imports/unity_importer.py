@@ -175,7 +175,6 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
         required=required if required else None,
         properties=nested_properties,
         items=items,
-        custom_properties={"databricksType": sql_type} if sql_type else None,
     )
 
 
