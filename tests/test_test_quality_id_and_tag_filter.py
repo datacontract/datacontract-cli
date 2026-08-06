@@ -123,11 +123,11 @@ def test_checks_report_the_id_and_tags_of_their_rule():
     run = DataContract(data_contract_str=CONTRACT).test()
     print(run.pretty())
     by_type = {check.type: check for check in run.checks}
-    assert by_type["row_count"].quality_id == "orders_not_empty"
+    assert by_type["row_count"].qualityId == "orders_not_empty"
     assert by_type["row_count"].tags == ["critical", "cheap"]
-    assert by_type["field_null_values"].quality_id is None
+    assert by_type["field_null_values"].qualityId is None
     assert by_type["field_null_values"].tags is None
-    assert by_type["field_is_present"].quality_id is None
+    assert by_type["field_is_present"].qualityId is None
 
 
 def test_quality_id_cli_option():
