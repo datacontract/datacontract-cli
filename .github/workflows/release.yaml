@@ -164,6 +164,9 @@ jobs:
     needs:
       - test
       - check_version
+    permissions:
+      contents: read
+      id-token: write  # IMPORTANT: mandatory for keyless signing with cosign
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -195,6 +198,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -207,14 +211,23 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
           provenance: mode=max
+      - name: Install cosign
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: sigstore/cosign-installer@v3
+      - name: Sign the image with cosign (keyless)
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        # Sign the immutable digest of the multi-arch index, not the mutable tags.
+        run: cosign sign --yes "datacontract/cli@${DIGEST}"
 
   push-to-ecr:
     runs-on: ubuntu-latest
     needs:
       - docker
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
 
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v4
@@ -234,10 +247,13 @@ jobs:
           aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/s4e5k7s9
 
       - name: Copy Multi-Arch Image from Docker Hub to AWS ECR
+        # `cosign copy` carries the signature and the SBOM/provenance attestations
+        # along with the image; `docker buildx imagetools create` would copy the
+        # manifest only and leave the signature behind on Docker Hub.
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"  # Strip 'v' prefix to match Docker Hub tag
-          docker buildx imagetools create \
-            --tag public.ecr.aws/s4e5k7s9/datacontract-cli:latest \
-            --tag public.ecr.aws/s4e5k7s9/datacontract-cli:${VERSION} \
-            docker.io/datacontract/cli:${VERSION}
+          SOURCE="docker.io/datacontract/cli:${VERSION}"
+          TARGET="public.ecr.aws/s4e5k7s9/datacontract-cli"
+          cosign copy --force "${SOURCE}" "${TARGET}:${VERSION}"
+          cosign copy --force "${SOURCE}" "${TARGET}:latest"

@@ -246,6 +246,8 @@ alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/
 
 _Note:_ The output of Docker command line messages is limited to 80 columns and may include line breaks. Don't pipe docker output to files if you want to export code. Use the `--output` option instead.
 
+Released images are signed with [cosign](https://docs.sigstore.dev/cosign/signing/overview/) keyless signing. See [Verifying the image](https://docs.datacontract.com/installation#verifying-the-image) to check a signature before you run it.
+
 
 
 ## Optional Dependencies (Extras)

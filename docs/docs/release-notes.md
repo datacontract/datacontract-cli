@@ -24,7 +24,10 @@ marked as such in the entry.
 - Install or upgrade with `uv tool install --upgrade datacontract-cli` or `pip install --upgrade datacontract-cli` — see [Installation](./installation.md).
 - Packages: [PyPI](https://pypi.org/project/datacontract-cli/#history) · [Docker Hub](https://hub.docker.com/r/datacontract/cli/tags) · [GitHub releases](https://github.com/datacontract/datacontract-cli/releases)
 
-## Unreleased {#unreleased}
+## Unreleased - targeting for 1.1.0 {#vUnreleased - targeting for 1-1-0}
+
+This release drops the pyspark compile-time dependency. The server types `dataframe` and `databricks` still work with a provided Spark session.
+This removes the JVM dependency, makes the images much, much smaller (Docker image from 777 MB to 277 MB), and many CVEs are resolved.
 
 ### Changed
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
@@ -41,6 +44,7 @@ This removes the JVM dependency, makes the images much, much smaller (Docker ima
 
 ### Added
 - `DATACONTRACT_KAFKA_MAX_MESSAGES` limits how many messages `datacontract test` reads from a topic, and `DATACONTRACT_KAFKA_TIMEOUT` how long it waits for one
+- Released Docker images are signed with cosign keyless signing, on Docker Hub and the Amazon ECR Public mirror; see [Installation](https://docs.datacontract.com/installation#verifying-the-image) for how to verify them
 
 ### Changed
 - `datacontract test` for Kafka no longer needs PySpark or a Java runtime: `datacontract-cli[kafka]` now installs confluent-kafka, fastavro, and DuckDB instead
