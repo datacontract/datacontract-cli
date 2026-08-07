@@ -1006,6 +1006,15 @@ def _get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> O
     return next((s for s in data_contract.schema_ if s.name == name), None)
 
 
+def _resolve_physical_names(schema_object: SchemaObject, field_name: str, server: Optional[Server]) -> tuple[str, str]:
+    """The (dataset, column) a servicelevel check must scan, in warehouse terms."""
+    server_type = server.type if server and server.type else None
+    prop = next((p for p in schema_object.properties or [] if p.name == field_name), None)
+    if prop is not None and prop.physicalName:
+        field_name = prop.physicalName
+    return to_schema_name(schema_object, server_type), field_name
+
+
 def to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Optional[Server] = None) -> List[Check]:
     checks: List[Check] = []
     if data_contract.slaProperties is None:
@@ -1017,7 +1026,7 @@ def to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opti
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
-            check = to_servicelevel_retention_check(data_contract, sla)
+            check = to_servicelevel_retention_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
 
@@ -1054,6 +1063,7 @@ def to_sla_freshness_check(
     if schema is None:
         logger.info(f"Model {model_name} not found in schema, skipping freshness check")
         return None
+    model_name, field_name = _resolve_physical_names(schema, field_name, server)
 
     # Build threshold from value and unit
     unit = sla.unit.lower() if sla.unit else "d"
@@ -1096,7 +1106,9 @@ def to_sla_freshness_check(
     )
 
 
-def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
+def to_servicelevel_retention_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Check | None:
     """Create a retention check from an ODCS retention SLA property."""
     if sla.element is None:
         logger.info("slaProperties.retention.element is not defined, skipping retention check")
@@ -1124,6 +1136,7 @@ def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla
     if schema is None:
         logger.info(f"Model {model_name} not found in schema, skipping retention check")
         return None
+    model_name, field_name = _resolve_physical_names(schema, field_name, server)
 
     # Convert retention value to seconds
     # Supports both numeric value + unit (ODCS style: value=3, unit=y)

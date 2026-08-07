@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
+- `datacontract test` and `datacontract export sodacl` freshness and retention checks now honor the schema object's and property's `physicalName` (#1488)
 
 ## [1.1.0] - 2026-08-04
 
