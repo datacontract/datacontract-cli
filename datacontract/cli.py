@@ -217,11 +217,19 @@ def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
             logging.getLogger(noisy_logger).setLevel(logging.ERROR)
 
 
-def validate_publish_url(publish: str | None) -> None:
-    """Reject `--publish` values that aren't http/https before any real work runs."""
-    if publish is not None and not (publish.startswith("http://") or publish.startswith("https://")):
+def validate_publish_url(publish: str | None) -> str | None:
+    """Normalize `--publish` and reject values that aren't http/https before any real work runs.
+
+    An empty value means "don't publish". CI templates that render the URL from an unset variable
+    pass `--publish ''` rather than omitting the option, e.g. GitHub Actions container actions,
+    where an argument list cannot drop an entry conditionally.
+    """
+    if not publish:
+        return None
+    if not (publish.startswith("http://") or publish.startswith("https://")):
         console.print(f"[red]--publish URL must start with http:// or https:// (got: {publish!r}).[/red]")
         raise typer.Exit(code=1)
+    return publish
 
 
 def resolve_output_format(output_format: Optional[OutputFormat], output: Optional[Path]) -> Optional[OutputFormat]:

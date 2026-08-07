@@ -339,7 +339,7 @@ def sync_command(
     or singular SQL tests if needed. Use `datacontract dbt test` or pass --run-tests to run the generated tests.
     """
     enable_debug_logging(debug)
-    validate_publish_url(publish)
+    publish = validate_publish_url(publish)
 
     if publish is not None and not run_tests_flag:
         console.print("[red]--publish requires --run-tests.[/red]")
@@ -467,7 +467,7 @@ def test_command(
     them. Use `datacontract dbt sync` to create and update the tests first.
     """
     enable_debug_logging(debug)
-    validate_publish_url(publish)
+    publish = validate_publish_url(publish)
     check_dbt_on_path()
 
     explicit_project_dir = project_dir is not None
