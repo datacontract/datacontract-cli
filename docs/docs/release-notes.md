@@ -26,6 +26,9 @@ marked as such in the entry.
 
 ## Unreleased {#unreleased}
 
+### Added
+- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection ([#1482](https://github.com/datacontract/datacontract-cli/issues/1482))
+
 ### Changed
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
 - `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`

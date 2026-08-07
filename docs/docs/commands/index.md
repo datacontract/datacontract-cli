@@ -33,6 +33,7 @@ Most commands additionally accept `--debug` for verbose logging.
 | [`edit`](./edit.md) | Edit a data contract file in the Data Contract Editor (web UI). |
 | [`lint`](./lint.md) | Validate that the datacontract.yaml is correctly formatted. |
 | [`changelog`](./changelog.md) | Show a changelog between two data contracts. |
+| [`breaking`](./breaking.md) | Show compatibility impact between two data contracts. |
 | [`test`](./test.md) | Run schema and quality tests on configured servers. |
 | [`dbt`](./dbt/index.md) | Work with data contracts in your dbt project. |
 | [`ci`](./ci.md) | Run tests for CI/CD pipelines. |
@@ -49,6 +50,7 @@ datacontract init datacontract.yaml
 datacontract edit datacontract.yaml
 datacontract lint datacontract.yaml
 datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
+datacontract breaking datacontract-v1.yaml datacontract-v2.yaml
 datacontract test datacontract.yaml --server production
 datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse
 datacontract ci datacontract.yaml --output test-results.xml --output-format junit
