@@ -1,5 +1,5 @@
 ---
-sidebar_position: 29
+sidebar_position: 30
 title: "import unity"
 description: "Import a data contract from Databricks Unity Catalog (alias of `import databricks`)."
 ---

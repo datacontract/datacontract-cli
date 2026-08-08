@@ -37,6 +37,7 @@ datacontract import [OPTIONS] COMMAND [ARGS]...
 | [`postgres`](./postgres.md) | Import a data contract from a Postgres schema. |
 | [`powerbi`](./powerbi.md) | Import a data contract from a Power BI semantic model (.pbit, .bim, or .json) file. |
 | [`protobuf`](./protobuf.md) | Import a data contract from a Protobuf schema file. |
+| [`pydantic-model`](./pydantic-model.md) | Import a data contract from Pydantic models. |
 | [`redshift`](./redshift.md) | Import a data contract from an Amazon Redshift schema. |
 | [`s3`](./s3.md) | Import a data contract from files in S3. |
 | [`snowflake`](./snowflake.md) | Import a data contract from a Snowflake workspace. |

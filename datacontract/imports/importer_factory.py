@@ -120,6 +120,11 @@ importer_factory.register_lazy_importer(
     class_name="ProtoBufImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.pydantic_model,
+    module_path="datacontract.imports.pydantic_importer",
+    class_name="PydanticImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.excel,
     module_path="datacontract.imports.excel_importer",
     class_name="ExcelImporter",

@@ -1,0 +1,140 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: Orders
+  physicalType: object
+  description: One row per customer order.
+  logicalType: object
+  physicalName: Orders
+  properties:
+  - name: order_id
+    physicalType: uuid
+    logicalType: string
+    required: true
+  - name: order_timestamp
+    physicalType: datetime
+    logicalType: date
+    required: true
+  - name: order_date
+    physicalType: date
+    logicalType: date
+    required: true
+  - name: customer_id
+    physicalType: str
+    logicalType: string
+    logicalTypeOptions:
+      minLength: 1
+      maxLength: 64
+    required: true
+  - name: order_total
+    physicalType: decimal
+    logicalType: number
+    logicalTypeOptions:
+      minimum: 0
+    required: true
+  - name: status
+    physicalType: str
+    logicalType: string
+    required: true
+    quality:
+    - type: library
+      metric: invalidValues
+      arguments:
+        validValues:
+        - pending
+        - shipped
+        - delivered
+      mustBe: 0
+  - name: channel
+    physicalType: str
+    logicalType: string
+    required: true
+    quality:
+    - type: library
+      metric: invalidValues
+      arguments:
+        validValues:
+        - web
+        - mobile
+        - store
+      mustBe: 0
+  - name: priority
+    physicalType: int
+    logicalType: integer
+    required: true
+    quality:
+    - type: library
+      metric: invalidValues
+      arguments:
+        validValues:
+        - 1
+        - 2
+        - 3
+      mustBe: 0
+  - name: shipping_address
+    physicalType: object
+    logicalType: object
+    required: true
+    properties:
+    - name: street
+      physicalType: str
+      logicalType: string
+      required: true
+    - name: city
+      physicalType: str
+      logicalType: string
+      required: true
+    - name: postal_code
+      physicalType: str
+      logicalType: string
+      required: false
+  - name: line_items
+    physicalType: list
+    logicalType: array
+    required: true
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: sku
+        physicalType: str
+        description: Stock keeping unit.
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 32
+        required: true
+      - name: quantity
+        physicalType: int
+        logicalType: integer
+        logicalTypeOptions:
+          minimum: 1
+        required: true
+  - name: tags
+    physicalType: list
+    logicalType: array
+    required: false
+    items:
+      name: items
+      physicalType: str
+      logicalType: string
+  - name: attributes
+    physicalType: map
+    logicalType: object
+    required: false
+  - name: note
+    physicalType: str
+    logicalType: string
+    required: false
+  - name: is_gift
+    physicalType: bool
+    logicalType: boolean
+    required: false
+  - name: payload
+    physicalType: bytes
+    logicalType: array
+    required: true
