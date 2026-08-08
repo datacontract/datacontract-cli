@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test --metadata-only` runs only checks that read the schema (field presence and types) and reports checks that read row values as skipped
 - `datacontract test --checks` accepts the ODCS terms `properties` and `slaProperties`, keeping `schema` and `servicelevel` as legacy aliases
 - Released Docker images are signed with cosign keyless signing, on Docker Hub and the Amazon ECR Public mirror; see [Installation](https://docs.datacontract.com/installation#verifying-the-image) for how to verify them
+- `datacontract import pydantic-model` creates a data contract from Pydantic models
 
 ### Changed
 - `datacontract export excel` uses the ODCS Excel template bundled with the CLI instead of downloading it, so the export works offline; use `--template` for a custom template
