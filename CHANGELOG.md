@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
+- `datacontract export pydantic-model` no longer emits an unparseable empty class for an object property without properties
 
 ## [1.1.0] - 2026-08-04
 
