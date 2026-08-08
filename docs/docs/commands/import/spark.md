@@ -1,5 +1,5 @@
 ---
-sidebar_position: 25
+sidebar_position: 26
 title: "import spark"
 description: "Import a data contract from a Spark schema."
 ---

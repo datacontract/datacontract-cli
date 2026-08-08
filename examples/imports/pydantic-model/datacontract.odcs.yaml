@@ -1,0 +1,47 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.1.0
+id: my-data-contract
+name: My Data Contract
+status: draft
+schema:
+- name: Orders
+  physicalType: object
+  description: One row per customer order.
+  logicalType: object
+  physicalName: Orders
+  properties:
+  - name: order_id
+    physicalType: str
+    logicalType: string
+    logicalTypeOptions:
+      maxLength: 32
+    required: true
+  - name: order_timestamp
+    physicalType: datetime
+    logicalType: date
+    required: true
+  - name: customer_id
+    physicalType: str
+    logicalType: string
+    required: false
+  - name: order_total
+    physicalType: int
+    description: Order total in cents.
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 0
+    required: true
+  - name: status
+    physicalType: str
+    logicalType: string
+    required: true
+    quality:
+    - type: library
+      metric: invalidValues
+      arguments:
+        validValues:
+        - pending
+        - shipped
+        - delivered
+      mustBe: 0

@@ -112,6 +112,10 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">protobuf</span><span className="doc-card-desc">A Protobuf schema file.</span></span>
   </a>
+  <a className="doc-card" href="/imports/pydantic-model">
+    <img src="/img/icons/pydantic.svg" alt="" />
+    <span><span className="doc-card-title">pydantic-model</span><span className="doc-card-desc">Pydantic model classes.</span></span>
+  </a>
   <a className="doc-card" href="/imports/redshift">
     <img src="/img/icons/redshift.svg" alt="" />
     <span><span className="doc-card-title">redshift</span><span className="doc-card-desc">An Amazon Redshift schema.</span></span>

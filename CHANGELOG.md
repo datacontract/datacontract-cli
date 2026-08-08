@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract import pydantic-model` creates a data contract from Pydantic models
+
 ### Changed
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
 - `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`
@@ -14,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
+- `datacontract export pydantic-model` no longer emits an unparseable empty class for an object property without properties
 
 ## [1.1.0] - 2026-08-04
 
