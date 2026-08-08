@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` for API servers with `delimiter: array` no longer fails JSON schema validation with `data must be object` (#1495)
 - `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
+- `datacontract export pydantic-model` no longer emits an unparseable empty class for an object property without properties
 
 ## [1.1.0] - 2026-08-04
 
