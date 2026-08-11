@@ -1,0 +1,36 @@
+# TEMPORARY — delete once release.yaml has published successfully with federated
+# credentials.
+#
+# Proves the AWS trust relationship without publishing anything. release.yaml
+# triggers only on `v<number>` tags and publishes to PyPI, so it cannot be used
+# as a rehearsal: any tag that would exercise it would also cut a real release.
+# This triggers on `oidc-check-*`, which that pattern does not match, and the
+# role trusts `refs/tags/*` generally.
+#
+#   git tag oidc-check-1 && git push origin oidc-check-1
+#   git push --delete origin oidc-check-1 && git tag -d oidc-check-1
+name: OIDC check
+
+on:
+  push:
+    tags: ["oidc-check-*"]
+
+permissions:
+  contents: read
+
+jobs:
+  whoami:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+
+      # Read-only, and deliberately nothing else: no login, no push, no tag.
+      - name: Report the assumed identity
+        run: aws sts get-caller-identity
