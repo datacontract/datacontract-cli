@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.DEBUG, force=True)
 
 
 datacontract = Path(__file__).parent / "fixtures/api/weather-service.odcs.yaml"
+datacontract_array = Path(__file__).parent / "fixtures/api/weather-service-array.odcs.yaml"
 
 
 def mock_get(*args, **kwargs):
@@ -46,6 +47,32 @@ def mock_get(*args, **kwargs):
 @patch("datacontract.engines.data_contract_test.requests.get", side_effect=mock_get)
 def test_test_api(_mock_get):
     with open(datacontract) as data_contract_file:
+        data_contract_str = data_contract_file.read()
+    data_contract = DataContract(data_contract_str=data_contract_str)
+
+    run = data_contract.test()
+
+    print(run)
+    assert run.result == "passed"
+    assert all(check.result == "passed" for check in run.checks)
+
+
+def mock_get_array(*args, **kwargs):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    json_data = [
+        {"temperature": 19.1, "humidity": 65, "wind_speed": 11.1, "condition": "sunny"},
+        {"temperature": 17.3, "humidity": 70, "wind_speed": 8.4, "condition": "cloudy"},
+    ]
+    mock_response.json.return_value = json_data
+    mock_response.text = json.dumps(json_data)
+    mock_response.raise_for_status.return_value = None
+    return mock_response
+
+
+@patch("datacontract.engines.data_contract_test.requests.get", side_effect=mock_get_array)
+def test_test_api_array_delimiter(_mock_get):
+    with open(datacontract_array) as data_contract_file:
         data_contract_str = data_contract_file.read()
     data_contract = DataContract(data_contract_str=data_contract_str)
 
