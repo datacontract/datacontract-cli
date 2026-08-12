@@ -939,27 +939,30 @@ def prepare_query(
 
     field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
-    if quoting_config.quote_model_name:
-        model_name_for_soda = f'"{model_name}"'
-    elif quoting_config.quote_model_name_with_backticks:
-        model_name_for_soda = f"`{model_name}`"
-    else:
-        model_name_for_soda = model_name
+    def quote_identifier(name: str) -> str:
+        if quoting_config.quote_model_name:
+            return f'"{name}"'
+        if quoting_config.quote_model_name_with_backticks:
+            return f"`{name}`"
+        return name
+
+    def server_value(attribute: str) -> str | None:
+        return getattr(server, attribute, None) if server else None
+
+    model_name_for_soda = quote_identifier(model_name)
 
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{object}["\']?', model_name_for_soda, query)
 
-    if server and server.schema_:
-        if quoting_config.quote_model_name:
-            schema_name_for_soda = f'"{server.schema_}"'
-        elif quoting_config.quote_model_name_with_backticks:
-            schema_name_for_soda = f"`{server.schema_}`"
-        else:
-            schema_name_for_soda = server.schema_
-        query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
-    else:
-        query = re.sub(r'["\']?\$?\{schema}["\']?', model_name_for_soda, query)
+    schema_value = server_value("schema_")
+    schema_name_for_soda = quote_identifier(schema_value) if schema_value else model_name_for_soda
+    query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
+
+    for placeholder in ("dataset", "project", "catalog", "database"):
+        value = server_value(placeholder)
+        replacement = quote_identifier(value) if value else model_name_for_soda
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement, query)
 
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name_for_soda, query)

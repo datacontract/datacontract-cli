@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- SQL quality rules support the `${dataset}`, `${project}`, `${catalog}`, and `${database}` placeholders for the server's values
+
 ### Changed
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
 - `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`
