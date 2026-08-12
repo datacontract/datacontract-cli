@@ -946,21 +946,19 @@ def prepare_query(
             return f"`{name}`"
         return name
 
-    def server_value(attribute: str) -> str | None:
-        return getattr(server, attribute, None) if server else None
-
     model_name_for_soda = quote_identifier(model_name)
 
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{object}["\']?', model_name_for_soda, query)
 
-    schema_value = server_value("schema_")
-    schema_name_for_soda = quote_identifier(schema_value) if schema_value else model_name_for_soda
-    query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
+    if server and server.schema_:
+        query = re.sub(r'["\']?\$?\{schema}["\']?', quote_identifier(server.schema_), query)
+    else:
+        query = re.sub(r'["\']?\$?\{schema}["\']?', model_name_for_soda, query)
 
     for placeholder in ("dataset", "project", "catalog", "database"):
-        value = server_value(placeholder)
+        value = getattr(server, placeholder, None) if server else None
         replacement = quote_identifier(value) if value else model_name_for_soda
         query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement, query)
 

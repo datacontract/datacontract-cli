@@ -141,10 +141,6 @@ def to_threshold(quality: DataQuality) -> Optional[Threshold]:
     return None
 
 
-def _server_value(server: Optional[Server], attribute: str) -> Optional[str]:
-    return getattr(server, attribute, None) if server else None
-
-
 def prepare_query(
     quality: DataQuality, model_name: str, field_name: Optional[str], server: Optional[Server]
 ) -> Optional[str]:
@@ -162,12 +158,12 @@ def prepare_query(
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name, query)
     query = re.sub(r'["\']?\$?\{object}["\']?', model_name, query)
 
-    schema_replacement = _server_value(server, "schema_") or model_name
+    schema_replacement = server.schema_ if server and server.schema_ else model_name
     query = re.sub(r'["\']?\$?\{schema}["\']?', schema_replacement, query)
 
     for placeholder in ("dataset", "project", "catalog", "database"):
-        replacement = _server_value(server, placeholder) or model_name
-        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement, query)
+        replacement = getattr(server, placeholder, None) if server else None
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
 
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)
