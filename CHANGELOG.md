@@ -8,11 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The OpenAPI document of `datacontract api` reports the CLI version, describes every endpoint, parameter, and response model, and names its operations `testDataContract`, `lintDataContract`, `exportDataContract`, and `changelogBetweenDataContracts`
+- `DATACONTRACT_CLI_API_KEY` now also protects `POST /lint` and `POST /export`, which previously answered without an API key
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
 - `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`
 - `datacontract export sql --server databricks` keeps the declared length of `varchar(n)` and `char(n)` instead of exporting `STRING`
 
 ### Fixed
+- `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
 
 ## [1.1.0] - 2026-08-04
