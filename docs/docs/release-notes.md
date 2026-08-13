@@ -34,6 +34,7 @@ marked as such in the entry.
 - `datacontract export sql --server databricks` keeps the declared length of `varchar(n)` and `char(n)` instead of exporting `STRING`
 
 ### Fixed
+- `datacontract test` and `datacontract export sodacl` freshness and retention checks now honor the schema object's and property's `physicalName` ([#1488](https://github.com/datacontract/datacontract-cli/issues/1488))
 - `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column ([#1483](https://github.com/datacontract/datacontract-cli/issues/1483))
 
