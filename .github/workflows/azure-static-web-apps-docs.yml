@@ -44,15 +44,6 @@ jobs:
         working-directory: docs
       - run: npm run build # regenerates the release notes, then docusaurus build, which fails on broken links
         working-directory: docs
-      # The generated page is committed so the Oryx deploy container can fall
-      # back to it when it cannot read CHANGELOG.md. Keep the two in sync.
-      - name: Check the committed Release Notes match CHANGELOG.md
-        run: |
-          # --porcelain rather than `git diff` so an uncommitted (untracked) page fails too.
-          if [ -n "$(git status --porcelain -- docs/docs/release-notes.md)" ]; then
-            echo "::error file=docs/docs/release-notes.md::Out of date. Run 'npm run release-notes' in docs/ and commit the result."
-            exit 1
-          fi
 
   deploy:
     if: github.event_name == 'push'
@@ -63,6 +54,11 @@ jobs:
         with:
           submodules: true
           lfs: false
+      # The Release Notes page is generated from CHANGELOG.md and not committed.
+      # Generate it here, so the Oryx build container below finds it even if it
+      # cannot read CHANGELOG.md from outside the docs/ app folder.
+      - name: Generate the Release Notes page
+        run: node docs/scripts/generate-release-notes.mjs
       - name: Build And Deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
