@@ -210,17 +210,23 @@ jobs:
 
   push-to-ecr:
     runs-on: ubuntu-latest
+    # Minting the OIDC token needs this explicitly; the workflow-level default
+    # is `contents: read` only.
+    permissions:
+      id-token: write
+      contents: read
     needs:
       - docker
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Federated rather than a long-lived access key. The role is scoped to
+      # this repository's tags and to the datacontract-cli repository alone.
       - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ vars.AWS_ECR_RELEASE_ROLE_ARN }}
           aws-region: us-east-1
 
       - name: Login to Docker Hub

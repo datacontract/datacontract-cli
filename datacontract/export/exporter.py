@@ -46,6 +46,8 @@ class SqlServerType(str, Enum):
 
 
 class ExportFormat(str, Enum):
+    """A format a data contract can be converted to."""
+
     jsonschema = "jsonschema"
     pydantic_model = "pydantic-model"
     sodacl = "sodacl"

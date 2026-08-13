@@ -1,13 +1,11 @@
 import contextlib
 import io
 import json
-import os
 import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-import pytest
 import six
 
 # Fix for Python 3.12
@@ -24,10 +22,6 @@ from datacontract.export.avro_exporter import to_avro_schema_json
 
 datacontract = "fixtures/kafka/datacontract.yaml"
 datacontract_avro = "fixtures/kafka/datacontract_avro.yaml"
-
-# Skip when running under pytest-xdist workers - Spark's Java Kafka client
-# experiences timeouts when running in xdist subprocess environment
-is_xdist_worker = os.environ.get("PYTEST_XDIST_WORKER") is not None
 
 CONFLUENT_SCHEMA_ID = 42
 
@@ -49,7 +43,6 @@ CONFLUENT_WRITER_SCHEMA = json.dumps(
 )
 
 
-@pytest.mark.skipif(is_xdist_worker, reason="Spark Kafka tests fail under pytest-xdist workers")
 def test_test_kafka(monkeypatch):
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
 
@@ -63,7 +56,6 @@ def test_test_kafka(monkeypatch):
     assert run.result == "passed"
 
 
-@pytest.mark.skipif(is_xdist_worker, reason="Spark Kafka tests fail under pytest-xdist workers")
 def test_test_kafka_avro_plain(monkeypatch):
     """Plain Avro messages (no Confluent Schema Registry framing) must decode without
     being corrupted by the 5-byte magic-byte/schema-id strip. Regression for #1344,
@@ -80,7 +72,6 @@ def test_test_kafka_avro_plain(monkeypatch):
     assert run.result == "passed"
 
 
-@pytest.mark.skipif(is_xdist_worker, reason="Spark Kafka tests fail under pytest-xdist workers")
 def test_test_kafka_avro_confluent_schema_registry(monkeypatch):
     """Confluent-framed Avro messages must be decoded with the writer schema from the schema
     registry, not with the schema derived from the data contract. Regression for #1347, where
@@ -101,7 +92,6 @@ def test_test_kafka_avro_confluent_schema_registry(monkeypatch):
     assert run.result == "passed"
 
 
-@pytest.mark.skipif(is_xdist_worker, reason="Spark Kafka tests fail under pytest-xdist workers")
 def test_test_kafka_avro_confluent_without_schema_registry(monkeypatch):
     """Without a configured registry the writer schema of Confluent-framed messages is unknown.
     That must be reported as an undecodable topic rather than silently decoding every message
@@ -217,8 +207,8 @@ def send_messages_to_topic(kafka: KafkaContainer, messages_file_path: str, topic
 
     bootstrap_server = kafka.get_bootstrap_server().replace("localhost", "127.0.0.1")
 
-    # Pre-create the topic and wait for it to be ready
-    # This prevents race conditions with Spark trying to read before topic metadata is available
+    # Pre-create the topic and wait for it to be ready, so the read does not
+    # race the broker publishing the topic metadata
     _ensure_topic_exists(bootstrap_server, topic_name)
 
     producer = KafkaProducer(bootstrap_servers=bootstrap_server, value_serializer=lambda v: v.encode("utf-8"))
@@ -269,6 +259,6 @@ def _setup_datacontract(kafka: KafkaContainer, contract_path: str = datacontract
         data_contract_str = data_contract_file.read()
     host = kafka.get_bootstrap_server()
     # Replace localhost with 127.0.0.1 to avoid IPv4/IPv6 resolution issues
-    # that can cause timeouts in Spark's Kafka client under parallel load
+    # that can cause connection timeouts under parallel load
     host = host.replace("localhost", "127.0.0.1")
     return data_contract_str.replace("__KAFKA_HOST__", host)

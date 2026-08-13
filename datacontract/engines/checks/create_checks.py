@@ -48,7 +48,8 @@ def is_check_types(server: Optional[Server]) -> bool:
 
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
-    # Kafka uses the Spark SQL view name (the logical name), not the topic (physicalName).
+    # Kafka messages are loaded into a table named after the schema object (the logical
+    # name), not after the topic the physicalName holds.
     if server_type == "kafka":
         return schema_object.name
     if schema_object.physicalName:
@@ -159,6 +160,10 @@ def prepare_query(
 
     schema_replacement = server.schema_ if server and server.schema_ else model_name
     query = re.sub(r'["\']?\$?\{schema}["\']?', schema_replacement, query)
+
+    for placeholder in ("dataset", "project", "catalog", "database"):
+        replacement = getattr(server, placeholder, None) if server else None
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
 
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)

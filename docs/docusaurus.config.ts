@@ -118,6 +118,7 @@ const config: Config = {
   ],
 
   plugins: [
+    'docusaurus-markdown-source-plugin',
     [
       'docusaurus-plugin-llms',
       {
@@ -150,7 +151,8 @@ const config: Config = {
           'quality-rules/*.md',
           'service-levels.md',
           'semantics.md',
-          'ci-cd.md',
+          'scheduling/index.md',
+          'scheduling/*.md',
           'dbt.md',
           'editor.md',
           'imports/index.md',

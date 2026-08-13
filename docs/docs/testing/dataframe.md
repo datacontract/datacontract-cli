@@ -10,13 +10,13 @@ Test Spark DataFrames in a pipeline before writing them to a data source. DataFr
 
 ## 1. Install
 
-Install the `dataframe` extra:
+Install the `dataframe` extra into the environment your pipeline runs in — this connection is used from Python, so it is a library install rather than a CLI tool:
 
 ```bash
-uv tool install --python python3.11 --upgrade 'datacontract-cli[dataframe]'
+pip install 'datacontract-cli[dataframe]'
 ```
 
-In a notebook or pipeline environment, install `datacontract-cli[dataframe]` as a library instead. Spark runtimes such as Databricks already ship PySpark, so only the Spark backend of the query engine is added. See [Installation](../installation.md) for pip, pipx, and Docker.
+The extra adds the Spark backend of the query engine, not PySpark itself. You already have PySpark wherever you can build the session this connection needs, and on a Spark runtime such as Databricks or EMR a second copy would shadow the one the cluster ships. Outside such a runtime, install PySpark yourself. See [Installation](../installation.md) for pip, pipx, and Docker.
 
 ## 2. Create a contract from your DataFrames
 

@@ -67,7 +67,7 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - Test your own warehouse in 5 minutes: **[Snowflake](./testing/snowflake.md)**, **[BigQuery](./testing/bigquery.md)**, **[Databricks](./testing/databricks.md)**, **[Amazon Redshift](./testing/redshift.md)**, or **[any other source](./testing/index.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
-- Run checks against real data with **[Test your Data](./testing/index.md)**, then keep them running with **[Scheduling and CI/CD](./ci-cd.md)**.
+- Run checks against real data with **[Test your Data](./testing/index.md)**, then keep them running with **[Scheduling](./scheduling/index.md)**.
 - Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
 - Evaluating options? See **[Comparison with Other Tools](./comparison.md)**.

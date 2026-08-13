@@ -176,6 +176,14 @@ datacontract dbt test
 datacontract dbt test orders.odcs.yaml --project-dir ./warehouse --target dev
 ```
 
+The command shells out to `dbt`, so a dbt adapter for your warehouse has to be installed alongside the CLI, e.g. `pip install dbt-snowflake`. `dbt sync --run-tests` needs one for the same reason.
+
+:::warning[Not available in the Docker image]
+`datacontract dbt test` does not work in the `datacontract/cli` container. The image ships no dbt adapter, and it is built on a minimal base with no shell or package manager, so one cannot be added to it — a derived image with `RUN pip install dbt-<adapter>` will not build. Run the command from a Python install (`pip install datacontract-cli`, plus your adapter) instead.
+
+`datacontract dbt sync` is unaffected and works in the container: it only reads and writes files in the dbt project.
+:::
+
 See the [`dbt` command reference](./commands/dbt/index.md).
 
 ## dbt exporters

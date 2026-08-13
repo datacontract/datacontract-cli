@@ -130,8 +130,8 @@ def to_failure_text(check):
         f"Reason: {check.reason}\n"
         f"Diagnostics:\n{yaml.dump(check.diagnostics, default_flow_style=False)}"
     )
-    if check.failed_samples:
-        text += f"Failed samples:\n{yaml.dump(check.failed_samples, default_flow_style=False)}"
+    if check.failedSamples:
+        text += f"Failed samples:\n{yaml.dump(check.failedSamples, default_flow_style=False)}"
     return text
 
 

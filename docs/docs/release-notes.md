@@ -27,8 +27,44 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Added
+- SQL quality rules support the `${dataset}`, `${project}`, `${catalog}`, and `${database}` placeholders for the server's values
 - `datacontract test --metadata-only` runs only checks that read the schema (field presence and types) and reports checks that read row values as skipped
 - `datacontract test --checks` accepts the ODCS terms `properties` and `slaProperties`, keeping `schema` and `servicelevel` as legacy aliases
+
+### Changed
+- `datacontract export excel` uses the ODCS Excel template bundled with the CLI instead of downloading it, so the export works offline; use `--template` for a custom template
+- The OpenAPI document of `datacontract api` reports the CLI version, describes every endpoint, parameter, and response model, and names its operations `testDataContract`, `lintDataContract`, `exportDataContract`, and `changelogBetweenDataContracts`
+- `DATACONTRACT_CLI_API_KEY` now also protects `POST /lint` and `POST /export`, which previously answered without an API key
+- Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
+- `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`
+- `datacontract export sql --server databricks` keeps the declared length of `varchar(n)` and `char(n)` instead of exporting `STRING`
+
+### Fixed
+- `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
+- `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column ([#1483](https://github.com/datacontract/datacontract-cli/issues/1483))
+
+## 1.1.0 — 2026-08-04 {#v1-1-0}
+
+This release drops the pyspark compile-time dependency. The server types `dataframe` and `databricks` still work with a provided Spark session.
+This removes the JVM dependency, makes the images much, much smaller (Docker image from 777 MB to 277 MB), and many CVEs are resolved.
+
+### Added
+- `DATACONTRACT_KAFKA_MAX_MESSAGES` limits how many messages `datacontract test` reads from a topic, and `DATACONTRACT_KAFKA_TIMEOUT` how long it waits for one
+
+### Changed
+- `datacontract test` for Kafka no longer needs PySpark or a Java runtime: `datacontract-cli[kafka]` now installs confluent-kafka, fastavro, and DuckDB instead
+- `datacontract-cli[databricks]` and `datacontract-cli[dataframe]` no longer install PySpark, so they can no longer shadow the build a Databricks Runtime or EMR cluster provides; supply your own PySpark for the Spark session these server types take, and `databricks-runtime` is now an alias of `databricks`
+- `datacontract-cli[all]` installs no PySpark at all, and so needs no Java runtime
+- The Docker image ships no JRE and uses a shell-less base image; a derived image can no longer `RUN pip install`, so `datacontract dbt test`, which needs a dbt adapter, is not available in the container
+- `datacontract import unity` resolves struct and array columns into nested properties without PySpark installed
+- `spark_exporter.to_spark_schema()`, `to_struct_type()`, `to_struct_field()`, and `to_spark_data_type()` return the exporter's own `SparkDataType` instead of `pyspark.sql.types` objects; use `to_spark_dict()` or the new `to_pyspark_schema()` for real PySpark schemas
+- Kafka topics with an Avro union of more than one non-null type are now reported as an error instead of being decoded into a struct of the union's members
+- Kafka messages without a value (compaction tombstones) are skipped instead of being checked as a row of nulls
+
+### Fixed
+- `datacontract export spark` and `datacontract export great-expectations --engine spark` no longer require PySpark to be installed
+- `spark_exporter.to_spark_dict()` reports which PySpark version lacks a type instead of raising a bare `AttributeError`, e.g. `VariantType` before PySpark 4.0
+- `datacontract test` for Databricks no longer creates ibis's memtable staging volume, so read-only service principals without `CREATE VOLUME` permission can run tests
 
 ## 1.0.17 — 2026-08-01 {#v1-0-17}
 
@@ -44,6 +80,7 @@ marked as such in the entry.
 - New Snowflake connection options: `DATACONTRACT_SNOWFLAKE_TOKEN`, `DATACONTRACT_SNOWFLAKE_PASSCODE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`, `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_HOST`, `DATACONTRACT_SNOWFLAKE_PORT`
 - Config options to override the server details from the data contract (host, port, database, schema, catalog, project, dataset, account, service name, staging directory) for Postgres, MySQL, SQL Server, Oracle, Redshift, Snowflake, BigQuery, Databricks, Trino, Athena, and Impala, e.g. `DATACONTRACT_POSTGRES_HOST` ([#1076](https://github.com/datacontract/datacontract-cli/issues/1076))
 - Data contract locations now support `s3://` URLs for commands that read contracts, including `lint`, `test`, `export`, `publish`, `changelog`, and `ci`
+- The documentation now supports raw Markdown access by adding a `.md` extension in url ([#1464](https://github.com/datacontract/datacontract-cli/issues/1464))
 
 ### Changed
 - `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning

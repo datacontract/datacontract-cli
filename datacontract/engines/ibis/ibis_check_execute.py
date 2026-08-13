@@ -66,7 +66,7 @@ def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
                 name=spec.name,
                 model=spec.model,
                 field=spec.field,
-                quality_id=spec.quality_id,
+                qualityId=spec.quality_id,
                 tags=spec.tags,
                 engine="ibis",
                 implementation=_describe(spec),
@@ -373,7 +373,7 @@ def _collect_failed_samples(run, t, columns, schema, model, specs, data_contract
             logger.debug("Could not collect failed samples for '%s': %s", spec.key, e)
             continue
         if samples:
-            check.failed_samples = samples
+            check.failedSamples = samples
 
 
 def _sample_field_meta(data_contract, server, model):

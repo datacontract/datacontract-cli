@@ -58,17 +58,17 @@ def _check(run, type_, field=None):
 def test_no_samples_collected_without_flag():
     run = _run(include_failed_samples=False)
     assert run.result == ResultEnum.failed  # there are real violations
-    assert all(c.failed_samples is None for c in run.checks)
+    assert all(c.failedSamples is None for c in run.checks)
 
 
 def test_missing_samples_have_identifier_and_offending_column():
     run = _run(include_failed_samples=True)
     check = _check(run, "field_required", field="region")
     assert check.result == ResultEnum.failed
-    assert check.failed_samples is not None
+    assert check.failedSamples is not None
     # region is empty for ids 3 and 5.
-    assert {s["id"] for s in check.failed_samples} == {3, 5}
-    for s in check.failed_samples:
+    assert {s["id"] for s in check.failedSamples} == {3, 5}
+    for s in check.failedSamples:
         assert set(s.keys()) == {"id", "region"}
         assert s["region"] is None
 
@@ -77,7 +77,7 @@ def test_invalid_range_sample_includes_offending_value():
     run = _run(include_failed_samples=True)
     check = _check(run, "field_maximum", field="amount")
     assert check.result == ResultEnum.failed
-    assert check.failed_samples == [{"id": 3, "amount": 200}]
+    assert check.failedSamples == [{"id": 3, "amount": 200}]
 
 
 def test_samples_respect_the_limit():
@@ -85,14 +85,14 @@ def test_samples_respect_the_limit():
     check = _check(run, "field_regex", field="email")
     assert check.result == ResultEnum.failed
     # 6 rows fail the email pattern, but samples are capped at 5.
-    assert len(check.failed_samples) == 5
+    assert len(check.failedSamples) == 5
 
 
 def test_sensitive_column_is_omitted_from_samples():
     run = _run(include_failed_samples=True)
     check = _check(run, "field_regex", field="email")
     # email is classified PII, so its value must not appear; only the identifier.
-    for s in check.failed_samples:
+    for s in check.failedSamples:
         assert "email" not in s
         assert set(s.keys()) == {"id"}
 
@@ -101,4 +101,4 @@ def test_duplicate_samples_report_key_and_count():
     run = _run(include_failed_samples=True)
     check = _check(run, "field_unique", field="id")
     assert check.result == ResultEnum.failed
-    assert check.failed_samples == [{"id": 2, "duplicate_count": 2}]
+    assert check.failedSamples == [{"id": 2, "duplicate_count": 2}]

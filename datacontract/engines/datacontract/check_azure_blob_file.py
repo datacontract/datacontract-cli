@@ -629,7 +629,7 @@ def _append_check(
             name=name,
             model=model,
             field=field,
-            quality_id=quality_id,
+            qualityId=quality_id,
             tags=tags,
             engine="datacontract",
             language="python",

@@ -267,8 +267,8 @@ A list of available extras:
 | Google BigQuery                          | `pip install datacontract-cli[bigquery]`   |
 | CSV                                      | `pip install datacontract-cli[csv]`        |
 | Databricks Integration                   | `pip install datacontract-cli[databricks]` |
-| Databricks Runtime                       | `pip install datacontract-cli[databricks-runtime]` (inside Databricks, where the cluster provides PySpark) |
-| DataFrame (Spark)                        | `pip install datacontract-cli[dataframe]`  |
+| Databricks Runtime                       | `pip install datacontract-cli[databricks]` (also inside Databricks, using the cluster's own Spark session) |
+| DataFrame (Spark)                        | `pip install datacontract-cli[dataframe]` (PySpark not included — you supply the Spark session) |
 | DBML                                     | `pip install datacontract-cli[dbml]`       |
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]`     |
 | Excel                                    | `pip install datacontract-cli[excel]`      |
@@ -309,11 +309,9 @@ It covers everything in depth, including the complete command reference:
 
 - Install [uv](https://docs.astral.sh/uv/)
 - Python base interpreter should be 3.11.x.
-- A JDK (17 or 21) must be installed for the Spark-based tests (e.g. `test_test_kafka.py`, `test_test_delta.py`, `test_test_dataframe.py`, `test_import_spark.py`). Java 25 is not yet supported. On macOS and Linux you can install one with [SDKMAN](https://sdkman.io): `sdk install java 21.0.11-tem` (or any 21.x build from `sdk list java`). Verify with `java --version`.
 - Docker engine must be running to execute the tests.
 
 ```bash
-sdk use java 21.0.11-tem
 uv python pin 3.11
 uv venv
 uv pip install -e '.[dev]'
@@ -345,15 +343,6 @@ Try to sync all groups:
 ```
 uv sync --all-groups --all-extras
 ```
-
-#### Errors in tests that use PySpark (e.g. test_test_kafka.py)
-
-Ensure you have a JDK 17 or 21 installed. Java 25 causes issues.
-
-```
-java --version
-```
-
 
 ### Docker Build
 

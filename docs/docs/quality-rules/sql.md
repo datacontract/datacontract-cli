@@ -47,6 +47,31 @@ schema:
         mustBeLessThan: 3600
 ```
 
+## Placeholders
+
+Instead of hard-coding names, the query can reference the schema, the property, and the location the server names:
+
+| Placeholder | Replaced with |
+|---|---|
+| `${model}` / `${table}` / `${object}` | the name of the schema object the rule belongs to |
+| `${field}` / `${column}` / `${property}` | the name of the property the rule belongs to (property-level rules only) |
+| `${schema}` | the server's `schema` |
+| `${dataset}` | the server's `dataset` (BigQuery) |
+| `${project}` | the server's `project` (BigQuery) |
+| `${catalog}` | the server's `catalog` (Databricks, Trino) |
+| `${database}` | the server's `database` (Postgres, SQL Server, Snowflake) |
+
+The `$` is optional: `{schema}` works the same as `${schema}`. A placeholder the server has no value for falls back to the name of the schema object.
+
+```yaml
+quality:
+  - type: sql
+    description: The orders table is not empty.
+    query: |
+      SELECT COUNT(*) FROM ${project}.${dataset}.${table}
+    mustBeGreaterThan: 0
+```
+
 ## Comparators
 
 The query must return a single value, which is compared using exactly one of:

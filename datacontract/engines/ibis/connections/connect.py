@@ -2,10 +2,11 @@
 
 Replaces the per-source soda configuration builders. Each branch maps the
 ``Server`` fields and the same ``DATACONTRACT_*`` environment variables the soda
-connections used onto an ``ibis.<backend>.connect(...)`` call. File sources
-reuse the DuckDB view builder (``duckdb_connection.py``) and Spark sources reuse
-the Spark/Kafka helpers (``kafka.py``), wrapping the resulting connection/session
-with the ibis duckdb / pyspark backend.
+connections used onto an ``ibis.<backend>.connect(...)`` call. File sources reuse
+the DuckDB view builder (``duckdb_connection.py``) and Kafka reuses the topic
+reader (``kafka.py``), which likewise loads its messages into DuckDB; both are
+wrapped with the ibis duckdb backend. Only the Spark-session server types
+(``dataframe``, ``databricks``) use the ibis pyspark backend.
 """
 
 from __future__ import annotations
@@ -73,12 +74,11 @@ def connect_ibis(
         return ibis.duckdb.from_connection(con)
 
     if server_type == "kafka":
-        from datacontract.engines.ibis.connections.kafka import create_spark_session, read_kafka_topic
+        from datacontract.engines.ibis.connections.kafka import read_kafka_topic
 
-        if spark is None:
-            spark = create_spark_session()
-        read_kafka_topic(spark, data_contract, server, config)
-        return ibis.pyspark.connect(session=spark)
+        run.log_info(f"Connecting to kafka {server.format} via duckdb")
+        con = read_kafka_topic(data_contract, server, run, config, duckdb_connection)
+        return ibis.duckdb.from_connection(con)
 
     if server_type == "dataframe":
         if spark is None:
@@ -236,7 +236,7 @@ def _connect_databricks(ibis, server: Server, run: Run, config: Config):
 
     if token:
         run.log_info("Connecting to databricks with a personal access token")
-        return ibis.databricks.connect(access_token=token, **kwargs)
+        return _databricks_connect(ibis, access_token=token, **kwargs)
 
     if client_id and client_secret:
         run.log_info("Connecting to databricks with an OAuth service principal (M2M)")
@@ -244,20 +244,50 @@ def _connect_databricks(ibis, server: Server, run: Run, config: Config):
         kwargs["credentials_provider"] = _databricks_credentials_provider(
             service_principal=True, host=sdk_host, client_id=client_id, client_secret=client_secret
         )
-        return ibis.databricks.connect(**kwargs)
+        return _databricks_connect(ibis, **kwargs)
 
     if profile:
         run.log_info(f"Connecting to databricks with config profile '{profile}'")
         kwargs["credentials_provider"] = _databricks_credentials_provider(profile=profile)
-        return ibis.databricks.connect(**kwargs)
+        return _databricks_connect(ibis, **kwargs)
 
     if auth_type:
         run.log_info(f"Connecting to databricks with auth_type '{auth_type}'")
-        return ibis.databricks.connect(auth_type=auth_type, **kwargs)
+        return _databricks_connect(ibis, auth_type=auth_type, **kwargs)
 
     # Nothing configured: fail with the same clear message as before.
     token = config.get_databricks_token(required=True)
-    return ibis.databricks.connect(access_token=token, **kwargs)
+    return _databricks_connect(ibis, access_token=token, **kwargs)
+
+
+def _databricks_connect(ibis, **kwargs):
+    """Connect to Databricks without creating ibis's memtable staging volume.
+
+    ibis's Databricks backend creates a staging volume for memtables in the
+    target schema at connect time (``CREATE VOLUME IF NOT EXISTS``), named
+    after the client host and pid and never cleaned up. Contract tests only
+    ever read, so the volume is never used: skipping its setup lets read-only
+    principals without CREATE VOLUME permission run tests and keeps repeated
+    runs from littering the schema with per-run volumes.
+
+    Workaround until https://github.com/dataqcompany/ibis/pull/2 (drops the
+    CREATE VOLUME requirement for read-only connections) is merged and
+    released; then the ``_post_connect`` patch can go.
+    """
+    from ibis.backends.databricks import Backend
+
+    from datacontract.engines.ibis.connections.databricks_patch import apply_databricks_compatibility_patch
+
+    # Databricks-only column types (GEOGRAPHY(4326), …) otherwise fail the whole
+    # model when ibis reflects the table.
+    apply_databricks_compatibility_patch()
+
+    original_post_connect = Backend._post_connect
+    Backend._post_connect = lambda self, *, memtable_volume=None: None
+    try:
+        return ibis.databricks.connect(**kwargs)
+    finally:
+        Backend._post_connect = original_post_connect
 
 
 def _databricks_credentials_provider(service_principal: bool = False, **config_kwargs):

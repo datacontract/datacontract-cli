@@ -177,5 +177,5 @@ A filtered run only makes a statement about the tested subset. So the applied fi
 ## Next steps
 
 - Run the tests from Python instead of the CLI: **[Python Library](../python-library.md)**.
-- Keep the tests running automatically: **[Scheduling and CI/CD](../ci-cd.md)**.
+- Keep the tests running automatically: **[Scheduling](../scheduling/index.md)**.
 - Roll data contracts out across a team: **[Adopting Data Contracts](../best-practices.md)**.

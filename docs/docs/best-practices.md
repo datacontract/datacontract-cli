@@ -37,7 +37,7 @@ Create a data contract based on the **actual data**. This is the fastest way to 
    datacontract ci --publish https://api.entropy-data.com/api/test-results
    ```
 
-   See [Scheduling and CI/CD](./ci-cd.md).
+   See [Scheduling](./scheduling/index.md).
 
 ## Contract-first approach
 

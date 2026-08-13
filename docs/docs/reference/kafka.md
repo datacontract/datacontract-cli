@@ -28,7 +28,18 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_PASSWORD` | `xxx` | The SASL password (secret) |
 | `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`; also `SCRAM-SHA-256`, `SCRAM-SHA-512` |
 
-If no username/password is set, the CLI connects without authentication (e.g. a local broker). `host`, `topic`, and `format` come from the contract's `servers` block. Kafka checks run on Spark and require a JDK (17 or 21).
+If no username/password is set, the CLI connects without authentication (e.g. a local broker). `host`, `topic`, and `format` come from the contract's `servers` block. A username and password switch the connection to `SASL_SSL`.
+
+## Reading the topic
+
+| Variable | Example | Description |
+|---|---|---|
+| `DATACONTRACT_KAFKA_MAX_MESSAGES` | `100000` | Stop after this many messages. Unset by default: the whole topic is read |
+| `DATACONTRACT_KAFKA_TIMEOUT` | `30` | Seconds to wait for a message before giving up. Default `30`; the timer resets whenever a message arrives, so a slow read is never cut short |
+
+Every partition is read from its earliest offset up to the latest offset at the time the run starts, so messages produced while the checks are running are not included. Offsets are never committed, and each run uses its own consumer group, so testing a topic does not disturb a real consumer. Messages with no value (compaction tombstones) are skipped.
+
+All messages are held in memory. `DATACONTRACT_KAFKA_MAX_MESSAGES` bounds that on a large topic, at the cost of checking a sample rather than the whole topic — the run reports when it has done so.
 
 ## Schema Registry
 
@@ -64,4 +75,24 @@ Avro logical type annotations take precedence: `decimal` → `number` (with prec
 
 ### Testing
 
-Messages are read via Spark. For `format: json` and `format: avro`, no type checks are generated — messages are decoded as the contract's types, and violations surface as decode errors or value-check failures from `logicalTypeOptions`. For Avro, the decoding schema comes from the [schema registry](#schema-registry) when the message carries a schema id.
+For `format: json` and `format: avro`, no type checks are generated — violations surface as decode errors or as value-check failures from `logicalTypeOptions`.
+
+JSON messages are decoded as the types the contract declares; a message that is not a JSON object becomes a row of nulls and is reported as missing values. Avro messages are decoded with the schema they were written with — from the [schema registry](#schema-registry) when the message carries a schema id, otherwise the one derived from the contract — and keep that schema's types:
+
+| Avro type | Read as |
+|---|---|
+| `boolean` | `BOOLEAN` |
+| `int`, `long` | `INTEGER`, `BIGINT` |
+| `float`, `double` | `FLOAT`, `DOUBLE` |
+| `string`, `enum` | `VARCHAR` |
+| `bytes`, `fixed` | `BLOB` |
+| `record` | `STRUCT` |
+| `array` | `LIST` |
+| `map` | `MAP(VARCHAR, …)` |
+| `decimal` (on `bytes`/`fixed`) | `DECIMAL(precision, scale)` |
+| `date` | `DATE` |
+| `time-millis`, `time-micros` | `TIME` |
+| `timestamp-millis`, `timestamp-micros` | `TIMESTAMP WITH TIME ZONE` |
+| `local-timestamp-millis`, `local-timestamp-micros` | `TIMESTAMP` |
+
+A union must be `[null, T]`: which type of a wider union a message carries is known only per message, and a column has one type. Such a union is rejected with an error rather than guessed at.
