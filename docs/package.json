@@ -5,9 +5,11 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "release-notes": "node scripts/generate-release-notes.mjs",
-    "prestart": "npm run release-notes",
+    "command-docs": "node scripts/generate-command-docs.mjs",
+    "generate": "npm run release-notes && npm run command-docs",
+    "prestart": "npm run generate",
     "start": "docusaurus start",
-    "prebuild": "npm run release-notes",
+    "prebuild": "npm run generate",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",

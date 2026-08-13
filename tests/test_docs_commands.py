@@ -1,12 +1,11 @@
-"""The command reference is generated from `--help` and must not drift.
+"""The command reference is generated from `--help` and has to stay reachable.
 
 Every page under docs/docs/commands/ is produced by update_command_docs.py from
-the Click command tree, so adding a command or an option without regenerating
-is a test failure rather than a silently stale page.
+the Click command tree, the same way the docs build produces it, so what is
+asserted here is that the generator covers every command and option and that
+the prose guides and the generated pages still link to each other.
 """
 
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -18,6 +17,8 @@ from update_command_docs import is_group
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 COMMANDS = DOCS / "commands"
+
+pytestmark = pytest.mark.usefixtures("generated_docs")
 
 
 def leaves():
@@ -92,14 +93,3 @@ def test_each_command_page_links_back_to_its_guide(guide, page):
     assert f"../../{guide.relative_to(DOCS).as_posix()}" in page.read_text(), (
         f"{page.relative_to(REPO_ROOT)} does not link back to {guide.relative_to(REPO_ROOT)}"
     )
-
-
-def test_command_docs_are_regenerated():
-    """`python update_command_docs.py --check` must be clean."""
-    result = subprocess.run(
-        [sys.executable, "update_command_docs.py", "--check"],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, result.stdout + result.stderr

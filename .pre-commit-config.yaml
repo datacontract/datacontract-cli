@@ -1,26 +1,13 @@
-# Only what CI also enforces, run from the project's own environment: pinning a
-# separate ruff here drifts from the `ruff==` pin in pyproject.toml, and a hook
-# that reformats what CI accepts is worse than no hook.
+# Only what CI also enforces. Generated docs are not committed, so nothing here
+# has to keep them in sync.
 repos:
-- repo: local
+# Keep the rev on the version pinned as `ruff==` in pyproject.toml: a hook that
+# reformats what CI accepts is worse than no hook. Dependabot updates both.
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.16.2
   hooks:
+    # Run the linter.
     - id: ruff
-      name: ruff check --fix
-      entry: ruff check --fix --force-exclude
-      language: system
-      types_or: [python, pyi]
-      require_serial: true
+      args: [ --fix ]
+    # Run the formatter.
     - id: ruff-format
-      name: ruff format
-      entry: ruff format --force-exclude
-      language: system
-      types_or: [python, pyi]
-      require_serial: true
-    # docs/docs/commands is generated but committed, and tests/test_docs_commands.py
-    # fails on a stale page. Regenerate it here so that never reaches CI.
-    - id: command-docs
-      name: Regenerate docs/docs/commands from the CLI --help output
-      entry: python update_command_docs.py
-      language: system
-      pass_filenames: false
-      files: ^(datacontract/|update_command_docs\.py$)

@@ -18,6 +18,17 @@ updates:
     labels:
       - "dependencies"
 
+  # The hooks in .pre-commit-config.yaml. Their rev is pinned separately from
+  # the `ruff==` pin in pyproject.toml, so without this the hook drifts behind
+  # and starts reformatting what CI accepts.
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "10:00"
+    labels:
+      - "dependencies"
+
   # The actions used by the workflows in .github/workflows.
   - package-ecosystem: "github-actions"
     directory: "/"

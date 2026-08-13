@@ -16,6 +16,10 @@ uv.lock
 # Generated from CHANGELOG.md by docs/scripts/generate-release-notes.mjs on every
 # docs build. Not committed, so a changelog entry never leaves the page stale.
 /docs/docs/release-notes.md
+# Generated from the CLI --help output by update_command_docs.py on every docs
+# build. _category_.json is hand-written: it positions the Commands section.
+/docs/docs/commands/*
+!/docs/docs/commands/_category_.json
 
 ### JetBrains template
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
