@@ -1,3 +1,10 @@
+# Without this, jekyll-sitemap and jekyll-seo-tag fall back to the http scheme:
+# sitemap.xml advertised http://cli.datacontract.com/ and og:url disagreed with
+# the https canonical. Google took the hint and indexed the http variants — they
+# hold 24k impressions against 6.6k on https, splitting every link and engagement
+# signal this site has earned across two versions of the same page.
+url: https://cli.datacontract.com
+
 plugins:
   - jekyll-sitemap
 markdown: kramdown

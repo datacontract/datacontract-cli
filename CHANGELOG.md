@@ -7,13 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- SQL quality rules support the `${dataset}`, `${project}`, `${catalog}`, and `${database}` placeholders for the server's values
+- `datacontract test --metadata-only` runs only checks that read the schema (field presence and types) and reports checks that read row values as skipped
+- `datacontract test --checks` accepts the ODCS terms `properties` and `slaProperties`, keeping `schema` and `servicelevel` as legacy aliases
+
 ### Changed
+- `datacontract export excel` uses the ODCS Excel template bundled with the CLI instead of downloading it, so the export works offline; use `--template` for a custom template
+- The OpenAPI document of `datacontract api` reports the CLI version, describes every endpoint, parameter, and response model, and names its operations `testDataContract`, `lintDataContract`, `exportDataContract`, and `changelogBetweenDataContracts`
+- `DATACONTRACT_CLI_API_KEY` now also protects `POST /lint` and `POST /export`, which previously answered without an API key
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
 - `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`
 - `datacontract export sql --server databricks` keeps the declared length of `varchar(n)` and `char(n)` instead of exporting `STRING`
 
 ### Fixed
 - `datacontract test` for API servers with `delimiter: array` no longer fails JSON schema validation with `data must be object` (#1495)
+- `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
 
 ## [1.1.0] - 2026-08-04

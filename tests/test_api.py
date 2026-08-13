@@ -288,3 +288,50 @@ def test_config_headers_work_despite_unrelated_malformed_env_var(monkeypatch):
     config = config_from_headers({"datacontract-postgres-username": "u"})
 
     assert config.get_postgres_username() == "u"
+
+
+# ---------------------------------------------------------------------------
+# DATACONTRACT_CLI_API_KEY protects the API, so it has to protect every
+# endpoint of it — not only the two that happened to ask for the key.
+# ---------------------------------------------------------------------------
+def _post(url: str, api_key: str | None = None):
+    headers = {"Content-Type": "application/yaml"}
+    if api_key is not None:
+        headers["x-api-key"] = api_key
+    with open("fixtures/lint/valid_datacontract.yaml") as f:
+        return client.post(url=url, content=f.read(), headers=headers)
+
+
+def test_every_endpoint_rejects_a_missing_api_key(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_CLI_API_KEY", "secret")
+
+    assert _post("/lint").status_code == 401
+    assert _post("/export?format=odcs").status_code == 401
+    assert _post("/test").status_code == 401
+    assert client.post(url="/changelog", json={"v1": "a: b", "v2": "a: b"}).status_code == 401
+
+
+def test_every_endpoint_rejects_a_wrong_api_key(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_CLI_API_KEY", "secret")
+
+    assert _post("/lint", api_key="not-the-secret").status_code == 403
+    assert _post("/export?format=odcs", api_key="not-the-secret").status_code == 403
+
+
+def test_every_endpoint_accepts_the_correct_api_key(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_CLI_API_KEY", "secret")
+
+    assert _post("/lint", api_key="secret").status_code == 200
+    assert _post("/export?format=odcs", api_key="secret").status_code == 200
+
+
+def test_export_reports_an_unparseable_contract_as_a_client_error():
+    """Not as a 500 — the request is the problem, not the server."""
+    response = client.post(
+        url="/export?format=sql",
+        content="not: a: contract: [",
+        headers={"Content-Type": "application/yaml"},
+    )
+
+    assert response.status_code == 422
+    assert "detail" in response.json()

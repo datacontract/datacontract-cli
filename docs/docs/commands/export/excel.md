@@ -20,7 +20,7 @@ datacontract export excel [OPTIONS] [LOCATION]
 
 | Option | Default | Description |
 |---|---|---|
-| `--template` | — | Path or URL to a custom Excel template. |
+| `--template` | — | Path or URL to a custom Excel template. Defaults to the bundled ODCS template. |
 | `--output` | — | File path where the exported data will be saved. If not provided, it will be printed to stdout. |
 | `--server` | — | The server name to export. |
 | `--schema-name` | `all` | Which schema to export, e.g., `orders`, or `all` for all schemas (default). |

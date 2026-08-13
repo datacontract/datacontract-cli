@@ -43,40 +43,89 @@ def _deprecated_alias(old_name: str, new_name: str) -> property:
 
 
 class ResultEnum(str, Enum):
+    """The outcome of a check or of a whole test run."""
+
     passed = "passed"
     warning = "warning"
     failed = "failed"
     error = "error"
     info = "info"
+    skipped = "skipped"
     unknown = "unknown"
 
 
 class Check(BaseModel):
-    id: str | None = None
-    key: str | None = None
-    category: str | None = None
-    type: str
-    name: str | None = None
-    model: str | None = None  # naming for historic reasons. Should rather be named schema
-    field: str | None = None  # naming for historic reasons. Should rather be named property
+    """A single test that was executed as part of a run."""
+
+    id: str | None = Field(default=None, description="A stable identifier of this check.")
+    key: str | None = Field(default=None, description="The key of the check within the test engine.")
+    category: str | None = Field(
+        default=None,
+        description="The category of the check, such as `schema` or `quality`.",
+        examples=["schema"],
+    )
+    type: str = Field(description="The kind of check that was executed.", examples=["field_unique"])
+    name: str | None = Field(
+        default=None,
+        description="A human-readable description of what was checked.",
+        examples=["Check that field order_id is unique"],
+    )
+    model: str | None = Field(  # naming for historic reasons. Should rather be named schema
+        default=None,
+        description="The name of the schema (table) this check applies to.",
+        examples=["orders"],
+    )
+    field: str | None = Field(  # naming for historic reasons. Should rather be named property
+        default=None,
+        description="The name of the property (column) this check applies to.",
+        examples=["order_id"],
+    )
     # The ODCS `quality.id` / `quality.tags` of the rule this check comes from,
     # so a check can be traced back to (and re-run through `test --quality-id`
     # / `test --tag`) the rule that declared it. Empty for built-in checks.
-    qualityId: str | None = Field(default=None, validation_alias=AliasChoices("qualityId", "quality_id"))
-    tags: list[str] | None = None
+    qualityId: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("qualityId", "quality_id"),
+        description="The ODCS `quality.id` of the rule this check comes from, so it can be traced back "
+        "to (and re-run through `test --quality-id`) the rule that declared it. Absent for built-in checks.",
+    )
+    tags: list[str] | None = Field(
+        default=None,
+        description="The ODCS `quality.tags` of the rule this check comes from.",
+    )
 
-    engine: str | None = None
-    language: str | None = None
-    implementation: str | None = None
+    engine: str | None = Field(
+        default=None,
+        description="The engine that executed the check.",
+        examples=["soda"],
+    )
+    language: str | None = Field(default=None, description="The language the check was expressed in.")
+    implementation: str | None = Field(
+        default=None,
+        description="The check as it was handed to the engine, such as the generated SQL.",
+    )
 
-    result: ResultEnum | None = None
-    reason: str | None = None
-    diagnostics: dict | None = None
+    result: ResultEnum | None = Field(default=None, description="The outcome of this check.")
+    reason: str | None = Field(
+        default=None,
+        description="Why the check did not pass.",
+        examples=["Value(s) not unique: 3"],
+    )
+    diagnostics: dict | None = Field(
+        default=None,
+        description="Engine-specific details about the check, such as the number of failed rows.",
+    )
     # A capped sample of rows that failed this check (only collected when
     # `datacontract test --include-failed-samples` is set). Each entry is a row
     # restricted to identifier + offending columns, with sensitive columns
     # omitted. The full failed count lives in `diagnostics`, not here.
-    failedSamples: list | None = Field(default=None, validation_alias=AliasChoices("failedSamples", "failed_samples"))
+    failedSamples: list | None = Field(
+        default=None,
+        validation_alias=AliasChoices("failedSamples", "failed_samples"),
+        description="A capped sample of rows that failed this check, each restricted to identifier and "
+        "offending columns. Only collected when failed samples were explicitly requested. "
+        "The full failed count is in `diagnostics`, not here.",
+    )
 
     # Deprecated former names of the two fields above. They still read, write and
     # validate, so `check.failed_samples` and older test-results JSON keep working.
@@ -84,12 +133,16 @@ class Check(BaseModel):
     failed_samples = _deprecated_alias("failed_samples", "failedSamples")
 
     @model_serializer(mode="wrap")
-    def _serialize_with_deprecated_aliases(self, handler: SerializerFunctionWrapHandler) -> dict:
-        """Write a set field under its deprecated name too.
+    def _serialize_with_deprecated_aliases(self, handler: SerializerFunctionWrapHandler):
+        """Write a set field under its deprecated name too. Returns a dict.
 
         The test results are published to the `/api/test-results` API, so a
         consumer still reading `quality_id` / `failed_samples` keeps working. A
         field that is not set stays absent under both names.
+
+        Deliberately left without a return annotation: a `-> dict` here replaces
+        the generated JSON Schema of the whole model with a bare object, which
+        would leave every check in the API's OpenAPI document untyped.
         """
         data = handler(self)
         for new_name, old_name in _DEPRECATED_CHECK_ALIASES.items():
@@ -99,27 +152,55 @@ class Check(BaseModel):
 
 
 class Log(BaseModel):
-    level: str
-    message: str
-    timestamp: datetime
+    """A message written while the run was executing."""
+
+    level: str = Field(description="The severity of the message.", examples=["INFO"])
+    message: str = Field(description="The message itself.")
+    timestamp: datetime = Field(description="When the message was written.")
 
 
 class Run(BaseModel):
-    runId: UUID
-    datacontractCliVersion: str = _cli_version()
-    dataContractId: str | None = None
-    dataContractVersion: str | None = None
-    dataProductId: str | None = None
-    outputPortId: str | None = None
-    server: str | None = None
+    """The result of testing or linting a data contract."""
+
+    runId: UUID = Field(description="A unique identifier of this run.")
+    datacontractCliVersion: str = Field(
+        default=_cli_version(),
+        description="The version of the Data Contract CLI that executed the run.",
+    )
+    dataContractId: str | None = Field(
+        default=None,
+        description="The `id` of the data contract that was tested.",
+        examples=["orders"],
+    )
+    dataContractVersion: str | None = Field(
+        default=None,
+        description="The `version` of the data contract that was tested.",
+        examples=["1.0.0"],
+    )
+    dataProductId: str | None = Field(default=None, description="The data product the contract belongs to.")
+    outputPortId: str | None = Field(default=None, description="The output port the contract describes.")
+    server: str | None = Field(
+        default=None,
+        description="The name of the server the tests ran against.",
+        examples=["production"],
+    )
     # The row filters applied to this run (--filter / --filters), keyed by the
     # contract's schema name. None when the whole dataset was tested.
-    filters: dict[str, str] | None = None
-    timestampStart: datetime | None
-    timestampEnd: datetime | None
-    result: ResultEnum = ResultEnum.unknown
-    checks: List[Check] | None
-    logs: List[Log] | None
+    filters: dict[str, str] | None = Field(
+        default=None,
+        description="The row filters applied to this run, keyed by schema name. "
+        "Absent when the whole dataset was tested.",
+        examples=[{"orders": "ingested_at >= CURRENT_DATE - 1"}],
+    )
+    timestampStart: datetime | None = Field(description="When the run started.")
+    timestampEnd: datetime | None = Field(description="When the run finished.")
+    result: ResultEnum = Field(
+        default=ResultEnum.unknown,
+        description="The overall outcome, derived from the most severe check result. "
+        "`passed` only if every check passed.",
+    )
+    checks: List[Check] | None = Field(description="One entry per executed check.")
+    logs: List[Log] | None = Field(description="The messages written while the run was executing.")
 
     def has_passed(self):
         self.calculate_result()

@@ -161,6 +161,10 @@ def prepare_query(
     schema_replacement = server.schema_ if server and server.schema_ else model_name
     query = re.sub(r'["\']?\$?\{schema}["\']?', schema_replacement, query)
 
+    for placeholder in ("dataset", "project", "catalog", "database"):
+        replacement = getattr(server, placeholder, None) if server else None
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
+
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)
         query = re.sub(r'["\']?\$?\{column}["\']?', field_name, query)

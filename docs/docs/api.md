@@ -41,6 +41,13 @@ datacontract api --port 1234 --root_path /datacontract
 Once running, open the interactive OpenAPI documentation (Swagger UI) at
 [http://localhost:4242](http://localhost:4242). You can execute the commands directly from the UI.
 
+The OpenAPI 3.1 document itself is served at `http://localhost:4242/openapi.json` and can be fed to
+a client generator:
+
+```bash
+curl -s http://localhost:4242/openapi.json > openapi.json
+```
+
 ## Test a data contract
 
 POST a data contract as the request body to `/test` and receive the test results as JSON:
@@ -87,7 +94,7 @@ Alternatively, `POST /test` accepts credentials per request via `datacontract-*`
 
 ## Secure the API
 
-Set `DATACONTRACT_CLI_API_KEY` to a secret value (such as a random UUID) to require authentication. Requests must then include the header `x-api-key` with the correct key.
+Set `DATACONTRACT_CLI_API_KEY` to a secret value (such as a random UUID) to require authentication. Every endpoint then requires the header `x-api-key` with the correct key, and answers `401` when it is missing and `403` when it is wrong.
 
 ```bash
 export DATACONTRACT_CLI_API_KEY=<your-secret-key-such-as-a-random-uuid>

@@ -18,7 +18,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
     check_that_datacontract_contains_valid_server_configuration,
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
-from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks
+from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
 
@@ -37,6 +37,7 @@ def execute_data_contract_test(
     include_failed_samples: bool = False,
     filter: str | None = None,
     filters: dict[str, str] | None = None,
+    metadata_only: bool = False,
     config: Config | None = None,
 ):
     config = Config.resolve(config)
@@ -101,6 +102,15 @@ def execute_data_contract_test(
         if not specs:
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
     run.checks.extend(build_check_stubs(specs))
+
+    if metadata_only:
+        executable = []
+        for spec in specs:
+            if spec.requires_data_read:
+                set_result(run, spec.key, ResultEnum.skipped, "Row-value check disabled by --metadata-only")
+            else:
+                executable.append(spec)
+        specs = executable
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
