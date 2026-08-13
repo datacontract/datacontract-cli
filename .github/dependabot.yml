@@ -3,6 +3,11 @@
 # Please see the documentation for all configuration options:
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
+#
+# Pull requests that only update development dependencies are merged
+# automatically once every check on them passes, see
+# .github/workflows/dependabot-auto-merge.yml.
+
 version: 2
 updates:
   - package-ecosystem: "pip" # See documentation for possible values
