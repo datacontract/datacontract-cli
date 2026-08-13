@@ -667,7 +667,7 @@ def export_excel(
     location: location_arg = "datacontract.yaml",
     template: Annotated[
         Optional[str],
-        typer.Option(help="Path or URL to a custom Excel template."),
+        typer.Option(help="Path or URL to a custom Excel template. Defaults to the bundled ODCS template."),
     ] = None,
     output: output_option = None,
     server: server_option = None,

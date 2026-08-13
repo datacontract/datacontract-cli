@@ -27,6 +27,7 @@ marked as such in the entry.
 ## Unreleased {#unreleased}
 
 ### Changed
+- `datacontract export excel` uses the ODCS Excel template bundled with the CLI instead of downloading it, so the export works offline; use `--template` for a custom template
 - The OpenAPI document of `datacontract api` reports the CLI version, describes every endpoint, parameter, and response model, and names its operations `testDataContract`, `lintDataContract`, `exportDataContract`, and `changelogBetweenDataContracts`
 - `DATACONTRACT_CLI_API_KEY` now also protects `POST /lint` and `POST /export`, which previously answered without an API key
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
