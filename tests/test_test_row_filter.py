@@ -118,3 +118,7 @@ def test_invalid_filter_predicate_errors_instead_of_failing():
     print(run.pretty())
     assert run.result == "error"
     assert any("Could not apply row filter" in str(check.reason) for check in run.checks)
+    # Schema checks read the catalog, not rows, so a broken predicate leaves them alone.
+    schema_checks = [c for c in run.checks if c.type in ("field_is_present", "field_type")]
+    assert schema_checks
+    assert all(c.result == "passed" for c in schema_checks)

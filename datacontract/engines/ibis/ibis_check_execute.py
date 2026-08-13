@@ -247,9 +247,17 @@ def _run_model(
         except Exception as e:
             logger.warning("Could not apply row filter to model '%s': %s", model, e)
             # A predicate that does not compile is a configuration problem, not a
-            # data violation, so the checks error rather than fail.
-            _fail_all(run, specs, ResultEnum.error, f"Could not apply row filter '{row_filter}': {e}")
-            return
+            # data violation, so the checks error rather than fail. Only the checks
+            # that read rows are affected.
+            _fail_all(
+                run,
+                [s for s in specs if s.requires_data_read],
+                ResultEnum.error,
+                f"Could not apply row filter '{row_filter}': {e}",
+            )
+            specs = [s for s in specs if not s.requires_data_read]
+            if not specs:
+                return
 
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
