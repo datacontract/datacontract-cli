@@ -74,6 +74,43 @@ alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/
 The output of Docker command line messages is limited to 80 columns and may include line breaks. Don't pipe Docker output to files if you want to export code — use the `--output` option instead.
 :::
 
+The image is also mirrored to Amazon ECR Public:
+
+```bash
+docker pull public.ecr.aws/s4e5k7s9/datacontract-cli
+```
+
+### Verifying the image
+
+Released images are signed with [cosign](https://docs.sigstore.dev/cosign/signing/overview/) keyless signing, using the GitHub Actions OIDC identity of the release workflow. There is no public key to distribute — verification checks that the image was built and signed by that workflow, in this repository, from a release tag.
+
+Install [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) v2.6.3 or later (v3 or later recommended), then:
+
+```bash
+cosign verify datacontract/cli:latest \
+  --certificate-identity-regexp '^https://github\.com/datacontract/datacontract-cli/\.github/workflows/release\.yaml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+Both `--certificate-identity-regexp` and `--certificate-oidc-issuer` are required. Without them, `cosign verify` accepts any valid Sigstore signature — including one produced by someone else.
+
+The same command works for the ECR mirror, which carries the signature and attestations along with the image:
+
+```bash
+cosign verify public.ecr.aws/s4e5k7s9/datacontract-cli:latest \
+  --certificate-identity-regexp '^https://github\.com/datacontract/datacontract-cli/\.github/workflows/release\.yaml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+Each image also ships an SBOM and SLSA provenance attestation, which you can inspect with:
+
+```bash
+docker buildx imagetools inspect datacontract/cli:latest --format '{{ json .SBOM }}'
+docker buildx imagetools inspect datacontract/cli:latest --format '{{ json .Provenance }}'
+```
+
+Signatures are attached to images released after version 1.1.0. Older tags, 1.1.0 included, are unsigned.
+
 ## Optional dependencies (extras)
 
 The CLI defines several optional dependencies (extras) for specific server types. With `all`, every server dependency is included.
