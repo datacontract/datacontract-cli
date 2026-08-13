@@ -50,6 +50,7 @@ class ResultEnum(str, Enum):
     failed = "failed"
     error = "error"
     info = "info"
+    skipped = "skipped"
     unknown = "unknown"
 
 

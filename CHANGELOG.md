@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - SQL quality rules support the `${dataset}`, `${project}`, `${catalog}`, and `${database}` placeholders for the server's values
+- `datacontract test --metadata-only` runs only checks that read the schema (field presence and types) and reports checks that read row values as skipped
+- `datacontract test --checks` accepts the ODCS terms `properties` and `slaProperties`, keeping `schema` and `servicelevel` as legacy aliases
 
 ### Changed
 - `datacontract export excel` uses the ODCS Excel template bundled with the CLI instead of downloading it, so the export works offline; use `--template` for a custom template

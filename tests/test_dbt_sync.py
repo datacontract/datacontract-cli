@@ -1427,7 +1427,7 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
     assert "configured to fail" in fail_check.reason
 
     statuses = {c.result.value for c in parsed.checks}
-    assert statuses == {"passed", "failed", "warning", "error", "info"}
+    assert statuses == {"passed", "failed", "warning", "error", "skipped"}
 
 
 def test_get_test_metadata_resolves_versioned_model_name():

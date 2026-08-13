@@ -46,6 +46,7 @@ class DataContract:
         include_failed_samples: bool = False,
         filter: str = None,
         filters: dict[str, str] | None = None,
+        metadata_only: bool = False,
         config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
@@ -69,6 +70,7 @@ class DataContract:
         self._include_failed_samples = include_failed_samples
         self._filter = filter
         self._filters = filters
+        self._metadata_only = metadata_only
         self._config = Config.resolve(config)
 
     @classmethod
@@ -168,6 +170,7 @@ class DataContract:
                 include_failed_samples=self._include_failed_samples,
                 filter=self._filter,
                 filters=self._filters,
+                metadata_only=self._metadata_only,
                 config=self._config,
             )
 

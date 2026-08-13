@@ -2545,7 +2545,7 @@ def parse_run_results_file(
         "fail": ResultEnum.failed,
         "warn": ResultEnum.warning,
         "error": ResultEnum.error,
-        "skipped": ResultEnum.info,
+        "skipped": ResultEnum.skipped,
     }
     for test_result in run_results.get("results") or []:
         unique_id = test_result.get("unique_id") or ""
