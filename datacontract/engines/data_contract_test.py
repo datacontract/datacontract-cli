@@ -294,6 +294,7 @@ def process_api_response(run, server, config: Config | None = None):
         type="local",
         format="json",
         path=f"{tmp_dir.name}/api_response.json",
+        delimiter=server.delimiter,
     )
     return new_server
 
