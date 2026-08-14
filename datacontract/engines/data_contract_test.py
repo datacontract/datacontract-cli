@@ -101,7 +101,7 @@ def execute_data_contract_test(
         specs = [s for s in specs if s.tags and not tags.isdisjoint(s.tags)]
         if not specs:
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
-    run.checks.extend(build_check_stubs(specs))
+    run.checks.extend(build_check_stubs(specs, metadata_only=metadata_only))
 
     if metadata_only:
         executable = []

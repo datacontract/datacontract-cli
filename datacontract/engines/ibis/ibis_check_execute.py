@@ -54,7 +54,8 @@ class _ColumnNotFound(Exception):
 # ---------------------------------------------------------------------------
 # Check stubs (created up-front so run.checks ordering & filtering is stable)
 # ---------------------------------------------------------------------------
-def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
+def build_check_stubs(specs: List[CheckSpec], metadata_only: bool = False) -> List[Check]:
+    engine = "ibis-metadata-only" if metadata_only else "ibis"
     stubs: List[Check] = []
     for spec in specs:
         stubs.append(
@@ -68,7 +69,7 @@ def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
                 field=spec.field,
                 qualityId=spec.quality_id,
                 tags=spec.tags,
-                engine="ibis",
+                engine=engine,
                 implementation=_describe(spec),
             )
         )

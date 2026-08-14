@@ -96,10 +96,14 @@ class Check(BaseModel):
 
     engine: str | None = Field(
         default=None,
-        description="The engine that executed the check.",
-        examples=["soda"],
+        description="The engine that executed the check. Per default one of ibis, ibis-metadata-only, jsonschema, dbt, or datacontract (for pre-check failures).",
+        examples=["ibis"],
     )
-    language: str | None = Field(default=None, description="The language the check was expressed in.")
+    language: str | None = Field(
+        default=None,
+        description="The language the check was expressed in.",
+        examples=["sql"],
+    )
     implementation: str | None = Field(
         default=None,
         description="The check as it was handed to the engine, such as the generated SQL.",

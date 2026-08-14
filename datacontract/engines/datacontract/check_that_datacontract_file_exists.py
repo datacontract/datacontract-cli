@@ -15,7 +15,7 @@ def check_that_datacontract_file_exists(run: Run, file_path: str):
                 name="Check that data contract file exists",
                 result="failed",
                 reason=f"The file '{file_path}' does not exist.",
-                engine="datacontract-cli",
+                engine="datacontract",
             )
         )
         raise Exception(f"The file '{file_path}' does not exist.")
