@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 import requests
 
 from datacontract.config import Config
-from datacontract.model.run import Run
+from datacontract.model.run import ResultEnum, Run
 
 # used to retrieve the HTML location of the published data contract or test results
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
@@ -29,7 +29,10 @@ def publish_test_results_to_entropy_data(
             raise Exception("Cannot publish run results for unknown data contract ID")
 
         headers = {"Content-Type": "application/json", "x-api-key": api_key}
-        request_body = run.model_dump_json()
+        published_run = run.model_copy(
+            update={"checks": [check for check in (run.checks or []) if check.result != ResultEnum.skipped]}
+        )
+        request_body = published_run.model_dump_json()
         # print("Request Body:", request_body)
         response = requests.post(
             url,
