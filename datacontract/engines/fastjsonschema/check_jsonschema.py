@@ -207,17 +207,20 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
     s3_location = server.location
     if "{model}" in s3_location:
         s3_location = s3_location.format(model=model_name)
-    json_stream = None
+    exceptions: List[DataContractException] = []
+    found_file = False
 
     for file_content in yield_s3_files(s3_endpoint_url, s3_location, config):
+        found_file = True
         if server.delimiter == "new_line":
             json_stream = read_json_lines_content(file_content)
         elif server.delimiter == "array":
             json_stream = read_json_array_content(file_content)
         else:
             json_stream = read_json_file_content(file_content)
+        exceptions.extend(validate_json_stream(schema, model_name, validate, json_stream))
 
-    if json_stream is None:
+    if not found_file:
         raise DataContractException(
             type="schema",
             name="Check that JSON has valid schema",
@@ -225,9 +228,6 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
             reason=f"Cannot find any file in {s3_location}",
             engine="datacontract",
         )
-
-    # Validate the JSON stream and collect exceptions.
-    exceptions = validate_json_stream(schema, model_name, validate, json_stream)
 
     # Handle all errors from schema validation.
     process_exceptions(run, exceptions, config)

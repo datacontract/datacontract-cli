@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export pydantic-model` exports the ODCS `timestamp` and `time` logical types as `datetime.datetime` and `datetime.time` instead of guessing from the physical type, which turned a `TIMESTAMPTZ` column into a `str`
 - `datacontract export pydantic-model` exports the ODCS `date` logical type as `datetime.date` instead of `datetime.datetime`
 - `datacontract import pydantic-model` maps `datetime.datetime` to the `timestamp` logical type and `datetime.time` to `time`
+- S3 JSON schema validation checks every file matched by a location instead of only the last file (#1511)
 - `datacontract test --publish` no longer fails for runs with skipped checks (skipped checks are omitted from the published test results)
 
 
