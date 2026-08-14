@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract test --publish` no longer fails for runs with skipped checks (skipped checks are omitted from the published test results)
+
 ## [1.1.1] - 2026-08-14
 
 ### Added
