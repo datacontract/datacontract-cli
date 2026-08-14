@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
+
 ### Fixed
 - `datacontract test --publish` no longer fails for runs with skipped checks (skipped checks are omitted from the published test results)
 
