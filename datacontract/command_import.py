@@ -417,6 +417,26 @@ def import_protobuf(
 
 
 @import_app.command(
+    name="pydantic-model",
+    epilog="Example: datacontract import pydantic-model --source models.py --output datacontract.yaml",
+)
+def import_pydantic_model(
+    source: Annotated[Optional[str], typer.Option(help="Path to the Python file defining the Pydantic models.")] = None,
+    output: output_option = None,
+    schema: schema_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from Pydantic models."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="pydantic-model", source=source, schema=schema, owner=owner, id=id
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="spark",
     epilog="Example: datacontract import spark --tables orders,customers --output datacontract.yaml",
 )
