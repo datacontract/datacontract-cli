@@ -12,7 +12,12 @@ also what makes the round trip with ``datacontract export pydantic-model`` hold.
 import ast
 from typing import Any, Dict, List, Optional, Tuple
 
-from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import (
+    DataQuality,
+    Description,
+    OpenDataContractStandard,
+    SchemaProperty,
+)
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object
@@ -401,6 +406,24 @@ def _resolve_annotation(annotation: ast.expr, index: _ModuleIndex, depth: int) -
     return {"logical_type": "string", "physical_type": segment or "str"}
 
 
+def _module_description(tree: ast.Module) -> Optional[str]:
+    """The contract description, from the module docstring or a bare string.
+
+    ``datacontract export pydantic-model`` writes it below the imports rather
+    than as a docstring, so both spellings are read back.
+    """
+    docstring = ast.get_docstring(tree)
+    if docstring:
+        return docstring
+    for statement in tree.body:
+        if isinstance(statement, ast.ClassDef):
+            break
+        if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Constant):
+            if isinstance(statement.value.value, str):
+                return statement.value.value
+    return None
+
+
 def import_pydantic(source: str) -> OpenDataContractStandard:
     """Read a Python module of Pydantic models into an ODCS data contract."""
     try:
@@ -437,6 +460,9 @@ def import_pydantic(source: str) -> OpenDataContractStandard:
     roots = [name for name in index.top_level if name not in nested] or index.top_level
 
     odcs = create_odcs()
+    purpose = _module_description(tree)
+    if purpose:
+        odcs.description = Description(purpose=purpose)
     odcs.schema_ = [
         create_schema_object(
             name=name,
