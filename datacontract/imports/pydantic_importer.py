@@ -27,9 +27,9 @@ _SCALAR_TYPES: Dict[str, Tuple[str, str]] = {
     "bool": ("boolean", "bool"),
     "bytes": ("array", "bytes"),
     "Decimal": ("number", "decimal"),
-    "datetime": ("date", "datetime"),
+    "datetime": ("timestamp", "datetime"),
     "date": ("date", "date"),
-    "time": ("string", "time"),
+    "time": ("time", "time"),
     "timedelta": ("string", "timedelta"),
     "UUID": ("string", "uuid"),
 }

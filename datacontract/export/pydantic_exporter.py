@@ -102,7 +102,11 @@ def constant_field_annotation(
         case "boolean":
             return (ast.Name("bool", ctx=ast.Load()), None)
         case "date":
+            return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="date"), None)
+        case "timestamp":
             return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="datetime"), None)
+        case "time":
+            return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="time"), None)
         case "array":
             if prop.items:
                 (annotated_type, new_class) = type_annotation(field_name, prop.items)
