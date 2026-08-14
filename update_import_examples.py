@@ -23,6 +23,7 @@ IMPORTS = {
     "jsonschema": ("examples/imports/jsonschema/orders.schema.json", "json", []),
     "avro": ("examples/imports/avro/orders.avsc", "json", []),
     "protobuf": ("examples/imports/protobuf/orders.proto", "protobuf", []),
+    "pydantic-model": ("examples/imports/pydantic-model/orders.py", "python", []),
     "dbml": ("examples/imports/dbml/orders.dbml", "text", []),
     "bigquery": ("examples/imports/bigquery/orders.json", "json", []),
     "iceberg": ("examples/imports/iceberg/orders.json", "json", []),

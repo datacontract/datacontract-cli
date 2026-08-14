@@ -47,6 +47,7 @@ class ImportFormat(str, Enum):
     parquet = "parquet"
     csv = "csv"
     protobuf = "protobuf"
+    pydantic_model = "pydantic-model"
     excel = "excel"
     powerbi = "powerbi"
     snowflake = "snowflake"
