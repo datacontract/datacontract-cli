@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
 - `datacontract import pydantic-model` reads the contract description from the module docstring
 
 ### Fixed

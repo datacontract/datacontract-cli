@@ -1621,19 +1621,22 @@ class _EditSession:
         pf.yaml.dump(pf.data, buf)
         return buf.getvalue()
 
-    def apply(self) -> tuple[list[Path], list[Path]]:
+    def apply(self, dry_run: bool = False) -> tuple[list[Path], list[Path]]:
+        """Write the planned changes to disk, or (with `dry_run`) just report what would change."""
         written: list[Path] = []
         deleted: list[Path] = []
         for pf in self.files.values():
             if pf.deleted:
                 if pf.path.exists():
-                    pf.path.unlink()
+                    if not dry_run:
+                        pf.path.unlink()
                     deleted.append(pf.path)
                 continue
             new_text = self._render(pf)
             if new_text != (pf.original_text or ""):
-                pf.path.parent.mkdir(parents=True, exist_ok=True)
-                pf.path.write_text(new_text, encoding="utf-8")
+                if not dry_run:
+                    pf.path.parent.mkdir(parents=True, exist_ok=True)
+                    pf.path.write_text(new_text, encoding="utf-8")
                 written.append(pf.path)
         return written, deleted
 
@@ -2684,12 +2687,14 @@ def generate_dbt_tests(
     prune: bool = False,
     model_version: Optional[str] = None,
     server: Optional[str] = None,
+    dry_run: bool = False,
 ) -> DbtTestGenerationResult:
     """Resolve the contract, merge its tests + metadata into the dbt project's model YAML in place.
 
     `model_version` (a dbt model version like "2", from the contract filename) merges this contract
     into a versioned model — a `versions:` block — additively, leaving sibling versions untouched.
     `server` selects the ODCS server whose `type` maps `logicalType`s to a `data_type`.
+    `dry_run` computes and reports the same plan without writing, deleting, or moving any files.
     """
     explicit_project_dir = project_dir is not None
     project_dir = (project_dir or Path.cwd()).resolve()
@@ -2844,23 +2849,26 @@ def generate_dbt_tests(
     if contract_subdir.is_dir():
         for sql in contract_subdir.glob(f"{own_prefix}*.sql"):
             if sql not in desired:
-                sql.unlink()
+                if not dry_run:
+                    sql.unlink()
                 deleted_sql.append(sql)
     for path, sql in desired.items():
-        path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists() or path.read_text(encoding="utf-8") != sql:
-            path.write_text(sql, encoding="utf-8")
+            if not dry_run:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(sql, encoding="utf-8")
             written_sql.append(path)
 
-    # Migrate v1.0.9's flat layout: remove our top-level `*.sql` (the dir is CLI-owned wholesale).
-    for stale in tests_dir.glob("*.sql"):
-        stale.unlink()
-        deleted_sql.append(stale)
-    # Drop the subdir if this contract (and its resolved siblings) left it empty.
-    if contract_subdir.is_dir() and not any(contract_subdir.iterdir()):
-        contract_subdir.rmdir()
-    _remove_legacy_dir(legacy_dir)
-    written_yaml, deleted_yaml = session.apply()
+    if not dry_run:
+        # Migrate v1.0.9's flat layout: remove our top-level `*.sql` (the dir is CLI-owned wholesale).
+        for stale in tests_dir.glob("*.sql"):
+            stale.unlink()
+            deleted_sql.append(stale)
+        # Drop the subdir if this contract (and its resolved siblings) left it empty.
+        if contract_subdir.is_dir() and not any(contract_subdir.iterdir()):
+            contract_subdir.rmdir()
+        _remove_legacy_dir(legacy_dir)
+    written_yaml, deleted_yaml = session.apply(dry_run=dry_run)
     # Regenerated SQL is unlinked then rewritten; report only the ones not written back as deletions.
     written_sql_set = set(written_sql)
     deleted_files = [p for p in deleted_sql if p not in written_sql_set] + deleted_yaml
