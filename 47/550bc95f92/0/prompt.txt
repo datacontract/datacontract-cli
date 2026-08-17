@@ -1,0 +1,10 @@
+review for best practices of a python cli project and library. what is missing that is normally done as a best practice?
+
+---
+
+add 7. Linux-only test matrix for a pip-installed CLI
+
+ci.yaml tests five Python versions but only ubuntu-latest, and README:337 concedes tests need WSL and fail on native Windows. Your users are data engineers on macOS and Windows laptops. Path handling is the single most common CLI portability bug, and it's invisible here.
+
+Fix: add macos-latest on one Python version — cheap and catches path/locale issues immediately. Add Windows as a separate allow-failure job to stop the drift getting worse.
+ so we are sure it works on macos as well
