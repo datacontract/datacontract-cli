@@ -1,0 +1,1 @@
+add a second datacontract.large.odcs.yaml which contains all logical types, nested object properties, an array proeprty, and two models

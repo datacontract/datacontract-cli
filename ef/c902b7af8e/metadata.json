@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.8.42",
+  "checkpoint_id": "efc902b7af8e",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "tests/fixtures/export/datacontract.large.odcs.yaml",
+    "tests/test_export_large_contract.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ef/c902b7af8e/0/metadata.json",
+      "transcript": "/ef/c902b7af8e/0/full.jsonl",
+      "compact_transcript": "/ef/c902b7af8e/0/transcript.jsonl",
+      "content_hash": "/ef/c902b7af8e/0/content_hash.txt",
+      "prompt": "/ef/c902b7af8e/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 20336,
+    "cache_read_tokens": 3692804,
+    "output_tokens": 15271,
+    "api_call_count": 17
+  }
+}
