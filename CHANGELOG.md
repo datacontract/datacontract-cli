@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export pydantic-model` exports the ODCS `date` logical type as `datetime.date` instead of `datetime.datetime`
 - `datacontract import pydantic-model` maps `datetime.datetime` to the `timestamp` logical type and `datetime.time` to `time`
 - `datacontract test --publish` no longer fails for runs with skipped checks (skipped checks are omitted from the published test results)
+- `datacontract export dcs` exports a `pii` custom property as a boolean instead of the string `'True'`
 
 
 ## [1.1.1] - 2026-08-14
