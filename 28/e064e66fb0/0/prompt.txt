@@ -1,0 +1,13 @@
+what other things from my best practices are still open?
+
+---
+
+what can we learn that we now have test coverage information?
+
+---
+
+is odcs_export_helper.py unused?
+
+---
+
+remove it
