@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.8.42",
+  "checkpoint_id": "64631cd17342",
+  "session_id": "393ea852-c1b8-48e0-b669-ff448fdc7c9c",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-17T18:26:05.246209Z",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "datacontract/export/dcs_exporter.py",
+    "tests/test_export_dcs.py",
+    "CHANGELOG.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5[1m]",
+  "turn_id": "577c1ae2e684",
+  "checkpoint_transcript_start": 758,
+  "transcript_lines_at_start": 758,
+  "compact_transcript_start": 131,
+  "token_usage": {
+    "input_tokens": 48,
+    "cache_creation_tokens": 26796,
+    "cache_read_tokens": 4678647,
+    "output_tokens": 17866,
+    "api_call_count": 24
+  },
+  "session_metrics": {
+    "turn_count": 6
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-17T18:26:05.19922Z",
+    "agent_lines": 158,
+    "agent_removed": 1,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 158,
+    "total_lines_changed": 159,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}

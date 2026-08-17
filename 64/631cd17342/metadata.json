@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.8.42",
+  "checkpoint_id": "64631cd17342",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "CHANGELOG.md",
+    "datacontract/export/dcs_exporter.py",
+    "tests/test_export_dcs.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/64/631cd17342/0/metadata.json",
+      "transcript": "/64/631cd17342/0/full.jsonl",
+      "compact_transcript": "/64/631cd17342/0/transcript.jsonl",
+      "content_hash": "/64/631cd17342/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 48,
+    "cache_creation_tokens": 26796,
+    "cache_read_tokens": 4678647,
+    "output_tokens": 17866,
+    "api_call_count": 24
+  }
+}
