@@ -46,13 +46,24 @@ jobs:
           - '3.12'
           - '3.13'
           - '3.14'
+        include:
+          # The CLI is installed with pip on macOS laptops as much as on Linux,
+          # and path handling, locale, and filesystem case sensitivity are where
+          # that breaks first. One Python version is enough to catch it; the
+          # macOS runners have no Docker daemon, so the container tests are left
+          # uncollected and named in the test output (see tests/conftest.py).
+          - os: 'macos-latest'
+            python-version: '3.11'
       fail-fast: false
     steps:
       - uses: actions/checkout@v7
-      - name: Install system dependencies (msodbcsql18, protoc)
+      - name: Install system dependencies (msodbcsql18)
+        # The SQL Server driver is only needed by the container tests, which do
+        # not run on the Docker-less macOS runner.
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y msodbcsql18 protobuf-compiler
+          sudo apt-get install -y msodbcsql18
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -68,10 +79,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - name: Install system dependencies (msodbcsql18, protoc)
+      - name: Install system dependencies (msodbcsql18)
         run: |
           sudo apt-get update
-          sudo apt-get install -y msodbcsql18 protobuf-compiler
+          sudo apt-get install -y msodbcsql18
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
