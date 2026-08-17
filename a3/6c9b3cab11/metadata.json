@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.8.42",
+  "checkpoint_id": "a36c9b3cab11",
+  "strategy": "manual-commit",
+  "branch": "ci-macos-test-matrix",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".github/scripts/coverage_summary.py",
+    ".github/workflows/ci.yaml",
+    ".gitignore",
+    "pyproject.toml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a3/6c9b3cab11/0/metadata.json",
+      "transcript": "/a3/6c9b3cab11/0/full.jsonl",
+      "compact_transcript": "/a3/6c9b3cab11/0/transcript.jsonl",
+      "content_hash": "/a3/6c9b3cab11/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 16855,
+    "cache_read_tokens": 2332794,
+    "output_tokens": 12841,
+    "api_call_count": 19
+  }
+}
