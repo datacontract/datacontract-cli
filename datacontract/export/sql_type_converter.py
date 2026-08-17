@@ -37,7 +37,7 @@ def _warn_cannot_map_type(field: Union[SchemaProperty, "FieldLike"], dialect: st
 
 
 class FieldLike(Protocol):
-    """Protocol for field-like objects (DCS Field or PropertyAdapter)."""
+    """Protocol for field-like objects (a DCS Field; ODCS passes SchemaProperty directly)."""
 
     type: Optional[str]
     config: Optional[Dict[str, Any]]
