@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
 from datacontract.data_contract import DataContract
-from datacontract.engines.checks.sql_guard import is_read_only_query
+from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
 from datacontract.engines.ibis.connections.duckdb_connection import restrict_to_paths
 from datacontract.model.run import ResultEnum
 
@@ -104,8 +104,78 @@ def test_a_statement_that_is_not_a_query_is_refused(statement):
     assert not is_read_only_query(statement)
 
 
-def test_an_unknown_dialect_does_not_reject_a_valid_query():
-    """The dialect labels the query; it is not a reason to refuse one."""
+@pytest.mark.parametrize(
+    "server_type, query",
+    [
+        ("snowflake", "SELECT count(*) FROM orders SAMPLE (10 ROWS)"),
+        ("bigquery", "SELECT count(*) FROM `proj.ds.orders` WHERE DATE(order_ts) = CURRENT_DATE()"),
+        ("databricks", "SELECT count(*) FROM orders TIMESTAMP AS OF '2026-01-01'"),
+        ("sqlserver", "SELECT TOP 1 count(*) FROM orders"),
+    ],
+)
+def test_dialect_specific_syntax_is_read_as_the_server_dialect(server_type, query):
+    """A rule that does not name a dialect is read as the dialect of the server it
+    runs against. Parsed as generic SQL these are syntax errors, and the guard
+    fails closed -- so without this they would be refused for being valid."""
+    assert not is_read_only_query(query), "if this parses generically the case no longer tests anything"
+
+    assert is_read_only_query(query, dialect_for_server_type(server_type))
+
+
+def test_the_server_dialect_still_refuses_what_is_not_a_query():
+    for server_type in ("snowflake", "bigquery", "postgres", "local"):
+        assert not is_read_only_query("DROP TABLE orders", dialect_for_server_type(server_type))
+
+
+def test_file_server_types_are_read_as_duckdb():
+    """local/s3/gcs/azure are read through duckdb, so a rule on them is duckdb SQL."""
+    for server_type in ("local", "s3", "gcs", "azure"):
+        assert dialect_for_server_type(server_type) == "duckdb"
+
+
+def test_the_documented_dialect_mapping_matches_the_code():
+    """The mapping is a table in docs/docs/quality-rules/sql.md, so it drifts
+    silently unless something reads both."""
+    from pathlib import Path
+
+    from datacontract.engines.checks.sql_guard import _DIALECT_BY_SERVER_TYPE
+
+    page = Path(__file__).parent.parent / "docs" / "docs" / "quality-rules" / "sql.md"
+    documented = {}
+    for line in page.read_text().splitlines():
+        if not line.startswith("| `"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if len(cells) != 2 or not cells[1].startswith("`"):
+            continue
+        for server_type in cells[0].split(","):
+            documented[server_type.strip().strip("`")] = cells[1].strip("`")
+
+    # `mssql` is an accepted spelling of sqlserver rather than its own ODCS server
+    # type, so it is deliberately not in the documented table.
+    assert documented == {k: v for k, v in _DIALECT_BY_SERVER_TYPE.items() if k != "mssql"}
+
+
+def test_an_unmapped_server_type_has_no_dialect():
+    assert dialect_for_server_type("no-such-server-type") is None
+    assert dialect_for_server_type(None) is None
+
+
+def test_a_refused_query_names_the_dialect_it_was_read_as(data_file):
+    """`TOP` is SQL Server syntax; the contract declares a local (duckdb) server,
+    so the query is not valid for the data source it would run against."""
+    run = DataContract(
+        data_contract_str=_contract(data_file, "SELECT TOP 1 count(*) FROM orders"),
+        inline_references=False,
+    ).test()
+
+    check = next(c for c in run.checks if c.type == "model_quality_sql")
+    assert check.result == ResultEnum.failed
+    assert "duckdb SQL" in check.reason
+
+
+def test_an_unmapped_dialect_does_not_reject_a_valid_query():
+    """A dialect name sqlglot does not know is about the parser, not the query."""
     assert is_read_only_query("SELECT count(*) FROM orders", dialect="no-such-dialect")
     assert not is_read_only_query("DROP TABLE orders", dialect="no-such-dialect")
 
