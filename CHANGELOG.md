@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import pydantic-model` reads the contract description from the module docstring
 
 ### Fixed
+- `datacontract api` compares the `x-api-key` header in constant time to avoid a timing side channel
 - `datacontract export pydantic-model` exports the ODCS `timestamp` and `time` logical types as `datetime.datetime` and `datetime.time` instead of guessing from the physical type, which turned a `TIMESTAMPTZ` column into a `str`
 - `datacontract export pydantic-model` exports the ODCS `date` logical type as `datetime.date` instead of `datetime.datetime`
 - `datacontract import pydantic-model` maps `datetime.datetime` to the `timestamp` logical type and `datetime.time` to `time`

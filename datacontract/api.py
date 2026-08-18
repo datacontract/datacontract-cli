@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import secrets
 import tempfile
 from importlib import metadata
 from typing import Annotated, Optional
@@ -457,7 +458,7 @@ def check_api_key(api_key_header: str | None):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
-    if api_key_header != correct_api_key:
+    if not secrets.compare_digest(api_key_header, correct_api_key):
         logging.info("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
