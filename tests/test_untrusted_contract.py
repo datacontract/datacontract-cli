@@ -114,11 +114,15 @@ def test_a_statement_that_is_not_a_query_is_refused(statement):
     ],
 )
 def test_dialect_specific_syntax_is_read_as_the_server_dialect(server_type, query):
-    """A rule that does not name a dialect is read as the dialect of the server it
-    runs against. Parsed as generic SQL these are syntax errors, and the guard
-    fails closed -- so without this they would be refused for being valid."""
-    assert not is_read_only_query(query), "if this parses generically the case no longer tests anything"
+    """A rule is read as the dialect of the server it runs against, so syntax that
+    belongs to that technology survives the guard.
 
+    Only the dialect result is asserted. Whether the same query *also* parses as
+    generic SQL is a property of the sqlglot version, not of this code -- sqlglot
+    30 reads Databricks' `TIMESTAMP AS OF` generically where 28 did not -- so
+    asserting it fails the build on a routine dependency bump. That the fixtures
+    still exercise dialect-specific syntax is checked in aggregate by
+    tests/test_quality_sql_dialects.py instead."""
     assert is_read_only_query(query, dialect_for_server_type(server_type))
 
 
