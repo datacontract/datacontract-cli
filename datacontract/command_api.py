@@ -4,7 +4,7 @@ from typing_extensions import Annotated
 from datacontract.cli import app, debug_option, enable_debug_logging
 
 
-def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict:
+def _get_uvicorn_arguments(port: int, host: str, reload: bool, context: typer.Context) -> dict:
     """
     Take the default datacontract uvicorn arguments and merge them with the
     extra arguments passed to the command to start the API.
@@ -13,7 +13,7 @@ def _get_uvicorn_arguments(port: int, host: str, context: typer.Context) -> dict
         "app": "datacontract.api:app",
         "port": port,
         "host": host,
-        "reload": True,
+        "reload": reload,
     }
 
     # Create a list of the extra arguments, remove the leading -- from the cli arguments
@@ -33,6 +33,13 @@ def api(
     host: Annotated[
         str, typer.Option(help="Bind socket to this host. Hint: For running in docker, set it to 0.0.0.0")
     ] = "127.0.0.1",
+    reload: Annotated[
+        bool,
+        typer.Option(
+            "--reload/--no-reload",
+            help="Watch the source files and restart the server on changes. For development only; off by default.",
+        ),
+    ] = False,
     debug: debug_option = None,
 ):
     """
@@ -59,7 +66,7 @@ def api(
     log_config = LOGGING_CONFIG
     log_config["root"] = {"level": "INFO"}
 
-    uvicorn_args = _get_uvicorn_arguments(port, host, ctx)
+    uvicorn_args = _get_uvicorn_arguments(port, host, reload, ctx)
     # Add the log config
     uvicorn_args["log_config"] = log_config
     # Run uvicorn

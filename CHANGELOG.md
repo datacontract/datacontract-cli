@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
 - `datacontract import pydantic-model` reads the contract description from the module docstring
 
+### Changed
+- `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
+
 ### Fixed
 - `datacontract export html` and `datacontract catalog` now HTML-escape data contract field values, closing a stored cross-site scripting hole
 - `datacontract api` compares the `x-api-key` header in constant time to avoid a timing side channel
