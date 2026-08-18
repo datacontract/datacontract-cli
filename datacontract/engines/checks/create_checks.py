@@ -23,6 +23,7 @@ from open_data_contract_standard.model import (
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
+from datacontract.engines.checks.sql_guard import is_read_only_query
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 
@@ -630,6 +631,26 @@ def _quality_rule_checks(
         if threshold is None:
             logger.warning(f"Quality check {check_key} has no valid threshold")
             return []
+        dialect = getattr(quality, "dialect", None)
+        if not is_read_only_query(query, dialect):
+            return [
+                CheckSpec(
+                    key=check_key,
+                    category="quality",
+                    type=check_type,
+                    name=quality.description or "Quality Check",
+                    model=model,
+                    field=field,
+                    metric=MetricType.UNSUPPORTED,
+                    dimension=quality.dimension,
+                    severity=quality.severity,
+                    preset_result="failed",
+                    preset_reason=(
+                        "A quality rule query must be a single read-only query. This one is not, "
+                        "so it was not executed."
+                    ),
+                )
+            ]
         return [
             CheckSpec(
                 key=check_key,
@@ -641,7 +662,7 @@ def _quality_rule_checks(
                 metric=MetricType.CUSTOM_SQL,
                 threshold=threshold,
                 query=query,
-                dialect=getattr(quality, "dialect", None),
+                dialect=dialect,
                 severity=quality.severity,
                 dimension=quality.dimension,
             )

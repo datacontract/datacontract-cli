@@ -53,6 +53,7 @@ def connect_ibis(
     duckdb_connection=None,
     schema_name: str = "all",
     config: Config | None = None,
+    untrusted_contract: bool = False,
 ) -> "ibis.BaseBackend | None":
     """Return a connected ibis backend, or ``None`` if the server is unsupported.
 
@@ -69,7 +70,13 @@ def connect_ibis(
             return None
         run.log_info(f"Connecting to {server_type} {server.format} via duckdb")
         con = get_duckdb_connection(
-            data_contract, server, run, duckdb_connection, schema_name=schema_name, config=config
+            data_contract,
+            server,
+            run,
+            duckdb_connection,
+            schema_name=schema_name,
+            config=config,
+            untrusted_contract=untrusted_contract,
         )
         return ibis.duckdb.from_connection(con)
 
