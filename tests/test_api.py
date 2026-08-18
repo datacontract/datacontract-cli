@@ -1,8 +1,9 @@
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
-from datacontract.api import app
+from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
 from datacontract.model.exceptions import DataContractException
 
 client = TestClient(app)
@@ -203,7 +204,7 @@ def test_unknown_config_header_is_rejected():
     assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
 
 
-def test_test_endpoint_uses_config_from_headers():
+def test_test_endpoint_uses_config_from_headers(allow_local_files):
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
 
@@ -221,12 +222,19 @@ def test_test_endpoint_uses_config_from_headers():
     assert config.get_postgres_password() == "pw"
 
 
+@pytest.fixture
+def allow_local_files(monkeypatch):
+    """These tests use a local fixture file as a convenient data source, which the
+    API refuses by default (see test_untrusted_contract.py)."""
+    monkeypatch.setenv(ALLOW_LOCAL_FILES_ENV, "true")
+
+
 def _row_filter_contract():
     with open("fixtures/row-filter/datacontract.yaml", "r", encoding="utf-8") as f:
         return f.read()
 
 
-def test_test_endpoint_filter_param():
+def test_test_endpoint_filter_param(allow_local_files):
     response = client.post(
         url="/test?filter=order_id <= 2",
         content=_row_filter_contract(),
@@ -238,7 +246,7 @@ def test_test_endpoint_filter_param():
     assert response.json()["filters"] == {"orders": "order_id <= 2"}
 
 
-def test_test_endpoint_filters_param():
+def test_test_endpoint_filters_param(allow_local_files):
     response = client.post(
         url='/test?filters={"orders": "order_id <= 2"}',
         content=_row_filter_contract(),

@@ -47,6 +47,7 @@ class DataContract:
         filter: str = None,
         filters: dict[str, str] | None = None,
         metadata_only: bool = False,
+        untrusted_contract: bool = False,
         config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
@@ -71,6 +72,9 @@ class DataContract:
         self._filter = filter
         self._filters = filters
         self._metadata_only = metadata_only
+        # The contract came from somewhere the caller does not control (the API
+        # server), so the SQL it carries must not reach the host running it.
+        self._untrusted_contract = untrusted_contract
         self._config = Config.resolve(config)
 
     @classmethod
@@ -172,6 +176,7 @@ class DataContract:
                 filters=self._filters,
                 metadata_only=self._metadata_only,
                 config=self._config,
+                untrusted_contract=self._untrusted_contract,
             )
 
         except DataContractException as e:

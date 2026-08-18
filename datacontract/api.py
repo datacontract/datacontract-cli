@@ -251,6 +251,15 @@ that value, and answers `401` when the header is missing and `403` when it is wr
 Securing the API is strongly recommended: `POST /test` connects to your data sources, and test
 results may contain sensitive information.
 
+## Contracts are untrusted
+
+A posted contract carries SQL and names the hosts to connect to, so the server treats it as
+untrusted input: a `quality.type: sql` rule must be a read-only query, a credential held in the
+server's environment is never sent to a host the contract names, and `servers[].type: local` is
+refused so a caller cannot read the server's own files. Set
+`DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment serves its own files on purpose;
+the contract is then still confined to the paths it declares.
+
 ## Connecting to data sources
 
 `POST /test` needs credentials for the server described in the contract's `servers` section. Provide
@@ -477,6 +486,65 @@ _AMBIENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...]]] 
 }
 
 
+def _selected_server(body: str, server_name: str | None, config):
+    """The server the request would test, or None if that cannot be determined.
+
+    A contract that does not resolve, or that names no such server, is reported
+    by test() itself -- the guards below simply have nothing to check.
+    """
+    from datacontract.engines.data_contract_test import get_server
+    from datacontract.lint import resolve
+
+    try:
+        data_contract = resolve.resolve_data_contract(data_contract_str=body, config=config)
+        return get_server(data_contract, server_name)
+    except Exception:
+        return None
+
+
+# Server types that read their data through the local filesystem of the machine
+# running the test, rather than from a remote data source.
+_LOCAL_SERVER_TYPES = frozenset({"local"})
+
+ALLOW_LOCAL_FILES_ENV = "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES"
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def _local_files_allowed() -> bool:
+    """Whether the operator opted in to serving data from the server's own disk.
+
+    Off by default. A deployment that mounts the data next to the API -- the data
+    directory in the container, say -- turns it on, accepting that a caller then
+    picks the path.
+    """
+    return (os.getenv(ALLOW_LOCAL_FILES_ENV) or "").strip().lower() in _TRUTHY
+
+
+def _reject_local_server_type(body: str, server_name: str | None, config) -> None:
+    """Keep a posted contract from reading the server's own disk.
+
+    `type: local` points the test at a path on the machine running it. For the
+    API server that machine is not the caller's, so the path is not theirs to
+    name -- and the result would tell them what is in it.
+    """
+    from datacontract.config import Config
+
+    if _local_files_allowed():
+        return
+    server = _selected_server(body, server_name, Config.resolve(config))
+    if server is None or server.type not in _LOCAL_SERVER_TYPES:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            f"Server type '{server.type}' reads from the file system of the server running this API, "
+            f"so it is refused. Use a server type that names a data source, such as s3, gcs, azure, "
+            f"postgres, or snowflake — or set {ALLOW_LOCAL_FILES_ENV}=true if this deployment serves "
+            f"its own files on purpose."
+        ),
+    )
+
+
 def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | None, config) -> None:
     """Keep an environment-held data-source credential from reaching a host the
     posted contract chose.
@@ -492,15 +560,9 @@ def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | 
     """
     from datacontract.config import Config
     from datacontract.config.settings import env_name
-    from datacontract.engines.data_contract_test import get_server
-    from datacontract.lint import resolve
 
     resolved = Config.resolve(config)
-    try:
-        data_contract = resolve.resolve_data_contract(data_contract_str=body, config=resolved)
-        server = get_server(data_contract, server_name)
-    except Exception:
-        return  # a broken contract or server selection is reported by test() itself
+    server = _selected_server(body, server_name, resolved)
     if server is None:
         return
     guard = _AMBIENT_CREDENTIAL_TARGETS.get(server.type)
@@ -644,8 +706,10 @@ async def test(
     logging.info("Testing data contract...")
     logging.info(body)
     config = config_from_headers(request.headers)
-    if getattr(request.app.state, "untrusted_contracts", False):
+    untrusted_contract = getattr(request.app.state, "untrusted_contracts", False)
+    if untrusted_contract:
         _reject_ambient_credentials_to_untrusted_host(body, server, config)
+        _reject_local_server_type(body, server, config)
     return DataContract(
         data_contract_str=body,
         server=server,
@@ -654,6 +718,7 @@ async def test(
         config=config,
         filter=filter,
         filters=parsed_filters,
+        untrusted_contract=untrusted_contract,
     ).test()
 
 
