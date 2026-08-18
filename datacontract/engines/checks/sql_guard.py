@@ -32,6 +32,7 @@ _DIALECT_BY_SERVER_TYPE = {
     "azure": "duckdb",
     "kafka": "duckdb",
     "api": "duckdb",
+    "duckdb": "duckdb",
     # spark session backends
     "dataframe": "spark",
     # named by a different spelling in sqlglot

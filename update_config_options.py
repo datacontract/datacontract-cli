@@ -28,6 +28,7 @@ GROUPS = {
     "azure": "Azure",
     "bigquery": "BigQuery",
     "databricks": "Databricks",
+    "duckdb": "DuckDB",
     "gcs": "GCS",
     "impala": "Impala",
     "kafka": "Kafka",

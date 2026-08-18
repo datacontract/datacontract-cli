@@ -96,7 +96,7 @@ There is no `dialect` field on a quality rule. The dialect is **derived from the
 
 | Server type | SQL dialect |
 |---|---|
-| `local`, `s3`, `gcs`, `azure`, `kafka`, `api` | `duckdb` |
+| `local`, `s3`, `gcs`, `azure`, `kafka`, `api`, `duckdb` | `duckdb` |
 | `postgres` | `postgres` |
 | `redshift` | `redshift` |
 | `mysql` | `mysql` |
@@ -110,7 +110,7 @@ There is no `dialect` field on a quality rule. The dialect is **derived from the
 | `impala` | `hive` |
 | `dataframe` | `spark` |
 
-A server declared as `type: custom` with `customType: mssql` is read as `tsql`, like `sqlserver`.
+The ODCS synonyms resolve to the spelling above before the dialect is looked up, so `postgresql` is read as `postgres`. A server declared as `type: custom` with `customType: mssql` is read as `tsql`, like `sqlserver`.
 
 Files, Kafka topics and API responses are read through DuckDB, so a rule on those server types is written in DuckDB SQL — including its functions, such as `read_parquet` or `list_contains`.
 

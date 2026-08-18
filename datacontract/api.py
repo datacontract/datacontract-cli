@@ -504,7 +504,7 @@ def _selected_server(body: str, server_name: str | None, config):
 
 # Server types that read their data through the local filesystem of the machine
 # running the test, rather than from a remote data source.
-_LOCAL_SERVER_TYPES = frozenset({"local"})
+_LOCAL_SERVER_TYPES = frozenset({"local", "duckdb"})
 
 ALLOW_LOCAL_FILES_ENV = "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES"
 _TRUTHY = frozenset({"1", "true", "yes", "on"})

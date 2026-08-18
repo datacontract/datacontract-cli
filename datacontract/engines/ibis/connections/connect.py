@@ -80,6 +80,9 @@ def connect_ibis(
         )
         return ibis.duckdb.from_connection(con)
 
+    if server_type == "duckdb":
+        return _connect_duckdb_database(ibis, server, run, config)
+
     if server_type == "kafka":
         from datacontract.engines.ibis.connections.kafka import read_kafka_topic
 
@@ -501,6 +504,44 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
         schema=config.get_snowflake_schema() or server.schema_,
         **kwargs,
     )
+
+
+def _connect_duckdb_database(ibis, server: Server, run: Run, config: Config):
+    """Connect to a DuckDB database file.
+
+    Distinct from the file server types (`local`, `s3`, …), which read data files
+    *through* DuckDB into views: here the DuckDB database itself is the data
+    source, and the contract's schema objects are the tables inside it. ODCS
+    carries the path to the database file in the server's `database` field.
+    """
+    path = config.get_duckdb_database() or server.database
+    if not path:
+        _unsupported(run, "For server type 'duckdb', a 'database' (the path to the database file) must be defined.")
+        return None
+    read_only = path != ":memory:"
+    run.log_info(f"Connecting to the duckdb database at {path}")
+    try:
+        # Opened read-only: a test reads the data, and a second process may hold
+        # the same database open at the same time.
+        con = ibis.duckdb.connect(path, read_only=read_only)
+    except Exception as e:
+        raise DataContractException(
+            type="connection",
+            name="Connect to duckdb",
+            result=ResultEnum.error,
+            reason=f"Could not open the duckdb database at {path}: {e}",
+            engine="datacontract",
+            original_exception=e,
+        )
+
+    schema = config.get_duckdb_schema() or server.schema_
+    if schema:
+        # `connect()` takes no schema, so the session's search path is set here:
+        # otherwise an unqualified table name in a quality rule's SQL resolves
+        # against `main` and is not found.
+        escaped = schema.replace('"', '""')
+        con.raw_sql(f'USE "{escaped}"')
+    return con
 
 
 def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str, config: Config):

@@ -1119,6 +1119,10 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
         return None
     if getattr(con, "name", None) in ("oracle", "mssql"):
         return server.schema_
+    # A duckdb database file is opened without a schema (`connect()` takes none),
+    # so a table outside `main` has to be qualified at lookup.
+    if get_server_type(server) == "duckdb":
+        return server.schema_
     # Redshift rides the Postgres backend, so detect it by the contract's server
     # type rather than con.name.
     if get_server_type(server) == "redshift":

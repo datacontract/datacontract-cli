@@ -130,6 +130,11 @@ class Config(BaseSettings):
     databricks_catalog: str | None = None
     databricks_schema: str | None = None
 
+    # duckdb
+    # overrides for the contract's servers block
+    duckdb_database: str | None = None
+    duckdb_schema: str | None = None
+
     # gcs
     gcs_key_id: str | None = None
     gcs_secret: SecretStr | None = None
@@ -622,6 +627,12 @@ class Config(BaseSettings):
 
     def get_postgres_password(self, required: bool = False) -> str | None:
         return self._str_option("postgres_password", required)
+
+    def get_duckdb_database(self, required: bool = False) -> str | None:
+        return self._str_option("duckdb_database", required)
+
+    def get_duckdb_schema(self, required: bool = False) -> str | None:
+        return self._str_option("duckdb_schema", required)
 
     def get_postgres_host(self, required: bool = False) -> str | None:
         return self._str_option("postgres_host", required)
