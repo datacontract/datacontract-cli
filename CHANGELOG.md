@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
 
 ### Fixed
+- The Entropy Data API key is only sent to the Entropy Data host, no longer to any host a data contract URL or `--publish` URL points at; set `ENTROPY_DATA_HOST` for a self-hosted deployment
 - `datacontract api` refuses to send an environment-held data source credential to a host named by the posted contract, preventing credential exfiltration through a crafted `servers` section
 - `datacontract export html` and `datacontract catalog` now HTML-escape data contract field values, closing a stored cross-site scripting hole
 - `datacontract api` compares the `x-api-key` header in constant time to avoid a timing side channel

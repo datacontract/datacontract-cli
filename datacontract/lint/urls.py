@@ -1,8 +1,7 @@
-from urllib.parse import urlparse
-
 import requests
 
 from datacontract.config import Config
+from datacontract.integration.entropy_data import _get_api_key_or_none, is_platform_url
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
@@ -28,49 +27,22 @@ def fetch_resource(url: str, config: Config | None = None):
 
 
 def _set_api_key(headers, url, config: Config):
-    hostname = urlparse(url).hostname
+    """Attach the API key, but only when the URL is on the Entropy Data host.
 
-    entropy_data_api_key = config.get_entropy_data_api_key()
-    datamesh_manager_api_key = config.get_datamesh_manager_api_key()
-    datacontract_manager_api_key = config.get_datacontract_manager_api_key()
+    A data contract location is whatever the user names, so a URL on any other
+    host is fetched anonymously: the key must never be handed to a third party
+    that happens to serve a contract.
+    """
+    if not is_platform_url(url, config):
+        return
 
-    if hostname == "entropy-data.com" or hostname.endswith(".entropy-data.com"):
-        if entropy_data_api_key is None or entropy_data_api_key == "":
-            print("Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.")
-            raise DataContractException(
-                type="lint",
-                name=f"Reading data contract from {url}",
-                reason="Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.",
-                engine="datacontract",
-                result=ResultEnum.error,
-            )
-        headers["x-api-key"] = entropy_data_api_key
-    elif hostname == "datamesh-manager.com" or hostname.endswith(".datamesh-manager.com"):
-        if datamesh_manager_api_key is None or datamesh_manager_api_key == "":
-            print("Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.")
-            raise DataContractException(
-                type="lint",
-                name=f"Reading data contract from {url}",
-                reason="Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
-                engine="datacontract",
-                result=ResultEnum.error,
-            )
-        headers["x-api-key"] = datamesh_manager_api_key
-    elif hostname == "datacontract-manager.com" or hostname.endswith(".datacontract-manager.com"):
-        if datacontract_manager_api_key is None or datacontract_manager_api_key == "":
-            print("Error: Data Contract Manager API key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.")
-            raise DataContractException(
-                type="lint",
-                name=f"Reading data contract from {url}",
-                reason="Error: Data Contract Manager API key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.",
-                engine="datacontract",
-                result=ResultEnum.error,
-            )
-        headers["x-api-key"] = datacontract_manager_api_key
-
-    if datacontract_manager_api_key is not None and datacontract_manager_api_key != "":
-        headers["x-api-key"] = datacontract_manager_api_key
-    if datamesh_manager_api_key is not None and datamesh_manager_api_key != "":
-        headers["x-api-key"] = datamesh_manager_api_key
-    if entropy_data_api_key is not None and entropy_data_api_key != "":
-        headers["x-api-key"] = entropy_data_api_key
+    api_key = _get_api_key_or_none(config)
+    if api_key is None:
+        raise DataContractException(
+            type="lint",
+            name=f"Reading data contract from {url}",
+            reason="Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.",
+            engine="datacontract",
+            result=ResultEnum.error,
+        )
+    headers["x-api-key"] = api_key
