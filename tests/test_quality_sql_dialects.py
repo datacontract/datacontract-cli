@@ -42,10 +42,8 @@ def test_there_is_a_contract_for_every_server_type_that_maps_to_a_dialect():
     """A new server type in the dialect map needs a contract here, or its SQL
     rules go untested."""
     covered = {path.stem for path in CONTRACTS}
-    # `mssql` is an accepted spelling of `sqlserver`, not a separate server type.
-    expected = set(_DIALECT_BY_SERVER_TYPE) - {"mssql"}
 
-    assert expected - covered == set(), "server types with no quality-sql contract"
+    assert set(_DIALECT_BY_SERVER_TYPE) - covered == set(), "server types with no quality-sql contract"
 
 
 @pytest.mark.parametrize("contract_path", CONTRACTS, ids=lambda p: p.stem)

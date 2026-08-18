@@ -110,6 +110,8 @@ There is no `dialect` field on a quality rule. The dialect is **derived from the
 | `impala` | `hive` |
 | `dataframe` | `spark` |
 
+A server declared as `type: custom` with `customType: mssql` is read as `tsql`, like `sqlserver`.
+
 Files, Kafka topics and API responses are read through DuckDB, so a rule on those server types is written in DuckDB SQL — including its functions, such as `read_parquet` or `list_contains`.
 
 If a rule fails with *"could not be read as one"*, the query is not valid for the server type the contract declares; the message names the dialect it was read as.
