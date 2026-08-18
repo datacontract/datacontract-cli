@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import pydantic-model` reads the contract description from the module docstring
 
 ### Changed
+- `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
 - `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
 
 ### Fixed

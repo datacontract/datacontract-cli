@@ -335,3 +335,25 @@ def test_export_reports_an_unparseable_contract_as_a_client_error():
 
     assert response.status_code == 422
     assert "detail" in response.json()
+
+
+def test_no_cors_headers_for_cross_origin_requests():
+    """The API sends no CORS headers, so a browser page on another origin cannot
+    read its responses. The only browser client is the same-origin Swagger UI,
+    which does not need CORS; every other client is not a browser."""
+    response = client.get("/openapi.json", headers={"Origin": "https://evil.example"})
+    assert response.status_code == 200
+    assert "access-control-allow-origin" not in {k.lower() for k in response.headers}
+
+
+def test_cross_origin_preflight_is_not_approved():
+    """A CORS preflight from a foreign origin gets no approval headers."""
+    response = client.options(
+        "/export?format=odcs",
+        headers={
+            "Origin": "https://evil.example",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert "access-control-allow-origin" not in {k.lower() for k in response.headers}

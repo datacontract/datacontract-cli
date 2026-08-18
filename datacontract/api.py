@@ -9,7 +9,6 @@ from typing import Annotated, Optional
 import pydantic
 import yaml
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field, ValidationError
@@ -335,12 +334,11 @@ def _openapi_with_external_docs() -> dict:
 
 app.openapi = _openapi_with_external_docs
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# No CORS middleware: the only browser client is the Swagger UI served at "/",
+# which is same-origin and therefore not subject to CORS. Every other client
+# (curl, the SDK, CI) is not a browser and ignores CORS. Allowing arbitrary
+# origins would only let a page the operator happens to visit drive this server
+# and read its responses, so the safe default is to send no CORS headers at all.
 
 api_key_header = APIKeyHeader(
     name="x-api-key",
