@@ -357,3 +357,138 @@ def test_cross_origin_preflight_is_not_approved():
         },
     )
     assert "access-control-allow-origin" not in {k.lower() for k in response.headers}
+
+
+# --- B1/C1: an environment-held credential must not be sent to a contract-chosen host ---
+
+from datacontract.api import _reject_ambient_credentials_to_untrusted_host  # noqa: E402
+from datacontract.config import Config  # noqa: E402
+
+_POSTGRES_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: exfil
+name: exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: postgres
+    host: attacker.example
+    port: 5432
+    database: analytics
+    schema: public
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+def test_guard_blocks_env_credential_to_contract_host(monkeypatch):
+    """The exploit: server holds a postgres password in its env, the contract
+    names the host -> the connection must be refused before it is attempted."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    import pytest
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)
+    assert exc.value.status_code == 422
+    assert "DATACONTRACT_POSTGRES_HOST" in exc.value.detail
+
+
+def test_guard_allows_when_operator_pins_the_host(monkeypatch):
+    """Operator sets both the password and the host in the environment -> the
+    contract's host is ignored and the connection is allowed."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", "db.internal")
+    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
+
+
+def test_guard_allows_when_no_ambient_secret(monkeypatch):
+    """No environment-held credential -> nothing to protect, connection allowed."""
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_PASSWORD", raising=False)
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
+
+
+def test_guard_allows_caller_supplied_credentials(monkeypatch):
+    """A caller who brings the whole credential set via request config may aim it
+    at their own host -- only the server's ambient secret is pinned (C1)."""
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_PASSWORD", raising=False)
+    config = Config.resolve({"DATACONTRACT_POSTGRES_PASSWORD": "caller-secret"})
+    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", config)  # no raise
+
+
+def test_test_endpoint_blocks_credential_exfiltration(monkeypatch):
+    """End to end through the API: POST a contract naming the host while the
+    server holds a postgres password -> 422, no connection attempted."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    response = client.post(
+        "/test?server=production",
+        content=_POSTGRES_CONTRACT,
+        headers={"Content-Type": "application/yaml"},
+    )
+    assert response.status_code == 422
+    assert "DATACONTRACT_POSTGRES_HOST" in response.json()["detail"]
+
+
+def test_edit_server_is_not_guarded(tmp_path):
+    """The edit server serves a local file the user owns, so it does not mark
+    contracts untrusted and the guard does not apply."""
+    from datacontract.command_edit import create_app
+
+    contract_file = tmp_path / "datacontract.yaml"
+    contract_file.write_text(_POSTGRES_CONTRACT)
+    edit_app = create_app(contract_file)
+    assert getattr(edit_app.state, "untrusted_contracts", False) is False
+
+
+def test_api_app_marks_contracts_untrusted():
+    from datacontract.api import app as api_app
+
+    assert api_app.state.untrusted_contracts is True
+
+
+_KAFKA_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: kafka-exfil
+name: kafka-exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: kafka
+    host: attacker.example:9092
+    format: json
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+def test_guard_blocks_env_kafka_password(monkeypatch):
+    """Kafka's broker host is always the contract's, so an env SASL password can
+    never be paired with a posted contract -- it must be rejected."""
+    monkeypatch.setenv("DATACONTRACT_KAFKA_SASL_PASSWORD", "prod-secret")
+    import pytest
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_ambient_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)
+    assert exc.value.status_code == 422
+    assert "kafka" in exc.value.detail
+
+
+def test_guard_allows_kafka_without_ambient_secret(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_PASSWORD", raising=False)
+    _reject_ambient_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)  # no raise

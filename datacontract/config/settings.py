@@ -348,6 +348,21 @@ class Config(BaseSettings):
             value = value.get_secret_value()
         return value
 
+    def option_source(self, field_name: str) -> str | None:
+        """Where ``get_<field_name>()`` takes its value from.
+
+        ``"request"`` when the value is set on this Config (a per-request header,
+        a config file, or a programmatic value), ``"env"`` when it falls back to
+        the process environment, and ``None`` when it is unset everywhere. Used to
+        keep a credential the server holds in its environment from being sent to a
+        host chosen by an untrusted caller.
+        """
+        if getattr(self, field_name) is not None:
+            return "request"
+        if os.environ.get(env_name(field_name, type(self).model_fields[field_name])) is not None:
+            return "env"
+        return None
+
     def _str_option(self, field_name: str, required: bool = False) -> str | None:
         value = self._raw_option(field_name)
         value = str(value) if value is not None else None

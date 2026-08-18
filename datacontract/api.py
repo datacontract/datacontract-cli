@@ -334,6 +334,12 @@ def _openapi_with_external_docs() -> dict:
 
 app.openapi = _openapi_with_external_docs
 
+# Contracts posted to this server arrive over HTTP from callers we do not trust,
+# so a credential the server holds in its environment must never be sent to a
+# host the contract names. The `edit` server reuses the `test` handler for a
+# local file the user owns, so it does not set this flag and is not guarded.
+app.state.untrusted_contracts = True
+
 # No CORS middleware: the only browser client is the Swagger UI served at "/",
 # which is same-origin and therefore not subject to CORS. Every other client
 # (curl, the SDK, CI) is not a browser and ignores CORS. Allowing arbitrary
@@ -443,6 +449,84 @@ def _parse_filters_query(filters: str | None) -> dict[str, str] | None:
     ):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
     return {schema_name: predicate.strip() for schema_name, predicate in parsed.items()}
+
+
+# For each server type whose connection host can be taken from the posted
+# contract: (the Server attribute that names the connection target, the Config
+# field an operator sets to pin that target in the environment or None when the
+# type has no such field, the Config fields that hold a connection secret).
+# See _reject_ambient_credentials_to_untrusted_host.
+_AMBIENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...]]] = {
+    "postgres": ("host", "postgres_host", ("postgres_password",)),
+    "mysql": ("host", "mysql_host", ("mysql_password",)),
+    "oracle": ("host", "oracle_host", ("oracle_password",)),
+    "impala": ("host", "impala_host", ("impala_password",)),
+    "trino": ("host", "trino_host", ("trino_password",)),
+    "redshift": ("host", "redshift_host", ("redshift_password",)),
+    "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
+    "snowflake": (
+        "account",
+        "snowflake_account",
+        ("snowflake_password", "snowflake_token", "snowflake_private_key"),
+    ),
+    "databricks": ("host", "databricks_server_hostname", ("databricks_token", "databricks_client_secret")),
+    # Kafka's broker host is always the contract's `server.host` (no environment
+    # option pins it), so an environment-held SASL password can never be paired
+    # with a posted contract safely -- host_field is None, so it is always rejected.
+    "kafka": ("broker host", None, ("kafka_sasl_password",)),
+}
+
+
+def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | None, config) -> None:
+    """Keep an environment-held data-source credential from reaching a host the
+    posted contract chose.
+
+    A contract that arrives over HTTP is untrusted. If it could name the
+    connection host (its ``servers`` section) while the server supplies the
+    password from its own environment, an attacker could point the host at their
+    own machine and capture that password. So when a credential for the selected
+    server's type resolves from the environment, the connection target must
+    resolve from the environment too -- not from the contract, and not from a
+    per-request header (a caller who brings the whole credential set may still
+    aim it wherever they like; only the server's ambient secret is pinned).
+    """
+    from datacontract.config import Config
+    from datacontract.config.settings import env_name
+    from datacontract.engines.data_contract_test import get_server
+    from datacontract.lint import resolve
+
+    resolved = Config.resolve(config)
+    try:
+        data_contract = resolve.resolve_data_contract(data_contract_str=body, config=resolved)
+        server = get_server(data_contract, server_name)
+    except Exception:
+        return  # a broken contract or server selection is reported by test() itself
+    if server is None:
+        return
+    guard = _AMBIENT_CREDENTIAL_TARGETS.get(server.type)
+    if guard is None:
+        return
+    target_attr, host_field, secret_fields = guard
+    if not any(resolved.option_source(field) == "env" for field in secret_fields):
+        return  # no environment-held secret for this server type; nothing to protect
+    if host_field is not None and resolved.option_source(host_field) == "env":
+        return  # the operator pinned the target host; the contract's host is ignored
+    if host_field is not None:
+        env_var = env_name(host_field, Config.model_fields[host_field])
+        detail = (
+            f"This server holds a {server.type} credential in its environment, so the connection "
+            f"{target_attr} must also come from the server's environment ({env_var}); it will not be "
+            f"taken from the posted data contract. Set {env_var}, or send the full set of credentials "
+            f"with the request instead of relying on the server's environment."
+        )
+    else:
+        detail = (
+            f"This server holds a {server.type} credential in its environment, but its {target_attr} "
+            f"can only come from the posted data contract, so the credential cannot be pinned to a "
+            f"trusted target. Send the credentials with the request instead of relying on the server's "
+            f"environment."
+        )
+    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
 
 
 def check_api_key(api_key_header: str | None):
@@ -559,12 +643,15 @@ async def test(
         )
     logging.info("Testing data contract...")
     logging.info(body)
+    config = config_from_headers(request.headers)
+    if getattr(request.app.state, "untrusted_contracts", False):
+        _reject_ambient_credentials_to_untrusted_host(body, server, config)
     return DataContract(
         data_contract_str=body,
         server=server,
         publish_url=publish_url,
         fastapi_url=str(request.url),
-        config=config_from_headers(request.headers),
+        config=config,
         filter=filter,
         filters=parsed_filters,
     ).test()
