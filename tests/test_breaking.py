@@ -1,4 +1,5 @@
 import pytest
+from typer.testing import CliRunner
 
 from datacontract.breaking.detector import BreakingChangeDetector
 from datacontract.breaking.rules import (
@@ -7,12 +8,17 @@ from datacontract.breaking.rules import (
     RuleEvaluation,
     TypeChangedRule,
 )
+from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.model.breaking import BreakingChangeLevel
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 
 V1 = "fixtures/changelog/integration/changelog_integration_v1.yaml"
 V2 = "fixtures/changelog/integration/changelog_integration_v2.yaml"
+WARNING_ONLY_V1 = "fixtures/changelog/breaking/warning_only_v1.yaml"
+WARNING_ONLY_V2 = "fixtures/changelog/breaking/warning_only_v2.yaml"
+
+runner = CliRunner()
 
 
 def _entry(path, change_type, old_value=None, new_value=None):
@@ -81,6 +87,25 @@ def test_data_contract_breaking_reuses_changelog():
     assert result.v1 == V1
     assert result.v2 == V2
     assert result.is_breaking
+
+
+def test_cli_warning_only_change_exits_zero_but_shows_warning():
+    result = runner.invoke(app, ["breaking", WARNING_ONLY_V1, WARNING_ONLY_V2])
+    assert result.exit_code == 0
+    assert "[ 1 Warning ]  [ 1 Info ]" in result.output
+
+
+def test_cli_missing_file_exits_nonzero():
+    result = runner.invoke(app, ["breaking", "unknown.yaml", "unknown.yaml"])
+    assert result.exit_code == 1
+    assert result.exception is not None
+    assert "The file 'unknown.yaml' does not exist." in str(result.exception)
+
+
+def test_cli_shows_full_severity_range_for_mixed_changes():
+    result = runner.invoke(app, ["breaking", V1, V2])
+    assert result.exit_code == 1
+    assert "[ 4 Error ]  [ 1 Warning ]  [ 3 Info ]" in result.output
 
 
 def test_detector_rejects_ambiguous_rules():
