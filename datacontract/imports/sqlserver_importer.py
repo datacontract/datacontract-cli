@@ -67,7 +67,7 @@ class SqlServerImporter(Importer):
                 type="source",
                 name="sqlserver import source",
                 reason="The host is required for the sqlserver import, e.g. --source localhost",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return import_sqlserver(
             host=source,
@@ -92,7 +92,7 @@ def import_sqlserver(
             type="source",
             name="sqlserver import database",
             reason="The database is required for the sqlserver import, e.g. --database mydb",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     port = int(port) if port else DEFAULT_PORT
@@ -127,7 +127,7 @@ def import_sqlserver(
             result="failed",
             name="no tables found",
             reason=f"No tables found in schema '{schema}' of database '{database}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()
@@ -149,7 +149,7 @@ def sqlserver_connection(server: Server, config: Optional[Config] = None):
             result="failed",
             name="sqlserver extra missing",
             reason="Install the extra datacontract-cli[sqlserver] to use sqlserver",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -163,7 +163,7 @@ def sqlserver_connection(server: Server, config: Optional[Config] = None):
             result="failed",
             name="sqlserver connection failed",
             reason=f"Could not connect to SQL Server at {server.host}:{server.port}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -182,7 +182,7 @@ def _fetch(connection, query: str, optional: bool = False) -> List[Dict[str, Any
             result="failed",
             name="sqlserver catalog query failed",
             reason=f"Could not read the SQL Server catalog: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

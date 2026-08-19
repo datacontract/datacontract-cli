@@ -64,7 +64,7 @@ def _import(module: str):
             result=ResultEnum.failed,
             name=f"{module} is missing",
             reason="Install the extra datacontract-cli[kafka] to use kafka",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -85,7 +85,7 @@ def read_kafka_topic(
             name="Configuring Kafka checks",
             result="warning",
             reason="No schema defined in data contract. Skip executing tests.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     schema_obj = data_contract.schema_[0]
@@ -98,7 +98,7 @@ def read_kafka_topic(
             name="Configuring Kafka checks",
             result="warning",
             reason=f"Kafka format '{server.format}' is not supported. Skip executing tests.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     logger.info("Reading data from Kafka server %s topic %s", server.host, topic)
@@ -206,7 +206,7 @@ def _resolve_offsets(consumer, topic: str, server: Server, TopicPartition) -> Tu
             name="Configuring Kafka checks",
             result=ResultEnum.failed,
             reason=f"Cannot read topic {topic} from the Kafka server {server.host}: {reason}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     assignments, expected = [], 0
@@ -325,7 +325,7 @@ def _group_by_writer_schema(values: List[bytes], registry: Optional[dict]) -> Li
                 "registry rather than derivable from the data contract. Set "
                 "DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL so it can be read from there."
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     return sorted(groups.items(), key=lambda item: (item[0] is not None, item[0]))
@@ -350,7 +350,7 @@ def _undecodable(source: str, registry_configured: bool, cause: Exception) -> Da
             f"Avro is positionally encoded, so it must be the exact schema the messages "
             f"were written with.{hint}"
         ),
-        engine="datacontract",
+        engine="datacontract-cli",
         original_exception=cause,
     )
 
@@ -384,7 +384,7 @@ def fetch_writer_schema(registry: dict, schema_id: int) -> str:
             name="Configuring Kafka checks",
             result=ResultEnum.failed,
             reason=f"Cannot fetch Avro schema id {schema_id} from the schema registry at {registry['url']}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     schema_type = body.get("schemaType", "AVRO")
@@ -397,7 +397,7 @@ def fetch_writer_schema(registry: dict, schema_id: int) -> str:
                 f"Schema id {schema_id} in the schema registry at {registry['url']} is a {schema_type} schema, "
                 f"but the server format is avro."
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     return body["schema"]
 
@@ -577,7 +577,7 @@ def _avro_type_to_arrow(pa, avro_type):
                 f"A column has one type, and which of the union's types a message carries is only "
                 f"known per message."
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     if isinstance(avro_type, dict):
@@ -604,6 +604,6 @@ def _avro_type_to_arrow(pa, avro_type):
             name="Configuring Kafka checks",
             result=ResultEnum.failed,
             reason=f"Unsupported Avro type '{avro_type}' in the schema of the topic.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     return getattr(pa, factory)()

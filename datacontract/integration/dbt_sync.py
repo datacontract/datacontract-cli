@@ -107,7 +107,7 @@ def _ensure_dbt_project(project_dir: Path, *, explicit: bool = False) -> None:
             type="dbt_sync",
             name="resolve dbt project",
             reason=reason,
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
 
 
@@ -127,7 +127,7 @@ dbt not found on PATH. Install the dbt adapter that matches your warehouse, e.g.
 
 Full list of adapters: https://docs.getdbt.com/docs/supported-data-platforms
 Install guide: https://docs.getdbt.com/docs/core/installation-overview""",
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return dbt_path
 
@@ -154,7 +154,7 @@ def parse_filename_version(path: Path) -> Optional[str]:
                 f"Contract filename `{path.name}` has multiple version tokens {sorted(normalized)}; "
                 "expected exactly one `v<N>`."
             ),
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return next(iter(normalized))
 
@@ -206,7 +206,7 @@ def resolve_model_names(
                 type="dbt_sync",
                 name="resolve schema",
                 reason=f"Schema `{schema_filter}` not found in contract. Available: {available}.",
-                engine="dbt-sync",
+                engine="datacontract-cli",
             )
     missing_physical: list[str] = []
     for schema_obj in schemas:
@@ -229,7 +229,7 @@ def resolve_model_names(
                 f"have no `physicalName` set: {listing}. Either set `physicalName` in the contract, "
                 "or use `--model-resolution name`."
             ),
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return mapping
 
@@ -2456,7 +2456,7 @@ def run_dbt_test(
             type="dbt_sync",
             name="dbt test",
             reason=f"Failed to invoke dbt: {e}",
-            engine="dbt-sync",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -2467,7 +2467,7 @@ def run_dbt_test(
             type="dbt_sync",
             name="dbt test",
             reason=f"`dbt test` failed (exit code {result.returncode}):\n{output}",
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return result
 
@@ -2643,7 +2643,7 @@ def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path
                     "  - Starting from this dbt project? Bootstrap a contract from it: run `dbt parse`, then "
                     "`datacontract import dbt --source target/manifest.json --output datacontract-v1.odcs.yaml`."
                 ),
-                engine="dbt-sync",
+                engine="datacontract-cli",
             )
         return candidates
 
@@ -2665,14 +2665,14 @@ def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path
                         f"{path} is a directory, not a contract file. Pass --project-dir {path} "
                         "(and omit the contract argument) to sync every `*.odcs.yaml` under it."
                     ),
-                    engine="dbt-sync",
+                    engine="datacontract-cli",
                 )
             if not path.is_file():
                 raise DataContractException(
                     type="dbt_sync",
                     name="resolve contract",
                     reason=f"Contract file not found: {path}",
-                    engine="dbt-sync",
+                    engine="datacontract-cli",
                 )
             resolved[path] = None
     return sorted(resolved)
@@ -2752,7 +2752,7 @@ def generate_dbt_tests(
                         "was synced without a version. Name the contract file with the target version "
                         "(e.g. `<name>-v2.odcs.yaml`), or de-version the model's `.sql` files."
                     ),
-                    engine="dbt-sync",
+                    engine="datacontract-cli",
                 )
         schema_obj = schemas_by_name[schema_name_key]
         model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, effective, run, model_version)
@@ -2769,7 +2769,7 @@ def generate_dbt_tests(
                 type="dbt_sync",
                 name="parse existing YAML files",
                 reason=(f"Cannot parse YAML file(s): {files}\nFix or remove them before running dbt sync."),
-                engine="dbt-sync",
+                engine="datacontract-cli",
             )
         run.log_warn(f"Ignoring unparseable YAML file: {files}")
 

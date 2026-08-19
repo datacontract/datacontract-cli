@@ -47,7 +47,7 @@ class MysqlImporter(Importer):
                 type="source",
                 name="mysql import source",
                 reason="The host is required for the mysql import, e.g. --source localhost",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return import_mysql(
             host=source,
@@ -70,7 +70,7 @@ def import_mysql(
             type="source",
             name="mysql import database",
             reason="The database is required for the mysql import, e.g. --database mydb",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     port = int(port) if port else DEFAULT_PORT
@@ -88,7 +88,7 @@ def import_mysql(
             result="failed",
             name="no tables found",
             reason=f"No tables found in the database '{database}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()
@@ -110,7 +110,7 @@ def _attach(host: str, port: int, database: str, config: Optional[Config] = None
             result="failed",
             name="mysql extra missing",
             reason="Install the extra datacontract-cli[mysql] to use mysql",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -131,7 +131,7 @@ def _attach(host: str, port: int, database: str, config: Optional[Config] = None
             result="failed",
             name="mysql connection failed",
             reason=f"Could not connect to MySQL at {host}:{port}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     return con
@@ -155,7 +155,7 @@ def _query(con, sql: str) -> List[Dict[str, Any]]:
             result="failed",
             name="mysql catalog query failed",
             reason=f"Could not read the MySQL catalog: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

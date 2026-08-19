@@ -43,7 +43,7 @@ def import_avro(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse avro schema",
             reason=f"Failed to parse avro schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -115,7 +115,7 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
                 reason=f"Field '{field.name}' has a union type with multiple non-null types "
                 f"{non_null_type_names}, which is not supported by ODCS. "
                 f"Only unions with a single non-null type (optional fields) are supported.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         enum_schema = get_enum_from_union_field(field)
         if enum_schema:
@@ -293,7 +293,7 @@ def import_type_of_optional_field(field: avro.schema.Field) -> tuple[str, str]:
         result="failed",
         name="Map avro type to data contract type",
         reason="Could not import optional field: union type does not contain a non-null type",
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 
@@ -347,5 +347,5 @@ def map_type_from_avro(avro_type_str: str) -> str:
         result="failed",
         name="Map avro type to data contract type",
         reason=f"Unsupported type {avro_type_str} in avro schema.",
-        engine="datacontract",
+        engine="datacontract-cli",
     )
