@@ -333,9 +333,9 @@ class TestEndToEndWiring:
             (c.type, c.field, c.result, c.reason) for c in azure_checks
         ]
 
-        # the SQL engine must not generate checks for a blob schema
-        sql_checks = [c for c in run.checks if not str(c.type).startswith("azure_") and c.engine != "jsonschema"]
-        assert not sql_checks, [(c.type, c.field) for c in sql_checks]
+        # a blob schema yields the azure_ checks and the JSON schema ones, nothing else
+        other_checks = [c for c in run.checks if not str(c.type).startswith("azure_") and c.engine != "jsonschema"]
+        assert not other_checks, [(c.type, c.field) for c in other_checks]
         assert run.result == ResultEnum.passed, [
             (c.type, c.name, c.result, c.reason) for c in run.checks if c.result != ResultEnum.passed
         ]

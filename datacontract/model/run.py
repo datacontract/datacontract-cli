@@ -96,7 +96,7 @@ class Check(BaseModel):
 
     engine: str | None = Field(
         default=None,
-        description="The engine that executed the check. Per default one of datacontract-cli, jsonschema, or dbt.",
+        description="The engine that executed the check. By default one of datacontract-cli, jsonschema, or dbt.",
         examples=["datacontract-cli"],
     )
     language: str | None = Field(
