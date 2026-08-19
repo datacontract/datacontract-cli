@@ -864,6 +864,42 @@ async def changelog_endpoint(
 
 
 @app.post(
+    "/breaking",
+    tags=["breaking"],
+    summary="Show compatibility impact between two data contracts.",
+    description="""
+        Compare two ODCS data contract YAMLs and classify their backward-compatibility impact.
+        POST a JSON body with `v1` (source/before) and `v2` (target/after) as YAML strings.
+    """,
+)
+async def breaking_endpoint(
+    body: ChangelogRequest,
+    api_key: Annotated[str | None, Depends(api_key_header)] = None,
+):
+    check_api_key(api_key)
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f1:
+        f1.write(body.v1)
+        v1_path = f1.name
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f2:
+        f2.write(body.v2)
+        v2_path = f2.name
+
+    try:
+        result = DataContract(data_contract_file=v1_path).breaking(DataContract(data_contract_file=v2_path))
+        return result
+    except yaml.YAMLError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
+    except pydantic.ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DataContractException as e:
+        raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
+    finally:
+        os.unlink(v1_path)
+        os.unlink(v2_path)
+
+
+@app.post(
     "/export",
     tags=["export"],
     operation_id="exportDataContract",
