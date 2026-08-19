@@ -21,12 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query
 - A `quality.type: sql` rule must be a read-only query; DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed, for every data source
-- `datacontract api` refuses `servers[].type: local`, so a posted data contract cannot read the files of the server running it; set `DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` to allow it
-- `datacontract api` confines the DuckDB connection of a file-based server to the data locations the posted data contract declares
+- `datacontract api`:
+  - refuses `servers[].type: local`, so a posted data contract cannot read the files of the server running it; set `DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` to allow it
+  - confines the DuckDB connection of a file-based server to the data locations the posted data contract declares
+  - refuses to send an environment-held data source credential to a host named by the posted contract, preventing credential exfiltration through a crafted `servers` section
+  - compares the `x-api-key` header in constant time to avoid a timing side channel
 - The Entropy Data API key is only sent to the Entropy Data host, no longer to any host a data contract URL or `--publish` URL points at; set `ENTROPY_DATA_HOST` for a self-hosted deployment
-- `datacontract api` refuses to send an environment-held data source credential to a host named by the posted contract, preventing credential exfiltration through a crafted `servers` section
 - `datacontract export html` and `datacontract catalog` now HTML-escape data contract field values, closing a stored cross-site scripting hole
-- `datacontract api` compares the `x-api-key` header in constant time to avoid a timing side channel
 - `datacontract export pydantic-model` exports the ODCS `timestamp` and `time` logical types as `datetime.datetime` and `datetime.time` instead of guessing from the physical type, which turned a `TIMESTAMPTZ` column into a `str`
 - `datacontract export pydantic-model` exports the ODCS `date` logical type as `datetime.date` instead of `datetime.datetime`
 - `datacontract import pydantic-model` maps `datetime.datetime` to the `timestamp` logical type and `datetime.time` to `time`
