@@ -32,6 +32,25 @@ class DcsExporter(Exporter):
         return to_dcs_yaml(data_contract)
 
 
+def _to_bool(value) -> Optional[bool]:
+    """Coerce an ODCS custom property value to the boolean DCS types `pii` as.
+
+    Custom property values are untyped in ODCS, and the DCS importer writes this
+    one back out as `str(field.pii)` — so contracts in the wild carry the string
+    "True" where the specification wants a boolean. Returns None when the value
+    is not recognisably boolean, leaving it to the caller to keep it as-is.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+    return None
+
+
 def to_dcs_yaml(data_contract: OpenDataContractStandard) -> str:
     """Convert ODCS to DCS and return as YAML."""
     dcs = to_dcs(data_contract)
@@ -228,7 +247,13 @@ def _convert_property_to_field(prop: SchemaProperty) -> Field:
         field.config = {}
         for cp in prop.customProperties:
             if cp.property == "pii":
-                field.pii = cp.value
+                pii = _to_bool(cp.value)
+                if pii is None:
+                    # Not recognisably boolean, so keep it verbatim rather than
+                    # emit a `pii` of the wrong type.
+                    field.config[cp.property] = cp.value
+                else:
+                    field.pii = pii
             else:
                 field.config[cp.property] = cp.value
 

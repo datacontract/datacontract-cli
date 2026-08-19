@@ -20,7 +20,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 erDiagram
         "**orders**" {
         order_id🔑🔒 string
-        order_timestamp date
+        order_timestamp timestamp
         customer_id string
         order_total number
         status string

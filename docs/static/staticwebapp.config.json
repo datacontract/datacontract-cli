@@ -1,6 +1,17 @@
 {
   "$schema": "https://json.schemastore.org/staticwebapp.config.json",
+  "trailingSlash": "auto",
   "routes": [
+    {
+      "route": "/index.html",
+      "redirect": "/",
+      "statusCode": 301
+    },
+    {
+      "route": "/index",
+      "redirect": "/",
+      "statusCode": 301
+    },
     {
       "route": "/assets/*",
       "headers": {

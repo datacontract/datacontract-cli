@@ -1,0 +1,49 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-snowflake
+name: Orders quality rules (snowflake)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a snowflake server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: snowflake
+    account: acme-prod
+    database: orders
+    schema: public
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "A sample of rows is readable (DIALECT-ONLY: SAMPLE)"
+        query: |
+          SELECT count(*) FROM ${model} SAMPLE (10 ROWS)
+        mustBeGreaterOrEqualTo: 0
+      - type: sql
+        description: "No negative order totals"
+        query: |
+          SELECT count_if(order_total < 0) FROM ${model}
+        mustBe: 0
+      - type: sql
+        description: "Orders arrived in the last day"
+        query: |
+          SELECT count(*) FROM ${model} WHERE order_timestamp >= DATEADD('day', -1, CURRENT_TIMESTAMP())
+        mustBeGreaterThan: 0

@@ -10,6 +10,18 @@ from datacontract.config import cli_config, set_cli_config
 runner = CliRunner()
 
 
+def message(result) -> str:
+    """The CLI output as one line.
+
+    Typer renders errors in a Rich box, wrapping the text to the terminal width.
+    Where it wraps depends on how long the path in the message is -- under
+    `pytest -n` the tmp_path carries a worker id and the wrap lands mid-phrase --
+    so the box drawing and the line breaks are removed before matching.
+    """
+    stripped = "".join(" " if character in "│╭╮╰╯─" else character for character in result.output)
+    return " ".join(stripped.split())
+
+
 @pytest.fixture(autouse=True)
 def reset_cli_config():
     yield
@@ -111,7 +123,7 @@ def test_invalid_config_file_fails_with_a_clear_message(tmp_path):
     result = runner.invoke(app, ["--config-file", str(path), "lint", "fixtures/lint/valid_datacontract.yaml"])
 
     assert result.exit_code != 0
-    assert "snowflake_warehose" in result.output
+    assert "snowflake_warehose" in message(result)
 
 
 def test_missing_config_file_fails_with_a_clear_message(tmp_path):
@@ -120,7 +132,7 @@ def test_missing_config_file_fails_with_a_clear_message(tmp_path):
     )
 
     assert result.exit_code != 0
-    assert "does not exist" in result.output
+    assert "does not exist" in message(result)
 
 
 def test_from_yaml_names_the_file_on_invalid_yaml(tmp_path):

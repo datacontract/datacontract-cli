@@ -6,7 +6,7 @@ description: "Run a custom SQL query against the data source and compare the res
 
 # SQL Quality Rules
 
-A `type: sql` rule runs a custom SQL query against the server and compares the single returned value to a threshold. It is the most flexible rule type — use it whenever a check can be expressed as a query. The query runs in the dialect of the selected server.
+A `type: sql` rule runs a custom SQL query against the server and compares the single returned value to a threshold. It is the most flexible rule type — use it whenever a check can be expressed as a query. The query must be read-only, and is written in the [dialect of the selected server](#sql-dialect).
 
 ## Property-level example
 
@@ -84,8 +84,39 @@ The query must return a single value, which is compared using exactly one of:
 | `mustBeLessThan` / `mustBeLessOrEqualTo` | is below an upper bound |
 | `mustBeBetween` / `mustNotBeBetween` | is inside / outside a `[min, max]` range |
 
+## The query must be a query
+
+A rule computes a single value from the data, so the query must be a **single read-only statement** — a `SELECT`, a `WITH … SELECT`, a `UNION`, or a parenthesized query. Anything else is reported as a failed check and never sent to the data source: DDL (`CREATE`, `DROP`, `ALTER`), DML (`INSERT`, `UPDATE`, `DELETE`), `COPY`, `ATTACH`, `INSTALL`/`LOAD`, `SET`, `PRAGMA`, `CALL`, and a second statement appended behind a legitimate one.
+
+This applies to every data source, and to every way the CLI is run. A data contract is not always written by the person whose credentials execute it.
+
+## SQL dialect
+
+There is no `dialect` field on a quality rule. The dialect is **derived from the type of the server the rule runs against**, so a query is read the same way the data source will read it — BigQuery's backtick-quoted table names, Snowflake's `SAMPLE`, SQL Server's `TOP` and Postgres' `->>` are all understood without any declaration:
+
+| Server type | SQL dialect |
+|---|---|
+| `local`, `s3`, `gcs`, `azure`, `kafka`, `api`, `duckdb` | `duckdb` |
+| `postgres` | `postgres` |
+| `redshift` | `redshift` |
+| `mysql` | `mysql` |
+| `oracle` | `oracle` |
+| `sqlserver` | `tsql` |
+| `snowflake` | `snowflake` |
+| `bigquery` | `bigquery` |
+| `databricks` | `databricks` |
+| `athena` | `athena` |
+| `trino` | `trino` |
+| `impala` | `hive` |
+| `dataframe` | `spark` |
+
+The ODCS synonyms resolve to the spelling above before the dialect is looked up, so `postgresql` is read as `postgres`. A server declared as `type: custom` with `customType: mssql` is read as `tsql`, like `sqlserver`.
+
+Files, Kafka topics and API responses are read through DuckDB, so a rule on those server types is written in DuckDB SQL — including its functions, such as `read_parquet` or `list_contains`.
+
+If a rule fails with *"could not be read as one"*, the query is not valid for the server type the contract declares; the message names the dialect it was read as.
+
 ## Notes
 
-- **`dialect`** — optionally pin the SQL dialect the query is written in (e.g. `dialect: postgres`). By default the query runs in the selected server's dialect.
 - **Referencing the data** — reference the schema/table by its name in the `FROM` clause (e.g. `FROM orders`).
 - **`severity`** — set `severity: warning` to report a failing rule without failing the run (see [`--fail-on`](../commands/ci.md)).

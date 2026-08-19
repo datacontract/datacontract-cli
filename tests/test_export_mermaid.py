@@ -52,3 +52,39 @@ def test_mermaid_structure(tmp_path: Path):
     assert "order_id" in content
     assert "order_total" in content
     assert "order_status" in content
+
+
+def test_mermaid_sanitizes_html_dangerous_characters():
+    """to_mermaid output is embedded `| safe` in the HTML export, so no token
+    (model name, field name, or field type) may carry `<`/`>` that could break
+    out of the <pre class="mermaid"> block."""
+    from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+
+    from datacontract.export.mermaid_exporter import to_mermaid
+
+    contract = OpenDataContractStandard(
+        apiVersion="v3.0.2",
+        kind="DataContract",
+        id="x",
+        version="1.0.0",
+        status="active",
+        schema=[
+            SchemaObject(
+                name="orders</pre><script>alert(1)</script>",
+                logicalType="object",
+                properties=[
+                    SchemaProperty(
+                        name="id</pre><img src=x onerror=alert(1)>",
+                        logicalType="string",
+                        physicalType="varchar<svg onload=alert(1)>",
+                    )
+                ],
+            )
+        ],
+    )
+
+    diagram = to_mermaid(contract)
+
+    assert diagram is not None
+    assert "<" not in diagram
+    assert ">" not in diagram

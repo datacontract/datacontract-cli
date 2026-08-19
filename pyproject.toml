@@ -117,7 +117,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.5.0",
-  "databricks-sdk<0.126.0",
+  "databricks-sdk<0.129.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -274,6 +274,7 @@ dev = [
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
   "pytest",
+  "pytest-cov",
   "pytest-xdist",
   "pymssql==2.3.13",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
@@ -281,7 +282,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.16.2",
+  "ruff==0.16.3",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.338.0",
 ]
@@ -322,6 +323,25 @@ markers = [
 log_level = "INFO"
 #log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"
+
+# Coverage is measured to make the number visible (the `coverage` CI job prints
+# the least-covered modules to the run summary), not to gate a pull request:
+# there is deliberately no `fail_under`, so nothing here can block a merge.
+# Run it locally with `pytest --cov`.
+[tool.coverage.run]
+source = ["datacontract"]
+omit = [
+    # Vendored build output of the datacontract-editor npm package, not ours to test.
+    "datacontract/editor_assets/*",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    # Bodies that only exist for typing; never executed at runtime.
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
 
 [tool.ruff]
 line-length = 120

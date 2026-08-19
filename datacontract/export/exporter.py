@@ -4,6 +4,8 @@ from enum import Enum
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
+from datacontract.model.server import get_server_type
+
 
 class Exporter(ABC):
     def __init__(self, export_format) -> None:
@@ -121,10 +123,10 @@ def _determine_sql_server_type(
             raise RuntimeError("Export with server_type='auto' requires servers in the data contract.")
 
         if server is None:
-            server_types = set([s.type for s in data_contract.servers])
+            server_types = {get_server_type(s) for s in data_contract.servers}
         else:
             server_obj = next((s for s in data_contract.servers if s.server == server), None)
-            server_types = {server_obj.type} if server_obj else set()
+            server_types = {get_server_type(server_obj)} if server_obj else set()
 
         if "snowflake" in server_types:
             return "snowflake"

@@ -104,6 +104,23 @@ export DATACONTRACT_CLI_API_KEY=<your-secret-key-such-as-a-random-uuid>
 Securing the API is highly recommended. Data contract tests may otherwise be subject to SQL injection or leak sensitive information.
 :::
 
+## Posted contracts are untrusted
+
+A data contract carries SQL and names the hosts to connect to, so a contract that arrives over HTTP is treated as untrusted input, whether or not the API key is set:
+
+- a `quality.type: sql` rule must be a **read-only query** — DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed;
+- a credential held in the server's environment is **never sent to a host the contract names** (see [Configuration](./configuration.md));
+- `servers[].type: local` is **refused**, so a caller cannot read the files of the machine running the API;
+- for a file-based server type (`s3`, `gcs`, `azure`), the DuckDB connection is **confined to the data locations the contract declares**.
+
+If the deployment serves its own files on purpose — the data mounted next to the API in the same container, say — allow it explicitly:
+
+```bash
+export DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true
+```
+
+The contract is then still confined to the paths it declares, but a caller chooses those paths, so only turn this on where callers are trusted.
+
 ## Run as a Docker container
 
 The pre-built image can run the API in any container environment (Docker Compose, Kubernetes, Azure Container Apps, Google Cloud Run, …):

@@ -40,6 +40,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/s3.svg" alt="" />
     <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">CSV, JSON, Delta, Parquet on S3 / S3-compatible storage</span></span>
   </a>
+  <a className="doc-card" href="/testing/duckdb">
+    <img src="/img/icons/database.svg" alt="" />
+    <span><span className="doc-card-title">DuckDB</span><span className="doc-card-desc">Tables inside a DuckDB database file</span></span>
+  </a>
   <a className="doc-card" href="/testing/local">
     <img src="/img/icons/local.svg" alt="" />
     <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Try it in 60 seconds — no credentials needed</span></span>

@@ -106,6 +106,7 @@ def execute_ibis_checks(
     include_failed_samples: bool = False,
     model_filters: Optional[dict[str, str]] = None,
     config=None,
+    untrusted_contract: bool = False,
 ):
     if data_contract is None:
         run.log_warn("Cannot run the checks, as the data contract is invalid")
@@ -124,7 +125,9 @@ def execute_ibis_checks(
 
     run.log_info("Running checks with ibis")
     try:
-        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name, config)
+        con = connect_ibis(
+            run, data_contract, server, spark, duckdb_connection, schema_name, config, untrusted_contract
+        )
     except DataContractException:
         raise
     except ImportError:
@@ -1115,6 +1118,10 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     if server is None or not server.schema_:
         return None
     if getattr(con, "name", None) in ("oracle", "mssql"):
+        return server.schema_
+    # A duckdb database file is opened without a schema (`connect()` takes none),
+    # so a table outside `main` has to be qualified at lookup.
+    if get_server_type(server) == "duckdb":
         return server.schema_
     # Redshift rides the Postgres backend, so detect it by the contract's server
     # type rather than con.name.

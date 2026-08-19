@@ -39,6 +39,7 @@ def execute_data_contract_test(
     filters: dict[str, str] | None = None,
     metadata_only: bool = False,
     config: Config | None = None,
+    untrusted_contract: bool = False,
 ):
     config = Config.resolve(config)
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -148,6 +149,7 @@ def execute_data_contract_test(
         include_failed_samples=include_failed_samples,
         model_filters=model_filters,
         config=config,
+        untrusted_contract=untrusted_contract,
     )
 
 
