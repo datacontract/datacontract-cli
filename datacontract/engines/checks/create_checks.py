@@ -846,7 +846,7 @@ def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         return None
 
     return CheckSpec(
-        key="servicelevel_freshness",
+        key=f"{model}__{field}__servicelevel_freshness",
         category="servicelevel",
         type="servicelevel_freshness",
         name=f"Freshness of {model}.{field} < {sla.value}{unit[0]}",
@@ -871,7 +871,7 @@ def _retention_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
     if seconds is None:
         return None
     return CheckSpec(
-        key="servicelevel_retention",
+        key=f"{model}__{field}__servicelevel_retention",
         category="servicelevel",
         type="servicelevel_retention",
         name=f"Retention of {model}.{field} < {seconds}s",

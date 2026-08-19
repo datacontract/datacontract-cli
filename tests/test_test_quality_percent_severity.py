@@ -108,6 +108,61 @@ def test_create_checks_percent_ignored_for_rowcount(caplog):
     assert "does not support unit: percent" in caplog.text
 
 
+def test_create_checks_servicelevel_keys_include_element():
+    contract = """
+apiVersion: v3.0.2
+kind: DataContract
+id: servicelevel_key_test
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: integer
+      - name: amount
+        logicalType: integer
+slaProperties:
+  - property: freshness
+    value: 24
+    unit: h
+    element: orders.order_id
+  - property: freshness
+    value: 48
+    unit: h
+    element: orders.amount
+  - property: retention
+    value: 1
+    unit: y
+    element: orders.order_id
+  - property: retention
+    value: 2
+    unit: y
+    element: orders.amount
+"""
+
+    servicelevel_specs = [spec for spec in _checks(contract) if spec.category == "servicelevel"]
+
+    assert [spec.type for spec in servicelevel_specs] == [
+        "servicelevel_freshness",
+        "servicelevel_freshness",
+        "servicelevel_retention",
+        "servicelevel_retention",
+    ]
+    assert [spec.key for spec in servicelevel_specs] == [
+        "orders__order_id__servicelevel_freshness",
+        "orders__amount__servicelevel_freshness",
+        "orders__order_id__servicelevel_retention",
+        "orders__amount__servicelevel_retention",
+    ]
+    assert len({spec.key for spec in servicelevel_specs}) == len(servicelevel_specs)
+
+
 # ---------------------------------------------------------------------------
 # end-to-end tests: ibis engine against local CSV (duckdb, in-process)
 # ---------------------------------------------------------------------------
