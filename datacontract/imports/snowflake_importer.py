@@ -35,7 +35,7 @@ class SnowflakeImporter(Importer):
                 type="source",
                 name="snowflake import source",
                 reason="Account is required for snowflake import and should be the account name",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
 
@@ -255,7 +255,7 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
                     result="failed",
                     name="snowflake query timeout",
                     reason=f"Snowflake queries did not complete within {_QUERY_TIMEOUT_S} seconds.",
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
             time.sleep(0.2)
 
@@ -272,7 +272,7 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
                 result="failed",
                 name=f"snowflake query failed: {name}",
                 reason=f"Snowflake query '{name}' failed with status {status}. Check permissions and query syntax.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         with conn.cursor(DictCursor) as cur:
             cur.get_results_from_sfqid(qid)
@@ -357,7 +357,7 @@ def import_snowflake_from_connector(
             result="failed",
             name="snowflake extra missing",
             reason="Install the extra datacontract-cli[snowflake] to use snowflake",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -462,7 +462,7 @@ def snowflake_cursor(account: str, database: str, schema: str, config: "Config |
             result="failed",
             name="snowflake extra missing",
             reason="Install the extra datacontract-cli[snowflake] to use snowflake",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

@@ -121,10 +121,10 @@ The operator pushes the full run report to XCom under the key `datacontract_resu
       "model": "orders",
       "field": "order_id",
       "result": "passed",
-      "engine": "datacontract"
+      "engine": "datacontract-cli"
     }
   ],
-  "logs": [{"level": "INFO", "message": "Running engine ibis", "timestamp": "..."}]
+  "logs": [{"level": "INFO", "message": "Running checks with ibis", "timestamp": "..."}]
 }
 ```
 

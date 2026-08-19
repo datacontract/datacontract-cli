@@ -97,7 +97,7 @@ class DataContract:
                     type="lint",
                     result=ResultEnum.passed,
                     name="Data contract is syntactically valid",
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
             )
             run.dataContractId = data_contract.id
@@ -124,7 +124,7 @@ class DataContract:
                     result=ResultEnum.error,
                     name="Check Data Contract",
                     reason=str(e),
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
             )
             run.log_error(str(e))
@@ -193,7 +193,7 @@ class DataContract:
                     result=ResultEnum.error,
                     name="Test Data Contract",
                     reason=str(e),
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
             )
             logging.exception("Exception occurred")

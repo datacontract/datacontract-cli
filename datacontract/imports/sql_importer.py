@@ -49,7 +49,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             type="import",
             name=f"Reading source from {source}",
             reason=f"Error parsing SQL: {str(e)}",
-            engine="datacontract",
+            engine="datacontract-cli",
             result=ResultEnum.error,
         )
 
@@ -390,7 +390,7 @@ def read_file(path):
             type="import",
             name=f"Reading source from {path}",
             reason=f"The file '{path}' does not exist.",
-            engine="datacontract",
+            engine="datacontract-cli",
             result=ResultEnum.error,
         )
     with open(path, "r") as file:

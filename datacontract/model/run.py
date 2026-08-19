@@ -96,8 +96,8 @@ class Check(BaseModel):
 
     engine: str | None = Field(
         default=None,
-        description="The engine that executed the check. Per default one of ibis, ibis-metadata-only, jsonschema, dbt, or datacontract (for pre-check failures).",
-        examples=["ibis"],
+        description="The engine that executed the check. Per default one of datacontract-cli, jsonschema, or dbt.",
+        examples=["datacontract-cli"],
     )
     language: str | None = Field(
         default=None,

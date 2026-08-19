@@ -334,8 +334,8 @@ class TestEndToEndWiring:
         ]
 
         # the SQL engine must not generate checks for a blob schema
-        ibis_checks = [c for c in run.checks if c.engine == "ibis"]
-        assert not ibis_checks, [(c.type, c.field) for c in ibis_checks]
+        sql_checks = [c for c in run.checks if not str(c.type).startswith("azure_") and c.engine != "jsonschema"]
+        assert not sql_checks, [(c.type, c.field) for c in sql_checks]
         assert run.result == ResultEnum.passed, [
             (c.type, c.name, c.result, c.reason) for c in run.checks if c.result != ResultEnum.passed
         ]

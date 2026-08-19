@@ -411,7 +411,7 @@ def import_pydantic(source: str) -> OpenDataContractStandard:
             type="file",
             name="Read Pydantic models",
             reason=f"Failed to read Python file: {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exception,
         )
     except SyntaxError as exception:
@@ -419,7 +419,7 @@ def import_pydantic(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse Pydantic models",
             reason=f"Failed to parse Python file: {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exception,
         )
 
@@ -429,7 +429,7 @@ def import_pydantic(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse Pydantic models",
             reason=f"No Pydantic models found in {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             result="failed",
         )
 

@@ -110,5 +110,5 @@ def map_pyarrow_field_to_property(pyarrow_field: pyarrow.Field, field_name: str)
         type="schema",
         name="Parse parquet schema",
         reason=f"{pyarrow_field.type} currently not supported.",
-        engine="datacontract",
+        engine="datacontract-cli",
     )

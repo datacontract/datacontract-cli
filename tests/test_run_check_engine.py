@@ -1,7 +1,5 @@
 from datacontract.data_contract import DataContract
 
-ALLOWED_ENGINES = {"datacontract", "ibis", "ibis-metadata-only", "jsonschema", "dbt"}
-
 CONTRACT = """
 apiVersion: v3.0.2
 kind: DataContract
@@ -27,22 +25,16 @@ schema:
 
 def test_full_run_reports_one_engine_throughout():
     run = DataContract(data_contract_str=CONTRACT).test()
-    assert {check.engine for check in run.checks} == {"ibis"}
+    assert {check.engine for check in run.checks} == {"datacontract-cli"}
 
 
 def test_metadata_only_run_reports_one_engine_throughout():
-    # The ibis-metadata-only engine is set for the whole run - the skipped row-value checks
-    # carry it too.
+    # The skipped row-value checks carry the engine too.
     run = DataContract(data_contract_str=CONTRACT, metadata_only=True).test()
-    assert {check.engine for check in run.checks} == {"ibis-metadata-only"}
+    assert {check.engine for check in run.checks} == {"datacontract-cli"}
     assert any(check.result == "skipped" for check in run.checks)
-
-
-def test_engines_stay_within_the_documented_set():
-    run = DataContract(data_contract_str=CONTRACT).test()
-    assert {check.engine for check in run.checks} <= ALLOWED_ENGINES
 
 
 def test_missing_file_is_reported_by_the_cli_itself():
     run = DataContract(data_contract_file="does-not-exist.yaml").test()
-    assert [check.engine for check in run.checks] == ["datacontract"]
+    assert [check.engine for check in run.checks] == ["datacontract-cli"]

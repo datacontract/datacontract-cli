@@ -35,7 +35,7 @@ def import_bigquery_from_json(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse bigquery schema",
             reason=f"Failed to parse bigquery schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     return convert_bigquery_schema(bigquery_schema)
@@ -54,7 +54,7 @@ def import_bigquery_from_api(
             result="failed",
             name="bigquery extra missing",
             reason="Install the extra datacontract-cli[bigquery] to use bigquery",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -78,7 +78,7 @@ def import_bigquery_from_api(
                 name="Invalid table name for bigquery API",
                 reason=f"Tablename {table} is invalid for the bigquery API",
                 original_exception=e,
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
         if api_table is None:
@@ -87,7 +87,7 @@ def import_bigquery_from_api(
                 result="failed",
                 name="Query bigtable Schema from API",
                 reason=f"Table {table} not found on bigtable schema Project {bigquery_project}, dataset {bigquery_dataset}.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
         schema_obj = convert_bigquery_table_to_schema(api_table.to_api_repr())
@@ -296,7 +296,7 @@ def map_type_from_bigquery(bigquery_type_str: str) -> str:
         result="failed",
         name="Map bigquery type to data contract type",
         reason=f"Unsupported type {bigquery_type_str} in bigquery json definition.",
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 

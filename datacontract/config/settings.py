@@ -361,7 +361,7 @@ class Config(BaseSettings):
                 name=f"missing_env_{key}",
                 reason=f"Required configuration {key} is not set. Set the environment variable "
                 f"or pass it via DataContract(config=...) to connect to {server_type}.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return value
 
@@ -395,7 +395,7 @@ class Config(BaseSettings):
                 type="configuration",
                 name=f"invalid_{key}",
                 reason=f"{key} must be a whole number, got {value!r}.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
     def _bool_option(self, field_name: str, default: bool) -> bool:

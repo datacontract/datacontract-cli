@@ -54,8 +54,7 @@ class _ColumnNotFound(Exception):
 # ---------------------------------------------------------------------------
 # Check stubs (created up-front so run.checks ordering & filtering is stable)
 # ---------------------------------------------------------------------------
-def build_check_stubs(specs: List[CheckSpec], metadata_only: bool = False) -> List[Check]:
-    engine = "ibis-metadata-only" if metadata_only else "ibis"
+def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
     stubs: List[Check] = []
     for spec in specs:
         stubs.append(
@@ -69,7 +68,7 @@ def build_check_stubs(specs: List[CheckSpec], metadata_only: bool = False) -> Li
                 field=spec.field,
                 qualityId=spec.quality_id,
                 tags=spec.tags,
-                engine=engine,
+                engine="datacontract-cli",
                 implementation=_describe(spec),
             )
         )
@@ -109,7 +108,7 @@ def execute_ibis_checks(
     config=None,
 ):
     if data_contract is None:
-        run.log_warn("Cannot run engine ibis, as data contract is invalid")
+        run.log_warn("Cannot run the checks, as the data contract is invalid")
         return
 
     # Checks the new engine cannot run (e.g. raw SodaCL) get their preset result.
@@ -123,7 +122,7 @@ def execute_ibis_checks(
     if not executable:
         return
 
-    run.log_info("Running engine ibis")
+    run.log_info("Running checks with ibis")
     try:
         con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name, config)
     except DataContractException:
@@ -142,21 +141,21 @@ def execute_ibis_checks(
                 name="Data Contract Tests",
                 result=ResultEnum.failed,
                 reason=reason,
-                engine="ibis",
+                engine="datacontract-cli",
             )
         )
         return
     except Exception as e:
-        reason = _first_line(str(e)) or "Engine ibis could not connect to the data source."
+        reason = _first_line(str(e)) or "Could not connect to the data source."
         logger.exception("ibis connection failed")
-        run.log_error(f"Engine ibis could not connect: {reason}")
+        run.log_error(f"Could not connect to the data source: {reason}")
         run.checks.append(
             Check(
                 type="general",
                 name="Data Contract Tests",
                 result=ResultEnum.failed,
                 reason=reason,
-                engine="ibis",
+                engine="datacontract-cli",
             )
         )
         return

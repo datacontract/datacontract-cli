@@ -409,7 +409,7 @@ def _snowflake_private_key(value: str | None):
                 reason=f"DATACONTRACT_SNOWFLAKE_PRIVATE_KEY could not be read as an unencrypted PEM private key: {e}. "
                 f"For encrypted keys, use DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE with "
                 f"DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
     import base64
 
@@ -420,7 +420,7 @@ def _snowflake_private_key(value: str | None):
             type="snowflake-connection",
             name="invalid_private_key",
             reason="DATACONTRACT_SNOWFLAKE_PRIVATE_KEY must be a PEM private key or base64-encoded DER.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 
@@ -657,14 +657,14 @@ def _connect_athena(ibis, server: Server, config: Config):
             type="athena-connection",
             name="missing_schema",
             reason="Schema is required for Athena connection.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if not staging_dir:
         raise DataContractException(
             type="athena-connection",
             name="missing_s3_staging_dir",
             reason="S3 staging directory is required for Athena connection.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     kwargs = dict(
         s3_staging_dir=staging_dir,
@@ -722,7 +722,7 @@ def _connect_trino(ibis, server: Server, config: Config):
                 "Unsupported DATACONTRACT_TRINO_AUTHENTICATION value "
                 f"{authentication!r}. Supported values are: basic, jwt, oauth2."
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 
@@ -741,7 +741,7 @@ def _unsupported(run: Run, reason: str):
             name="Check that server type is supported",
             result=ResultEnum.warning,
             reason=reason,
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     )
     run.log_warn(reason)

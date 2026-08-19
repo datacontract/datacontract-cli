@@ -22,7 +22,7 @@ def fetch_resource(url: str, config: Config | None = None):
             type="lint",
             name=f"Reading data contract from {url}",
             reason=f"Cannot read resource from URL {url}. Response status is {response.status_code}",
-            engine="datacontract",
+            engine="datacontract-cli",
             result=ResultEnum.error,
         )
 
@@ -41,7 +41,7 @@ def _set_api_key(headers, url, config: Config):
                 type="lint",
                 name=f"Reading data contract from {url}",
                 reason="Error: Entropy Data API key is not set. Set env variable ENTROPY_DATA_API_KEY.",
-                engine="datacontract",
+                engine="datacontract-cli",
                 result=ResultEnum.error,
             )
         headers["x-api-key"] = entropy_data_api_key
@@ -52,7 +52,7 @@ def _set_api_key(headers, url, config: Config):
                 type="lint",
                 name=f"Reading data contract from {url}",
                 reason="Error: Data Mesh Manager API key is not set. Set env variable DATAMESH_MANAGER_API_KEY.",
-                engine="datacontract",
+                engine="datacontract-cli",
                 result=ResultEnum.error,
             )
         headers["x-api-key"] = datamesh_manager_api_key
@@ -63,7 +63,7 @@ def _set_api_key(headers, url, config: Config):
                 type="lint",
                 name=f"Reading data contract from {url}",
                 reason="Error: Data Contract Manager API key is not set. Set env variable DATACONTRACT_MANAGER_API_KEY.",
-                engine="datacontract",
+                engine="datacontract-cli",
                 result=ResultEnum.error,
             )
         headers["x-api-key"] = datacontract_manager_api_key

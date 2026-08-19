@@ -81,7 +81,7 @@ def resolve_redshift_login(
             f"Unsupported DATACONTRACT_REDSHIFT_AUTHENTICATION value {authentication!r}. "
             "Supported values are: password, iam."
         ),
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 
@@ -104,7 +104,7 @@ def _infer_authentication(config: Config) -> str:
             "DATACONTRACT_REDSHIFT_PASSWORD for a database login, or sign in to AWS (e.g. aws sso login) to use "
             "IAM authentication."
         ),
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 
@@ -199,7 +199,7 @@ def _resolve_endpoint(host: Optional[str], config: Config) -> Tuple[str, str, Op
             "DATACONTRACT_REDSHIFT_CLUSTER_IDENTIFIER (provisioned cluster), "
             "plus DATACONTRACT_REDSHIFT_REGION."
         ),
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 
@@ -218,7 +218,7 @@ def _call_aws(operation, kwargs: dict, api_name: str) -> dict:
                 f"Could not obtain temporary Redshift credentials via {api_name}: {e} "
                 f"Check that the AWS identity is allowed to call {api_name} and that the region is correct."
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

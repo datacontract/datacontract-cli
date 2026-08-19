@@ -40,7 +40,7 @@ class TrinoImporter(Importer):
                 type="source",
                 name="trino import source",
                 reason="The host is required for the trino import, e.g. --source localhost",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return import_trino(
             host=source,
@@ -65,14 +65,14 @@ def import_trino(
             type="source",
             name="trino import catalog",
             reason="The catalog is required for the trino import, e.g. --catalog my_catalog",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if not schema:
         raise DataContractException(
             type="source",
             name="trino import schema",
             reason="The schema is required for the trino import, e.g. --schema my_schema",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     port = int(port) if port else DEFAULT_PORT
@@ -92,7 +92,7 @@ def import_trino(
             result="failed",
             name="no tables found",
             reason=f"No tables found in schema '{schema}' of catalog '{catalog}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()
@@ -113,7 +113,7 @@ def trino_connection(server: Server, config=None):
             result="failed",
             name="trino extra missing",
             reason="Install the extra datacontract-cli[trino] to use trino",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -129,7 +129,7 @@ def trino_connection(server: Server, config=None):
             result="failed",
             name="trino connection failed",
             reason=f"Could not connect to Trino at {server.host}:{server.port}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -146,7 +146,7 @@ def _fetch(connection, query: str) -> List[Dict[str, Any]]:
             result="failed",
             name="trino catalog query failed",
             reason=f"Could not read the Trino catalog: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

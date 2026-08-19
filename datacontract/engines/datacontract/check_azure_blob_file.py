@@ -454,7 +454,7 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
             result="failed",
             name="azure-storage extra missing",
             reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exc,
         )
 
@@ -484,7 +484,7 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
                 result="failed",
                 name="azure-identity extra missing",
                 reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-                engine="datacontract",
+                engine="datacontract-cli",
                 original_exception=exc,
             )
         credential = ClientSecretCredential(
@@ -503,7 +503,7 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
             result="failed",
             name="azure-identity extra missing",
             reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exc,
         )
     return BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
@@ -631,7 +631,7 @@ def _append_check(
             field=field,
             qualityId=quality_id,
             tags=tags,
-            engine="datacontract",
+            engine="datacontract-cli",
             language="python",
             result=result,
             reason=reason,
