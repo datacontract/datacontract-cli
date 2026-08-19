@@ -168,7 +168,7 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason="For server with type 'local', a 'path' must be defined.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if "{model}" in path:
         path = path.format(model=model_name)
@@ -193,7 +193,7 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"No files found in '{path}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     for file in all_files:
@@ -223,7 +223,7 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"Cannot find any file in {s3_location}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     # Validate the JSON stream and collect exceptions.

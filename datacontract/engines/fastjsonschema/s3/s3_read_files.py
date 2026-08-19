@@ -24,7 +24,7 @@ def s3_fs(s3_endpoint_url, config: Config | None = None):
             result=ResultEnum.failed,
             name="s3 extra missing",
             reason="Install the extra s3 to use s3",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

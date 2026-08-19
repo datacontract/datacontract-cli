@@ -717,7 +717,7 @@ def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
             result="failed",
             name="Map datacontract type to bigquery data type",
             reason=f"Unsupported type {logical_type} in data contract definition.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 

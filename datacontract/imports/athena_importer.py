@@ -58,7 +58,7 @@ def import_athena(
             type="source",
             name="athena import schema",
             reason="The Athena database is required for the athena import, e.g. --schema my_database",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if not staging_dir:
         raise DataContractException(
@@ -68,7 +68,7 @@ def import_athena(
                 "An S3 staging directory is required for the athena import so the contract can be tested, "
                 "e.g. --staging-dir s3://my-bucket/athena-results/"
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     selected = _select_tables(get_glue_tables(schema, region, config), tables)
@@ -78,7 +78,7 @@ def import_athena(
             result="failed",
             name="no tables found",
             reason=f"No tables found in the Athena database '{schema}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()

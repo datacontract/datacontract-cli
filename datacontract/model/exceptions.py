@@ -19,7 +19,7 @@ class DataContractException(Exception):
         type,
         name,
         reason,
-        engine="datacontract",
+        engine="datacontract-cli",
         model=None,
         original_exception=None,
         result: ResultEnum = ResultEnum.failed,

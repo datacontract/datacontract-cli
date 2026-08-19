@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
 - `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
+- **breaking:** the `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
 
 ### Fixed
 - A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query

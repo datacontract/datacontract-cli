@@ -93,7 +93,7 @@ def resolve_data_contract_dict(
             result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason="Data contract needs to be provided",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 
@@ -123,7 +123,7 @@ def resolve_data_contract(
             result=ResultEnum.failed,
             name="Check that data contract YAML is valid",
             reason="Data contract needs to be provided",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 
@@ -339,7 +339,7 @@ def _definition_resolution_error(
         result=ResultEnum.failed,
         name="Resolve business definition",
         reason=reason,
-        engine="datacontract",
+        engine="datacontract-cli",
         original_exception=original_exception,
     )
 
@@ -359,7 +359,7 @@ def _resolve_data_contract_from_str(
             result=ResultEnum.failed,
             name="Parse data contract",
             reason="The data contract is empty or not a YAML mapping.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     if is_open_data_product_standard(yaml_dict):
@@ -369,7 +369,7 @@ def _resolve_data_contract_from_str(
             result=ResultEnum.failed,
             name="Parse ODCS contract",
             reason="Cannot parse ODPS product",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     if is_open_data_contract_standard(yaml_dict):
@@ -408,7 +408,7 @@ def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContrac
             type="schema",
             name="Parse ODCS contract",
             reason=f"Failed to parse ODCS contract: {str(e)}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -423,7 +423,7 @@ def _to_yaml(data_contract_str) -> dict:
             result="failed",
             name="Check that data contract YAML is valid",
             reason=f"Cannot parse YAML. Error: {str(e)}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 
@@ -433,7 +433,7 @@ def _validation_error_to_exception(error_message: str, original_exception=None) 
         result=ResultEnum.failed,
         name="Check that data contract YAML is valid",
         reason=error_message,
-        engine="datacontract",
+        engine="datacontract-cli",
         original_exception=original_exception,
     )
 
