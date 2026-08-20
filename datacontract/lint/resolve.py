@@ -15,7 +15,11 @@ from pydantic import ConfigDict
 from datacontract.config import Config
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
-from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
+from datacontract.model.exceptions import (
+    DataContractException,
+    DataContractValidationErrors,
+    DefinitionResolutionError,
+)
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
 
@@ -329,19 +333,12 @@ def _host_mismatch_hint(url: str, configured_host: str) -> str:
 
 def _definition_resolution_error(
     url: str, target_url: str, detail: str, original_exception: Exception | None = None, hint: str | None = None
-) -> DataContractException:
+) -> DefinitionResolutionError:
     reason = f"Could not resolve business definition '{url}' from {target_url}: {detail}"
     if hint:
         reason = f"{reason} — {hint}"
     logging.warning(reason)
-    return DataContractException(
-        type="lint",
-        result=ResultEnum.failed,
-        name="Resolve business definition",
-        reason=reason,
-        engine="datacontract-cli",
-        original_exception=original_exception,
-    )
+    return DefinitionResolutionError(url=url, reason=reason, original_exception=original_exception)
 
 
 def _resolve_data_contract_from_str(

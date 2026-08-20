@@ -1,6 +1,8 @@
 from unittest.mock import patch
 
 import pytest
+import requests
+import responses
 from fastapi.testclient import TestClient
 
 from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
@@ -123,6 +125,53 @@ def test_changelog_data_contract_exception_returns_422():
     detail = response.json()["detail"]
     assert detail.startswith("Data Contract Validation Failure:")
     assert "something went wrong" in detail
+
+
+# ---------------------------------------------------------------------------
+# A posted contract may reference an authoritativeDefinition by URL, and the
+# server fetches it. What that fetch answered is an observation of the server's
+# network, so it must not be echoed back to whoever posted the contract.
+# ---------------------------------------------------------------------------
+
+
+def _contract_referencing(url: str) -> str:
+    return f"""
+apiVersion: v3.0.2
+kind: DataContract
+id: definition-ref
+version: 1.0.0
+status: draft
+schema:
+  - name: t
+    properties:
+      - name: c
+        authoritativeDefinitions:
+          - type: definition
+            url: {url}
+"""
+
+
+@responses.activate
+def test_changelog_definition_resolution_failure_does_not_echo_the_response():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=401)
+
+    contract = _contract_referencing(internal_url)
+    response = client.post(url="/changelog", json={"v1": contract, "v2": contract})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+
+
+@responses.activate
+def test_export_definition_resolution_failure_does_not_echo_the_transport_error():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, body=requests.exceptions.ConnectionError("connection refused"))
+
+    response = client.post(url="/export?format=odcs", json=_contract_referencing(internal_url))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
 
 
 # ---------------------------------------------------------------------------

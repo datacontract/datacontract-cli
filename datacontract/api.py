@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, ValidationError
 from datacontract.config import Config, known_env_names
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.changelog import ChangelogEntry
-from datacontract.model.exceptions import DataContractException
+from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 from datacontract.model.run import Check, ResultEnum, Run
 
 DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.1.0
@@ -856,6 +856,11 @@ async def changelog_endpoint(
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     except pydantic.ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DefinitionResolutionError as e:
+        # The reason names the host that was contacted and what it answered.
+        # Omit for security reasons.
+        logging.warning("Definition resolution failed: %s", e)
+        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
     except DataContractException as e:
         raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
     finally:
@@ -974,5 +979,10 @@ def export(
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     except pydantic.ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DefinitionResolutionError as e:
+        # The reason names the host that was contacted and what it answered.
+        # Omit for security reasons.
+        logging.warning("Definition resolution failed: %s", e)
+        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
     except DataContractException as e:
         raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
