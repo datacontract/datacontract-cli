@@ -217,6 +217,13 @@ def test(
             "Checks that read row values are skipped."
         ),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            help="Report the checks that would run, without connecting to the server or reading any data. "
+            "Every reported check has the result 'skipped'."
+        ),
+    ] = False,
     include_failed_samples: Annotated[
         bool,
         typer.Option(
@@ -283,6 +290,7 @@ def test(
         filter=filter,
         filters=parsed_filters,
         metadata_only=metadata_only,
+        dry_run=dry_run,
     ).test()
     if logs:
         _print_logs(run)

@@ -203,6 +203,10 @@ class Run(BaseModel):
         description="The overall outcome, derived from the most severe check result. "
         "`passed` only if every check passed.",
     )
+    dryRun: bool = Field(
+        default=False,
+        description="Whether the run only reported the checks it would execute, without reading any data.",
+    )
     checks: List[Check] | None = Field(description="One entry per executed check.")
     logs: List[Log] | None = Field(description="The messages written while the run was executing.")
 
@@ -215,6 +219,10 @@ class Run(BaseModel):
         self.calculate_result()
 
     def calculate_result(self):
+        if self.dryRun:
+            # A plan asserts nothing, so it can neither pass nor fail.
+            self.result = ResultEnum.skipped
+            return
         if any(check.result == ResultEnum.error for check in self.checks):
             self.result = ResultEnum.error
         elif any(check.result == ResultEnum.failed for check in self.checks):
