@@ -48,6 +48,7 @@ class DataContract:
         filter: str = None,
         filters: dict[str, str] | None = None,
         metadata_only: bool = False,
+        dry_run: bool = False,
         untrusted_contract: bool = False,
         config: "Config | dict[str, str] | None" = None,
     ):
@@ -73,6 +74,7 @@ class DataContract:
         self._filter = filter
         self._filters = filters
         self._metadata_only = metadata_only
+        self._dry_run = dry_run
         # The contract came from somewhere the caller does not control (the API
         # server), so the SQL it carries must not reach the host running it.
         self._untrusted_contract = untrusted_contract
@@ -176,6 +178,7 @@ class DataContract:
                 filter=self._filter,
                 filters=self._filters,
                 metadata_only=self._metadata_only,
+                dry_run=self._dry_run,
                 config=self._config,
                 untrusted_contract=self._untrusted_contract,
             )
