@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 20
 title: "Trino"
 description: "Create a data contract from your Trino tables and test the actual data against it."
 ---

@@ -130,6 +130,32 @@ def test_changelog_with_changes():
     assert "Added" in result.output
 
 
+def test_breaking_help():
+    result = runner.invoke(app, ["breaking", "--help"])
+    assert result.exit_code == 0
+
+
+def test_breaking_with_changes_exits_nonzero_and_shows_severity():
+    result = runner.invoke(
+        app,
+        [
+            "breaking",
+            "fixtures/changelog/integration/changelog_integration_v1.yaml",
+            "fixtures/changelog/integration/changelog_integration_v2.yaml",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "Severity" in result.output
+    assert "ERROR" in result.output
+
+
+def test_breaking_without_changes_exits_zero():
+    fixture = "fixtures/changelog/integration/changelog_integration_v1.yaml"
+    result = runner.invoke(app, ["breaking", fixture, fixture])
+    assert result.exit_code == 0
+    assert "Details" in result.output
+
+
 def test_error_message_keeps_bracketed_text(monkeypatch, capsys):
     """Rich markup must not eat hints like `pip install "botocore[crt]"`."""
     from datacontract import cli

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `postgresql` is accepted as the ODCS synonym of the `postgres` server type
 - `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
 - `datacontract import pydantic-model` reads the contract description from the module docstring
+- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection (#1482)
 
 ### Changed
 - `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
