@@ -153,25 +153,7 @@ def connect_ibis(
         return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run, config))
 
     if server_type == "bigquery":
-        credentials = _bigquery_credentials(config)
-        billing_project = config.get_bigquery_billing_project()
-        project = config.get_bigquery_project() or server.project
-        dataset = config.get_bigquery_dataset() or server.dataset
-
-        if billing_project and billing_project != project:
-            from google.cloud import bigquery as bq_client_lib
-
-            client = bq_client_lib.Client(project=billing_project, credentials=credentials)
-            return ibis.bigquery.connect(
-                project_id=project,
-                dataset_id=dataset,
-                client=client,
-            )
-
-        kwargs = dict(project_id=project, dataset_id=dataset)
-        if credentials:
-            kwargs["credentials"] = credentials
-        return ibis.bigquery.connect(**kwargs)
+        return _connect_bigquery(ibis, server, config)
 
     # `mssql` is what ODBC, ibis and dbt call SQL Server; ODCS spells it `sqlserver`.
     if server_type in ("sqlserver", "mssql"):
@@ -328,6 +310,28 @@ def _databricks_credentials_provider(service_principal: bool = False, **config_k
         return config.authenticate
 
     return credentials_provider
+
+
+def _connect_bigquery(ibis, server: Server, config: Config):
+    credentials = _bigquery_credentials(config)
+    billing_project = config.get_bigquery_billing_project()
+    project = config.get_bigquery_project() or server.project
+    dataset = config.get_bigquery_dataset() or server.dataset
+
+    if billing_project and billing_project != project:
+        from google.cloud import bigquery as bq_client_lib
+
+        client = bq_client_lib.Client(project=billing_project, credentials=credentials)
+        return ibis.bigquery.connect(
+            project_id=project,
+            dataset_id=dataset,
+            client=client,
+        )
+
+    kwargs = dict(project_id=project, dataset_id=dataset)
+    if credentials:
+        kwargs["credentials"] = credentials
+    return ibis.bigquery.connect(**kwargs)
 
 
 _BIGQUERY_SCOPES = ["https://www.googleapis.com/auth/bigquery"]
