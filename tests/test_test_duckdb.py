@@ -156,3 +156,39 @@ def test_the_database_is_opened_read_only(duckdb_database):
         assert con.sql("SELECT count(*) FROM orders").fetchone()[0] == 2
     finally:
         con.close()
+
+
+@pytest.fixture
+def duckdb_database_without_a_main_table(tmp_path):
+    """A database whose only `orders` table lives in the `reporting` schema."""
+    database = tmp_path / "orders.duckdb"
+    con = duckdb.connect(str(database))
+    con.sql("CREATE SCHEMA reporting")
+    con.sql("CREATE TABLE reporting.orders (order_id VARCHAR NOT NULL, order_total INTEGER)")
+    con.sql("INSERT INTO reporting.orders VALUES ('order-1', 100), ('order-2', 200)")
+    con.close()
+    return database
+
+
+def test_the_configured_schema_also_qualifies_the_table_lookup(duckdb_database_without_a_main_table, monkeypatch):
+    """The contract names a schema the table is not in, so a run that reaches it
+    can only have resolved the table against the configured schema."""
+    monkeypatch.setenv("DATACONTRACT_DUCKDB_SCHEMA", "reporting")
+
+    run = DataContract(data_contract_str=_contract(duckdb_database_without_a_main_table, schema="main")).test()
+
+    assert run.result == ResultEnum.passed, [check.reason for check in run.checks if check.reason]
+    assert any(
+        "using schema 'reporting' from configuration, overriding 'main' from the contract" in log.message
+        for log in run.logs
+    ), [log.message for log in run.logs]
+
+
+def test_the_configured_schema_can_be_passed_programmatically(duckdb_database_without_a_main_table):
+    """Config fields and DATACONTRACT_* env vars are two distinct sources."""
+    run = DataContract(
+        data_contract_str=_contract(duckdb_database_without_a_main_table, schema="main"),
+        config={"DATACONTRACT_DUCKDB_SCHEMA": "reporting"},
+    ).test()
+
+    assert run.result == ResultEnum.passed, [check.reason for check in run.checks if check.reason]

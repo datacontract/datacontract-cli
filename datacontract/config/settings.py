@@ -38,6 +38,8 @@ SERVER_OVERRIDE_OPTIONS = {
     "databricks_server_hostname": "host",
     "databricks_catalog": "catalog",
     "databricks_schema": "schema",
+    "duckdb_database": "database",
+    "duckdb_schema": "schema",
     "impala_host": "host",
     "impala_port": "port",
     "impala_database": "database",
