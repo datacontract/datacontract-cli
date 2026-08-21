@@ -40,6 +40,16 @@ def _connect():
     return connect.call_args.kwargs
 
 
+def _connect_ibis():
+    """Connect through the real ibis BigQuery backend, stubbing out only the
+    Google clients, so the assertions cover how ibis reads our arguments.
+    Returns the connection and the patched ``bigquery.Client``."""
+    with patch("ibis.backends.bigquery.bq.Client") as client:
+        client.return_value.default_query_job_config = None
+        with patch("ibis.backends.bigquery.bqstorage.BigQueryReadClient"):
+            return connect_ibis(Run.create_run(), None, _server()), client
+
+
 def test_no_credentials_without_env_vars(env):
     """Nothing configured means ibis falls back to application default credentials."""
     kwargs = _connect()
@@ -83,18 +93,21 @@ def test_impersonation_uses_the_key_file_as_source_when_set(env, tmp_path):
     assert kwargs["credentials"] is impersonated.return_value
 
 
-def test_billing_project_client_uses_the_impersonated_credentials(env):
+def test_billing_project_keeps_the_contract_project_as_the_data_project(env):
+    """The billing project pays for the query jobs; the tables still live in the
+    contract's project. Drives the real ibis backend, as asserting our own kwargs
+    would not catch ibis resolving the data project differently."""
     env.setenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT", "my-billing-project")
     env.setenv("DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT", SERVICE_ACCOUNT)
 
     with patch("google.auth.default", return_value=(MagicMock(), "my-project")):
         with patch("google.auth.impersonated_credentials.Credentials") as impersonated:
-            with patch("google.cloud.bigquery.Client") as client:
-                kwargs = _connect()
+            con, client = _connect_ibis()
 
-    assert client.call_args.kwargs["project"] == "my-billing-project"
+    assert con.data_project == "my-project"
+    assert con.billing_project == "my-billing-project"
+    assert con.dataset == "my_dataset"
     assert client.call_args.kwargs["credentials"] is impersonated.return_value
-    assert kwargs["client"] is client.return_value
 
 
 def test_env_variables_override_the_contract_project_and_dataset(env):
