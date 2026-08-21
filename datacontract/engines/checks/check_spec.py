@@ -136,6 +136,11 @@ class CheckSpec:
     # check comes from. `test --tag` selects rules by them.
     tags: Optional[List[str]] = None
 
+    # The ODCS quality rule this check comes from, rendered as YAML, so a
+    # consumer of the test results can show what the check asserts. None for
+    # schema and service level checks, which no rule declared.
+    quality_definition: Optional[str] = None
+
     # --- metric arguments -------------------------------------------------
     missing_values: Optional[List[Any]] = None  # MISSING_COUNT / INVALID_COUNT
     valid_values: Optional[List[Any]] = None  # INVALID_COUNT
