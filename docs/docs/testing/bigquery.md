@@ -85,3 +85,4 @@ All authentication options (service-account keys, WIF, billing project) and the 
 - **`Your default credentials were not found`** — run `gcloud auth application-default login`, or set `GOOGLE_APPLICATION_CREDENTIALS` / `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` to a service-account key file.
 - **`403 Access Denied`** — the account is missing **BigQuery Job User** (to run query jobs) or **BigQuery Data Viewer** (to read the tables).
 - **Queries billed to the wrong project** — set `DATACONTRACT_BIGQUERY_BILLING_PROJECT`.
+- **`403 ... does not have 'bigquery.readsessions.create' permission`** — grant **BigQuery Read Session User** on the billing project. Results are read through the Storage Read API, whose read session is created there, so schema checks pass while every row-level check fails.

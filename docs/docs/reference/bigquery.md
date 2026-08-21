@@ -26,7 +26,7 @@ Authentication uses a Service Account Key or Application Default Credentials (AD
 | Variable | Example | Description |
 |---|---|---|
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `~/service-access-key.json` | Service Account key JSON file used by `test`. If unset, ADC/WIF is used. |
-| `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `my-compute-project` | Optional. Project to bill query jobs to. Requires `bigquery.jobUser` on the billing project and `bigquery.dataViewer` on the data project. |
+| `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `my-compute-project` | Optional. Project to bill query jobs to. Requires `bigquery.jobUser` and `bigquery.readSessionUser` on the billing project (results are read through the Storage Read API, whose read session is created there) and `bigquery.dataViewer` on the data project. |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `runner@my-project.iam.gserviceaccount.com` | Optional. Service account to impersonate, using the key file above (or ADC) as the source principal. Requires `roles/iam.serviceAccountTokenCreator` on the target. |
 
 `project` and `dataset` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_BIGQUERY_PROJECT` and `DATACONTRACT_BIGQUERY_DATASET`. `datacontract import bigquery` always uses ADC — set `GOOGLE_APPLICATION_CREDENTIALS` to point it at a key file.
