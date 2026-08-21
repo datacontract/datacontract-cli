@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **breaking:** the `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
 
 ### Fixed
-- Configuration options that override a server's location (`DATACONTRACT_BIGQUERY_PROJECT`, `DATACONTRACT_POSTGRES_SCHEMA`, and the like) now also apply to the table lookup and the physical type checks, not just to the connection; the effective location is logged when it differs from the contract's
+- Configuration options that override a server's location (`DATACONTRACT_BIGQUERY_PROJECT`, `DATACONTRACT_POSTGRES_SCHEMA`, and the like) now apply to the whole test run, not just to the connection
 - A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query
 - A `quality.type: sql` rule must be a read-only query; DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed, for every data source
 - `datacontract api`:

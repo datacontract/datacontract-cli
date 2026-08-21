@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 from open_data_contract_standard.model import CustomProperty, Server
 
 from datacontract.config import SERVER_OVERRIDE_OPTIONS, Config
+from datacontract.model.run import Run
 
 # datacontract-CLI supports server types that are not part of the ODCS
 # `Server.type` enum (e.g. a Spark `dataframe`). To stay compliant with the
@@ -69,12 +70,7 @@ def _get_custom_property(server: Server, name: str) -> Optional[str]:
     return None
 
 
-# The server type a config option prefix names, where the CLI accepts a second
-# spelling for the same system: the options are all `sqlserver_*`.
-_OPTION_PREFIX_ALIASES = {"mssql": "sqlserver"}
-
-
-def resolve_server_overrides(server: Optional[Server], config: Config, run) -> Optional[Server]:
+def resolve_server_overrides(server: Optional[Server], config: Config, run: Run) -> Optional[Server]:
     """Return the effective server: the contract's, with the override options applied.
 
     Applied once here so that the connection, the table lookup and the catalog
@@ -84,7 +80,8 @@ def resolve_server_overrides(server: Optional[Server], config: Config, run) -> O
     if server is None:
         return None
     server_type = get_server_type(server)
-    prefix = _OPTION_PREFIX_ALIASES.get(server_type, server_type)
+    # The mssql options are all spelled `sqlserver_*`.
+    prefix = "sqlserver" if server_type == "mssql" else server_type
     if prefix is None:
         return server
 

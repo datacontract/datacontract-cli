@@ -77,28 +77,21 @@ def test_an_empty_option_leaves_the_contract_value_in_place(run, monkeypatch):
     assert effective.schema_ == "declared"
 
 
-def test_the_override_is_logged_with_both_values(run, monkeypatch):
+@pytest.mark.parametrize(
+    "declared, expected",
+    [
+        ("declared", "using schema 'configured' from configuration, overriding 'declared' from the contract"),
+        (None, "using schema 'configured' from configuration"),
+    ],
+    ids=["the contract declares the property", "the contract does not declare the property"],
+)
+def test_the_effective_value_is_logged(declared, expected, run, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", "configured")
-    server = Server(server="production", type="postgres", schema="declared")
+    server = Server(server="production", type="postgres", schema=declared)
 
     resolve_server_overrides(server, Config.resolve(None), run)
 
-    assert any(
-        "Server 'production': using schema 'configured' from configuration, overriding 'declared' from the contract"
-        == log.message
-        for log in run.logs
-    ), [log.message for log in run.logs]
-
-
-def test_a_property_the_contract_does_not_declare_is_logged_without_a_contract_value(run, monkeypatch):
-    monkeypatch.setenv("DATACONTRACT_POSTGRES_SCHEMA", "configured")
-    server = Server(server="production", type="postgres")
-
-    resolve_server_overrides(server, Config.resolve(None), run)
-
-    assert any("using schema 'configured' from configuration" == log.message.split(": ", 1)[1] for log in run.logs), [
-        log.message for log in run.logs
-    ]
+    assert any(f"Server 'production': {expected}" == log.message for log in run.logs), [log.message for log in run.logs]
 
 
 def test_every_option_names_a_real_server_property():
