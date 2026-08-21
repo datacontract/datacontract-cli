@@ -12,13 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `postgresql` is accepted as the ODCS synonym of the `postgres` server type
 - `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
 - `datacontract import pydantic-model` reads the contract description from the module docstring
+- Test results carry the data quality dimension a check measures and, for a check from a `quality` rule, that rule as YAML
+- Published test results report how many rows a check found bad and how many rows it looked at
 
 ### Changed
 - `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
 - `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
 - **breaking:** the `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
+- Test results published to Entropy Data use the field names its API reads
+- **breaking:** published test results no longer repeat `qualityId` and `failedSamples` under their deprecated `quality_id` and `failed_samples` spellings
+- A service level check is identified by its `slaProperties[].id`, so `datacontract test --quality-id` can select one
+- A JSON Schema check that was not run because the server type is unsupported is now reported as `skipped` instead of `info`
 
 ### Fixed
+- Publishing a run to Entropy Data no longer fails outright when it contains a JSON Schema check that could not be run
 - Configuration options that override a server's location (`DATACONTRACT_BIGQUERY_PROJECT`, `DATACONTRACT_POSTGRES_SCHEMA`, and the like) now apply to the whole test run, not just to the connection
 - BigQuery: `DATACONTRACT_BIGQUERY_BILLING_PROJECT` no longer overrides the server's `project`, so tables are still read from the data project (#1358)
 - A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query
