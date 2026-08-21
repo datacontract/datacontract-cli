@@ -285,7 +285,7 @@ def check_jsonschema(
                     type="schema",
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.info,
+                    result=ResultEnum.skipped,
                     reason="JSON Schema check skipped for GCS, as GCS is currently not supported",
                     engine="jsonschema",
                 )
@@ -296,7 +296,7 @@ def check_jsonschema(
                     type="schema",
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.info,
+                    result=ResultEnum.skipped,
                     reason="JSON Schema check skipped for azure, as azure is currently not supported",
                     engine="jsonschema",
                 )
