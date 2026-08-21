@@ -21,6 +21,7 @@ from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschem
 from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
+from datacontract.model.server import resolve_server_overrides
 
 
 def execute_data_contract_test(
@@ -52,7 +53,7 @@ def execute_data_contract_test(
         )
     if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
-    server = get_server(data_contract, server_name)
+    server = resolve_server_overrides(get_server(data_contract, server_name), config, run)
     run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
     run.dataContractId = data_contract.id
     run.dataContractVersion = data_contract.version
