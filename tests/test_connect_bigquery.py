@@ -10,6 +10,7 @@ import pytest
 from open_data_contract_standard.model import Server
 
 from datacontract.engines.ibis.connections.connect import connect_ibis
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
 BIGQUERY_ENV_VARS = [
@@ -30,13 +31,14 @@ def env(monkeypatch):
     return monkeypatch
 
 
-def _server():
-    return Server(server="bigquery", type="bigquery", project="my-project", dataset="my_dataset")
+def _server(**overrides):
+    kwargs = dict(server="bigquery", type="bigquery", project="my-project", dataset="my_dataset")
+    return Server(**{**kwargs, **overrides})
 
 
-def _connect():
+def _connect(**overrides):
     with patch("ibis.bigquery.connect") as connect:
-        connect_ibis(Run.create_run(), None, _server())
+        connect_ibis(Run.create_run(), None, _server(**overrides))
     return connect.call_args.kwargs
 
 
@@ -118,3 +120,11 @@ def test_env_variables_override_the_contract_project_and_dataset(env):
 
     assert kwargs["project_id"] == "env-project"
     assert kwargs["dataset_id"] == "env_dataset"
+
+
+@pytest.mark.parametrize("missing", ["project", "dataset"])
+def test_project_and_dataset_are_required(env, missing):
+    with pytest.raises(DataContractException) as e:
+        _connect(**{missing: None})
+
+    assert e.value.name == f"missing_{missing}"

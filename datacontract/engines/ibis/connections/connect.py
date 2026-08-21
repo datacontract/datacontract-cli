@@ -317,6 +317,20 @@ def _connect_bigquery(ibis, server: Server, config: Config):
     billing_project = config.get_bigquery_billing_project()
     project = config.get_bigquery_project() or server.project
     dataset = config.get_bigquery_dataset() or server.dataset
+    if not project:
+        raise DataContractException(
+            type="bigquery-connection",
+            name="missing_project",
+            reason="Project is required for BigQuery connection.",
+            engine="datacontract-cli",
+        )
+    if not dataset:
+        raise DataContractException(
+            type="bigquery-connection",
+            name="missing_dataset",
+            reason="Dataset is required for BigQuery connection.",
+            engine="datacontract-cli",
+        )
 
     # ibis reads the billing project from ``project_id`` and the data project from a
     # ``<project>.<dataset>`` qualified ``dataset_id``. Passing a pre-built client
