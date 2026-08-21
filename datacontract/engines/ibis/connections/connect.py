@@ -153,25 +153,7 @@ def connect_ibis(
         return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run, config))
 
     if server_type == "bigquery":
-        credentials = _bigquery_credentials(config)
-        billing_project = config.get_bigquery_billing_project()
-        project = config.get_bigquery_project() or server.project
-        dataset = config.get_bigquery_dataset() or server.dataset
-
-        if billing_project and billing_project != project:
-            from google.cloud import bigquery as bq_client_lib
-
-            client = bq_client_lib.Client(project=billing_project, credentials=credentials)
-            return ibis.bigquery.connect(
-                project_id=project,
-                dataset_id=dataset,
-                client=client,
-            )
-
-        kwargs = dict(project_id=project, dataset_id=dataset)
-        if credentials:
-            kwargs["credentials"] = credentials
-        return ibis.bigquery.connect(**kwargs)
+        return _connect_bigquery(ibis, server, config)
 
     # `mssql` is what ODBC, ibis and dbt call SQL Server; ODCS spells it `sqlserver`.
     if server_type in ("sqlserver", "mssql"):
@@ -328,6 +310,44 @@ def _databricks_credentials_provider(service_principal: bool = False, **config_k
         return config.authenticate
 
     return credentials_provider
+
+
+def _connect_bigquery(ibis, server: Server, config: Config):
+    credentials = _bigquery_credentials(config)
+    billing_project = config.get_bigquery_billing_project()
+    project = config.get_bigquery_project() or server.project
+    dataset = config.get_bigquery_dataset() or server.dataset
+    if billing_project and not project:
+        raise DataContractException(
+            type="bigquery-connection",
+            name="missing_project",
+            reason=(
+                "Project is required for BigQuery connection when a billing project is set. "
+                "Set the server's `project` or DATACONTRACT_BIGQUERY_PROJECT."
+            ),
+            engine="datacontract-cli",
+        )
+    if not dataset:
+        raise DataContractException(
+            type="bigquery-connection",
+            name="missing_dataset",
+            reason=(
+                "Dataset is required for BigQuery connection. "
+                "Set the server's `dataset` or DATACONTRACT_BIGQUERY_DATASET."
+            ),
+            engine="datacontract-cli",
+        )
+
+    # ibis reads the billing project from ``project_id`` and the data project from a
+    # ``<project>.<dataset>`` qualified ``dataset_id``. Passing a pre-built client
+    # instead would make ibis take its project as both.
+    kwargs = dict(
+        project_id=billing_project or project,
+        dataset_id=f"{project}.{dataset}" if project else dataset,
+    )
+    if credentials:
+        kwargs["credentials"] = credentials
+    return ibis.bigquery.connect(**kwargs)
 
 
 _BIGQUERY_SCOPES = ["https://www.googleapis.com/auth/bigquery"]
