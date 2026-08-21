@@ -317,18 +317,24 @@ def _connect_bigquery(ibis, server: Server, config: Config):
     billing_project = config.get_bigquery_billing_project()
     project = config.get_bigquery_project() or server.project
     dataset = config.get_bigquery_dataset() or server.dataset
-    if not project:
+    if billing_project and not project:
         raise DataContractException(
             type="bigquery-connection",
             name="missing_project",
-            reason="Project is required for BigQuery connection.",
+            reason=(
+                "Project is required for BigQuery connection when a billing project is set. "
+                "Set the server's `project` or DATACONTRACT_BIGQUERY_PROJECT."
+            ),
             engine="datacontract-cli",
         )
     if not dataset:
         raise DataContractException(
             type="bigquery-connection",
             name="missing_dataset",
-            reason="Dataset is required for BigQuery connection.",
+            reason=(
+                "Dataset is required for BigQuery connection. "
+                "Set the server's `dataset` or DATACONTRACT_BIGQUERY_DATASET."
+            ),
             engine="datacontract-cli",
         )
 
@@ -337,7 +343,7 @@ def _connect_bigquery(ibis, server: Server, config: Config):
     # instead would make ibis take its project as both.
     kwargs = dict(
         project_id=billing_project or project,
-        dataset_id=f"{project}.{dataset}" if billing_project else dataset,
+        dataset_id=f"{project}.{dataset}" if project else dataset,
     )
     if credentials:
         kwargs["credentials"] = credentials

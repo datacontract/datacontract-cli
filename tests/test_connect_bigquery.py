@@ -57,7 +57,7 @@ def test_no_credentials_without_env_vars(env):
     kwargs = _connect()
 
     assert kwargs["project_id"] == "my-project"
-    assert kwargs["dataset_id"] == "my_dataset"
+    assert kwargs["dataset_id"] == "my-project.my_dataset"
     assert "credentials" not in kwargs
 
 
@@ -119,12 +119,30 @@ def test_env_variables_override_the_contract_project_and_dataset(env):
     kwargs = _connect()
 
     assert kwargs["project_id"] == "env-project"
-    assert kwargs["dataset_id"] == "env_dataset"
+    assert kwargs["dataset_id"] == "env-project.env_dataset"
 
 
-@pytest.mark.parametrize("missing", ["project", "dataset"])
-def test_project_and_dataset_are_required(env, missing):
+def test_dataset_is_required(env):
     with pytest.raises(DataContractException) as e:
-        _connect(**{missing: None})
+        _connect(dataset=None)
 
-    assert e.value.name == f"missing_{missing}"
+    assert e.value.name == "missing_dataset"
+
+
+def test_project_is_left_to_ibis_to_resolve_from_the_credentials(env):
+    """Without a project, ibis falls back to the project of the credentials."""
+    kwargs = _connect(project=None)
+
+    assert kwargs["project_id"] is None
+    assert kwargs["dataset_id"] == "my_dataset"
+
+
+def test_project_is_required_with_a_billing_project(env):
+    """The data project cannot be resolved from the credentials once ``project_id``
+    carries the billing project."""
+    env.setenv("DATACONTRACT_BIGQUERY_BILLING_PROJECT", "my-billing-project")
+
+    with pytest.raises(DataContractException) as e:
+        _connect(project=None)
+
+    assert e.value.name == "missing_project"
