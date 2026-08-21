@@ -50,17 +50,21 @@ def get_primary_key_value(schema: dict, model_name: str, json_object: dict) -> O
     return json_object.get(primary_key_field)
 
 
+def _get_error_limit(config: Config | None = None) -> int:
+    try:
+        configured_limit = Config.resolve(config).get_max_errors()
+        return 500 if configured_limit is None else configured_limit
+    except DataContractException:
+        # Fallback to default if the configured value is invalid.
+        return 500
+
+
 def process_exceptions(run, exceptions: List[DataContractException], config: Config | None = None):
     if not exceptions:
         return
 
     # Define the maximum number of errors to process (can be adjusted via configuration).
-    try:
-        configured_limit = Config.resolve(config).get_max_errors()
-        error_limit = 500 if configured_limit is None else configured_limit
-    except DataContractException:
-        # Fallback to default if the configured value is invalid.
-        error_limit = 500
+    error_limit = _get_error_limit(config)
 
     # Calculate the effective limit to avoid index out of range
     limit = min(len(exceptions), error_limit)
@@ -208,6 +212,7 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
     if "{model}" in s3_location:
         s3_location = s3_location.format(model=model_name)
     exceptions: List[DataContractException] = []
+    error_limit = _get_error_limit(config)
     found_file = False
 
     for file_content in yield_s3_files(s3_endpoint_url, s3_location, config):
@@ -219,6 +224,8 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
         else:
             json_stream = read_json_file_content(file_content)
         exceptions.extend(validate_json_stream(schema, model_name, validate, json_stream))
+        if len(exceptions) >= error_limit:
+            break
 
     if not found_file:
         raise DataContractException(

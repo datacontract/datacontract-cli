@@ -5,6 +5,7 @@ import fastjsonschema
 import pytest
 from testcontainers.minio import MinioContainer
 
+from datacontract.config import Config
 from datacontract.data_contract import DataContract
 from datacontract.engines.fastjsonschema import check_jsonschema
 from datacontract.model.exceptions import DataContractException
@@ -59,6 +60,30 @@ def test_s3_json_validates_every_matching_file(monkeypatch):
         check_jsonschema.process_s3_file(MagicMock(), server, schema, "orders", fastjsonschema.compile(schema))
 
     assert "must be integer" in exc_info.value.reason
+
+
+def test_s3_json_stops_after_max_errors(monkeypatch):
+    schema = {
+        "type": "object",
+        "properties": {"order_id": {"type": "integer"}},
+        "required": ["order_id"],
+    }
+    server = MagicMock(
+        endpointUrl="http://minio:9000",
+        location="s3://bucket/orders/*.json",
+        delimiter="new_line",
+    )
+
+    def s3_files(*_):
+        yield b'{"order_id": "invalid"}\n'
+        raise AssertionError("files after the error limit should not be loaded")
+
+    monkeypatch.setattr(check_jsonschema, "yield_s3_files", s3_files)
+
+    with pytest.raises(DataContractException, match="must be integer"):
+        check_jsonschema.process_s3_file(
+            MagicMock(), server, schema, "orders", fastjsonschema.compile(schema), Config(max_errors=1)
+        )
 
 
 def _prepare_s3_files(minio_container):
