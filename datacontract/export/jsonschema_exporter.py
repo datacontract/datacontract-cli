@@ -16,8 +16,9 @@ def to_jsonschemas(data_contract: OpenDataContractStandard) -> dict:
     jsonschemas = {}
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
-            jsonschema = to_jsonschema(schema_obj.name, schema_obj)
-            jsonschemas[schema_obj.name] = jsonschema
+            schema_name = schema_obj.physicalName or schema_obj.name
+            jsonschema = to_jsonschema(schema_name, schema_obj)
+            jsonschemas[schema_name] = jsonschema
     return jsonschemas
 
 
@@ -29,7 +30,7 @@ def to_jsonschema_json(model_key: str, model_value: SchemaObject) -> str:
 def to_properties(properties: List[SchemaProperty]) -> dict:
     result = {}
     for prop in properties:
-        result[prop.name] = to_property(prop)
+        result[prop.physicalName or prop.name] = to_property(prop)
     return result
 
 
@@ -94,7 +95,7 @@ def to_property(prop: SchemaProperty) -> dict:
     if json_type == "object":
         nested_props = prop.properties or []
         # TODO: any better idea to distinguish between properties and patternProperties?
-        if nested_props and nested_props[0].name.startswith("^"):
+        if nested_props and (nested_props[0].physicalName or nested_props[0].name).startswith("^"):
             property_dict["patternProperties"] = to_properties(nested_props)
         else:
             property_dict["properties"] = to_properties(nested_props)
@@ -171,7 +172,7 @@ def to_required(properties: List[SchemaProperty]) -> list:
     required = []
     for prop in properties:
         if prop.required is True:
-            required.append(prop.name)
+            required.append(prop.physicalName or prop.name)
     return required
 
 
