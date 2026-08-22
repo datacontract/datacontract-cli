@@ -65,10 +65,12 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             "Update host, port, database, and schema in the output before use."
         )
 
+    # Only a CREATE TABLE creates one. CREATE SCHEMA carries a table node with no table name,
+    # and a CTAS or CREATE VIEW carries its query sources.
     tables = [
-        t
-        for t in parsed.find_all(sqlglot.expressions.Table)
-        if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
+        create.this.find(sqlglot.expressions.Table)
+        for create in parsed.find_all(sqlglot.expressions.Create)
+        if create.kind == "TABLE"
     ]
 
     for table in tables:
