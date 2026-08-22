@@ -38,7 +38,7 @@ class SqlImporter(Importer):
 
 
 def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandard:
-    sql = read_file(source)
+    sql, variables = read_file(source)
     dialect = to_dialect(import_args)
 
     try:
@@ -59,10 +59,11 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     server_type = to_server_type(source, dialect)
     if server_type is not None:
         server_defaults = get_server_defaults(server_type)
+        server_defaults.update(get_created_location(parsed, server_type, variables))
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
         logging.warning(
             "SQL import generated a server block with placeholder connection values. "
-            "Update host, port, database, and schema in the output before use."
+            "Review host, port, database, and schema in the output before use."
         )
 
     tables = [
@@ -156,6 +157,47 @@ def to_dialect(import_args: dict) -> Dialects | None:
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
     return None
+
+
+# Server types whose qualified table names mean database.schema. Elsewhere the parts mean
+# something else, such as project.dataset on BigQuery or the database alone on MySQL, and
+# belong in other server fields, so their DDL is left to the placeholders.
+DATABASE_SCHEMA_SERVER_TYPES = ("snowflake", "sqlserver", "postgres", "redshift")
+
+
+def get_created_location(parsed, server_type: str, variables: set[str]) -> dict:
+    """Database and schema of the created tables, when every one of them names the same."""
+    if server_type not in DATABASE_SCHEMA_SERVER_TYPES:
+        return {}
+
+    locations = set()
+    for create in parsed.find_all(sqlglot.expressions.Create):
+        if (create.kind or "").upper() != "TABLE":
+            continue
+        target = create.this
+        if isinstance(target, sqlglot.expressions.Schema):
+            target = target.this
+        if isinstance(target, sqlglot.expressions.Table):
+            locations.add((target.catalog, target.db))
+    if len(locations) != 1:
+        return {}
+
+    catalog, db = locations.pop()
+    location = {}
+    if catalog and not is_templated(catalog, variables):
+        location["database"] = catalog
+    if db and not is_templated(db, variables):
+        location["schema"] = db
+    return location
+
+
+def is_templated(name: str, variables: set[str]) -> bool:
+    """Whether an identifier carries substituted text, so is no more usable than a placeholder.
+
+    Substring matching keeps names like ${env}_DB out. It can also hold back a literal name
+    that happens to contain a variable name, which leaves the placeholder in place.
+    """
+    return any(variable in name for variable in variables)
 
 
 def get_server_defaults(server_type: str) -> dict:
@@ -374,14 +416,24 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return (None, None)
 
 
-def remove_variable_tokens(sql_script: str) -> str:
-    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL."""
+def remove_variable_tokens(sql_script: str) -> tuple[str, set[str]]:
+    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL.
+
+    Returns the rewritten script and the names that came from a placeholder.
+    """
     variable_pattern = re.compile(
         r"\$\((\w+)\)"  # $(var) — sqlcmd (T-SQL)
         r"|\$\{(\w+)\}"  # ${var} — Liquibase
         r"|\{\{(\w+)\}\}"  # {{var}} — Jinja / dbt
     )
-    return variable_pattern.sub(lambda m: m.group(1) or m.group(2) or m.group(3), sql_script)
+    variables = set()
+
+    def to_variable_name(match: re.Match) -> str:
+        name = match.group(1) or match.group(2) or match.group(3)
+        variables.add(name)
+        return name
+
+    return variable_pattern.sub(to_variable_name, sql_script), variables
 
 
 def read_file(path):
