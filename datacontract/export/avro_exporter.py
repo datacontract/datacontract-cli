@@ -14,7 +14,7 @@ class AvroExporter(Exporter):
 
 def to_avro_schema(model_name: str, model: SchemaObject) -> dict:
     namespace = _get_config_value(model, "namespace")
-    return to_avro_record(model_name, model.properties or [], model.description, namespace)
+    return to_avro_record(model.physicalName or model_name, model.properties or [], model.description, namespace)
 
 
 def to_avro_schema_json(model_name: str, model: SchemaObject) -> str:
@@ -106,7 +106,7 @@ def _parse_default_value(value: str):
 
 
 def to_avro_field(prop: SchemaProperty) -> dict:
-    avro_field = {"name": prop.name}
+    avro_field = {"name": prop.physicalName or prop.name}
     if prop.description is not None:
         avro_field["doc"] = prop.description
     is_required_avro = prop.required if prop.required is not None else True
@@ -118,7 +118,7 @@ def to_avro_field(prop: SchemaProperty) -> dict:
     avro_config_type = _get_config_value(prop, "avroType")
 
     if avro_type == "enum" or (isinstance(avro_field["type"], list) and "enum" in avro_field["type"]):
-        title = prop.businessName or prop.name
+        title = prop.physicalName or prop.businessName or prop.name
         enum_def = {
             "type": "enum",
             "name": title,
@@ -244,7 +244,7 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
             return "bytes"
     elif field_type.lower() in ["object", "record", "struct"]:
         namespace = _get_config_value(prop, "namespace")
-        return to_avro_record(prop.name, prop.properties or [], prop.description, namespace)
+        return to_avro_record(prop.physicalName or prop.name, prop.properties or [], prop.description, namespace)
     elif field_type.lower() in ["binary"]:
         return "bytes"
     elif field_type.lower() in ["array"]:

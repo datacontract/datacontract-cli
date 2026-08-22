@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **breaking:** the `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
 
 ### Fixed
+- Avro and JSON Schema exports use `physicalName` for schemas and properties when it is provided (#1494)
 - Configuration options that override a server's location (`DATACONTRACT_BIGQUERY_PROJECT`, `DATACONTRACT_POSTGRES_SCHEMA`, and the like) now apply to the whole test run, not just to the connection
 - BigQuery: `DATACONTRACT_BIGQUERY_BILLING_PROJECT` no longer overrides the server's `project`, so tables are still read from the data project (#1358)
 - A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query

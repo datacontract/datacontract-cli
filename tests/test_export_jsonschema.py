@@ -2,6 +2,7 @@ import json
 import os
 import sys
 
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -10,6 +11,52 @@ from datacontract.export.jsonschema_exporter import to_jsonschemas
 from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
+
+
+def test_to_jsonschemas_uses_physical_names():
+    model = SchemaObject(
+        name="logical_record",
+        physicalName="physical_record",
+        properties=[
+            SchemaProperty(
+                name="logical_field",
+                physicalName="physical_field",
+                logicalType="string",
+                required=True,
+            ),
+            SchemaProperty(
+                name="logical_nested",
+                physicalName="physical_nested",
+                logicalType="object",
+                required=True,
+                properties=[
+                    SchemaProperty(
+                        name="logical_child",
+                        physicalName="physical_child",
+                        logicalType="string",
+                        required=True,
+                    )
+                ],
+            ),
+        ],
+    )
+    data_contract = OpenDataContractStandard(schema=[model])
+
+    assert to_jsonschemas(data_contract) == {
+        "physical_record": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+                "physical_field": {"type": "string"},
+                "physical_nested": {
+                    "type": "object",
+                    "properties": {"physical_child": {"type": "string"}},
+                    "required": ["physical_child"],
+                },
+            },
+            "required": ["physical_field", "physical_nested"],
+        }
+    }
 
 
 def test_cli():

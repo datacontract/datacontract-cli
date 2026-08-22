@@ -1,13 +1,59 @@
 import json
 
 from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import SchemaObject, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.avro_exporter import to_avro_schema_json
+from datacontract.export.avro_exporter import to_avro_schema, to_avro_schema_json
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
+
+
+def test_to_avro_schema_uses_physical_names():
+    model = SchemaObject(
+        name="logical_record",
+        physicalName="physical_record",
+        properties=[
+            SchemaProperty(
+                name="logical_field",
+                physicalName="physical_field",
+                logicalType="string",
+                required=True,
+            ),
+            SchemaProperty(
+                name="logical_nested",
+                physicalName="physical_nested",
+                logicalType="object",
+                required=True,
+                properties=[
+                    SchemaProperty(
+                        name="logical_child",
+                        physicalName="physical_child",
+                        logicalType="string",
+                        required=True,
+                    )
+                ],
+            ),
+        ],
+    )
+
+    assert to_avro_schema(model.name, model) == {
+        "type": "record",
+        "name": "physical_record",
+        "fields": [
+            {"name": "physical_field", "type": "string"},
+            {
+                "name": "physical_nested",
+                "type": {
+                    "type": "record",
+                    "name": "physical_nested",
+                    "fields": [{"name": "physical_child", "type": "string"}],
+                },
+            },
+        ],
+    }
 
 
 def test_cli():
