@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from datacontract.config import Config, known_env_names
 from datacontract.data_contract import DataContract, ExportFormat
+from datacontract.model.breaking import BreakingChangeEntry
 from datacontract.model.changelog import ChangelogEntry
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -814,6 +815,20 @@ class ChangelogResponse(BaseModel):
     )
 
 
+class BreakingChangesResponse(BaseModel):
+    """The breaking changes between two versions of a data contract."""
+
+    summary: list[BreakingChangeEntry] = Field(
+        description="One entry per breaking change, rolled up to the level a reader cares about.",
+    )
+    entries: list[BreakingChangeEntry] = Field(
+        description="Every individual breaking change, with the old and new value.",
+    )
+    is_breaking: bool = Field(
+        description="Whether any detected change is classified as an error-level breaking change.",
+    )
+
+
 @app.post(
     "/changelog",
     tags=["changelog"],
@@ -866,16 +881,28 @@ async def changelog_endpoint(
 @app.post(
     "/breaking",
     tags=["breaking"],
+    operation_id="breakingChangesDataContracts",
     summary="Show compatibility impact between two data contracts.",
     description="""
-        Compare two ODCS data contract YAMLs and classify their backward-compatibility impact.
-        POST a JSON body with `v1` (source/before) and `v2` (target/after) as YAML strings.
+Compare two versions of an ODCS data contract and detect backward-incompatible changes.
+
+`POST` a JSON body with `v1` (before) and `v2` (after) as YAML strings. A contract that cannot be
+parsed is answered with `422`.
     """,
+    response_description="The breaking changes detected between the two data contracts.",
+    responses={
+        **AUTHENTICATION_RESPONSES,
+        422: {
+            "description": "One of the two data contracts is not valid YAML or not a valid data contract.",
+            "model": UnprocessableEntityResponse,
+            "content": {"application/json": {"example": {"detail": "Invalid YAML: while parsing a block mapping"}}},
+        },
+    },
 )
-async def breaking_endpoint(
+def breaking_endpoint(
     body: ChangelogRequest,
     api_key: Annotated[str | None, Depends(api_key_header)] = None,
-):
+) -> BreakingChangesResponse:
     check_api_key(api_key)
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f1:
@@ -887,7 +914,7 @@ async def breaking_endpoint(
 
     try:
         result = DataContract(data_contract_file=v1_path).breaking(DataContract(data_contract_file=v2_path))
-        return result
+        return BreakingChangesResponse(summary=result.summary, entries=result.entries, is_breaking=result.is_breaking)
     except yaml.YAMLError as e:
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     except pydantic.ValidationError as e:

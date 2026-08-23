@@ -1,3 +1,4 @@
+from collections import defaultdict
 from collections.abc import Iterable
 
 from datacontract.breaking.rules import DEFAULT_RULES, BreakingChangeRule
@@ -21,33 +22,29 @@ class BreakingChangeDetector:
 
     def detect(self, changelog: ChangelogResult) -> BreakingChangeResult:
         entries = [self._classify(entry) for entry in changelog.entries]
-        summary = [self._summarize(entry, entries) for entry in changelog.summary]
+        entries_by_prefix = defaultdict(list)
+        for entry in entries:
+            prefix = ""
+            for segment in entry.path.split("."):
+                prefix = f"{prefix}.{segment}" if prefix else segment
+                entries_by_prefix[prefix].append(entry)
+        summary = [self._summarize(entry, entries_by_prefix.get(entry.path, [])) for entry in changelog.summary]
         return BreakingChangeResult(v1=changelog.v1, v2=changelog.v2, summary=summary, entries=entries)
 
     def _classify(self, entry: ChangelogEntry) -> BreakingChangeEntry:
-        matches = [match for rule in self._rules if (match := rule.evaluate(entry)) is not None]
-        if not matches:
-            raise ValueError(f"No breaking-change rule classified {entry.path}")
-        highest_priority = max(self._priority(match.rule_id) for match in matches)
-        highest = [match for match in matches if self._priority(match.rule_id) == highest_priority]
-        if len({match.rule_id for match in highest}) > 1:
-            raise ValueError(f"Ambiguous breaking-change rules for {entry.path}: {highest}")
-        evaluation = highest[0]
-        return BreakingChangeEntry(
-            path=entry.path,
-            change_type=entry.type,
-            level=evaluation.level,
-            message=evaluation.message,
-            rule_id=evaluation.rule_id,
-            old_value=entry.old_value,
-            new_value=entry.new_value,
-        )
-
-    def _priority(self, rule_id: str) -> int:
         for rule in self._rules:
-            if rule.rule_id == rule_id:
-                return rule.priority
-        raise ValueError(f"Unknown rule {rule_id}")
+            evaluation = rule.evaluate(entry)
+            if evaluation is not None:
+                return BreakingChangeEntry(
+                    path=entry.path,
+                    change_type=entry.type,
+                    level=evaluation.level,
+                    message=evaluation.message,
+                    rule_id=evaluation.rule_id,
+                    old_value=entry.old_value,
+                    new_value=entry.new_value,
+                )
+        raise ValueError(f"No breaking-change rule classified {entry.path}")
 
     @staticmethod
     def _summarize(summary_entry: ChangelogEntry, entries: list[BreakingChangeEntry]) -> BreakingChangeEntry:

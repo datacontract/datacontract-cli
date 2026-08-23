@@ -1,5 +1,5 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
@@ -21,7 +21,7 @@ function withAccessibleTokenColors(
       const color = entry.style?.color;
       const replacement = color && replacements[color];
       return replacement
-        ? {...entry, style: {...entry.style, color: replacement}}
+        ? { ...entry, style: { ...entry.style, color: replacement } }
         : entry;
     }),
   };
@@ -113,7 +113,7 @@ const config: Config = {
           // Raise the priority of the main hub pages so crawlers can
           // distinguish them from the long tail of import/export reference pages.
           createSitemapItems: async (params) => {
-            const {defaultCreateSitemapItems, ...rest} = params;
+            const { defaultCreateSitemapItems, ...rest } = params;
             const items = await defaultCreateSitemapItems(rest);
             const hubs: Record<string, number> = {
               'https://docs.datacontract.com/': 1.0,
@@ -122,7 +122,7 @@ const config: Config = {
             };
             return items.map((item) => {
               const priority = hubs[item.url];
-              return priority ? {...item, priority} : item;
+              return priority ? { ...item, priority } : item;
             });
           },
         },
@@ -160,6 +160,7 @@ const config: Config = {
           'testing/index.md',
           'testing/*.md',
           'schema.md',
+          'compare-contract-versions.md',
           'quality-rules/index.md',
           'quality-rules/*.md',
           'service-levels.md',
@@ -212,8 +213,8 @@ const config: Config = {
   themeConfig: {
     image: 'img/datacontractcli.png',
     metadata: [
-      {name: 'og:type', content: 'website'},
-      {name: 'og:site_name', content: 'Data Contract CLI'},
+      { name: 'og:type', content: 'website' },
+      { name: 'og:site_name', content: 'Data Contract CLI' },
       {
         name: 'keywords',
         content:
@@ -261,16 +262,16 @@ const config: Config = {
         {
           title: 'Docs',
           items: [
-            {label: 'What is Data Contract CLI?', to: '/'},
-            {label: 'Quickstart', to: '/quickstart'},
-            {label: 'Commands', to: '/commands/'},
-            {label: 'Release Notes', to: '/release-notes'},
+            { label: 'What is Data Contract CLI?', to: '/' },
+            { label: 'Quickstart', to: '/quickstart' },
+            { label: 'Commands', to: '/commands/' },
+            { label: 'Release Notes', to: '/release-notes' },
           ],
         },
         {
           title: 'Community',
           items: [
-            {label: 'Slack', href: 'https://datacontract.com/slack'},
+            { label: 'Slack', href: 'https://datacontract.com/slack' },
             {
               label: 'GitHub',
               href: 'https://github.com/datacontract/datacontract-cli',
@@ -284,16 +285,16 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            {label: 'datacontract.com', href: 'https://datacontract.com'},
-            {label: 'Data Contract Editor', href: 'https://editor.datacontract.com'},
-            {label: 'PyPI', href: 'https://pypi.org/project/datacontract-cli/'},
+            { label: 'datacontract.com', href: 'https://datacontract.com' },
+            { label: 'Data Contract Editor', href: 'https://editor.datacontract.com' },
+            { label: 'PyPI', href: 'https://pypi.org/project/datacontract-cli/' },
           ],
         },
         {
           title: 'Legal',
           items: [
-            {label: 'Legal Notice', href: 'https://entropy-data.com/legal-notice'},
-            {label: 'Privacy Policy', href: 'https://entropy-data.com/privacy-policy'},
+            { label: 'Legal Notice', href: 'https://entropy-data.com/legal-notice' },
+            { label: 'Privacy Policy', href: 'https://entropy-data.com/privacy-policy' },
           ],
         },
       ],

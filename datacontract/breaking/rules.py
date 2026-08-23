@@ -1,7 +1,6 @@
-import ast
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from datetime import date
 
 from datacontract.model.breaking import BreakingChangeLevel
 from datacontract.model.changelog import ChangelogEntry, ChangelogType
@@ -15,7 +14,6 @@ class RuleEvaluation:
 
 
 class BreakingChangeRule(ABC):
-    priority: int = 0
     rule_id: str
 
     @abstractmethod
@@ -24,7 +22,6 @@ class BreakingChangeRule(ABC):
 
 
 class SchemaRemovedRule(BreakingChangeRule):
-    priority = 90
     rule_id = "schema-removed"
 
     def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
@@ -35,7 +32,6 @@ class SchemaRemovedRule(BreakingChangeRule):
 
 
 class FieldRemovedRule(BreakingChangeRule):
-    priority = 90
     rule_id = "field-removed"
 
     def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
@@ -47,7 +43,6 @@ class FieldRemovedRule(BreakingChangeRule):
 
 
 class RequiredChangedRule(BreakingChangeRule):
-    priority = 100
     rule_id = "required-changed"
 
     def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
@@ -69,7 +64,6 @@ class RequiredChangedRule(BreakingChangeRule):
 
 
 class TypeChangedRule(BreakingChangeRule):
-    priority = 80
     rule_id = "type-changed"
 
     def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
@@ -85,7 +79,6 @@ class TypeChangedRule(BreakingChangeRule):
 
 
 class UniqueConstraintRule(BreakingChangeRule):
-    priority = 75
     rule_id = "unique-constraint-changed"
 
     def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
@@ -103,7 +96,6 @@ class UniqueConstraintRule(BreakingChangeRule):
 
 
 class KeyConstraintRule(BreakingChangeRule):
-    priority = 70
     rule_id = "key-constraint-changed"
 
     def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
@@ -112,29 +104,7 @@ class KeyConstraintRule(BreakingChangeRule):
         return RuleEvaluation(self.rule_id, BreakingChangeLevel.WARNING, _change_message("key constraint", entry))
 
 
-class EnumConstraintRule(BreakingChangeRule):
-    priority = 65
-    rule_id = "enum-constraint-changed"
-
-    def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
-        if not entry.path.endswith(".enum"):
-            return None
-        old = _parse_sequence(entry.old_value)
-        new = _parse_sequence(entry.new_value)
-        if old is not None and new is not None:
-            if set(old) - set(new):
-                level = BreakingChangeLevel.ERROR
-            elif set(new) - set(old):
-                level = BreakingChangeLevel.INFO
-            else:
-                level = BreakingChangeLevel.INFO
-        else:
-            level = BreakingChangeLevel.WARNING
-        return RuleEvaluation(self.rule_id, level, _change_message("enum constraint", entry))
-
-
 class ValidationConstraintRule(BreakingChangeRule):
-    priority = 60
     rule_id = "validation-constraint-changed"
     _suffixes = (
         ".pattern",
@@ -161,7 +131,6 @@ class ValidationConstraintRule(BreakingChangeRule):
 
 
 class MetadataFallbackRule(BreakingChangeRule):
-    priority = -100
     rule_id = "metadata-or-unknown-change"
 
     def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation:
@@ -173,7 +142,7 @@ def _is_schema_property_path(segments: list[str]) -> bool:
         properties_index = segments.index("properties")
     except ValueError:
         return False
-    return segments[0] == "schema" and properties_index + 1 < len(segments)
+    return segments[0] == "schema" and properties_index == len(segments) - 2
 
 
 def _parse_bool(value: str | None) -> bool | None:
@@ -190,20 +159,14 @@ def _parse_bool(value: str | None) -> bool | None:
 def _parse_number(value: str | None) -> float | None:
     if value is None:
         return None
+    normalized = value.strip()
     try:
-        return float(value.strip())
+        return float(normalized)
     except ValueError:
-        return None
-
-
-def _parse_sequence(value: str | None) -> list[Any] | None:
-    if value is None:
-        return None
-    try:
-        parsed = ast.literal_eval(value)
-    except (SyntaxError, ValueError):
-        return None
-    return parsed if isinstance(parsed, list) else None
+        try:
+            return float(date.fromisoformat(normalized).toordinal())
+        except ValueError:
+            return None
 
 
 def _is_tightening(path: str, old: float, new: float) -> bool:
@@ -229,7 +192,6 @@ DEFAULT_RULES: tuple[BreakingChangeRule, ...] = (
     TypeChangedRule(),
     UniqueConstraintRule(),
     KeyConstraintRule(),
-    EnumConstraintRule(),
     ValidationConstraintRule(),
     MetadataFallbackRule(),
 )

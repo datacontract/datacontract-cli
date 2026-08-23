@@ -1,12 +1,17 @@
-import pytest
 from typer.testing import CliRunner
 
 from datacontract.breaking.detector import BreakingChangeDetector
 from datacontract.breaking.rules import (
     BreakingChangeRule,
+    FieldRemovedRule,
+    KeyConstraintRule,
+    MetadataFallbackRule,
     RequiredChangedRule,
     RuleEvaluation,
+    SchemaRemovedRule,
     TypeChangedRule,
+    UniqueConstraintRule,
+    ValidationConstraintRule,
 )
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
@@ -47,6 +52,124 @@ def test_type_change_is_error():
     )
     assert result is not None
     assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_removing_schema_is_breaking():
+    result = SchemaRemovedRule().evaluate(_entry("schema.orders", ChangelogType.removed))
+    assert result is not None
+    assert result.level == BreakingChangeLevel.ERROR
+    assert result.message == "Removed schema orders"
+
+
+def test_removing_property_metadata_is_not_property_removal():
+    result = FieldRemovedRule().evaluate(
+        _entry("schema.orders.properties.customer_id.description", ChangelogType.removed, "old description")
+    )
+    assert result is None
+
+
+def test_removing_property_is_breaking():
+    result = FieldRemovedRule().evaluate(
+        _entry("schema.orders.properties.customer_id", ChangelogType.removed, "string")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.ERROR
+    assert result.message == "Removed property customer_id"
+
+
+def test_tightening_uniqueness_is_breaking():
+    result = UniqueConstraintRule().evaluate(
+        _entry("schema.orders.properties.order_id.unique", ChangelogType.updated, "False", "True")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_changing_primary_key_is_warning():
+    result = KeyConstraintRule().evaluate(
+        _entry("schema.orders.properties.order_id.primaryKey", ChangelogType.updated, "True", "False")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.WARNING
+
+
+def test_tightening_validation_constraint_is_breaking():
+    result = ValidationConstraintRule().evaluate(
+        _entry("schema.orders.properties.customer_id.minLength", ChangelogType.updated, "5", "10")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_tightening_date_validation_constraint_is_breaking():
+    result = ValidationConstraintRule().evaluate(
+        _entry(
+            "schema.orders.properties.order_date.logicalTypeOptions.minimum",
+            ChangelogType.updated,
+            "2024-01-01",
+            "2024-02-01",
+        )
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_relaxing_date_minimum_constraint_is_info():
+    result = ValidationConstraintRule().evaluate(
+        _entry(
+            "schema.orders.properties.order_date.logicalTypeOptions.minimum",
+            ChangelogType.updated,
+            "2024-02-01",
+            "2024-01-01",
+        )
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_tightening_date_maximum_constraint_is_breaking():
+    result = ValidationConstraintRule().evaluate(
+        _entry(
+            "schema.orders.properties.order_date.logicalTypeOptions.maximum",
+            ChangelogType.updated,
+            "2024-02-01",
+            "2024-01-01",
+        )
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_relaxing_date_validation_constraint_is_info():
+    result = ValidationConstraintRule().evaluate(
+        _entry(
+            "schema.orders.properties.order_date.logicalTypeOptions.maximum",
+            ChangelogType.updated,
+            "2024-01-01",
+            "2024-02-01",
+        )
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_invalid_date_validation_constraint_is_warning():
+    result = ValidationConstraintRule().evaluate(
+        _entry(
+            "schema.orders.properties.order_date.logicalTypeOptions.minimum",
+            ChangelogType.updated,
+            "not-a-date",
+            "2024-01-01",
+        )
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.WARNING
+
+
+def test_unknown_change_is_info():
+    result = MetadataFallbackRule().evaluate(_entry("description.purpose", ChangelogType.updated, "old", "new"))
+    assert result.level == BreakingChangeLevel.INFO
+    assert result.message == "Changed contract at description.purpose from 'old' to 'new'"
 
 
 def test_unmatched_entry_uses_info_fallback():
@@ -108,22 +231,22 @@ def test_cli_shows_full_severity_range_for_mixed_changes():
     assert "[ 4 Error ]  [ 1 Warning ]  [ 3 Info ]" in result.output
 
 
-def test_detector_rejects_ambiguous_rules():
+def test_detector_uses_first_matching_rule():
     class FirstRule(BreakingChangeRule):
-        priority = 10
         rule_id = "first"
 
         def evaluate(self, entry):
             return RuleEvaluation(self.rule_id, BreakingChangeLevel.INFO, "first")
 
     class SecondRule(BreakingChangeRule):
-        priority = 10
         rule_id = "second"
 
         def evaluate(self, entry):
             return RuleEvaluation(self.rule_id, BreakingChangeLevel.WARNING, "second")
 
-    with pytest.raises(ValueError, match="Ambiguous"):
-        BreakingChangeDetector((FirstRule(), SecondRule())).detect(
-            ChangelogResult(v1="v1", v2="v2", entries=[_entry("field", ChangelogType.updated)])
-        )
+    result = BreakingChangeDetector((FirstRule(), SecondRule())).detect(
+        ChangelogResult(v1="v1", v2="v2", entries=[_entry("field", ChangelogType.updated)])
+    )
+
+    assert result.entries[0].rule_id == "first"
+    assert result.entries[0].level == BreakingChangeLevel.INFO

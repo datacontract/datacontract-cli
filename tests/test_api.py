@@ -75,6 +75,8 @@ def test_breaking():
     response = client.post(url="/breaking", json={"v1": v1, "v2": v2})
     assert response.status_code == 200
     data = response.json()
+    assert "v1" not in data
+    assert "v2" not in data
     assert data["is_breaking"] is True
     assert "summary" in data
     assert "entries" in data

@@ -28,7 +28,6 @@ datacontract test --checks schema datacontract.yaml
 | `logicalTypeOptions.minimum` / `maximum` | property | Value within bounds (inclusive) |
 | `logicalTypeOptions.exclusiveMinimum` / `exclusiveMaximum` | property | Value within bounds (exclusive) |
 | `logicalTypeOptions.pattern` | property | Value matches the regular expression |
-| `logicalTypeOptions.enum` | property | Value is one of the listed values |
 | `quality` | schema, property | See [Define your Quality Rules](./quality-rules/index.md) |
 
 A contract that uses all of them:
