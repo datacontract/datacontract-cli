@@ -143,16 +143,8 @@ def execute_data_contract_test(
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
-    if server.format == "json" and server.type != "kafka":
-        # The JSON Schema validation emits checks of type "schema" throughout,
-        # so it is out of scope once a quality rule is selected by id or tag.
-        if (
-            (check_categories is None or "schema" in check_categories)
-            and (dimensions is None or default_dimension("schema") in dimensions)
-            and quality_ids is None
-            and tags is None
-        ):
-            check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
     # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
     if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
         check_azure_blob_file(
@@ -298,6 +290,29 @@ def get_server(data_contract: OpenDataContractStandard, server_name: str = None)
     return server
 
 
+def _runs_jsonschema_checks(
+    server: Server,
+    check_categories: set[str] | None,
+    dimensions: set[str] | None,
+    quality_ids: set[str] | None,
+    tags: set[str] | None,
+) -> bool:
+    """Whether the JSON Schema validation applies to this run.
+
+    Shared by the execution path and the dry run so a plan cannot disagree with
+    what actually runs. The JSON Schema validation emits checks of type "schema"
+    throughout, so it is out of scope once a quality rule is selected by id or tag.
+    """
+    if server.format != "json" or server.type == "kafka":
+        return False
+    return (
+        (check_categories is None or "schema" in check_categories)
+        and (dimensions is None or default_dimension("schema") in dimensions)
+        and quality_ids is None
+        and tags is None
+    )
+
+
 def _report_dry_run(
     run,
     data_contract: OpenDataContractStandard,
@@ -321,14 +336,8 @@ def _report_dry_run(
     for spec in specs:
         set_result(run, spec.key, ResultEnum.skipped, "Dry run: check not executed")
 
-    if server.format == "json" and server.type != "kafka":
-        if (
-            (check_categories is None or "schema" in check_categories)
-            and (dimensions is None or default_dimension("schema") in dimensions)
-            and quality_ids is None
-            and tags is None
-        ):
-            check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, dry_run=True)
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, dry_run=True)
 
     # The blob checks read file metadata to decide which checks exist at all,
     # so they cannot be planned without reading. Say so rather than reporting a

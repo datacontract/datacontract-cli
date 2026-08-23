@@ -65,8 +65,15 @@ def test_the_plan_says_what_each_check_asserts():
     assert all(check.implementation for check in described)
 
 
-def test_a_dry_run_needs_no_credentials():
-    """The server is never contacted, so a plan works where a run cannot."""
+def test_a_dry_run_needs_no_credentials(monkeypatch):
+    """The server is never contacted, so a plan works where a run cannot.
+
+    The credentials are cleared explicitly: with them set, the run without the
+    flag would try to reach a host that is not there and block until it gives up.
+    """
+    for name in ("DATACONTRACT_POSTGRES_USERNAME", "DATACONTRACT_POSTGRES_PASSWORD"):
+        monkeypatch.delenv(name, raising=False)
+
     planned = CliRunner().invoke(app, ["test", postgres, "--dry-run"])
     without_dry_run = CliRunner().invoke(app, ["test", postgres])
 
@@ -95,3 +102,28 @@ def test_a_real_run_is_not_marked_as_a_plan():
     run = DataContract(data_contract_file=local_json).test()
 
     assert run.dryRun is False
+
+
+def test_a_plan_that_could_not_be_completed_says_so():
+    """Blob checks cannot be planned, and a plan must not look clean without them."""
+    run = DataContract(data_contract_file="fixtures/azure-blob-file/datacontract.yaml", dry_run=True).test()
+
+    assert run.result == ResultEnum.warning
+    incomplete = [c for c in run.checks if c.result == ResultEnum.warning]
+    assert incomplete != []
+    assert "incomplete" in incomplete[0].reason
+
+
+def test_an_incomplete_plan_still_does_not_fail_the_build():
+    result = CliRunner().invoke(app, ["test", "fixtures/azure-blob-file/datacontract.yaml", "--dry-run"])
+
+    assert result.exit_code == 0
+
+
+def test_the_plan_matches_a_real_run_when_checks_are_filtered():
+    """The filters run before the plan is taken, so a narrowed run narrows the plan."""
+    for kwargs in ({}, {"check_categories": {"properties"}}, {"dimensions": {"completeness"}}):
+        planned = DataContract(data_contract_file=local_json, dry_run=True, **kwargs).test()
+        executed = DataContract(data_contract_file=local_json, **kwargs).test()
+
+        assert keys(planned) == keys(executed), kwargs

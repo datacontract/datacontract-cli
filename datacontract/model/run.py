@@ -237,8 +237,15 @@ class Run(BaseModel):
 
     def calculate_result(self):
         if self.dryRun:
-            # A plan asserts nothing, so it can neither pass nor fail.
-            self.result = ResultEnum.skipped
+            # A plan asserts nothing, so it can neither pass nor fail. It can
+            # still be incomplete, though, and that has to stay visible: a
+            # check that could not be planned reports its own result.
+            if any(check.result == ResultEnum.error for check in self.checks):
+                self.result = ResultEnum.error
+            elif any(check.result == ResultEnum.warning for check in self.checks):
+                self.result = ResultEnum.warning
+            else:
+                self.result = ResultEnum.skipped
             return
         if any(check.result == ResultEnum.error for check in self.checks):
             self.result = ResultEnum.error
