@@ -2,6 +2,9 @@ from typing import List, Optional, Tuple
 
 from open_data_contract_standard.model import CustomProperty, Server
 
+from datacontract.config import SERVER_OVERRIDE_OPTIONS, Config
+from datacontract.model.run import Run
+
 # datacontract-CLI supports server types that are not part of the ODCS
 # `Server.type` enum (e.g. a Spark `dataframe`). To stay compliant with the
 # ODCS standard, such a server is written as `type: custom` and the real
@@ -65,3 +68,45 @@ def _get_custom_property(server: Server, name: str) -> Optional[str]:
         if prop.property == name:
             return prop.value
     return None
+
+
+def resolve_server_overrides(server: Optional[Server], config: Config, run: Run) -> Optional[Server]:
+    """Return the effective server: the contract's, with the override options applied.
+
+    Applied once here so that the connection, the table lookup and the catalog
+    reads behind physical type checks all see the same location. The contract's
+    own server is never mutated; a copy carries the overrides.
+    """
+    if server is None:
+        return None
+    server_type = get_server_type(server)
+    # The mssql options are all spelled `sqlserver_*`.
+    prefix = "sqlserver" if server_type == "mssql" else server_type
+    if prefix is None:
+        return server
+
+    updates = {}
+    for option, property_name in SERVER_OVERRIDE_OPTIONS.items():
+        if option.split("_", 1)[0] != prefix:
+            continue
+        # Via the accessor, never the field: a programmatic `Config(postgres_schema=...)`
+        # and DATACONTRACT_POSTGRES_SCHEMA are distinct sources and only it sees both.
+        value = getattr(config, f"get_{option}")()
+        # An option set to an empty value leaves the contract's value in place,
+        # matching how the connection code reads it (`get_x() or server.y`).
+        if not value:
+            continue
+        field = "schema_" if property_name == "schema" else property_name
+        declared = getattr(server, field, None)
+        if declared == value:
+            continue
+        updates[field] = value
+        if declared is None:
+            run.log_info(f"Server '{server.server}': using {property_name} '{value}' from configuration")
+        else:
+            run.log_info(
+                f"Server '{server.server}': using {property_name} '{value}' from configuration, "
+                f"overriding '{declared}' from the contract"
+            )
+
+    return server.model_copy(update=updates) if updates else server

@@ -163,8 +163,8 @@ Every option, by its environment variable name and the matching `Config` field. 
 
 | Environment variable | `Config` field | Type | Notes |
 |---|---|---|---|
-| `DATACONTRACT_DUCKDB_DATABASE` | `duckdb_database` | string |  |
-| `DATACONTRACT_DUCKDB_SCHEMA` | `duckdb_schema` | string |  |
+| `DATACONTRACT_DUCKDB_DATABASE` | `duckdb_database` | string | Overrides `database` from the contract's `servers` block |
+| `DATACONTRACT_DUCKDB_SCHEMA` | `duckdb_schema` | string | Overrides `schema` from the contract's `servers` block |
 
 ### GCS
 
