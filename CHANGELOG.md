@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
 - `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
 - **breaking:** the `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
-- Test results published to Entropy Data use the field names its API reads
-- **breaking:** published test results no longer repeat `qualityId` and `failedSamples` under their deprecated `quality_id` and `failed_samples` spellings
+- Test results published to Entropy Data carry the field names its API reads, in addition to the names they were already published under
+- **breaking:** published `failedSamples` are JSON documents, as the API reads them; the deprecated `failed_samples` field still carries the raw rows
 - A service level check is identified by its `slaProperties[].id`, so `datacontract test --quality-id` can select one
 - A JSON Schema check that was not run because the server type is unsupported is now reported as `skipped` instead of `info`
 

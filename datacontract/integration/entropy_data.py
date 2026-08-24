@@ -49,29 +49,22 @@ def _host_and_port(url: str) -> tuple[str | None, int | None]:
         return None, None
 
 
-# The check fields the `/api/test-results` API reads under the name the CLI uses.
-_CHECK_PASS_THROUGH = ("type", "name", "result", "engine", "model", "field", "reason", "dimension")
-
-# ... and the ones it reads under a different name.
+# The check fields the `/api/test-results` API reads under a different name than the
+# CLI writes them. Both names are published.
 _CHECK_RENAMED = {
     "qualityId": "qualityReference",
     "category": "qualityCategory",
     "qualityDefinition": "qualityCheckDefinition",
 }
 
-# The metrics whose value is a count of bad rows, and so can be published as a
-# failed row count. `custom_sql` is not one: its value is whatever the author's
-# query returned.
+# The metrics whose value counts bad rows. `custom_sql` is not one: its value is
+# whatever the author's query returned.
 _FAILED_ROW_METRICS = ("missing_count", "invalid_count", "duplicate_count")
 
 
 def to_test_results_payload(run: Run) -> dict:
-    """`run` as the `/api/test-results` API expects it.
-
-    The API and the CLI model the same run differently, so the checks are
-    translated rather than dumped: the API names some fields differently, and
-    reads the failed and total row counts the CLI keeps in `diagnostics`.
-    """
+    """`run` as the `/api/test-results` API expects it: the renamed check fields and the
+    row counts from `diagnostics`, added on top of the dumped run."""
     payload = json.loads(run.model_dump_json(exclude_none=True))
     payload["id"] = str(run.runId)
     payload["checks"] = [_to_check_payload(check) for check in payload.get("checks") or []]
@@ -79,7 +72,7 @@ def to_test_results_payload(run: Run) -> dict:
 
 
 def _to_check_payload(check: dict) -> dict:
-    published = {name: check[name] for name in _CHECK_PASS_THROUGH if name in check}
+    published = dict(check)
     published.update({name: check[old] for old, name in _CHECK_RENAMED.items() if old in check})
     if check.get("failedSamples"):
         published["failedSamples"] = [json.dumps(row) for row in check["failedSamples"]]
@@ -90,9 +83,8 @@ def _to_check_payload(check: dict) -> dict:
 def _row_counts(diagnostics: dict) -> dict:
     """The failed and total row counts a check measured, both in rows or neither.
 
-    They are summed across checks into a row-level quality score, so a count in
-    any other unit -- duplicated keys, an author's own query result -- is left out
-    rather than published as if it were rows.
+    The API sums them across checks into a row-level quality score, so a count in any
+    other unit -- duplicated keys, an author's own query result -- is left out.
     """
     metric = diagnostics.get("metric")
     if metric in _FAILED_ROW_METRICS:
