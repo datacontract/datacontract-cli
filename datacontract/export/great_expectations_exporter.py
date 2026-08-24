@@ -32,6 +32,8 @@ _QUALITY_META_EXCLUDED_FIELDS = {"type", "engine", "implementation"}
 
 
 class GreatExpectationsEngine(str, Enum):
+    """Supported execution engines for Great Expectations suites."""
+
     pandas = "pandas"
     spark = "spark"
     sql = "sql"
@@ -39,6 +41,18 @@ class GreatExpectationsEngine(str, Enum):
 
 class GreatExpectationsExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
+        """Export a data contract as a Great Expectations suite JSON string.
+
+        Args:
+            data_contract: Data contract to export.
+            schema_name: Name of the contract schema to export.
+            server: Server configuration. Unused by this exporter.
+            sql_server_type: SQL dialect used when the selected engine is SQL.
+            export_args: Export options, including optional ``suite_name`` and ``engine`` values.
+
+        Returns:
+            str: Serialized Great Expectations expectation suite.
+        """
         expectation_suite_name = export_args.get("suite_name")
         engine = export_args.get("engine")
         schema_name, _ = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
@@ -47,7 +61,14 @@ class GreatExpectationsExporter(Exporter):
 
 
 def _get_type(prop: SchemaProperty) -> Optional[str]:
-    """Get the type from a schema property."""
+    """Get the physical type, or fall back to the logical type, for a property.
+
+    Args:
+        prop: Schema property whose type is read.
+
+    Returns:
+        str | None: The physical or logical type, or ``None`` when neither is defined.
+    """
     if prop.physicalType:
         return prop.physicalType
     if prop.logicalType:
@@ -56,14 +77,29 @@ def _get_type(prop: SchemaProperty) -> Optional[str]:
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
-    """Get a logical type option value."""
+    """Get a value from a property's logical type options.
+
+    Args:
+        prop: Schema property containing logical type options.
+        key: Option name to retrieve.
+
+    Returns:
+        Any | None: The option value, or ``None`` when options or the key are absent.
+    """
     if prop.logicalTypeOptions is None:
         return None
     return prop.logicalTypeOptions.get(key)
 
 
 def _get_enum_from_custom_properties(prop: SchemaProperty) -> Optional[List[str]]:
-    """Get enum values from customProperties (used when importing from DCS)."""
+    """Get enum values from custom properties used by DCS imports.
+
+    Args:
+        prop: Schema property whose custom properties are inspected.
+
+    Returns:
+        list[str] | None: Declared enum values, or ``None`` when no enum is present.
+    """
     if prop.customProperties is None:
         return None
     for cp in prop.customProperties:
@@ -75,20 +111,40 @@ def _get_enum_from_custom_properties(prop: SchemaProperty) -> Optional[List[str]
 
 
 def _get_format_regex(format_value: str) -> Optional[str]:
-    """Return a regex string for common string format names, or None if unsupported."""
+    """Look up the regular expression for a supported string format.
+
+    Args:
+        format_value: Case-insensitive logical format name.
+
+    Returns:
+        str | None: Matching regular expression, or ``None`` for unsupported formats.
+    """
     return _FORMAT_REGEX_MAP.get(format_value.lower())
 
 
 def _to_snake_case(text: str) -> str:
-    """Convert a string to snake_case: lowercase, all non-alphanumeric chars → underscore, collapse multiples."""
+    """Convert text to a normalized snake-case identifier.
+
+    Args:
+        text: Input text to normalize.
+
+    Returns:
+        str: Lowercase identifier with non-alphanumeric characters replaced by underscores.
+    """
     result = re.sub(r"[^a-z0-9_]", "_", text.strip().lower())
     return re.sub(r"_+", "_", result).strip("_")
 
 
 def _display_name(prop: SchemaProperty, field_name: str) -> str:
-    """Return businessName when set (and not 'NoBV'), else the column name, for use in human-readable meta.
-
+    """ "Return businessName when set (and not 'NoBV'), else the column name, for use in human-readable meta.
     'NoBV' is a placeholder for 'No Business Value' and is ignored in favor of the column name.
+
+    Args:
+        prop: Schema property that may define a business name.
+        field_name: Technical field name used as a fallback.
+
+    Returns:
+        str: Business name when defined; otherwise, ``field_name``.
     """
     if prop.businessName and prop.businessName.lower() != "nobv":
         return prop.businessName
@@ -96,7 +152,16 @@ def _display_name(prop: SchemaProperty, field_name: str) -> str:
 
 
 def _build_expectation_id(contract_id: str, column_name: Optional[str], rule_name: str) -> str:
-    """Build a unique expectation ID from contract ID, optional column name, and rule name."""
+    """Build an expectation ID from contract, column, and rule identifiers.
+
+    Args:
+        contract_id: Data contract identifier.
+        column_name: Column name for a column-level expectation, if applicable.
+        rule_name: Normalized quality rule name.
+
+    Returns:
+        str: Dot-separated expectation identifier.
+    """
     if column_name:
         return f"{contract_id}.{column_name}.{rule_name}"
     return f"{contract_id}.{rule_name}"
@@ -110,7 +175,19 @@ def _build_constraint_meta(
     description: str,
     dimension: str,
 ) -> Dict[str, Any]:
-    """Build the meta dict for auto-generated constraint expectations (primaryKey, required, unique, logicalTypeOptions)."""
+    """Build metadata for an automatically generated constraint expectation.
+
+    Args:
+        contract_id: Data contract identifier.
+        column_name: Column constrained by the expectation.
+        rule_name: Caller-provided rule identifier retained for API clarity.
+        name: Human-readable expectation name.
+        description: Human-readable expectation description.
+        dimension: Data quality dimension represented by the constraint.
+
+    Returns:
+        dict[str, Any]: Great Expectations metadata, including its generated identifier.
+    """
     return {
         "expectation_id": _build_expectation_id(contract_id, column_name, _to_snake_case(name)),
         "rule_location": "quality_column",
@@ -125,7 +202,16 @@ def _extract_quality_meta(
     contract_id: str,
     column_name: Optional[str],
 ) -> Dict[str, Any]:
-    """Extract and enrich meta from a quality block for the GE expectation meta field."""
+    """Extract and enrich metadata from a contract quality block.
+
+    Args:
+        quality: Quality rule containing the source metadata.
+        contract_id: Data contract identifier used in the expectation ID.
+        column_name: Column name for column-level rules, if applicable.
+
+    Returns:
+        dict[str, Any]: Metadata suitable for a Great Expectations expectation.
+    """
     # Use name field first (more stable), fall back to description, then generic default
     rule_name_raw = getattr(quality, "name", None) or quality.description or "quality_rule"
     rule_name = _to_snake_case(rule_name_raw)
@@ -204,6 +290,15 @@ def to_great_expectations(
 
 
 def to_suite(expectations: List[Dict[str, Any]], expectation_suite_name: str) -> str:
+    """Serialize expectations as a Great Expectations suite JSON string.
+
+    Args:
+        expectations: Expectations to include in the suite.
+        expectation_suite_name: Name assigned to the expectation suite.
+
+    Returns:
+        str: Indented JSON representation of the expectation suite.
+    """
     return json.dumps(
         {
             "name": expectation_suite_name,
@@ -220,6 +315,17 @@ def model_to_expectations(
     sql_server_type: str,
     contract_id: str = "",
 ) -> List[Dict[str, Any]]:
+    """Build expectations for every property in a schema.
+
+    Args:
+        properties: Schema properties to convert.
+        engine: Optional Great Expectations execution engine.
+        sql_server_type: SQL dialect used for SQL engine type conversion.
+        contract_id: Data contract identifier used in expectation metadata.
+
+    Returns:
+        list[dict[str, Any]]: Expectations derived from property constraints and quality rules.
+    """
     expectations = []
     for prop in properties:
         add_field_expectations(prop.name, prop, expectations, engine, sql_server_type, contract_id)
@@ -236,6 +342,19 @@ def add_field_expectations(
     sql_server_type: str,
     contract_id: str = "",
 ) -> List[Dict[str, Any]]:
+    """Append expectations derived from one field definition.
+
+    Args:
+        field_name: Technical name of the field.
+        prop: Schema property defining the field constraints.
+        expectations: Collection to which generated expectations are appended.
+        engine: Optional Great Expectations execution engine.
+        sql_server_type: SQL dialect used for SQL engine type conversion.
+        contract_id: Data contract identifier used in expectation metadata.
+
+    Returns:
+        list[dict[str, Any]]: The provided collection after generated expectations are appended.
+    """
     dn = _display_name(prop, field_name)
     prop_type = _get_type(prop)
     if prop_type is not None:
@@ -471,6 +590,15 @@ def add_field_expectations(
 
 
 def add_column_order_exp(properties: List[SchemaProperty], expectations: List[Dict[str, Any]]):
+    """Append an expectation that enforces the declared column order.
+
+    Args:
+        properties: Ordered schema properties that define the expected columns.
+        expectations: Collection to which the column-order expectation is appended.
+
+    Returns:
+        None: The expectation is added to ``expectations`` in place.
+    """
     column_names = [prop.name for prop in properties]
     expectations.append(
         {
@@ -482,6 +610,16 @@ def add_column_order_exp(properties: List[SchemaProperty], expectations: List[Di
 
 
 def to_column_types_exp(field_name, field_type, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Create a column type expectation.
+
+    Args:
+        field_name: Column validated by the expectation.
+        field_type: Expected Great Expectations-compatible column type.
+        meta: Optional metadata to attach to the expectation.
+
+    Returns:
+        dict[str, Any]: Great Expectations column-type expectation.
+    """
     return {
         "type": "expect_column_values_to_be_of_type",
         "kwargs": {"column": field_name, "type_": field_type},
@@ -490,6 +628,15 @@ def to_column_types_exp(field_name, field_type, meta: Optional[Dict[str, Any]] =
 
 
 def to_column_not_null_exp(field_name: str, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Create a column non-null expectation.
+
+    Args:
+        field_name: Column validated by the expectation.
+        meta: Optional metadata to attach to the expectation.
+
+    Returns:
+        dict[str, Any]: Great Expectations non-null expectation.
+    """
     return {
         "type": "expect_column_values_to_not_be_null",
         "kwargs": {"column": field_name},
@@ -498,6 +645,15 @@ def to_column_not_null_exp(field_name: str, meta: Optional[Dict[str, Any]] = Non
 
 
 def to_column_unique_exp(field_name: str, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Create a column uniqueness expectation.
+
+    Args:
+        field_name: Column validated by the expectation.
+        meta: Optional metadata to attach to the expectation.
+
+    Returns:
+        dict[str, Any]: Great Expectations uniqueness expectation.
+    """
     return {
         "type": "expect_column_values_to_be_unique",
         "kwargs": {"column": field_name},
@@ -511,6 +667,17 @@ def to_column_length_exp(
     max_length: Optional[int],
     meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    """Create a column value-length range expectation.
+
+    Args:
+        field_name: Column validated by the expectation.
+        min_length: Inclusive minimum permitted value length.
+        max_length: Inclusive maximum permitted value length.
+        meta: Optional metadata to attach to the expectation.
+
+    Returns:
+        dict[str, Any]: Great Expectations value-length expectation.
+    """
     kwargs: Dict[str, Any] = {"column": field_name}
     if min_length is not None:
         kwargs["min_value"] = min_length
@@ -529,6 +696,17 @@ def to_column_min_max_exp(
     maximum,
     meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    """Create a column value-range expectation.
+
+    Args:
+        field_name: Column validated by the expectation.
+        minimum: Inclusive lower bound, when defined.
+        maximum: Inclusive upper bound, when defined.
+        meta: Optional metadata to attach to the expectation.
+
+    Returns:
+        dict[str, Any]: Great Expectations value-range expectation.
+    """
     kwargs: Dict[str, Any] = {"column": field_name}
     if minimum is not None:
         kwargs["min_value"] = minimum
@@ -546,6 +724,16 @@ def to_column_enum_exp(
     enum_list: List[str],
     meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    """Create a column allowed-values expectation.
+
+    Args:
+        field_name: Column validated by the expectation.
+        enum_list: Permitted values for the column.
+        meta: Optional metadata to attach to the expectation.
+
+    Returns:
+        dict[str, Any]: Great Expectations set-membership expectation.
+    """
     return {
         "type": "expect_column_values_to_be_in_set",
         "kwargs": {"column": field_name, "value_set": enum_list},
@@ -558,6 +746,16 @@ def to_column_regex_exp(
     regex: str,
     meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    """Create a column regular-expression expectation.
+
+    Args:
+        field_name: Column validated by the expectation.
+        regex: Regular expression each non-null value must match.
+        meta: Optional metadata to attach to the expectation.
+
+    Returns:
+        dict[str, Any]: Great Expectations regular-expression expectation.
+    """
     return {
         "type": "expect_column_values_to_match_regex",
         "kwargs": {"column": field_name, "regex": regex},
