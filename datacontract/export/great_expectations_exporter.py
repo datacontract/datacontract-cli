@@ -250,9 +250,12 @@ def add_field_expectations(
             field_type = prop_type
         expectations.append(
             to_column_types_exp(
-                field_name, field_type,
+                field_name,
+                field_type,
                 _build_constraint_meta(
-                    contract_id, field_name, "column_type",
+                    contract_id,
+                    field_name,
+                    "column_type",
                     f"{dn} must be of type {field_type}",
                     f"{dn} must be of type {field_type}",
                     "conformity",
@@ -266,7 +269,9 @@ def add_field_expectations(
             to_column_not_null_exp(
                 field_name,
                 _build_constraint_meta(
-                    contract_id, field_name, "primary_key_not_null",
+                    contract_id,
+                    field_name,
+                    "primary_key_not_null",
                     f"{dn} must be filled (primary key)",
                     f"{dn} is a primary key and must not contain null values",
                     "completeness",
@@ -277,7 +282,9 @@ def add_field_expectations(
             to_column_unique_exp(
                 field_name,
                 _build_constraint_meta(
-                    contract_id, field_name, "primary_key_unique",
+                    contract_id,
+                    field_name,
+                    "primary_key_unique",
                     f"{dn} must be unique (primary key)",
                     f"{dn} is a primary key and must contain unique values",
                     "uniqueness",
@@ -291,7 +298,9 @@ def add_field_expectations(
             to_column_not_null_exp(
                 field_name,
                 _build_constraint_meta(
-                    contract_id, field_name, "not_null",
+                    contract_id,
+                    field_name,
+                    "not_null",
                     f"{dn} must be filled",
                     f"{dn} must be not null values",
                     "completeness",
@@ -305,7 +314,9 @@ def add_field_expectations(
             to_column_unique_exp(
                 field_name,
                 _build_constraint_meta(
-                    contract_id, field_name, "unique",
+                    contract_id,
+                    field_name,
+                    "unique",
                     f"{dn} must be unique",
                     f"{dn} must contain unique values",
                     "uniqueness",
@@ -328,8 +339,12 @@ def add_field_expectations(
             rule_name_label = f"{dn} length must be at most {max_length}"
         expectations.append(
             to_column_length_exp(
-                field_name, min_length, max_length,
-                _build_constraint_meta(contract_id, field_name, rule_name, rule_name_label, rule_name_label, "conformity"),
+                field_name,
+                min_length,
+                max_length,
+                _build_constraint_meta(
+                    contract_id, field_name, rule_name, rule_name_label, rule_name_label, "conformity"
+                ),
             )
         )
 
@@ -348,8 +363,19 @@ def add_field_expectations(
             rule_name_label = f"{dn} must be at most {maximum}"
         expectations.append(
             to_column_min_max_exp(
-                field_name, minimum, maximum,
-                _build_constraint_meta(contract_id, field_name, rule_name, rule_name_label, f"{dn} value must be between {minimum} and {maximum}" if rule_name == "value_range" else rule_name_label, "conformity"),
+                field_name,
+                minimum,
+                maximum,
+                _build_constraint_meta(
+                    contract_id,
+                    field_name,
+                    rule_name,
+                    rule_name_label,
+                    f"{dn} value must be between {minimum} and {maximum}"
+                    if rule_name == "value_range"
+                    else rule_name_label,
+                    "conformity",
+                ),
             )
         )
 
@@ -357,7 +383,9 @@ def add_field_expectations(
     exclusive_min = _get_logical_type_option(prop, "exclusiveMinimum")
     if exclusive_min is not None:
         meta = _build_constraint_meta(
-            contract_id, field_name, "exclusive_min",
+            contract_id,
+            field_name,
+            "exclusive_min",
             f"{dn} must be strictly greater than {exclusive_min}",
             f"{dn} value must be strictly greater than {exclusive_min}",
             "conformity",
@@ -368,7 +396,9 @@ def add_field_expectations(
     exclusive_max = _get_logical_type_option(prop, "exclusiveMaximum")
     if exclusive_max is not None:
         meta = _build_constraint_meta(
-            contract_id, field_name, "exclusive_max",
+            contract_id,
+            field_name,
+            "exclusive_max",
             f"{dn} must be strictly less than {exclusive_max}",
             f"{dn} value must be strictly less than {exclusive_max}",
             "conformity",
@@ -381,9 +411,12 @@ def add_field_expectations(
     if pattern is not None:
         expectations.append(
             to_column_regex_exp(
-                field_name, pattern,
+                field_name,
+                pattern,
                 _build_constraint_meta(
-                    contract_id, field_name, "pattern_match",
+                    contract_id,
+                    field_name,
+                    "pattern_match",
                     f"{dn} must match pattern {pattern}",
                     f"{dn} values must match the pattern {pattern}",
                     "conformity",
@@ -398,9 +431,12 @@ def add_field_expectations(
         if regex:
             expectations.append(
                 to_column_regex_exp(
-                    field_name, regex,
+                    field_name,
+                    regex,
                     _build_constraint_meta(
-                        contract_id, field_name, "format_check",
+                        contract_id,
+                        field_name,
+                        "format_check",
                         f"{dn} must be a valid {format_val}",
                         f"{dn} values must be in {format_val} format",
                         "conformity",
@@ -413,9 +449,12 @@ def add_field_expectations(
     if enum_values is not None and len(enum_values) != 0:
         expectations.append(
             to_column_enum_exp(
-                field_name, enum_values,
+                field_name,
+                enum_values,
                 _build_constraint_meta(
-                    contract_id, field_name, "enum_values",
+                    contract_id,
+                    field_name,
+                    "enum_values",
                     f"{dn} must belong to allowed values",
                     f"{dn} must be in the set of allowed values",
                     "conformity",
@@ -561,4 +600,3 @@ def get_quality_checks(
             }
             quality_specification.append(expectation)
     return quality_specification
-

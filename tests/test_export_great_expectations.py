@@ -271,7 +271,10 @@ def expected_spark_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "order_id"},
-                "meta": {"expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled", **_not_null("order_id")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled",
+                    **_not_null("order_id"),
+                },
             },
             {
                 "type": "expect_column_values_to_be_of_type",
@@ -287,7 +290,10 @@ def expected_spark_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "processed_timestamp"},
-                "meta": {"expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled", **_not_null("processed_timestamp")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled",
+                    **_not_null("processed_timestamp"),
+                },
             },
         ],
         "meta": {},
@@ -327,7 +333,10 @@ def expected_pandas_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "order_id"},
-                "meta": {"expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled", **_not_null("order_id")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled",
+                    **_not_null("order_id"),
+                },
             },
             {
                 "type": "expect_column_values_to_be_of_type",
@@ -343,7 +352,10 @@ def expected_pandas_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "processed_timestamp"},
-                "meta": {"expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled", **_not_null("processed_timestamp")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled",
+                    **_not_null("processed_timestamp"),
+                },
             },
         ],
         "meta": {},
@@ -383,7 +395,10 @@ def expected_sql_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "order_id"},
-                "meta": {"expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled", **_not_null("order_id")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled",
+                    **_not_null("order_id"),
+                },
             },
             {
                 "type": "expect_column_values_to_be_of_type",
@@ -399,7 +414,10 @@ def expected_sql_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "processed_timestamp"},
-                "meta": {"expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled", **_not_null("processed_timestamp")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled",
+                    **_not_null("processed_timestamp"),
+                },
             },
         ],
         "meta": {},
@@ -439,7 +457,10 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "order_id"},
-                "meta": {"expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled", **_not_null("order_id")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled",
+                    **_not_null("order_id"),
+                },
             },
             {
                 "type": "expect_column_values_to_be_of_type",
@@ -458,7 +479,10 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "processed_timestamp"},
-                "meta": {"expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled", **_not_null("processed_timestamp")},
+                "meta": {
+                    "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_filled",
+                    **_not_null("processed_timestamp"),
+                },
             },
         ],
         "meta": {},
@@ -626,20 +650,36 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
 
     def _sk(text: str) -> str:
         import re as _re
+
         r = _re.sub(r"[^a-z0-9_]", "_", text.strip().lower())
         return _re.sub(r"_+", "_", r).strip("_")
 
     def _col_type(col, dn, t):
-        return {"expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be of type ' + t)}", "rule_location": "quality_column",
-                "name": f"{dn} must be of type {t}", "description": f"{dn} must be of type {t}", "dimension": "conformity"}
+        return {
+            "expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be of type ' + t)}",
+            "rule_location": "quality_column",
+            "name": f"{dn} must be of type {t}",
+            "description": f"{dn} must be of type {t}",
+            "dimension": "conformity",
+        }
 
     def _not_null(col, dn):
-        return {"expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be filled')}", "rule_location": "quality_column",
-                "name": f"{dn} must be filled", "description": f"{dn} must be not null values", "dimension": "completeness"}
+        return {
+            "expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be filled')}",
+            "rule_location": "quality_column",
+            "name": f"{dn} must be filled",
+            "description": f"{dn} must be not null values",
+            "dimension": "completeness",
+        }
 
     def _unique_meta(col, dn):
-        return {"expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be unique')}", "rule_location": "quality_column",
-                "name": f"{dn} must be unique", "description": f"{dn} must contain unique values", "dimension": "uniqueness"}
+        return {
+            "expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be unique')}",
+            "rule_location": "quality_column",
+            "name": f"{dn} must be unique",
+            "description": f"{dn} must contain unique values",
+            "dimension": "uniqueness",
+        }
 
     # order_id has businessName "Order ID" from the $ref definition title
     oid = "Order ID"
@@ -648,44 +688,93 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
         "name": "orders.1.0.0",
         "expectations": [
             # order_id: text, required, unique, format=uuid
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "order_id", "type_": "text"},
-             "meta": _col_type("order_id", oid, "text")},
-            {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "order_id"},
-             "meta": _not_null("order_id", oid)},
-            {"type": "expect_column_values_to_be_unique", "kwargs": {"column": "order_id"},
-             "meta": _unique_meta("order_id", oid)},
-            {"type": "expect_column_values_to_match_regex", "kwargs": {"column": "order_id", "regex": _uuid_regex},
-             "meta": {"expectation_id": f"{_cid}.order_id.{_sk(oid + ' must be a valid uuid')}", "rule_location": "quality_column",
-                      "name": f"{oid} must be a valid uuid", "description": f"{oid} values must be in uuid format",
-                      "dimension": "conformity"}},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "text"},
+                "meta": _col_type("order_id", oid, "text"),
+            },
+            {
+                "type": "expect_column_values_to_not_be_null",
+                "kwargs": {"column": "order_id"},
+                "meta": _not_null("order_id", oid),
+            },
+            {
+                "type": "expect_column_values_to_be_unique",
+                "kwargs": {"column": "order_id"},
+                "meta": _unique_meta("order_id", oid),
+            },
+            {
+                "type": "expect_column_values_to_match_regex",
+                "kwargs": {"column": "order_id", "regex": _uuid_regex},
+                "meta": {
+                    "expectation_id": f"{_cid}.order_id.{_sk(oid + ' must be a valid uuid')}",
+                    "rule_location": "quality_column",
+                    "name": f"{oid} must be a valid uuid",
+                    "description": f"{oid} values must be in uuid format",
+                    "dimension": "conformity",
+                },
+            },
             # order_timestamp: timestamp, required
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "order_timestamp", "type_": "timestamp"},
-             "meta": _col_type("order_timestamp", "order_timestamp", "timestamp")},
-            {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "order_timestamp"},
-             "meta": _not_null("order_timestamp", "order_timestamp")},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_timestamp", "type_": "timestamp"},
+                "meta": _col_type("order_timestamp", "order_timestamp", "timestamp"),
+            },
+            {
+                "type": "expect_column_values_to_not_be_null",
+                "kwargs": {"column": "order_timestamp"},
+                "meta": _not_null("order_timestamp", "order_timestamp"),
+            },
             # order_total: long, required
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "order_total", "type_": "long"},
-             "meta": _col_type("order_total", "order_total", "long")},
-            {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "order_total"},
-             "meta": _not_null("order_total", "order_total")},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_total", "type_": "long"},
+                "meta": _col_type("order_total", "order_total", "long"),
+            },
+            {
+                "type": "expect_column_values_to_not_be_null",
+                "kwargs": {"column": "order_total"},
+                "meta": _not_null("order_total", "order_total"),
+            },
             # customer_id: text, minLength+maxLength
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "customer_id", "type_": "text"},
-             "meta": _col_type("customer_id", "customer_id", "text")},
-            {"type": "expect_column_value_lengths_to_be_between",
-             "kwargs": {"column": "customer_id", "min_value": 10, "max_value": 20},
-             "meta": {"expectation_id": f"{_cid}.customer_id.{_sk('customer_id length must be between 10 and 20')}", "rule_location": "quality_column",
-                      "name": "customer_id length must be between 10 and 20",
-                      "description": "customer_id length must be between 10 and 20", "dimension": "conformity"}},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "customer_id", "type_": "text"},
+                "meta": _col_type("customer_id", "customer_id", "text"),
+            },
+            {
+                "type": "expect_column_value_lengths_to_be_between",
+                "kwargs": {"column": "customer_id", "min_value": 10, "max_value": 20},
+                "meta": {
+                    "expectation_id": f"{_cid}.customer_id.{_sk('customer_id length must be between 10 and 20')}",
+                    "rule_location": "quality_column",
+                    "name": "customer_id length must be between 10 and 20",
+                    "description": "customer_id length must be between 10 and 20",
+                    "dimension": "conformity",
+                },
+            },
             # customer_email_address: text, required, format=email
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "customer_email_address", "type_": "text"},
-             "meta": _col_type("customer_email_address", "customer_email_address", "text")},
-            {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "customer_email_address"},
-             "meta": _not_null("customer_email_address", "customer_email_address")},
-            {"type": "expect_column_values_to_match_regex",
-             "kwargs": {"column": "customer_email_address", "regex": _email_regex},
-             "meta": {"expectation_id": f"{_cid}.customer_email_address.{_sk('customer_email_address must be a valid email')}", "rule_location": "quality_column",
-                      "name": "customer_email_address must be a valid email",
-                      "description": "customer_email_address values must be in email format", "dimension": "conformity"}},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "customer_email_address", "type_": "text"},
+                "meta": _col_type("customer_email_address", "customer_email_address", "text"),
+            },
+            {
+                "type": "expect_column_values_to_not_be_null",
+                "kwargs": {"column": "customer_email_address"},
+                "meta": _not_null("customer_email_address", "customer_email_address"),
+            },
+            {
+                "type": "expect_column_values_to_match_regex",
+                "kwargs": {"column": "customer_email_address", "regex": _email_regex},
+                "meta": {
+                    "expectation_id": f"{_cid}.customer_email_address.{_sk('customer_email_address must be a valid email')}",
+                    "rule_location": "quality_column",
+                    "name": "customer_email_address must be a valid email",
+                    "description": "customer_email_address values must be in email format",
+                    "dimension": "conformity",
+                },
+            },
         ],
         "meta": {},
     }
@@ -697,28 +786,55 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
         "name": "line_items.1.0.0",
         "expectations": [
             # lines_item_id: text, required, unique
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "lines_item_id", "type_": "text"},
-             "meta": _col_type("lines_item_id", "lines_item_id", "text")},
-            {"type": "expect_column_values_to_not_be_null", "kwargs": {"column": "lines_item_id"},
-             "meta": _not_null("lines_item_id", "lines_item_id")},
-            {"type": "expect_column_values_to_be_unique", "kwargs": {"column": "lines_item_id"},
-             "meta": _unique_meta("lines_item_id", "lines_item_id")},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "lines_item_id", "type_": "text"},
+                "meta": _col_type("lines_item_id", "lines_item_id", "text"),
+            },
+            {
+                "type": "expect_column_values_to_not_be_null",
+                "kwargs": {"column": "lines_item_id"},
+                "meta": _not_null("lines_item_id", "lines_item_id"),
+            },
+            {
+                "type": "expect_column_values_to_be_unique",
+                "kwargs": {"column": "lines_item_id"},
+                "meta": _unique_meta("lines_item_id", "lines_item_id"),
+            },
             # order_id: text, format=uuid (from definition ref)
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "order_id", "type_": "text"},
-             "meta": _col_type("order_id", oid, "text")},
-            {"type": "expect_column_values_to_match_regex", "kwargs": {"column": "order_id", "regex": _uuid_regex},
-             "meta": {"expectation_id": f"{_cid}.order_id.{_sk(oid + ' must be a valid uuid')}", "rule_location": "quality_column",
-                      "name": f"{oid} must be a valid uuid", "description": f"{oid} values must be in uuid format",
-                      "dimension": "conformity"}},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "order_id", "type_": "text"},
+                "meta": _col_type("order_id", oid, "text"),
+            },
+            {
+                "type": "expect_column_values_to_match_regex",
+                "kwargs": {"column": "order_id", "regex": _uuid_regex},
+                "meta": {
+                    "expectation_id": f"{_cid}.order_id.{_sk(oid + ' must be a valid uuid')}",
+                    "rule_location": "quality_column",
+                    "name": f"{oid} must be a valid uuid",
+                    "description": f"{oid} values must be in uuid format",
+                    "dimension": "conformity",
+                },
+            },
             # sku: text, pattern from definition ref
-            {"type": "expect_column_values_to_be_of_type", "kwargs": {"column": "sku", "type_": "text"},
-             "meta": _col_type("sku", sku_dn, "text")},
-            {"type": "expect_column_values_to_match_regex",
-             "kwargs": {"column": "sku", "regex": "^[A-Za-z0-9]{8,14}$"},
-             "meta": {"expectation_id": f"{_cid}.sku.{_sk(sku_dn + ' must match pattern ^[A-Za-z0-9]{8,14}$')}", "rule_location": "quality_column",
-                      "name": f"{sku_dn} must match pattern ^[A-Za-z0-9]{{8,14}}$",
-                      "description": f"{sku_dn} values must match the pattern ^[A-Za-z0-9]{{8,14}}$",
-                      "dimension": "conformity"}},
+            {
+                "type": "expect_column_values_to_be_of_type",
+                "kwargs": {"column": "sku", "type_": "text"},
+                "meta": _col_type("sku", sku_dn, "text"),
+            },
+            {
+                "type": "expect_column_values_to_match_regex",
+                "kwargs": {"column": "sku", "regex": "^[A-Za-z0-9]{8,14}$"},
+                "meta": {
+                    "expectation_id": f"{_cid}.sku.{_sk(sku_dn + ' must match pattern ^[A-Za-z0-9]{8,14}$')}",
+                    "rule_location": "quality_column",
+                    "name": f"{sku_dn} must match pattern ^[A-Za-z0-9]{{8,14}}$",
+                    "description": f"{sku_dn} values must match the pattern ^[A-Za-z0-9]{{8,14}}$",
+                    "dimension": "conformity",
+                },
+            },
         ],
         "meta": {},
     }
@@ -971,18 +1087,22 @@ def test_primary_key_generates_not_null_and_unique(data_contract_all_constraints
     """primaryKey: true must generate both NOT_NULL and UNIQUE expectations; standalone required/unique are suppressed."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     pk_not_null = next(
-        e for e in result["expectations"]
+        e
+        for e in result["expectations"]
         if e["type"] == "expect_column_values_to_not_be_null"
-        and e.get("meta", {}).get("expectation_id") == "test-all-constraints.product_id.product_id_must_be_filled_primary_key"
+        and e.get("meta", {}).get("expectation_id")
+        == "test-all-constraints.product_id.product_id_must_be_filled_primary_key"
     )
     assert pk_not_null["meta"]["rule_location"] == "quality_column"
     assert pk_not_null["meta"]["dimension"] == "completeness"
     assert "must be filled (primary key)" in pk_not_null["meta"]["name"]
 
     pk_unique = next(
-        e for e in result["expectations"]
+        e
+        for e in result["expectations"]
         if e["type"] == "expect_column_values_to_be_unique"
-        and e.get("meta", {}).get("expectation_id") == "test-all-constraints.product_id.product_id_must_be_unique_primary_key"
+        and e.get("meta", {}).get("expectation_id")
+        == "test-all-constraints.product_id.product_id_must_be_unique_primary_key"
     )
     assert pk_unique["meta"]["dimension"] == "uniqueness"
 
@@ -996,7 +1116,8 @@ def test_required_generates_not_null(data_contract_all_constraints: OpenDataCont
     """required: true must generate a NOT_NULL expectation using businessName or column name."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     required_not_null = next(
-        e for e in result["expectations"]
+        e
+        for e in result["expectations"]
         if e["type"] == "expect_column_values_to_not_be_null"
         and e.get("meta", {}).get("expectation_id") == "test-all-constraints.email.email_must_be_filled"
     )
@@ -1011,9 +1132,11 @@ def test_unique_generates_unique_expectation(data_contract_all_constraints: Open
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     # product_id has primaryKey=true so it gets primary_key_unique, not standalone unique
     unique_exp = next(
-        e for e in result["expectations"]
+        e
+        for e in result["expectations"]
         if e["type"] == "expect_column_values_to_be_unique"
-        and e.get("meta", {}).get("expectation_id") == "test-all-constraints.product_id.product_id_must_be_unique_primary_key"
+        and e.get("meta", {}).get("expectation_id")
+        == "test-all-constraints.product_id.product_id_must_be_unique_primary_key"
     )
     assert unique_exp["meta"]["dimension"] == "uniqueness"
     assert unique_exp["meta"]["rule_location"] == "quality_column"
@@ -1024,13 +1147,17 @@ def test_string_length_range(data_contract_all_constraints: OpenDataContractStan
     """minLength+maxLength must produce a single length_range expectation with human-readable meta."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     length_exp = next(
-        e for e in result["expectations"]
+        e
+        for e in result["expectations"]
         if e["type"] == "expect_column_value_lengths_to_be_between"
         and e.get("kwargs", {}).get("column") == "product_id"
     )
     assert length_exp["kwargs"]["min_value"] == 5
     assert length_exp["kwargs"]["max_value"] == 20
-    assert length_exp["meta"]["expectation_id"] == "test-all-constraints.product_id.product_id_length_must_be_between_5_and_20"
+    assert (
+        length_exp["meta"]["expectation_id"]
+        == "test-all-constraints.product_id.product_id_length_must_be_between_5_and_20"
+    )
     assert length_exp["meta"]["dimension"] == "conformity"
     assert "length must be between 5 and 20" in length_exp["meta"]["name"]
 
@@ -1039,12 +1166,14 @@ def test_string_pattern(data_contract_all_constraints: OpenDataContractStandard)
     """pattern must generate a regex expectation with human-readable meta."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     regex_exp = next(
-        e for e in result["expectations"]
-        if e["type"] == "expect_column_values_to_match_regex"
-        and e.get("kwargs", {}).get("column") == "product_id"
+        e
+        for e in result["expectations"]
+        if e["type"] == "expect_column_values_to_match_regex" and e.get("kwargs", {}).get("column") == "product_id"
     )
     assert regex_exp["kwargs"]["regex"] == "^PRD-[0-9]+$"
-    assert regex_exp["meta"]["expectation_id"] == "test-all-constraints.product_id.product_id_must_match_pattern_prd_0_9"
+    assert (
+        regex_exp["meta"]["expectation_id"] == "test-all-constraints.product_id.product_id_must_match_pattern_prd_0_9"
+    )
     assert regex_exp["meta"]["dimension"] == "conformity"
     assert "must match pattern" in regex_exp["meta"]["name"]
 
@@ -1053,9 +1182,9 @@ def test_string_format_email(data_contract_all_constraints: OpenDataContractStan
     """format: email must generate a regex expectation with human-readable name."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     email_exp = next(
-        e for e in result["expectations"]
-        if e["type"] == "expect_column_values_to_match_regex"
-        and e.get("kwargs", {}).get("column") == "email"
+        e
+        for e in result["expectations"]
+        if e["type"] == "expect_column_values_to_match_regex" and e.get("kwargs", {}).get("column") == "email"
     )
     assert "@" in email_exp["kwargs"]["regex"]
     assert email_exp["meta"]["expectation_id"] == "test-all-constraints.email.email_must_be_a_valid_email"
@@ -1067,9 +1196,9 @@ def test_string_format_url(data_contract_all_constraints: OpenDataContractStanda
     """format: url must generate a regex expectation."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     url_exp = next(
-        e for e in result["expectations"]
-        if e["type"] == "expect_column_values_to_match_regex"
-        and e.get("kwargs", {}).get("column") == "website"
+        e
+        for e in result["expectations"]
+        if e["type"] == "expect_column_values_to_match_regex" and e.get("kwargs", {}).get("column") == "website"
     )
     assert url_exp["meta"]["expectation_id"] == "test-all-constraints.website.website_must_be_a_valid_url"
 
@@ -1078,10 +1207,12 @@ def test_numeric_value_range(data_contract_all_constraints: OpenDataContractStan
     """minimum+maximum must produce a single value_range expectation with human-readable meta."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     range_exp = next(
-        e for e in result["expectations"]
+        e
+        for e in result["expectations"]
         if e["type"] == "expect_column_values_to_be_between"
         and e.get("kwargs", {}).get("column") == "quantity"
-        and e.get("meta", {}).get("expectation_id") == "test-all-constraints.quantity.quantity_must_be_between_0_and_9999"
+        and e.get("meta", {}).get("expectation_id")
+        == "test-all-constraints.quantity.quantity_must_be_between_0_and_9999"
     )
     assert range_exp["kwargs"]["min_value"] == 0
     assert range_exp["kwargs"]["max_value"] == 9999
@@ -1094,16 +1225,20 @@ def test_exclusive_min_max(data_contract_all_constraints: OpenDataContractStanda
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
 
     excl_min = next(
-        e for e in result["expectations"]
-        if e.get("meta", {}).get("expectation_id") == "test-all-constraints.quantity.quantity_must_be_strictly_greater_than_1"
+        e
+        for e in result["expectations"]
+        if e.get("meta", {}).get("expectation_id")
+        == "test-all-constraints.quantity.quantity_must_be_strictly_greater_than_1"
     )
     assert excl_min["type"] == "expect_column_values_to_be_between"
     assert excl_min["kwargs"]["min_value"] == -1
     assert excl_min["meta"]["exclusive"] is True
 
     excl_max = next(
-        e for e in result["expectations"]
-        if e.get("meta", {}).get("expectation_id") == "test-all-constraints.quantity.quantity_must_be_strictly_less_than_10000"
+        e
+        for e in result["expectations"]
+        if e.get("meta", {}).get("expectation_id")
+        == "test-all-constraints.quantity.quantity_must_be_strictly_less_than_10000"
     )
     assert excl_max["kwargs"]["max_value"] == 10000
     assert excl_max["meta"]["exclusive"] is True
@@ -1113,9 +1248,9 @@ def test_enum_values(data_contract_all_constraints: OpenDataContractStandard):
     """enum in customProperties must generate an in_set expectation with human-readable meta."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     enum_exp = next(
-        e for e in result["expectations"]
-        if e["type"] == "expect_column_values_to_be_in_set"
-        and e.get("kwargs", {}).get("column") == "category"
+        e
+        for e in result["expectations"]
+        if e["type"] == "expect_column_values_to_be_in_set" and e.get("kwargs", {}).get("column") == "category"
     )
     assert set(enum_exp["kwargs"]["value_set"]) == {"electronics", "clothing", "food"}
     assert enum_exp["meta"]["expectation_id"] == "test-all-constraints.category.category_must_belong_to_allowed_values"
@@ -1127,22 +1262,22 @@ def test_date_value_range(data_contract_all_constraints: OpenDataContractStandar
     """minimum/maximum on date columns must produce a between expectation."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     date_exp = next(
-        e for e in result["expectations"]
-        if e["type"] == "expect_column_values_to_be_between"
-        and e.get("kwargs", {}).get("column") == "event_date"
+        e
+        for e in result["expectations"]
+        if e["type"] == "expect_column_values_to_be_between" and e.get("kwargs", {}).get("column") == "event_date"
     )
     assert date_exp["kwargs"]["min_value"] == "2020-01-01"
     assert date_exp["kwargs"]["max_value"] == "2030-12-31"
-    assert date_exp["meta"]["expectation_id"] == "test-all-constraints.event_date.event_date_must_be_between_2020_01_01_and_2030_12_31"
+    assert (
+        date_exp["meta"]["expectation_id"]
+        == "test-all-constraints.event_date.event_date_must_be_between_2020_01_01_and_2030_12_31"
+    )
 
 
 def test_table_quality_enriched_meta(data_contract_all_constraints: OpenDataContractStandard):
     """Table-level quality blocks must have enriched meta with rule_location=quality_table."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
-    row_count_exp = next(
-        e for e in result["expectations"]
-        if e["type"] == "expect_table_row_count_to_be_between"
-    )
+    row_count_exp = next(e for e in result["expectations"] if e["type"] == "expect_table_row_count_to_be_between")
     assert row_count_exp["meta"]["rule_location"] == "quality_table"
     assert row_count_exp["meta"]["expectation_id"] == "test-all-constraints.row_count_check"
     assert row_count_exp["kwargs"]["min_value"] == 1
@@ -1152,10 +1287,7 @@ def test_table_quality_enriched_meta(data_contract_all_constraints: OpenDataCont
 def test_quality_meta_custom_properties(data_contract_quality_meta: OpenDataContractStandard):
     """customProperties in quality blocks must be flattened into the expectation meta."""
     result = json.loads(to_great_expectations(data_contract_quality_meta, "orders"))
-    status_exp = next(
-        e for e in result["expectations"]
-        if e["type"] == "expect_column_values_to_be_in_set"
-    )
+    status_exp = next(e for e in result["expectations"] if e["type"] == "expect_column_values_to_be_in_set")
     assert status_exp["meta"]["ruleWeight"] == 10
     assert status_exp["meta"]["businessOwner"] == "revenue-team"
     assert status_exp["meta"]["expectation_id"] == "test-quality-meta.subscription_status.subscription_status_values"
@@ -1177,6 +1309,7 @@ def test_column_not_duplicated_outside_kwargs(data_contract_quality_meta: OpenDa
 def test_quality_column_already_in_kwargs_not_duplicated():
     """When column is already provided in quality kwargs, it must not be added again."""
     from open_data_contract_standard.model import OpenDataContractStandard
+
     yaml_content = """
 kind: DataContract
 apiVersion: v3.1.0
@@ -1200,6 +1333,7 @@ schema:
 """
     import os
     import tempfile
+
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(yaml_content)
         path = f.name
@@ -1217,6 +1351,7 @@ schema:
 def test_expectation_id_uses_contract_id():
     """The expectation_id must always be prefixed with the contract's id field."""
     from open_data_contract_standard.model import OpenDataContractStandard
+
     yaml_content = """
 kind: DataContract
 apiVersion: v3.1.0
@@ -1231,6 +1366,7 @@ schema:
 """
     import os
     import tempfile
+
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         f.write(yaml_content)
         path = f.name
@@ -1241,4 +1377,3 @@ schema:
         assert not_null_exp["meta"]["expectation_id"].startswith("my-special-contract-id.")
     finally:
         os.unlink(path)
-
