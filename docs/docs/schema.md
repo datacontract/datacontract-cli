@@ -29,6 +29,8 @@ datacontract test --checks schema datacontract.yaml
 | `logicalTypeOptions.exclusiveMinimum` / `exclusiveMaximum` | property | Value within bounds (exclusive) |
 | `logicalTypeOptions.pattern` | property | Value matches the regular expression |
 | `logicalTypeOptions.enum` | property | Value is one of the listed values |
+| `logicalTypeOptions.minItems` / `maxItems` | array property | Number of elements within bounds |
+| `logicalTypeOptions.uniqueItems` | array property | Elements of the array are distinct |
 | `quality` | schema, property | See [Define your Quality Rules](./quality-rules/index.md) |
 
 A contract that uses all of them:
@@ -159,6 +161,10 @@ These are common sources of confusion. They are valid ODCS and appear in exports
 - **`logicalTypeOptions.format`** (`email`, `uuid`, `uri`, …) — use `pattern` for an enforceable equivalent.
 - **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties`. `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
 - **Schema-level attributes** other than `name`, `physicalName`, `properties`, and `quality`.
+
+The array options measure the elements of one row's array. If the column turns
+out not to be an array, the check reports an error rather than passing: a
+constraint that cannot be measured is not a constraint that holds.
 
 Anything beyond this list that you want verified belongs in a [quality rule](./quality-rules/index.md) — a `type: library` metric for the common cases, or `type: sql` for arbitrary expressions.
 
