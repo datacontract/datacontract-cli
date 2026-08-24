@@ -61,9 +61,7 @@ def test_diagnostics_passing_check_reports_zero_fraction():
 def test_diagnostics_duplicate_and_present():
     run = DataContract(data_contract_file="fixtures/diagnostics/datacontract.yaml").test()
 
-    # One order_id occurs twice, so one key value is duplicated and two of the
-    # five rows are: the threshold is compared against the key count, and the row
-    # count is what is reported as failed.
+    # One order_id occurs twice: one duplicated key value spanning two of the five rows.
     unique = _find(run, "field_unique", "order_id")
     assert unique.result == ResultEnum.failed
     assert unique.diagnostics == {

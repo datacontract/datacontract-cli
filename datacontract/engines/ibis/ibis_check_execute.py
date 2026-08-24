@@ -13,6 +13,7 @@ import logging
 import re
 import uuid
 from collections import defaultdict
+from functools import cache
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
@@ -264,15 +265,12 @@ def _run_model(
             if not specs:
                 return
 
-    # The model's row count, computed at most once and only if a check needs it as
-    # a denominator. The batched aggregation reads its own within the same query.
-    row_counts: List[int] = []
-
+    # Read at most once, and only for a check that needs a denominator; the batched
+    # aggregation reads its own row count within the same query.
+    @cache
     def model_row_count() -> int:
-        if not row_counts:
-            rc = t.count().execute()
-            row_counts.append(0 if rc is None else int(rc))
-        return row_counts[0]
+        rc = t.count().execute()
+        return 0 if rc is None else int(rc)
 
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
@@ -664,11 +662,8 @@ def _constraint_info(spec: CheckSpec) -> dict:
 # dedicated check runners
 # ---------------------------------------------------------------------------
 def _run_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
-    """Count the duplicated key values, and the rows they cost.
-
-    The key count is what the threshold compares against; the row count is what is
-    reported as failed, so it can be read against the model's row count.
-    """
+    """The threshold is compared against the duplicated key count; the rows those
+    keys span are what is reported as failed."""
     import pandas as pd
 
     cols = [_resolve_col(columns, c) for c in (spec.columns or [spec.field])]

@@ -106,11 +106,8 @@ def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: b
 
 
 def quality_definition_yaml(quality: DataQuality) -> str:
-    """The quality rule as YAML, as the CLI understood it.
-
-    Not the author's text: ODCS keys the model does not know are dropped when the
-    contract is parsed, and comments with them.
-    """
+    """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
+    know are dropped, and comments with them."""
     return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
 
 

@@ -1,9 +1,4 @@
-"""What a check records about the contract element it was derived from.
-
-An executed check carries the dimension it measures and, where a quality rule
-declared it, that rule as YAML -- so a test result can be read back against what
-the contract asked for.
-"""
+"""What a check records about the contract element it was derived from."""
 
 from open_data_contract_standard.model import OpenDataContractStandard
 
@@ -67,8 +62,6 @@ def test_a_check_from_a_quality_rule_carries_the_rule_it_came_from():
 
 
 def test_a_schema_check_carries_the_dimension_it_measures_but_no_rule():
-    """No rule declared it, so there is no definition to show -- but it still
-    measures a dimension, and is selectable by it."""
     check = _stubs()["field_required"]
 
     assert check.dimension == "completeness"
