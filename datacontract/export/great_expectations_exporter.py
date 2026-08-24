@@ -136,18 +136,18 @@ def _to_snake_case(text: str) -> str:
 
 
 def _display_name(prop: SchemaProperty, field_name: str) -> str:
-    """ "Return businessName when set (and not 'NoBV'), else the column name, for use in human-readable meta.
-    'NoBV' is a placeholder for 'No Business Value' and is ignored in favor of the column name.
+    """Always return the column name for generating human-readable expectation names.
+
+    businessName is ignored to ensure consistent, traceable naming based on
+    the actual database column name.
 
     Args:
-        prop: Schema property that may define a business name.
-        field_name: Technical field name used as a fallback.
+        prop: Schema property (businessName is ignored).
+        field_name: Technical field name to use for expectation naming.
 
     Returns:
-        str: Business name when defined; otherwise, ``field_name``.
+        str: The column field name.
     """
-    if prop.businessName and prop.businessName.lower() != "nobv":
-        return prop.businessName
     return field_name
 
 
