@@ -13,6 +13,7 @@ import logging
 import re
 from typing import List, Optional
 
+import yaml
 from open_data_contract_standard.model import (
     DataQuality,
     OpenDataContractStandard,
@@ -102,6 +103,12 @@ def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: b
         expected_type_label=_declared_type_label(prop, physical),
         expected_schema_property=prop,
     )
+
+
+def quality_definition_yaml(quality: DataQuality) -> str:
+    """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
+    know are dropped, and comments with them."""
+    return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -591,6 +598,7 @@ def _quality_checks(
         for check in rule_checks:
             check.quality_id = quality.id
             check.tags = list(quality.tags) if quality.tags else None
+            check.quality_definition = quality_definition_yaml(quality)
         checks.extend(rule_checks)
     return checks
 
@@ -853,6 +861,7 @@ def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         model=model,
         field=field,
         metric=MetricType.FRESHNESS,
+        quality_id=sla.id,
         seconds=seconds,
     )
 
@@ -878,6 +887,7 @@ def _retention_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         model=model,
         field=field,
         metric=MetricType.RETENTION,
+        quality_id=sla.id,
         seconds=seconds,
     )
 

@@ -1,3 +1,4 @@
+import json
 from urllib.parse import urlparse
 
 import requests
@@ -48,6 +49,54 @@ def _host_and_port(url: str) -> tuple[str | None, int | None]:
         return None, None
 
 
+# The check fields the `/api/test-results` API reads under a different name than the
+# CLI writes them. Both names are published.
+_CHECK_RENAMED = {
+    "qualityId": "qualityReference",
+    "category": "qualityCategory",
+    "qualityDefinition": "qualityCheckDefinition",
+}
+
+# The metrics whose value counts bad rows. `custom_sql` is not one: its value is
+# whatever the author's query returned.
+_FAILED_ROW_METRICS = ("missing_count", "invalid_count", "duplicate_count")
+
+
+def to_test_results_payload(run: Run) -> dict:
+    """`run` as the `/api/test-results` API expects it: the renamed check fields and the
+    row counts from `diagnostics`, added on top of the dumped run."""
+    payload = json.loads(run.model_dump_json(exclude_none=True))
+    payload["id"] = str(run.runId)
+    payload["checks"] = [_to_check_payload(check) for check in payload.get("checks") or []]
+    return payload
+
+
+def _to_check_payload(check: dict) -> dict:
+    published = dict(check)
+    published.update({name: check[old] for old, name in _CHECK_RENAMED.items() if old in check})
+    if check.get("failedSamples"):
+        published["failedSamples"] = [json.dumps(row) for row in check["failedSamples"]]
+    published.update(_row_counts(check.get("diagnostics") or {}))
+    return {name: value for name, value in published.items() if value is not None}
+
+
+def _row_counts(diagnostics: dict) -> dict:
+    """The failed and total row counts a check measured, both in rows or neither.
+
+    The API sums them across checks into a row-level quality score, so a count in any
+    other unit -- duplicated keys, an author's own query result -- is left out.
+    """
+    metric = diagnostics.get("metric")
+    if metric in _FAILED_ROW_METRICS:
+        return {
+            "failedNumber": diagnostics.get("failed_rows", diagnostics.get("value")),
+            "totalNumber": diagnostics.get("row_count"),
+        }
+    if metric == "row_count":
+        return {"totalNumber": diagnostics.get("value")}
+    return {}
+
+
 def publish_test_results_to_entropy_data(
     run: Run, publish_url: str, ssl_verification: bool, config: Config | None = None
 ) -> bool:
@@ -78,11 +127,9 @@ def publish_test_results_to_entropy_data(
         published_run = run.model_copy(
             update={"checks": [check for check in (run.checks or []) if check.result != ResultEnum.skipped]}
         )
-        request_body = published_run.model_dump_json()
-        # print("Request Body:", request_body)
         response = requests.post(
             url,
-            data=request_body,
+            json=to_test_results_payload(published_run),
             headers=headers,
             verify=ssl_verification,
         )

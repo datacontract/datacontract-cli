@@ -10,6 +10,7 @@ if typing.TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
 from datacontract.config import Config
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
@@ -183,6 +184,7 @@ class DataContract:
             run.checks.append(
                 Check(
                     type=e.type,
+                    dimension=default_dimension(e.type),
                     name=e.name,
                     result=e.result,
                     reason=e.reason,

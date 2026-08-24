@@ -286,3 +286,12 @@ def test_dimension_cli_spaces_after_comma():
         ["test", "--dimension", "completeness, uniqueness", "./fixtures/quality-dimensions/datacontract.yaml"],
     )
     assert result.exit_code == 0
+
+
+def test_a_json_schema_check_carries_the_conformity_dimension():
+    """Every check the engine emits shares the type "schema", so one dimension covers all."""
+    run = DataContract(data_contract_file="fixtures/local-json/datacontract.yaml").test()
+
+    schema_checks = [c for c in run.checks if c.engine == "jsonschema"]
+    assert schema_checks
+    assert all(c.dimension == "conformity" for c in schema_checks)
