@@ -1434,7 +1434,10 @@ schema:
             if e["type"] == "expect_column_values_to_not_be_null" and e["kwargs"]["column"] == "article_code"
         )
         assert article_code_not_null["meta"]["name"] == "article_code must be filled"
-        assert article_code_not_null["meta"]["expectation_id"] == "test-column-naming.article_code.article_code_must_be_filled"
+        assert (
+            article_code_not_null["meta"]["expectation_id"]
+            == "test-column-naming.article_code.article_code_must_be_filled"
+        )
 
         # Test 3: article_code unique should use column name (NoBV ignored)
         article_code_unique = next(
@@ -1443,7 +1446,10 @@ schema:
             if e["type"] == "expect_column_values_to_be_unique" and e["kwargs"]["column"] == "article_code"
         )
         assert article_code_unique["meta"]["name"] == "article_code must be unique"
-        assert article_code_unique["meta"]["expectation_id"] == "test-column-naming.article_code.article_code_must_be_unique"
+        assert (
+            article_code_unique["meta"]["expectation_id"]
+            == "test-column-naming.article_code.article_code_must_be_unique"
+        )
 
         # Test 4: currency_rate with valid businessName should STILL use column name (businessName always ignored)
         currency_rate_type_exp = next(
@@ -1468,7 +1474,8 @@ schema:
         )
         assert currency_rate_not_null["meta"]["name"] == "currency_rate must be filled"
         assert (
-            currency_rate_not_null["meta"]["expectation_id"] == "test-column-naming.currency_rate.currency_rate_must_be_filled"
+            currency_rate_not_null["meta"]["expectation_id"]
+            == "test-column-naming.currency_rate.currency_rate_must_be_filled"
         )
 
         # Test 6: invoice_id with businessName "Rental Invoice Identifier" should use column name
