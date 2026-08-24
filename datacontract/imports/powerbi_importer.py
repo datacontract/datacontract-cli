@@ -74,7 +74,7 @@ class PowerBiImporter(Importer):
                     "Source file path is required for Power BI import. "
                     "Provide a path to a .pbit file, a .bim file, or a model.bim JSON file."
                 ),
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return import_powerbi_from_file(source_path=source)
 
@@ -92,7 +92,7 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
             type="import",
             name="powerbi import",
             reason=f"File not found: {source_path}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     suffix = path.suffix.lower()
@@ -105,7 +105,7 @@ def import_powerbi_from_file(source_path: str) -> OpenDataContractStandard:
             type="import",
             name="powerbi import",
             reason=(f"Unsupported file extension '{suffix}'. Supported formats: .pbit, .bim, .json"),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     return _build_odcs(bim, model_name=path.stem)
@@ -137,7 +137,7 @@ def _load_bim_from_pbit(pbit_path: Path) -> dict[str, Any]:
                         "the model as a .bim file using pbi-tools (https://pbi.tools) and "
                         "import that instead."
                     ),
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
             raw = zf.read(_ENTRY_NAME)
     except zipfile.BadZipFile as exc:
@@ -145,7 +145,7 @@ def _load_bim_from_pbit(pbit_path: Path) -> dict[str, Any]:
             type="import",
             name="powerbi import",
             reason=f"'{pbit_path.name}' is not a valid .pbit / ZIP file: {exc}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exc,
         )
 
@@ -158,7 +158,7 @@ def _load_bim_from_pbit(pbit_path: Path) -> dict[str, Any]:
             type="import",
             name="powerbi import",
             reason=f"Failed to parse DataModelSchema JSON: {exc}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exc,
         )
 
@@ -173,7 +173,7 @@ def _load_bim_from_json(bim_path: Path) -> dict[str, Any]:
             type="import",
             name="powerbi import",
             reason=f"Failed to read BIM file '{bim_path}': {exc}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exc,
         )
 

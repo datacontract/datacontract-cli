@@ -38,6 +38,8 @@ SERVER_OVERRIDE_OPTIONS = {
     "databricks_server_hostname": "host",
     "databricks_catalog": "catalog",
     "databricks_schema": "schema",
+    "duckdb_database": "database",
+    "duckdb_schema": "schema",
     "impala_host": "host",
     "impala_port": "port",
     "impala_database": "database",
@@ -129,6 +131,11 @@ class Config(BaseSettings):
     # overrides for the contract's servers block
     databricks_catalog: str | None = None
     databricks_schema: str | None = None
+
+    # duckdb
+    # overrides for the contract's servers block
+    duckdb_database: str | None = None
+    duckdb_schema: str | None = None
 
     # gcs
     gcs_key_id: str | None = None
@@ -348,6 +355,21 @@ class Config(BaseSettings):
             value = value.get_secret_value()
         return value
 
+    def option_source(self, field_name: str) -> str | None:
+        """Where ``get_<field_name>()`` takes its value from.
+
+        ``"request"`` when the value is set on this Config (a per-request header,
+        a config file, or a programmatic value), ``"env"`` when it falls back to
+        the process environment, and ``None`` when it is unset everywhere. Used to
+        keep a credential the server holds in its environment from being sent to a
+        host chosen by an untrusted caller.
+        """
+        if getattr(self, field_name) is not None:
+            return "request"
+        if os.environ.get(env_name(field_name, type(self).model_fields[field_name])) is not None:
+            return "env"
+        return None
+
     def _str_option(self, field_name: str, required: bool = False) -> str | None:
         value = self._raw_option(field_name)
         value = str(value) if value is not None else None
@@ -361,7 +383,7 @@ class Config(BaseSettings):
                 name=f"missing_env_{key}",
                 reason=f"Required configuration {key} is not set. Set the environment variable "
                 f"or pass it via DataContract(config=...) to connect to {server_type}.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return value
 
@@ -395,7 +417,7 @@ class Config(BaseSettings):
                 type="configuration",
                 name=f"invalid_{key}",
                 reason=f"{key} must be a whole number, got {value!r}.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
     def _bool_option(self, field_name: str, default: bool) -> bool:
@@ -607,6 +629,12 @@ class Config(BaseSettings):
 
     def get_postgres_password(self, required: bool = False) -> str | None:
         return self._str_option("postgres_password", required)
+
+    def get_duckdb_database(self, required: bool = False) -> str | None:
+        return self._str_option("duckdb_database", required)
+
+    def get_duckdb_schema(self, required: bool = False) -> str | None:
+        return self._str_option("duckdb_schema", required)
 
     def get_postgres_host(self, required: bool = False) -> str | None:
         return self._str_option("postgres_host", required)

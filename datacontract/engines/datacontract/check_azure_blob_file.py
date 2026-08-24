@@ -17,6 +17,8 @@ from open_data_contract_standard.model import (
 
 from datacontract.config import Config
 from datacontract.engines.checks.check_filter import CheckFilter
+from datacontract.engines.checks.create_checks import quality_definition_yaml
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -454,7 +456,7 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
             result="failed",
             name="azure-storage extra missing",
             reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exc,
         )
 
@@ -484,7 +486,7 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
                 result="failed",
                 name="azure-identity extra missing",
                 reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-                engine="datacontract",
+                engine="datacontract-cli",
                 original_exception=exc,
             )
         credential = ClientSecretCredential(
@@ -503,7 +505,7 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
             result="failed",
             name="azure-identity extra missing",
             reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=exc,
         )
     return BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
@@ -612,10 +614,11 @@ def _append_check(
     """
     quality_id = quality.id if quality is not None else None
     tags = list(quality.tags) if quality is not None and quality.tags else None
+    dimension = quality.dimension if quality is not None else None
     if not check_filter.matches(
         category=category,
         check_type=check_type,
-        dimension=quality.dimension if quality is not None else None,
+        dimension=dimension,
         quality_id=quality_id,
         tags=tags,
     ):
@@ -631,7 +634,9 @@ def _append_check(
             field=field,
             qualityId=quality_id,
             tags=tags,
-            engine="datacontract",
+            dimension=dimension or default_dimension(check_type),
+            qualityDefinition=quality_definition_yaml(quality) if quality is not None else None,
+            engine="datacontract-cli",
             language="python",
             result=result,
             reason=reason,

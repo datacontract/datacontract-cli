@@ -50,6 +50,7 @@ class ResultEnum(str, Enum):
     failed = "failed"
     error = "error"
     info = "info"
+    skipped = "skipped"
     unknown = "unknown"
 
 
@@ -85,20 +86,35 @@ class Check(BaseModel):
     qualityId: str | None = Field(
         default=None,
         validation_alias=AliasChoices("qualityId", "quality_id"),
-        description="The ODCS `quality.id` of the rule this check comes from, so it can be traced back "
-        "to (and re-run through `test --quality-id`) the rule that declared it. Absent for built-in checks.",
+        description="The ODCS `quality.id` of the rule this check comes from, or the `slaProperties` "
+        "id for a service level check, so it can be traced back to (and re-run through "
+        "`test --quality-id`) the declaration it came from. Absent for built-in schema checks.",
     )
     tags: list[str] | None = Field(
         default=None,
         description="The ODCS `quality.tags` of the rule this check comes from.",
     )
+    dimension: str | None = Field(
+        default=None,
+        description="The data quality dimension this check measures, either declared by the rule "
+        "(`quality.dimension`) or the one its check type measures.",
+        examples=["completeness"],
+    )
+    qualityDefinition: str | None = Field(
+        default=None,
+        description="The ODCS quality rule this check comes from, as YAML. Absent for checks that no rule declared.",
+    )
 
     engine: str | None = Field(
         default=None,
-        description="The engine that executed the check.",
-        examples=["soda"],
+        description="The engine that executed the check. By default one of datacontract-cli, jsonschema, or dbt.",
+        examples=["datacontract-cli"],
     )
-    language: str | None = Field(default=None, description="The language the check was expressed in.")
+    language: str | None = Field(
+        default=None,
+        description="The language the check was expressed in.",
+        examples=["sql"],
+    )
     implementation: str | None = Field(
         default=None,
         description="The check as it was handed to the engine, such as the generated SQL.",

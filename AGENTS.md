@@ -87,6 +87,10 @@ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 # to a specific version of the datacontract-editor npm package (latest if omitted)
 python update_editor_assets.py 0.1.10
 
+# Update the bundled ODCS Excel template (datacontract/templates/excel/, used by `datacontract export excel`)
+# from the open-data-contract-standard-excel-template repository
+python update_excel_template.py
+
 # Validate every example data contract under examples/ (also runs in CI)
 python lint_examples.py
 
@@ -104,9 +108,9 @@ python update_reference_types.py
 python update_config_options.py
 
 # Regenerate the whole docs Commands section from the CLI --help output, including one
-# sub-page per import/export/dbt subcommand. --check fails instead of writing (used by CI).
+# sub-page per import/export/dbt subcommand. The docs build and the docs tests run this
+# on their own, so run it by hand only to look at the output.
 python update_command_docs.py
-python update_command_docs.py --check
 ```
 
 ## Project Architecture
@@ -153,4 +157,4 @@ The project uses factory patterns for extensibility:
 - Follows PEP 8 style guidelines with some adjustments (120 character line length)
 - `CHANGELOG.md` entries should be one line each: what changed (user-facing), not how or why. Append the fixed issue, if exists, as `(#NNN)`. No details on mechanism, rationale, or edge cases.
 - The docs list every importer and exporter three times (sidebar, card grid, and the subcommand table on the generated `commands/import/index.md`), all alphabetical, enforced by `tests/test_docs_ordering.py`. The sidebar is ordered by the label it **renders**, not the file name — `Import: AWS Glue` belongs under A, not G.
-- `docs/docs/commands/` is **generated** from the CLI `--help` output by `update_command_docs.py` — never edit those pages by hand (`_category_.json`, which holds the section's position in the docs sidebar, is the only hand-written file there). `index.md` is generated too, and is the only page documenting the global options (`--version`, `--system-truststore`). Prose guides belong in `docs/docs/imports`, `exports`, or `testing`; each guide links to its generated command page and each command page links back. `tests/test_docs_commands.py` fails if either is stale.
+- `docs/docs/commands/` and `docs/docs/release-notes.md` are **generated** and **not committed** (see `.gitignore`) — the docs build regenerates them before every `npm start` and `npm run build`, so a changed help string or changelog entry can never leave a stale page behind for CI to trip over. The Commands section comes from the CLI `--help` output via `update_command_docs.py`; `docs/docs/commands/_category_.json`, which holds the section's position in the docs sidebar, is the only hand-written file there. `commands/index.md` is generated too, and is the only page documenting the global options (`--version`, `--system-truststore`). Prose guides belong in `docs/docs/imports`, `exports`, or `testing`; each guide links to its generated command page and each command page links back, which `tests/test_docs_commands.py` enforces (it generates the pages through the `command_docs` fixture in `tests/conftest.py`).

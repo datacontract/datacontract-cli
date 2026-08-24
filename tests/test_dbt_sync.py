@@ -87,6 +87,7 @@ def sync(
     profiles_dir: Optional[Path] = None,
     skip_tests: bool = False,
     prune: bool = False,
+    dry_run: bool = False,
 ) -> _SyncResult:
     """End-to-end orchestration helper for tests — mirrors what the CLI does."""
     if not skip_tests:
@@ -97,6 +98,7 @@ def sync(
         schema_name=schema_name,
         model_resolution=model_resolution,
         prune=prune,
+        dry_run=dry_run,
     )
     if skip_tests:
         gen.generation_run.log_info("Skipped `dbt test` (--skip-tests).")
@@ -996,6 +998,112 @@ def test_sync_with_no_resolvable_schemas_still_wipes_stale_artifacts(tmp_path: P
     assert not (project / GENERATED_MODELS_DIR).exists()  # legacy parallel-YAML dir is migrated away
 
 
+# ---------------------------------------------------------------------------
+# --dry-run
+# ---------------------------------------------------------------------------
+
+
+def test_sync_dry_run_creates_no_files(tmp_path: Path):
+    """`dry_run` reports the same plan as a real sync, but writes nothing to disk."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)  # no YAML entry → a real sync would create a sidecar + singular SQL
+
+    result = sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True, dry_run=True)
+
+    assert len(result.written_yaml) == 1
+    assert len(result.written_sql) == 5
+    for path in result.written_yaml + result.written_sql:
+        assert not path.exists()
+    assert not (project / "models" / "orders.yml").exists()
+    assert not (project / GENERATED_TESTS_DIR).exists()
+
+
+def test_sync_dry_run_does_not_modify_existing_yaml(tmp_path: Path):
+    """An in-place merge into a user's existing model entry is reported but not written."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    original_text = schema.read_text()
+
+    result = sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True, dry_run=True)
+
+    assert schema in result.written_yaml  # merge would have changed the file...
+    assert schema.read_text() == original_text  # ...but it was left untouched
+
+
+def test_sync_dry_run_preserves_stale_artifacts(tmp_path: Path):
+    """Stale generated files that a real sync would wipe are left in place under --dry-run."""
+    project = _copy_dbt_project(tmp_path)
+    stale_legacy = project / GENERATED_MODELS_DIR / "stale.yml"
+    stale_sql = project / GENERATED_TESTS_DIR / "empty_contract__stale.sql"
+    stale_legacy.parent.mkdir(parents=True, exist_ok=True)
+    stale_sql.parent.mkdir(parents=True, exist_ok=True)
+    stale_legacy.write_text("# stale")
+    stale_sql.write_text("-- stale")
+
+    empty_contract = tmp_path / "empty.odcs.yaml"
+    empty_contract.write_text(
+        "kind: DataContract\napiVersion: v3.1.0\nid: empty-contract\nname: Empty\nversion: 1.0.0\nstatus: active\n"
+    )
+
+    sync(contract=str(empty_contract), project_dir=project, skip_tests=True, dry_run=True)
+
+    assert stale_sql.exists()
+    assert stale_legacy.exists()
+
+
+def test_cli_dry_run_flag_writes_nothing(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["dbt", "sync", str(CONTRACT_PATH), "--project-dir", str(project), "--dry-run"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Would sync 1 model" in result.stdout
+    assert not (project / "models" / "orders.yml").exists()
+    assert not (project / GENERATED_TESTS_DIR).exists()
+
+
+def test_cli_no_dry_run_flag_writes_files(tmp_path: Path):
+    """`--no-dry-run` is the explicit-off form of the flag — behaves like a plain sync."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["dbt", "sync", str(CONTRACT_PATH), "--project-dir", str(project), "--no-dry-run"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Synced 1 model" in result.stdout
+    assert "Would sync" not in result.stdout
+    assert (project / "models" / "orders.yml").exists()
+    assert (project / GENERATED_TESTS_DIR).is_dir()
+
+
+def test_sync_no_dry_run_matches_default_behavior(tmp_path: Path):
+    """`dry_run=False` (the default) and an explicit `--no-dry-run` write identical files."""
+    project_default = _copy_dbt_project(tmp_path / "default")
+    _orders_model_sql(project_default)
+    project_explicit = _copy_dbt_project(tmp_path / "explicit")
+    _orders_model_sql(project_explicit)
+
+    result_default = sync(contract=str(CONTRACT_PATH), project_dir=project_default, skip_tests=True)
+    result_explicit = sync(contract=str(CONTRACT_PATH), project_dir=project_explicit, skip_tests=True, dry_run=False)
+
+    assert len(result_default.written_yaml) == len(result_explicit.written_yaml) == 1
+    assert len(result_default.written_sql) == len(result_explicit.written_sql) == 5
+    for path in result_default.written_yaml + result_default.written_sql:
+        assert path.exists()
+    for path in result_explicit.written_yaml + result_explicit.written_sql:
+        assert path.exists()
+
+
 def test_sync_missing_contract_raises(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     with pytest.raises(DataContractException, match="not found"):
@@ -1427,7 +1535,7 @@ def test_parse_run_results_maps_status_and_failures(tmp_path: Path):
     assert "configured to fail" in fail_check.reason
 
     statuses = {c.result.value for c in parsed.checks}
-    assert statuses == {"passed", "failed", "warning", "error", "info"}
+    assert statuses == {"passed", "failed", "warning", "error", "skipped"}
 
 
 def test_get_test_metadata_resolves_versioned_model_name():

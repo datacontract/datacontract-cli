@@ -3,10 +3,26 @@
 # Please see the documentation for all configuration options:
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
+#
+# Pull requests that only update development dependencies are merged
+# automatically once every check on them passes, see
+# .github/workflows/dependabot-auto-merge.yml.
+
 version: 2
 updates:
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+      time: "10:00"
+    labels:
+      - "dependencies"
+
+  # The hooks in .pre-commit-config.yaml. Their rev is pinned separately from
+  # the `ruff==` pin in pyproject.toml, so without this the hook drifts behind
+  # and starts reformatting what CI accepts.
+  - package-ecosystem: "pre-commit"
+    directory: "/"
     schedule:
       interval: "weekly"
       time: "10:00"

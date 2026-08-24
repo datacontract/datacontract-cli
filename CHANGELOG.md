@@ -7,7 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- New server type `duckdb` to test the tables inside a DuckDB database file (the file is opened read-only)
+- `postgresql` is accepted as the ODCS synonym of the `postgres` server type
+- `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
+- `datacontract import pydantic-model` reads the contract description from the module docstring
+- Test results report how many rows a check found bad out of the rows it read, plus the data quality dimension and the `quality` rule a check comes from
+
 ### Changed
+- `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
+- `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
+- **breaking:** the `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
+- A JSON Schema check that could not be run is reported as `skipped`, not `info`
+
+### Fixed
+- Test results published to Entropy Data no longer drop the quality rule id, category, rule definition and failed samples
+- Configuration options that override a server's location (`DATACONTRACT_BIGQUERY_PROJECT`, `DATACONTRACT_POSTGRES_SCHEMA`, and the like) now apply to the whole test run, not just to the connection
+- BigQuery: `DATACONTRACT_BIGQUERY_BILLING_PROJECT` no longer overrides the server's `project`, so tables are still read from the data project (#1358)
+- A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query
+- A `quality.type: sql` rule must be a read-only query; DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed, for every data source
+- `datacontract api`:
+  - refuses `servers[].type: local`, so a posted data contract cannot read the files of the server running it; set `DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` to allow it
+  - confines the DuckDB connection of a file-based server to the data locations the posted data contract declares
+  - refuses to send an environment-held data source credential to a host named by the posted contract, preventing credential exfiltration through a crafted `servers` section
+  - compares the `x-api-key` header in constant time to avoid a timing side channel
+- The Entropy Data API key is only sent to the Entropy Data host, no longer to any host a data contract URL or `--publish` URL points at; set `ENTROPY_DATA_HOST` for a self-hosted deployment
+- `datacontract export html` and `datacontract catalog` now HTML-escape data contract field values, closing a stored cross-site scripting hole
+- `datacontract export pydantic-model` exports the ODCS `timestamp` and `time` logical types as `datetime.datetime` and `datetime.time` instead of guessing from the physical type, which turned a `TIMESTAMPTZ` column into a `str`
+- `datacontract export pydantic-model` exports the ODCS `date` logical type as `datetime.date` instead of `datetime.datetime`
+- `datacontract import pydantic-model` maps `datetime.datetime` to the `timestamp` logical type and `datetime.time` to `time`
+- `datacontract test --publish` no longer fails for runs with skipped checks (skipped checks are omitted from the published test results)
+- `datacontract export dcs` exports a `pii` custom property as a boolean instead of the string `'True'`
+
+
+## [1.1.1] - 2026-08-14
+
+### Added
+- SQL quality rules support the `${dataset}`, `${project}`, `${catalog}`, and `${database}` placeholders for the server's values
+- `datacontract test --metadata-only` runs only checks that read the schema (field presence and types) and reports checks that read row values as skipped
+- `datacontract test --checks` accepts the ODCS terms `properties` and `slaProperties`, keeping `schema` and `servicelevel` as legacy aliases
+- Released Docker images are signed with cosign keyless signing, on Docker Hub and the Amazon ECR Public mirror; see [Installation](https://docs.datacontract.com/installation#verifying-the-image) for how to verify them
+- `datacontract import pydantic-model` creates a data contract from Pydantic models
+
+### Changed
+- `datacontract export excel` uses the ODCS Excel template bundled with the CLI instead of downloading it, so the export works offline; use `--template` for a custom template
 - The OpenAPI document of `datacontract api` reports the CLI version, describes every endpoint, parameter, and response model, and names its operations `testDataContract`, `lintDataContract`, `exportDataContract`, and `changelogBetweenDataContracts`
 - `DATACONTRACT_CLI_API_KEY` now also protects `POST /lint` and `POST /export`, which previously answered without an API key
 - Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
@@ -16,8 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` and `datacontract export sodacl` freshness and retention checks now honor the schema object's and property's `physicalName` (#1488)
+- `datacontract test` for API servers with `delimiter: array` no longer fails JSON schema validation with `data must be object` (#1495)
 - `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
+- `datacontract export pydantic-model` no longer emits an unparseable empty class for an object property without properties
 
 ## [1.1.0] - 2026-08-04
 

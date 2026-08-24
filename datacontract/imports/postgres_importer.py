@@ -79,7 +79,7 @@ class PostgresImporter(Importer):
                 type="source",
                 name="postgres import source",
                 reason="The host is required for the postgres import, e.g. --source localhost",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return import_postgres_from_connector(
             host=source,
@@ -104,7 +104,7 @@ def import_postgres_from_connector(
             type="source",
             name="postgres import database",
             reason="The database is required for the postgres import, e.g. --database postgres",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     port = int(port) if port else DEFAULT_PORT
@@ -126,7 +126,7 @@ def import_postgres_from_connector(
             result="failed",
             name="no tables found",
             reason=f"No tables found in schema '{schema}' of database '{database}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()
@@ -158,7 +158,7 @@ def postgres_connection(host: str, port: int, database: str, config: Optional[Co
             result="failed",
             name="postgres extra missing",
             reason="Install the extra datacontract-cli[postgres] to use postgres",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -188,7 +188,7 @@ def _fetch(connection, query: str, params: tuple, optional: bool = False) -> Lis
             result="failed",
             name="postgres catalog query failed",
             reason=f"Could not read the Postgres catalog: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

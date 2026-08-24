@@ -1,26 +1,13 @@
+# Only what CI also enforces. Generated docs are not committed, so nothing here
+# has to keep them in sync.
 repos:
+# Keep the rev on the version pinned as `ruff==` in pyproject.toml: a hook that
+# reformats what CI accepts is worse than no hook. Dependabot updates both.
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  # Ruff version.
-  rev: v0.14.3
+  rev: v0.16.4
   hooks:
     # Run the linter.
     - id: ruff
       args: [ --fix ]
     # Run the formatter.
     - id: ruff-format
-
-# Regenerate the committed generated docs, so CI never fails on stale ones.
-- repo: local
-  hooks:
-    - id: command-docs
-      name: Regenerate docs/docs/commands from the CLI --help output
-      entry: python update_command_docs.py
-      language: system
-      pass_filenames: false
-      files: ^(datacontract/|update_command_docs\.py$)
-    - id: release-notes
-      name: Regenerate docs/docs/release-notes.md from CHANGELOG.md
-      entry: node docs/scripts/generate-release-notes.mjs
-      language: system
-      pass_filenames: false
-      files: ^(CHANGELOG\.md|docs/scripts/generate-release-notes\.mjs)$

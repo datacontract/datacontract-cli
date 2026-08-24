@@ -123,7 +123,7 @@ def create_index_html(contracts, path):
         env = Environment(
             loader=package_loader,
             autoescape=select_autoescape(
-                enabled_extensions="html",
+                enabled_extensions=("html", "htm", "xml"),
                 default_for_string=True,
             ),
         )

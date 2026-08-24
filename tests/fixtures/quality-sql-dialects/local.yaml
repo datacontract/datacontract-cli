@@ -1,0 +1,43 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-local
+name: Orders quality rules (local)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a local server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: local
+    path: ./orders.json
+    format: json
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "Orders are tagged, using a duckdb list function"
+        query: |
+          SELECT count(*) FROM ${model} WHERE NOT list_contains(tags, 'pii')
+        mustBe: 0
+      - type: sql
+        description: "One row per order id, using duckdb QUALIFY"
+        query: |
+          SELECT count(*) FROM ${model} QUALIFY row_number() OVER (PARTITION BY order_id ORDER BY order_timestamp) > 1
+        mustBe: 0

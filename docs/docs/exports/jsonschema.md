@@ -29,7 +29,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
     },
     "order_timestamp": {
       "type": "string",
-      "format": "date",
+      "format": "date-time",
       "description": "Timestamp when the order was placed."
     },
     "customer_id": {

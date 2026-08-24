@@ -61,6 +61,13 @@ def ci(
         OutputFormat,
         typer.Option(help="The target format for the test results. Accepted values: json, junit."),
     ] = None,
+    metadata_only: Annotated[
+        bool,
+        typer.Option(
+            help="Run only checks that read the schema (field presence and types). "
+            "Checks that read row values are skipped."
+        ),
+    ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
     fail_on: Annotated[
@@ -119,6 +126,7 @@ def ci(
             server=server,
             ssl_verification=ssl_verification,
             inline_references=inline_references,
+            metadata_only=metadata_only,
         ).test()
         if logs:
             _print_logs(run, out)

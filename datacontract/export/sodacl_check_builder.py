@@ -59,6 +59,15 @@ def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
     return field_name
 
 
+def _quote_model_name(model_name: str, quoting_config: QuotingConfig) -> str:
+    """Quote a model, schema, or other identifier according to the quoting configuration."""
+    if quoting_config.quote_model_name:
+        return f'"{model_name}"'
+    elif quoting_config.quote_model_name_with_backticks:
+        return f"`{model_name}`"
+    return model_name
+
+
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
 _ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "mssql", "snowflake", "azure", "s3", "gcs", "local"}
 
@@ -941,27 +950,21 @@ def prepare_query(
 
     field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
-    if quoting_config.quote_model_name:
-        model_name_for_soda = f'"{model_name}"'
-    elif quoting_config.quote_model_name_with_backticks:
-        model_name_for_soda = f"`{model_name}`"
-    else:
-        model_name_for_soda = model_name
+    model_name_for_soda = _quote_model_name(model_name, quoting_config)
 
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{object}["\']?', model_name_for_soda, query)
 
     if server and server.schema_:
-        if quoting_config.quote_model_name:
-            schema_name_for_soda = f'"{server.schema_}"'
-        elif quoting_config.quote_model_name_with_backticks:
-            schema_name_for_soda = f"`{server.schema_}`"
-        else:
-            schema_name_for_soda = server.schema_
-        query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
+        query = re.sub(r'["\']?\$?\{schema}["\']?', _quote_model_name(server.schema_, quoting_config), query)
     else:
         query = re.sub(r'["\']?\$?\{schema}["\']?', model_name_for_soda, query)
+
+    for placeholder in ("dataset", "project", "catalog", "database"):
+        value = getattr(server, placeholder, None) if server else None
+        replacement = _quote_model_name(value, quoting_config) if value else model_name_for_soda
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement, query)
 
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name_for_soda, query)

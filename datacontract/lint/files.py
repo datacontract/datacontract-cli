@@ -10,7 +10,7 @@ def read_file(path):
             type="lint",
             name=f"Reading data contract from {path}",
             reason=f"The file '{path}' does not exist.",
-            engine="datacontract",
+            engine="datacontract-cli",
             result=ResultEnum.error,
         )
     with open(path, "r") as file:

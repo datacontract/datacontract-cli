@@ -159,6 +159,13 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_DATABRICKS_CATALOG` | `databricks_catalog` | string | Overrides `catalog` from the contract's `servers` block |
 | `DATACONTRACT_DATABRICKS_SCHEMA` | `databricks_schema` | string | Overrides `schema` from the contract's `servers` block |
 
+### DuckDB
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_DUCKDB_DATABASE` | `duckdb_database` | string | Overrides `database` from the contract's `servers` block |
+| `DATACONTRACT_DUCKDB_SCHEMA` | `duckdb_schema` | string | Overrides `schema` from the contract's `servers` block |
+
 ### GCS
 
 | Environment variable | `Config` field | Type | Notes |

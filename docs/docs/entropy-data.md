@@ -24,6 +24,14 @@ datacontract test https://demo.entropy-data.com/demo279750347121/datacontracts/4
 
 The same `--publish` option is available on [`ci`](./commands/ci.md) and [`dbt sync`](./commands/dbt/sync.md), so you can report results from CI/CD and scheduled runs — see [Scheduling](./scheduling/index.md).
 
+## Self-hosted deployments
+
+The API key is only ever sent to Entropy Data: to `entropy-data.com` and its subdomains, or to the host set in `ENTROPY_DATA_HOST`. A contract URL or `--publish` URL on any other host is contacted without the key, so that a third party serving a data contract never receives it. If you run Entropy Data on your own domain, set the host so that contract URLs and `--publish` are authenticated:
+
+```bash
+export ENTROPY_DATA_HOST=https://entropy.internal.example
+```
+
 ## Publish the contract
 
 Use the [`publish`](./commands/publish.md) command to push a data contract itself to Entropy Data:

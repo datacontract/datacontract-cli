@@ -30,7 +30,7 @@ class Orders(Base):
     __tablename__ = 'orders'
     __table_args__ = {'comment': 'One row per customer order.', 'schema': None}
     order_id = Column(String(None), nullable=False, comment='Unique identifier of the order.', primary_key=True)
-    order_timestamp = Column(Date, nullable=False, comment='Timestamp when the order was placed.', primary_key=None)
+    order_timestamp = Column(TIMESTAMP, nullable=False, comment='Timestamp when the order was placed.', primary_key=None)
     customer_id = Column(String(None), nullable=False, comment='Reference to the customer who placed the order.', primary_key=None)
     order_total = Column(Numeric(None, None), nullable=False, comment='Total amount of the order in cents.', primary_key=None)
     status = Column(String(None), nullable=False, comment='Current fulfilment status of the order.', primary_key=None)

@@ -1,0 +1,45 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-redshift
+name: Orders quality rules (redshift)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a redshift server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: redshift
+    host: acme.eu-central-1.redshift.amazonaws.com
+    port: 5439
+    database: orders
+    schema: public
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "Distinct order ids (DIALECT-ONLY: APPROXIMATE COUNT)"
+        query: |
+          SELECT approximate count(distinct order_id) FROM ${model}
+        mustBeGreaterThan: 0
+      - type: sql
+        description: "Orders arrived in the last day"
+        query: |
+          SELECT count(*) FROM ${model} WHERE order_timestamp > GETDATE() - interval '1 day'
+        mustBeGreaterThan: 0

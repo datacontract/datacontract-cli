@@ -1,12 +1,100 @@
+import json
 from urllib.parse import urlparse
 
 import requests
 
 from datacontract.config import Config
-from datacontract.model.run import Run
+from datacontract.model.run import ResultEnum, Run
 
 # used to retrieve the HTML location of the published data contract or test results
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
+
+# The domains the platform serves under. `datamesh-manager.com` and
+# `datacontract-manager.com` are the product's former names.
+_PLATFORM_DOMAINS = ("entropy-data.com", "datamesh-manager.com", "datacontract-manager.com")
+
+
+def is_platform_url(url: str, config: "Config | None" = None) -> bool:
+    """True when `url` points at the Entropy Data platform.
+
+    The API key is only ever sent to a host that answers for it: one of the
+    platform's own domains, or the host of a self-hosted deployment named by
+    ENTROPY_DATA_HOST (or its deprecated synonyms). Contract locations and
+    publish URLs are arbitrary user input -- `datacontract lint
+    https://example.com/datacontract.yaml` fetches whatever URL it is given --
+    so every other host is contacted anonymously rather than handed the key.
+    """
+    config = Config.resolve(config)
+    target = urlparse(url)
+    if target.hostname is None:
+        return False
+    if any(target.hostname == domain or target.hostname.endswith(f".{domain}") for domain in _PLATFORM_DOMAINS):
+        return True
+    return any(
+        configured is not None and _host_and_port(configured) == _host_and_port(url)
+        for configured in (
+            config.get_entropy_data_host(),
+            config.get_datamesh_manager_host(),
+            config.get_datacontract_manager_host(),
+        )
+    )
+
+
+def _host_and_port(url: str) -> tuple[str | None, int | None]:
+    """The host and port of a URL, which a configured host may be written without a scheme."""
+    try:
+        parsed = urlparse(url if "//" in url else f"https://{url}")
+        return parsed.hostname, parsed.port
+    except ValueError:  # an unparseable port
+        return None, None
+
+
+# The check fields the `/api/test-results` API reads under a different name than the
+# CLI writes them. Both names are published.
+_CHECK_RENAMED = {
+    "qualityId": "qualityReference",
+    "category": "qualityCategory",
+    "qualityDefinition": "qualityCheckDefinition",
+}
+
+# The metrics whose value counts bad rows. `custom_sql` is not one: its value is
+# whatever the author's query returned.
+_FAILED_ROW_METRICS = ("missing_count", "invalid_count", "duplicate_count")
+
+
+def to_test_results_payload(run: Run) -> dict:
+    """`run` as the `/api/test-results` API expects it: the renamed check fields and the
+    row counts from `diagnostics`, added on top of the dumped run."""
+    payload = json.loads(run.model_dump_json(exclude_none=True))
+    payload["id"] = str(run.runId)
+    payload["checks"] = [_to_check_payload(check) for check in payload.get("checks") or []]
+    return payload
+
+
+def _to_check_payload(check: dict) -> dict:
+    published = dict(check)
+    published.update({name: check[old] for old, name in _CHECK_RENAMED.items() if old in check})
+    if check.get("failedSamples"):
+        published["failedSamples"] = [json.dumps(row) for row in check["failedSamples"]]
+    published.update(_row_counts(check.get("diagnostics") or {}))
+    return {name: value for name, value in published.items() if value is not None}
+
+
+def _row_counts(diagnostics: dict) -> dict:
+    """The failed and total row counts a check measured, both in rows or neither.
+
+    The API sums them across checks into a row-level quality score, so a count in any
+    other unit -- duplicated keys, an author's own query result -- is left out.
+    """
+    metric = diagnostics.get("metric")
+    if metric in _FAILED_ROW_METRICS:
+        return {
+            "failedNumber": diagnostics.get("failed_rows", diagnostics.get("value")),
+            "totalNumber": diagnostics.get("row_count"),
+        }
+    if metric == "row_count":
+        return {"totalNumber": diagnostics.get("value")}
+    return {}
 
 
 def publish_test_results_to_entropy_data(
@@ -23,17 +111,25 @@ def publish_test_results_to_entropy_data(
         else:
             url = publish_url
 
-        api_key = _get_api_key(config)
-
         if run.dataContractId is None:
             raise Exception("Cannot publish run results for unknown data contract ID")
 
-        headers = {"Content-Type": "application/json", "x-api-key": api_key}
-        request_body = run.model_dump_json()
-        # print("Request Body:", request_body)
+        headers = {"Content-Type": "application/json"}
+        # `publish_url` is arbitrary input -- a CLI option, and a query parameter on the
+        # API server's /test endpoint -- so the key goes only to the platform it belongs to.
+        if is_platform_url(url, config):
+            headers["x-api-key"] = _get_api_key(config)
+        else:
+            run.log_warn(
+                f"Publishing to {_extract_hostname(url)} without an API key: it is not the Entropy Data host. "
+                "Set ENTROPY_DATA_HOST to publish to a self-hosted deployment."
+            )
+        published_run = run.model_copy(
+            update={"checks": [check for check in (run.checks or []) if check.result != ResultEnum.skipped]}
+        )
         response = requests.post(
             url,
-            data=request_body,
+            json=to_test_results_payload(published_run),
             headers=headers,
             verify=ssl_verification,
         )

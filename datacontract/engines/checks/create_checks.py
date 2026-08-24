@@ -13,6 +13,7 @@ import logging
 import re
 from typing import List, Optional
 
+import yaml
 from open_data_contract_standard.model import (
     DataQuality,
     OpenDataContractStandard,
@@ -23,8 +24,10 @@ from open_data_contract_standard.model import (
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
+from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
+from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +105,12 @@ def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: b
     )
 
 
+def quality_definition_yaml(quality: DataQuality) -> str:
+    """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
+    know are dropped, and comments with them."""
+    return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
+
+
 _PERCENT_UNITS = {"percent", "percentage", "%"}
 
 
@@ -160,6 +169,10 @@ def prepare_query(
 
     schema_replacement = server.schema_ if server and server.schema_ else model_name
     query = re.sub(r'["\']?\$?\{schema}["\']?', schema_replacement, query)
+
+    for placeholder in ("dataset", "project", "catalog", "database"):
+        replacement = getattr(server, placeholder, None) if server else None
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
 
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)
@@ -585,6 +598,7 @@ def _quality_checks(
         for check in rule_checks:
             check.quality_id = quality.id
             check.tags = list(quality.tags) if quality.tags else None
+            check.quality_definition = quality_definition_yaml(quality)
         checks.extend(rule_checks)
     return checks
 
@@ -626,6 +640,29 @@ def _quality_rule_checks(
         if threshold is None:
             logger.warning(f"Quality check {check_key} has no valid threshold")
             return []
+        # The query is read as the dialect of the server it runs against, so
+        # dialect-specific syntax is not mistaken for something that is not a query.
+        parse_dialect = dialect_for_server_type(get_server_type(server))
+        if not is_read_only_query(query, parse_dialect):
+            return [
+                CheckSpec(
+                    key=check_key,
+                    category="quality",
+                    type=check_type,
+                    name=quality.description or "Quality Check",
+                    model=model,
+                    field=field,
+                    metric=MetricType.UNSUPPORTED,
+                    dimension=quality.dimension,
+                    severity=quality.severity,
+                    preset_result="failed",
+                    preset_reason=(
+                        f"A quality rule query must be a single read-only query, and this one could "
+                        f"not be read as one{f' ({parse_dialect} SQL)' if parse_dialect else ''}, "
+                        f"so it was not executed."
+                    ),
+                )
+            ]
         return [
             CheckSpec(
                 key=check_key,
@@ -637,7 +674,6 @@ def _quality_rule_checks(
                 metric=MetricType.CUSTOM_SQL,
                 threshold=threshold,
                 query=query,
-                dialect=getattr(quality, "dialect", None),
                 severity=quality.severity,
                 dimension=quality.dimension,
             )
@@ -843,6 +879,7 @@ def _freshness_check(
         model=model,
         field=field,
         metric=MetricType.FRESHNESS,
+        quality_id=sla.id,
         seconds=seconds,
     )
 
@@ -867,6 +904,7 @@ def _retention_check(
         model=model,
         field=field,
         metric=MetricType.RETENTION,
+        quality_id=sla.id,
         seconds=seconds,
     )
 

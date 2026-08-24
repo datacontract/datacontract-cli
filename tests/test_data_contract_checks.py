@@ -79,6 +79,47 @@ def test_prepare_query_schema_placeholder_no_schema():
     assert result == "SELECT * FROM my_table"
 
 
+def test_prepare_query_dataset_and_project_placeholders():
+    """Test that {dataset} and {project} are replaced with the BigQuery server values."""
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM ${project}.${dataset}.${table}")
+    server = Server(type="bigquery", project="my_project", dataset="my_dataset")
+
+    result = prepare_query(quality, "my_table", None, QuotingConfig(), server)
+
+    assert result == "SELECT COUNT(*) FROM my_project.my_dataset.my_table"
+
+
+def test_prepare_query_dataset_placeholder_backticks():
+    """Test that {dataset} and {project} are backtick-quoted for bigquery."""
+    quality = DataQuality(type="sql", query="SELECT * FROM {project}.{dataset}.{model}")
+    server = Server(type="bigquery", project="my_project", dataset="my_dataset")
+    quoting_config = QuotingConfig(quote_model_name_with_backticks=True)
+
+    result = prepare_query(quality, "my_table", None, quoting_config, server)
+
+    assert result == "SELECT * FROM `my_project`.`my_dataset`.`my_table`"
+
+
+def test_prepare_query_catalog_and_database_placeholders():
+    """Test that {catalog} and {database} are replaced with the server values."""
+    quality = DataQuality(type="sql", query="SELECT * FROM {catalog}.{database}.{model}")
+    server = Server(**{"type": "databricks", "catalog": "my_catalog", "database": "my_database"})
+
+    result = prepare_query(quality, "my_table", None, QuotingConfig(), server)
+
+    assert result == "SELECT * FROM my_catalog.my_database.my_table"
+
+
+def test_prepare_query_dataset_placeholder_falls_back_to_model_name():
+    """Test that {dataset} falls back to the model name when the server has no dataset."""
+    quality = DataQuality(type="sql", query="SELECT * FROM {dataset}")
+    server = Server(**{"type": "postgres", "schema": "my_schema"})
+
+    result = prepare_query(quality, "my_table", None, QuotingConfig(), server)
+
+    assert result == "SELECT * FROM my_table"
+
+
 def test_prepare_query_schema_placeholder_with_dollar():
     """Test that ${schema} placeholder (with $) is replaced with server schema."""
     quality = DataQuality(type="sql", query="SELECT * FROM ${schema}.${model}")

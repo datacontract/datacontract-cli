@@ -18,9 +18,10 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
     check_that_datacontract_contains_valid_server_configuration,
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
-from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks
+from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
+from datacontract.model.server import resolve_server_overrides
 
 
 def execute_data_contract_test(
@@ -37,7 +38,9 @@ def execute_data_contract_test(
     include_failed_samples: bool = False,
     filter: str | None = None,
     filters: dict[str, str] | None = None,
+    metadata_only: bool = False,
     config: Config | None = None,
+    untrusted_contract: bool = False,
 ):
     config = Config.resolve(config)
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -46,11 +49,11 @@ def execute_data_contract_test(
             name="Check that data contract contains models",
             result=ResultEnum.warning,
             reason="Schema block is missing. Skip executing tests.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
-    server = get_server(data_contract, server_name)
+    server = resolve_server_overrides(get_server(data_contract, server_name), config, run)
     run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
     run.dataContractId = data_contract.id
     run.dataContractVersion = data_contract.version
@@ -66,7 +69,7 @@ def execute_data_contract_test(
                 name="Check that schema name exists",
                 result=ResultEnum.failed,
                 reason=f"Schema '{schema_name}' not found in data contract. Available schemas: {sorted(schema_names)}",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
     if quality_ids is not None:
@@ -101,6 +104,15 @@ def execute_data_contract_test(
         if not specs:
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
     run.checks.extend(build_check_stubs(specs))
+
+    if metadata_only:
+        executable = []
+        for spec in specs:
+            if spec.requires_data_read:
+                set_result(run, spec.key, ResultEnum.skipped, "Row-value check disabled by --metadata-only")
+            else:
+                executable.append(spec)
+        specs = executable
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
@@ -138,6 +150,7 @@ def execute_data_contract_test(
         include_failed_samples=include_failed_samples,
         model_filters=model_filters,
         config=config,
+        untrusted_contract=untrusted_contract,
     )
 
 
@@ -162,7 +175,7 @@ def resolve_row_filters(
             name="Check row filter arguments",
             result=ResultEnum.failed,
             reason="Use either a single filter predicate or per-schema filters, not both.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     schema_objects = data_contract.schema_ or []
     if filter is not None:
@@ -175,7 +188,7 @@ def resolve_row_filters(
                 reason=f"--filter is ambiguous, as the data contract has multiple schemas: "
                 f"{sorted(s.name for s in candidates)}. "
                 f'Use --filters \'{{"<schema>": "<predicate>"}}\' or select a single schema with --schema-name.',
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         filters = {candidates[0].name: filter.strip()}
     if not filters:
@@ -189,7 +202,7 @@ def resolve_row_filters(
             result=ResultEnum.failed,
             reason=f"Filter schema(s) not found in data contract: {', '.join(unknown)}. "
             f"Available schemas: {sorted(schema_by_name)}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     run.filters = dict(filters)
     for name, predicate in filters.items():
@@ -231,7 +244,7 @@ def check_that_quality_ids_exist(
             f"Quality rule id(s) not found in data contract: {', '.join(unknown)}. "
             f"Available quality rule ids: {sorted(available)}"
         ),
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 
@@ -274,7 +287,7 @@ def process_api_response(run, server, config: Config | None = None):
             name="API server connection error",
             result=ResultEnum.error,
             reason=f"Failed to fetch API response from {server.location}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     with open(f"{tmp_dir.name}/api_response.json", "w") as f:
         f.write(response.text)
@@ -284,6 +297,7 @@ def process_api_response(run, server, config: Config | None = None):
         type="local",
         format="json",
         path=f"{tmp_dir.name}/api_response.json",
+        delimiter=server.delimiter,
     )
     return new_server
 

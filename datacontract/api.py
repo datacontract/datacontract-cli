@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import secrets
 import tempfile
 from importlib import metadata
 from typing import Annotated, Optional
@@ -8,7 +9,6 @@ from typing import Annotated, Optional
 import pydantic
 import yaml
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field, ValidationError
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, ValidationError
 from datacontract.config import Config, known_env_names
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.changelog import ChangelogEntry
-from datacontract.model.exceptions import DataContractException
+from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 from datacontract.model.run import Check, ResultEnum, Run
 
 DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.1.0
@@ -251,6 +251,15 @@ that value, and answers `401` when the header is missing and `403` when it is wr
 Securing the API is strongly recommended: `POST /test` connects to your data sources, and test
 results may contain sensitive information.
 
+## Contracts are untrusted
+
+A posted contract carries SQL and names the hosts to connect to, so the server treats it as
+untrusted input: a `quality.type: sql` rule must be a read-only query, a credential held in the
+server's environment is never sent to a host the contract names, and `servers[].type: local` is
+refused so a caller cannot read the server's own files. Set
+`DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment serves its own files on purpose;
+the contract is then still confined to the paths it declares.
+
 ## Connecting to data sources
 
 `POST /test` needs credentials for the server described in the contract's `servers` section. Provide
@@ -334,12 +343,17 @@ def _openapi_with_external_docs() -> dict:
 
 app.openapi = _openapi_with_external_docs
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Contracts posted to this server arrive over HTTP from callers we do not trust,
+# so a credential the server holds in its environment must never be sent to a
+# host the contract names. The `edit` server reuses the `test` handler for a
+# local file the user owns, so it does not set this flag and is not guarded.
+app.state.untrusted_contracts = True
+
+# No CORS middleware: the only browser client is the Swagger UI served at "/",
+# which is same-origin and therefore not subject to CORS. Every other client
+# (curl, the SDK, CI) is not a browser and ignores CORS. Allowing arbitrary
+# origins would only let a page the operator happens to visit drive this server
+# and read its responses, so the safe default is to send no CORS headers at all.
 
 api_key_header = APIKeyHeader(
     name="x-api-key",
@@ -446,6 +460,137 @@ def _parse_filters_query(filters: str | None) -> dict[str, str] | None:
     return {schema_name: predicate.strip() for schema_name, predicate in parsed.items()}
 
 
+# For each server type whose connection host can be taken from the posted
+# contract: (the Server attribute that names the connection target, the Config
+# field an operator sets to pin that target in the environment or None when the
+# type has no such field, the Config fields that hold a connection secret).
+# See _reject_ambient_credentials_to_untrusted_host.
+_AMBIENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...]]] = {
+    "postgres": ("host", "postgres_host", ("postgres_password",)),
+    "mysql": ("host", "mysql_host", ("mysql_password",)),
+    "oracle": ("host", "oracle_host", ("oracle_password",)),
+    "impala": ("host", "impala_host", ("impala_password",)),
+    "trino": ("host", "trino_host", ("trino_password",)),
+    "redshift": ("host", "redshift_host", ("redshift_password",)),
+    "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
+    "snowflake": (
+        "account",
+        "snowflake_account",
+        ("snowflake_password", "snowflake_token", "snowflake_private_key"),
+    ),
+    "databricks": ("host", "databricks_server_hostname", ("databricks_token", "databricks_client_secret")),
+    # Kafka's broker host is always the contract's `server.host` (no environment
+    # option pins it), so an environment-held SASL password can never be paired
+    # with a posted contract safely -- host_field is None, so it is always rejected.
+    "kafka": ("broker host", None, ("kafka_sasl_password",)),
+}
+
+
+def _selected_server(body: str, server_name: str | None, config):
+    """The server the request would test, or None if that cannot be determined.
+
+    A contract that does not resolve, or that names no such server, is reported
+    by test() itself -- the guards below simply have nothing to check.
+    """
+    from datacontract.engines.data_contract_test import get_server
+    from datacontract.lint import resolve
+
+    try:
+        data_contract = resolve.resolve_data_contract(data_contract_str=body, config=config)
+        return get_server(data_contract, server_name)
+    except Exception:
+        return None
+
+
+# Server types that read their data through the local filesystem of the machine
+# running the test, rather than from a remote data source.
+_LOCAL_SERVER_TYPES = frozenset({"local", "duckdb"})
+
+ALLOW_LOCAL_FILES_ENV = "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES"
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def _local_files_allowed() -> bool:
+    """Whether the operator opted in to serving data from the server's own disk.
+
+    Off by default. A deployment that mounts the data next to the API -- the data
+    directory in the container, say -- turns it on, accepting that a caller then
+    picks the path.
+    """
+    return (os.getenv(ALLOW_LOCAL_FILES_ENV) or "").strip().lower() in _TRUTHY
+
+
+def _reject_local_server_type(body: str, server_name: str | None, config) -> None:
+    """Keep a posted contract from reading the server's own disk.
+
+    `type: local` points the test at a path on the machine running it. For the
+    API server that machine is not the caller's, so the path is not theirs to
+    name -- and the result would tell them what is in it.
+    """
+    from datacontract.config import Config
+
+    if _local_files_allowed():
+        return
+    server = _selected_server(body, server_name, Config.resolve(config))
+    if server is None or server.type not in _LOCAL_SERVER_TYPES:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            f"Server type '{server.type}' reads from the file system of the server running this API, "
+            f"so it is refused. Use a server type that names a data source, such as s3, gcs, azure, "
+            f"postgres, or snowflake — or set {ALLOW_LOCAL_FILES_ENV}=true if this deployment serves "
+            f"its own files on purpose."
+        ),
+    )
+
+
+def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | None, config) -> None:
+    """Keep an environment-held data-source credential from reaching a host the
+    posted contract chose.
+
+    A contract that arrives over HTTP is untrusted. If it could name the
+    connection host (its ``servers`` section) while the server supplies the
+    password from its own environment, an attacker could point the host at their
+    own machine and capture that password. So when a credential for the selected
+    server's type resolves from the environment, the connection target must
+    resolve from the environment too -- not from the contract, and not from a
+    per-request header (a caller who brings the whole credential set may still
+    aim it wherever they like; only the server's ambient secret is pinned).
+    """
+    from datacontract.config import Config
+    from datacontract.config.settings import env_name
+
+    resolved = Config.resolve(config)
+    server = _selected_server(body, server_name, resolved)
+    if server is None:
+        return
+    guard = _AMBIENT_CREDENTIAL_TARGETS.get(server.type)
+    if guard is None:
+        return
+    target_attr, host_field, secret_fields = guard
+    if not any(resolved.option_source(field) == "env" for field in secret_fields):
+        return  # no environment-held secret for this server type; nothing to protect
+    if host_field is not None and resolved.option_source(host_field) == "env":
+        return  # the operator pinned the target host; the contract's host is ignored
+    if host_field is not None:
+        env_var = env_name(host_field, Config.model_fields[host_field])
+        detail = (
+            f"This server holds a {server.type} credential in its environment, so the connection "
+            f"{target_attr} must also come from the server's environment ({env_var}); it will not be "
+            f"taken from the posted data contract. Set {env_var}, or send the full set of credentials "
+            f"with the request instead of relying on the server's environment."
+        )
+    else:
+        detail = (
+            f"This server holds a {server.type} credential in its environment, but its {target_attr} "
+            f"can only come from the posted data contract, so the credential cannot be pinned to a "
+            f"trusted target. Send the credentials with the request instead of relying on the server's "
+            f"environment."
+        )
+    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
+
 def check_api_key(api_key_header: str | None):
     correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
@@ -457,7 +602,7 @@ def check_api_key(api_key_header: str | None):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
-    if api_key_header != correct_api_key:
+    if not secrets.compare_digest(api_key_header, correct_api_key):
         logging.info("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -560,14 +705,20 @@ async def test(
         )
     logging.info("Testing data contract...")
     logging.info(body)
+    config = config_from_headers(request.headers)
+    untrusted_contract = getattr(request.app.state, "untrusted_contracts", False)
+    if untrusted_contract:
+        _reject_ambient_credentials_to_untrusted_host(body, server, config)
+        _reject_local_server_type(body, server, config)
     return DataContract(
         data_contract_str=body,
         server=server,
         publish_url=publish_url,
         fastapi_url=str(request.url),
-        config=config_from_headers(request.headers),
+        config=config,
         filter=filter,
         filters=parsed_filters,
+        untrusted_contract=untrusted_contract,
     ).test()
 
 
@@ -705,6 +856,11 @@ async def changelog_endpoint(
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     except pydantic.ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DefinitionResolutionError as e:
+        # The reason names the host that was contacted and what it answered.
+        # Omit for security reasons.
+        logging.warning("Definition resolution failed: %s", e)
+        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
     except DataContractException as e:
         raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
     finally:
@@ -823,5 +979,10 @@ def export(
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     except pydantic.ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DefinitionResolutionError as e:
+        # The reason names the host that was contacted and what it answered.
+        # Omit for security reasons.
+        logging.warning("Definition resolution failed: %s", e)
+        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
     except DataContractException as e:
         raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")

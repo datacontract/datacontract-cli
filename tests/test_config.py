@@ -175,9 +175,13 @@ def test_declared_snowflake_variables_are_not_reported(monkeypatch):
 
 # Env vars the code reads that are deliberately not Config fields: process-level
 # concerns, not per-operation connection config.
+# Settings of the machine running the CLI, not of a data source. Deliberately not
+# Config fields: a Config field is settable per request through a `datacontract-*`
+# header, which would let a caller of the API server change the server's own policy.
 _NON_CONFIG_ENV_VARS = {
     "DATACONTRACT_CLI_DEBUG",
     "DATACONTRACT_CLI_API_KEY",
+    "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES",
     "DATACONTRACT_SYSTEM_TRUSTSTORE",
 }
 

@@ -5,9 +5,11 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "release-notes": "node scripts/generate-release-notes.mjs",
-    "prestart": "npm run release-notes",
+    "command-docs": "node scripts/generate-command-docs.mjs",
+    "generate": "npm run release-notes && npm run command-docs",
+    "prestart": "npm run generate",
     "start": "docusaurus start",
-    "prebuild": "npm run release-notes",
+    "prebuild": "npm run generate",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
@@ -35,7 +37,7 @@
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
     "@types/react": "^19.0.0",
-    "typescript": "~6.0.2"
+    "typescript": "~7.0.2"
   },
   "overrides": {
     "serialize-javascript": "^7.0.3",

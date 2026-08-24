@@ -28,6 +28,7 @@ from ruamel.yaml.error import CommentMark
 from ruamel.yaml.tokens import CommentToken
 from ruamel.yaml.util import load_yaml_guess_indent
 
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.export.sql_type_converter import _get_config_value, convert_to_sql_type
 from datacontract.integration.dbt_test_mapping import field_to_data_tests, get_logical_type_option
 from datacontract.lint.resolve import resolve_data_contract
@@ -107,7 +108,7 @@ def _ensure_dbt_project(project_dir: Path, *, explicit: bool = False) -> None:
             type="dbt_sync",
             name="resolve dbt project",
             reason=reason,
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
 
 
@@ -127,7 +128,7 @@ dbt not found on PATH. Install the dbt adapter that matches your warehouse, e.g.
 
 Full list of adapters: https://docs.getdbt.com/docs/supported-data-platforms
 Install guide: https://docs.getdbt.com/docs/core/installation-overview""",
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return dbt_path
 
@@ -154,7 +155,7 @@ def parse_filename_version(path: Path) -> Optional[str]:
                 f"Contract filename `{path.name}` has multiple version tokens {sorted(normalized)}; "
                 "expected exactly one `v<N>`."
             ),
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return next(iter(normalized))
 
@@ -206,7 +207,7 @@ def resolve_model_names(
                 type="dbt_sync",
                 name="resolve schema",
                 reason=f"Schema `{schema_filter}` not found in contract. Available: {available}.",
-                engine="dbt-sync",
+                engine="datacontract-cli",
             )
     missing_physical: list[str] = []
     for schema_obj in schemas:
@@ -229,7 +230,7 @@ def resolve_model_names(
                 f"have no `physicalName` set: {listing}. Either set `physicalName` in the contract, "
                 "or use `--model-resolution name`."
             ),
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return mapping
 
@@ -1621,19 +1622,22 @@ class _EditSession:
         pf.yaml.dump(pf.data, buf)
         return buf.getvalue()
 
-    def apply(self) -> tuple[list[Path], list[Path]]:
+    def apply(self, dry_run: bool = False) -> tuple[list[Path], list[Path]]:
+        """Write the planned changes to disk, or (with `dry_run`) just report what would change."""
         written: list[Path] = []
         deleted: list[Path] = []
         for pf in self.files.values():
             if pf.deleted:
                 if pf.path.exists():
-                    pf.path.unlink()
+                    if not dry_run:
+                        pf.path.unlink()
                     deleted.append(pf.path)
                 continue
             new_text = self._render(pf)
             if new_text != (pf.original_text or ""):
-                pf.path.parent.mkdir(parents=True, exist_ok=True)
-                pf.path.write_text(new_text, encoding="utf-8")
+                if not dry_run:
+                    pf.path.parent.mkdir(parents=True, exist_ok=True)
+                    pf.path.write_text(new_text, encoding="utf-8")
                 written.append(pf.path)
         return written, deleted
 
@@ -2453,7 +2457,7 @@ def run_dbt_test(
             type="dbt_sync",
             name="dbt test",
             reason=f"Failed to invoke dbt: {e}",
-            engine="dbt-sync",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -2464,7 +2468,7 @@ def run_dbt_test(
             type="dbt_sync",
             name="dbt test",
             reason=f"`dbt test` failed (exit code {result.returncode}):\n{output}",
-            engine="dbt-sync",
+            engine="datacontract-cli",
         )
     return result
 
@@ -2545,7 +2549,7 @@ def parse_run_results_file(
         "fail": ResultEnum.failed,
         "warn": ResultEnum.warning,
         "error": ResultEnum.error,
-        "skipped": ResultEnum.info,
+        "skipped": ResultEnum.skipped,
     }
     for test_result in run_results.get("results") or []:
         unique_id = test_result.get("unique_id") or ""
@@ -2576,6 +2580,7 @@ def parse_run_results_file(
             Check(
                 key=check_key,
                 type=check_type,
+                dimension=default_dimension(check_type),
                 name=description or fallback_name,
                 model=model,
                 field=column,
@@ -2640,7 +2645,7 @@ def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path
                     "  - Starting from this dbt project? Bootstrap a contract from it: run `dbt parse`, then "
                     "`datacontract import dbt --source target/manifest.json --output datacontract-v1.odcs.yaml`."
                 ),
-                engine="dbt-sync",
+                engine="datacontract-cli",
             )
         return candidates
 
@@ -2662,14 +2667,14 @@ def _resolve_contract_paths(contracts: list[str], search_dir: Path) -> list[Path
                         f"{path} is a directory, not a contract file. Pass --project-dir {path} "
                         "(and omit the contract argument) to sync every `*.odcs.yaml` under it."
                     ),
-                    engine="dbt-sync",
+                    engine="datacontract-cli",
                 )
             if not path.is_file():
                 raise DataContractException(
                     type="dbt_sync",
                     name="resolve contract",
                     reason=f"Contract file not found: {path}",
-                    engine="dbt-sync",
+                    engine="datacontract-cli",
                 )
             resolved[path] = None
     return sorted(resolved)
@@ -2684,12 +2689,14 @@ def generate_dbt_tests(
     prune: bool = False,
     model_version: Optional[str] = None,
     server: Optional[str] = None,
+    dry_run: bool = False,
 ) -> DbtTestGenerationResult:
     """Resolve the contract, merge its tests + metadata into the dbt project's model YAML in place.
 
     `model_version` (a dbt model version like "2", from the contract filename) merges this contract
     into a versioned model — a `versions:` block — additively, leaving sibling versions untouched.
     `server` selects the ODCS server whose `type` maps `logicalType`s to a `data_type`.
+    `dry_run` computes and reports the same plan without writing, deleting, or moving any files.
     """
     explicit_project_dir = project_dir is not None
     project_dir = (project_dir or Path.cwd()).resolve()
@@ -2747,7 +2754,7 @@ def generate_dbt_tests(
                         "was synced without a version. Name the contract file with the target version "
                         "(e.g. `<name>-v2.odcs.yaml`), or de-version the model's `.sql` files."
                     ),
-                    engine="dbt-sync",
+                    engine="datacontract-cli",
                 )
         schema_obj = schemas_by_name[schema_name_key]
         model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, effective, run, model_version)
@@ -2764,7 +2771,7 @@ def generate_dbt_tests(
                 type="dbt_sync",
                 name="parse existing YAML files",
                 reason=(f"Cannot parse YAML file(s): {files}\nFix or remove them before running dbt sync."),
-                engine="dbt-sync",
+                engine="datacontract-cli",
             )
         run.log_warn(f"Ignoring unparseable YAML file: {files}")
 
@@ -2844,23 +2851,26 @@ def generate_dbt_tests(
     if contract_subdir.is_dir():
         for sql in contract_subdir.glob(f"{own_prefix}*.sql"):
             if sql not in desired:
-                sql.unlink()
+                if not dry_run:
+                    sql.unlink()
                 deleted_sql.append(sql)
     for path, sql in desired.items():
-        path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists() or path.read_text(encoding="utf-8") != sql:
-            path.write_text(sql, encoding="utf-8")
+            if not dry_run:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(sql, encoding="utf-8")
             written_sql.append(path)
 
-    # Migrate v1.0.9's flat layout: remove our top-level `*.sql` (the dir is CLI-owned wholesale).
-    for stale in tests_dir.glob("*.sql"):
-        stale.unlink()
-        deleted_sql.append(stale)
-    # Drop the subdir if this contract (and its resolved siblings) left it empty.
-    if contract_subdir.is_dir() and not any(contract_subdir.iterdir()):
-        contract_subdir.rmdir()
-    _remove_legacy_dir(legacy_dir)
-    written_yaml, deleted_yaml = session.apply()
+    if not dry_run:
+        # Migrate v1.0.9's flat layout: remove our top-level `*.sql` (the dir is CLI-owned wholesale).
+        for stale in tests_dir.glob("*.sql"):
+            stale.unlink()
+            deleted_sql.append(stale)
+        # Drop the subdir if this contract (and its resolved siblings) left it empty.
+        if contract_subdir.is_dir() and not any(contract_subdir.iterdir()):
+            contract_subdir.rmdir()
+        _remove_legacy_dir(legacy_dir)
+    written_yaml, deleted_yaml = session.apply(dry_run=dry_run)
     # Regenerated SQL is unlinked then rewritten; report only the ones not written back as deletions.
     written_sql_set = set(written_sql)
     deleted_files = [p for p in deleted_sql if p not in written_sql_set] + deleted_yaml

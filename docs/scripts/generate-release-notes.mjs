@@ -4,13 +4,14 @@
  *
  * Runs automatically before `npm run build` and `npm start` (see the `prebuild`
  * and `prestart` scripts in package.json), so the published page never drifts
- * from the changelog. The generated page is committed as well: the Azure Static
- * Web Apps build runs in an Oryx container where only the `docs/` app folder is
- * guaranteed to be present, so if `CHANGELOG.md` cannot be read we keep the
- * committed page instead of failing the deploy.
+ * from the changelog. The page is generated, never committed (see .gitignore) —
+ * otherwise every pull request that adds a changelog entry would leave the
+ * committed copy stale.
  *
- * The CI `Build` job re-runs this and fails on a diff, which is what keeps the
- * committed copy honest.
+ * The deploy workflow runs this before handing the site to Azure Static Web
+ * Apps, whose Oryx container is only guaranteed to see the `docs/` app folder:
+ * if `CHANGELOG.md` cannot be read there, we keep the already generated page
+ * instead of failing the deploy.
  */
 
 import {existsSync, readFileSync, writeFileSync} from 'node:fs';

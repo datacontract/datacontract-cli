@@ -6,7 +6,7 @@
   <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
     <div class="diagram-container p-4 w-full" id="diagram-container">
         <pre class="mermaid">
-          {{ mermaid_diagram }}
+          {{ mermaid_diagram | safe }}
         </pre>
       </div>
   </div>

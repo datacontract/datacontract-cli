@@ -1,8 +1,11 @@
 from unittest.mock import patch
 
+import pytest
+import requests
+import responses
 from fastapi.testclient import TestClient
 
-from datacontract.api import app
+from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
 from datacontract.model.exceptions import DataContractException
 
 client = TestClient(app)
@@ -125,6 +128,53 @@ def test_changelog_data_contract_exception_returns_422():
 
 
 # ---------------------------------------------------------------------------
+# A posted contract may reference an authoritativeDefinition by URL, and the
+# server fetches it. What that fetch answered is an observation of the server's
+# network, so it must not be echoed back to whoever posted the contract.
+# ---------------------------------------------------------------------------
+
+
+def _contract_referencing(url: str) -> str:
+    return f"""
+apiVersion: v3.0.2
+kind: DataContract
+id: definition-ref
+version: 1.0.0
+status: draft
+schema:
+  - name: t
+    properties:
+      - name: c
+        authoritativeDefinitions:
+          - type: definition
+            url: {url}
+"""
+
+
+@responses.activate
+def test_changelog_definition_resolution_failure_does_not_echo_the_response():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=401)
+
+    contract = _contract_referencing(internal_url)
+    response = client.post(url="/changelog", json={"v1": contract, "v2": contract})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+
+
+@responses.activate
+def test_export_definition_resolution_failure_does_not_echo_the_transport_error():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, body=requests.exceptions.ConnectionError("connection refused"))
+
+    response = client.post(url="/export?format=odcs", json=_contract_referencing(internal_url))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+
+
+# ---------------------------------------------------------------------------
 # The schema parameter is documented as a URL. Without that being enforced,
 # fetch_schema falls through to the filesystem, so an unauthenticated caller
 # could have the server open its own files and tell existing paths from missing
@@ -203,7 +253,7 @@ def test_unknown_config_header_is_rejected():
     assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
 
 
-def test_test_endpoint_uses_config_from_headers():
+def test_test_endpoint_uses_config_from_headers(allow_local_files):
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
 
@@ -221,12 +271,19 @@ def test_test_endpoint_uses_config_from_headers():
     assert config.get_postgres_password() == "pw"
 
 
+@pytest.fixture
+def allow_local_files(monkeypatch):
+    """These tests use a local fixture file as a convenient data source, which the
+    API refuses by default (see test_untrusted_contract.py)."""
+    monkeypatch.setenv(ALLOW_LOCAL_FILES_ENV, "true")
+
+
 def _row_filter_contract():
     with open("fixtures/row-filter/datacontract.yaml", "r", encoding="utf-8") as f:
         return f.read()
 
 
-def test_test_endpoint_filter_param():
+def test_test_endpoint_filter_param(allow_local_files):
     response = client.post(
         url="/test?filter=order_id <= 2",
         content=_row_filter_contract(),
@@ -238,7 +295,7 @@ def test_test_endpoint_filter_param():
     assert response.json()["filters"] == {"orders": "order_id <= 2"}
 
 
-def test_test_endpoint_filters_param():
+def test_test_endpoint_filters_param(allow_local_files):
     response = client.post(
         url='/test?filters={"orders": "order_id <= 2"}',
         content=_row_filter_contract(),
@@ -335,3 +392,160 @@ def test_export_reports_an_unparseable_contract_as_a_client_error():
 
     assert response.status_code == 422
     assert "detail" in response.json()
+
+
+def test_no_cors_headers_for_cross_origin_requests():
+    """The API sends no CORS headers, so a browser page on another origin cannot
+    read its responses. The only browser client is the same-origin Swagger UI,
+    which does not need CORS; every other client is not a browser."""
+    response = client.get("/openapi.json", headers={"Origin": "https://evil.example"})
+    assert response.status_code == 200
+    assert "access-control-allow-origin" not in {k.lower() for k in response.headers}
+
+
+def test_cross_origin_preflight_is_not_approved():
+    """A CORS preflight from a foreign origin gets no approval headers."""
+    response = client.options(
+        "/export?format=odcs",
+        headers={
+            "Origin": "https://evil.example",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert "access-control-allow-origin" not in {k.lower() for k in response.headers}
+
+
+# --- B1/C1: an environment-held credential must not be sent to a contract-chosen host ---
+
+from datacontract.api import _reject_ambient_credentials_to_untrusted_host  # noqa: E402
+from datacontract.config import Config  # noqa: E402
+
+_POSTGRES_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: exfil
+name: exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: postgres
+    host: attacker.example
+    port: 5432
+    database: analytics
+    schema: public
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+def test_guard_blocks_env_credential_to_contract_host(monkeypatch):
+    """The exploit: server holds a postgres password in its env, the contract
+    names the host -> the connection must be refused before it is attempted."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    import pytest
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)
+    assert exc.value.status_code == 422
+    assert "DATACONTRACT_POSTGRES_HOST" in exc.value.detail
+
+
+def test_guard_allows_when_operator_pins_the_host(monkeypatch):
+    """Operator sets both the password and the host in the environment -> the
+    contract's host is ignored and the connection is allowed."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", "db.internal")
+    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
+
+
+def test_guard_allows_when_no_ambient_secret(monkeypatch):
+    """No environment-held credential -> nothing to protect, connection allowed."""
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_PASSWORD", raising=False)
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
+
+
+def test_guard_allows_caller_supplied_credentials(monkeypatch):
+    """A caller who brings the whole credential set via request config may aim it
+    at their own host -- only the server's ambient secret is pinned (C1)."""
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_PASSWORD", raising=False)
+    config = Config.resolve({"DATACONTRACT_POSTGRES_PASSWORD": "caller-secret"})
+    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", config)  # no raise
+
+
+def test_test_endpoint_blocks_credential_exfiltration(monkeypatch):
+    """End to end through the API: POST a contract naming the host while the
+    server holds a postgres password -> 422, no connection attempted."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    response = client.post(
+        "/test?server=production",
+        content=_POSTGRES_CONTRACT,
+        headers={"Content-Type": "application/yaml"},
+    )
+    assert response.status_code == 422
+    assert "DATACONTRACT_POSTGRES_HOST" in response.json()["detail"]
+
+
+def test_edit_server_is_not_guarded(tmp_path):
+    """The edit server serves a local file the user owns, so it does not mark
+    contracts untrusted and the guard does not apply."""
+    from datacontract.command_edit import create_app
+
+    contract_file = tmp_path / "datacontract.yaml"
+    contract_file.write_text(_POSTGRES_CONTRACT)
+    edit_app = create_app(contract_file)
+    assert getattr(edit_app.state, "untrusted_contracts", False) is False
+
+
+def test_api_app_marks_contracts_untrusted():
+    from datacontract.api import app as api_app
+
+    assert api_app.state.untrusted_contracts is True
+
+
+_KAFKA_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: kafka-exfil
+name: kafka-exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: kafka
+    host: attacker.example:9092
+    format: json
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+def test_guard_blocks_env_kafka_password(monkeypatch):
+    """Kafka's broker host is always the contract's, so an env SASL password can
+    never be paired with a posted contract -- it must be rejected."""
+    monkeypatch.setenv("DATACONTRACT_KAFKA_SASL_PASSWORD", "prod-secret")
+    import pytest
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_ambient_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)
+    assert exc.value.status_code == 422
+    assert "kafka" in exc.value.detail
+
+
+def test_guard_allows_kafka_without_ambient_secret(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_PASSWORD", raising=False)
+    _reject_ambient_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)  # no raise

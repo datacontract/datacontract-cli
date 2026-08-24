@@ -81,7 +81,7 @@ def import_object_storage(
                 f"The location is required for the {server_type} import, "
                 f"e.g. --source {_EXAMPLE_LOCATIONS[server_type]}"
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     format = (format or detect_format(location) or "").lower()
@@ -93,7 +93,7 @@ def import_object_storage(
                 f"Could not tell the format of '{location}'. "
                 f"Pass --format with one of: {', '.join(sorted(SUPPORTED_FORMATS))}."
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     server = create_server(
@@ -114,7 +114,7 @@ def import_object_storage(
             result="failed",
             name="no columns found",
             reason=f"No columns found at '{location}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()
@@ -177,7 +177,7 @@ def _read_columns(server: Server, location: str, format: str, config=None):
             result="failed",
             name="s3 read failed",
             reason=f"Could not read '{location}' as {format}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     finally:

@@ -57,7 +57,7 @@ class OracleImporter(Importer):
                 type="source",
                 name="oracle import source",
                 reason="The host is required for the oracle import, e.g. --source localhost",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return import_oracle(
             host=source,
@@ -82,14 +82,14 @@ def import_oracle(
             type="source",
             name="oracle import service name",
             reason="The service name is required for the oracle import, e.g. --service-name XEPDB1",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if not schema:
         raise DataContractException(
             type="source",
             name="oracle import schema",
             reason="The schema is required for the oracle import, e.g. --schema ADMIN",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     port = int(port) if port else DEFAULT_PORT
@@ -121,7 +121,7 @@ def import_oracle(
             result="failed",
             name="no tables found",
             reason=f"No tables found in schema '{schema}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()
@@ -143,7 +143,7 @@ def oracle_connection(server: Server, config=None):
             result="failed",
             name="oracle extra missing",
             reason="Install the extra datacontract-cli[oracle] to use oracle",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -158,7 +158,7 @@ def oracle_connection(server: Server, config=None):
             result="failed",
             name="oracle connection failed",
             reason=f"Could not connect to Oracle at {server.host}:{server.port}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -177,7 +177,7 @@ def _fetch(connection, query: str, optional: bool = False) -> List[Dict[str, Any
             result="failed",
             name="oracle catalog query failed",
             reason=f"Could not read the Oracle catalog: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

@@ -102,7 +102,11 @@ def constant_field_annotation(
         case "boolean":
             return (ast.Name("bool", ctx=ast.Load()), None)
         case "date":
+            return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="date"), None)
+        case "timestamp":
             return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="datetime"), None)
+        case "time":
+            return (ast.Attribute(value=ast.Name(id="datetime", ctx=ast.Load()), attr="time"), None)
         case "array":
             if prop.items:
                 (annotated_type, new_class) = type_annotation(field_name, prop.items)
@@ -172,6 +176,11 @@ def field_definitions(properties: list[SchemaProperty]) -> tuple[list[ast.Expr],
     return (annotations, classes)
 
 
+def class_body(statements: list[typing.Any]) -> list[typing.Any]:
+    """A class needs a body: an object without properties still has to parse."""
+    return statements or [ast.Pass()]
+
+
 def generate_field_class(field_name: str, prop: SchemaProperty) -> ast.ClassDef:
     prop_type = _get_type(prop) or ""
     physical_type = (prop.physicalType or "").lower()
@@ -181,7 +190,7 @@ def generate_field_class(field_name: str, prop: SchemaProperty) -> ast.ClassDef:
     return ast.ClassDef(
         name=field_name,
         bases=[ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()), attr="BaseModel", ctx=ast.Load())],
-        body=[*documentation, *new_classes, *annotated_type],
+        body=class_body([*documentation, *new_classes, *annotated_type]),
         keywords=[],
         decorator_list=[],
     )
@@ -193,7 +202,7 @@ def generate_model_class(name: str, schema_obj: SchemaObject) -> ast.ClassDef:
     result = ast.ClassDef(
         name=name.capitalize(),
         bases=[ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()), attr="BaseModel", ctx=ast.Load())],
-        body=[*documentation, *nested_classes, *field_assignments],
+        body=class_body([*documentation, *nested_classes, *field_assignments]),
         keywords=[],
         decorator_list=[],
     )
