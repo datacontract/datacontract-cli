@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `postgresql` is accepted as the ODCS synonym of the `postgres` server type
 - `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
 - `datacontract import pydantic-model` reads the contract description from the module docstring
-- Additional information in test results (data quality dimension, number of failed and total rows, `quality` rules as YAML)
+- Test results report how many rows a check found bad out of the rows it read, plus the data quality dimension and the `quality` rule a check comes from
 
 ### Changed
 - `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A JSON Schema check that could not be run is reported as `skipped`, not `info`
 
 ### Fixed
+- Test results published to Entropy Data no longer drop the quality rule id, category, rule definition and failed samples
 - Configuration options that override a server's location (`DATACONTRACT_BIGQUERY_PROJECT`, `DATACONTRACT_POSTGRES_SCHEMA`, and the like) now apply to the whole test run, not just to the connection
 - BigQuery: `DATACONTRACT_BIGQUERY_BILLING_PROJECT` no longer overrides the server's `project`, so tables are still read from the data project (#1358)
 - A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query
