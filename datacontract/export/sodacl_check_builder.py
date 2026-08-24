@@ -98,7 +98,9 @@ def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> st
     pattern = _BARE_IDENTIFIER_PERMISSIVE if server_type in _PERMISSIVE_BARE_DIALECTS else _BARE_IDENTIFIER_STRICT
     if pattern.match(identifier):
         return identifier
-    return f"`{identifier}`" if server_type in _BACKTICK_DIALECTS else f'"{identifier}"'
+    if server_type in _BACKTICK_DIALECTS:
+        return "`" + identifier.replace("`", "``") + "`"
+    return '"' + identifier.replace('"', '""') + '"'
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -1148,12 +1150,13 @@ def to_servicelevel_retention_check(
 
     check_type = "servicelevel_retention"
     check_key = "servicelevel_retention"
+    quoted_field = _quote_identifier_if_needed(field_name, server)
     sodacl_check_dict = {
         f"checks for {model_name}": [
             {
                 f"{model_name}_servicelevel_retention < {seconds}": {
                     "name": check_key,
-                    f"{model_name}_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({field_name}), CURRENT_TIMESTAMP)",
+                    f"{model_name}_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({quoted_field}), CURRENT_TIMESTAMP)",
                 },
             }
         ],
