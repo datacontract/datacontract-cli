@@ -86,8 +86,13 @@ def _to_snake_case(text: str) -> str:
 
 
 def _display_name(prop: SchemaProperty, field_name: str) -> str:
-    """Return businessName when set, else the column name, for use in human-readable meta."""
-    return prop.businessName if prop.businessName else field_name
+    """Return businessName when set (and not 'NoBV'), else the column name, for use in human-readable meta.
+    
+    'NoBV' is a placeholder for 'No Business Value' and is ignored in favor of the column name.
+    """
+    if prop.businessName and prop.businessName.lower() != "nobv":
+        return prop.businessName
+    return field_name
 
 
 def _build_expectation_id(contract_id: str, column_name: Optional[str], rule_name: str) -> str:
