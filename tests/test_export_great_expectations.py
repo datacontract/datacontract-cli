@@ -1417,15 +1417,20 @@ schema:
 
         # Test 1: article_code with businessName: NoBV should use column name
         article_code_type_exp = next(
-            e for e in result["expectations"]
+            e
+            for e in result["expectations"]
             if e["type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "article_code"
         )
         assert article_code_type_exp["meta"]["name"] == "article_code must be of type string"
-        assert article_code_type_exp["meta"]["expectation_id"] == "test-nobv.article_code.article_code_must_be_of_type_string"
+        assert (
+            article_code_type_exp["meta"]["expectation_id"]
+            == "test-nobv.article_code.article_code_must_be_of_type_string"
+        )
 
         # Test 2: article_code not_null should use column name (NoBV ignored)
         article_code_not_null = next(
-            e for e in result["expectations"]
+            e
+            for e in result["expectations"]
             if e["type"] == "expect_column_values_to_not_be_null" and e["kwargs"]["column"] == "article_code"
         )
         assert article_code_not_null["meta"]["name"] == "article_code must be filled"
@@ -1433,7 +1438,8 @@ schema:
 
         # Test 3: article_code unique should use column name (NoBV ignored)
         article_code_unique = next(
-            e for e in result["expectations"]
+            e
+            for e in result["expectations"]
             if e["type"] == "expect_column_values_to_be_unique" and e["kwargs"]["column"] == "article_code"
         )
         assert article_code_unique["meta"]["name"] == "article_code must be unique"
@@ -1441,26 +1447,38 @@ schema:
 
         # Test 4: article_name with businessName: nobv (lowercase) should also use column name
         article_name_type_exp = next(
-            e for e in result["expectations"]
+            e
+            for e in result["expectations"]
             if e["type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "article_name"
         )
         assert article_name_type_exp["meta"]["name"] == "article_name must be of type text"
-        assert article_name_type_exp["meta"]["expectation_id"] == "test-nobv.article_name.article_name_must_be_of_type_text"
+        assert (
+            article_name_type_exp["meta"]["expectation_id"]
+            == "test-nobv.article_name.article_name_must_be_of_type_text"
+        )
 
         # Test 5: with_real_business_name should use its businessName (not NoBV)
         real_name_type_exp = next(
-            e for e in result["expectations"]
+            e
+            for e in result["expectations"]
             if e["type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "with_real_business_name"
         )
         assert real_name_type_exp["meta"]["name"] == "Rental Product Name must be of type string"
-        assert real_name_type_exp["meta"]["expectation_id"] == "test-nobv.with_real_business_name.rental_product_name_must_be_of_type_string"
+        assert (
+            real_name_type_exp["meta"]["expectation_id"]
+            == "test-nobv.with_real_business_name.rental_product_name_must_be_of_type_string"
+        )
 
         # Test 6: with_real_business_name not_null should use business name
         real_name_not_null = next(
-            e for e in result["expectations"]
+            e
+            for e in result["expectations"]
             if e["type"] == "expect_column_values_to_not_be_null" and e["kwargs"]["column"] == "with_real_business_name"
         )
         assert real_name_not_null["meta"]["name"] == "Rental Product Name must be filled"
-        assert real_name_not_null["meta"]["expectation_id"] == "test-nobv.with_real_business_name.rental_product_name_must_be_filled"
+        assert (
+            real_name_not_null["meta"]["expectation_id"]
+            == "test-nobv.with_real_business_name.rental_product_name_must_be_filled"
+        )
     finally:
         os.unlink(path)
