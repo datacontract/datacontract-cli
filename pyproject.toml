@@ -117,7 +117,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.5.0",
-  "databricks-sdk<0.129.0",
+  "databricks-sdk<0.134.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
