@@ -174,6 +174,8 @@ def _build_constraint_meta(
     name: str,
     description: str,
     dimension: str,
+    severity: str = "critical",
+    checkType: str = "technical",
 ) -> Dict[str, Any]:
     """Build metadata for an automatically generated constraint expectation.
 
@@ -184,6 +186,8 @@ def _build_constraint_meta(
         name: Human-readable expectation name.
         description: Human-readable expectation description.
         dimension: Data quality dimension represented by the constraint.
+        severity: Severity level for the constraint (default: "critical").
+        checkType: Type of check (default: "technical").
 
     Returns:
         dict[str, Any]: Great Expectations metadata, including its generated identifier.
@@ -194,6 +198,8 @@ def _build_constraint_meta(
         "name": name,
         "description": description,
         "dimension": dimension,
+        "severity": severity,
+        "checkType": checkType,
     }
 
 
@@ -286,15 +292,22 @@ def to_great_expectations(
 
     expectations.extend(model_to_expectations(schema.properties or [], engine, sql_server_type, contract_id))
 
-    return to_suite(expectations, expectation_suite_name)
+    return to_suite(expectations, expectation_suite_name, contract_id=contract_id, contract_version=odcs.version or "")
 
 
-def to_suite(expectations: List[Dict[str, Any]], expectation_suite_name: str) -> str:
+def to_suite(
+    expectations: List[Dict[str, Any]],
+    expectation_suite_name: str,
+    contract_id: str = "",
+    contract_version: str = "",
+) -> str:
     """Serialize expectations as a Great Expectations suite JSON string.
 
     Args:
         expectations: Expectations to include in the suite.
         expectation_suite_name: Name assigned to the expectation suite.
+        contract_id: Data contract identifier for metadata enrichment.
+        contract_version: Data contract version for metadata enrichment.
 
     Returns:
         str: Indented JSON representation of the expectation suite.
@@ -303,7 +316,10 @@ def to_suite(expectations: List[Dict[str, Any]], expectation_suite_name: str) ->
         {
             "name": expectation_suite_name,
             "expectations": expectations,
-            "meta": {},
+            "meta": {
+                "contract_id": contract_id,
+                "contract_version": contract_version,
+            },
         },
         indent=2,
     )

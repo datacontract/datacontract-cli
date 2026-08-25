@@ -65,6 +65,8 @@ def expected_json_suite() -> Dict[str, Any]:
         "name": f"{col} must be of type {typ}",
         "description": f"{col} must be of type {typ}",
         "dimension": "conformity",
+        "severity": "critical",
+        "checkType": "technical",
     }
     _not_null = lambda col: {  # noqa: E731
         "expectation_id": f"my-data-contract-id.{col}.{col}_must_be_filled",
@@ -72,6 +74,8 @@ def expected_json_suite() -> Dict[str, Any]:
         "name": f"{col} must be filled",
         "description": f"{col} must be not null values",
         "dimension": "completeness",
+        "severity": "critical",
+        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -105,7 +109,10 @@ def expected_json_suite() -> Dict[str, Any]:
                 "meta": _not_null("processed_timestamp"),
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.0.0",
+        },
     }
 
 
@@ -131,6 +138,8 @@ def expected_json_suite_table_quality() -> Dict[str, Any]:
                     "name": "order_id must be of type string",
                     "description": "order_id must be of type string",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -142,10 +151,15 @@ def expected_json_suite_table_quality() -> Dict[str, Any]:
                     "name": "order_id must be filled",
                     "description": "order_id must be not null values",
                     "dimension": "completeness",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.0.0",
+        },
     }
 
 
@@ -164,6 +178,8 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                     "name": "id must be of type string",
                     "description": "id must be of type string",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -175,6 +191,8 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                     "name": "id must be filled (primary key)",
                     "description": "id is a primary key and must not contain null values",
                     "dimension": "completeness",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -186,6 +204,8 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                     "name": "id must be unique (primary key)",
                     "description": "id is a primary key and must contain unique values",
                     "dimension": "uniqueness",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             # --- type: string, required, enum + quality block ---
@@ -198,6 +218,8 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                     "name": "type must be of type string",
                     "description": "type must be of type string",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -209,6 +231,8 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                     "name": "type must be filled",
                     "description": "type must be not null values",
                     "dimension": "completeness",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -220,6 +244,8 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                     "name": "type must belong to allowed values",
                     "description": "type must be in the set of allowed values",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             # Bug fix: column is in kwargs, not at root level
@@ -234,7 +260,10 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.1.1",
+        },
     }
 
 
@@ -245,6 +274,8 @@ def expected_spark_engine() -> Dict[str, Any]:
         "name": f"{col} must be filled",
         "description": f"{col} must be not null values",
         "dimension": "completeness",
+        "severity": "critical",
+        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -266,6 +297,8 @@ def expected_spark_engine() -> Dict[str, Any]:
                     "name": "order_id must be of type StringType",
                     "description": "order_id must be of type StringType",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -285,6 +318,8 @@ def expected_spark_engine() -> Dict[str, Any]:
                     "name": "processed_timestamp must be of type TimestampType",
                     "description": "processed_timestamp must be of type TimestampType",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -296,7 +331,10 @@ def expected_spark_engine() -> Dict[str, Any]:
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.0.0",
+        },
     }
 
 
@@ -307,6 +345,8 @@ def expected_pandas_engine() -> Dict[str, Any]:
         "name": f"{col} must be filled",
         "description": f"{col} must be not null values",
         "dimension": "completeness",
+        "severity": "critical",
+        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -328,6 +368,8 @@ def expected_pandas_engine() -> Dict[str, Any]:
                     "name": "order_id must be of type str",
                     "description": "order_id must be of type str",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -347,6 +389,8 @@ def expected_pandas_engine() -> Dict[str, Any]:
                     "name": "processed_timestamp must be of type datetime64[ns]",
                     "description": "processed_timestamp must be of type datetime64[ns]",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -358,7 +402,10 @@ def expected_pandas_engine() -> Dict[str, Any]:
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.0.0",
+        },
     }
 
 
@@ -369,6 +416,8 @@ def expected_sql_engine() -> Dict[str, Any]:
         "name": f"{col} must be filled",
         "description": f"{col} must be not null values",
         "dimension": "completeness",
+        "severity": "critical",
+        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -390,6 +439,8 @@ def expected_sql_engine() -> Dict[str, Any]:
                     "name": "order_id must be of type STRING",
                     "description": "order_id must be of type STRING",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -409,6 +460,8 @@ def expected_sql_engine() -> Dict[str, Any]:
                     "name": "processed_timestamp must be of type TIMESTAMP_TZ",
                     "description": "processed_timestamp must be of type TIMESTAMP_TZ",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -420,7 +473,10 @@ def expected_sql_engine() -> Dict[str, Any]:
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.0.0",
+        },
     }
 
 
@@ -431,6 +487,8 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
         "name": f"{col} must be filled",
         "description": f"{col} must be not null values",
         "dimension": "completeness",
+        "severity": "critical",
+        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -452,6 +510,8 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
                     "name": "order_id must be of type varchar",
                     "description": "order_id must be of type varchar",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -474,6 +534,8 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
                     "name": "processed_timestamp must be of type timestamp(3) with time zone",
                     "description": "processed_timestamp must be of type timestamp(3) with time zone",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             {
@@ -485,7 +547,10 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.0.0",
+        },
     }
 
 
@@ -494,6 +559,19 @@ def test_to_great_expectation(data_contract_basic: OpenDataContractStandard):
     _oid = "order_id"
     _ot = "order_total"
     _os = "order_status"
+    
+    def _mk(expectation_id, rule_location, name, description, dimension):
+        """Helper to build meta with severity and checkType for constraints."""
+        return {
+            "expectation_id": expectation_id,
+            "rule_location": rule_location,
+            "name": name,
+            "description": description,
+            "dimension": dimension,
+            "severity": "critical",
+            "checkType": "technical",
+        }
+    
     expected_json_suite = {
         "name": "orders.1.0.0",
         "expectations": [
@@ -501,139 +579,142 @@ def test_to_great_expectation(data_contract_basic: OpenDataContractStandard):
             {
                 "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_id", "type_": "varchar"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_id.order_id_must_be_of_type_varchar",
-                    "rule_location": "quality_column",
-                    "name": f"{_oid} must be of type varchar",
-                    "description": f"{_oid} must be of type varchar",
-                    "dimension": "conformity",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_id.order_id_must_be_of_type_varchar",
+                    "quality_column",
+                    f"{_oid} must be of type varchar",
+                    f"{_oid} must be of type varchar",
+                    "conformity",
+                ),
             },
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "order_id"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_id.order_id_must_be_filled_primary_key",
-                    "rule_location": "quality_column",
-                    "name": f"{_oid} must be filled (primary key)",
-                    "description": f"{_oid} is a primary key and must not contain null values",
-                    "dimension": "completeness",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_id.order_id_must_be_filled_primary_key",
+                    "quality_column",
+                    f"{_oid} must be filled (primary key)",
+                    f"{_oid} is a primary key and must not contain null values",
+                    "completeness",
+                ),
             },
             {
                 "type": "expect_column_values_to_be_unique",
                 "kwargs": {"column": "order_id"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_id.order_id_must_be_unique_primary_key",
-                    "rule_location": "quality_column",
-                    "name": f"{_oid} must be unique (primary key)",
-                    "description": f"{_oid} is a primary key and must contain unique values",
-                    "dimension": "uniqueness",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_id.order_id_must_be_unique_primary_key",
+                    "quality_column",
+                    f"{_oid} must be unique (primary key)",
+                    f"{_oid} is a primary key and must contain unique values",
+                    "uniqueness",
+                ),
             },
             {
                 "type": "expect_column_value_lengths_to_be_between",
                 "kwargs": {"column": "order_id", "min_value": 8, "max_value": 10},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_id.order_id_length_must_be_between_8_and_10",
-                    "rule_location": "quality_column",
-                    "name": f"{_oid} length must be between 8 and 10",
-                    "description": f"{_oid} length must be between 8 and 10",
-                    "dimension": "conformity",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_id.order_id_length_must_be_between_8_and_10",
+                    "quality_column",
+                    f"{_oid} length must be between 8 and 10",
+                    f"{_oid} length must be between 8 and 10",
+                    "conformity",
+                ),
             },
             {
                 "type": "expect_column_values_to_match_regex",
                 "kwargs": {"column": "order_id", "regex": "^B[0-9]+$"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_id.order_id_must_match_pattern_b_0_9",
-                    "rule_location": "quality_column",
-                    "name": f"{_oid} must match pattern ^B[0-9]+$",
-                    "description": f"{_oid} values must match the pattern ^B[0-9]+$",
-                    "dimension": "conformity",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_id.order_id_must_match_pattern_b_0_9",
+                    "quality_column",
+                    f"{_oid} must match pattern ^B[0-9]+$",
+                    f"{_oid} values must match the pattern ^B[0-9]+$",
+                    "conformity",
+                ),
             },
             # --- order_total: bigint, required, minimum+maximum ---
             {
                 "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_total", "type_": "bigint"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_total.order_total_must_be_of_type_bigint",
-                    "rule_location": "quality_column",
-                    "name": f"{_ot} must be of type bigint",
-                    "description": f"{_ot} must be of type bigint",
-                    "dimension": "conformity",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_total.order_total_must_be_of_type_bigint",
+                    "quality_column",
+                    f"{_ot} must be of type bigint",
+                    f"{_ot} must be of type bigint",
+                    "conformity",
+                ),
             },
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "order_total"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_total.order_total_must_be_filled",
-                    "rule_location": "quality_column",
-                    "name": f"{_ot} must be filled",
-                    "description": f"{_ot} must be not null values",
-                    "dimension": "completeness",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_total.order_total_must_be_filled",
+                    "quality_column",
+                    f"{_ot} must be filled",
+                    f"{_ot} must be not null values",
+                    "completeness",
+                ),
             },
             {
                 "type": "expect_column_values_to_be_between",
                 "kwargs": {"column": "order_total", "min_value": 0, "max_value": 1000000},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_total.order_total_must_be_between_0_and_1000000",
-                    "rule_location": "quality_column",
-                    "name": f"{_ot} must be between 0 and 1000000",
-                    "description": f"{_ot} value must be between 0 and 1000000",
-                    "dimension": "conformity",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_total.order_total_must_be_between_0_and_1000000",
+                    "quality_column",
+                    f"{_ot} must be between 0 and 1000000",
+                    f"{_ot} value must be between 0 and 1000000",
+                    "conformity",
+                ),
             },
             # --- order_status: text, primaryKey+required → only primaryKey rules, then enum ---
             {
                 "type": "expect_column_values_to_be_of_type",
                 "kwargs": {"column": "order_status", "type_": "text"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_status.order_status_must_be_of_type_text",
-                    "rule_location": "quality_column",
-                    "name": f"{_os} must be of type text",
-                    "description": f"{_os} must be of type text",
-                    "dimension": "conformity",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_status.order_status_must_be_of_type_text",
+                    "quality_column",
+                    f"{_os} must be of type text",
+                    f"{_os} must be of type text",
+                    "conformity",
+                ),
             },
             {
                 "type": "expect_column_values_to_not_be_null",
                 "kwargs": {"column": "order_status"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_status.order_status_must_be_filled_primary_key",
-                    "rule_location": "quality_column",
-                    "name": f"{_os} must be filled (primary key)",
-                    "description": f"{_os} is a primary key and must not contain null values",
-                    "dimension": "completeness",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_status.order_status_must_be_filled_primary_key",
+                    "quality_column",
+                    f"{_os} must be filled (primary key)",
+                    f"{_os} is a primary key and must not contain null values",
+                    "completeness",
+                ),
             },
             {
                 "type": "expect_column_values_to_be_unique",
                 "kwargs": {"column": "order_status"},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_status.order_status_must_be_unique_primary_key",
-                    "rule_location": "quality_column",
-                    "name": f"{_os} must be unique (primary key)",
-                    "description": f"{_os} is a primary key and must contain unique values",
-                    "dimension": "uniqueness",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_status.order_status_must_be_unique_primary_key",
+                    "quality_column",
+                    f"{_os} must be unique (primary key)",
+                    f"{_os} is a primary key and must contain unique values",
+                    "uniqueness",
+                ),
             },
             {
                 "type": "expect_column_values_to_be_in_set",
                 "kwargs": {"column": "order_status", "value_set": ["pending", "shipped", "delivered"]},
-                "meta": {
-                    "expectation_id": "orders-unit-test.order_status.order_status_must_belong_to_allowed_values",
-                    "rule_location": "quality_column",
-                    "name": f"{_os} must belong to allowed values",
-                    "description": f"{_os} must be in the set of allowed values",
-                    "dimension": "conformity",
-                },
+                "meta": _mk(
+                    "orders-unit-test.order_status.order_status_must_belong_to_allowed_values",
+                    "quality_column",
+                    f"{_os} must belong to allowed values",
+                    f"{_os} must be in the set of allowed values",
+                    "conformity",
+                ),
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "orders-unit-test",
+            "contract_version": "1.0.0",
+        },
     }
 
     result_orders = to_great_expectations(data_contract_basic, "orders")
@@ -661,6 +742,8 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
             "name": f"{dn} must be of type {t}",
             "description": f"{dn} must be of type {t}",
             "dimension": "conformity",
+            "severity": "critical",
+            "checkType": "technical",
         }
 
     def _not_null(col, dn):
@@ -670,6 +753,8 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
             "name": f"{dn} must be filled",
             "description": f"{dn} must be not null values",
             "dimension": "completeness",
+            "severity": "critical",
+            "checkType": "technical",
         }
 
     def _unique_meta(col, dn):
@@ -679,6 +764,8 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
             "name": f"{dn} must be unique",
             "description": f"{dn} must contain unique values",
             "dimension": "uniqueness",
+            "severity": "critical",
+            "checkType": "technical",
         }
 
     # order_id uses column name for display (businessName "Order ID" is ignored)
@@ -712,6 +799,8 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                     "name": f"{oid} must be a valid uuid",
                     "description": f"{oid} values must be in uuid format",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             # order_timestamp: timestamp, required
@@ -751,6 +840,8 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                     "name": "customer_id length must be between 10 and 20",
                     "description": "customer_id length must be between 10 and 20",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             # customer_email_address: text, required, format=email
@@ -773,10 +864,15 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                     "name": "customer_email_address must be a valid email",
                     "description": "customer_email_address values must be in email format",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "orders-latest",
+            "contract_version": "1.0.0",
+        },
     }
 
     # sku uses column name for display (businessName "Stock Keeping Unit" is ignored)
@@ -816,6 +912,8 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                     "name": f"{oid} must be a valid uuid",
                     "description": f"{oid} values must be in uuid format",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
             # sku: text, pattern from definition ref
@@ -833,10 +931,15 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                     "name": f"{sku_dn} must match pattern ^[A-Za-z0-9]{{8,14}}$",
                     "description": f"{sku_dn} values must match the pattern ^[A-Za-z0-9]{{8,14}}$",
                     "dimension": "conformity",
+                    "severity": "critical",
+                    "checkType": "technical",
                 },
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "orders-latest",
+            "contract_version": "1.0.0",
+        },
     }
     result_orders = to_great_expectations(data_contract_complex, "orders")
     assert result_orders == json.dumps(expected_orders, indent=2)
@@ -870,6 +973,8 @@ def test_to_great_expectation_custom_name(
         "name": f"{col} must be filled",
         "description": f"{col} must be not null values",
         "dimension": "completeness",
+        "severity": "critical",
+        "checkType": "technical",
     }
     _col_type = lambda col, t: {  # noqa: E731
         "expectation_id": f"my-data-contract-id.{col}.{col}_must_be_of_type_{t}",
@@ -877,6 +982,8 @@ def test_to_great_expectation_custom_name(
         "name": f"{col} must be of type {t}",
         "description": f"{col} must be of type {t}",
         "dimension": "conformity",
+        "severity": "critical",
+        "checkType": "technical",
     }
     expected = {
         "name": "my_expectation_suite_name",
@@ -910,7 +1017,10 @@ def test_to_great_expectation_custom_name(
                 "meta": _not_null("processed_timestamp"),
             },
         ],
-        "meta": {},
+        "meta": {
+            "contract_id": "my-data-contract-id",
+            "contract_version": "1.0.0",
+        },
     }
 
     result = to_great_expectations(
