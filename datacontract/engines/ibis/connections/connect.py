@@ -162,9 +162,12 @@ def connect_ibis(
             from google.cloud import bigquery as bq_client_lib
 
             client = bq_client_lib.Client(project=billing_project, credentials=credentials)
+            # ibis's do_connect prefers client.project over project_id when a
+            # client is passed, so qualify dataset_id or it resolves against
+            # billing_project instead of project.
             return ibis.bigquery.connect(
                 project_id=project,
-                dataset_id=dataset,
+                dataset_id=f"{project}.{dataset}",
                 client=client,
             )
 
