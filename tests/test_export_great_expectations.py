@@ -559,7 +559,7 @@ def test_to_great_expectation(data_contract_basic: OpenDataContractStandard):
     _oid = "order_id"
     _ot = "order_total"
     _os = "order_status"
-    
+
     def _mk(expectation_id, rule_location, name, description, dimension):
         """Helper to build meta with severity and checkType for constraints."""
         return {
@@ -571,7 +571,7 @@ def test_to_great_expectation(data_contract_basic: OpenDataContractStandard):
             "severity": "critical",
             "checkType": "technical",
         }
-    
+
     expected_json_suite = {
         "name": "orders.1.0.0",
         "expectations": [
