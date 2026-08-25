@@ -95,6 +95,10 @@ def test_billing_project_client_uses_the_impersonated_credentials(env):
     assert client.call_args.kwargs["project"] == "my-billing-project"
     assert client.call_args.kwargs["credentials"] is impersonated.return_value
     assert kwargs["client"] is client.return_value
+    # ibis prefers client.project over project_id when a client is passed, so
+    # dataset_id must carry the data project itself or queries resolve
+    # against the billing project instead.
+    assert kwargs["dataset_id"] == "my-project.my_dataset"
 
 
 def test_env_variables_override_the_contract_project_and_dataset(env):
