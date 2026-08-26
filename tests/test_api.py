@@ -595,6 +595,16 @@ def test_publish_url_arbitrary_host_refused(clean_platform_env):
         _reject_unpinned_publish_url("https://evilentropy-data.com/api/test-results")  # no subdomain dot
 
 
+def test_publish_url_backslash_userinfo_refused(clean_platform_env):
+    """The host guard must see the host requests connects to. urlparse reads a
+    backslash as userinfo and the host as the platform; requests connects to
+    attacker.example, so the key would be POSTed there."""
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException):
+        _reject_unpinned_publish_url("https://attacker.example\\@entropy-data.com/api/test-results")
+
+
 def test_publish_url_environment_configured_host_allowed(clean_platform_env):
     clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://dcm.mycompany.example")
     _reject_unpinned_publish_url("https://dcm.mycompany.example/api/test-results")  # no raise
