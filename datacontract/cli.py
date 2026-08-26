@@ -252,7 +252,8 @@ def _print_publish_failure(run, out=None):
     for log in run.logs:
         if log.level in ("WARN", "ERROR") and "publish" in log.message.lower():
             color = "red" if log.level == "ERROR" else "yellow"
-            out.print(f"[{color}]{escape(log.message)}[/{color}]")
+            # highlight=False: render as prose, not rich's code-like repr highlighting.
+            out.print(f"[{color}]{escape(log.message)}[/{color}]", highlight=False)
 
 
 # ---------------------------------------------------------------------------

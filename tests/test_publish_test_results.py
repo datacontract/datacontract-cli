@@ -108,3 +108,35 @@ def test_cli_shows_publish_failure_and_exits_1(monkeypatch):
     assert result.exit_code == 1
     assert "Error publishing test results to dcm.mycompany.example" in result.output
     assert "Set ENTROPY_DATA_HOST" in result.output
+
+
+def test_ci_fails_on_publish_failure_regardless_of_fail_on(monkeypatch):
+    """datacontract ci exits 1 on a failed publish even with --fail-on never, and shows why."""
+    from typer.testing import CliRunner
+
+    from datacontract.cli import app
+
+    for var in ("ENTROPY_DATA_HOST", "DATAMESH_MANAGER_HOST", "DATACONTRACT_MANAGER_HOST"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("ENTROPY_DATA_API_KEY", "test-key")
+
+    class _Unauthorized:
+        status_code = 401
+        text = '{"error": "Unauthorized"}'
+        headers = {}
+
+    monkeypatch.setattr("datacontract.integration.entropy_data.requests.post", lambda *args, **kwargs: _Unauthorized())
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ci",
+            "fixtures/local-json/datacontract.yaml",
+            "--publish",
+            "https://dcm.mycompany.example/api/test-results",
+            "--fail-on",
+            "never",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "Error publishing test results to dcm.mycompany.example" in result.output

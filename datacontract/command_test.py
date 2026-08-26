@@ -266,7 +266,7 @@ def test(
     console.print(f"Testing {location}")
     if server == "all":
         server = None
-    contract = DataContract(
+    run = DataContract(
         config=cli_config(),
         data_contract_file=location,
         schema_location=schema,
@@ -284,8 +284,7 @@ def test(
         filter=filter,
         filters=parsed_filters,
         metadata_only=metadata_only,
-    )
-    run = contract.test()
+    ).test()
     if logs:
         _print_logs(run)
     try:
@@ -296,7 +295,7 @@ def test(
         write_test_result(run, console, output_format, output, data_contract)
     finally:
         # Publish messages are otherwise only logged, which is suppressed without --debug.
-        if contract.publish_succeeded is False:
+        if run.publish_succeeded is False:
             _print_publish_failure(run)
-    if contract.publish_succeeded is False:
+    if run.publish_succeeded is False:
         raise typer.Exit(code=1)

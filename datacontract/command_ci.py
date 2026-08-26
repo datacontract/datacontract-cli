@@ -119,7 +119,7 @@ def ci(
 
     for location in locations:
         out.print(f"Testing {location}")
-        contract = DataContract(
+        run = DataContract(
             config=cli_config(),
             data_contract_file=location,
             schema_location=schema,
@@ -128,8 +128,7 @@ def ci(
             ssl_verification=ssl_verification,
             inline_references=inline_references,
             metadata_only=metadata_only,
-        )
-        run = contract.test()
+        ).test()
         if logs:
             _print_logs(run, out)
         results.append((location, run))
@@ -138,7 +137,7 @@ def ci(
             write_test_result(run, out, output_format, output)
         except typer.Exit:
             pass
-        if contract.publish_succeeded is False:
+        if run.publish_succeeded is False:
             # A publish that was asked for and failed is a failed run, regardless of --fail-on.
             _print_publish_failure(run, out)
             should_fail = True
