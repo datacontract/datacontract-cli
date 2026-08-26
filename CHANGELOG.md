@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status`
 - New server type `duckdb` to test the tables inside a DuckDB database file (the file is opened read-only)
 - `postgresql` is accepted as the ODCS synonym of the `postgres` server type
 - `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk
