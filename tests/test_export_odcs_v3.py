@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.odcs_v3_exporter import to_odcs_v3_yaml
+from datacontract.imports.dcs_importer import convert_dcs_to_odcs, parse_dcs_from_dict
 from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
@@ -50,6 +51,24 @@ def test_to_odcs():
 
     # Verify team
     assert parsed["team"]["name"] == "checkout"
+
+
+def test_to_odcs_defaults_status_when_missing():
+    """Contracts without info.status must export a valid ODCS 'status' field."""
+    dcs_yaml = """
+id: my-unit-test
+info:
+  title: My Unit Test
+  version: 1.0.0
+  owner: checkout
+"""
+    data_contract = parse_dcs_from_dict(yaml.safe_load(dcs_yaml))
+    odcs = convert_dcs_to_odcs(data_contract)
+
+    assert odcs.status == "draft"
+
+    parsed = yaml.safe_load(odcs.to_yaml())
+    assert parsed["status"] == "draft"
 
 
 def assert_equals_odcs_yaml_str(expected, actual):
