@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 
 from datacontract.cli import (
     _print_logs,
+    _print_publish_failure,
     app,
     console,
     debug_option,
@@ -118,7 +119,7 @@ def ci(
 
     for location in locations:
         out.print(f"Testing {location}")
-        run = DataContract(
+        contract = DataContract(
             config=cli_config(),
             data_contract_file=location,
             schema_location=schema,
@@ -127,7 +128,8 @@ def ci(
             ssl_verification=ssl_verification,
             inline_references=inline_references,
             metadata_only=metadata_only,
-        ).test()
+        )
+        run = contract.test()
         if logs:
             _print_logs(run, out)
         results.append((location, run))
@@ -136,6 +138,10 @@ def ci(
             write_test_result(run, out, output_format, output)
         except typer.Exit:
             pass
+        if contract.publish_succeeded is False:
+            # A publish that was asked for and failed is a failed run, regardless of --fail-on.
+            _print_publish_failure(run, out)
+            should_fail = True
         if run.result in fail_results[fail_on]:
             should_fail = True
 

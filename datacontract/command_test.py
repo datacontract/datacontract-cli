@@ -7,6 +7,7 @@ from typing_extensions import Annotated
 
 from datacontract.cli import (
     _print_logs,
+    _print_publish_failure,
     app,
     console,
     debug_option,
@@ -265,7 +266,7 @@ def test(
     console.print(f"Testing {location}")
     if server == "all":
         server = None
-    run = DataContract(
+    contract = DataContract(
         config=cli_config(),
         data_contract_file=location,
         schema_location=schema,
@@ -283,11 +284,19 @@ def test(
         filter=filter,
         filters=parsed_filters,
         metadata_only=metadata_only,
-    ).test()
+    )
+    run = contract.test()
     if logs:
         _print_logs(run)
     try:
         data_contract = resolve_data_contract(location, schema_location=schema, config=cli_config())
     except Exception:
         data_contract = None
-    write_test_result(run, console, output_format, output, data_contract)
+    try:
+        write_test_result(run, console, output_format, output, data_contract)
+    finally:
+        # Publish messages are otherwise only logged, which is suppressed without --debug.
+        if contract.publish_succeeded is False:
+            _print_publish_failure(run)
+    if contract.publish_succeeded is False:
+        raise typer.Exit(code=1)

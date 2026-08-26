@@ -59,6 +59,8 @@ class DataContract:
         self._schema_name = schema_name
         self._publish_url = publish_url
         self._publish_test_results = publish_test_results
+        # None until test() publishes; the outcome of the last publish afterwards
+        self.publish_succeeded: bool | None = None
         self._spark = spark
         self._duckdb_connection = duckdb_connection
         self._inline_references = inline_references
@@ -209,7 +211,9 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None or self._publish_test_results:
-            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification, config=self._config)
+            self.publish_succeeded = publish_test_results_to_entropy_data(
+                run, self._publish_url, self._ssl_verification, config=self._config
+            )
 
         return run
 
