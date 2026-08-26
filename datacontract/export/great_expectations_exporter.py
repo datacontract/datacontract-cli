@@ -129,9 +129,10 @@ def _to_snake_case(text: str) -> str:
         text: Input text to normalize.
 
     Returns:
-        str: Lowercase identifier with non-alphanumeric characters replaced by underscores.
+        str: Lowercase identifier with hyphens mapped to ``minus_`` and other non-alphanumeric characters replaced by underscores.
     """
-    result = re.sub(r"[^a-z0-9_]", "_", text.strip().lower())
+    normalized = text.strip().lower().replace("-", "minus_")
+    result = re.sub(r"[^a-z0-9_]", "_", normalized)
     return re.sub(r"_+", "_", result).strip("_")
 
 
