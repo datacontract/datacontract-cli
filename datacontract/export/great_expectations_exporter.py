@@ -606,26 +606,6 @@ def add_field_expectations(
     return expectations
 
 
-def add_column_order_exp(properties: List[SchemaProperty], expectations: List[Dict[str, Any]]):
-    """Append an expectation that enforces the declared column order.
-
-    Args:
-        properties: Ordered schema properties that define the expected columns.
-        expectations: Collection to which the column-order expectation is appended.
-
-    Returns:
-        None: The expectation is added to ``expectations`` in place.
-    """
-    column_names = [prop.name for prop in properties]
-    expectations.append(
-        {
-            "type": "expect_table_columns_to_match_ordered_list",
-            "kwargs": {"column_list": column_names},
-            "meta": {},
-        }
-    )
-
-
 def to_column_types_exp(field_name, field_type, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Create a column type expectation.
 
