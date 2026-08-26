@@ -28,6 +28,7 @@ from ruamel.yaml.error import CommentMark
 from ruamel.yaml.tokens import CommentToken
 from ruamel.yaml.util import load_yaml_guess_indent
 
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.export.sql_type_converter import _get_config_value, convert_to_sql_type
 from datacontract.integration.dbt_test_mapping import field_to_data_tests, get_logical_type_option
 from datacontract.lint.resolve import resolve_data_contract
@@ -2579,6 +2580,7 @@ def parse_run_results_file(
             Check(
                 key=check_key,
                 type=check_type,
+                dimension=default_dimension(check_type),
                 name=description or fallback_name,
                 model=model,
                 field=column,

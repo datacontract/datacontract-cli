@@ -11,6 +11,7 @@ if typing.TYPE_CHECKING:
 
 from datacontract.breaking.detector import BreakingChangeDetector
 from datacontract.config import Config
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
 from datacontract.export.exporter_factory import exporter_factory
@@ -185,6 +186,7 @@ class DataContract:
             run.checks.append(
                 Check(
                     type=e.type,
+                    dimension=default_dimension(e.type),
                     name=e.name,
                     result=e.result,
                     reason=e.reason,
@@ -209,7 +211,9 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None or self._publish_test_results:
-            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification, config=self._config)
+            run.publish_succeeded = publish_test_results_to_entropy_data(
+                run, self._publish_url, self._ssl_verification, config=self._config
+            )
 
         return run
 

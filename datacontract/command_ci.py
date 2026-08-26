@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 
 from datacontract.cli import (
     _print_logs,
+    _print_publish_failure,
     app,
     console,
     debug_option,
@@ -136,6 +137,10 @@ def ci(
             write_test_result(run, out, output_format, output)
         except typer.Exit:
             pass
+        if run.publish_succeeded is False:
+            # A publish that was asked for and failed is a failed run, regardless of --fail-on.
+            _print_publish_failure(run, out)
+            should_fail = True
         if run.result in fail_results[fail_on]:
             should_fail = True
 

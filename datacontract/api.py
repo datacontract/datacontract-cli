@@ -256,8 +256,9 @@ results may contain sensitive information.
 
 A posted contract carries SQL and names the hosts to connect to, so the server treats it as
 untrusted input: a `quality.type: sql` rule must be a read-only query, a credential held in the
-server's environment is never sent to a host the contract names, and `servers[].type: local` is
-refused so a caller cannot read the server's own files. Set
+server's environment is never sent to a host the contract names, a `publish_url` may only point at
+the Entropy Data platform or the host configured via `ENTROPY_DATA_HOST`, and `servers[].type: local`
+is refused so a caller cannot read the server's own files. Set
 `DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment serves its own files on purpose;
 the contract is then still confined to the paths it declares.
 
@@ -465,8 +466,8 @@ def _parse_filters_query(filters: str | None) -> dict[str, str] | None:
 # contract: (the Server attribute that names the connection target, the Config
 # field an operator sets to pin that target in the environment or None when the
 # type has no such field, the Config fields that hold a connection secret).
-# See _reject_ambient_credentials_to_untrusted_host.
-_AMBIENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...]]] = {
+# See _reject_environment_credentials_to_untrusted_host.
+_ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...]]] = {
     "postgres": ("host", "postgres_host", ("postgres_password",)),
     "mysql": ("host", "mysql_host", ("mysql_password",)),
     "oracle": ("host", "oracle_host", ("oracle_password",)),
@@ -546,7 +547,7 @@ def _reject_local_server_type(body: str, server_name: str | None, config) -> Non
     )
 
 
-def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | None, config) -> None:
+def _reject_environment_credentials_to_untrusted_host(body: str, server_name: str | None, config) -> None:
     """Keep an environment-held data-source credential from reaching a host the
     posted contract chose.
 
@@ -557,7 +558,7 @@ def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | 
     server's type resolves from the environment, the connection target must
     resolve from the environment too -- not from the contract, and not from a
     per-request header (a caller who brings the whole credential set may still
-    aim it wherever they like; only the server's ambient secret is pinned).
+    aim it wherever they like; only the server's environment secret is pinned).
     """
     from datacontract.config import Config
     from datacontract.config.settings import env_name
@@ -566,7 +567,7 @@ def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | 
     server = _selected_server(body, server_name, resolved)
     if server is None:
         return
-    guard = _AMBIENT_CREDENTIAL_TARGETS.get(server.type)
+    guard = _ENVIRONMENT_CREDENTIAL_TARGETS.get(server.type)
     if guard is None:
         return
     target_attr, host_field, secret_fields = guard
@@ -590,6 +591,67 @@ def _reject_ambient_credentials_to_untrusted_host(body: str, server_name: str | 
             f"environment."
         )
     raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
+
+# The fields backing the platform API key and host, in the fallback order
+# _get_api_key / _get_host read them (current name first, deprecated synonyms after).
+_PLATFORM_KEY_FIELDS = ("entropy_data_api_key", "datamesh_manager_api_key", "datacontract_manager_api_key")
+_PLATFORM_HOST_FIELDS = ("entropy_data_host", "datamesh_manager_host", "datacontract_manager_host")
+
+
+def _reject_unpinned_publish_url(publish_url: str | None) -> None:
+    """Keep the API server from POSTing test results to a caller-chosen host.
+
+    `publish_url` names where the finished run — check details, failed-row
+    samples — is POSTed, so an arbitrary URL would let a caller aim a blind
+    POST into the operator's network and exfiltrate the results. The target
+    must be a platform URL as the server's own environment sees it: a
+    per-request `entropy-data-host` header does not widen the set, or the
+    guard would be the caller's to configure.
+    """
+    from datacontract.integration.entropy_data import is_platform_url
+
+    if publish_url is None or is_platform_url(publish_url, None):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            "The publish_url must point at the Entropy Data platform. To publish to a self-hosted "
+            "deployment, set the environment variable ENTROPY_DATA_HOST on the server running this "
+            "API to that host."
+        ),
+    )
+
+
+def _reject_request_platform_host_with_environment_key(config) -> None:
+    """Keep the environment-held platform API key from following a request-chosen host.
+
+    The platform host decides where the Entropy Data API key travels, and it can
+    be set per request (`entropy-data-host` header). A request that supplies the
+    host while the key resolves from the server's environment could therefore
+    aim that key at its own machine — same rule as the data sources: an
+    environment credential goes only to an environment-pinned destination. A
+    caller who brings the key itself may aim it wherever they like.
+    """
+    from datacontract.config import Config
+
+    resolved = Config.resolve(config)
+    key_source = next(
+        (source for field in _PLATFORM_KEY_FIELDS if (source := resolved.option_source(field)) is not None), None
+    )
+    if key_source != "env":
+        return
+    if not any(resolved.option_source(field) == "request" for field in _PLATFORM_HOST_FIELDS):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            "This server holds an Entropy Data API key in its environment, so the platform host must "
+            "also come from the server's environment (ENTROPY_DATA_HOST); it will not be taken from a "
+            "request header. Remove the entropy-data-host header, or send the API key with the request "
+            "instead of relying on the server's environment."
+        ),
+    )
 
 
 def check_api_key(api_key_header: str | None):
@@ -646,8 +708,9 @@ handled. A contract that cannot be parsed is reported the same way, as a failed 
             },
         },
         422: {
-            "description": "`filter` and `filters` were both given, or `filters` is not a JSON object "
-            "mapping schema name to a SQL predicate.",
+            "description": "`filter` and `filters` were both given, `filters` is not a JSON object "
+            "mapping schema name to a SQL predicate, or `publish_url` does not point at the Entropy "
+            "Data platform or the host configured via `ENTROPY_DATA_HOST`.",
             "model": UnprocessableEntityResponse,
         },
     },
@@ -675,7 +738,9 @@ async def test(
     publish_url: Annotated[
         str | None,
         Query(
-            description="URL to publish test results. Optional, if you want to publish the test results to a Data Mesh Manager or Data Contract Manager. Example: https://api.datamesh-manager.com/api/test-results",
+            description="URL to publish test results. Optional, if you want to publish the test results to a Data Mesh Manager or Data Contract Manager. Example: https://api.datamesh-manager.com/api/test-results. "
+            "Must point at the Entropy Data platform, or at the host configured on this server "
+            "via the environment variable ENTROPY_DATA_HOST — other hosts are refused with 422.",
             examples=["https://api.datamesh-manager.com/api/test-results"],
         ),
     ] = None,
@@ -709,7 +774,9 @@ async def test(
     config = config_from_headers(request.headers)
     untrusted_contract = getattr(request.app.state, "untrusted_contracts", False)
     if untrusted_contract:
-        _reject_ambient_credentials_to_untrusted_host(body, server, config)
+        _reject_unpinned_publish_url(publish_url)
+        _reject_request_platform_host_with_environment_key(config)
+        _reject_environment_credentials_to_untrusted_host(body, server, config)
         _reject_local_server_type(body, server, config)
     return DataContract(
         data_contract_str=body,

@@ -86,12 +86,23 @@ class Check(BaseModel):
     qualityId: str | None = Field(
         default=None,
         validation_alias=AliasChoices("qualityId", "quality_id"),
-        description="The ODCS `quality.id` of the rule this check comes from, so it can be traced back "
-        "to (and re-run through `test --quality-id`) the rule that declared it. Absent for built-in checks.",
+        description="The ODCS `quality.id` of the rule this check comes from, or the `slaProperties` "
+        "id for a service level check, so it can be traced back to (and re-run through "
+        "`test --quality-id`) the declaration it came from. Absent for built-in schema checks.",
     )
     tags: list[str] | None = Field(
         default=None,
         description="The ODCS `quality.tags` of the rule this check comes from.",
+    )
+    dimension: str | None = Field(
+        default=None,
+        description="The data quality dimension this check measures, either declared by the rule "
+        "(`quality.dimension`) or the one its check type measures.",
+        examples=["completeness"],
+    )
+    qualityDefinition: str | None = Field(
+        default=None,
+        description="The ODCS quality rule this check comes from, as YAML. Absent for checks that no rule declared.",
     )
 
     engine: str | None = Field(
@@ -205,6 +216,12 @@ class Run(BaseModel):
     )
     checks: List[Check] | None = Field(description="One entry per executed check.")
     logs: List[Log] | None = Field(description="The messages written while the run was executing.")
+    # Excluded from serialization: an in-process signal, not part of the published/returned result.
+    publish_succeeded: bool | None = Field(
+        default=None,
+        exclude=True,
+        description="Whether publishing the test results succeeded; None if no publish was requested.",
+    )
 
     def has_passed(self):
         self.calculate_result()
