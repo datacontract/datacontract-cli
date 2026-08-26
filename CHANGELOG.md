@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test results report how many rows a check found bad out of the rows it read, plus the data quality dimension and the `quality` rule a check comes from
 
 ### Changed
+- `datacontract api` only publishes test results to the Entropy Data platform or the host configured via `ENTROPY_DATA_HOST`; other `publish_url` targets are refused
 - `datacontract api` no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
 - `datacontract api` no longer reloads on file changes by default; pass `--reload` to enable it (development only)
 - **breaking:** the `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
