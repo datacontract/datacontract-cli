@@ -60,11 +60,13 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     server_type = to_server_type(source, dialect)
     if server_type is not None:
         server_defaults = get_server_defaults(server_type)
-        server_defaults.update(get_created_location(statements, server_type, variables))
+        location = get_created_location(statements, server_type, variables)
+        server_defaults.update(location)
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
+        placeholders = ", ".join(field for field in server_defaults if field not in location)
         logging.warning(
-            "SQL import generated a server block with placeholder connection values. "
-            "Review host, port, database, and schema in the output before use."
+            f"SQL import generated a server block with placeholder connection values. "
+            f"Update the following values before use: {placeholders}"
         )
 
     tables = [
