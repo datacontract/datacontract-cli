@@ -23,6 +23,7 @@ from datacontract.export.sodacl_check_builder import (
     create_checks,
     prepare_query,
     to_schema_checks,
+    to_servicelevel_checks,
     to_sla_freshness_check,
 )
 
@@ -611,6 +612,69 @@ def test_field_checks_fall_back_to_name_without_physical_name():
 
     present = next(c for c in checks if c.type == "field_is_present")
     assert present.field == "sku"
+
+
+def test_servicelevel_checks_use_physical_names_when_set():
+    """Freshness/retention SodaCL must target physicalName, like the schema checks.
+
+    The `checks for X` block names the dataset Soda scans; the sla element
+    speaks contract language. Without resolution, a contract whose object
+    name differs from the relation name emits checks against a dataset that
+    does not exist.
+    """
+    contract = OpenDataContractStandard(
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="freshness-test",
+        schema=[
+            SchemaObject(
+                name="events",
+                physicalName="events_v1",
+                properties=[SchemaProperty(name="ts", physicalName="TS", logicalType="timestamp")],
+            )
+        ],
+    )
+    contract.slaProperties = [
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value=24, unit="h"),
+        ServiceLevelAgreementProperty(property="retention", element="events.ts", value=1, unit="y"),
+    ]
+
+    freshness, retention = to_servicelevel_checks(contract, Server(type="snowflake"))
+
+    assert freshness.model == "events_v1"
+    fresh_impl = yaml.safe_load(freshness.implementation)
+    assert list(fresh_impl["checks for events_v1"][0].keys()) == ["freshness(TS) < 24h"]
+
+    assert retention.model == "events_v1"
+    ret_impl = yaml.safe_load(retention.implementation)
+    (entry,) = ret_impl["checks for events_v1"]
+    ((_, config),) = entry.items()
+    assert "MIN(TS)" in config["events_v1_servicelevel_retention expression"]
+
+
+def test_servicelevel_checks_keep_kafka_logical_name():
+    """to_schema_name reads the Spark SQL view (logical name) on kafka, not the topic."""
+    contract = OpenDataContractStandard(
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="freshness-test",
+        schema=[
+            SchemaObject(
+                name="events",
+                physicalName="events-topic",
+                properties=[SchemaProperty(name="ts", logicalType="timestamp")],
+            )
+        ],
+    )
+    contract.slaProperties = [
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value=24, unit="h"),
+    ]
+
+    (freshness,) = to_servicelevel_checks(contract, Server(type="kafka"))
+
+    assert freshness.model == "events"
+    fresh_impl = yaml.safe_load(freshness.implementation)
+    assert "checks for events" in fresh_impl
 
 
 # ---------------------------------------------------------------------------

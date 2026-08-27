@@ -13,6 +13,7 @@ import logging
 import re
 import uuid
 from collections import defaultdict
+from functools import cache
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
@@ -68,6 +69,8 @@ def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
                 field=spec.field,
                 qualityId=spec.quality_id,
                 tags=spec.tags,
+                dimension=spec.dimension,
+                qualityDefinition=spec.quality_definition,
                 engine="datacontract-cli",
                 implementation=_describe(spec),
             )
@@ -262,6 +265,13 @@ def _run_model(
             if not specs:
                 return
 
+    # Read at most once, and only for a check that needs a denominator; the batched
+    # aggregation reads its own row count within the same query.
+    @cache
+    def model_row_count() -> int:
+        rc = t.count().execute()
+        return 0 if rc is None else int(rc)
+
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
         try:
@@ -277,11 +287,11 @@ def _run_model(
                 if expr is None:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
-                    _evaluate(run, spec, 0)
+                    _evaluate(run, spec, 0, row_count=model_row_count())
                 else:
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
-                _run_duplicate(run, t, columns, spec)
+                _run_duplicate(run, t, columns, spec, model_row_count())
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
@@ -651,16 +661,29 @@ def _constraint_info(spec: CheckSpec) -> dict:
 # ---------------------------------------------------------------------------
 # dedicated check runners
 # ---------------------------------------------------------------------------
-def _run_duplicate(run: Run, t, columns, spec: CheckSpec):
+def _run_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
+    """The threshold is compared against the duplicated key count; the rows those
+    keys span are what is reported as failed."""
+    import pandas as pd
+
     cols = [_resolve_col(columns, c) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
-    dup_count = dup_groups.count().execute()
-    dup_count = int(dup_count) if dup_count is not None else 0
-    _evaluate(run, spec, dup_count)
+    totals = dup_groups.aggregate(
+        _dup_keys=dup_groups["_dup_n"].count(), _dup_rows=dup_groups["_dup_n"].sum()
+    ).execute()
+
+    def _int(value) -> int:
+        return 0 if (value is None or pd.isna(value)) else int(value)
+
+    row = totals.iloc[0]
+    dup_count = _int(row["_dup_keys"])
+    _evaluate(run, spec, dup_count, row_count=row_count)
+    extra = {"failed_rows": _int(row["_dup_rows"])}
     if len(cols) > 1:
-        _update_diagnostics(run, spec.key, {"columns": cols})
+        extra["columns"] = cols
+    _update_diagnostics(run, spec.key, extra)
 
 
 def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
@@ -968,9 +991,10 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
         severity=spec.severity,
         threshold=spec.threshold.describe() if spec.threshold is not None else None,
     )
+    if row_count is not None:
+        diag["row_count"] = row_count
     # For "bad row" metrics, show how many of the total rows failed.
     if row_count is not None and is_bad_row:
-        diag["row_count"] = row_count
         diag["failed_fraction"] = round(value / row_count, 6) if row_count else 0.0
     if percent is not None:
         diag["percent"] = percent

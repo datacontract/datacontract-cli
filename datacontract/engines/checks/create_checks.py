@@ -13,6 +13,7 @@ import logging
 import re
 from typing import List, Optional
 
+import yaml
 from open_data_contract_standard.model import (
     DataQuality,
     OpenDataContractStandard,
@@ -102,6 +103,12 @@ def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: b
         expected_type_label=_declared_type_label(prop, physical),
         expected_schema_property=prop,
     )
+
+
+def quality_definition_yaml(quality: DataQuality) -> str:
+    """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
+    know are dropped, and comments with them."""
+    return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -591,6 +598,7 @@ def _quality_checks(
         for check in rule_checks:
             check.quality_id = quality.id
             check.tags = list(quality.tags) if quality.tags else None
+            check.quality_definition = quality_definition_yaml(quality)
         checks.extend(rule_checks)
     return checks
 
@@ -806,11 +814,11 @@ def _to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opt
         return checks
     for sla in data_contract.slaProperties:
         if sla.property == "freshness":
-            check = _freshness_check(data_contract, sla)
+            check = _freshness_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
-            check = _retention_check(data_contract, sla)
+            check = _retention_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
     return checks
@@ -823,16 +831,34 @@ def _split_element(element: Optional[str]) -> Optional[tuple[str, str]]:
     return model, field
 
 
-def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[CheckSpec]:
-    if sla.element is None or sla.value is None:
-        return None
-    parts = _split_element(sla.element)
+def _resolve_sla_element(
+    data_contract: OpenDataContractStandard, element: Optional[str], server: Optional[Server]
+) -> Optional[tuple[str, str]]:
+    """The (model, field) a contract-language sla element points at, in warehouse terms."""
+    parts = _split_element(element)
     if parts is None:
-        logger.info("freshness element is not a single model.field, skipping")
+        logger.info(f"sla element {element!r} is not a single model.field, skipping")
         return None
     model, field = parts
-    if _get_schema_by_name(data_contract, model) is None:
+    schema_object = _get_schema_by_name(data_contract, model)
+    if schema_object is None:
         return None
+    server_type = server.type if server and server.type else None
+    prop = next((p for p in schema_object.properties or [] if p.name == field), None)
+    if prop is not None and prop.physicalName:
+        field = prop.physicalName
+    return to_schema_name(schema_object, server_type), field
+
+
+def _freshness_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Optional[CheckSpec]:
+    if sla.element is None or sla.value is None:
+        return None
+    resolved = _resolve_sla_element(data_contract, sla.element, server)
+    if resolved is None:
+        return None
+    model, field = resolved
 
     unit = (sla.unit or "d").lower()
     if unit in ("d", "day", "days"):
@@ -853,20 +879,20 @@ def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         model=model,
         field=field,
         metric=MetricType.FRESHNESS,
+        quality_id=sla.id,
         seconds=seconds,
     )
 
 
-def _retention_check(data_contract: OpenDataContractStandard, sla) -> Optional[CheckSpec]:
+def _retention_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Optional[CheckSpec]:
     if sla.element is None or sla.value is None:
         return None
-    parts = _split_element(sla.element)
-    if parts is None:
-        logger.info("retention element is not a single model.field, skipping")
+    resolved = _resolve_sla_element(data_contract, sla.element, server)
+    if resolved is None:
         return None
-    model, field = parts
-    if _get_schema_by_name(data_contract, model) is None:
-        return None
+    model, field = resolved
     seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
         return None
@@ -878,6 +904,7 @@ def _retention_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         model=model,
         field=field,
         metric=MetricType.RETENTION,
+        quality_id=sla.id,
         seconds=seconds,
     )
 

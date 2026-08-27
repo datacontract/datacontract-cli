@@ -132,6 +132,12 @@ def test_test_postgres_servicelevels_freshness_should_fail_odcs(postgres_contain
 
     print(run.pretty())
     assert run.result == "failed"
+    # Must fail because the data is stale (a measurement happened), not because
+    # the logical schema object name was read as the relation name.
+    freshness = next(c for c in run.checks if c.type == "servicelevel_freshness")
+    assert freshness.result == "failed"
+    assert freshness.diagnostics is not None
+    assert freshness.diagnostics["age_seconds"] > 3600
 
 
 def _setup_datacontract(file):
