@@ -42,7 +42,8 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     dialect = to_dialect(import_args)
 
     try:
-        parsed = sqlglot.parse_one(sql=sql, read=dialect)
+        # not parse_one: sqlglot below 29 gives it only the first statement of a script
+        statements = [s for s in sqlglot.parse(sql=sql, read=dialect) if s is not None]
     except Exception as e:
         logging.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
@@ -59,7 +60,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     server_type = to_server_type(source, dialect)
     if server_type is not None:
         server_defaults = get_server_defaults(server_type)
-        server_defaults.update(get_created_location(parsed, server_type, variables))
+        server_defaults.update(get_created_location(statements, server_type, variables))
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
         logging.warning(
             "SQL import generated a server block with placeholder connection values. "
@@ -68,7 +69,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
     tables = [
         t
-        for t in parsed.find_all(sqlglot.expressions.Table)
+        for t in find_all(statements, sqlglot.expressions.Table)
         if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
     ]
 
@@ -77,7 +78,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         properties = []
 
         primary_key_position = 1
-        for column in parsed.find_all(sqlglot.exp.ColumnDef):
+        for column in find_all(statements, sqlglot.exp.ColumnDef):
             if column.parent.this.name != table_name:
                 continue
 
@@ -111,14 +112,14 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
             properties.append(prop)
 
-        table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+        table_comment_property = find_first(statements, sqlglot.expressions.SchemaCommentProperty)
 
         table_description = None
         if table_comment_property:
             table_description = table_comment_property.this.this
 
         table_tags = None
-        table_props = parsed.find(sqlglot.expressions.Properties)
+        table_props = find_first(statements, sqlglot.expressions.Properties)
         if table_props:
             tags = table_props.find(sqlglot.expressions.Tags)
             if tags:
@@ -165,13 +166,22 @@ def to_dialect(import_args: dict) -> Dialects | None:
 DATABASE_SCHEMA_SERVER_TYPES = ("snowflake", "sqlserver", "postgres", "redshift")
 
 
-def get_created_location(parsed, server_type: str, variables: set[str]) -> dict:
+def find_all(statements: list, *types):
+    for statement in statements:
+        yield from statement.find_all(*types)
+
+
+def find_first(statements: list, *types):
+    return next(find_all(statements, *types), None)
+
+
+def get_created_location(statements: list, server_type: str, variables: set[str]) -> dict:
     """Database and schema of the created tables, when every one of them names the same."""
     if server_type not in DATABASE_SCHEMA_SERVER_TYPES:
         return {}
 
     locations = set()
-    for create in parsed.find_all(sqlglot.expressions.Create):
+    for create in find_all(statements, sqlglot.expressions.Create):
         if (create.kind or "").upper() != "TABLE":
             continue
         target = create.this
