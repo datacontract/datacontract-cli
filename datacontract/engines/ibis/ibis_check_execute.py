@@ -273,7 +273,7 @@ def _run_model(
                 named = _count_true(_missing_expr(t, col, spec.missing_values)).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 col = _resolve_col(columns, spec.field)
-                if _wants_array_constraints(spec) and not schema[col].is_array():
+                if _has_array_constraints(spec) and not schema[col].is_array():
                     # Silently dropping the constraint would report the check as
                     # passed, which is worse than saying it could not be run.
                     _set_impl(run, spec.key, _describe(spec), None)
@@ -593,7 +593,7 @@ def _regex_search_expr(t, column, pattern: str):
     return column.re_search(pattern)
 
 
-def _wants_array_constraints(spec: CheckSpec) -> bool:
+def _has_array_constraints(spec: CheckSpec) -> bool:
     """Whether the check measures the elements of an array."""
     return spec.valid_min_items is not None or spec.valid_max_items is not None or bool(spec.valid_unique_items)
 
