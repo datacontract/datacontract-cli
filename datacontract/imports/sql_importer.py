@@ -67,21 +67,15 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
     # Only a CREATE TABLE creates one. CREATE SCHEMA carries a table node with no table name,
     # and a CTAS or CREATE VIEW carries its query sources.
-    tables = [
-        create.this.find(sqlglot.expressions.Table)
-        for create in parsed.find_all(sqlglot.expressions.Create)
-        if create.kind == "TABLE"
-    ]
+    creates = [create for create in parsed.find_all(sqlglot.expressions.Create) if create.kind == "TABLE"]
 
-    for table in tables:
+    for create in creates:
+        table = create.this.find(sqlglot.expressions.Table)
         table_name = table.this.name
         properties = []
 
         primary_key_position = 1
-        for column in parsed.find_all(sqlglot.exp.ColumnDef):
-            if column.parent.this.name != table_name:
-                continue
-
+        for column in create.find_all(sqlglot.exp.ColumnDef):
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
             logical_type, format = map_type_from_sql(col_type)
