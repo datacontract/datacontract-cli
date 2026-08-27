@@ -117,6 +117,15 @@ def execute_data_contract_test(
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
     run.checks.extend(build_check_stubs(specs))
 
+    if metadata_only:
+        executable = []
+        for spec in specs:
+            if spec.requires_data_read:
+                set_result(run, spec.key, ResultEnum.skipped, "Row-value check disabled by --metadata-only")
+            else:
+                executable.append(spec)
+        specs = executable
+
     if dry_run:
         _report_dry_run(
             run,
@@ -131,15 +140,6 @@ def execute_data_contract_test(
             config=config,
         )
         return
-
-    if metadata_only:
-        executable = []
-        for spec in specs:
-            if spec.requires_data_read:
-                set_result(run, spec.key, ResultEnum.skipped, "Row-value check disabled by --metadata-only")
-            else:
-                executable.append(spec)
-        specs = executable
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
@@ -348,7 +348,7 @@ def _report_dry_run(
                 type="schema",
                 name="Check that blob files match the contract",
                 result=ResultEnum.warning,
-                reason="Dry run is incomplete: file-metadata checks for blob schemas are not planned.",
+                reason="Checks for Azure Blob storage are not considered in dry runs.",
                 engine="datacontract-cli",
             )
         )

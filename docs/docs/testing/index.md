@@ -149,9 +149,12 @@ datacontract test datacontract.yaml --dry-run --output-format json --output plan
   "result": "skipped" }
 ```
 
-Because nothing connects, a dry run needs no credentials for the server, which
-makes it usable on a pull request build that has no warehouse access. A dry run
-exits `0`: it is a plan, not a verdict.
+A dry run never connects to the server, so it needs no credentials for it, which
+makes it usable on a pull request build that has no warehouse access. It is not
+offline in general: a contract that references
+[external semantics](../semantics.md) still fetches them, because the checks it
+would run cannot be worked out until those are resolved. A dry run exits `0`:
+it is a plan, not a verdict.
 
 One gap: contracts with `logicalType: blob` schemas on Azure decide which
 file-metadata checks exist by reading the file listing, so those cannot be

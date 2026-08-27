@@ -38,6 +38,36 @@ def test_the_plan_lists_the_checks_a_real_run_executes():
     assert keys(planned) != []
 
 
+def test_the_plan_matches_a_real_run_under_metadata_only():
+    """A plan has to be narrowed by every filter a real run applies, not some.
+
+    --metadata-only drops the row-value checks, so a plan that ignored it would
+    promise checks the run would skip.
+    """
+    planned = DataContract(data_contract_file=local_json, dry_run=True, metadata_only=True).test()
+    executed = DataContract(data_contract_file=local_json, metadata_only=True).test()
+
+    def executable(run):
+        return sorted(
+            check.key
+            for check in run.checks
+            if check.key and check.reason != "Row-value check disabled by --metadata-only"
+        )
+
+    assert executable(planned) == executable(executed)
+    assert executable(planned) != []
+
+
+def test_metadata_only_keeps_its_own_reason_in_a_plan():
+    """The plan says why each check will not run, and the two reasons differ."""
+    run = DataContract(data_contract_file=local_json, dry_run=True, metadata_only=True).test()
+
+    reasons = {check.reason for check in run.checks if check.reason}
+
+    assert "Row-value check disabled by --metadata-only" in reasons
+    assert "Dry run: check not executed" in reasons
+
+
 def test_every_planned_check_is_skipped():
     run = plan(local_json)
 
@@ -111,7 +141,7 @@ def test_a_plan_that_could_not_be_completed_says_so():
     assert run.result == ResultEnum.warning
     incomplete = [c for c in run.checks if c.result == ResultEnum.warning]
     assert incomplete != []
-    assert "incomplete" in incomplete[0].reason
+    assert "not considered in dry runs" in incomplete[0].reason
 
 
 def test_an_incomplete_plan_still_does_not_fail_the_build():

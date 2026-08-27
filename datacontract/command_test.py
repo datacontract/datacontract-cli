@@ -222,7 +222,7 @@ def test(
         bool,
         typer.Option(
             help="Report the checks that would run, without connecting to the server or reading any data. "
-            "Every reported check has the result 'skipped'."
+            "Reported checks have the result 'skipped', or 'warning' where a check could not be planned."
         ),
     ] = False,
     include_failed_samples: Annotated[
