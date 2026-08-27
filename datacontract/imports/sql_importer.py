@@ -38,11 +38,12 @@ class SqlImporter(Importer):
 
 
 def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandard:
-    sql = read_file(source)
+    sql, variables = read_file(source)
     dialect = to_dialect(import_args)
 
     try:
-        parsed = sqlglot.parse_one(sql=sql, read=dialect)
+        # not parse_one: sqlglot below 29 gives it only the first statement of a script
+        statements = [s for s in sqlglot.parse(sql=sql, read=dialect) if s is not None]
     except Exception as e:
         logging.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
@@ -59,27 +60,26 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     server_type = to_server_type(source, dialect)
     if server_type is not None:
         server_defaults = get_server_defaults(server_type)
+        location = get_created_location(statements, server_type, variables)
+        server_defaults.update(location)
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
+        placeholders = ", ".join(field for field in server_defaults if field not in location)
         logging.warning(
-            "SQL import generated a server block with placeholder connection values. "
-            "Update host, port, database, and schema in the output before use."
+            f"SQL import generated a server block with placeholder connection values. "
+            f"Update the following values before use: {placeholders}"
         )
 
-    tables = [
-        t
-        for t in parsed.find_all(sqlglot.expressions.Table)
-        if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
-    ]
+    # Only a CREATE TABLE creates one. CREATE SCHEMA carries a table node with no table name,
+    # and a CTAS or CREATE VIEW carries its query sources.
+    creates = [create for create in find_all(statements, sqlglot.expressions.Create) if create.kind == "TABLE"]
 
-    for table in tables:
+    for create in creates:
+        table = create.this.find(sqlglot.expressions.Table)
         table_name = table.this.name
         properties = []
 
         primary_key_position = 1
-        for column in parsed.find_all(sqlglot.exp.ColumnDef):
-            if column.parent.this.name != table_name:
-                continue
-
+        for column in create.find_all(sqlglot.exp.ColumnDef):
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
             logical_type, format = map_type_from_sql(col_type)
@@ -110,14 +110,14 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
             properties.append(prop)
 
-        table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+        table_comment_property = find_first(statements, sqlglot.expressions.SchemaCommentProperty)
 
         table_description = None
         if table_comment_property:
             table_description = table_comment_property.this.this
 
         table_tags = None
-        table_props = parsed.find(sqlglot.expressions.Properties)
+        table_props = find_first(statements, sqlglot.expressions.Properties)
         if table_props:
             tags = table_props.find(sqlglot.expressions.Tags)
             if tags:
@@ -156,6 +156,56 @@ def to_dialect(import_args: dict) -> Dialects | None:
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
     return None
+
+
+# Server types whose qualified table names mean database.schema. Elsewhere the parts mean
+# something else, such as project.dataset on BigQuery or the database alone on MySQL, and
+# belong in other server fields, so their DDL is left to the placeholders.
+DATABASE_SCHEMA_SERVER_TYPES = ("snowflake", "sqlserver", "postgres", "redshift")
+
+
+def find_all(statements: list, *types):
+    for statement in statements:
+        yield from statement.find_all(*types)
+
+
+def find_first(statements: list, *types):
+    return next(find_all(statements, *types), None)
+
+
+def get_created_location(statements: list, server_type: str, variables: set[str]) -> dict:
+    """Database and schema of the created tables, when every one of them names the same."""
+    if server_type not in DATABASE_SCHEMA_SERVER_TYPES:
+        return {}
+
+    locations = set()
+    for create in find_all(statements, sqlglot.expressions.Create):
+        if (create.kind or "").upper() != "TABLE":
+            continue
+        target = create.this
+        if isinstance(target, sqlglot.expressions.Schema):
+            target = target.this
+        if isinstance(target, sqlglot.expressions.Table):
+            locations.add((target.catalog, target.db))
+    if len(locations) != 1:
+        return {}
+
+    catalog, db = locations.pop()
+    location = {}
+    if catalog and not is_templated(catalog, variables):
+        location["database"] = catalog
+    if db and not is_templated(db, variables):
+        location["schema"] = db
+    return location
+
+
+def is_templated(name: str, variables: set[str]) -> bool:
+    """Whether an identifier carries substituted text, so is no more usable than a placeholder.
+
+    Substring matching keeps names like ${env}_DB out. It can also hold back a literal name
+    that happens to contain a variable name, which leaves the placeholder in place.
+    """
+    return any(variable in name for variable in variables)
 
 
 def get_server_defaults(server_type: str) -> dict:
@@ -374,14 +424,24 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return (None, None)
 
 
-def remove_variable_tokens(sql_script: str) -> str:
-    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL."""
+def remove_variable_tokens(sql_script: str) -> tuple[str, set[str]]:
+    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL.
+
+    Returns the rewritten script and the names that came from a placeholder.
+    """
     variable_pattern = re.compile(
         r"\$\((\w+)\)"  # $(var) — sqlcmd (T-SQL)
         r"|\$\{(\w+)\}"  # ${var} — Liquibase
         r"|\{\{(\w+)\}\}"  # {{var}} — Jinja / dbt
     )
-    return variable_pattern.sub(lambda m: m.group(1) or m.group(2) or m.group(3), sql_script)
+    variables = set()
+
+    def to_variable_name(match: re.Match) -> str:
+        name = match.group(1) or match.group(2) or match.group(3)
+        variables.add(name)
+        return name
+
+    return variable_pattern.sub(to_variable_name, sql_script), variables
 
 
 def read_file(path):

@@ -209,7 +209,9 @@ class DataContract:
         run.finish()
 
         if self._publish_url is not None or self._publish_test_results:
-            publish_test_results_to_entropy_data(run, self._publish_url, self._ssl_verification, config=self._config)
+            run.publish_succeeded = publish_test_results_to_entropy_data(
+                run, self._publish_url, self._ssl_verification, config=self._config
+            )
 
         return run
 

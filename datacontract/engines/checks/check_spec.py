@@ -149,6 +149,9 @@ class CheckSpec:
     valid_max: Any = None  # INVALID_COUNT
     valid_min_length: Optional[int] = None  # INVALID_COUNT
     valid_max_length: Optional[int] = None  # INVALID_COUNT
+    valid_min_items: Optional[int] = None  # INVALID_COUNT, array columns
+    valid_max_items: Optional[int] = None  # INVALID_COUNT, array columns
+    valid_unique_items: Optional[bool] = None  # INVALID_COUNT, array columns
 
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
@@ -184,5 +187,8 @@ class CheckSpec:
                 self.valid_max,
                 self.valid_min_length,
                 self.valid_max_length,
+                self.valid_min_items,
+                self.valid_max_items,
+                self.valid_unique_items,
             )
         )

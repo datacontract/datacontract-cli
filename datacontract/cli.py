@@ -245,6 +245,17 @@ def _print_logs(run, out=None):
         out.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
 
 
+def _print_publish_failure(run, out=None):
+    """Surface the publish log messages on the console; logging is suppressed without --debug."""
+    if out is None:
+        out = console
+    for log in run.logs:
+        if log.level in ("WARN", "ERROR") and "publish" in log.message.lower():
+            color = "red" if log.level == "ERROR" else "yellow"
+            # highlight=False: render as prose, not rich's code-like repr highlighting.
+            out.print(f"[{color}]{escape(log.message)}[/{color}]", highlight=False)
+
+
 # ---------------------------------------------------------------------------
 # Register commands (must be after app and shared helpers are defined so the
 # command_* modules can import from this module without circular-import issues)

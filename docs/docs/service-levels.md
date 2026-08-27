@@ -79,7 +79,7 @@ Retention also accepts an **ISO 8601 duration** as the `value`, in which case `u
 ```yaml
 slaProperties:
   - property: retention
-    value: P1Y        # also P6M, P30D, PT12H, PT30M, PT10S
+    value: P1Y6M      # 1 year and 6 months; also P7Y, P90D, P12W, PT48H
     element: orders.order_timestamp
 ```
 
@@ -104,8 +104,9 @@ A service level is skipped — without failing the run — when:
 - the `property` is anything other than `freshness` or `retention` (for example `latency`, `frequency`, or `timeOfAvailability`, which are documentation only),
 - `element` or `value` is missing,
 - `element` is not exactly one `schema.property` reference,
-- the referenced schema is not in the contract, or
-- the `unit` is not one of the values listed above.
+- the referenced schema is not in the contract,
+- the `unit` is not one of the values listed above, or
+- the `value` is a string that is not a supported ISO 8601 duration.
 
 Run with `--debug` to see the reasons. If the check *does* run but the column is empty or entirely `NULL`, the check **fails** with `No timestamp value found in '<field>'`.
 

@@ -283,6 +283,17 @@ def _run_model(
                 named = _count_true(_missing_expr(t, col, spec.missing_values)).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 col = _resolve_col(columns, spec.field)
+                if _has_array_constraints(spec) and not schema[col].is_array():
+                    # Silently dropping the constraint would report the check as
+                    # passed, which is worse than saying it could not be run.
+                    _set_impl(run, spec.key, _describe(spec), None)
+                    set_result(
+                        run,
+                        spec.key,
+                        ResultEnum.error,
+                        f"Column {spec.field} is {schema[col]}, not an array, so the constraint cannot be measured.",
+                    )
+                    continue
                 expr = _invalid_expr(t, col, schema[col], spec)
                 if expr is None:
                     # No validity constraints => nothing can be invalid.
@@ -592,6 +603,11 @@ def _regex_search_expr(t, column, pattern: str):
     return column.re_search(pattern)
 
 
+def _has_array_constraints(spec: CheckSpec) -> bool:
+    """Whether the check measures the elements of an array."""
+    return spec.valid_min_items is not None or spec.valid_max_items is not None or bool(spec.valid_unique_items)
+
+
 def _valid_expr(t, col, dtype, spec: CheckSpec):
     """Boolean: a non-missing value satisfies all configured validity constraints."""
     conds = []
@@ -607,6 +623,16 @@ def _valid_expr(t, col, dtype, spec: CheckSpec):
         conds.append(_as_string(t[col], dtype).length() >= spec.valid_min_length)
     if spec.valid_max_length is not None:
         conds.append(_as_string(t[col], dtype).length() <= spec.valid_max_length)
+    # Array constraints count the elements of the row's array. A column the
+    # contract calls an array but the server does not cannot be measured that
+    # way, so the constraint is left off rather than compiled into invalid SQL.
+    if dtype is not None and dtype.is_array():
+        if spec.valid_min_items is not None:
+            conds.append(t[col].length() >= spec.valid_min_items)
+        if spec.valid_max_items is not None:
+            conds.append(t[col].length() <= spec.valid_max_items)
+        if spec.valid_unique_items:
+            conds.append(t[col].unique().length() == t[col].length())
     if not conds:
         return None
     expr = conds[0]
@@ -655,6 +681,12 @@ def _constraint_info(spec: CheckSpec) -> dict:
         info["min_length"] = spec.valid_min_length
     if spec.valid_max_length is not None:
         info["max_length"] = spec.valid_max_length
+    if spec.valid_min_items is not None:
+        info["min_items"] = spec.valid_min_items
+    if spec.valid_max_items is not None:
+        info["max_items"] = spec.valid_max_items
+    if spec.valid_unique_items:
+        info["unique_items"] = True
     return info
 
 

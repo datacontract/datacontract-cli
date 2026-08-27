@@ -216,6 +216,12 @@ class Run(BaseModel):
     )
     checks: List[Check] | None = Field(description="One entry per executed check.")
     logs: List[Log] | None = Field(description="The messages written while the run was executing.")
+    # Excluded from serialization: an in-process signal, not part of the published/returned result.
+    publish_succeeded: bool | None = Field(
+        default=None,
+        exclude=True,
+        description="Whether publishing the test results succeeded; None if no publish was requested.",
+    )
 
     def has_passed(self):
         self.calculate_result()
