@@ -934,18 +934,19 @@ def _retention_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
     return None
 
 
-# P followed by integer-unit combinatinos (e.g. P1Y2M3DT4H5M6S), every component optional, but at least one required
+# P followed by number-unit combinations (e.g. P1Y2M3W4DT5H6M7S), every component optional, but at least one required
 _ISO8601_DURATION = re.compile(
     r"P(?=\d|T\d)"
-    r"(?:(\d+)Y)?"
-    r"(?:(\d+)M)?"
-    r"(?:(\d+)D)?"
+    r"(?:(\d+(?:\.\d+)?)Y)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)W)?"
+    r"(?:(\d+(?:\.\d+)?)D)?"
     r"(?:T(?=\d)"
-    r"(?:(\d+)H)?"
-    r"(?:(\d+)M)?"
-    r"(?:(\d+)S)?)?"
+    r"(?:(\d+(?:\.\d+)?)H)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)S)?)?"
 )
-_COMPONENT_SECONDS = (365 * 86400, 30 * 86400, 86400, 3600, 60, 1)
+_COMPONENT_SECONDS = (365 * 86400, 30 * 86400, 7 * 86400, 86400, 3600, 60, 1)
 
 
 def _parse_iso8601_to_seconds(duration: str) -> Optional[int]:
@@ -955,4 +956,4 @@ def _parse_iso8601_to_seconds(duration: str) -> Optional[int]:
     if match is None:
         logger.info(f"Unsupported retention period: {duration}")
         return None
-    return sum(int(amount) * seconds for amount, seconds in zip(match.groups(), _COMPONENT_SECONDS) if amount)
+    return round(sum(float(amount) * seconds for amount, seconds in zip(match.groups(), _COMPONENT_SECONDS) if amount))

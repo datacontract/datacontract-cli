@@ -35,10 +35,16 @@ def _retention_checks(period):
         ("P30D", 30 * 86400),
         ("PT6M", 6 * 60),
         ("PT30S", 30),
+        ("P4W", 4 * 7 * 86400),
+        ("PT0.5H", 30 * 60),
+        ("P1.5D", 36 * 3600),
         ("P2DT12H", 2 * 86400 + 12 * 3600),
         ("P1Y6M", 365 * 86400 + 6 * 30 * 86400),
         ("PT1H30M", 3600 + 30 * 60),
-        ("P1Y2M3DT4H5M6S", 365 * 86400 + 2 * 30 * 86400 + 3 * 86400 + 4 * 3600 + 5 * 60 + 6),
+        (
+            "P1Y2M3W4DT5H6M7S",
+            365 * 86400 + 2 * 30 * 86400 + 3 * 7 * 86400 + 4 * 86400 + 5 * 3600 + 6 * 60 + 7,
+        ),
     ],
 )
 def test_retention_period_sums_every_component(period, seconds):
@@ -46,6 +52,6 @@ def test_retention_period_sums_every_component(period, seconds):
     assert check.seconds == seconds
 
 
-@pytest.mark.parametrize("period", ["P30Djunk", "garbage", "P", "PT", "P4W"])
+@pytest.mark.parametrize("period", ["P30Djunk", "garbage", "P", "PT", "P.5D", "P1,5D"])
 def test_unparsable_retention_period_yields_no_check(period):
     assert _retention_checks(period) == []
