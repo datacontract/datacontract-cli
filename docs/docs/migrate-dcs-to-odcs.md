@@ -46,7 +46,7 @@ datacontract test datacontract.odcs.yaml
 Once all three pass, delete the DCS file and point your [CI/CD pipeline](./scheduling/index.md) at the new
 one.
 
-## Three things to fix by hand
+## Three things to check by hand
 
 - **`status` defaults to `draft`** when the DCS file has no `info.status`. Change it to
   `active` (or another value) once the contract is ready for production.
