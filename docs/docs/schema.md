@@ -176,7 +176,7 @@ properties:
 These are common sources of confusion. They are valid ODCS and appear in exports, but they generate no check:
 
 - **`isNullable`** — the CLI reads `required`, not `isNullable`. Write `required: true` to assert that a column has no nulls.
-- **`logicalTypeOptions.format`** (`email`, `uuid`, `uri`, …) — use `pattern` for an enforceable equivalent.
+- **`logicalTypeOptions.format`** — never enforced, on any property. On a `string` property (`email`, `uuid`, `uri`, …) use `pattern` for an enforceable equivalent. On a `date`, `timestamp` or `time` property `format` holds a date pattern such as `yyyy-MM-dd`, and `pattern` is *not* an equivalent there: by the time a check runs, the column has already been parsed as a date, so there is no string left to match. Such a column is validated as a date, in whatever format the server stores it.
 - **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties`. `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
 - **Schema-level attributes** other than `name`, `physicalName`, `properties`, and `quality`.
 

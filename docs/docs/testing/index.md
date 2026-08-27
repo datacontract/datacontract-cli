@@ -106,7 +106,7 @@ The CLI uses different engines based on the server `type`. Internally it connect
 
 Checks fall into categories you can select with `--checks`:
 
-- `properties` — the [schema](../schema.md) attributes: presence, types, `required`, `unique`, primary keys, and `logicalTypeOptions`. `schema` is kept as a legacy alias.
+- `properties` — the [schema](../schema.md) attributes: presence, types, `required`, `unique`, primary keys, and `logicalTypeOptions`. `schema` is kept as a legacy alias. Not every ODCS attribute produces a check — see [What is not checked](../schema.md#what-is-not-checked) if one you declared appears to have no effect.
 - `quality` — the [quality rules](../quality-rules/index.md) defined in the contract.
 - `slaProperties` — the [service levels](../service-levels.md) defined in the contract. `servicelevel` is kept as a legacy alias.
 - `custom` — custom checks.
