@@ -24,6 +24,7 @@ DEFAULT_DIMENSIONS: dict[str, str] = {
     "field_unique": "uniqueness",
     "field_primary_key_unique": "uniqueness",
     "primary_key_unique": "uniqueness",
+    "field_unique_items": "uniqueness",
     # conformity — the data deviates from the declared shape, type, or value domain
     "field_is_present": "conformity",
     "field_type": "conformity",
@@ -37,6 +38,8 @@ DEFAULT_DIMENSIONS: dict[str, str] = {
     "field_minimum": "conformity",
     "field_maximum": "conformity",
     "field_not_equal": "conformity",
+    "field_min_items": "conformity",
+    "field_max_items": "conformity",
     # the JSON Schema validation checks, which all share the type "schema"
     "schema": "conformity",
     # the dataset does not conform to the retention period it promises

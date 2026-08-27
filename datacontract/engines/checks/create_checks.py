@@ -443,6 +443,43 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                 )
             )
 
+        # Array constraints. ODCS allows these only on an array property, and
+        # they measure the elements of one row's array, not the rows.
+        min_items = _get_logical_type_option(prop, "minItems")
+        if min_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_min_items",
+                    name=f"Check that field {field} has at least {min_items} items",
+                    valid_min_items=min_items,
+                )
+            )
+
+        max_items = _get_logical_type_option(prop, "maxItems")
+        if max_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_max_items",
+                    name=f"Check that field {field} has at most {max_items} items",
+                    valid_max_items=max_items,
+                )
+            )
+
+        if _get_logical_type_option(prop, "uniqueItems") is True:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_unique_items",
+                    name=f"Check that field {field} has no duplicate items",
+                    valid_unique_items=True,
+                )
+            )
+
         pattern = _get_logical_type_option(prop, "pattern")
         if pattern is not None:
             checks.append(
