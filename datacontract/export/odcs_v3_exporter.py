@@ -14,13 +14,13 @@ def to_odcs_v3_yaml(data_contract: OpenDataContractStandard) -> str:
     """Export the internal ODCS model to YAML format.
 
     Since the internal model is now ODCS, this is a simple serialization.
+    ODCS requires a top-level `status`; default to 'draft' when omitted.
     """
-    return data_contract.to_yaml()
+    return to_odcs_v3(data_contract).to_yaml()
 
 
 def to_odcs_v3(data_contract: OpenDataContractStandard) -> OpenDataContractStandard:
-    """Return the internal ODCS model.
-
-    Since the internal model is now ODCS, this is an identity function.
-    """
+    """Return the internal ODCS model, ensuring required ODCS fields are populated."""
+    if not data_contract.status:
+        return data_contract.model_copy(update={"status": "draft"})
     return data_contract

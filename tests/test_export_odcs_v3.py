@@ -6,7 +6,7 @@ from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.export.odcs_v3_exporter import to_odcs_v3_yaml
+from datacontract.export.odcs_v3_exporter import to_odcs_v3, to_odcs_v3_yaml
 from datacontract.imports.dcs_importer import convert_dcs_to_odcs, parse_dcs_from_dict
 from datacontract.lint.resolve import resolve_data_contract
 
@@ -64,10 +64,13 @@ info:
 """
     data_contract = parse_dcs_from_dict(yaml.safe_load(dcs_yaml))
     odcs = convert_dcs_to_odcs(data_contract)
+    assert odcs.status is None
 
-    assert odcs.status == "draft"
+    odcs_v3 = to_odcs_v3(odcs)
+    assert odcs_v3.status == "draft"
 
-    parsed = yaml.safe_load(odcs.to_yaml())
+    odcs_yaml = to_odcs_v3_yaml(odcs)
+    parsed = yaml.safe_load(odcs_yaml)
     assert parsed["status"] == "draft"
 
 
