@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `datacontract import sql` takes the server's `database` and `schema` from a qualified `CREATE TABLE`, instead of always writing placeholders (#651)
 - `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529)
+- `datacontract test` sums every component of an ODCS retention period, instead of truncating `P2DT12H` to two days, and rejects an unparsable period (#1538)
 
 ## [1.1.2] - 2026-08-26
 
