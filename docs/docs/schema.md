@@ -60,6 +60,14 @@ schema:
         logicalTypeOptions:
           maxLength: 255
           pattern: '^[^@]+@[^@]+$'
+      - name: tags
+        logicalType: array
+        items:
+          logicalType: string
+        logicalTypeOptions:
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
 ```
 
 ## Presence and naming
@@ -141,6 +149,14 @@ properties:
     logicalType: string
     logicalTypeOptions:
       enum: ['pending', 'shipped', 'delivered']
+  - name: tags
+    logicalType: array
+    items:
+      logicalType: string
+    logicalTypeOptions:
+      minItems: 1
+      maxItems: 10
+      uniqueItems: true
 ```
 
 | Option | Fails when a value is… |
@@ -150,6 +166,8 @@ properties:
 | `exclusiveMinimum` / `exclusiveMaximum` | below / above **or equal to** the bound |
 | `pattern` | not matching the regular expression |
 | `enum` | not one of the listed values |
+| `minItems` / `maxItems` | an array with fewer / more elements than the bound |
+| `uniqueItems` | an array that repeats an element |
 
 `exclusiveMinimum` and `exclusiveMaximum` each produce two checks — a bound check and an inequality check — so a violation of either is reported separately.
 
@@ -161,10 +179,6 @@ These are common sources of confusion. They are valid ODCS and appear in exports
 - **`logicalTypeOptions.format`** (`email`, `uuid`, `uri`, …) — use `pattern` for an enforceable equivalent.
 - **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties`. `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
 - **Schema-level attributes** other than `name`, `physicalName`, `properties`, and `quality`.
-
-The array options measure the elements of one row's array. If the column turns
-out not to be an array, the check reports an error rather than passing: a
-constraint that cannot be measured is not a constraint that holds.
 
 Anything beyond this list that you want verified belongs in a [quality rule](./quality-rules/index.md) — a `type: library` metric for the common cases, or `type: sql` for arbitrary expressions.
 
