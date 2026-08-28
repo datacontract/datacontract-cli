@@ -580,6 +580,10 @@ def export_great_expectations(
         Optional[GreatExpectationsEngine],
         typer.Option(help="The engine used for Great Expectations run."),
     ] = None,
+    suite_name: Annotated[
+        Optional[str],
+        typer.Option(help="The suite name for the Great Expectations run."),
+    ] = None,
     dialect: dialect_option = SqlServerType.auto,
     output: output_option = None,
     server: server_option = None,
@@ -598,6 +602,7 @@ def export_great_expectations(
         schema_name,
         schema,
         engine=engine.value if engine is not None else None,
+        suite_name=suite_name,
         sql_server_type=dialect.value,
         inline_references=inline_references,
     )
