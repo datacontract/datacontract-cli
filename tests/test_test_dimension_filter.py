@@ -152,6 +152,7 @@ def test_builtin_dimension_mapping():
     assert default_dimension("field_unique") == "uniqueness"
     assert default_dimension("field_primary_key_unique") == "uniqueness"
     assert default_dimension("primary_key_unique") == "uniqueness"
+    assert default_dimension("field_unique_items") == "uniqueness"
     for check_type in (
         "field_is_present",
         "field_type",
@@ -165,6 +166,8 @@ def test_builtin_dimension_mapping():
         "field_minimum",
         "field_maximum",
         "field_not_equal",
+        "field_min_items",
+        "field_max_items",
         "schema",
         "servicelevel_retention",
     ):

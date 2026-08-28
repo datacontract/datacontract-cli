@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514)
+- `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status`
+
+### Fixed
+- `datacontract import sql` takes the server's `database` and `schema` from a qualified `CREATE TABLE`, instead of always writing placeholders (#651)
+- `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529)
+- `datacontract test` now supports ISO 8601 retention periods correctly (previously, only the first component was considered) (#1538)
+
 ## [1.1.2] - 2026-08-26
 
 ### Added

@@ -443,6 +443,43 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                 )
             )
 
+        # Array constraints. ODCS allows these only on an array property, and
+        # they measure the elements of one row's array, not the rows.
+        min_items = _get_logical_type_option(prop, "minItems")
+        if min_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_min_items",
+                    name=f"Check that field {field} has at least {min_items} items",
+                    valid_min_items=min_items,
+                )
+            )
+
+        max_items = _get_logical_type_option(prop, "maxItems")
+        if max_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_max_items",
+                    name=f"Check that field {field} has at most {max_items} items",
+                    valid_max_items=max_items,
+                )
+            )
+
+        if _get_logical_type_option(prop, "uniqueItems") is True:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_unique_items",
+                    name=f"Check that field {field} has no duplicate items",
+                    valid_unique_items=True,
+                )
+            )
+
         pattern = _get_logical_type_option(prop, "pattern")
         if pattern is not None:
             checks.append(
@@ -934,19 +971,26 @@ def _retention_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
     return None
 
 
+# P followed by number-unit combinations (e.g. P1Y2M3W4DT5H6M7S), every component optional, but at least one required
+_ISO8601_DURATION = re.compile(
+    r"P(?=\d|T\d)"
+    r"(?:(\d+(?:\.\d+)?)Y)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)W)?"
+    r"(?:(\d+(?:\.\d+)?)D)?"
+    r"(?:T(?=\d)"
+    r"(?:(\d+(?:\.\d+)?)H)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)S)?)?"
+)
+_COMPONENT_SECONDS = (365 * 86400, 30 * 86400, 7 * 86400, 86400, 3600, 60, 1)
+
+
 def _parse_iso8601_to_seconds(duration: str) -> Optional[int]:
     if not duration:
         return None
-    duration = duration.upper()
-    for pat, mult in (
-        (r"P(\d+)Y", 365 * 86400),
-        (r"P(\d+)M", 30 * 86400),
-        (r"P(\d+)D", 86400),
-        (r"PT(\d+)H", 3600),
-        (r"PT(\d+)M", 60),
-        (r"PT(\d+)S", 1),
-    ):
-        m = re.match(pat, duration)
-        if m:
-            return int(m.group(1)) * mult
-    return None
+    match = _ISO8601_DURATION.fullmatch(duration.upper())
+    if match is None:
+        logger.info(f"Unsupported retention period: {duration}")
+        return None
+    return round(sum(float(amount) * seconds for amount, seconds in zip(match.groups(), _COMPONENT_SECONDS) if amount))

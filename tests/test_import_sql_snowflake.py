@@ -1,3 +1,4 @@
+import pytest
 import yaml
 
 from datacontract.data_contract import DataContract
@@ -20,7 +21,7 @@ servers:
   host: my_host
   port: 443
   database: my_database
-  schema: my_schema
+  schema: PUBLIC
 schema:
 - name: my_table
   physicalType: table
@@ -190,3 +191,43 @@ def test_map_type_from_sql_time_with_precision():
     # must not swallow timestamps
     assert map_type_from_sql("timestamp(6)") == ("timestamp", None)
     assert map_type_from_sql("TIMESTAMP_NTZ(9)") == ("timestamp", None)
+
+
+@pytest.mark.parametrize(
+    ("ddl", "database", "schema"),
+    [
+        ("CREATE TABLE analytics.sales.orders (id INT);", "analytics", "sales"),
+        ("CREATE TABLE sales.orders (id INT);", "my_database", "sales"),
+        ("CREATE TABLE orders (id INT);", "my_database", "my_schema"),
+        # the qualifier belongs to the query source, not to the created table
+        ("CREATE TABLE orders AS SELECT * FROM analytics.sales.source;", "my_database", "my_schema"),
+        # tables in two different places name no single server location
+        ("CREATE TABLE a.b.one (id INT); CREATE TABLE c.d.two (id INT);", "my_database", "my_schema"),
+        # a templated name is no more usable than the placeholder it would replace
+        ("CREATE TABLE ${db}.PUBLIC.orders (id INT);", "my_database", "PUBLIC"),
+        ("CREATE TABLE ${env}_DB.PUBLIC.orders (id INT);", "my_database", "PUBLIC"),
+        # only created tables name the location
+        ("CREATE VIEW other.x.v AS SELECT 1 AS id; CREATE TABLE a.b.orders (id INT);", "a", "b"),
+    ],
+)
+def test_import_sql_server_location(tmp_path, ddl, database, schema):
+    ddl_file = tmp_path / "ddl.sql"
+    ddl_file.write_text(ddl)
+
+    result = DataContract().import_from_source("sql", str(ddl_file), dialect="snowflake")
+
+    server = yaml.safe_load(result.to_yaml())["servers"][0]
+    assert server["database"] == database
+    assert server["schema"] == schema
+
+
+@pytest.mark.parametrize("dialect", ["mysql", "oracle", "bigquery", "databricks"])
+def test_import_sql_server_location_only_where_the_parts_mean_database_and_schema(tmp_path, dialect):
+    ddl_file = tmp_path / "ddl.sql"
+    ddl_file.write_text("CREATE TABLE sales.orders (id INT);")
+
+    result = DataContract().import_from_source("sql", str(ddl_file), dialect=dialect)
+
+    server = yaml.safe_load(result.to_yaml())["servers"][0]
+    assert server["database"] == "my_database"
+    assert server["schema"] == "my_schema"

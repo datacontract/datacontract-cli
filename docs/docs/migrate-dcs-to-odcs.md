@@ -46,10 +46,10 @@ datacontract test datacontract.odcs.yaml
 Once all three pass, delete the DCS file and point your [CI/CD pipeline](./scheduling/index.md) at the new
 one.
 
-## Three things to fix by hand
+## Three things to check by hand
 
-- **`status` is required in ODCS.** Without `info.status` in the DCS file, `lint` reports
-  `data must contain ['status'] properties`. Add a top-level `status: active`.
+- **`status` defaults to `draft`** when the DCS file has no `info.status`. Change it to
+  `active` (or another value) once the contract is ready for production.
 - **The deprecated `primary: true` is not carried over** — only `primaryKey: true` is. Search
   your contracts for `primary:` and set `primaryKey: true` in the ODCS file.
 - **`physicalType` holds the DCS `type`**, so a column reads `physicalType: string` instead of

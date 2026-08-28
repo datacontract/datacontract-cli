@@ -167,7 +167,7 @@ servers:
     host: my_host
     port: 5432
     database: my_database
-    schema: public
+    schema: my_schema
 schema:
   - name: customer_location
     physicalType: table

@@ -276,3 +276,40 @@ def test_resolve_dcs_dataframe_server_converted_to_custom():
     )
     assert odcs.servers[0].type == "custom"
     assert get_server_type(odcs.servers[0]) == "dataframe"
+
+
+def test_resolve_dcs_status_defaults_to_draft():
+    odcs = resolve_data_contract(
+        data_contract_str="""
+    dataContractSpecification: 1.2.1
+    id: my-id
+    info:
+      title: My Title
+      version: 1.0.0
+    models:
+      my_table:
+        fields:
+          c:
+            type: string
+    """,
+    )
+    assert odcs.status == "draft"
+
+
+def test_resolve_dcs_status_preserved_when_set():
+    odcs = resolve_data_contract(
+        data_contract_str="""
+    dataContractSpecification: 1.2.1
+    id: my-id
+    info:
+      title: My Title
+      version: 1.0.0
+      status: active
+    models:
+      my_table:
+        fields:
+          c:
+            type: string
+    """,
+    )
+    assert odcs.status == "active"
