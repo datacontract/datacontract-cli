@@ -12,15 +12,15 @@ permissions:
   issues: write
 
 jobs:
-  # Immediately drop the 'stale' label when new commits are pushed to a PR,
-  # so contributors don't wait until the next scheduled run.
+  # Immediately drop the 'stale' and 'waiting-for-response' labels when new commits
+  # are pushed to a PR, so contributors don't wait until the next scheduled run.
   unstale:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
-      - run: gh pr edit "$NUMBER" --remove-label stale --repo "$REPO" || true
+      - run: gh pr edit "$NUMBER" --remove-label stale --remove-label waiting-for-response --repo "$REPO" || true
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}

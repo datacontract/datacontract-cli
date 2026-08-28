@@ -78,6 +78,8 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
     # Convert status
     if dcs.info and dcs.info.status:
         odcs.status = dcs.info.status
+    else:
+        odcs.status = "draft"
 
     # Convert servers
     if dcs.servers:

@@ -28,6 +28,9 @@ datacontract test --checks schema datacontract.yaml
 | `logicalTypeOptions.minimum` / `maximum` | property | Value within bounds (inclusive) |
 | `logicalTypeOptions.exclusiveMinimum` / `exclusiveMaximum` | property | Value within bounds (exclusive) |
 | `logicalTypeOptions.pattern` | property | Value matches the regular expression |
+| `logicalTypeOptions.enum` | property | Value is one of the listed values |
+| `logicalTypeOptions.minItems` / `maxItems` | array property | Number of elements within bounds |
+| `logicalTypeOptions.uniqueItems` | array property | Elements of the array are distinct |
 | `quality` | schema, property | See [Define your Quality Rules](./quality-rules/index.md) |
 
 A contract that uses all of them:
@@ -57,6 +60,14 @@ schema:
         logicalTypeOptions:
           maxLength: 255
           pattern: '^[^@]+@[^@]+$'
+      - name: tags
+        logicalType: array
+        items:
+          logicalType: string
+        logicalTypeOptions:
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
 ```
 
 ## Presence and naming
@@ -138,6 +149,14 @@ properties:
     logicalType: string
     logicalTypeOptions:
       enum: ['pending', 'shipped', 'delivered']
+  - name: tags
+    logicalType: array
+    items:
+      logicalType: string
+    logicalTypeOptions:
+      minItems: 1
+      maxItems: 10
+      uniqueItems: true
 ```
 
 | Option | Fails when a value is… |
@@ -147,6 +166,8 @@ properties:
 | `exclusiveMinimum` / `exclusiveMaximum` | below / above **or equal to** the bound |
 | `pattern` | not matching the regular expression |
 | `enum` | not one of the listed values |
+| `minItems` / `maxItems` | an array with fewer / more elements than the bound |
+| `uniqueItems` | an array that repeats an element |
 
 `exclusiveMinimum` and `exclusiveMaximum` each produce two checks — a bound check and an inequality check — so a violation of either is reported separately.
 
