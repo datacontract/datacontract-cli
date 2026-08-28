@@ -13,6 +13,7 @@ import logging
 import re
 import uuid
 from collections import defaultdict
+from functools import cache
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
@@ -68,6 +69,8 @@ def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
                 field=spec.field,
                 qualityId=spec.quality_id,
                 tags=spec.tags,
+                dimension=spec.dimension,
+                qualityDefinition=spec.quality_definition,
                 engine="datacontract-cli",
                 implementation=_describe(spec),
             )
@@ -262,6 +265,13 @@ def _run_model(
             if not specs:
                 return
 
+    # Read at most once, and only for a check that needs a denominator; the batched
+    # aggregation reads its own row count within the same query.
+    @cache
+    def model_row_count() -> int:
+        rc = t.count().execute()
+        return 0 if rc is None else int(rc)
+
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
         try:
@@ -273,15 +283,26 @@ def _run_model(
                 named = _count_true(_missing_expr(t, col, spec.missing_values)).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 col = _resolve_col(columns, spec.field)
+                if _has_array_constraints(spec) and not schema[col].is_array():
+                    # Silently dropping the constraint would report the check as
+                    # passed, which is worse than saying it could not be run.
+                    _set_impl(run, spec.key, _describe(spec), None)
+                    set_result(
+                        run,
+                        spec.key,
+                        ResultEnum.error,
+                        f"Column {spec.field} is {schema[col]}, not an array, so the constraint cannot be measured.",
+                    )
+                    continue
                 expr = _invalid_expr(t, col, schema[col], spec)
                 if expr is None:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
-                    _evaluate(run, spec, 0)
+                    _evaluate(run, spec, 0, row_count=model_row_count())
                 else:
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
-                _run_duplicate(run, t, columns, spec)
+                _run_duplicate(run, t, columns, spec, model_row_count())
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
@@ -582,6 +603,11 @@ def _regex_search_expr(t, column, pattern: str):
     return column.re_search(pattern)
 
 
+def _has_array_constraints(spec: CheckSpec) -> bool:
+    """Whether the check measures the elements of an array."""
+    return spec.valid_min_items is not None or spec.valid_max_items is not None or bool(spec.valid_unique_items)
+
+
 def _valid_expr(t, col, dtype, spec: CheckSpec):
     """Boolean: a non-missing value satisfies all configured validity constraints."""
     conds = []
@@ -597,6 +623,16 @@ def _valid_expr(t, col, dtype, spec: CheckSpec):
         conds.append(_as_string(t[col], dtype).length() >= spec.valid_min_length)
     if spec.valid_max_length is not None:
         conds.append(_as_string(t[col], dtype).length() <= spec.valid_max_length)
+    # Array constraints count the elements of the row's array. A column the
+    # contract calls an array but the server does not cannot be measured that
+    # way, so the constraint is left off rather than compiled into invalid SQL.
+    if dtype is not None and dtype.is_array():
+        if spec.valid_min_items is not None:
+            conds.append(t[col].length() >= spec.valid_min_items)
+        if spec.valid_max_items is not None:
+            conds.append(t[col].length() <= spec.valid_max_items)
+        if spec.valid_unique_items:
+            conds.append(t[col].unique().length() == t[col].length())
     if not conds:
         return None
     expr = conds[0]
@@ -645,22 +681,41 @@ def _constraint_info(spec: CheckSpec) -> dict:
         info["min_length"] = spec.valid_min_length
     if spec.valid_max_length is not None:
         info["max_length"] = spec.valid_max_length
+    if spec.valid_min_items is not None:
+        info["min_items"] = spec.valid_min_items
+    if spec.valid_max_items is not None:
+        info["max_items"] = spec.valid_max_items
+    if spec.valid_unique_items:
+        info["unique_items"] = True
     return info
 
 
 # ---------------------------------------------------------------------------
 # dedicated check runners
 # ---------------------------------------------------------------------------
-def _run_duplicate(run: Run, t, columns, spec: CheckSpec):
+def _run_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
+    """The threshold is compared against the duplicated key count; the rows those
+    keys span are what is reported as failed."""
+    import pandas as pd
+
     cols = [_resolve_col(columns, c) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
-    dup_count = dup_groups.count().execute()
-    dup_count = int(dup_count) if dup_count is not None else 0
-    _evaluate(run, spec, dup_count)
+    totals = dup_groups.aggregate(
+        _dup_keys=dup_groups["_dup_n"].count(), _dup_rows=dup_groups["_dup_n"].sum()
+    ).execute()
+
+    def _int(value) -> int:
+        return 0 if (value is None or pd.isna(value)) else int(value)
+
+    row = totals.iloc[0]
+    dup_count = _int(row["_dup_keys"])
+    _evaluate(run, spec, dup_count, row_count=row_count)
+    extra = {"failed_rows": _int(row["_dup_rows"])}
     if len(cols) > 1:
-        _update_diagnostics(run, spec.key, {"columns": cols})
+        extra["columns"] = cols
+    _update_diagnostics(run, spec.key, extra)
 
 
 def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
@@ -968,9 +1023,10 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
         severity=spec.severity,
         threshold=spec.threshold.describe() if spec.threshold is not None else None,
     )
+    if row_count is not None:
+        diag["row_count"] = row_count
     # For "bad row" metrics, show how many of the total rows failed.
     if row_count is not None and is_bad_row:
-        diag["row_count"] = row_count
         diag["failed_fraction"] = round(value / row_count, 6) if row_count else 0.0
     if percent is not None:
         diag["percent"] = percent

@@ -13,6 +13,7 @@ import logging
 import re
 from typing import List, Optional
 
+import yaml
 from open_data_contract_standard.model import (
     DataQuality,
     OpenDataContractStandard,
@@ -102,6 +103,12 @@ def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: b
         expected_type_label=_declared_type_label(prop, physical),
         expected_schema_property=prop,
     )
+
+
+def quality_definition_yaml(quality: DataQuality) -> str:
+    """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
+    know are dropped, and comments with them."""
+    return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -436,6 +443,43 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                 )
             )
 
+        # Array constraints. ODCS allows these only on an array property, and
+        # they measure the elements of one row's array, not the rows.
+        min_items = _get_logical_type_option(prop, "minItems")
+        if min_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_min_items",
+                    name=f"Check that field {field} has at least {min_items} items",
+                    valid_min_items=min_items,
+                )
+            )
+
+        max_items = _get_logical_type_option(prop, "maxItems")
+        if max_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_max_items",
+                    name=f"Check that field {field} has at most {max_items} items",
+                    valid_max_items=max_items,
+                )
+            )
+
+        if _get_logical_type_option(prop, "uniqueItems") is True:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_unique_items",
+                    name=f"Check that field {field} has no duplicate items",
+                    valid_unique_items=True,
+                )
+            )
+
         pattern = _get_logical_type_option(prop, "pattern")
         if pattern is not None:
             checks.append(
@@ -591,6 +635,7 @@ def _quality_checks(
         for check in rule_checks:
             check.quality_id = quality.id
             check.tags = list(quality.tags) if quality.tags else None
+            check.quality_definition = quality_definition_yaml(quality)
         checks.extend(rule_checks)
     return checks
 
@@ -806,11 +851,11 @@ def _to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opt
         return checks
     for sla in data_contract.slaProperties:
         if sla.property == "freshness":
-            check = _freshness_check(data_contract, sla)
+            check = _freshness_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
-            check = _retention_check(data_contract, sla)
+            check = _retention_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
     return checks
@@ -823,16 +868,34 @@ def _split_element(element: Optional[str]) -> Optional[tuple[str, str]]:
     return model, field
 
 
-def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[CheckSpec]:
-    if sla.element is None or sla.value is None:
-        return None
-    parts = _split_element(sla.element)
+def _resolve_sla_element(
+    data_contract: OpenDataContractStandard, element: Optional[str], server: Optional[Server]
+) -> Optional[tuple[str, str]]:
+    """The (model, field) a contract-language sla element points at, in warehouse terms."""
+    parts = _split_element(element)
     if parts is None:
-        logger.info("freshness element is not a single model.field, skipping")
+        logger.info(f"sla element {element!r} is not a single model.field, skipping")
         return None
     model, field = parts
-    if _get_schema_by_name(data_contract, model) is None:
+    schema_object = _get_schema_by_name(data_contract, model)
+    if schema_object is None:
         return None
+    server_type = server.type if server and server.type else None
+    prop = next((p for p in schema_object.properties or [] if p.name == field), None)
+    if prop is not None and prop.physicalName:
+        field = prop.physicalName
+    return to_schema_name(schema_object, server_type), field
+
+
+def _freshness_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Optional[CheckSpec]:
+    if sla.element is None or sla.value is None:
+        return None
+    resolved = _resolve_sla_element(data_contract, sla.element, server)
+    if resolved is None:
+        return None
+    model, field = resolved
 
     unit = (sla.unit or "d").lower()
     if unit in ("d", "day", "days"):
@@ -853,20 +916,20 @@ def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         model=model,
         field=field,
         metric=MetricType.FRESHNESS,
+        quality_id=sla.id,
         seconds=seconds,
     )
 
 
-def _retention_check(data_contract: OpenDataContractStandard, sla) -> Optional[CheckSpec]:
+def _retention_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Optional[CheckSpec]:
     if sla.element is None or sla.value is None:
         return None
-    parts = _split_element(sla.element)
-    if parts is None:
-        logger.info("retention element is not a single model.field, skipping")
+    resolved = _resolve_sla_element(data_contract, sla.element, server)
+    if resolved is None:
         return None
-    model, field = parts
-    if _get_schema_by_name(data_contract, model) is None:
-        return None
+    model, field = resolved
     seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
         return None
@@ -878,6 +941,7 @@ def _retention_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         model=model,
         field=field,
         metric=MetricType.RETENTION,
+        quality_id=sla.id,
         seconds=seconds,
     )
 
@@ -907,19 +971,26 @@ def _retention_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
     return None
 
 
+# P followed by number-unit combinations (e.g. P1Y2M3W4DT5H6M7S), every component optional, but at least one required
+_ISO8601_DURATION = re.compile(
+    r"P(?=\d|T\d)"
+    r"(?:(\d+(?:\.\d+)?)Y)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)W)?"
+    r"(?:(\d+(?:\.\d+)?)D)?"
+    r"(?:T(?=\d)"
+    r"(?:(\d+(?:\.\d+)?)H)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)S)?)?"
+)
+_COMPONENT_SECONDS = (365 * 86400, 30 * 86400, 7 * 86400, 86400, 3600, 60, 1)
+
+
 def _parse_iso8601_to_seconds(duration: str) -> Optional[int]:
     if not duration:
         return None
-    duration = duration.upper()
-    for pat, mult in (
-        (r"P(\d+)Y", 365 * 86400),
-        (r"P(\d+)M", 30 * 86400),
-        (r"P(\d+)D", 86400),
-        (r"PT(\d+)H", 3600),
-        (r"PT(\d+)M", 60),
-        (r"PT(\d+)S", 1),
-    ):
-        m = re.match(pat, duration)
-        if m:
-            return int(m.group(1)) * mult
-    return None
+    match = _ISO8601_DURATION.fullmatch(duration.upper())
+    if match is None:
+        logger.info(f"Unsupported retention period: {duration}")
+        return None
+    return round(sum(float(amount) * seconds for amount, seconds in zip(match.groups(), _COMPONENT_SECONDS) if amount))
