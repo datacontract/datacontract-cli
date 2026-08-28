@@ -606,6 +606,22 @@ def add_field_expectations(
     return expectations
 
 
+def _pop_description(meta: Optional[Dict[str, Any]]) -> tuple[Optional[str], Dict[str, Any]]:
+    """Extract description from meta, returning it separately alongside the remaining meta."""
+    meta_copy = dict(meta or {})
+    return meta_copy.pop("description", None), meta_copy
+
+
+def _build_exp(type_: str, kwargs: Dict[str, Any], description: Optional[str], meta: Dict[str, Any]) -> Dict[str, Any]:
+    """Assemble an expectation dict, placing description at root level when present."""
+    exp: Dict[str, Any] = {"type": type_}
+    if description is not None:
+        exp["description"] = description
+    exp["kwargs"] = kwargs
+    exp["meta"] = meta
+    return exp
+
+
 def to_column_types_exp(field_name, field_type, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Create a column type expectation.
 
@@ -617,11 +633,13 @@ def to_column_types_exp(field_name, field_type, meta: Optional[Dict[str, Any]] =
     Returns:
         dict[str, Any]: Great Expectations column-type expectation.
     """
-    return {
-        "type": "expect_column_values_to_be_of_type",
-        "kwargs": {"column": field_name, "type_": field_type},
-        "meta": meta or {},
-    }
+    description, meta_copy = _pop_description(meta)
+    return _build_exp(
+        "expect_column_values_to_be_of_type",
+        {"column": field_name, "type_": field_type},
+        description,
+        meta_copy,
+    )
 
 
 def to_column_not_null_exp(field_name: str, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -634,11 +652,8 @@ def to_column_not_null_exp(field_name: str, meta: Optional[Dict[str, Any]] = Non
     Returns:
         dict[str, Any]: Great Expectations non-null expectation.
     """
-    return {
-        "type": "expect_column_values_to_not_be_null",
-        "kwargs": {"column": field_name},
-        "meta": meta or {},
-    }
+    description, meta_copy = _pop_description(meta)
+    return _build_exp("expect_column_values_to_not_be_null", {"column": field_name}, description, meta_copy)
 
 
 def to_column_unique_exp(field_name: str, meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -651,11 +666,8 @@ def to_column_unique_exp(field_name: str, meta: Optional[Dict[str, Any]] = None)
     Returns:
         dict[str, Any]: Great Expectations uniqueness expectation.
     """
-    return {
-        "type": "expect_column_values_to_be_unique",
-        "kwargs": {"column": field_name},
-        "meta": meta or {},
-    }
+    description, meta_copy = _pop_description(meta)
+    return _build_exp("expect_column_values_to_be_unique", {"column": field_name}, description, meta_copy)
 
 
 def to_column_length_exp(
@@ -680,11 +692,8 @@ def to_column_length_exp(
         kwargs["min_value"] = min_length
     if max_length is not None:
         kwargs["max_value"] = max_length
-    return {
-        "type": "expect_column_value_lengths_to_be_between",
-        "kwargs": kwargs,
-        "meta": meta or {},
-    }
+    description, meta_copy = _pop_description(meta)
+    return _build_exp("expect_column_value_lengths_to_be_between", kwargs, description, meta_copy)
 
 
 def to_column_min_max_exp(
@@ -709,11 +718,8 @@ def to_column_min_max_exp(
         kwargs["min_value"] = minimum
     if maximum is not None:
         kwargs["max_value"] = maximum
-    return {
-        "type": "expect_column_values_to_be_between",
-        "kwargs": kwargs,
-        "meta": meta or {},
-    }
+    description, meta_copy = _pop_description(meta)
+    return _build_exp("expect_column_values_to_be_between", kwargs, description, meta_copy)
 
 
 def to_column_enum_exp(
@@ -731,11 +737,13 @@ def to_column_enum_exp(
     Returns:
         dict[str, Any]: Great Expectations set-membership expectation.
     """
-    return {
-        "type": "expect_column_values_to_be_in_set",
-        "kwargs": {"column": field_name, "value_set": enum_list},
-        "meta": meta or {},
-    }
+    description, meta_copy = _pop_description(meta)
+    return _build_exp(
+        "expect_column_values_to_be_in_set",
+        {"column": field_name, "value_set": enum_list},
+        description,
+        meta_copy,
+    )
 
 
 def to_column_regex_exp(
@@ -753,11 +761,13 @@ def to_column_regex_exp(
     Returns:
         dict[str, Any]: Great Expectations regular-expression expectation.
     """
-    return {
-        "type": "expect_column_values_to_match_regex",
-        "kwargs": {"column": field_name, "regex": regex},
-        "meta": meta or {},
-    }
+    description, meta_copy = _pop_description(meta)
+    return _build_exp(
+        "expect_column_values_to_match_regex",
+        {"column": field_name, "regex": regex},
+        description,
+        meta_copy,
+    )
 
 
 def get_quality_checks(
@@ -793,10 +803,8 @@ def get_quality_checks(
             if field_name is not None and "column" not in kwargs:
                 kwargs["column"] = field_name
 
-            expectation = {
-                "type": impl.get("type"),
-                "kwargs": kwargs,
-                "meta": _extract_quality_meta(quality, contract_id, field_name),
-            }
+            meta = _extract_quality_meta(quality, contract_id, field_name)
+            description, meta_copy = _pop_description(meta)
+            expectation = _build_exp(impl.get("type"), kwargs, description, meta_copy)
             quality_specification.append(expectation)
     return quality_specification
