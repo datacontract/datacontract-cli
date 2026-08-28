@@ -1,7 +1,13 @@
 import logging
 
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+from open_data_contract_standard.model import (
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
+    Server,
+    ServiceLevelAgreementProperty,
+)
 
 from datacontract.export.sodacl_check_builder import _retention_value_to_seconds, check_property_type, create_checks
 from datacontract.export.sodacl_exporter import SodaExporter
@@ -83,8 +89,6 @@ checks for orders:
 
 def test_multiple_servicelevel_promises_get_distinct_check_keys():
     """Each promise needs its own key, matching the engine check path (#1515)."""
-    from open_data_contract_standard.model import ServiceLevelAgreementProperty
-
     contract = OpenDataContractStandard(
         version="1",
         kind="DataContract",
