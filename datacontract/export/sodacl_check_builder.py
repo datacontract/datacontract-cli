@@ -1086,7 +1086,7 @@ def to_sla_freshness_check(
         return None
 
     check_type = "servicelevel_freshness"
-    check_key = "servicelevel_freshness"
+    check_key = f"{model_name}__{field_name}__{check_type}"
     quoted_field = _quote_identifier_if_needed(field_name, server)
     sodacl_check_dict = {
         f"checks for {model_name}": [
@@ -1152,7 +1152,7 @@ def to_servicelevel_retention_check(
         return None
 
     check_type = "servicelevel_retention"
-    check_key = "servicelevel_retention"
+    check_key = f"{model_name}__{field_name}__{check_type}"
     quoted_field = _quote_identifier_if_needed(field_name, server)
     sodacl_check_dict = {
         f"checks for {model_name}": [
