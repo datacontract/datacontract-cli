@@ -4,7 +4,7 @@ repos:
 # Keep the rev on the version pinned as `ruff==` in pyproject.toml: a hook that
 # reformats what CI accepts is worse than no hook. Dependabot updates both.
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.16.4
+  rev: v0.16.5
   hooks:
     # Run the linter.
     - id: ruff
