@@ -269,7 +269,7 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.2.2",
+  "moto==5.2.3",
   "openapi-spec-validator>=0.7,<0.10",  # asserts that `datacontract api` serves a valid OpenAPI document
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
