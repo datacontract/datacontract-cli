@@ -53,6 +53,25 @@ def test_test_postgres_odcs(postgres_container, monkeypatch):
     assert all(check.result == "passed" for check in run.checks)
 
 
+def test_test_postgres_odcs_postgresql_server_type(postgres_container, monkeypatch):
+    """`postgresql` is the other spelling ODCS allows for the same system, so a
+    contract using it must test exactly like `type: postgres`."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    _init_sql("fixtures/postgres/data/data.sql")
+
+    data_contract_str = _setup_datacontract("fixtures/postgres/odcs.yaml").replace(
+        "type: postgres\n", "type: postgresql\n"
+    )
+    assert "type: postgresql" in data_contract_str
+
+    run = DataContract(data_contract_str=data_contract_str).test()
+
+    print(run.pretty())
+    assert run.result == "passed"
+    assert all(check.result == "passed" for check in run.checks)
+
+
 def test_test_postgres_case_sensitive_table_name(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
@@ -113,6 +132,12 @@ def test_test_postgres_servicelevels_freshness_should_fail_odcs(postgres_contain
 
     print(run.pretty())
     assert run.result == "failed"
+    # Must fail because the data is stale (a measurement happened), not because
+    # the logical schema object name was read as the relation name.
+    freshness = next(c for c in run.checks if c.type == "servicelevel_freshness")
+    assert freshness.result == "failed"
+    assert freshness.diagnostics is not None
+    assert freshness.diagnostics["age_seconds"] > 3600
 
 
 def _setup_datacontract(file):
@@ -132,7 +157,7 @@ def _init_sql(file_path):
             result="failed",
             name="postgres extra missing",
             reason="Install the extra datacontract-cli[postgres] to use postgres",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

@@ -41,6 +41,9 @@ datacontract dbt sync --run-tests
 
 # Generate, run, and publish results to an Entropy Data instance 
 datacontract dbt sync orders.odcs.yaml --run-tests --publish https://api.entropy-data.com/api/test-results
+
+# Preview changes without applying them
+datacontract dbt sync orders.odcs.yaml --dry-run
 ```
 
 A list of all options can be found at the [`dbt` command reference](./commands/dbt/sync.md).

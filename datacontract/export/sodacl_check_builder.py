@@ -59,6 +59,15 @@ def _quote_field_name(field_name: str, quoting_config: QuotingConfig) -> str:
     return field_name
 
 
+def _quote_model_name(model_name: str, quoting_config: QuotingConfig) -> str:
+    """Quote a model, schema, or other identifier according to the quoting configuration."""
+    if quoting_config.quote_model_name:
+        return f'"{model_name}"'
+    elif quoting_config.quote_model_name_with_backticks:
+        return f"`{model_name}`"
+    return model_name
+
+
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
 _ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "mssql", "snowflake", "azure", "s3", "gcs", "local"}
 
@@ -98,7 +107,9 @@ def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> st
     pattern = _BARE_IDENTIFIER_PERMISSIVE if server_type in _PERMISSIVE_BARE_DIALECTS else _BARE_IDENTIFIER_STRICT
     if pattern.match(identifier):
         return identifier
-    return f"`{identifier}`" if server_type in _BACKTICK_DIALECTS else f'"{identifier}"'
+    if server_type in _BACKTICK_DIALECTS:
+        return "`" + identifier.replace("`", "``") + "`"
+    return '"' + identifier.replace('"', '""') + '"'
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -939,27 +950,21 @@ def prepare_query(
 
     field_name_for_soda = _quote_field_name(field_name, quoting_config)
 
-    if quoting_config.quote_model_name:
-        model_name_for_soda = f'"{model_name}"'
-    elif quoting_config.quote_model_name_with_backticks:
-        model_name_for_soda = f"`{model_name}`"
-    else:
-        model_name_for_soda = model_name
+    model_name_for_soda = _quote_model_name(model_name, quoting_config)
 
     query = re.sub(r'["\']?\$?\{model}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{table}["\']?', model_name_for_soda, query)
     query = re.sub(r'["\']?\$?\{object}["\']?', model_name_for_soda, query)
 
     if server and server.schema_:
-        if quoting_config.quote_model_name:
-            schema_name_for_soda = f'"{server.schema_}"'
-        elif quoting_config.quote_model_name_with_backticks:
-            schema_name_for_soda = f"`{server.schema_}`"
-        else:
-            schema_name_for_soda = server.schema_
-        query = re.sub(r'["\']?\$?\{schema}["\']?', schema_name_for_soda, query)
+        query = re.sub(r'["\']?\$?\{schema}["\']?', _quote_model_name(server.schema_, quoting_config), query)
     else:
         query = re.sub(r'["\']?\$?\{schema}["\']?', model_name_for_soda, query)
+
+    for placeholder in ("dataset", "project", "catalog", "database"):
+        value = getattr(server, placeholder, None) if server else None
+        replacement = _quote_model_name(value, quoting_config) if value else model_name_for_soda
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement, query)
 
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name_for_soda, query)
@@ -1006,6 +1011,15 @@ def _get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> O
     return next((s for s in data_contract.schema_ if s.name == name), None)
 
 
+def _resolve_physical_names(schema_object: SchemaObject, field_name: str, server: Optional[Server]) -> tuple[str, str]:
+    """The (dataset, column) a servicelevel check must scan, in warehouse terms."""
+    server_type = server.type if server and server.type else None
+    prop = next((p for p in schema_object.properties or [] if p.name == field_name), None)
+    if prop is not None and prop.physicalName:
+        field_name = prop.physicalName
+    return to_schema_name(schema_object, server_type), field_name
+
+
 def to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Optional[Server] = None) -> List[Check]:
     checks: List[Check] = []
     if data_contract.slaProperties is None:
@@ -1017,7 +1031,7 @@ def to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opti
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
-            check = to_servicelevel_retention_check(data_contract, sla)
+            check = to_servicelevel_retention_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
 
@@ -1054,6 +1068,7 @@ def to_sla_freshness_check(
     if schema is None:
         logger.info(f"Model {model_name} not found in schema, skipping freshness check")
         return None
+    model_name, field_name = _resolve_physical_names(schema, field_name, server)
 
     # Build threshold from value and unit
     unit = sla.unit.lower() if sla.unit else "d"
@@ -1096,7 +1111,9 @@ def to_sla_freshness_check(
     )
 
 
-def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla) -> Check | None:
+def to_servicelevel_retention_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Check | None:
     """Create a retention check from an ODCS retention SLA property."""
     if sla.element is None:
         logger.info("slaProperties.retention.element is not defined, skipping retention check")
@@ -1124,6 +1141,7 @@ def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla
     if schema is None:
         logger.info(f"Model {model_name} not found in schema, skipping retention check")
         return None
+    model_name, field_name = _resolve_physical_names(schema, field_name, server)
 
     # Convert retention value to seconds
     # Supports both numeric value + unit (ODCS style: value=3, unit=y)
@@ -1135,12 +1153,13 @@ def to_servicelevel_retention_check(data_contract: OpenDataContractStandard, sla
 
     check_type = "servicelevel_retention"
     check_key = "servicelevel_retention"
+    quoted_field = _quote_identifier_if_needed(field_name, server)
     sodacl_check_dict = {
         f"checks for {model_name}": [
             {
                 f"{model_name}_servicelevel_retention < {seconds}": {
                     "name": check_key,
-                    f"{model_name}_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({field_name}), CURRENT_TIMESTAMP)",
+                    f"{model_name}_servicelevel_retention expression": f"TIMESTAMPDIFF(SECOND, MIN({quoted_field}), CURRENT_TIMESTAMP)",
                 },
             }
         ],

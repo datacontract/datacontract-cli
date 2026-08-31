@@ -51,7 +51,7 @@ def _get_proto_package_name(data_contract: OpenDataContractStandard) -> str:
                     name="invalid-proto-package-name",
                     reason=f"Invalid protoPackageName '{cp.value}'. "
                     "Must be a dot-separated sequence of identifiers, e.g. 'com.example.mydata'.",
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
             return cp.value
     return "example"

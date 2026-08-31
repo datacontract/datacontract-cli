@@ -52,7 +52,7 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
                     type="lint",
                     name=f"Reading schema from {location}",
                     reason=f"The file '{location}' does not exist.",
-                    engine="datacontract",
+                    engine="datacontract-cli",
                     result=ResultEnum.error,
                 )
 

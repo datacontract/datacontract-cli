@@ -55,6 +55,19 @@ const config: Config = {
   url: 'https://docs.datacontract.com',
   baseUrl: '/',
 
+  // One URL per page, without a trailing slash.
+  //
+  // Left unset, Docusaurus emits `commands/index.html` but canonicalises to
+  // `/commands` — except for category index pages, which canonicalise to
+  // `/commands/dbt/` *with* a slash. The site then disagrees with itself, and
+  // no host-level trailing-slash rule can be right for both halves.
+  //
+  // `false` settles it: every URL loses the slash and the build emits flat
+  // `commands/dbt.html`, so all 199 canonicals share one shape. The host then
+  // redirects the leftover forms onto it — see `trailingSlash` in
+  // `static/staticwebapp.config.json`, which has to stay consistent with this.
+  trailingSlash: false,
+
   organizationName: 'datacontract',
   projectName: 'datacontract-cli',
 

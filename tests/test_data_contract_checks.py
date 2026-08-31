@@ -23,6 +23,7 @@ from datacontract.export.sodacl_check_builder import (
     create_checks,
     prepare_query,
     to_schema_checks,
+    to_servicelevel_checks,
     to_sla_freshness_check,
 )
 
@@ -72,6 +73,47 @@ def test_prepare_query_schema_placeholder_no_schema():
     """Test that {schema} falls back to model name when server has no schema."""
     quality = DataQuality(type="sql", query="SELECT * FROM {schema}")
     server = Server(type="postgres")
+
+    result = prepare_query(quality, "my_table", None, QuotingConfig(), server)
+
+    assert result == "SELECT * FROM my_table"
+
+
+def test_prepare_query_dataset_and_project_placeholders():
+    """Test that {dataset} and {project} are replaced with the BigQuery server values."""
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM ${project}.${dataset}.${table}")
+    server = Server(type="bigquery", project="my_project", dataset="my_dataset")
+
+    result = prepare_query(quality, "my_table", None, QuotingConfig(), server)
+
+    assert result == "SELECT COUNT(*) FROM my_project.my_dataset.my_table"
+
+
+def test_prepare_query_dataset_placeholder_backticks():
+    """Test that {dataset} and {project} are backtick-quoted for bigquery."""
+    quality = DataQuality(type="sql", query="SELECT * FROM {project}.{dataset}.{model}")
+    server = Server(type="bigquery", project="my_project", dataset="my_dataset")
+    quoting_config = QuotingConfig(quote_model_name_with_backticks=True)
+
+    result = prepare_query(quality, "my_table", None, quoting_config, server)
+
+    assert result == "SELECT * FROM `my_project`.`my_dataset`.`my_table`"
+
+
+def test_prepare_query_catalog_and_database_placeholders():
+    """Test that {catalog} and {database} are replaced with the server values."""
+    quality = DataQuality(type="sql", query="SELECT * FROM {catalog}.{database}.{model}")
+    server = Server(**{"type": "databricks", "catalog": "my_catalog", "database": "my_database"})
+
+    result = prepare_query(quality, "my_table", None, QuotingConfig(), server)
+
+    assert result == "SELECT * FROM my_catalog.my_database.my_table"
+
+
+def test_prepare_query_dataset_placeholder_falls_back_to_model_name():
+    """Test that {dataset} falls back to the model name when the server has no dataset."""
+    quality = DataQuality(type="sql", query="SELECT * FROM {dataset}")
+    server = Server(**{"type": "postgres", "schema": "my_schema"})
 
     result = prepare_query(quality, "my_table", None, QuotingConfig(), server)
 
@@ -570,6 +612,69 @@ def test_field_checks_fall_back_to_name_without_physical_name():
 
     present = next(c for c in checks if c.type == "field_is_present")
     assert present.field == "sku"
+
+
+def test_servicelevel_checks_use_physical_names_when_set():
+    """Freshness/retention SodaCL must target physicalName, like the schema checks.
+
+    The `checks for X` block names the dataset Soda scans; the sla element
+    speaks contract language. Without resolution, a contract whose object
+    name differs from the relation name emits checks against a dataset that
+    does not exist.
+    """
+    contract = OpenDataContractStandard(
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="freshness-test",
+        schema=[
+            SchemaObject(
+                name="events",
+                physicalName="events_v1",
+                properties=[SchemaProperty(name="ts", physicalName="TS", logicalType="timestamp")],
+            )
+        ],
+    )
+    contract.slaProperties = [
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value=24, unit="h"),
+        ServiceLevelAgreementProperty(property="retention", element="events.ts", value=1, unit="y"),
+    ]
+
+    freshness, retention = to_servicelevel_checks(contract, Server(type="snowflake"))
+
+    assert freshness.model == "events_v1"
+    fresh_impl = yaml.safe_load(freshness.implementation)
+    assert list(fresh_impl["checks for events_v1"][0].keys()) == ["freshness(TS) < 24h"]
+
+    assert retention.model == "events_v1"
+    ret_impl = yaml.safe_load(retention.implementation)
+    (entry,) = ret_impl["checks for events_v1"]
+    ((_, config),) = entry.items()
+    assert "MIN(TS)" in config["events_v1_servicelevel_retention expression"]
+
+
+def test_servicelevel_checks_keep_kafka_logical_name():
+    """to_schema_name reads the Spark SQL view (logical name) on kafka, not the topic."""
+    contract = OpenDataContractStandard(
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="freshness-test",
+        schema=[
+            SchemaObject(
+                name="events",
+                physicalName="events-topic",
+                properties=[SchemaProperty(name="ts", logicalType="timestamp")],
+            )
+        ],
+    )
+    contract.slaProperties = [
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value=24, unit="h"),
+    ]
+
+    (freshness,) = to_servicelevel_checks(contract, Server(type="kafka"))
+
+    assert freshness.model == "events"
+    fresh_impl = yaml.safe_load(freshness.implementation)
+    assert "checks for events" in fresh_impl
 
 
 # ---------------------------------------------------------------------------

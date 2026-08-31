@@ -1,0 +1,93 @@
+name: Dependabot auto-merge
+
+# Squash-merges Dependabot pull requests that only update development
+# dependencies (the `dev` extra in pyproject.toml, the devDependencies of the
+# docs site) once every check on the pull request has passed. Everything a
+# release ships to users — runtime dependencies, the workflow actions — is
+# still merged by hand.
+#
+# This runs on workflow_run, not on pull_request: workflows triggered by
+# Dependabot get a read-only GITHUB_TOKEN and cannot merge anything. Every
+# workflow that runs on pull requests is a trigger, and each one re-checks the
+# whole pull request, so whichever finishes last is the one that finds
+# everything green and merges. Branch protection on main has no required status
+# checks, so GitHub's own auto-merge cannot express "wait for the tests" — this
+# workflow is the gate.
+
+on:
+  workflow_run:
+    workflows: ["CI", "CodeQL", "Docs"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    name: Auto-merge development dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: >-
+      github.repository == 'datacontract/datacontract-cli' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
+    steps:
+      - name: Merge when development-only and green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          # Passed as environment variables rather than interpolated into the
+          # script, so that no branch name can end up as shell code.
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          pr=$(gh pr list --head "$BRANCH" --state open --author "app/dependabot" \
+                 --json number --jq '.[0].number // empty')
+          if [ -z "$pr" ]; then
+            echo "No open Dependabot pull request for $BRANCH."
+            exit 0
+          fi
+
+          head=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+          if [ "$head" != "$TESTED_SHA" ]; then
+            echo "PR #$pr has moved on to $head; the runs for that commit decide."
+            exit 0
+          fi
+
+          # Dependabot records what it updated as a commit message trailer, one
+          # block per dependency, so grouped pull requests list all of them.
+          types=$(gh api --paginate "repos/$GH_REPO/pulls/$pr/commits" --jq '.[].commit.message' \
+                    | sed -n 's/^ *dependency-type: *//p' | sort -u)
+          if [ -z "$types" ]; then
+            echo "PR #$pr carries no dependency-type metadata; leaving it to a human."
+            exit 0
+          fi
+          if [ "$types" != "direct:development" ]; then
+            echo "PR #$pr updates $(echo "$types" | paste -sd' ' -); only direct:development is auto-merged."
+            exit 0
+          fi
+
+          # gh exits non-zero while checks are pending or failing, hence the `|| true`.
+          checks=$(gh pr checks "$pr" --json name,bucket,state 2>/dev/null || true)
+          if [ -z "$checks" ]; then
+            echo "No checks reported for PR #$pr."
+            exit 0
+          fi
+          # Buckets are pass, skipping, pending, fail and cancel. This job is not
+          # reported as a check on the pull request, but filter it out regardless.
+          not_green=$(echo "$checks" | jq -r '
+            [.[] | select(.name != "Auto-merge development dependencies")
+                 | select(.bucket != "pass" and .bucket != "skipping")]')
+          if [ "$(echo "$not_green" | jq length)" -ne 0 ]; then
+            echo "PR #$pr is not green yet:"
+            echo "$not_green" | jq -r '.[] | "  \(.name): \(.state)"'
+            exit 0
+          fi
+
+          echo "Merging PR #$pr (development-only, all checks passed)."
+          gh pr merge "$pr" --squash

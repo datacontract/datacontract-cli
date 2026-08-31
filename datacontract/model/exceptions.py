@@ -19,7 +19,7 @@ class DataContractException(Exception):
         type,
         name,
         reason,
-        engine="datacontract",
+        engine="datacontract-cli",
         model=None,
         original_exception=None,
         result: ResultEnum = ResultEnum.failed,
@@ -35,6 +35,21 @@ class DataContractException(Exception):
         self.message = message
         super().__init__(
             f"{self.message}: [{self.type}] {self.name} - {self.model} - {self.result} - {self.reason} - {self.engine}"
+        )
+
+
+class DefinitionResolutionError(DataContractException):
+    """An authoritativeDefinition URL could not be fetched or parsed."""
+
+    def __init__(self, url: str, reason: str, original_exception: Exception | None = None):
+        self.url = url
+        super().__init__(
+            type="lint",
+            result=ResultEnum.failed,
+            name="Resolve business definition",
+            reason=reason,
+            engine="datacontract-cli",
+            original_exception=original_exception,
         )
 
 

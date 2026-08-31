@@ -48,7 +48,7 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse unity schema",
             reason=f"Failed to parse unity schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -71,7 +71,7 @@ def import_unity_from_api(
             type="configuration",
             name="Databricks configuration",
             reason="",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
         if not profile and not host and not token:
             reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set"
@@ -91,7 +91,7 @@ def import_unity_from_api(
             type="schema",
             name="Retrieve unity catalog schema",
             reason="Failed to connect to unity catalog schema",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -106,7 +106,7 @@ def import_unity_from_api(
                 type="schema",
                 name="Retrieve unity catalog schema",
                 reason=f"Unity table {unity_table_full_name} not found",
-                engine="datacontract",
+                engine="datacontract-cli",
                 original_exception=e,
             )
         odcs = convert_unity_schema(odcs, unity_schema)

@@ -40,6 +40,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/s3.svg" alt="" />
     <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">CSV, JSON, Delta, Parquet on S3 / S3-compatible storage</span></span>
   </a>
+  <a className="doc-card" href="/testing/duckdb">
+    <img src="/img/icons/database.svg" alt="" />
+    <span><span className="doc-card-title">DuckDB</span><span className="doc-card-desc">Tables inside a DuckDB database file</span></span>
+  </a>
   <a className="doc-card" href="/testing/local">
     <img src="/img/icons/local.svg" alt="" />
     <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Try it in 60 seconds — no credentials needed</span></span>
@@ -102,16 +106,43 @@ The CLI uses different engines based on the server `type`. Internally it connect
 
 Checks fall into categories you can select with `--checks`:
 
-- `schema` — the [schema](../schema.md) attributes: presence, types, `required`, `unique`, primary keys, and `logicalTypeOptions`.
+- `properties` — the [schema](../schema.md) attributes: presence, types, `required`, `unique`, primary keys, and `logicalTypeOptions`. `schema` is kept as a legacy alias.
 - `quality` — the [quality rules](../quality-rules/index.md) defined in the contract.
-- `servicelevel` — the [service levels](../service-levels.md) defined in the contract (`slaProperties`).
+- `slaProperties` — the [service levels](../service-levels.md) defined in the contract. `servicelevel` is kept as a legacy alias.
 - `custom` — custom checks.
 
 Omit `--checks` to run all of them.
 
+:::note
+Selecting `properties` (or its legacy alias `schema`) is not metadata-only. The category says where a rule is defined in the contract, not how the check reads the database: constraints such as `required`, `unique`, enum, pattern, and ranges read column values and may scan data.
+
+Use `--metadata-only` to skip these value-level checks: only the schema-reading checks (field presence and types) run, and the rest show as `skipped`. One exception: on JSON file and API sources, record validation still reads every record; `--metadata-only` does not disable it.
+:::
+
 `--dimension` cuts across those categories instead: it selects every check that measures one aspect of data quality — the [quality rules](../quality-rules/index.md#quality-dimensions) tagged with that `dimension` plus the schema and service level checks that measure the same thing.
 
 `--quality-id` and `--tag` go the other way and narrow the run to individual [quality rules](../quality-rules/index.md#identifying-rules): `--quality-id` runs the one rule declaring that `id`, `--tag` runs every rule declaring that tag, and neither runs any schema or service level check.
+
+## Dry Run
+
+`--dry-run` reports the checks a run would execute and stops there. No data is read from the server, so every reported check has the result
+`skipped` (or `warning` if they cannot be planned).
+
+```bash
+datacontract test datacontract.yaml --dry-run
+```
+
+A dry run needs no server credentials, which
+makes it usable on a pull request build that has no warehouse access. A dry run
+exits `0`: it is a plan, not a verdict.
+
+:::note
+A dry run is not offline in general: a contract that references [external semantics](../semantics.md) still fetches them. This is necessary to build all of its checks.
+:::
+
+:::caution
+Contracts with `logicalType: blob` schemas on Azure do not support dry runs.
+:::
 
 ## Configuring the connection
 

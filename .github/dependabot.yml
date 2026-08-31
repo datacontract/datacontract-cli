@@ -3,7 +3,12 @@
 # Please see the documentation for all configuration options:
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
-version: 2 
+#
+# Pull requests that only update development dependencies are merged
+# automatically once every check on them passes, see
+# .github/workflows/dependabot-auto-merge.yml.
+
+version: 2
 updates:
   - package-ecosystem: "pip" # See documentation for possible values
     directory: "/" # Location of package manifests
@@ -12,3 +17,47 @@ updates:
       time: "10:00"
     labels:
       - "dependencies"
+
+  # The hooks in .pre-commit-config.yaml. Their rev is pinned separately from
+  # the `ruff==` pin in pyproject.toml, so without this the hook drifts behind
+  # and starts reformatting what CI accepts.
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "10:00"
+    labels:
+      - "dependencies"
+
+  # The actions used by the workflows in .github/workflows.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "10:00"
+    labels:
+      - "dependencies"
+    groups:
+      # One pull request per week for all of them, rather than one per action.
+      github-actions:
+        patterns:
+          - "*"
+
+  # The Docusaurus documentation site. Without this, the docs dependencies only
+  # ever get the security updates Dependabot opens on its own, never version
+  # updates — which is why the open alerts there are all for outdated packages.
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
+      time: "10:00"
+    labels:
+      - "dependencies"
+    groups:
+      # Docusaurus ships as a dozen packages that must move in lockstep.
+      docusaurus:
+        patterns:
+          - "@docusaurus/*"
+      npm:
+        patterns:
+          - "*"

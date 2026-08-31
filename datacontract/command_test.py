@@ -7,6 +7,7 @@ from typing_extensions import Annotated
 
 from datacontract.cli import (
     _print_logs,
+    _print_publish_failure,
     app,
     console,
     debug_option,
@@ -28,6 +29,16 @@ class CheckCategory(str, Enum):
     custom = "custom"
 
 
+# ODCS section names (`properties`, `slaProperties`) accepted as user-facing
+# aliases for the legacy category names. Keyed lowercase: `--checks` matching
+# is case-insensitive.
+CHECK_CATEGORY_ALIASES = {
+    "properties": CheckCategory.schema,
+    "slaproperties": CheckCategory.servicelevel,
+}
+CHECK_CATEGORY_OPTIONS = "properties, quality, slaProperties, custom; legacy aliases: schema, servicelevel"
+
+
 class QualityDimension(str, Enum):
     """The ODCS `quality.dimension` enum (see the bundled ODCS JSON schema)."""
 
@@ -40,22 +51,43 @@ class QualityDimension(str, Enum):
     uniqueness = "uniqueness"
 
 
-def _parse_enum_csv(value: str | None, enum_cls: type[Enum], option: str, label: str) -> set[str] | None:
-    """Parse a comma-separated option into a set of enum values, or None if unset."""
+def _parse_enum_csv(
+    value: str | None,
+    enum_cls: type[Enum],
+    option: str,
+    label: str,
+    aliases: dict[str, Enum] | None = None,
+    available: str | None = None,
+) -> set[str] | None:
+    """Parse a comma-separated option into a set of enum values, or None if unset.
+
+    Matching is case-insensitive; `aliases` maps additional lowercase spellings
+    to their enum value. `available` overrides the choices shown in errors.
+    """
     if value is None:
         return None
     allowed = [e.value for e in enum_cls]
     raw = [v.strip() for v in value.split(",") if v.strip()]
     if not raw:
         console.print(f"[red]Empty {option} specified.[/red]")
-        console.print(f"Available {label}: {', '.join(allowed)}")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
         raise typer.Exit(code=1)
-    invalid = sorted(set(raw) - set(allowed))
+    aliases = aliases or {}
+    values = set()
+    invalid = set()
+    for v in raw:
+        key = v.lower()
+        if key in aliases:
+            values.add(aliases[key].value)
+        elif key in allowed:
+            values.add(key)
+        else:
+            invalid.add(v)
     if invalid:
-        console.print(f"[red]Invalid {option} specified: {', '.join(invalid)}[/red]")
-        console.print(f"Available {label}: {', '.join(allowed)}")
+        console.print(f"[red]Invalid {option} specified: {', '.join(sorted(invalid))}[/red]")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
         raise typer.Exit(code=1)
-    return {enum_cls(v).value for v in raw}
+    return values
 
 
 def _parse_filters(value: str | None) -> dict[str, str] | None:
@@ -135,7 +167,7 @@ def test(
         str,
         typer.Option(
             help="Comma-separated list of check categories to run "
-            f"(available: {', '.join(c.value for c in CheckCategory)}). Omit to enable all."
+            f"(available: {CHECK_CATEGORY_OPTIONS}). Omit to enable all."
         ),
     ] = None,
     dimension: Annotated[
@@ -179,6 +211,20 @@ def test(
             "Schema checks and custom SQL queries are not filtered."
         ),
     ] = None,
+    metadata_only: Annotated[
+        bool,
+        typer.Option(
+            help="Run only checks that read the schema (field presence and types). "
+            "Checks that read row values are skipped."
+        ),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            help="Report the checks that would run, without connecting to the server or reading any data. "
+            "Reported checks have the result 'skipped', or 'warning' where a check could not be planned."
+        ),
+    ] = False,
     include_failed_samples: Annotated[
         bool,
         typer.Option(
@@ -206,7 +252,14 @@ def test(
     enable_debug_logging(debug, otherwise_disable_stderr=True)
     publish = validate_publish_url(publish)
 
-    check_categories = _parse_enum_csv(checks, CheckCategory, "--checks", "categories")
+    check_categories = _parse_enum_csv(
+        checks,
+        CheckCategory,
+        "--checks",
+        "categories",
+        aliases=CHECK_CATEGORY_ALIASES,
+        available=CHECK_CATEGORY_OPTIONS,
+    )
     dimensions = _parse_enum_csv(dimension, QualityDimension, "--dimension", "dimensions")
     quality_ids = _parse_csv(quality_id, "--quality-id")
     tags = _parse_csv(tag, "--tag")
@@ -237,6 +290,8 @@ def test(
         include_failed_samples=include_failed_samples,
         filter=filter,
         filters=parsed_filters,
+        metadata_only=metadata_only,
+        dry_run=dry_run,
     ).test()
     if logs:
         _print_logs(run)
@@ -244,4 +299,11 @@ def test(
         data_contract = resolve_data_contract(location, schema_location=schema, config=cli_config())
     except Exception:
         data_contract = None
-    write_test_result(run, console, output_format, output, data_contract)
+    try:
+        write_test_result(run, console, output_format, output, data_contract)
+    finally:
+        # Publish messages are otherwise only logged, which is suppressed without --debug.
+        if run.publish_succeeded is False:
+            _print_publish_failure(run)
+    if run.publish_succeeded is False:
+        raise typer.Exit(code=1)

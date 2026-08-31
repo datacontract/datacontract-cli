@@ -10,6 +10,7 @@ from fastjsonschema import JsonSchemaValueException
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.config import Config
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_exporter import to_jsonschema
 from datacontract.model.exceptions import DataContractException
@@ -71,6 +72,7 @@ def process_exceptions(run, exceptions: List[DataContractException], config: Con
         [
             Check(
                 type=exception.type,
+                dimension=default_dimension(exception.type),
                 name=exception.name,
                 result=exception.result,
                 reason=exception.reason,
@@ -165,10 +167,11 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
     if not path:
         raise DataContractException(
             type="schema",
+            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason="For server with type 'local', a 'path' must be defined.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if "{model}" in path:
         path = path.format(model=model_name)
@@ -190,10 +193,11 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
     if not all_files:
         raise DataContractException(
             type="schema",
+            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"No files found in '{path}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     for file in all_files:
@@ -220,10 +224,11 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
     if json_stream is None:
         raise DataContractException(
             type="schema",
+            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"Cannot find any file in {s3_location}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     # Validate the JSON stream and collect exceptions.
@@ -239,6 +244,7 @@ def check_jsonschema(
     server: Server,
     schema_name: str = "all",
     config: Config | None = None,
+    dry_run: bool = False,
 ):
     run.log_info("Running engine jsonschema")
 
@@ -247,6 +253,7 @@ def check_jsonschema(
         run.checks.append(
             Check(
                 type="schema",
+                dimension=default_dimension("schema"),
                 name="Check that JSON has valid schema",
                 result=ResultEnum.warning,
                 reason="Server format is not 'json'. Skip validating jsonschema.",
@@ -274,6 +281,21 @@ def check_jsonschema(
             formats={"uuid": r"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$"},
         )
 
+        if dry_run:
+            # The schema was still built and compiled above, so a contract that
+            # could never validate fails here; only the file read is skipped.
+            run.checks.append(
+                Check(
+                    type="schema",
+                    name="Check that JSON has valid schema",
+                    model=model_name,
+                    result=ResultEnum.skipped,
+                    reason="Dry run: check not executed",
+                    engine="jsonschema",
+                )
+            )
+            continue
+
         # Process files based on server type
         if server.type == "local":
             process_local_file(run, server, schema, model_name, validate, config)
@@ -283,9 +305,10 @@ def check_jsonschema(
             run.checks.append(
                 Check(
                     type="schema",
+                    dimension=default_dimension("schema"),
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.info,
+                    result=ResultEnum.skipped,
                     reason="JSON Schema check skipped for GCS, as GCS is currently not supported",
                     engine="jsonschema",
                 )
@@ -294,9 +317,10 @@ def check_jsonschema(
             run.checks.append(
                 Check(
                     type="schema",
+                    dimension=default_dimension("schema"),
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.info,
+                    result=ResultEnum.skipped,
                     reason="JSON Schema check skipped for azure, as azure is currently not supported",
                     engine="jsonschema",
                 )
@@ -305,6 +329,7 @@ def check_jsonschema(
             run.checks.append(
                 Check(
                     type="schema",
+                    dimension=default_dimension("schema"),
                     name="Check that JSON has valid schema",
                     model=model_name,
                     result=ResultEnum.warning,
@@ -317,6 +342,7 @@ def check_jsonschema(
         run.checks.append(
             Check(
                 type="schema",
+                dimension=default_dimension("schema"),
                 name="Check that JSON has valid schema",
                 model=model_name,
                 result=ResultEnum.passed,

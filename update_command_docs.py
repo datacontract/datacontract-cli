@@ -7,18 +7,18 @@ Groups (`import`, `export`, `dbt`) get a folder with one sub-page per
 subcommand. Prose guides live elsewhere (docs/docs/imports, exports, testing);
 nothing outside docs/docs/commands/ is touched.
 
-    python update_command_docs.py          # rewrite the pages
-    python update_command_docs.py --check  # fail if anything is out of date
+    python update_command_docs.py
 
-Re-run whenever a command, option, or help string changes.
+The pages are not committed: the docs build runs this (via
+docs/scripts/generate-command-docs.mjs) before every `npm start` and
+`npm run build`, and the docs tests run it through the `command_docs` fixture.
+Run it by hand only to look at the output.
 """
 
 from __future__ import annotations
 
 import json
 import re
-import shutil
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -341,28 +341,12 @@ def generate(changed: list[str]) -> set[Path]:
 
 
 def main() -> int:
-    check = "--check" in sys.argv
-    if check:
-        backup = Path(str(DOCS) + ".bak")
-        shutil.copytree(DOCS, backup, dirs_exist_ok=True)
-
     changed: list[str] = []
     expected = generate(changed)
     stale = [p for p in DOCS.rglob("*") if p.is_file() and p not in expected]
     for path in stale:
         path.unlink()
         changed.append(f"{path} (removed)")
-
-    if check:
-        shutil.rmtree(DOCS)
-        shutil.move(str(Path(str(DOCS) + ".bak")), str(DOCS))
-        if changed:
-            print("Command docs are out of date. Run: python update_command_docs.py")
-            for c in sorted(changed):
-                print(f"  {c}")
-            return 1
-        print("Command docs are up to date.")
-        return 0
 
     for c in sorted(changed):
         print(f"  {c}")

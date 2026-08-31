@@ -53,6 +53,7 @@ def connect_ibis(
     duckdb_connection=None,
     schema_name: str = "all",
     config: Config | None = None,
+    untrusted_contract: bool = False,
 ) -> "ibis.BaseBackend | None":
     """Return a connected ibis backend, or ``None`` if the server is unsupported.
 
@@ -69,9 +70,18 @@ def connect_ibis(
             return None
         run.log_info(f"Connecting to {server_type} {server.format} via duckdb")
         con = get_duckdb_connection(
-            data_contract, server, run, duckdb_connection, schema_name=schema_name, config=config
+            data_contract,
+            server,
+            run,
+            duckdb_connection,
+            schema_name=schema_name,
+            config=config,
+            untrusted_contract=untrusted_contract,
         )
         return ibis.duckdb.from_connection(con)
+
+    if server_type == "duckdb":
+        return _connect_duckdb_database(ibis, server, run, config)
 
     if server_type == "kafka":
         from datacontract.engines.ibis.connections.kafka import read_kafka_topic
@@ -143,25 +153,7 @@ def connect_ibis(
         return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run, config))
 
     if server_type == "bigquery":
-        credentials = _bigquery_credentials(config)
-        billing_project = config.get_bigquery_billing_project()
-        project = config.get_bigquery_project() or server.project
-        dataset = config.get_bigquery_dataset() or server.dataset
-
-        if billing_project and billing_project != project:
-            from google.cloud import bigquery as bq_client_lib
-
-            client = bq_client_lib.Client(project=billing_project, credentials=credentials)
-            return ibis.bigquery.connect(
-                project_id=project,
-                dataset_id=dataset,
-                client=client,
-            )
-
-        kwargs = dict(project_id=project, dataset_id=dataset)
-        if credentials:
-            kwargs["credentials"] = credentials
-        return ibis.bigquery.connect(**kwargs)
+        return _connect_bigquery(ibis, server, config)
 
     # `mssql` is what ODBC, ibis and dbt call SQL Server; ODCS spells it `sqlserver`.
     if server_type in ("sqlserver", "mssql"):
@@ -320,6 +312,44 @@ def _databricks_credentials_provider(service_principal: bool = False, **config_k
     return credentials_provider
 
 
+def _connect_bigquery(ibis, server: Server, config: Config):
+    credentials = _bigquery_credentials(config)
+    billing_project = config.get_bigquery_billing_project()
+    project = config.get_bigquery_project() or server.project
+    dataset = config.get_bigquery_dataset() or server.dataset
+    if billing_project and not project:
+        raise DataContractException(
+            type="bigquery-connection",
+            name="missing_project",
+            reason=(
+                "Project is required for BigQuery connection when a billing project is set. "
+                "Set the server's `project` or DATACONTRACT_BIGQUERY_PROJECT."
+            ),
+            engine="datacontract-cli",
+        )
+    if not dataset:
+        raise DataContractException(
+            type="bigquery-connection",
+            name="missing_dataset",
+            reason=(
+                "Dataset is required for BigQuery connection. "
+                "Set the server's `dataset` or DATACONTRACT_BIGQUERY_DATASET."
+            ),
+            engine="datacontract-cli",
+        )
+
+    # ibis reads the billing project from ``project_id`` and the data project from a
+    # ``<project>.<dataset>`` qualified ``dataset_id``. Passing a pre-built client
+    # instead would make ibis take its project as both.
+    kwargs = dict(
+        project_id=billing_project or project,
+        dataset_id=f"{project}.{dataset}" if project else dataset,
+    )
+    if credentials:
+        kwargs["credentials"] = credentials
+    return ibis.bigquery.connect(**kwargs)
+
+
 _BIGQUERY_SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 
 
@@ -409,7 +439,7 @@ def _snowflake_private_key(value: str | None):
                 reason=f"DATACONTRACT_SNOWFLAKE_PRIVATE_KEY could not be read as an unencrypted PEM private key: {e}. "
                 f"For encrypted keys, use DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE with "
                 f"DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
     import base64
 
@@ -420,7 +450,7 @@ def _snowflake_private_key(value: str | None):
             type="snowflake-connection",
             name="invalid_private_key",
             reason="DATACONTRACT_SNOWFLAKE_PRIVATE_KEY must be a PEM private key or base64-encoded DER.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 
@@ -494,6 +524,44 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
         schema=config.get_snowflake_schema() or server.schema_,
         **kwargs,
     )
+
+
+def _connect_duckdb_database(ibis, server: Server, run: Run, config: Config):
+    """Connect to a DuckDB database file.
+
+    Distinct from the file server types (`local`, `s3`, …), which read data files
+    *through* DuckDB into views: here the DuckDB database itself is the data
+    source, and the contract's schema objects are the tables inside it. ODCS
+    carries the path to the database file in the server's `database` field.
+    """
+    path = config.get_duckdb_database() or server.database
+    if not path:
+        _unsupported(run, "For server type 'duckdb', a 'database' (the path to the database file) must be defined.")
+        return None
+    read_only = path != ":memory:"
+    run.log_info(f"Connecting to the duckdb database at {path}")
+    try:
+        # Opened read-only: a test reads the data, and a second process may hold
+        # the same database open at the same time.
+        con = ibis.duckdb.connect(path, read_only=read_only)
+    except Exception as e:
+        raise DataContractException(
+            type="connection",
+            name="Connect to duckdb",
+            result=ResultEnum.error,
+            reason=f"Could not open the duckdb database at {path}: {e}",
+            engine="datacontract-cli",
+            original_exception=e,
+        )
+
+    schema = config.get_duckdb_schema() or server.schema_
+    if schema:
+        # `connect()` takes no schema, so the session's search path is set here:
+        # otherwise an unqualified table name in a quality rule's SQL resolves
+        # against `main` and is not found.
+        escaped = schema.replace('"', '""')
+        con.raw_sql(f'USE "{escaped}"')
+    return con
 
 
 def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str, config: Config):
@@ -657,14 +725,14 @@ def _connect_athena(ibis, server: Server, config: Config):
             type="athena-connection",
             name="missing_schema",
             reason="Schema is required for Athena connection.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if not staging_dir:
         raise DataContractException(
             type="athena-connection",
             name="missing_s3_staging_dir",
             reason="S3 staging directory is required for Athena connection.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     kwargs = dict(
         s3_staging_dir=staging_dir,
@@ -722,7 +790,7 @@ def _connect_trino(ibis, server: Server, config: Config):
                 "Unsupported DATACONTRACT_TRINO_AUTHENTICATION value "
                 f"{authentication!r}. Supported values are: basic, jwt, oauth2."
             ),
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 
@@ -741,7 +809,7 @@ def _unsupported(run: Run, reason: str):
             name="Check that server type is supported",
             result=ResultEnum.warning,
             reason=reason,
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     )
     run.log_warn(reason)

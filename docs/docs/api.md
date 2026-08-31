@@ -41,6 +41,13 @@ datacontract api --port 1234 --root_path /datacontract
 Once running, open the interactive OpenAPI documentation (Swagger UI) at
 [http://localhost:4242](http://localhost:4242). You can execute the commands directly from the UI.
 
+The OpenAPI 3.1 document itself is served at `http://localhost:4242/openapi.json` and can be fed to
+a client generator:
+
+```bash
+curl -s http://localhost:4242/openapi.json > openapi.json
+```
+
 ## Test a data contract
 
 POST a data contract as the request body to `/test` and receive the test results as JSON:
@@ -87,7 +94,7 @@ Alternatively, `POST /test` accepts credentials per request via `datacontract-*`
 
 ## Secure the API
 
-Set `DATACONTRACT_CLI_API_KEY` to a secret value (such as a random UUID) to require authentication. Requests must then include the header `x-api-key` with the correct key.
+Set `DATACONTRACT_CLI_API_KEY` to a secret value (such as a random UUID) to require authentication. Every endpoint then requires the header `x-api-key` with the correct key, and answers `401` when it is missing and `403` when it is wrong.
 
 ```bash
 export DATACONTRACT_CLI_API_KEY=<your-secret-key-such-as-a-random-uuid>
@@ -96,6 +103,24 @@ export DATACONTRACT_CLI_API_KEY=<your-secret-key-such-as-a-random-uuid>
 :::warning
 Securing the API is highly recommended. Data contract tests may otherwise be subject to SQL injection or leak sensitive information.
 :::
+
+## Posted contracts are untrusted
+
+A data contract carries SQL and names the hosts to connect to, so a contract that arrives over HTTP is treated as untrusted input, whether or not the API key is set:
+
+- a `quality.type: sql` rule must be a **read-only query** — DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed;
+- a credential held in the server's environment is **never sent to a host the contract names** (see [Configuration](./configuration.md));
+- a `publish_url` may only point at the **Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this, and other hosts are refused;
+- `servers[].type: local` is **refused**, so a caller cannot read the files of the machine running the API;
+- for a file-based server type (`s3`, `gcs`, `azure`), the DuckDB connection is **confined to the data locations the contract declares**.
+
+If the deployment serves its own files on purpose — the data mounted next to the API in the same container, say — allow it explicitly:
+
+```bash
+export DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true
+```
+
+The contract is then still confined to the paths it declares, but a caller chooses those paths, so only turn this on where callers are trusted.
 
 ## Run as a Docker container
 

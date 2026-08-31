@@ -74,7 +74,7 @@ class RedshiftImporter(Importer):
                     "The Redshift endpoint host is required for the redshift import, "
                     "e.g. --source my-workgroup.123456789012.us-east-1.redshift-serverless.amazonaws.com"
                 ),
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         return import_redshift_from_connector(
             host=source,
@@ -99,14 +99,14 @@ def import_redshift_from_connector(
             type="source",
             name="redshift import database",
             reason="The database is required for the redshift import, e.g. --database dev",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if not schema:
         raise DataContractException(
             type="source",
             name="redshift import schema",
             reason="The schema is required for the redshift import, e.g. --schema public",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     port = int(port) if port else DEFAULT_PORT
@@ -127,7 +127,7 @@ def import_redshift_from_connector(
             result="failed",
             name="no tables found",
             reason=f"No tables found in schema '{schema}' of database '{database}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     odcs = create_odcs()
@@ -158,7 +158,7 @@ def redshift_connection(host: str, port: int, database: str, config=None):
             result="failed",
             name="redshift extra missing",
             reason="Install the extra datacontract-cli[redshift] to use redshift",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -193,7 +193,7 @@ def _fetch(connection, query: str, params: tuple, optional: bool = False) -> Lis
             result="failed",
             name="redshift catalog query failed",
             reason=f"Could not read the Redshift catalog: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

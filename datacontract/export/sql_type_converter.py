@@ -37,7 +37,7 @@ def _warn_cannot_map_type(field: Union[SchemaProperty, "FieldLike"], dialect: st
 
 
 class FieldLike(Protocol):
-    """Protocol for field-like objects (DCS Field or PropertyAdapter)."""
+    """Protocol for field-like objects (a DCS Field; ODCS passes SchemaProperty directly)."""
 
     type: Optional[str]
     config: Optional[Dict[str, Any]]
@@ -717,7 +717,7 @@ def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
             result="failed",
             name="Map datacontract type to bigquery data type",
             reason=f"Unsupported type {logical_type} in data contract definition.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
 

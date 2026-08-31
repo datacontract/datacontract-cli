@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 10
 title: "HTTP API"
 description: "Create a data contract from a JSON HTTP API and test the responses against it (GET requests only)."
 ---

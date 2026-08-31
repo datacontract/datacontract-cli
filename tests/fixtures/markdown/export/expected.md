@@ -3,6 +3,7 @@
 *Successful customer orders in the webshop. <br />All orders since 2020-01-01. <br />Orders with their line items are in their current state (no history included).<br />*
 - **name:** Orders Latest
 - **version:** 2.0.0
+- **status:** draft
 - **team:** Checkout Team
 
 ## Terms of Use

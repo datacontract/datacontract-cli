@@ -18,9 +18,10 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
     check_that_datacontract_contains_valid_server_configuration,
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
-from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks
+from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import ResultEnum, Run
+from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.server import resolve_server_overrides
 
 
 def execute_data_contract_test(
@@ -37,7 +38,10 @@ def execute_data_contract_test(
     include_failed_samples: bool = False,
     filter: str | None = None,
     filters: dict[str, str] | None = None,
+    metadata_only: bool = False,
+    dry_run: bool = False,
     config: Config | None = None,
+    untrusted_contract: bool = False,
 ):
     config = Config.resolve(config)
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
@@ -46,11 +50,11 @@ def execute_data_contract_test(
             name="Check that data contract contains models",
             result=ResultEnum.warning,
             reason="Schema block is missing. Skip executing tests.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
-    server = get_server(data_contract, server_name)
+    server = resolve_server_overrides(get_server(data_contract, server_name), config, run)
     run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
     run.dataContractId = data_contract.id
     run.dataContractVersion = data_contract.version
@@ -66,7 +70,7 @@ def execute_data_contract_test(
                 name="Check that schema name exists",
                 result=ResultEnum.failed,
                 reason=f"Schema '{schema_name}' not found in data contract. Available schemas: {sorted(schema_names)}",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
     if quality_ids is not None:
@@ -75,7 +79,18 @@ def execute_data_contract_test(
         check_that_quality_ids_exist(data_contract, quality_ids, schema_name)
 
     if server.type == "api":
-        server = process_api_response(run, server, config)
+        if dry_run:
+            # A dry run reads nothing, so the response that would become the
+            # local file is never fetched; stand in the server it would return.
+            server = Server(
+                server="api_local",
+                type="local",
+                format="json",
+                path="(not fetched: dry run)",
+                delimiter=server.delimiter,
+            )
+        else:
+            server = process_api_response(run, server, config)
 
     model_filters = resolve_row_filters(data_contract, server, run, filter, filters, schema_name)
 
@@ -102,18 +117,34 @@ def execute_data_contract_test(
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
     run.checks.extend(build_check_stubs(specs))
 
+    if metadata_only:
+        executable = []
+        for spec in specs:
+            if spec.requires_data_read:
+                set_result(run, spec.key, ResultEnum.skipped, "Row-value check disabled by --metadata-only")
+            else:
+                executable.append(spec)
+        specs = executable
+
+    if dry_run:
+        _report_dry_run(
+            run,
+            data_contract,
+            server,
+            specs,
+            schema_name=schema_name,
+            check_categories=check_categories,
+            dimensions=dimensions,
+            quality_ids=quality_ids,
+            tags=tags,
+            config=config,
+        )
+        return
+
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
-    if server.format == "json" and server.type != "kafka":
-        # The JSON Schema validation emits checks of type "schema" throughout,
-        # so it is out of scope once a quality rule is selected by id or tag.
-        if (
-            (check_categories is None or "schema" in check_categories)
-            and (dimensions is None or default_dimension("schema") in dimensions)
-            and quality_ids is None
-            and tags is None
-        ):
-            check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
     # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
     if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
         check_azure_blob_file(
@@ -138,6 +169,7 @@ def execute_data_contract_test(
         include_failed_samples=include_failed_samples,
         model_filters=model_filters,
         config=config,
+        untrusted_contract=untrusted_contract,
     )
 
 
@@ -162,7 +194,7 @@ def resolve_row_filters(
             name="Check row filter arguments",
             result=ResultEnum.failed,
             reason="Use either a single filter predicate or per-schema filters, not both.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     schema_objects = data_contract.schema_ or []
     if filter is not None:
@@ -175,7 +207,7 @@ def resolve_row_filters(
                 reason=f"--filter is ambiguous, as the data contract has multiple schemas: "
                 f"{sorted(s.name for s in candidates)}. "
                 f'Use --filters \'{{"<schema>": "<predicate>"}}\' or select a single schema with --schema-name.',
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         filters = {candidates[0].name: filter.strip()}
     if not filters:
@@ -189,7 +221,7 @@ def resolve_row_filters(
             result=ResultEnum.failed,
             reason=f"Filter schema(s) not found in data contract: {', '.join(unknown)}. "
             f"Available schemas: {sorted(schema_by_name)}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     run.filters = dict(filters)
     for name, predicate in filters.items():
@@ -231,7 +263,7 @@ def check_that_quality_ids_exist(
             f"Quality rule id(s) not found in data contract: {', '.join(unknown)}. "
             f"Available quality rule ids: {sorted(available)}"
         ),
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 
@@ -258,6 +290,71 @@ def get_server(data_contract: OpenDataContractStandard, server_name: str = None)
     return server
 
 
+def _runs_jsonschema_checks(
+    server: Server,
+    check_categories: set[str] | None,
+    dimensions: set[str] | None,
+    quality_ids: set[str] | None,
+    tags: set[str] | None,
+) -> bool:
+    """Whether the JSON Schema validation applies to this run.
+
+    Shared by the execution path and the dry run so a plan cannot disagree with
+    what actually runs. The JSON Schema validation emits checks of type "schema"
+    throughout, so it is out of scope once a quality rule is selected by id or tag.
+    """
+    if server.format != "json" or server.type == "kafka":
+        return False
+    return (
+        (check_categories is None or "schema" in check_categories)
+        and (dimensions is None or default_dimension("schema") in dimensions)
+        and quality_ids is None
+        and tags is None
+    )
+
+
+def _report_dry_run(
+    run,
+    data_contract: OpenDataContractStandard,
+    server: Server,
+    specs,
+    schema_name: str = "all",
+    check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
+    quality_ids: set[str] | None = None,
+    tags: set[str] | None = None,
+    config: Config | None = None,
+) -> None:
+    """Report the checks a run would execute, without reading any data.
+
+    Every check is already registered as a stub by this point, so the plan is
+    the stub list with a result. The JSON Schema checks are added here too: the
+    schema is still built and compiled, which is what makes a dry run able to
+    catch a contract that could never validate, but no file is read.
+    """
+    run.dryRun = True
+    for spec in specs:
+        set_result(run, spec.key, ResultEnum.skipped, "Dry run: check not executed")
+
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, dry_run=True)
+
+    # The blob checks read file metadata to decide which checks exist at all,
+    # so they cannot be planned without reading. Say so rather than reporting a
+    # plan that is quietly missing them.
+    if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
+        run.checks.append(
+            Check(
+                type="schema",
+                name="Check that blob files match the contract",
+                result=ResultEnum.warning,
+                reason="Checks for Azure Blob storage are not considered in dry runs.",
+                engine="datacontract-cli",
+            )
+        )
+        run.log_warn("dry run: file-metadata checks for blob schemas are not included in the plan")
+
+
 def process_api_response(run, server, config: Config | None = None):
     config = Config.resolve(config)
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract_cli_api_")
@@ -274,7 +371,7 @@ def process_api_response(run, server, config: Config | None = None):
             name="API server connection error",
             result=ResultEnum.error,
             reason=f"Failed to fetch API response from {server.location}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     with open(f"{tmp_dir.name}/api_response.json", "w") as f:
         f.write(response.text)
@@ -284,6 +381,7 @@ def process_api_response(run, server, config: Config | None = None):
         type="local",
         format="json",
         path=f"{tmp_dir.name}/api_response.json",
+        delimiter=server.delimiter,
     )
     return new_server
 

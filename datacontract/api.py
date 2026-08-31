@@ -1,22 +1,23 @@
 import json
 import logging
 import os
+import secrets
 import tempfile
+from importlib import metadata
 from typing import Annotated, Optional
 
 import pydantic
-import typer
 import yaml
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from datacontract.config import Config, known_env_names
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import Run
+from datacontract.model.changelog import ChangelogEntry
+from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
+from datacontract.model.run import Check, ResultEnum, Run
 
 DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.1.0
 kind: DataContract
@@ -225,51 +226,187 @@ def _require_schema_url(schema: str | None) -> str | None:
     return schema
 
 
+def _cli_version() -> str:
+    try:
+        return metadata.version("datacontract-cli")
+    except metadata.PackageNotFoundError:
+        return "0.0.0"
+
+
+API_DESCRIPTION = """
+The Data Contract CLI as a web server. Every endpoint takes an
+[ODCS](https://bitol-io.github.io/open-data-contract-standard/) data contract and runs one of the
+CLI commands against it, so anything `datacontract test|lint|export|changelog` can do on the command
+line can be done over HTTP.
+
+The data contract is the request body: `POST` it as `application/yaml` (or as a JSON string) —
+there is no contract storage, every request is self-contained.
+
+## Authentication
+
+Authentication is off unless the server was started with the environment variable
+`DATACONTRACT_CLI_API_KEY` set. When it is set, every endpoint requires the header `x-api-key` with
+that value, and answers `401` when the header is missing and `403` when it is wrong.
+
+Securing the API is strongly recommended: `POST /test` connects to your data sources, and test
+results may contain sensitive information.
+
+## Contracts are untrusted
+
+A posted contract carries SQL and names the hosts to connect to, so the server treats it as
+untrusted input: a `quality.type: sql` rule must be a read-only query, a credential held in the
+server's environment is never sent to a host the contract names, a `publish_url` may only point at
+the Entropy Data platform or the host configured via `ENTROPY_DATA_HOST`, and `servers[].type: local`
+is refused so a caller cannot read the server's own files. Set
+`DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment serves its own files on purpose;
+the contract is then still confined to the paths it declares.
+
+## Connecting to data sources
+
+`POST /test` needs credentials for the server described in the contract's `servers` section. Provide
+them either as environment variables when starting the server, or per request as `datacontract-*`
+headers, which are matched case-insensitively and map mechanically to the environment variable names
+(`datacontract-snowflake-password` sets `DATACONTRACT_SNOWFLAKE_PASSWORD` for that request only).
+Per-request headers are never written to the process environment, so one server can serve several
+tenants. Send them over HTTPS only.
+
+See [Configuration](https://docs.datacontract.com/configuration) for the full list of options.
+"""
+
 app = FastAPI(
     docs_url="/",
     title="Data Contract CLI API",
-    summary="You can use the API to test, export, and lint your data contracts.",
+    summary="Test, lint, export, and compare data contracts over HTTP.",
+    description=API_DESCRIPTION,
+    version=_cli_version(),
     license_info={
         "name": "MIT License",
         "identifier": "MIT",
     },
-    contact={"name": "Data Contract CLI", "url": "https://cli.datacontract.com/"},
+    contact={
+        "name": "Data Contract CLI",
+        "url": "https://docs.datacontract.com/",
+    },
+    # Relative, so the document works for any deployment. A second, absolute entry would
+    # show up as a target in the Swagger UI dropdown and invite sending contracts there.
+    servers=[{"url": "/", "description": "The server this document was loaded from"}],
     openapi_tags=[
         {
             "name": "test",
+            "description": "Run the schema and quality tests of a data contract against the actual data.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://cli.datacontract.com/#test",
+                "url": "https://docs.datacontract.com/testing/",
             },
         },
         {
             "name": "lint",
+            "description": "Validate that a data contract is syntactically correct and follows the standard.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://cli.datacontract.com/#lint",
+                "url": "https://docs.datacontract.com/commands/lint",
             },
         },
         {
             "name": "export",
+            "description": "Convert a data contract into another format, such as SQL DDL, Avro, or dbt.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://cli.datacontract.com/#export",
+                "url": "https://docs.datacontract.com/exports/",
+            },
+        },
+        {
+            "name": "changelog",
+            "description": "Compare two versions of a data contract and list what changed.",
+            "externalDocs": {
+                "description": "Documentation",
+                "url": "https://docs.datacontract.com/commands/changelog",
             },
         },
     ],
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_fastapi_openapi = app.openapi
+
+
+def _openapi_with_external_docs() -> dict:
+    """Add the document-level `externalDocs`, which FastAPI has no constructor argument for."""
+    schema = _fastapi_openapi()
+    schema.setdefault(
+        "externalDocs",
+        {
+            "description": "Data Contract CLI documentation",
+            "url": "https://docs.datacontract.com/api",
+        },
+    )
+    return schema
+
+
+app.openapi = _openapi_with_external_docs
+
+# Contracts posted to this server arrive over HTTP from callers we do not trust,
+# so a credential the server holds in its environment must never be sent to a
+# host the contract names. The `edit` server reuses the `test` handler for a
+# local file the user owns, so it does not set this flag and is not guarded.
+app.state.untrusted_contracts = True
+
+# No CORS middleware: the only browser client is the Swagger UI served at "/",
+# which is same-origin and therefore not subject to CORS. Every other client
+# (curl, the SDK, CI) is not a browser and ignores CORS. Allowing arbitrary
+# origins would only let a page the operator happens to visit drive this server
+# and read its responses, so the safe default is to send no CORS headers at all.
 
 api_key_header = APIKeyHeader(
     name="x-api-key",
+    description="The secret the server was started with in the environment variable "
+    "`DATACONTRACT_CLI_API_KEY`. Only required if that variable is set.",
     auto_error=False,  # this makes authentication optional
 )
+
+
+class ErrorResponse(BaseModel):
+    """The body returned for a request that could not be handled."""
+
+    detail: str = Field(
+        description="A human-readable explanation of why the request failed.",
+        examples=["Missing API key. Use Header 'x-api-key' to provide the API key."],
+    )
+
+
+class RequestValidationErrorItem(BaseModel):
+    """A single violation found while validating the request itself."""
+
+    loc: list[str | int] = Field(description="The path to the offending part of the request.")
+    msg: str = Field(description="What is wrong with it.")
+    type: str = Field(description="The machine-readable error type.")
+
+
+class UnprocessableEntityResponse(BaseModel):
+    """The body returned for a request that is well-formed but cannot be processed."""
+
+    detail: str | list[RequestValidationErrorItem] = Field(
+        description="A message explaining why the request was rejected, or — when the request itself "
+        "failed validation — one entry per violation.",
+        examples=["The schema parameter must be an http:// or https:// URL."],
+    )
+
+
+AUTHENTICATION_RESPONSES: dict[int | str, dict] = {
+    401: {
+        "description": "The API key is missing (only when the server runs with DATACONTRACT_CLI_API_KEY set).",
+        "model": ErrorResponse,
+        "content": {
+            "application/json": {
+                "example": {"detail": "Missing API key. Use Header 'x-api-key' to provide the API key."}
+            }
+        },
+    },
+    403: {
+        "description": "The provided API key is not correct.",
+        "model": ErrorResponse,
+        "content": {"application/json": {"example": {"detail": "The provided API key is not correct."}}},
+    },
+}
 
 
 _CONFIG_HEADER_PREFIX = "datacontract-"
@@ -324,6 +461,198 @@ def _parse_filters_query(filters: str | None) -> dict[str, str] | None:
     return {schema_name: predicate.strip() for schema_name, predicate in parsed.items()}
 
 
+# For each server type whose connection host can be taken from the posted
+# contract: (the Server attribute that names the connection target, the Config
+# field an operator sets to pin that target in the environment or None when the
+# type has no such field, the Config fields that hold a connection secret).
+# See _reject_environment_credentials_to_untrusted_host.
+_ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...]]] = {
+    "postgres": ("host", "postgres_host", ("postgres_password",)),
+    "mysql": ("host", "mysql_host", ("mysql_password",)),
+    "oracle": ("host", "oracle_host", ("oracle_password",)),
+    "impala": ("host", "impala_host", ("impala_password",)),
+    "trino": ("host", "trino_host", ("trino_password",)),
+    "redshift": ("host", "redshift_host", ("redshift_password",)),
+    "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
+    "snowflake": (
+        "account",
+        "snowflake_account",
+        ("snowflake_password", "snowflake_token", "snowflake_private_key"),
+    ),
+    "databricks": ("host", "databricks_server_hostname", ("databricks_token", "databricks_client_secret")),
+    # Kafka's broker host is always the contract's `server.host` (no environment
+    # option pins it), so an environment-held SASL password can never be paired
+    # with a posted contract safely -- host_field is None, so it is always rejected.
+    "kafka": ("broker host", None, ("kafka_sasl_password",)),
+}
+
+
+def _selected_server(body: str, server_name: str | None, config):
+    """The server the request would test, or None if that cannot be determined.
+
+    A contract that does not resolve, or that names no such server, is reported
+    by test() itself -- the guards below simply have nothing to check.
+    """
+    from datacontract.engines.data_contract_test import get_server
+    from datacontract.lint import resolve
+
+    try:
+        data_contract = resolve.resolve_data_contract(data_contract_str=body, config=config)
+        return get_server(data_contract, server_name)
+    except Exception:
+        return None
+
+
+# Server types that read their data through the local filesystem of the machine
+# running the test, rather than from a remote data source.
+_LOCAL_SERVER_TYPES = frozenset({"local", "duckdb"})
+
+ALLOW_LOCAL_FILES_ENV = "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES"
+_TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def _local_files_allowed() -> bool:
+    """Whether the operator opted in to serving data from the server's own disk.
+
+    Off by default. A deployment that mounts the data next to the API -- the data
+    directory in the container, say -- turns it on, accepting that a caller then
+    picks the path.
+    """
+    return (os.getenv(ALLOW_LOCAL_FILES_ENV) or "").strip().lower() in _TRUTHY
+
+
+def _reject_local_server_type(body: str, server_name: str | None, config) -> None:
+    """Keep a posted contract from reading the server's own disk.
+
+    `type: local` points the test at a path on the machine running it. For the
+    API server that machine is not the caller's, so the path is not theirs to
+    name -- and the result would tell them what is in it.
+    """
+    from datacontract.config import Config
+
+    if _local_files_allowed():
+        return
+    server = _selected_server(body, server_name, Config.resolve(config))
+    if server is None or server.type not in _LOCAL_SERVER_TYPES:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            f"Server type '{server.type}' reads from the file system of the server running this API, "
+            f"so it is refused. Use a server type that names a data source, such as s3, gcs, azure, "
+            f"postgres, or snowflake — or set {ALLOW_LOCAL_FILES_ENV}=true if this deployment serves "
+            f"its own files on purpose."
+        ),
+    )
+
+
+def _reject_environment_credentials_to_untrusted_host(body: str, server_name: str | None, config) -> None:
+    """Keep an environment-held data-source credential from reaching a host the
+    posted contract chose.
+
+    A contract that arrives over HTTP is untrusted. If it could name the
+    connection host (its ``servers`` section) while the server supplies the
+    password from its own environment, an attacker could point the host at their
+    own machine and capture that password. So when a credential for the selected
+    server's type resolves from the environment, the connection target must
+    resolve from the environment too -- not from the contract, and not from a
+    per-request header (a caller who brings the whole credential set may still
+    aim it wherever they like; only the server's environment secret is pinned).
+    """
+    from datacontract.config import Config
+    from datacontract.config.settings import env_name
+
+    resolved = Config.resolve(config)
+    server = _selected_server(body, server_name, resolved)
+    if server is None:
+        return
+    guard = _ENVIRONMENT_CREDENTIAL_TARGETS.get(server.type)
+    if guard is None:
+        return
+    target_attr, host_field, secret_fields = guard
+    if not any(resolved.option_source(field) == "env" for field in secret_fields):
+        return  # no environment-held secret for this server type; nothing to protect
+    if host_field is not None and resolved.option_source(host_field) == "env":
+        return  # the operator pinned the target host; the contract's host is ignored
+    if host_field is not None:
+        env_var = env_name(host_field, Config.model_fields[host_field])
+        detail = (
+            f"This server holds a {server.type} credential in its environment, so the connection "
+            f"{target_attr} must also come from the server's environment ({env_var}); it will not be "
+            f"taken from the posted data contract. Set {env_var}, or send the full set of credentials "
+            f"with the request instead of relying on the server's environment."
+        )
+    else:
+        detail = (
+            f"This server holds a {server.type} credential in its environment, but its {target_attr} "
+            f"can only come from the posted data contract, so the credential cannot be pinned to a "
+            f"trusted target. Send the credentials with the request instead of relying on the server's "
+            f"environment."
+        )
+    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
+
+# The fields backing the platform API key and host, in the fallback order
+# _get_api_key / _get_host read them (current name first, deprecated synonyms after).
+_PLATFORM_KEY_FIELDS = ("entropy_data_api_key", "datamesh_manager_api_key", "datacontract_manager_api_key")
+_PLATFORM_HOST_FIELDS = ("entropy_data_host", "datamesh_manager_host", "datacontract_manager_host")
+
+
+def _reject_unpinned_publish_url(publish_url: str | None) -> None:
+    """Keep the API server from POSTing test results to a caller-chosen host.
+
+    `publish_url` names where the finished run — check details, failed-row
+    samples — is POSTed, so an arbitrary URL would let a caller aim a blind
+    POST into the operator's network and exfiltrate the results. The target
+    must be a platform URL as the server's own environment sees it: a
+    per-request `entropy-data-host` header does not widen the set, or the
+    guard would be the caller's to configure.
+    """
+    from datacontract.integration.entropy_data import is_platform_url
+
+    if publish_url is None or is_platform_url(publish_url, None):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            "The publish_url must point at the Entropy Data platform. To publish to a self-hosted "
+            "deployment, set the environment variable ENTROPY_DATA_HOST on the server running this "
+            "API to that host."
+        ),
+    )
+
+
+def _reject_request_platform_host_with_environment_key(config) -> None:
+    """Keep the environment-held platform API key from following a request-chosen host.
+
+    The platform host decides where the Entropy Data API key travels, and it can
+    be set per request (`entropy-data-host` header). A request that supplies the
+    host while the key resolves from the server's environment could therefore
+    aim that key at its own machine — same rule as the data sources: an
+    environment credential goes only to an environment-pinned destination. A
+    caller who brings the key itself may aim it wherever they like.
+    """
+    from datacontract.config import Config
+
+    resolved = Config.resolve(config)
+    key_source = next(
+        (source for field in _PLATFORM_KEY_FIELDS if (source := resolved.option_source(field)) is not None), None
+    )
+    if key_source != "env":
+        return
+    if not any(resolved.option_source(field) == "request" for field in _PLATFORM_HOST_FIELDS):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=(
+            "This server holds an Entropy Data API key in its environment, so the platform host must "
+            "also come from the server's environment (ENTROPY_DATA_HOST); it will not be taken from a "
+            "request header. Remove the entropy-data-host header, or send the API key with the request "
+            "instead of relying on the server's environment."
+        ),
+    )
+
+
 def check_api_key(api_key_header: str | None):
     correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
@@ -335,7 +664,7 @@ def check_api_key(api_key_header: str | None):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
-    if api_key_header != correct_api_key:
+    if not secrets.compare_digest(api_key_header, correct_api_key):
         logging.info("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -348,32 +677,40 @@ def check_api_key(api_key_header: str | None):
 @app.post(
     "/test",
     tags=["test"],
-    summary="Run data contract tests",
+    operation_id="testDataContract",
+    summary="Run the tests of a data contract",
     description="""
-              Run schema and quality tests. Data Contract CLI connects to the data sources configured in the server section.
-              This usually requires credentials to access the data sources.
-              Credentials can be provided via environment variables when running the web server, or per request
-              via datacontract-* headers (case-insensitive), which map to the environment variable names
-              (e.g. datacontract-snowflake-password sets DATACONTRACT_SNOWFLAKE_PASSWORD for this request only).
-              POST the data contract YAML as payload.
+Run the schema and quality tests of a data contract against the actual data. The Data Contract CLI
+connects to the data source described by the contract's `servers` section, so this usually requires
+credentials — set them as environment variables when starting the server, or send them per request
+as `datacontract-*` headers (see the API description).
+
+`POST` the data contract as `application/yaml`. The response is a test run with one check per
+executed test; `result` is `passed` only if every check passed. Note that a failed test is a
+`200 OK` with `"result": "failed"` — a non-2xx status means the request itself could not be
+handled. A contract that cannot be parsed is reported the same way, as a failed check.
             """,
+    response_description="The test run, with one check per executed test.",
     responses={
-        401: {
-            "description": "Unauthorized (when an environment variable DATACONTRACT_CLI_API_KEY is configured).",
+        **AUTHENTICATION_RESPONSES,
+        400: {
+            "description": "A `datacontract-*` header does not name a known configuration option, "
+            "or its value is not valid for that option.",
+            "model": ErrorResponse,
             "content": {
                 "application/json": {
-                    "examples": {
-                        "api_key_missing": {
-                            "summary": "API key Missing",
-                            "value": {"detail": "Missing API key. Use Header 'x-api-key' to provide the API key."},
-                        },
-                        "api_key_wrong": {
-                            "summary": "API key Wrong",
-                            "value": {"detail": "The provided API key is not correct."},
-                        },
+                    "example": {
+                        "detail": "Invalid datacontract-* configuration header: "
+                        "DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT: input should be a valid integer"
                     }
                 }
             },
+        },
+        422: {
+            "description": "`filter` and `filters` were both given, `filters` is not a JSON object "
+            "mapping schema name to a SQL predicate, or `publish_url` does not point at the Entropy "
+            "Data platform or the host configured via `ENTROPY_DATA_HOST`.",
+            "model": UnprocessableEntityResponse,
         },
     },
     response_model_exclude_none=True,
@@ -400,7 +737,9 @@ async def test(
     publish_url: Annotated[
         str | None,
         Query(
-            description="URL to publish test results. Optional, if you want to publish the test results to a Data Mesh Manager or Data Contract Manager. Example: https://api.datamesh-manager.com/api/test-results",
+            description="URL to publish test results. Optional, if you want to publish the test results to a Data Mesh Manager or Data Contract Manager. Example: https://api.datamesh-manager.com/api/test-results. "
+            "Must point at the Entropy Data platform, or at the host configured on this server "
+            "via the environment variable ENTROPY_DATA_HOST — other hosts are refused with 422.",
             examples=["https://api.datamesh-manager.com/api/test-results"],
         ),
     ] = None,
@@ -431,22 +770,58 @@ async def test(
         )
     logging.info("Testing data contract...")
     logging.info(body)
+    config = config_from_headers(request.headers)
+    untrusted_contract = getattr(request.app.state, "untrusted_contracts", False)
+    if untrusted_contract:
+        _reject_unpinned_publish_url(publish_url)
+        _reject_request_platform_host_with_environment_key(config)
+        _reject_environment_credentials_to_untrusted_host(body, server, config)
+        _reject_local_server_type(body, server, config)
     return DataContract(
         data_contract_str=body,
         server=server,
         publish_url=publish_url,
         fastapi_url=str(request.url),
-        config=config_from_headers(request.headers),
+        config=config,
         filter=filter,
         filters=parsed_filters,
+        untrusted_contract=untrusted_contract,
     ).test()
+
+
+class LintResponse(BaseModel):
+    """The outcome of validating a data contract against the schema."""
+
+    result: ResultEnum = Field(
+        description="`passed` if the data contract is valid, otherwise the most severe check result.",
+        examples=["passed"],
+    )
+    checks: list[Check] = Field(
+        description="One entry per validation performed. A valid contract yields a single passed check; "
+        "an invalid one yields a failed check per schema violation.",
+    )
 
 
 @app.post(
     "/lint",
     tags=["lint"],
-    summary="Validate that the datacontract.yaml is correctly formatted.",
-    description="""Validate that the datacontract.yaml is correctly formatted.""",
+    operation_id="lintDataContract",
+    summary="Validate that a data contract is correctly formatted",
+    description="""
+Validate that the data contract is syntactically correct and conforms to the Open Data Contract
+Standard. No data source is contacted, so no credentials are needed.
+
+An invalid contract is reported as a `200 OK` with `"result": "failed"` and one check per schema
+violation — not as an error status. A `schema` that is not an `http(s)` URL is rejected with `422`.
+            """,
+    response_description="The lint result, with one check per validation performed.",
+    responses={
+        **AUTHENTICATION_RESPONSES,
+        422: {
+            "description": "The `schema` parameter is not an `http(s)` URL.",
+            "model": UnprocessableEntityResponse,
+        },
+    },
 )
 async def lint(
     body: Annotated[
@@ -457,43 +832,81 @@ async def lint(
             examples=[DATA_CONTRACT_EXAMPLE_PAYLOAD],
         ),
     ],
+    api_key: Annotated[str | None, Depends(api_key_header)] = None,
     schema: Annotated[
         str | None,
         Query(
             examples=["https://datacontract.com/datacontract.schema.json"],
-            description="The schema to use for validation. This must be a URL.",
+            description="The JSON Schema to validate against, as an `http(s)` URL. "
+            "Defaults to the schema for the contract's `apiVersion`.",
         ),
     ] = None,
     all_errors: Annotated[
         bool,
         Query(description="Report all JSON Schema validation errors instead of only the first one."),
     ] = False,
-):
+) -> LintResponse:
+    check_api_key(api_key)
     data_contract = DataContract(
         data_contract_str=body, schema_location=_require_schema_url(schema), all_errors=all_errors
     )
     lint_result = data_contract.lint()
-    return {"result": lint_result.result, "checks": lint_result.checks}
+    return LintResponse(result=lint_result.result, checks=lint_result.checks)
 
 
 class ChangelogRequest(BaseModel):
-    v1: str = DATA_CONTRACT_EXAMPLE_PAYLOAD
-    v2: str = DATA_CONTRACT_EXAMPLE_PAYLOAD
+    """The two data contract versions to compare."""
+
+    v1: str = Field(
+        default=DATA_CONTRACT_EXAMPLE_PAYLOAD,
+        title="Source Data Contract YAML",
+        description="The data contract as it was before, as a YAML string.",
+    )
+    v2: str = Field(
+        default=DATA_CONTRACT_EXAMPLE_PAYLOAD,
+        title="Target Data Contract YAML",
+        description="The data contract as it is now, as a YAML string.",
+    )
+
+
+class ChangelogResponse(BaseModel):
+    """The differences between two versions of a data contract."""
+
+    summary: list[ChangelogEntry] = Field(
+        description="One entry per changed element, rolled up to the level a reader cares about "
+        "(a renamed property is one entry, not one per changed attribute). Values are omitted.",
+    )
+    entries: list[ChangelogEntry] = Field(
+        description="Every individual change, with the old and new value.",
+    )
 
 
 @app.post(
     "/changelog",
     tags=["changelog"],
-    summary="Show a changelog between two data contracts.",
+    operation_id="changelogBetweenDataContracts",
+    summary="Show a changelog between two data contracts",
     description="""
-        Compare two ODCS data contract YAMLs and return a changelog.
-        POST a JSON body with `v1` (source/before) and `v2` (target/after) as YAML strings.
+Compare two versions of an ODCS data contract and return what changed between them. Useful to
+decide whether a new version is a breaking change before publishing it.
+
+`POST` a JSON body with `v1` (before) and `v2` (after) as YAML strings. A contract that cannot be
+parsed is answered with `422`.
     """,
+    response_description="The changelog, as a rolled-up summary and the individual changes.",
+    responses={
+        **AUTHENTICATION_RESPONSES,
+        422: {
+            "description": "One of the two data contracts is not valid YAML or not a valid data contract.",
+            "model": UnprocessableEntityResponse,
+            "content": {"application/json": {"example": {"detail": "Invalid YAML: while parsing a block mapping"}}},
+        },
+    },
 )
 async def changelog_endpoint(
     body: ChangelogRequest,
     api_key: Annotated[str | None, Depends(api_key_header)] = None,
-):
+) -> ChangelogResponse:
     check_api_key(api_key)
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f1:
@@ -505,11 +918,16 @@ async def changelog_endpoint(
 
     try:
         result = DataContract(data_contract_file=v1_path).changelog(DataContract(data_contract_file=v2_path))
-        return {"summary": result.summary, "entries": result.entries}
+        return ChangelogResponse(summary=result.summary, entries=result.entries)
     except yaml.YAMLError as e:
         raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
     except pydantic.ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DefinitionResolutionError as e:
+        # The reason names the host that was contacted and what it answered.
+        # Omit for security reasons.
+        logging.warning("Definition resolution failed: %s", e)
+        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
     except DataContractException as e:
         raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
     finally:
@@ -520,8 +938,53 @@ async def changelog_endpoint(
 @app.post(
     "/export",
     tags=["export"],
-    summary="Convert data contract to a specific format.",
+    operation_id="exportDataContract",
+    summary="Convert a data contract to another format",
+    description="""
+Convert a data contract into another format, such as SQL DDL, Avro, Protobuf, dbt, or HTML.
+
+The response is the converted document as `text/plain`; its actual syntax depends on the requested
+`format`. Some formats have extra parameters, marked with the format they apply to in their
+description.
+    """,
+    response_description="The data contract converted to the requested format.",
     response_class=PlainTextResponse,
+    # Spelled out rather than reusing the shared entries, because a route with a
+    # non-JSON response_class would have FastAPI document every declared model in
+    # that media type — while errors are always returned as JSON.
+    responses={
+        200: {
+            "description": "The data contract converted to the requested format.",
+            "content": {
+                "text/plain": {
+                    "schema": {"type": "string"},
+                    "example": "CREATE TABLE orders (\n  order_id UUID PRIMARY KEY,\n  order_total INTEGER NOT NULL\n);",
+                }
+            },
+        },
+        401: {
+            "description": AUTHENTICATION_RESPONSES[401]["description"],
+            "content": {
+                "application/json": {
+                    "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+                    "example": {"detail": "Missing API key. Use Header 'x-api-key' to provide the API key."},
+                }
+            },
+        },
+        403: {
+            "description": AUTHENTICATION_RESPONSES[403]["description"],
+            "content": {
+                "application/json": {
+                    "schema": {"$ref": "#/components/schemas/ErrorResponse"},
+                    "example": {"detail": "The provided API key is not correct."},
+                }
+            },
+        },
+        422: {
+            "description": "The data contract could not be parsed, or is not a valid data contract.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UnprocessableEntityResponse"}}},
+        },
+    },
 )
 def export(
     body: Annotated[
@@ -532,7 +995,14 @@ def export(
             examples=[DATA_CONTRACT_EXAMPLE_PAYLOAD],
         ),
     ],
-    format: Annotated[ExportFormat, typer.Option(help="The export format.")],
+    format: Annotated[
+        ExportFormat,
+        Query(
+            description="The format to convert the data contract to.",
+            examples=["sql"],
+        ),
+    ],
+    api_key: Annotated[str | None, Depends(api_key_header)] = None,
     server: Annotated[
         str | None,
         Query(
@@ -546,24 +1016,40 @@ def export(
             description="Use the key of the model in the data contract yaml file "
             "to refer to a model, e.g., `orders`, or `all` for all "
             "models (default).",
+            examples=["all"],
         ),
     ] = "all",
     rdf_base: Annotated[
         Optional[str],
-        typer.Option(help="[rdf] The base URI used to generate the RDF graph.", rich_help_panel="RDF Options"),
+        Query(
+            description="[rdf] The base URI used to generate the RDF graph.",
+            examples=["https://example.com/"],
+        ),
     ] = None,
     sql_server_type: Annotated[
         Optional[str],
         Query(
             description="[sql] The server type to determine the sql dialect. By default, it uses 'auto' to automatically detect the sql dialect via the specified servers in the data contract.",
+            examples=["postgres"],
         ),
     ] = None,
 ):
-    result = DataContract(data_contract_str=body, server=server).export(
-        export_format=format,
-        model=model,
-        rdf_base=rdf_base,
-        sql_server_type=sql_server_type,
-    )
-
-    return result
+    check_api_key(api_key)
+    try:
+        return DataContract(data_contract_str=body, server=server).export(
+            export_format=format,
+            model=model,
+            rdf_base=rdf_base,
+            sql_server_type=sql_server_type,
+        )
+    except yaml.YAMLError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
+    except pydantic.ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
+    except DefinitionResolutionError as e:
+        # The reason names the host that was contacted and what it answered.
+        # Omit for security reasons.
+        logging.warning("Definition resolution failed: %s", e)
+        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
+    except DataContractException as e:
+        raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")

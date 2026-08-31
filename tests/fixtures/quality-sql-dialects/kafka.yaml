@@ -1,0 +1,39 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-kafka
+name: Orders quality rules (kafka)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a kafka server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: kafka
+    host: broker.acme.internal:9092
+    topic: orders
+    format: json
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "Messages were read from the topic"
+        query: |
+          SELECT count(*) FROM ${model}
+        mustBeGreaterThan: 0

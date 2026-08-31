@@ -33,10 +33,12 @@ def get_duckdb_connection(
     duckdb_connection: "duckdb.DuckDBPyConnection | None" = None,
     schema_name: str = "all",
     config: Config | None = None,
+    untrusted_contract: bool = False,
 ) -> "duckdb.DuckDBPyConnection":
     duckdb = _import_duckdb()
     config = Config.resolve(config)
-    if duckdb_connection is None:
+    own_connection = duckdb_connection is None
+    if own_connection:
         con = duckdb.connect(database=":memory:")
     else:
         con = duckdb_connection
@@ -54,14 +56,26 @@ def get_duckdb_connection(
         path = server.location
         setup_azure_connection(con, server, config)
 
+    if server.format == "delta":
+        # Updating an extension reaches the network and the extension directory,
+        # both of which the sandbox below takes away -- so do it first, and once
+        # for the whole connection rather than once per model.
+        con.sql("update extensions;")  # Make sure we have the latest delta extension
+
+    model_paths = _model_paths(data_contract, path, schema_name)
+    if untrusted_contract and own_connection:
+        # After the extensions are loaded and the secrets created -- both need
+        # access the sandbox takes away -- and before any contract-supplied SQL
+        # can run. Not applied to a connection the caller handed us: that one is
+        # theirs to configure.
+        restrict_to_paths(con, model_paths)
+
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
             model_name = schema_obj.name
             if schema_name != "all" and model_name != schema_name:
                 continue
-            model_path = path
-            if "{model}" in model_path:
-                model_path = model_path.format(model=model_name)
+            model_path = _model_path(path, model_name)
             run.log_info(f"Creating table {model_name} for {model_path}")
 
             if server.format == "json":
@@ -89,12 +103,73 @@ def get_duckdb_connection(
             elif server.format == "csv":
                 create_view_with_schema_union(con, schema_obj, model_path, "read_csv", to_csv_types)
             elif server.format == "delta":
-                con.sql("update extensions;")  # Make sure we have the latest delta extension
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
             table_info = con.sql(f'PRAGMA table_info("{model_name}");').fetchall()
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
     return con
+
+
+def _model_path(path: str, model_name: str) -> str:
+    """The data location of one model: the server path with `{model}` filled in."""
+    return path.format(model=model_name) if "{model}" in path else path
+
+
+def _model_paths(data_contract: OpenDataContractStandard, path: str, schema_name: str) -> list[str]:
+    """Every location this connection is going to read, one per model under test."""
+    if not path or not data_contract.schema_:
+        return []
+    return [
+        _model_path(path, schema_obj.name)
+        for schema_obj in data_contract.schema_
+        if schema_name == "all" or schema_obj.name == schema_name
+    ]
+
+
+# duckdb globs against the filesystem, so a location holding one of these has to be
+# allowed as a directory prefix rather than as an exact file.
+_GLOB_CHARACTERS = ("*", "?", "[")
+
+
+def restrict_to_paths(con, paths: list[str]) -> None:
+    """Confine the connection to `paths` and nothing else.
+
+    A data contract carries SQL (`quality.type: sql`) that runs on this
+    connection, and for a file server type that connection is duckdb -- which
+    reads and writes the local filesystem. So the contract's own data locations
+    are the only ones it may touch: `read_text('/etc/passwd')` and `COPY ... TO`
+    alike are then refused by duckdb itself.
+
+    `enable_external_access = false` is one-way -- duckdb refuses to re-enable it,
+    and refuses to widen `allowed_paths`/`allowed_directories` once it is off --
+    so the restriction holds without `lock_configuration`, which would also stop
+    ibis from setting the session timezone.
+
+    Must run after the extensions are loaded (installing one needs access this
+    takes away) and before any contract-supplied SQL.
+    """
+    directories = sorted({_glob_root(p) for p in paths if _is_glob(p)})
+    files = sorted({p for p in paths if not _is_glob(p)})
+    if directories:
+        con.sql(f"SET allowed_directories = {_sql_list(directories)}")
+    if files:
+        con.sql(f"SET allowed_paths = {_sql_list(files)}")
+    con.sql("SET enable_external_access = false")
+
+
+def _is_glob(path: str) -> bool:
+    return any(character in path for character in _GLOB_CHARACTERS) or path.endswith("/")
+
+
+def _glob_root(path: str) -> str:
+    """The fixed prefix of a glob, which is the directory duckdb has to be allowed into."""
+    cut = min((path.find(c) for c in _GLOB_CHARACTERS if c in path), default=len(path))
+    root = path[:cut].rstrip("/")
+    return root or "/"
+
+
+def _sql_list(values: list[str]) -> str:
+    return "[" + ", ".join(f"'{_sql_literal(value)}'" for value in values) + "]"
 
 
 def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str, read_function: str, type_converter):

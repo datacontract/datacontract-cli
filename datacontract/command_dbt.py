@@ -172,10 +172,11 @@ def _count(n: int, noun: str) -> str:
 _MAX_LISTED_FILES = 5
 
 
-def _print_sync_summary(gen, project_dir: Path, *, debug: bool = False) -> None:
+def _print_sync_summary(gen, project_dir: Path, *, debug: bool = False, dry_run: bool = False) -> None:
     """Print the per-contract sync summary, naming the touched files."""
     prefix = f"{gen.contract_path.name}: "
-    line = f"{prefix}Synced {_count(len(gen.resolved_models), 'model')}: updated {_count(len(gen.written_yaml), 'YAML file')}"
+    verb = "Would sync" if dry_run else "Synced"
+    line = f"{prefix}{verb} {_count(len(gen.resolved_models), 'model')}: updated {_count(len(gen.written_yaml), 'YAML file')}"
     if gen.written_sql:
         line += f", wrote {_count(len(gen.written_sql), 'singular SQL test')}"
     if gen.deleted_files:
@@ -315,6 +316,12 @@ def sync_command(
         bool,
         typer.Option(help="Remove model columns and tags that are not declared in the contract."),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run/--no-dry-run", help="Run in dry-run mode, without applying any changes to the dbt project."
+        ),
+    ] = False,
     run_tests_flag: Annotated[
         bool,
         typer.Option(
@@ -336,7 +343,8 @@ def sync_command(
     Generate dbt tests and model metadata from one or more ODCS contracts.
 
     Modifies the existing dbt model YAML in place (preserving comments and formatting), and creates new model YAML files
-    or singular SQL tests if needed. Use `datacontract dbt test` or pass --run-tests to run the generated tests.
+    or singular SQL tests if needed (if not run in dry-run mode). Use `datacontract dbt test` or pass --run-tests to run
+    the generated tests.
     """
     enable_debug_logging(debug)
     publish = validate_publish_url(publish)
@@ -390,6 +398,7 @@ def sync_command(
                 prune=prune,
                 model_version=dbt_version,
                 server=server,
+                dry_run=dry_run,
             )
         except Exception as e:
             if not multiple_contracts:
@@ -398,7 +407,7 @@ def sync_command(
             continue
         if not contract and not multiple_contracts:
             console.print(f"Resolved contract {gen.contract_path}")
-        _print_sync_summary(gen, project_dir, debug=bool(debug))
+        _print_sync_summary(gen, project_dir, debug=bool(debug), dry_run=dry_run)
         if not prune:
             _warn_prunable(gen, project_dir)
         ctxs.append(_ContractCtx(gen.contract_path, gen.odcs, gen.resolved_models, gen.generation_run, dbt_version))

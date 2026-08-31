@@ -1,0 +1,44 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-mysql
+name: Orders quality rules (mysql)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a mysql server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: mysql
+    host: localhost
+    port: 3306
+    database: orders
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "Backtick-quoted table name (DIALECT-ONLY: backtick quoting)"
+        query: |
+          SELECT count(*) FROM `orders`
+        mustBeGreaterThan: 0
+      - type: sql
+        description: "Orders arrived in the last day"
+        query: |
+          SELECT count(*) FROM ${model} WHERE order_timestamp > DATE_SUB(NOW(), INTERVAL 1 DAY)
+        mustBeGreaterThan: 0

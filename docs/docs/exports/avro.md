@@ -31,8 +31,8 @@ Running this against the [example `orders` contract](https://github.com/datacont
       "name": "order_timestamp",
       "doc": "Timestamp when the order was placed.",
       "type": {
-        "type": "int",
-        "logicalType": "date"
+        "type": "long",
+        "logicalType": "timestamp-millis"
       }
     },
     {

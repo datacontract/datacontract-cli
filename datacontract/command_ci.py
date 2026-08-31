@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 
 from datacontract.cli import (
     _print_logs,
+    _print_publish_failure,
     app,
     console,
     debug_option,
@@ -61,6 +62,13 @@ def ci(
         OutputFormat,
         typer.Option(help="The target format for the test results. Accepted values: json, junit."),
     ] = None,
+    metadata_only: Annotated[
+        bool,
+        typer.Option(
+            help="Run only checks that read the schema (field presence and types). "
+            "Checks that read row values are skipped."
+        ),
+    ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
     fail_on: Annotated[
@@ -119,6 +127,7 @@ def ci(
             server=server,
             ssl_verification=ssl_verification,
             inline_references=inline_references,
+            metadata_only=metadata_only,
         ).test()
         if logs:
             _print_logs(run, out)
@@ -128,6 +137,10 @@ def ci(
             write_test_result(run, out, output_format, output)
         except typer.Exit:
             pass
+        if run.publish_succeeded is False:
+            # A publish that was asked for and failed is a failed run, regardless of --fail-on.
+            _print_publish_failure(run, out)
+            should_fail = True
         if run.result in fail_results[fail_on]:
             should_fail = True
 

@@ -20,7 +20,7 @@ def fetch_resource(url: str, config: Config | None = None) -> str:
             type="lint",
             name=f"Reading data contract from {url}",
             reason=f"Cannot read resource from {url}. Error: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
             result=ResultEnum.error,
             original_exception=e,
         )

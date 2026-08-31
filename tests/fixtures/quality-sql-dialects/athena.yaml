@@ -1,0 +1,44 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-athena
+name: Orders quality rules (athena)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a athena server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: athena
+    catalog: awsdatacatalog
+    schema: orders
+    stagingDir: s3://acme-athena-results/
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "95th percentile of the order total"
+        query: |
+          SELECT approx_percentile(order_total, 0.95) FROM ${model}
+        mustBeLessThan: 100000
+      - type: sql
+        description: "Only the current partition is read"
+        query: |
+          SELECT count(*) FROM ${model} WHERE "$path" LIKE '%2026%'
+        mustBeGreaterOrEqualTo: 0
