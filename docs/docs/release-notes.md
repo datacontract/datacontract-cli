@@ -33,7 +33,7 @@ marked as such in the entry.
 
 ### Fixed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column ([#1483](https://github.com/datacontract/datacontract-cli/issues/1483))
-- An empty `--publish` value now means "don't publish" instead of failing with a URL validation error, so CI templates that always render the option can pass `--publish ''` when no URL is configured (also applies to `datacontract ci`, `datacontract dbt sync`, and `datacontract dbt test`)
+- An empty `--publish` value now means "don't publish" instead of failing with a URL validation error
 
 ## 1.1.0 — 2026-08-04 {#v1-1-0}
 
