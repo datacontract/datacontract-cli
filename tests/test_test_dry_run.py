@@ -157,3 +157,19 @@ def test_the_plan_matches_a_real_run_when_checks_are_filtered():
         executed = DataContract(data_contract_file=local_json, **kwargs).test()
 
         assert keys(planned) == keys(executed), kwargs
+
+
+def test_a_dry_run_does_not_publish(monkeypatch):
+    """A plan has no test results, so `--publish` is ignored instead of uploading it."""
+    published = []
+    monkeypatch.setattr(
+        "datacontract.data_contract.publish_test_results_to_entropy_data",
+        lambda *args, **kwargs: published.append(args) or True,
+    )
+
+    run = DataContract(data_contract_file=local_json, dry_run=True, publish_url="http://127.0.0.1:9/nope").test()
+
+    assert published == []
+    assert run.publish_succeeded is None
+    assert run.result == ResultEnum.skipped
+    assert any("Publishing skipped" in log.message for log in run.logs)
