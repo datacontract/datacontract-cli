@@ -244,6 +244,7 @@ def check_jsonschema(
     server: Server,
     schema_name: str = "all",
     config: Config | None = None,
+    dry_run: bool = False,
 ):
     run.log_info("Running engine jsonschema")
 
@@ -279,6 +280,21 @@ def check_jsonschema(
             schema,
             formats={"uuid": r"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$"},
         )
+
+        if dry_run:
+            # The schema was still built and compiled above, so a contract that
+            # could never validate fails here; only the file read is skipped.
+            run.checks.append(
+                Check(
+                    type="schema",
+                    name="Check that JSON has valid schema",
+                    model=model_name,
+                    result=ResultEnum.skipped,
+                    reason="Dry run: check not executed",
+                    engine="jsonschema",
+                )
+            )
+            continue
 
         # Process files based on server type
         if server.type == "local":

@@ -123,6 +123,27 @@ Use `--metadata-only` to skip these value-level checks: only the schema-reading 
 
 `--quality-id` and `--tag` go the other way and narrow the run to individual [quality rules](../quality-rules/index.md#identifying-rules): `--quality-id` runs the one rule declaring that `id`, `--tag` runs every rule declaring that tag, and neither runs any schema or service level check.
 
+## Dry Run
+
+`--dry-run` reports the checks a run would execute and stops there. No data is read from the server, so every reported check has the result
+`skipped` (or `warning` if they cannot be planned).
+
+```bash
+datacontract test datacontract.yaml --dry-run
+```
+
+A dry run needs no server credentials, which
+makes it usable on a pull request build that has no warehouse access. A dry run
+exits `0`: it is a plan, not a verdict.
+
+:::note
+A dry run is not offline in general: a contract that references [external semantics](../semantics.md) still fetches them. This is necessary to build all of its checks.
+:::
+
+:::caution
+Contracts with `logicalType: blob` schemas on Azure do not support dry runs.
+:::
+
 ## Configuring the connection
 
 The connection details (host, catalog, location, …) live in the contract's `servers` block; **credentials are provided as environment variables**.
