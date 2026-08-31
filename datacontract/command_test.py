@@ -250,7 +250,7 @@ def test(
     Run schema and quality tests on configured servers.
     """
     enable_debug_logging(debug, otherwise_disable_stderr=True)
-    validate_publish_url(publish)
+    publish = validate_publish_url(publish)
 
     check_categories = _parse_enum_csv(
         checks,
