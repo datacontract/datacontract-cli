@@ -9,6 +9,7 @@ Usage (from the repo root):
 
 Golden files written:
     tests/fixtures/changelog/golden_changelog_text.txt
+    tests/fixtures/changelog/golden_breaking_text.txt
 
 After running, review the diff with git and commit if the changes are expected:
     git diff tests/fixtures/changelog/
@@ -27,26 +28,39 @@ V1 = os.path.normpath(os.path.join(REPO_ROOT, "tests/fixtures/changelog/integrat
 V2 = os.path.normpath(os.path.join(REPO_ROOT, "tests/fixtures/changelog/integration/changelog_integration_v2.yaml"))
 
 
-def generate():
-    # Import here so the script can be run from the repo root with venv activated
-    from datacontract.data_contract import DataContract
-    from datacontract.output.text_changelog_results import write_text_changelog_results
-
-    result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2))
-
+def _render(write, result) -> str:
     buf = io.StringIO()
     con = Console(file=buf, width=300, highlight=False, no_color=True)
     old_stdout = sys.stdout
     sys.stdout = buf
     try:
-        write_text_changelog_results(result, con)
+        write(result, con)
     finally:
         sys.stdout = old_stdout
+    return buf.getvalue()
 
-    text_path = os.path.normpath(os.path.join(FIXTURE_DIR, "golden_changelog_text.txt"))
-    with open(text_path, "w", encoding="utf-8") as f:
-        f.write(buf.getvalue())
-    print(f"Written: {text_path}")
+
+def generate():
+    # Import here so the script can be run from the repo root with venv activated
+    from datacontract.data_contract import DataContract
+    from datacontract.output.text_breaking_results import write_text_breaking_results
+    from datacontract.output.text_changelog_results import write_text_changelog_results
+
+    v1 = DataContract(data_contract_file=V1)
+    outputs = {
+        "golden_changelog_text.txt": _render(
+            write_text_changelog_results, v1.changelog(DataContract(data_contract_file=V2))
+        ),
+        "golden_breaking_text.txt": _render(
+            write_text_breaking_results, v1.breaking(DataContract(data_contract_file=V2))
+        ),
+    }
+
+    for name, text in outputs.items():
+        text_path = os.path.normpath(os.path.join(FIXTURE_DIR, name))
+        with open(text_path, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"Written: {text_path}")
     print("\nDone. Review changes with: git diff tests/fixtures/changelog/")
 
 

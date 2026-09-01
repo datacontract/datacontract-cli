@@ -1,3 +1,8 @@
+import io
+import sys
+from pathlib import Path
+
+from rich.console import Console
 from typer.testing import CliRunner
 
 from datacontract.breaking.detector import BreakingChangeDetector
@@ -17,11 +22,14 @@ from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.model.breaking import BreakingChangeLevel
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
+from datacontract.output.text_breaking_results import write_text_breaking_results
 
 V1 = "fixtures/changelog/integration/changelog_integration_v1.yaml"
 V2 = "fixtures/changelog/integration/changelog_integration_v2.yaml"
 WARNING_ONLY_V1 = "fixtures/changelog/breaking/warning_only_v1.yaml"
 WARNING_ONLY_V2 = "fixtures/changelog/breaking/warning_only_v2.yaml"
+
+GOLDEN_TEXT = Path(__file__).parent / "fixtures/changelog/golden_breaking_text.txt"
 
 runner = CliRunner()
 
@@ -263,11 +271,23 @@ def test_summary_uses_highest_detail_severity():
     assert result.summary[0].level == BreakingChangeLevel.ERROR
 
 
-def test_every_detail_entry_is_classified():
-    changelog = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2))
-    result = BreakingChangeDetector().detect(changelog)
-    assert len(result.entries) == len(changelog.entries)
-    assert all(isinstance(entry.level, BreakingChangeLevel) for entry in result.entries)
+def test_golden_output():
+    result = DataContract(data_contract_file=V1).breaking(DataContract(data_contract_file=V2))
+    assert len(result.entries) == len(
+        DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2)).entries
+    )
+    buf = io.StringIO()
+    con = Console(file=buf, width=300, highlight=False, no_color=True)
+    old_stdout = sys.stdout
+    sys.stdout = buf
+    try:
+        write_text_breaking_results(result, con)
+    finally:
+        sys.stdout = old_stdout
+    assert buf.getvalue() == GOLDEN_TEXT.read_text(encoding="utf-8"), (
+        "Breaking-change text output has changed. If intentional, regenerate "
+        "golden_breaking_text.txt (see tests/fixtures/changelog/helper/generate_golden.py)."
+    )
 
 
 def test_data_contract_breaking_reuses_changelog():
