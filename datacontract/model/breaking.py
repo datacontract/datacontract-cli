@@ -31,9 +31,3 @@ class BreakingChangeResult(BaseModel):
     @property
     def is_breaking(self) -> bool:
         return any(entry.level == BreakingChangeLevel.ERROR for entry in self.entries)
-
-    def has_changes(self) -> bool:
-        return bool(self.entries)
-
-    def pretty(self) -> str:
-        return self.model_dump_json(indent=2)
