@@ -324,6 +324,14 @@ app = FastAPI(
                 "url": "https://docs.datacontract.com/commands/changelog",
             },
         },
+        {
+            "name": "breaking",
+            "description": "Compare two versions of a data contract and grade each change by compatibility impact.",
+            "externalDocs": {
+                "description": "Documentation",
+                "url": "https://docs.datacontract.com/commands/breaking",
+            },
+        },
     ],
 )
 
