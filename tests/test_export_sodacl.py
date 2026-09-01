@@ -1,7 +1,13 @@
 import logging
 
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+from open_data_contract_standard.model import (
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
+    Server,
+    ServiceLevelAgreementProperty,
+)
 
 from datacontract.export.sodacl_check_builder import _retention_value_to_seconds, check_property_type, create_checks
 from datacontract.export.sodacl_exporter import SodaExporter
@@ -67,10 +73,10 @@ checks for orders:
         FROM orders
   - row_count > 10
   - orders_servicelevel_retention < 31536000:
-      name: servicelevel_retention
+      name: orders__processed_timestamp__servicelevel_retention
       orders_servicelevel_retention expression: TIMESTAMPDIFF(SECOND, MIN(processed_timestamp), CURRENT_TIMESTAMP)
   - freshness(order_timestamp) < 24h:
-      name: servicelevel_freshness
+      name: orders__order_timestamp__servicelevel_freshness
 """
 
     data_contract = resolve_data_contract_from_location("./fixtures/sodacl/datacontract.odcs.yaml")
@@ -79,6 +85,38 @@ checks for orders:
     result = exporter.export(data_contract, "all", None, "auto", None)
 
     assert yaml.safe_load(expected) == yaml.safe_load(result)
+
+
+def test_multiple_servicelevel_promises_get_distinct_check_keys():
+    """Each promise needs its own key, matching the engine check path (#1515)."""
+    contract = OpenDataContractStandard(
+        version="1",
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="x",
+        schema=[
+            SchemaObject(
+                name="events",
+                properties=[
+                    SchemaProperty(name="ts", logicalType="timestamp"),
+                    SchemaProperty(name="updated", logicalType="timestamp"),
+                ],
+            )
+        ],
+        slaProperties=[
+            ServiceLevelAgreementProperty(property="freshness", element="events.ts", value=48, unit="h"),
+            ServiceLevelAgreementProperty(property="freshness", element="events.updated", value=2, unit="h"),
+            ServiceLevelAgreementProperty(property="retention", element="events.ts", value=1, unit="y"),
+            ServiceLevelAgreementProperty(property="retention", element="events.updated", value=2, unit="y"),
+        ],
+    )
+
+    checks = create_checks(contract, Server(server="s", type="snowflake"))
+
+    freshness_keys = [c.key for c in checks if c.type == "servicelevel_freshness"]
+    retention_keys = [c.key for c in checks if c.type == "servicelevel_retention"]
+    assert freshness_keys == ["events__ts__servicelevel_freshness", "events__updated__servicelevel_freshness"]
+    assert retention_keys == ["events__ts__servicelevel_retention", "events__updated__servicelevel_retention"]
 
 
 def test_export_sodacl_numeric_retention():

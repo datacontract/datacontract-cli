@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import sql` takes the server's `database` and `schema` from a qualified `CREATE TABLE`, instead of always writing placeholders (#651)
 - `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529)
 - `datacontract test` now supports ISO 8601 retention periods correctly (previously, only the first component was considered) (#1538)
+- `datacontract test` reports each freshness and retention check result on its own check, instead of writing every result to the first one (#1515)
 
 ## [1.1.2] - 2026-08-26
 
