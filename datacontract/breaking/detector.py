@@ -54,12 +54,7 @@ class BreakingChangeDetector:
 
     @staticmethod
     def _summarize(summary_entry: ChangelogEntry, entries: list[BreakingChangeEntry]) -> BreakingChangeEntry:
-        matching = [
-            entry
-            for entry in entries
-            if entry.path == summary_entry.path or entry.path.startswith(f"{summary_entry.path}.")
-        ]
-        if not matching:
+        if not entries:
             return BreakingChangeEntry(
                 path=summary_entry.path,
                 change_type=summary_entry.type,
@@ -67,7 +62,7 @@ class BreakingChangeDetector:
                 message=f"Changed contract at {summary_entry.path}",
                 rule_id="summary-fallback",
             )
-        highest = max(matching, key=lambda entry: _LEVEL_ORDER[entry.level])
+        highest = max(entries, key=lambda entry: _LEVEL_ORDER[entry.level])
         return BreakingChangeEntry(
             path=summary_entry.path,
             change_type=summary_entry.type,
