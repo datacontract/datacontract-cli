@@ -42,9 +42,10 @@ jobs:
           cache-dependency-path: docs/package-lock.json
       # The Commands section is rendered from the CLI's own --help output, so
       # the build needs the CLI importable.
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: '3.11'
+          prune-cache: true
       - run: uv sync
       - run: npm ci
         working-directory: docs
@@ -66,9 +67,10 @@ jobs:
       # CHANGELOG.md from outside the docs/ app folder nor run the Python
       # generator at all. Both generators keep what they find on disk when they
       # cannot regenerate, so the Oryx build reuses these pages.
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: '3.11'
+          prune-cache: true
       - run: uv sync
       - name: Generate the Release Notes page and the Commands section
         run: |
