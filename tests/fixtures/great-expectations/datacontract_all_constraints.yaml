@@ -36,6 +36,11 @@ schema:
           maximum: 9999
           exclusiveMinimum: -1
           exclusiveMaximum: 10000
+      - name: discount
+        logicalType: number
+        logicalTypeOptions:
+          exclusiveMinimum: 0
+          exclusiveMaximum: 1
       - name: score
         logicalType: number
         logicalTypeOptions:

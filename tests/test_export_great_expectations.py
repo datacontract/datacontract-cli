@@ -1319,27 +1319,36 @@ def test_numeric_value_range(data_contract_all_constraints: OpenDataContractStan
 
 
 def test_exclusive_min_max(data_contract_all_constraints: OpenDataContractStandard):
-    """exclusiveMinimum and exclusiveMaximum must each produce an expectation with exclusive=true in meta."""
+    """exclusiveMinimum and exclusiveMaximum must set GE's strict_min/strict_max in the kwargs."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
 
-    excl_min = next(
+    excl = next(
         e
         for e in result["expectations"]
-        if e.get("meta", {}).get("expectation_id")
-        == "test-all-constraints.quantity.quantity_must_be_strictly_greater_than_1"
+        if e["type"] == "expect_column_values_to_be_between" and e.get("kwargs", {}).get("column") == "discount"
     )
-    assert excl_min["type"] == "expect_column_values_to_be_between"
-    assert excl_min["kwargs"]["min_value"] == -1
-    assert excl_min["meta"]["exclusive"] is True
+    assert excl["kwargs"] == {
+        "column": "discount",
+        "min_value": 0,
+        "strict_min": True,
+        "max_value": 1,
+        "strict_max": True,
+    }
+    assert excl["meta"]["exclusive"] is True
 
-    excl_max = next(
+
+def test_bounds_merge_into_a_single_expectation(data_contract_all_constraints: OpenDataContractStandard):
+    """All four bounds on one column must merge: GE keeps only the last between-expectation per column."""
+    result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
+
+    quantity_exps = [
         e
         for e in result["expectations"]
-        if e.get("meta", {}).get("expectation_id")
-        == "test-all-constraints.quantity.quantity_must_be_strictly_less_than_10000"
-    )
-    assert excl_max["kwargs"]["max_value"] == 10000
-    assert excl_max["meta"]["exclusive"] is True
+        if e["type"] == "expect_column_values_to_be_between" and e.get("kwargs", {}).get("column") == "quantity"
+    ]
+    assert len(quantity_exps) == 1
+    # minimum 0 / maximum 9999 are tighter than exclusiveMinimum -1 / exclusiveMaximum 10000
+    assert quantity_exps[0]["kwargs"] == {"column": "quantity", "min_value": 0, "max_value": 9999}
 
 
 def test_enum_values(data_contract_all_constraints: OpenDataContractStandard):

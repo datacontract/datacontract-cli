@@ -110,18 +110,6 @@ def _get_enum_from_custom_properties(prop: SchemaProperty) -> Optional[List[str]
     return None
 
 
-def _get_format_regex(format_value: str) -> Optional[str]:
-    """Look up the regular expression for a supported string format.
-
-    Args:
-        format_value: Case-insensitive logical format name.
-
-    Returns:
-        str | None: Matching regular expression, or ``None`` for unsupported formats.
-    """
-    return _FORMAT_REGEX_MAP.get(format_value.lower())
-
-
 def _to_snake_case(text: str) -> str:
     """Convert text to a normalized snake-case identifier.
 
@@ -134,22 +122,6 @@ def _to_snake_case(text: str) -> str:
     normalized = text.strip().lower()
     result = re.sub(r"[^a-z0-9_]", "_", normalized)
     return re.sub(r"_+", "_", result).strip("_")
-
-
-def _display_name(prop: SchemaProperty, field_name: str) -> str:
-    """Always return the column name for generating human-readable expectation names.
-
-    businessName is ignored to ensure consistent, traceable naming based on
-    the actual database column name.
-
-    Args:
-        prop: Schema property (businessName is ignored).
-        field_name: Technical field name to use for expectation naming.
-
-    Returns:
-        str: The column field name.
-    """
-    return field_name
 
 
 def _build_expectation_id(contract_id: str, column_name: Optional[str], rule_name: str) -> str:
@@ -171,7 +143,6 @@ def _build_expectation_id(contract_id: str, column_name: Optional[str], rule_nam
 def _build_constraint_meta(
     contract_id: str,
     column_name: str,
-    rule_name: str,  # kept for caller clarity; expectation_id is derived from name instead
     name: str,
     description: str,
     dimension: str,
@@ -183,7 +154,6 @@ def _build_constraint_meta(
     Args:
         contract_id: Data contract identifier.
         column_name: Column constrained by the expectation.
-        rule_name: Caller-provided rule identifier retained for API clarity.
         name: Human-readable expectation name.
         description: Human-readable expectation description.
         dimension: Data quality dimension represented by the constraint.
@@ -230,10 +200,7 @@ def _extract_quality_meta(
     }
 
     # Extract all quality fields except excluded ones (type, engine, implementation)
-    try:
-        quality_dict = quality.model_dump(exclude_none=True)
-    except AttributeError:
-        quality_dict = quality.dict(exclude_none=True)
+    quality_dict = quality.model_dump(exclude_none=True)
 
     for key, value in quality_dict.items():
         if key in _QUALITY_META_EXCLUDED_FIELDS:
@@ -372,7 +339,7 @@ def add_field_expectations(
     Returns:
         list[dict[str, Any]]: The provided collection after generated expectations are appended.
     """
-    dn = _display_name(prop, field_name)
+    dn = field_name
     prop_type = _get_type(prop)
     if prop_type is not None:
         if engine == GreatExpectationsEngine.spark.value:
@@ -396,7 +363,6 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    "column_type",
                     f"{dn} must be of type {field_type}",
                     f"{dn} must be of type {field_type}",
                     "conformity",
@@ -412,7 +378,6 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    "primary_key_not_null",
                     f"{dn} must be filled (primary key)",
                     f"{dn} is a primary key and must not contain null values",
                     "completeness",
@@ -425,7 +390,6 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    "primary_key_unique",
                     f"{dn} must be unique (primary key)",
                     f"{dn} is a primary key and must contain unique values",
                     "uniqueness",
@@ -441,7 +405,6 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    "not_null",
                     f"{dn} must be filled",
                     f"{dn} must be not null values",
                     "completeness",
@@ -457,7 +420,6 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    "unique",
                     f"{dn} must be unique",
                     f"{dn} must contain unique values",
                     "uniqueness",
@@ -483,69 +445,61 @@ def add_field_expectations(
                 field_name,
                 min_length,
                 max_length,
-                _build_constraint_meta(
-                    contract_id, field_name, rule_name, rule_name_label, rule_name_label, "conformity"
-                ),
+                _build_constraint_meta(contract_id, field_name, rule_name_label, rule_name_label, "conformity"),
             )
         )
 
-    # logicalTypeOptions: minimum / maximum (numeric or date)
+    # logicalTypeOptions: minimum / maximum / exclusiveMinimum / exclusiveMaximum (numeric or date).
+    # All four merge into one expectation: Great Expectations keeps only the last
+    # expect_column_values_to_be_between per column, so emitting several drops constraints.
     minimum = _get_logical_type_option(prop, "minimum")
     maximum = _get_logical_type_option(prop, "maximum")
+    exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
+    exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
+
+    strict_min = False
+    if exclusive_minimum is not None and (minimum is None or exclusive_minimum >= minimum):
+        minimum, strict_min = exclusive_minimum, True
+    strict_max = False
+    if exclusive_maximum is not None and (maximum is None or exclusive_maximum <= maximum):
+        maximum, strict_max = exclusive_maximum, True
+
     if minimum is not None or maximum is not None:
+        min_label = f"strictly greater than {minimum}" if strict_min else f"at least {minimum}"
+        max_label = f"strictly less than {maximum}" if strict_max else f"at most {maximum}"
         if minimum is not None and maximum is not None:
             rule_name = "value_range"
-            rule_name_label = f"{dn} must be between {minimum} and {maximum}"
+            if not strict_min and not strict_max:
+                rule_name_label = f"{dn} must be between {minimum} and {maximum}"
+            else:
+                rule_name_label = f"{dn} must be {min_label} and {max_label}"
         elif minimum is not None:
-            rule_name = "minimum"
-            rule_name_label = f"{dn} must be at least {minimum}"
+            rule_name = "exclusive_min" if strict_min else "minimum"
+            rule_name_label = f"{dn} must be {min_label}"
         else:
-            rule_name = "maximum"
-            rule_name_label = f"{dn} must be at most {maximum}"
+            rule_name = "exclusive_max" if strict_max else "maximum"
+            rule_name_label = f"{dn} must be {max_label}"
+        meta = _build_constraint_meta(
+            contract_id,
+            field_name,
+            rule_name_label,
+            f"{dn} value must be between {minimum} and {maximum}"
+            if rule_name == "value_range" and not strict_min and not strict_max
+            else rule_name_label.replace(f"{dn} must be", f"{dn} value must be", 1),
+            "conformity",
+        )
+        if strict_min or strict_max:
+            meta["exclusive"] = True
         expectations.append(
             to_column_min_max_exp(
                 field_name,
                 minimum,
                 maximum,
-                _build_constraint_meta(
-                    contract_id,
-                    field_name,
-                    rule_name,
-                    rule_name_label,
-                    f"{dn} value must be between {minimum} and {maximum}"
-                    if rule_name == "value_range"
-                    else rule_name_label,
-                    "conformity",
-                ),
+                meta,
+                strict_min=strict_min,
+                strict_max=strict_max,
             )
         )
-
-    # logicalTypeOptions: exclusiveMinimum / exclusiveMaximum
-    exclusive_min = _get_logical_type_option(prop, "exclusiveMinimum")
-    if exclusive_min is not None:
-        meta = _build_constraint_meta(
-            contract_id,
-            field_name,
-            "exclusive_min",
-            f"{dn} must be strictly greater than {exclusive_min}",
-            f"{dn} value must be strictly greater than {exclusive_min}",
-            "conformity",
-        )
-        meta["exclusive"] = True
-        expectations.append(to_column_min_max_exp(field_name, exclusive_min, None, meta))
-
-    exclusive_max = _get_logical_type_option(prop, "exclusiveMaximum")
-    if exclusive_max is not None:
-        meta = _build_constraint_meta(
-            contract_id,
-            field_name,
-            "exclusive_max",
-            f"{dn} must be strictly less than {exclusive_max}",
-            f"{dn} value must be strictly less than {exclusive_max}",
-            "conformity",
-        )
-        meta["exclusive"] = True
-        expectations.append(to_column_min_max_exp(field_name, None, exclusive_max, meta))
 
     # logicalTypeOptions: pattern (regex validation)
     pattern = _get_logical_type_option(prop, "pattern")
@@ -557,7 +511,6 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    "pattern_match",
                     f"{dn} must match pattern {pattern}",
                     f"{dn} values must match the pattern {pattern}",
                     "conformity",
@@ -568,7 +521,7 @@ def add_field_expectations(
     # logicalTypeOptions: format (maps to known regex patterns for common string formats)
     format_val = _get_logical_type_option(prop, "format")
     if format_val is not None:
-        regex = _get_format_regex(format_val)
+        regex = _FORMAT_REGEX_MAP.get(format_val.lower())
         if regex:
             expectations.append(
                 to_column_regex_exp(
@@ -577,7 +530,6 @@ def add_field_expectations(
                     _build_constraint_meta(
                         contract_id,
                         field_name,
-                        "format_check",
                         f"{dn} must be a valid {format_val}",
                         f"{dn} values must be in {format_val} format",
                         "conformity",
@@ -595,7 +547,6 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    "enum_values",
                     f"{dn} must belong to allowed values",
                     f"{dn} must be in the set of allowed values",
                     "conformity",
@@ -701,14 +652,18 @@ def to_column_min_max_exp(
     minimum,
     maximum,
     meta: Optional[Dict[str, Any]] = None,
+    strict_min: bool = False,
+    strict_max: bool = False,
 ) -> Dict[str, Any]:
     """Create a column value-range expectation.
 
     Args:
         field_name: Column validated by the expectation.
-        minimum: Inclusive lower bound, when defined.
-        maximum: Inclusive upper bound, when defined.
+        minimum: Lower bound, when defined.
+        maximum: Upper bound, when defined.
         meta: Optional metadata to attach to the expectation.
+        strict_min: Whether the lower bound is exclusive.
+        strict_max: Whether the upper bound is exclusive.
 
     Returns:
         dict[str, Any]: Great Expectations value-range expectation.
@@ -716,8 +671,12 @@ def to_column_min_max_exp(
     kwargs: Dict[str, Any] = {"column": field_name}
     if minimum is not None:
         kwargs["min_value"] = minimum
+        if strict_min:
+            kwargs["strict_min"] = True
     if maximum is not None:
         kwargs["max_value"] = maximum
+        if strict_max:
+            kwargs["strict_max"] = True
     description, meta_copy = _pop_description(meta)
     return _build_exp("expect_column_values_to_be_between", kwargs, description, meta_copy)
 
@@ -795,7 +754,7 @@ def get_quality_checks(
             and quality.engine.lower() in ("great-expectations", "greatexpectations")
         ):
             impl = quality.implementation
-            if not isinstance(impl, dict):
+            if not isinstance(impl, dict) or not impl.get("type"):
                 continue
 
             kwargs = dict(impl.get("kwargs") or {})
@@ -805,6 +764,6 @@ def get_quality_checks(
 
             meta = _extract_quality_meta(quality, contract_id, field_name)
             description, meta_copy = _pop_description(meta)
-            expectation = _build_exp(impl.get("type"), kwargs, description, meta_copy)
+            expectation = _build_exp(impl["type"], kwargs, description, meta_copy)
             quality_specification.append(expectation)
     return quality_specification
