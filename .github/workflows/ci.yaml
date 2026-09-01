@@ -24,6 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: '3.11'
+          prune-cache: true
       - name: Install the project
         run: uv sync --all-extras --dev
       - name: Check linting
@@ -68,6 +69,7 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: ${{ matrix.python-version }}
+          prune-cache: true
       - name: Install the project
         run: uv sync --all-extras --dev
       - name: Run tests
@@ -87,6 +89,7 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: '3.11'
+          prune-cache: true
       - name: Install the project
         run: uv sync --all-extras --dev
       - name: Run slow tests
@@ -106,6 +109,7 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: '3.11'
+          prune-cache: true
       - name: Install the project
         run: uv sync --all-extras --dev
       - name: Run tests with coverage
