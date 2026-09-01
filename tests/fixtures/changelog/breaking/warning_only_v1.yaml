@@ -10,3 +10,5 @@ schema:
       - name: order_id
         logicalType: string
         required: true
+        logicalTypeOptions:
+          pattern: "^ORD-[0-9]+$"

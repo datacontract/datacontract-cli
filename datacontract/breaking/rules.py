@@ -52,7 +52,8 @@ class RequiredChangedRule(BreakingChangeRule):
         new = _parse_bool(entry.new_value)
         if entry.type == ChangelogType.added and new is True:
             level = BreakingChangeLevel.ERROR
-        elif entry.type == ChangelogType.removed or (old is True and new is False):
+        elif entry.type == ChangelogType.removed or new is False:
+            # Dropping the requirement, or writing out the optional default, only loosens the contract.
             level = BreakingChangeLevel.INFO
         elif entry.type == ChangelogType.updated and old is False and new is True:
             level = BreakingChangeLevel.ERROR
@@ -71,7 +72,9 @@ class TypeChangedRule(BreakingChangeRule):
             return None
         if entry.type == ChangelogType.updated:
             level = BreakingChangeLevel.ERROR
-        elif entry.type in (ChangelogType.added, ChangelogType.removed):
+        elif entry.type == ChangelogType.added:
+            level = BreakingChangeLevel.INFO
+        elif entry.type == ChangelogType.removed:
             level = BreakingChangeLevel.WARNING
         else:
             return None

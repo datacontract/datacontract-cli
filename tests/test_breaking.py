@@ -46,6 +46,30 @@ def test_required_change_to_false_is_info():
     assert result.level == BreakingChangeLevel.INFO
 
 
+def test_adding_required_false_is_info():
+    result = RequiredChangedRule().evaluate(
+        _entry("schema.orders.properties.region.required", ChangelogType.added, None, "False")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_adding_a_type_is_info():
+    result = TypeChangedRule().evaluate(
+        _entry("schema.orders.properties.region.logicalType", ChangelogType.added, None, "string")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_removing_a_type_is_warning():
+    result = TypeChangedRule().evaluate(
+        _entry("schema.orders.properties.region.logicalType", ChangelogType.removed, "string")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.WARNING
+
+
 def test_type_change_is_error():
     result = TypeChangedRule().evaluate(
         _entry("schema.orders.properties.order_id.logicalType", ChangelogType.updated, "string", "integer")
@@ -231,7 +255,7 @@ def test_data_contract_breaking_reuses_changelog():
 def test_cli_warning_only_change_exits_zero_but_shows_warning():
     result = runner.invoke(app, ["breaking", WARNING_ONLY_V1, WARNING_ONLY_V2])
     assert result.exit_code == 0
-    assert "[ 1 Warning ]  [ 1 Info ]" in result.output
+    assert "[ 1 Warning ]  [ 2 Info ]" in result.output
 
 
 def test_cli_missing_file_exits_nonzero():
@@ -241,10 +265,10 @@ def test_cli_missing_file_exits_nonzero():
     assert "The file 'unknown.yaml' does not exist." in str(result.exception)
 
 
-def test_cli_shows_full_severity_range_for_mixed_changes():
+def test_cli_exits_nonzero_and_badges_errors_for_mixed_changes():
     result = runner.invoke(app, ["breaking", V1, V2])
     assert result.exit_code == 1
-    assert "[ 4 Error ]  [ 1 Warning ]  [ 3 Info ]" in result.output
+    assert "[ 4 Error ]  [ 4 Info ]" in result.output
 
 
 def test_detector_uses_first_matching_rule():
