@@ -121,7 +121,9 @@ print(data_contract.export("odcs"))
 
 See [Imports](./imports/index.md) for the full list of formats.
 
-## Compare two contracts (changelog)
+## Compare two contracts
+
+`changelog()` lists what changed between two versions:
 
 ```python
 from datacontract.data_contract import DataContract
@@ -132,6 +134,17 @@ v2 = DataContract(data_contract_file="v2.odcs.yaml")
 result = v1.changelog(v2)
 print(result)
 ```
+
+`breaking()` grades those same changes for compatibility impact. Every entry carries a `level` (`info`, `warning` or `error`), and `is_breaking` is `True` when any entry is an error:
+
+```python
+result = v1.breaking(v2)
+
+for entry in result.entries:
+    print(entry.level.value, entry.path, entry.message)
+```
+
+See [Compare contract versions](./compare-contract-versions.md) for the severity levels and the rules behind them.
 
 ## Spark DataFrames and Databricks
 

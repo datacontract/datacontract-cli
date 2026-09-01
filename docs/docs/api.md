@@ -66,9 +66,11 @@ curl -X POST "http://localhost:4242/export?format=sql" \
   --data-binary @datacontract.yaml
 ```
 
-## Changelog between two contracts
+## Comparing two contracts
 
-POST a JSON body with `v1` (before) and `v2` (after) as YAML strings. The response is a JSON object with `summary` and `entries`:
+Both comparison endpoints take the same JSON body: `v1` (before) and `v2` (after) as YAML strings.
+
+`POST /changelog` lists what changed. The response is a JSON object with `summary` (one entry per changed field) and `entries` (one per atomic change):
 
 ```bash
 curl -X POST "http://localhost:4242/changelog" \
@@ -78,6 +80,37 @@ curl -X POST "http://localhost:4242/changelog" \
     "v2": "'"$(cat v2.odcs.yaml)"'"
   }'
 ```
+
+`POST /breaking` grades those same changes for compatibility impact. It adds a `level` (`info`, `warning` or `error`) and a `rule_id` to every entry, plus a top-level `is_breaking` flag that is `true` when any entry is an `error`:
+
+```bash
+curl -X POST "http://localhost:4242/breaking" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "v1": "'"$(cat v1.odcs.yaml)"'",
+    "v2": "'"$(cat v2.odcs.yaml)"'"
+  }'
+```
+
+```json
+{
+  "summary": [...],
+  "entries": [
+    {
+      "path": "schema.orders.properties.order_id.logicalTypeOptions.pattern",
+      "change_type": "updated",
+      "level": "warning",
+      "message": "Changed validation constraint at schema.orders.properties.order_id.logicalTypeOptions.pattern from '^ORD-[0-9]+$' to '^ORD-[0-9]{4}$'",
+      "rule_id": "validation-constraint-changed",
+      "old_value": "^ORD-[0-9]+$",
+      "new_value": "^ORD-[0-9]{4}$"
+    }
+  ],
+  "is_breaking": false
+}
+```
+
+See [Compare contract versions](./compare-contract-versions.md) for the severity levels and the rules behind them.
 
 ## Configure server credentials
 
