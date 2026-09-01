@@ -224,6 +224,31 @@ def test_unmatched_entry_uses_info_fallback():
     assert not result.is_breaking
 
 
+def test_required_inside_an_added_schema_is_not_breaking():
+    changelog = ChangelogResult(
+        v1="v1",
+        v2="v2",
+        entries=[
+            _entry("schema.customers", ChangelogType.added),
+            _entry("schema.customers.properties.customer_id", ChangelogType.added),
+            _entry("schema.customers.properties.customer_id.required", ChangelogType.added, None, "True"),
+        ],
+    )
+    result = BreakingChangeDetector().detect(changelog)
+    assert all(entry.level == BreakingChangeLevel.INFO for entry in result.entries)
+    assert not result.is_breaking
+
+
+def test_required_added_to_an_existing_property_is_breaking():
+    changelog = ChangelogResult(
+        v1="v1",
+        v2="v2",
+        entries=[_entry("schema.orders.properties.order_id.required", ChangelogType.added, None, "True")],
+    )
+    result = BreakingChangeDetector().detect(changelog)
+    assert result.is_breaking
+
+
 def test_summary_uses_highest_detail_severity():
     changelog = ChangelogResult(
         v1="v1",
@@ -268,7 +293,7 @@ def test_cli_missing_file_exits_nonzero():
 def test_cli_exits_nonzero_and_badges_errors_for_mixed_changes():
     result = runner.invoke(app, ["breaking", V1, V2])
     assert result.exit_code == 1
-    assert "[ 4 Error ]  [ 4 Info ]" in result.output
+    assert "[ 3 Error ]  [ 5 Info ]" in result.output
 
 
 def test_detector_uses_first_matching_rule():

@@ -3,7 +3,7 @@ from collections.abc import Iterable
 
 from datacontract.breaking.rules import DEFAULT_RULES, BreakingChangeRule
 from datacontract.model.breaking import BreakingChangeEntry, BreakingChangeLevel, BreakingChangeResult
-from datacontract.model.changelog import ChangelogEntry, ChangelogResult
+from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 
 _LEVEL_ORDER = {
     BreakingChangeLevel.INFO: 0,
@@ -22,6 +22,12 @@ class BreakingChangeDetector:
 
     def detect(self, changelog: ChangelogResult) -> BreakingChangeResult:
         entries = [self._classify(entry) for entry in changelog.entries]
+        # Nothing inside a newly added element can break a consumer: it did not exist before.
+        added = {entry.path for entry in entries if entry.change_type == ChangelogType.added}
+        for entry in entries:
+            segments = entry.path.split(".")
+            if any(".".join(segments[:i]) in added for i in range(1, len(segments))):
+                entry.level = BreakingChangeLevel.INFO
         entries_by_prefix = defaultdict(list)
         for entry in entries:
             prefix = ""
