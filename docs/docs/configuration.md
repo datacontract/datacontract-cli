@@ -199,6 +199,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` | `kafka_schema_registry_password` | string (secret) |  |
 | `DATACONTRACT_KAFKA_MAX_MESSAGES` | `kafka_max_messages` | integer |  |
 | `DATACONTRACT_KAFKA_TIMEOUT` | `kafka_timeout` | integer |  |
+| `DATACONTRACT_KAFKA_GROUP_PREFIX` | `kafka_group_prefix` | string |  |
 
 ### MySQL
 
