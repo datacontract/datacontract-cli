@@ -38,7 +38,7 @@ class FieldRemovedRule(BreakingChangeRule):
         segments = entry.path.split(".")
         if entry.type != ChangelogType.removed or not _is_schema_property_path(segments):
             return None
-        property_name = segments[segments.index("properties") + 1]
+        property_name = segments[-1]
         return RuleEvaluation(self.rule_id, BreakingChangeLevel.ERROR, f"Removed property {property_name}")
 
 
@@ -138,11 +138,7 @@ class MetadataFallbackRule(BreakingChangeRule):
 
 
 def _is_schema_property_path(segments: list[str]) -> bool:
-    try:
-        properties_index = segments.index("properties")
-    except ValueError:
-        return False
-    return segments[0] == "schema" and properties_index == len(segments) - 2
+    return len(segments) >= 3 and segments[0] == "schema" and segments[-2] == "properties"
 
 
 def _parse_bool(value: str | None) -> bool | None:

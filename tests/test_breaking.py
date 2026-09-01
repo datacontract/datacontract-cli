@@ -77,6 +77,22 @@ def test_removing_property_is_breaking():
     assert result.message == "Removed property customer_id"
 
 
+def test_removing_nested_property_is_breaking():
+    result = FieldRemovedRule().evaluate(
+        _entry("schema.orders.properties.customer.properties.email", ChangelogType.removed, "string")
+    )
+    assert result is not None
+    assert result.level == BreakingChangeLevel.ERROR
+    assert result.message == "Removed property email"
+
+
+def test_removing_nested_property_metadata_is_not_property_removal():
+    result = FieldRemovedRule().evaluate(
+        _entry("schema.orders.properties.customer.properties.email.description", ChangelogType.removed, "old")
+    )
+    assert result is None
+
+
 def test_tightening_uniqueness_is_breaking():
     result = UniqueConstraintRule().evaluate(
         _entry("schema.orders.properties.order_id.unique", ChangelogType.updated, "False", "True")
