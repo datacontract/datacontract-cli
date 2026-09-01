@@ -891,13 +891,14 @@ class ChangelogResponse(BaseModel):
 
 
 class BreakingChangesResponse(BaseModel):
-    """The breaking changes between two versions of a data contract."""
+    """Every change between two versions of a data contract, each graded `info`, `warning` or `error`."""
 
     summary: list[BreakingChangeEntry] = Field(
-        description="One entry per breaking change, rolled up to the level a reader cares about.",
+        description="One entry per changed element, graded by the most severe change. A property whose type and requiredness "
+        "both changed appears once.",
     )
     entries: list[BreakingChangeEntry] = Field(
-        description="Every individual breaking change, with the old and new value.",
+        description="Every single change with its grade and the old and new value.",
     )
     is_breaking: bool = Field(
         description="Whether any detected change is classified as an error-level breaking change.",
