@@ -162,6 +162,7 @@ class Config(BaseSettings):
     kafka_schema_registry_password: SecretStr | None = None
     kafka_max_messages: int | None = None
     kafka_timeout: int | None = None
+    kafka_group_prefix: str | None = None
 
     # mysql
     mysql_username: str | None = None
@@ -587,6 +588,9 @@ class Config(BaseSettings):
 
     def get_kafka_timeout(self) -> int | None:
         return self._int_option("kafka_timeout")
+
+    def get_kafka_group_prefix(self, required: bool = False) -> str | None:
+        return self._str_option("kafka_group_prefix", required)
 
     # --- mysql ---
     def get_mysql_username(self, required: bool = False) -> str | None:
