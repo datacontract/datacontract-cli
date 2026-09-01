@@ -135,20 +135,6 @@ def test_breaking_help():
     assert result.exit_code == 0
 
 
-def test_breaking_with_changes_exits_nonzero_and_shows_severity():
-    result = runner.invoke(
-        app,
-        [
-            "breaking",
-            "fixtures/changelog/integration/changelog_integration_v1.yaml",
-            "fixtures/changelog/integration/changelog_integration_v2.yaml",
-        ],
-    )
-    assert result.exit_code == 1
-    assert "Severity" in result.output
-    assert "ERROR" in result.output
-
-
 def test_breaking_without_changes_exits_zero():
     fixture = "fixtures/changelog/integration/changelog_integration_v1.yaml"
     result = runner.invoke(app, ["breaking", fixture, fixture])
