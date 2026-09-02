@@ -13,6 +13,7 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+from datacontract.config.variables import UnresolvedVariableError, resolve_server_variables
 from datacontract.engines.datacontract.check_azure_blob_file import check_azure_blob_file
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
@@ -55,6 +56,7 @@ def execute_data_contract_test(
     if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
     server = resolve_server_overrides(get_server(data_contract, server_name), config, run)
+    server = _resolve_server_variables(server)
     run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
     run.dataContractId = data_contract.id
     run.dataContractVersion = data_contract.version
@@ -265,6 +267,28 @@ def check_that_quality_ids_exist(
         ),
         engine="datacontract-cli",
     )
+
+
+def _resolve_server_variables(server: Server | None) -> Server | None:
+    """Resolve ``${VAR}`` references in the server's fields, now that it is about to be used.
+
+    Overrides from the configuration were applied first, so they win over a
+    reference in the contract. An unresolvable reference fails the run with a
+    message naming the variable instead of surfacing later as a connection error.
+    """
+    if server is None:
+        return None
+    try:
+        return resolve_server_variables(server)
+    except UnresolvedVariableError as e:
+        raise DataContractException(
+            type="general",
+            name="Resolve variables in server configuration",
+            result=ResultEnum.failed,
+            reason=f"{e} Set the variable in the environment or a .env file, or give the reference a default "
+            "with ${" + e.name + ":-default}.",
+            engine="datacontract-cli",
+        )
 
 
 def get_server(data_contract: OpenDataContractStandard, server_name: str = None) -> Server | None:

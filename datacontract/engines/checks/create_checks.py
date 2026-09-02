@@ -22,6 +22,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.config.variables import UnresolvedVariableError, resolve_variables
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
@@ -677,10 +678,8 @@ def _quality_rule_checks(
         if threshold is None:
             logger.warning(f"Quality check {check_key} has no valid threshold")
             return []
-        # The query is read as the dialect of the server it runs against, so
-        # dialect-specific syntax is not mistaken for something that is not a query.
-        parse_dialect = dialect_for_server_type(get_server_type(server))
-        if not is_read_only_query(query, parse_dialect):
+
+        def not_executed(reason: str) -> List[CheckSpec]:
             return [
                 CheckSpec(
                     key=check_key,
@@ -693,13 +692,27 @@ def _quality_rule_checks(
                     dimension=quality.dimension,
                     severity=quality.severity,
                     preset_result="failed",
-                    preset_reason=(
-                        f"A quality rule query must be a single read-only query, and this one could "
-                        f"not be read as one{f' ({parse_dialect} SQL)' if parse_dialect else ''}, "
-                        f"so it was not executed."
-                    ),
+                    preset_reason=reason,
                 )
             ]
+
+        # ``${VAR}`` references (ODCS v3.2.0) resolve from the environment now that
+        # the query is about to be used; the CLI's own ``${model}``-style placeholders
+        # were substituted first, so they are not mistaken for variables. The
+        # contract keeps the references.
+        try:
+            query = resolve_variables(query, source=f"the query of quality check '{check_key}'")
+        except UnresolvedVariableError as e:
+            return not_executed(f"{e} Set it in the environment or a .env file, or use ${{{e.name}:-default}}.")
+        # The query is read as the dialect of the server it runs against, so
+        # dialect-specific syntax is not mistaken for something that is not a query.
+        parse_dialect = dialect_for_server_type(get_server_type(server))
+        if not is_read_only_query(query, parse_dialect):
+            return not_executed(
+                f"A quality rule query must be a single read-only query, and this one could "
+                f"not be read as one{f' ({parse_dialect} SQL)' if parse_dialect else ''}, "
+                f"so it was not executed."
+            )
         return [
             CheckSpec(
                 key=check_key,

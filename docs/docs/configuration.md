@@ -34,9 +34,32 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
 
 The `.env` values are exported into the process environment, so they also reach tools that read the environment directly, such as boto3 (`AWS_PROFILE`), the Databricks SDK, and Snowflake's `SNOWFLAKE_HOME`.
 
+## Variables in the data contract
+
+Since ODCS v3.2.0, any string value in a data contract may contain a `${VAR_NAME}` reference, optionally with an inline default: `${VAR_NAME:-default}`. This keeps hostnames, bucket paths, and other environment-specific values out of the contract, so the same file works in every environment.
+
+```yaml
+servers:
+  - server: production
+    type: postgresql
+    host: ${DB_HOST}
+    port: ${DB_PORT:-5432}
+    database: ${DB_NAME:-orders}
+schema:
+  - name: orders
+    quality:
+      - type: sql
+        query: SELECT COUNT(*) FROM orders WHERE created_at > '${CUTOFF_DATE}'
+        mustBe: 0
+```
+
+The CLI resolves a reference at the moment it uses the value: when `datacontract test` opens the connection, and when it prepares a SQL quality query for execution. In queries, the CLI's own placeholders such as `${model}` and `${schema}` are substituted first. Values come from the environment, including a loaded `.env` file. A reference to an unset or empty variable without a default fails the run with the variable's name; an empty string is never substituted silently. The contract itself is never changed: `lint` accepts unresolved references, and `export` and `publish` write them back exactly as written.
+
+The [per-source override options](#all-options) such as `DATACONTRACT_POSTGRES_HOST` take precedence over the contract, so an override replaces a reference in the same field without resolving it.
+
 ## Config file (YAML)
 
-A YAML config file groups options in sections per data source. Pass it with the global `--config-file` option, or place it at one of the default locations: `./datacontract-config.yaml` or `~/.datacontract/config.yaml`.
+A YAML config file groups options in sections per data source. String values may contain `${VAR}` and `${VAR:-default}` references, resolved when the file is loaded. Pass it with the global `--config-file` option, or place it at one of the default locations: `./datacontract-config.yaml` or `~/.datacontract/config.yaml`.
 
 ```yaml
 # datacontract-config.yaml

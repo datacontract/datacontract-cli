@@ -166,6 +166,8 @@ DATACONTRACT_POSTGRES_USERNAME=postgres
 DATACONTRACT_POSTGRES_PASSWORD=postgres
 ```
 
+Server fields may also hold `${VAR}` or `${VAR:-default}` references (ODCS v3.2.0), which `test` resolves from the environment when it connects; see [Variables in the data contract](../configuration.md#variables-in-the-data-contract).
+
 The page for each source above lists its `servers` fields and the environment variables it expects. Credentials can also come from a YAML config file (`--config-file`), the Python `Config` class, or per-request API headers; see [Configuration](../configuration.md) for all mechanisms and their precedence.
 
 ## Options
