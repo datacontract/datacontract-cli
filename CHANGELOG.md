@@ -5,10 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - ODCS v3.2.0
+
+This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md). Development happens on the `odcs-3.2.0` branch, tracked in #1557.
+
+### Added
+- Contracts declaring `apiVersion: v3.2.0` lint and round-trip, including `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types (#1558)
+- `datacontract export avro-idl` writes `map<...>` and `array<float>` for `map` and `vector` properties; `datacontract export sqlalchemy` writes `JSON` and `ARRAY(Float)` (#1558)
+
+### Changed
+- `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)
+- `open-data-contract-standard` dependency bumped to 3.2.x (#1558)
+
 ## [Unreleased]
 
 ### Added
-- Support for ODCS v3.2.0: contracts declaring `apiVersion: v3.2.0` with `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types lint and round-trip; `datacontract init` and all importers now write `apiVersion: v3.2.0`
 - Add `DATACONTRACT_KAFKA_GROUP_PREFIX` environment variable to customise the consumer group ID prefix used during Kafka testing (#1553)
 - `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514)
 - `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status`
