@@ -13,6 +13,12 @@ schema:
           - type: custom
             engine: great-expectations
             description: Subscription Status Values
+            tags:
+              - pii
+              - critical
+            authoritativeDefinitions:
+              - url: https://example.com/rules/subscription-status
+                type: businessDefinition
             implementation:
               type: expect_column_values_to_be_in_set
               kwargs:

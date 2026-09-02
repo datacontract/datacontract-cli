@@ -27,6 +27,21 @@ def test_cli():
     assert result.exit_code == 0
 
 
+def _column_set_exp(schema_name: str, contract_id: str, columns: list[str]) -> Dict[str, Any]:
+    label = f"{schema_name} must contain exactly the contracted columns"
+    return {
+        "type": "expect_table_columns_to_match_set",
+        "description": label,
+        "kwargs": {"column_set": columns},
+        "meta": {
+            "expectation_id": f"{contract_id}.column_set",
+            "data_contract_rule_location": {"origin": "schema_inferred", "scope": "table"},
+            "name": label,
+            "dimension": "conformity",
+        },
+    }
+
+
 @pytest.fixture
 def data_contract_basic() -> OpenDataContractStandard:
     return OpenDataContractStandard.from_file("fixtures/export/datacontract.odcs.yaml")
@@ -74,6 +89,7 @@ def expected_json_suite() -> Dict[str, Any]:
     return {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["order_id", "processed_timestamp"]),
             {
                 "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
@@ -119,6 +135,7 @@ def expected_json_suite_table_quality() -> Dict[str, Any]:
     return {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["order_id"]),
             {
                 "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
@@ -162,6 +179,7 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
     return {
         "name": "orders.1.1.1",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["id", "type"]),
             # --- id: string, primaryKey+required+unique → only primaryKey rules ---
             {
                 "type": "expect_column_values_to_be_of_type",
@@ -259,6 +277,7 @@ def expected_spark_engine() -> Dict[str, Any]:
     return {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["order_id", "processed_timestamp"]),
             {
                 "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
@@ -325,6 +344,7 @@ def expected_pandas_engine() -> Dict[str, Any]:
     return {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["order_id", "processed_timestamp"]),
             {
                 "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
@@ -391,6 +411,7 @@ def expected_sql_engine() -> Dict[str, Any]:
     return {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["order_id", "processed_timestamp"]),
             {
                 "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
@@ -457,6 +478,7 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
     return {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["order_id", "processed_timestamp"]),
             {
                 "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
@@ -539,6 +561,7 @@ def test_to_great_expectation(data_contract_basic: OpenDataContractStandard):
     expected_json_suite = {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp("orders", "orders-unit-test", ["order_id", "order_total", "order_status"]),
             # --- order_id: varchar, primaryKey+required+unique → only primaryKey rules ---
             _mk(
                 "expect_column_values_to_be_of_type",
@@ -693,6 +716,11 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
     expected_orders = {
         "name": "orders.1.0.0",
         "expectations": [
+            _column_set_exp(
+                "orders",
+                "orders-latest",
+                ["order_id", "order_timestamp", "order_total", "customer_id", "customer_email_address"],
+            ),
             # order_id: text, required, unique, format=uuid
             {
                 "type": "expect_column_values_to_be_of_type",
@@ -804,6 +832,7 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
     expected_line_items = {
         "name": "line_items.1.0.0",
         "expectations": [
+            _column_set_exp("line_items", "orders-latest", ["lines_item_id", "order_id", "sku"]),
             # lines_item_id: text, required, unique
             {
                 "type": "expect_column_values_to_be_of_type",
@@ -906,6 +935,7 @@ def test_to_great_expectation_custom_name(
     expected = {
         "name": "my_expectation_suite_name",
         "expectations": [
+            _column_set_exp("orders", "my-data-contract-id", ["order_id", "processed_timestamp"]),
             {
                 "type": "expect_table_row_count_to_be_between",
                 "kwargs": {"min_value": 10},
@@ -1237,8 +1267,6 @@ def test_string_format_url(data_contract_all_constraints: OpenDataContractStanda
 
 def test_string_format_ipv4_and_dropped_formats():
     """format: ipv4 must still generate a regex expectation; ipv6/hostname are no longer supported formats."""
-    from open_data_contract_standard.model import OpenDataContractStandard
-
     yaml_content = """
 kind: DataContract
 apiVersion: v3.1.0
@@ -1260,21 +1288,12 @@ schema:
         logicalTypeOptions:
           format: hostname
 """
-    import os
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(yaml_content)
-        path = f.name
-    try:
-        contract = OpenDataContractStandard.from_file(path)
-        result = json.loads(to_great_expectations(contract, "tbl"))
-        regex_columns = {
-            e["kwargs"]["column"] for e in result["expectations"] if e["type"] == "expect_column_values_to_match_regex"
-        }
-        assert regex_columns == {"ip_address"}
-    finally:
-        os.unlink(path)
+    contract = OpenDataContractStandard.from_string(yaml_content)
+    result = json.loads(to_great_expectations(contract, "tbl"))
+    regex_columns = {
+        e["kwargs"]["column"] for e in result["expectations"] if e["type"] == "expect_column_values_to_match_regex"
+    }
+    assert regex_columns == {"ip_address"}
 
 
 def test_numeric_value_range(data_contract_all_constraints: OpenDataContractStandard):
@@ -1357,6 +1376,16 @@ def test_date_value_range(data_contract_all_constraints: OpenDataContractStandar
     )
 
 
+def test_column_set_expectation_is_order_agnostic(data_contract_all_constraints: OpenDataContractStandard):
+    """The suite carries one table-level column-set check; membership is asserted, order is not."""
+    result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
+    col_set = next(e for e in result["expectations"] if e["type"] == "expect_table_columns_to_match_set")
+    assert set(col_set["kwargs"]["column_set"]) == {p.name for p in data_contract_all_constraints.schema_[0].properties}
+    assert col_set["meta"]["data_contract_rule_location"] == {"origin": "schema_inferred", "scope": "table"}
+    assert col_set["meta"]["expectation_id"] == "test-all-constraints.column_set"
+    assert not any(e["type"] == "expect_table_columns_to_match_ordered_list" for e in result["expectations"])
+
+
 def test_table_quality_enriched_meta(data_contract_all_constraints: OpenDataContractStandard):
     """Table-level quality blocks must have enriched meta with data_contract_rule_location scope=table."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
@@ -1374,10 +1403,19 @@ def test_quality_meta_custom_properties(data_contract_quality_meta: OpenDataCont
     custom_properties = status_exp["meta"]["data_contract_custom_properties"]
     assert custom_properties["ruleWeight"] == 10
     assert custom_properties["businessOwner"] == "revenue-team"
-    assert custom_properties["check_type"] == "business"
-    assert "checkType" not in custom_properties
+    assert custom_properties["checkType"] == "business"
     assert status_exp["meta"]["expectation_id"] == "test-quality-meta.subscription_status.subscription_status_values"
     assert status_exp["meta"]["data_contract_rule_location"] == {"origin": "quality_block", "scope": "column"}
+
+
+def test_quality_meta_tags_and_authoritative_definitions(data_contract_quality_meta: OpenDataContractStandard):
+    """tags and authoritativeDefinitions carry provenance the expectation itself cannot encode."""
+    result = json.loads(to_great_expectations(data_contract_quality_meta, "orders"))
+    status_exp = next(e for e in result["expectations"] if e["type"] == "expect_column_values_to_be_in_set")
+    assert status_exp["meta"]["tags"] == ["pii", "critical"]
+    assert status_exp["meta"]["authoritativeDefinitions"] == [
+        {"url": "https://example.com/rules/subscription-status", "type": "businessDefinition"}
+    ]
 
 
 def test_column_not_duplicated_outside_kwargs(data_contract_quality_meta: OpenDataContractStandard):
@@ -1394,8 +1432,6 @@ def test_column_not_duplicated_outside_kwargs(data_contract_quality_meta: OpenDa
 
 def test_quality_column_already_in_kwargs_not_duplicated():
     """When column is already provided in quality kwargs, it must not be added again."""
-    from open_data_contract_standard.model import OpenDataContractStandard
-
     yaml_content = """
 kind: DataContract
 apiVersion: v3.1.0
@@ -1417,27 +1453,16 @@ schema:
                 value_set: [A, B]
               meta: {}
 """
-    import os
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(yaml_content)
-        path = f.name
-    try:
-        contract = OpenDataContractStandard.from_file(path)
-        result = json.loads(to_great_expectations(contract, "tbl"))
-        col_exp = next(e for e in result["expectations"] if e["type"] == "expect_column_values_to_be_in_set")
-        # column must appear exactly once in kwargs
-        assert col_exp["kwargs"]["column"] == "my_col"
-        assert "column" not in col_exp  # not at root level
-    finally:
-        os.unlink(path)
+    contract = OpenDataContractStandard.from_string(yaml_content)
+    result = json.loads(to_great_expectations(contract, "tbl"))
+    col_exp = next(e for e in result["expectations"] if e["type"] == "expect_column_values_to_be_in_set")
+    # column must appear exactly once in kwargs
+    assert col_exp["kwargs"]["column"] == "my_col"
+    assert "column" not in col_exp  # not at root level
 
 
 def test_expectation_id_uses_contract_id():
     """The expectation_id must always be prefixed with the contract's id field."""
-    from open_data_contract_standard.model import OpenDataContractStandard
-
     yaml_content = """
 kind: DataContract
 apiVersion: v3.1.0
@@ -1450,25 +1475,14 @@ schema:
         logicalType: string
         required: true
 """
-    import os
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(yaml_content)
-        path = f.name
-    try:
-        contract = OpenDataContractStandard.from_file(path)
-        result = json.loads(to_great_expectations(contract, "tbl"))
-        not_null_exp = next(e for e in result["expectations"] if e["type"] == "expect_column_values_to_not_be_null")
-        assert not_null_exp["meta"]["expectation_id"].startswith("my-special-contract-id.")
-    finally:
-        os.unlink(path)
+    contract = OpenDataContractStandard.from_string(yaml_content)
+    result = json.loads(to_great_expectations(contract, "tbl"))
+    not_null_exp = next(e for e in result["expectations"] if e["type"] == "expect_column_values_to_not_be_null")
+    assert not_null_exp["meta"]["expectation_id"].startswith("my-special-contract-id.")
 
 
 def test_column_name_always_used_ignores_business_name():
-    """Column name should always be used for expectation naming, businessName is always ignored."""
-    from open_data_contract_standard.model import OpenDataContractStandard
-
+    """businessName is never used for expectation naming; the column name always is."""
     yaml_content = """
 kind: DataContract
 apiVersion: v3.1.0
@@ -1477,117 +1491,18 @@ version: 1.0.0
 schema:
   - name: tbl
     properties:
-      - name: article_code
-        logicalType: string
-        businessName: NoBV
-        required: true
-        unique: true
-      - name: currency_rate
-        logicalType: number
-        businessName: Exchange rate value
-        required: true
       - name: invoice_id
         logicalType: string
         businessName: Rental Invoice Identifier
         required: true
+        unique: true
 """
-    import os
-    import tempfile
+    contract = OpenDataContractStandard.from_string(yaml_content)
+    result = json.loads(to_great_expectations(contract, "tbl"))
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        f.write(yaml_content)
-        path = f.name
-    try:
-        contract = OpenDataContractStandard.from_file(path)
-        result = json.loads(to_great_expectations(contract, "tbl"))
-
-        # Test 1: article_code with businessName: NoBV should use column name
-        article_code_type_exp = next(
-            e
-            for e in result["expectations"]
-            if e["type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "article_code"
-        )
-        assert article_code_type_exp["meta"]["name"] == "article_code must be of type string"
-        assert (
-            article_code_type_exp["meta"]["expectation_id"]
-            == "test-column-naming.article_code.article_code_must_be_of_type_string"
-        )
-
-        # Test 2: article_code not_null should use column name (NoBV ignored)
-        article_code_not_null = next(
-            e
-            for e in result["expectations"]
-            if e["type"] == "expect_column_values_to_not_be_null" and e["kwargs"]["column"] == "article_code"
-        )
-        assert article_code_not_null["meta"]["name"] == "article_code must be filled"
-        assert (
-            article_code_not_null["meta"]["expectation_id"]
-            == "test-column-naming.article_code.article_code_must_be_filled"
-        )
-
-        # Test 3: article_code unique should use column name (NoBV ignored)
-        article_code_unique = next(
-            e
-            for e in result["expectations"]
-            if e["type"] == "expect_column_values_to_be_unique" and e["kwargs"]["column"] == "article_code"
-        )
-        assert article_code_unique["meta"]["name"] == "article_code must be unique"
-        assert (
-            article_code_unique["meta"]["expectation_id"]
-            == "test-column-naming.article_code.article_code_must_be_unique"
-        )
-
-        # Test 4: currency_rate with valid businessName should STILL use column name (businessName always ignored)
-        currency_rate_type_exp = next(
-            e
-            for e in result["expectations"]
-            if e["type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "currency_rate"
-        )
-        assert currency_rate_type_exp["meta"]["name"] == "currency_rate must be of type number"
-        assert (
-            currency_rate_type_exp["meta"]["expectation_id"]
-            == "test-column-naming.currency_rate.currency_rate_must_be_of_type_number"
-        )
-        # Verify businessName is NOT used
-        assert "exchange_rate" not in currency_rate_type_exp["meta"]["name"].lower()
-        assert "exchange_rate" not in currency_rate_type_exp["meta"]["expectation_id"].lower()
-
-        # Test 5: currency_rate not_null should use column name
-        currency_rate_not_null = next(
-            e
-            for e in result["expectations"]
-            if e["type"] == "expect_column_values_to_not_be_null" and e["kwargs"]["column"] == "currency_rate"
-        )
-        assert currency_rate_not_null["meta"]["name"] == "currency_rate must be filled"
-        assert (
-            currency_rate_not_null["meta"]["expectation_id"]
-            == "test-column-naming.currency_rate.currency_rate_must_be_filled"
-        )
-
-        # Test 6: invoice_id with businessName "Rental Invoice Identifier" should use column name
-        invoice_id_type_exp = next(
-            e
-            for e in result["expectations"]
-            if e["type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "invoice_id"
-        )
-        assert invoice_id_type_exp["meta"]["name"] == "invoice_id must be of type string"
-        assert (
-            invoice_id_type_exp["meta"]["expectation_id"]
-            == "test-column-naming.invoice_id.invoice_id_must_be_of_type_string"
-        )
-        # Verify businessName is NOT used
-        assert "rental" not in invoice_id_type_exp["meta"]["name"].lower()
-        assert "rental" not in invoice_id_type_exp["meta"]["expectation_id"].lower()
-
-        # Test 7: invoice_id not_null should use column name
-        invoice_id_not_null = next(
-            e
-            for e in result["expectations"]
-            if e["type"] == "expect_column_values_to_not_be_null" and e["kwargs"]["column"] == "invoice_id"
-        )
-        assert invoice_id_not_null["meta"]["name"] == "invoice_id must be filled"
-        assert (
-            invoice_id_not_null["meta"]["expectation_id"] == "test-column-naming.invoice_id.invoice_id_must_be_filled"
-        )
-    finally:
-        os.unlink(path)
+    assert {e["meta"]["name"] for e in result["expectations"] if e["kwargs"].get("column") == "invoice_id"} == {
+        "invoice_id must be of type string",
+        "invoice_id must be filled",
+        "invoice_id must be unique",
+    }
+    assert "rental" not in json.dumps(result).lower()

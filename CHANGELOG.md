@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514)
 - `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status`
-- `datacontract export great-expectations` covers the `logicalTypeOptions` constraints, attaches contract metadata to every expectation and takes a `--suite-name` (#1544)
+- `datacontract export great-expectations` covers the `logicalTypeOptions` constraints, attaches contract metadata to every expectation, checks the column set instead of the column order and takes a `--suite-name` (#1544)
 
 ### Fixed
 - `datacontract import sql` takes the server's `database` and `schema` from a qualified `CREATE TABLE`, instead of always writing placeholders (#651)

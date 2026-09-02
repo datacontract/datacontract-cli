@@ -36,6 +36,8 @@ _QUALITY_META_ALLOWED_FIELDS = {
     "customProperties",
     "scheduler",
     "schedule",
+    "tags",
+    "authoritativeDefinitions",
 }
 
 
@@ -197,8 +199,7 @@ def _extract_quality_meta(
                 prop_key = cp.get("property") if isinstance(cp, dict) else getattr(cp, "property", None)
                 prop_val = cp.get("value") if isinstance(cp, dict) else getattr(cp, "value", None)
                 if prop_key:
-                    # checkType is renamed here only; the source contract keeps its original key
-                    custom_properties["check_type" if prop_key == "checkType" else prop_key] = prop_val
+                    custom_properties[prop_key] = prop_val
             if custom_properties:
                 meta["data_contract_custom_properties"] = custom_properties
         else:
@@ -244,6 +245,22 @@ def to_great_expectations(
             schema_name=schema_name, contract_version=odcs.version
         )
 
+    column_names = [prop.name for prop in schema.properties or []]
+    if column_names:
+        expectations.append(
+            _build_exp(
+                "expect_table_columns_to_match_set",
+                {"column_set": column_names},
+                f"{schema_name} must contain exactly the contracted columns",
+                {
+                    "expectation_id": _build_expectation_id(contract_id, None, "column_set"),
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "table"},
+                    "name": f"{schema_name} must contain exactly the contracted columns",
+                    "dimension": "conformity",
+                },
+            )
+        )
+
     if schema.quality:
         expectations.extend(get_quality_checks(schema.quality, None, contract_id))
 
@@ -286,7 +303,6 @@ def add_field_expectations(
     Returns:
         list[dict[str, Any]]: The provided collection after generated expectations are appended.
     """
-    dn = field_name
     prop_type = prop.physicalType or prop.logicalType
     if prop_type is not None:
         if engine == GreatExpectationsEngine.spark.value:
@@ -310,8 +326,8 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    f"{dn} must be of type {field_type}",
-                    f"{dn} must be of type {field_type}",
+                    f"{field_name} must be of type {field_type}",
+                    f"{field_name} must be of type {field_type}",
                     "conformity",
                 ),
             )
@@ -325,8 +341,8 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    f"{dn} must be filled (primary key)",
-                    f"{dn} is a primary key and must not contain null values",
+                    f"{field_name} must be filled (primary key)",
+                    f"{field_name} is a primary key and must not contain null values",
                     "completeness",
                 ),
             )
@@ -337,8 +353,8 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    f"{dn} must be unique (primary key)",
-                    f"{dn} is a primary key and must contain unique values",
+                    f"{field_name} must be unique (primary key)",
+                    f"{field_name} is a primary key and must contain unique values",
                     "uniqueness",
                 ),
             )
@@ -352,8 +368,8 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    f"{dn} must be filled",
-                    f"{dn} must be not null values",
+                    f"{field_name} must be filled",
+                    f"{field_name} must be not null values",
                     "completeness",
                 ),
             )
@@ -367,8 +383,8 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    f"{dn} must be unique",
-                    f"{dn} must contain unique values",
+                    f"{field_name} must be unique",
+                    f"{field_name} must contain unique values",
                     "uniqueness",
                 ),
             )
@@ -380,13 +396,13 @@ def add_field_expectations(
     if min_length is not None or max_length is not None:
         if min_length is not None and max_length is not None:
             rule_name = "length_range"
-            rule_name_label = f"{dn} length must be between {min_length} and {max_length}"
+            rule_name_label = f"{field_name} length must be between {min_length} and {max_length}"
         elif min_length is not None:
             rule_name = "min_length"
-            rule_name_label = f"{dn} length must be at least {min_length}"
+            rule_name_label = f"{field_name} length must be at least {min_length}"
         else:
             rule_name = "max_length"
-            rule_name_label = f"{dn} length must be at most {max_length}"
+            rule_name_label = f"{field_name} length must be at most {max_length}"
         expectations.append(
             to_column_length_exp(
                 field_name,
@@ -417,22 +433,22 @@ def add_field_expectations(
         if minimum is not None and maximum is not None:
             rule_name = "value_range"
             if not strict_min and not strict_max:
-                rule_name_label = f"{dn} must be between {minimum} and {maximum}"
+                rule_name_label = f"{field_name} must be between {minimum} and {maximum}"
             else:
-                rule_name_label = f"{dn} must be {min_label} and {max_label}"
+                rule_name_label = f"{field_name} must be {min_label} and {max_label}"
         elif minimum is not None:
             rule_name = "exclusive_min" if strict_min else "minimum"
-            rule_name_label = f"{dn} must be {min_label}"
+            rule_name_label = f"{field_name} must be {min_label}"
         else:
             rule_name = "exclusive_max" if strict_max else "maximum"
-            rule_name_label = f"{dn} must be {max_label}"
+            rule_name_label = f"{field_name} must be {max_label}"
         meta = _build_constraint_meta(
             contract_id,
             field_name,
             rule_name_label,
-            f"{dn} value must be between {minimum} and {maximum}"
+            f"{field_name} value must be between {minimum} and {maximum}"
             if rule_name == "value_range" and not strict_min and not strict_max
-            else rule_name_label.replace(f"{dn} must be", f"{dn} value must be", 1),
+            else rule_name_label.replace(f"{field_name} must be", f"{field_name} value must be", 1),
             "conformity",
         )
         if strict_min or strict_max:
@@ -458,8 +474,8 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    f"{dn} must match pattern {pattern}",
-                    f"{dn} values must match the pattern {pattern}",
+                    f"{field_name} must match pattern {pattern}",
+                    f"{field_name} values must match the pattern {pattern}",
                     "conformity",
                 ),
             )
@@ -477,8 +493,8 @@ def add_field_expectations(
                     _build_constraint_meta(
                         contract_id,
                         field_name,
-                        f"{dn} must be a valid {format_val}",
-                        f"{dn} values must be in {format_val} format",
+                        f"{field_name} must be a valid {format_val}",
+                        f"{field_name} values must be in {format_val} format",
                         "conformity",
                     ),
                 )
@@ -494,8 +510,8 @@ def add_field_expectations(
                 _build_constraint_meta(
                     contract_id,
                     field_name,
-                    f"{dn} must belong to allowed values",
-                    f"{dn} must be in the set of allowed values",
+                    f"{field_name} must belong to allowed values",
+                    f"{field_name} must be in the set of allowed values",
                     "conformity",
                 ),
             )
