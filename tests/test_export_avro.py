@@ -1,6 +1,7 @@
 import json
 
 from datacontract_specification.model import DataContractSpecification
+from open_data_contract_standard.model import SchemaObject, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -98,6 +99,22 @@ def test_to_field_map():
     result = to_avro_schema_json(model.name, model)
 
     assert json.loads(result) == json.loads(expected_avro_schema)
+
+
+def test_to_avro_schema_uses_physical_name():
+    schema = SchemaObject(
+        name="equipment",
+        properties=[
+            SchemaProperty(name="Equipment Name", physicalName="name", logicalType="string", required=True),
+            SchemaProperty(name="location", logicalType="string", required=False),
+        ],
+    )
+
+    result = json.loads(to_avro_schema_json("equipment", schema))
+
+    # physicalName wins over the logical name; falls back to name when unset
+    field_names = [field["name"] for field in result["fields"]]
+    assert field_names == ["name", "location"]
 
 
 def test_to_field_float():

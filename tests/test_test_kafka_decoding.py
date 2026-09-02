@@ -11,12 +11,32 @@ from open_data_contract_standard.model import SchemaObject, SchemaProperty
 from datacontract.config import Config
 from datacontract.engines.ibis.connections.kafka import (
     _avro_type_to_arrow,
+    _consumer_config,
     _decode_json,
     _group_by_writer_schema,
     get_auth_options,
     to_arrow_type,
 )
 from datacontract.model.exceptions import DataContractException
+
+
+def _mock_server():
+    from unittest.mock import MagicMock
+
+    server = MagicMock()
+    server.host = "localhost:9092"
+    return server
+
+
+def test_consumer_config_uses_default_prefix_when_unset():
+    result = _consumer_config(_mock_server(), Config())
+    assert result["group.id"].startswith("datacontract-cli-")
+
+
+def test_consumer_config_uses_custom_prefix():
+    result = _consumer_config(_mock_server(), Config(kafka_group_prefix="my-team-"))
+    assert result["group.id"].startswith("my-team-")
+    assert not result["group.id"].startswith("datacontract-cli-")
 
 
 def test_auth_options_are_empty_without_credentials():

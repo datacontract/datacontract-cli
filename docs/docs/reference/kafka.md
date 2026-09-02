@@ -36,6 +36,7 @@ If no username/password is set, the CLI connects without authentication (e.g. a 
 |---|---|---|
 | `DATACONTRACT_KAFKA_MAX_MESSAGES` | `100000` | Stop after this many messages. Unset by default: the whole topic is read |
 | `DATACONTRACT_KAFKA_TIMEOUT` | `30` | Seconds to wait for a message before giving up. Default `30`; the timer resets whenever a message arrives, so a slow read is never cut short |
+| `DATACONTRACT_KAFKA_GROUP_PREFIX` | `my-team-` | Replaces the default `datacontract-cli-` consumer group prefix. A UUID is still appended so each run gets a unique group ID. Useful when the service account's ACLs restrict which consumer group prefixes it may use |
 
 Every partition is read from its earliest offset up to the latest offset at the time the run starts, so messages produced while the checks are running are not included. Offsets are never committed, and each run uses its own consumer group, so testing a topic does not disturb a real consumer. Messages with no value (compaction tombstones) are skipped.
 

@@ -222,11 +222,12 @@ def _resolve_offsets(consumer, topic: str, server: Server, TopicPartition) -> Tu
 
 def _consumer_config(server: Server, config: Config) -> dict:
     """librdkafka settings for a one-off, read-only, non-committing consumer."""
+    prefix = config.get_kafka_group_prefix() or "datacontract-cli-"
     settings = {
         "bootstrap.servers": server.host,
         # A fresh group id per run, with commits off, so a test run never
         # interferes with the offsets of a real consumer group.
-        "group.id": f"datacontract-cli-{uuid.uuid4()}",
+        "group.id": f"{prefix}{uuid.uuid4()}",
         "enable.auto.commit": False,
         "auto.offset.reset": "earliest",
         # Report end-of-partition so the read knows when the topic is exhausted.

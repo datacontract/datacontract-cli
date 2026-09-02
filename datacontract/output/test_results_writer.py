@@ -73,6 +73,11 @@ def write_test_result(
         console.print(
             f"🟢 data contract is valid. Run {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
+    elif run.result == "skipped":
+        console.print(
+            f"⚪ no checks were executed. Planned {len(run.checks)} checks. "
+            f"Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
+        )
     elif run.result == "warning":
         console.print("🟠 data contract has warnings. Found the following warnings:")
         i = 1

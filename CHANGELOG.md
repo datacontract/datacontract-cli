@@ -8,14 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add `DATACONTRACT_KAFKA_GROUP_PREFIX` environment variable to customise the consumer group ID prefix used during Kafka testing (#1553)
 - `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514)
 - `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status`
 - `datacontract export great-expectations` covers the `logicalTypeOptions` constraints, attaches contract metadata to every expectation, checks the column set instead of the column order and takes a `--suite-name` (#1544)
+- `datacontract test --dry-run` reports the checks a run would execute without connecting to the server or reading any data (#1510)
 
 ### Fixed
+- `datacontract export jsonschema`, `datacontract export avro` and `datacontract test` on local files use a property's `physicalName` as the field name when set, instead of the logical `name` (#1494)
 - `datacontract import sql` takes the server's `database` and `schema` from a qualified `CREATE TABLE`, instead of always writing placeholders (#651)
 - `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529)
 - `datacontract test` now supports ISO 8601 retention periods correctly (previously, only the first component was considered) (#1538)
+- `datacontract test` reports each freshness and retention check result on its own check, instead of writing every result to the first one (#1515)
 
 ## [1.1.2] - 2026-08-26
 
@@ -80,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
 - `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
 - `datacontract export pydantic-model` no longer emits an unparseable empty class for an object property without properties
+- An empty `--publish` value now means "don't publish" instead of failing with a URL validation error
 
 ## [1.1.0] - 2026-08-04
 

@@ -218,6 +218,13 @@ def test(
             "Checks that read row values are skipped."
         ),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            help="Report the checks that would run, without connecting to the server or reading any data. "
+            "Reported checks have the result 'skipped', or 'warning' where a check could not be planned."
+        ),
+    ] = False,
     include_failed_samples: Annotated[
         bool,
         typer.Option(
@@ -243,7 +250,7 @@ def test(
     Run schema and quality tests on configured servers.
     """
     enable_debug_logging(debug, otherwise_disable_stderr=True)
-    validate_publish_url(publish)
+    publish = validate_publish_url(publish)
 
     check_categories = _parse_enum_csv(
         checks,
@@ -284,6 +291,7 @@ def test(
         filter=filter,
         filters=parsed_filters,
         metadata_only=metadata_only,
+        dry_run=dry_run,
     ).test()
     if logs:
         _print_logs(run)

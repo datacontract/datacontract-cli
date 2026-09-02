@@ -269,7 +269,7 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.2.2",
+  "moto==5.2.3",
   "openapi-spec-validator>=0.7,<0.10",  # asserts that `datacontract api` serves a valid OpenAPI document
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
@@ -282,7 +282,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.16.4",
+  "ruff==0.16.5",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.339.0",
 ]

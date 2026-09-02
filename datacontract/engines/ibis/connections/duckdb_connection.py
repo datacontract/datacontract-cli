@@ -215,7 +215,7 @@ def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     columns = {}
     if schema_obj.properties:
         for prop in schema_obj.properties:
-            columns[prop.name] = convert_to_duckdb_csv_type(prop)
+            columns[prop.physicalName or prop.name] = convert_to_duckdb_csv_type(prop)
     return columns
 
 
@@ -226,7 +226,7 @@ def to_parquet_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     columns = {}
     if schema_obj.properties:
         for prop in schema_obj.properties:
-            columns[prop.name] = convert_to_duckdb(prop)
+            columns[prop.physicalName or prop.name] = convert_to_duckdb(prop)
     return columns
 
 
@@ -236,7 +236,7 @@ def to_json_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     columns = {}
     if schema_obj.properties:
         for prop in schema_obj.properties:
-            columns[prop.name] = convert_to_duckdb_json_type(prop)
+            columns[prop.physicalName or prop.name] = convert_to_duckdb_json_type(prop)
     return columns
 
 
@@ -263,16 +263,17 @@ def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properti
         elif field_type == "object" and (prop.properties is None or len(prop.properties) == 0):
             continue
 
-        nested_model_name = f"{model_name}__{prop.name}"
+        field_name = prop.physicalName or prop.name
+        nested_model_name = f"{model_name}__{field_name}"
         max_depth = 2 if field_type == "array" else 1
 
         ## if parent field is not required, the nested objects may resolve
         ## to a row of NULLs -- but if the objects themselves have required
         ## fields, this will fail the check.
-        where = "" if prop.required else f" WHERE {prop.name} IS NOT NULL"
+        where = "" if prop.required else f" WHERE {field_name} IS NOT NULL"
         con.sql(f"""
             CREATE VIEW IF NOT EXISTS "{nested_model_name}" AS
-            SELECT unnest({prop.name}, max_depth := {max_depth}) as {prop.name} FROM "{model_name}" {where}
+            SELECT unnest({field_name}, max_depth := {max_depth}) as {field_name} FROM "{model_name}" {where}
             """)
         if field_type == "array":
             add_nested_views(con, nested_model_name, prop.items.properties if prop.items else None)

@@ -69,6 +69,31 @@ def test_servicelevel_checks_fall_back_to_names_without_physical_names():
     assert check.field == "ts"
 
 
+def test_multiple_servicelevel_promises_get_distinct_keys():
+    """Each promise needs its own key, or every result lands on the first check (#1515)."""
+    schema = SchemaObject(
+        name="events",
+        properties=[
+            SchemaProperty(name="ts", logicalType="timestamp"),
+            SchemaProperty(name="updated", logicalType="timestamp"),
+        ],
+    )
+    contract = _contract(
+        schema,
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value=48, unit="h"),
+        ServiceLevelAgreementProperty(property="freshness", element="events.updated", value=2, unit="h"),
+        ServiceLevelAgreementProperty(property="retention", element="events.ts", value=1, unit="y"),
+        ServiceLevelAgreementProperty(property="retention", element="events.updated", value=2, unit="y"),
+    )
+
+    checks = create_checks(contract, Server(server="s", type="snowflake"))
+
+    freshness_keys = [c.key for c in _of_type(checks, "servicelevel_freshness")]
+    retention_keys = [c.key for c in _of_type(checks, "servicelevel_retention")]
+    assert freshness_keys == ["events__ts__servicelevel_freshness", "events__updated__servicelevel_freshness"]
+    assert retention_keys == ["events__ts__servicelevel_retention", "events__updated__servicelevel_retention"]
+
+
 def test_servicelevel_checks_keep_kafka_logical_name():
     """to_schema_name reads the Spark SQL view (logical name) on kafka, not the topic."""
     schema = SchemaObject(

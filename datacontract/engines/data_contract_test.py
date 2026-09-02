@@ -20,7 +20,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.run import ResultEnum, Run
+from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import resolve_server_overrides
 
 
@@ -39,6 +39,7 @@ def execute_data_contract_test(
     filter: str | None = None,
     filters: dict[str, str] | None = None,
     metadata_only: bool = False,
+    dry_run: bool = False,
     config: Config | None = None,
     untrusted_contract: bool = False,
 ):
@@ -78,7 +79,18 @@ def execute_data_contract_test(
         check_that_quality_ids_exist(data_contract, quality_ids, schema_name)
 
     if server.type == "api":
-        server = process_api_response(run, server, config)
+        if dry_run:
+            # A dry run reads nothing, so the response that would become the
+            # local file is never fetched; stand in the server it would return.
+            server = Server(
+                server="api_local",
+                type="local",
+                format="json",
+                path="(not fetched: dry run)",
+                delimiter=server.delimiter,
+            )
+        else:
+            server = process_api_response(run, server, config)
 
     model_filters = resolve_row_filters(data_contract, server, run, filter, filters, schema_name)
 
@@ -114,18 +126,25 @@ def execute_data_contract_test(
                 executable.append(spec)
         specs = executable
 
+    if dry_run:
+        _report_dry_run(
+            run,
+            data_contract,
+            server,
+            specs,
+            schema_name=schema_name,
+            check_categories=check_categories,
+            dimensions=dimensions,
+            quality_ids=quality_ids,
+            tags=tags,
+            config=config,
+        )
+        return
+
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
-    if server.format == "json" and server.type != "kafka":
-        # The JSON Schema validation emits checks of type "schema" throughout,
-        # so it is out of scope once a quality rule is selected by id or tag.
-        if (
-            (check_categories is None or "schema" in check_categories)
-            and (dimensions is None or default_dimension("schema") in dimensions)
-            and quality_ids is None
-            and tags is None
-        ):
-            check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
     # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
     if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
         check_azure_blob_file(
@@ -269,6 +288,71 @@ def get_server(data_contract: OpenDataContractStandard, server_name: str = None)
     else:
         server = data_contract.servers[0] if data_contract.servers else None
     return server
+
+
+def _runs_jsonschema_checks(
+    server: Server,
+    check_categories: set[str] | None,
+    dimensions: set[str] | None,
+    quality_ids: set[str] | None,
+    tags: set[str] | None,
+) -> bool:
+    """Whether the JSON Schema validation applies to this run.
+
+    Shared by the execution path and the dry run so a plan cannot disagree with
+    what actually runs. The JSON Schema validation emits checks of type "schema"
+    throughout, so it is out of scope once a quality rule is selected by id or tag.
+    """
+    if server.format != "json" or server.type == "kafka":
+        return False
+    return (
+        (check_categories is None or "schema" in check_categories)
+        and (dimensions is None or default_dimension("schema") in dimensions)
+        and quality_ids is None
+        and tags is None
+    )
+
+
+def _report_dry_run(
+    run,
+    data_contract: OpenDataContractStandard,
+    server: Server,
+    specs,
+    schema_name: str = "all",
+    check_categories: set[str] | None = None,
+    dimensions: set[str] | None = None,
+    quality_ids: set[str] | None = None,
+    tags: set[str] | None = None,
+    config: Config | None = None,
+) -> None:
+    """Report the checks a run would execute, without reading any data.
+
+    Every check is already registered as a stub by this point, so the plan is
+    the stub list with a result. The JSON Schema checks are added here too: the
+    schema is still built and compiled, which is what makes a dry run able to
+    catch a contract that could never validate, but no file is read.
+    """
+    run.dryRun = True
+    for spec in specs:
+        set_result(run, spec.key, ResultEnum.skipped, "Dry run: check not executed")
+
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, dry_run=True)
+
+    # The blob checks read file metadata to decide which checks exist at all,
+    # so they cannot be planned without reading. Say so rather than reporting a
+    # plan that is quietly missing them.
+    if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
+        run.checks.append(
+            Check(
+                type="schema",
+                name="Check that blob files match the contract",
+                result=ResultEnum.warning,
+                reason="Checks for Azure Blob storage are not considered in dry runs.",
+                engine="datacontract-cli",
+            )
+        )
+        run.log_warn("dry run: file-metadata checks for blob schemas are not included in the plan")
 
 
 def process_api_response(run, server, config: Config | None = None):
