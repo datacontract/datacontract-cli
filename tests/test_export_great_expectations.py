@@ -61,19 +61,15 @@ def data_contract_great_expectations_quality_column() -> OpenDataContractStandar
 def expected_json_suite() -> Dict[str, Any]:
     _col_meta = lambda col, typ: {  # noqa: E731
         "expectation_id": f"my-data-contract-id.{col}.{col}_must_be_of_type_{typ}",
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be of type {typ}",
         "dimension": "conformity",
-        "severity": "critical",
-        "checkType": "technical",
     }
     _not_null = lambda col: {  # noqa: E731
         "expectation_id": f"my-data-contract-id.{col}.{col}_must_be_filled",
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be filled",
         "dimension": "completeness",
-        "severity": "critical",
-        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -83,7 +79,7 @@ def expected_json_suite() -> Dict[str, Any]:
                 "kwargs": {"min_value": 10},
                 "meta": {
                     "expectation_id": "my-data-contract-id.quality_rule",
-                    "rule_location": "quality_table",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "table"},
                 },
             },
             {
@@ -128,7 +124,7 @@ def expected_json_suite_table_quality() -> Dict[str, Any]:
                 "kwargs": {"min_value": 10},
                 "meta": {
                     "expectation_id": "my-data-contract-id.quality_rule",
-                    "rule_location": "quality_table",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "table"},
                 },
             },
             {
@@ -137,11 +133,9 @@ def expected_json_suite_table_quality() -> Dict[str, Any]:
                 "kwargs": {"column": "order_id", "type_": "string"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.order_id.order_id_must_be_of_type_string",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "order_id must be of type string",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -150,11 +144,9 @@ def expected_json_suite_table_quality() -> Dict[str, Any]:
                 "kwargs": {"column": "order_id"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.order_id.order_id_must_be_filled",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "order_id must be filled",
                     "dimension": "completeness",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
         ],
@@ -177,11 +169,9 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 "kwargs": {"column": "id", "type_": "string"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.id.id_must_be_of_type_string",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "id must be of type string",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -190,11 +180,9 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 "kwargs": {"column": "id"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.id.id_must_be_filled_primary_key",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "id must be filled (primary key)",
                     "dimension": "completeness",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -203,11 +191,9 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 "kwargs": {"column": "id"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.id.id_must_be_unique_primary_key",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "id must be unique (primary key)",
                     "dimension": "uniqueness",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             # --- type: string, required, enum + quality block ---
@@ -217,11 +203,9 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 "kwargs": {"column": "type", "type_": "string"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.type.type_must_be_of_type_string",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "type must be of type string",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -230,11 +214,9 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 "kwargs": {"column": "type"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.type.type_must_be_filled",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "type must be filled",
                     "dimension": "completeness",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -243,11 +225,9 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 "kwargs": {"column": "type", "value_set": ["A", "B", "C", "D", "E"]},
                 "meta": {
                     "expectation_id": "my-data-contract-id.type.type_must_belong_to_allowed_values",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "type must belong to allowed values",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             # Bug fix: column is in kwargs, not at root level
@@ -257,7 +237,7 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
                 "kwargs": {"value": 1, "column": "type"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.type.accepted_values_for_type",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "column"},
                     "notes": "Ensures that column length is 1.",
                 },
             },
@@ -272,11 +252,9 @@ def expected_json_suite_with_enum() -> Dict[str, Any]:
 @pytest.fixture
 def expected_spark_engine() -> Dict[str, Any]:
     _not_null = lambda col: {  # noqa: E731
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be filled",
         "dimension": "completeness",
-        "severity": "critical",
-        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -286,7 +264,7 @@ def expected_spark_engine() -> Dict[str, Any]:
                 "kwargs": {"min_value": 10},
                 "meta": {
                     "expectation_id": "my-data-contract-id.quality_rule",
-                    "rule_location": "quality_table",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "table"},
                 },
             },
             {
@@ -295,11 +273,9 @@ def expected_spark_engine() -> Dict[str, Any]:
                 "kwargs": {"column": "order_id", "type_": "StringType"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.order_id.order_id_must_be_of_type_stringtype",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "order_id must be of type StringType",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -317,11 +293,9 @@ def expected_spark_engine() -> Dict[str, Any]:
                 "kwargs": {"column": "processed_timestamp", "type_": "TimestampType"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_of_type_timestamptype",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "processed_timestamp must be of type TimestampType",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -344,11 +318,9 @@ def expected_spark_engine() -> Dict[str, Any]:
 @pytest.fixture
 def expected_pandas_engine() -> Dict[str, Any]:
     _not_null = lambda col: {  # noqa: E731
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be filled",
         "dimension": "completeness",
-        "severity": "critical",
-        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -358,7 +330,7 @@ def expected_pandas_engine() -> Dict[str, Any]:
                 "kwargs": {"min_value": 10},
                 "meta": {
                     "expectation_id": "my-data-contract-id.quality_rule",
-                    "rule_location": "quality_table",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "table"},
                 },
             },
             {
@@ -367,11 +339,9 @@ def expected_pandas_engine() -> Dict[str, Any]:
                 "kwargs": {"column": "order_id", "type_": "str"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.order_id.order_id_must_be_of_type_str",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "order_id must be of type str",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -389,11 +359,9 @@ def expected_pandas_engine() -> Dict[str, Any]:
                 "kwargs": {"column": "processed_timestamp", "type_": "datetime64[ns]"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_of_type_datetime64_ns",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "processed_timestamp must be of type datetime64[ns]",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -416,11 +384,9 @@ def expected_pandas_engine() -> Dict[str, Any]:
 @pytest.fixture
 def expected_sql_engine() -> Dict[str, Any]:
     _not_null = lambda col: {  # noqa: E731
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be filled",
         "dimension": "completeness",
-        "severity": "critical",
-        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -430,7 +396,7 @@ def expected_sql_engine() -> Dict[str, Any]:
                 "kwargs": {"min_value": 10},
                 "meta": {
                     "expectation_id": "my-data-contract-id.quality_rule",
-                    "rule_location": "quality_table",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "table"},
                 },
             },
             {
@@ -439,11 +405,9 @@ def expected_sql_engine() -> Dict[str, Any]:
                 "kwargs": {"column": "order_id", "type_": "STRING"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.order_id.order_id_must_be_of_type_string",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "order_id must be of type STRING",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -461,11 +425,9 @@ def expected_sql_engine() -> Dict[str, Any]:
                 "kwargs": {"column": "processed_timestamp", "type_": "TIMESTAMP_TZ"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_of_type_timestamp_tz",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "processed_timestamp must be of type TIMESTAMP_TZ",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -488,11 +450,9 @@ def expected_sql_engine() -> Dict[str, Any]:
 @pytest.fixture
 def expected_sql_trino_engine() -> Dict[str, Any]:
     _not_null = lambda col: {  # noqa: E731
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be filled",
         "dimension": "completeness",
-        "severity": "critical",
-        "checkType": "technical",
     }
     return {
         "name": "orders.1.0.0",
@@ -502,7 +462,7 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
                 "kwargs": {"min_value": 10},
                 "meta": {
                     "expectation_id": "my-data-contract-id.quality_rule",
-                    "rule_location": "quality_table",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "table"},
                 },
             },
             {
@@ -511,11 +471,9 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
                 "kwargs": {"column": "order_id", "type_": "varchar"},
                 "meta": {
                     "expectation_id": "my-data-contract-id.order_id.order_id_must_be_of_type_varchar",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "order_id must be of type varchar",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -536,11 +494,9 @@ def expected_sql_trino_engine() -> Dict[str, Any]:
                 },
                 "meta": {
                     "expectation_id": "my-data-contract-id.processed_timestamp.processed_timestamp_must_be_of_type_timestamp_3_with_time_zone",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "processed_timestamp must be of type timestamp(3) with time zone",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             {
@@ -574,11 +530,9 @@ def test_to_great_expectation(data_contract_basic: OpenDataContractStandard):
             "kwargs": kwargs,
             "meta": {
                 "expectation_id": expectation_id,
-                "rule_location": "quality_column",
+                "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                 "name": name,
                 "dimension": dimension,
-                "severity": "critical",
-                "checkType": "technical",
             },
         }
 
@@ -712,31 +666,25 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
     def _col_type(col, dn, t):
         return {
             "expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be of type ' + t)}",
-            "rule_location": "quality_column",
+            "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
             "name": f"{dn} must be of type {t}",
             "dimension": "conformity",
-            "severity": "critical",
-            "checkType": "technical",
         }
 
     def _not_null(col, dn):
         return {
             "expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be filled')}",
-            "rule_location": "quality_column",
+            "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
             "name": f"{dn} must be filled",
             "dimension": "completeness",
-            "severity": "critical",
-            "checkType": "technical",
         }
 
     def _unique_meta(col, dn):
         return {
             "expectation_id": f"{_cid}.{col}.{_sk(dn + ' must be unique')}",
-            "rule_location": "quality_column",
+            "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
             "name": f"{dn} must be unique",
             "dimension": "uniqueness",
-            "severity": "critical",
-            "checkType": "technical",
         }
 
     # order_id uses column name for display (businessName "Order ID" is ignored)
@@ -770,11 +718,9 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                 "kwargs": {"column": "order_id", "regex": _uuid_regex},
                 "meta": {
                     "expectation_id": f"{_cid}.order_id.{_sk(oid + ' must be a valid uuid')}",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": f"{oid} must be a valid uuid",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             # order_timestamp: timestamp, required
@@ -816,11 +762,9 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                 "kwargs": {"column": "customer_id", "min_value": 10, "max_value": 20},
                 "meta": {
                     "expectation_id": f"{_cid}.customer_id.{_sk('customer_id length must be between 10 and 20')}",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "customer_id length must be between 10 and 20",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             # customer_email_address: text, required, format=email
@@ -842,11 +786,9 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                 "kwargs": {"column": "customer_email_address", "regex": _email_regex},
                 "meta": {
                     "expectation_id": f"{_cid}.customer_email_address.{_sk('customer_email_address must be a valid email')}",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": "customer_email_address must be a valid email",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
         ],
@@ -894,11 +836,9 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                 "kwargs": {"column": "order_id", "regex": _uuid_regex},
                 "meta": {
                     "expectation_id": f"{_cid}.order_id.{_sk(oid + ' must be a valid uuid')}",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": f"{oid} must be a valid uuid",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
             # sku: text, pattern from definition ref
@@ -914,11 +854,9 @@ def test_to_great_expectation_complex(data_contract_complex: OpenDataContractSta
                 "kwargs": {"column": "sku", "regex": "^[A-Za-z0-9]{8,14}$"},
                 "meta": {
                     "expectation_id": f"{_cid}.sku.{_sk(sku_dn + ' must match pattern ^[A-Za-z0-9]{8,14}$')}",
-                    "rule_location": "quality_column",
+                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
                     "name": f"{sku_dn} must match pattern ^[A-Za-z0-9]{{8,14}}$",
                     "dimension": "conformity",
-                    "severity": "critical",
-                    "checkType": "technical",
                 },
             },
         ],
@@ -955,19 +893,15 @@ def test_to_great_expectation_custom_name(
     """
     _not_null = lambda col: {  # noqa: E731
         "expectation_id": f"my-data-contract-id.{col}.{col}_must_be_filled",
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be filled",
         "dimension": "completeness",
-        "severity": "critical",
-        "checkType": "technical",
     }
     _col_type = lambda col, t: {  # noqa: E731
         "expectation_id": f"my-data-contract-id.{col}.{col}_must_be_of_type_{t}",
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": f"{col} must be of type {t}",
         "dimension": "conformity",
-        "severity": "critical",
-        "checkType": "technical",
     }
     expected = {
         "name": "my_expectation_suite_name",
@@ -977,7 +911,7 @@ def test_to_great_expectation_custom_name(
                 "kwargs": {"min_value": 10},
                 "meta": {
                     "expectation_id": "my-data-contract-id.quality_rule",
-                    "rule_location": "quality_table",
+                    "data_contract_rule_location": {"origin": "quality_block", "scope": "table"},
                 },
             },
             {
@@ -1191,7 +1125,7 @@ def test_primary_key_generates_not_null_and_unique(data_contract_all_constraints
         and e.get("meta", {}).get("expectation_id")
         == "test-all-constraints.product_id.product_id_must_be_filled_primary_key"
     )
-    assert pk_not_null["meta"]["rule_location"] == "quality_column"
+    assert pk_not_null["meta"]["data_contract_rule_location"] == {"origin": "schema_inferred", "scope": "column"}
     assert pk_not_null["meta"]["dimension"] == "completeness"
     assert "must be filled (primary key)" in pk_not_null["meta"]["name"]
 
@@ -1219,7 +1153,7 @@ def test_required_generates_not_null(data_contract_all_constraints: OpenDataCont
         if e["type"] == "expect_column_values_to_not_be_null"
         and e.get("meta", {}).get("expectation_id") == "test-all-constraints.email.email_must_be_filled"
     )
-    assert required_not_null["meta"]["rule_location"] == "quality_column"
+    assert required_not_null["meta"]["data_contract_rule_location"] == {"origin": "schema_inferred", "scope": "column"}
     assert required_not_null["meta"]["dimension"] == "completeness"
     assert "must be filled" in required_not_null["meta"]["name"]
     assert "must be not null values" in required_not_null["description"]
@@ -1237,7 +1171,7 @@ def test_unique_generates_unique_expectation(data_contract_all_constraints: Open
         == "test-all-constraints.product_id.product_id_must_be_unique_primary_key"
     )
     assert unique_exp["meta"]["dimension"] == "uniqueness"
-    assert unique_exp["meta"]["rule_location"] == "quality_column"
+    assert unique_exp["meta"]["data_contract_rule_location"] == {"origin": "schema_inferred", "scope": "column"}
     assert "must be unique (primary key)" in unique_exp["meta"]["name"]
 
 
@@ -1299,6 +1233,48 @@ def test_string_format_url(data_contract_all_constraints: OpenDataContractStanda
         if e["type"] == "expect_column_values_to_match_regex" and e.get("kwargs", {}).get("column") == "website"
     )
     assert url_exp["meta"]["expectation_id"] == "test-all-constraints.website.website_must_be_a_valid_url"
+
+
+def test_string_format_ipv4_and_dropped_formats():
+    """format: ipv4 must still generate a regex expectation; ipv6/hostname are no longer supported formats."""
+    from open_data_contract_standard.model import OpenDataContractStandard
+
+    yaml_content = """
+kind: DataContract
+apiVersion: v3.1.0
+id: test-format-map
+version: 1.0.0
+schema:
+  - name: tbl
+    properties:
+      - name: ip_address
+        logicalType: string
+        logicalTypeOptions:
+          format: ipv4
+      - name: ip6_address
+        logicalType: string
+        logicalTypeOptions:
+          format: ipv6
+      - name: host
+        logicalType: string
+        logicalTypeOptions:
+          format: hostname
+"""
+    import os
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        f.write(yaml_content)
+        path = f.name
+    try:
+        contract = OpenDataContractStandard.from_file(path)
+        result = json.loads(to_great_expectations(contract, "tbl"))
+        regex_columns = {
+            e["kwargs"]["column"] for e in result["expectations"] if e["type"] == "expect_column_values_to_match_regex"
+        }
+        assert regex_columns == {"ip_address"}
+    finally:
+        os.unlink(path)
 
 
 def test_numeric_value_range(data_contract_all_constraints: OpenDataContractStandard):
@@ -1382,23 +1358,26 @@ def test_date_value_range(data_contract_all_constraints: OpenDataContractStandar
 
 
 def test_table_quality_enriched_meta(data_contract_all_constraints: OpenDataContractStandard):
-    """Table-level quality blocks must have enriched meta with rule_location=quality_table."""
+    """Table-level quality blocks must have enriched meta with data_contract_rule_location scope=table."""
     result = json.loads(to_great_expectations(data_contract_all_constraints, "products"))
     row_count_exp = next(e for e in result["expectations"] if e["type"] == "expect_table_row_count_to_be_between")
-    assert row_count_exp["meta"]["rule_location"] == "quality_table"
+    assert row_count_exp["meta"]["data_contract_rule_location"] == {"origin": "quality_block", "scope": "table"}
     assert row_count_exp["meta"]["expectation_id"] == "test-all-constraints.row_count_check"
     assert row_count_exp["kwargs"]["min_value"] == 1
     assert row_count_exp["kwargs"]["max_value"] == 1000000
 
 
 def test_quality_meta_custom_properties(data_contract_quality_meta: OpenDataContractStandard):
-    """customProperties in quality blocks must be flattened into the expectation meta."""
+    """customProperties in quality blocks must be nested under meta.data_contract_custom_properties."""
     result = json.loads(to_great_expectations(data_contract_quality_meta, "orders"))
     status_exp = next(e for e in result["expectations"] if e["type"] == "expect_column_values_to_be_in_set")
-    assert status_exp["meta"]["ruleWeight"] == 10
-    assert status_exp["meta"]["businessOwner"] == "revenue-team"
+    custom_properties = status_exp["meta"]["data_contract_custom_properties"]
+    assert custom_properties["ruleWeight"] == 10
+    assert custom_properties["businessOwner"] == "revenue-team"
+    assert custom_properties["check_type"] == "business"
+    assert "checkType" not in custom_properties
     assert status_exp["meta"]["expectation_id"] == "test-quality-meta.subscription_status.subscription_status_values"
-    assert status_exp["meta"]["rule_location"] == "quality_column"
+    assert status_exp["meta"]["data_contract_rule_location"] == {"origin": "quality_block", "scope": "column"}
 
 
 def test_column_not_duplicated_outside_kwargs(data_contract_quality_meta: OpenDataContractStandard):

@@ -22,13 +22,21 @@ _FORMAT_REGEX_MAP: Dict[str, str] = {
     "uuid": r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
     "uri": r"^[a-zA-Z][a-zA-Z0-9+\-.]*:[^\s]*$",
     "url": r"^https?://[^\s/$.?#][^\s]*$",
-    "hostname": r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$",
     "ipv4": r"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
-    "ipv6": r"^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$",
 }
 
-# Fields excluded when extracting quality block metadata into the GE meta dict
-_QUALITY_META_EXCLUDED_FIELDS = {"type", "engine", "implementation"}
+# Only these DataQuality fields are surfaced in the GE meta dict (allowlist, not exclude-list)
+_QUALITY_META_ALLOWED_FIELDS = {
+    "id",
+    "name",
+    "description",
+    "dimension",
+    "severity",
+    "businessImpact",
+    "customProperties",
+    "scheduler",
+    "schedule",
+}
 
 
 class GreatExpectationsEngine(str, Enum):
@@ -58,22 +66,6 @@ class GreatExpectationsExporter(Exporter):
         schema_name, _ = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         sql_server_type = "snowflake" if sql_server_type == "auto" else sql_server_type
         return to_great_expectations(data_contract, schema_name, expectation_suite_name, engine, sql_server_type)
-
-
-def _get_type(prop: SchemaProperty) -> Optional[str]:
-    """Get the physical type, or fall back to the logical type, for a property.
-
-    Args:
-        prop: Schema property whose type is read.
-
-    Returns:
-        str | None: The physical or logical type, or ``None`` when neither is defined.
-    """
-    if prop.physicalType:
-        return prop.physicalType
-    if prop.logicalType:
-        return prop.logicalType
-    return None
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -146,8 +138,6 @@ def _build_constraint_meta(
     name: str,
     description: str,
     dimension: str,
-    severity: str = "critical",
-    checkType: str = "technical",
 ) -> Dict[str, Any]:
     """Build metadata for an automatically generated constraint expectation.
 
@@ -157,20 +147,16 @@ def _build_constraint_meta(
         name: Human-readable expectation name.
         description: Human-readable expectation description.
         dimension: Data quality dimension represented by the constraint.
-        severity: Severity level for the constraint (default: "critical").
-        checkType: Type of check (default: "technical").
 
     Returns:
         dict[str, Any]: Great Expectations metadata, including its generated identifier.
     """
     return {
         "expectation_id": _build_expectation_id(contract_id, column_name, _to_snake_case(name)),
-        "rule_location": "quality_column",
+        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "column"},
         "name": name,
         "description": description,
         "dimension": dimension,
-        "severity": severity,
-        "checkType": checkType,
     }
 
 
@@ -192,26 +178,29 @@ def _extract_quality_meta(
     # Use name field first (more stable), fall back to description, then generic default
     rule_name_raw = getattr(quality, "name", None) or quality.description or "quality_rule"
     rule_name = _to_snake_case(rule_name_raw)
-    rule_location = "quality_column" if column_name else "quality_table"
+    scope = "column" if column_name else "table"
 
     meta: Dict[str, Any] = {
         "expectation_id": _build_expectation_id(contract_id, column_name, rule_name),
-        "rule_location": rule_location,
+        "data_contract_rule_location": {"origin": "quality_block", "scope": scope},
     }
 
-    # Extract all quality fields except excluded ones (type, engine, implementation)
+    # Only surface allowlisted DataQuality fields in meta
     quality_dict = quality.model_dump(exclude_none=True)
 
     for key, value in quality_dict.items():
-        if key in _QUALITY_META_EXCLUDED_FIELDS:
+        if key not in _QUALITY_META_ALLOWED_FIELDS:
             continue
         if key == "customProperties" and isinstance(value, list):
-            # Flatten property/value pairs directly into meta
+            custom_properties = {}
             for cp in value:
                 prop_key = cp.get("property") if isinstance(cp, dict) else getattr(cp, "property", None)
                 prop_val = cp.get("value") if isinstance(cp, dict) else getattr(cp, "value", None)
                 if prop_key:
-                    meta[prop_key] = prop_val
+                    # checkType is renamed here only; the source contract keeps its original key
+                    custom_properties["check_type" if prop_key == "checkType" else prop_key] = prop_val
+            if custom_properties:
+                meta["data_contract_custom_properties"] = custom_properties
         else:
             meta[key] = value
 
@@ -258,64 +247,22 @@ def to_great_expectations(
     if schema.quality:
         expectations.extend(get_quality_checks(schema.quality, None, contract_id))
 
-    expectations.extend(model_to_expectations(schema.properties or [], engine, sql_server_type, contract_id))
+    for prop in schema.properties or []:
+        add_field_expectations(prop.name, prop, expectations, engine, sql_server_type, contract_id)
+        if prop.quality:
+            expectations.extend(get_quality_checks(prop.quality, prop.name, contract_id))
 
-    return to_suite(expectations, expectation_suite_name, contract_id=contract_id, contract_version=odcs.version or "")
-
-
-def to_suite(
-    expectations: List[Dict[str, Any]],
-    expectation_suite_name: str,
-    contract_id: str = "",
-    contract_version: str = "",
-) -> str:
-    """Serialize expectations as a Great Expectations suite JSON string.
-
-    Args:
-        expectations: Expectations to include in the suite.
-        expectation_suite_name: Name assigned to the expectation suite.
-        contract_id: Data contract identifier for metadata enrichment.
-        contract_version: Data contract version for metadata enrichment.
-
-    Returns:
-        str: Indented JSON representation of the expectation suite.
-    """
     return json.dumps(
         {
             "name": expectation_suite_name,
             "expectations": expectations,
             "meta": {
                 "contract_id": contract_id,
-                "contract_version": contract_version,
+                "contract_version": odcs.version or "",
             },
         },
         indent=2,
     )
-
-
-def model_to_expectations(
-    properties: List[SchemaProperty],
-    engine: str | None,
-    sql_server_type: str,
-    contract_id: str = "",
-) -> List[Dict[str, Any]]:
-    """Build expectations for every property in a schema.
-
-    Args:
-        properties: Schema properties to convert.
-        engine: Optional Great Expectations execution engine.
-        sql_server_type: SQL dialect used for SQL engine type conversion.
-        contract_id: Data contract identifier used in expectation metadata.
-
-    Returns:
-        list[dict[str, Any]]: Expectations derived from property constraints and quality rules.
-    """
-    expectations = []
-    for prop in properties:
-        add_field_expectations(prop.name, prop, expectations, engine, sql_server_type, contract_id)
-        if prop.quality:
-            expectations.extend(get_quality_checks(prop.quality, prop.name, contract_id))
-    return expectations
 
 
 def add_field_expectations(
@@ -340,7 +287,7 @@ def add_field_expectations(
         list[dict[str, Any]]: The provided collection after generated expectations are appended.
     """
     dn = field_name
-    prop_type = _get_type(prop)
+    prop_type = prop.physicalType or prop.logicalType
     if prop_type is not None:
         if engine == GreatExpectationsEngine.spark.value:
             from datacontract.export.spark_exporter import to_spark_data_type

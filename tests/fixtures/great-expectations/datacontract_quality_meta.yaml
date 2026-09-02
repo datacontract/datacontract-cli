@@ -28,3 +28,5 @@ schema:
                 value: 10
               - property: businessOwner
                 value: revenue-team
+              - property: checkType
+                value: business
