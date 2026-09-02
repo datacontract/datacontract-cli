@@ -9,6 +9,7 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+from datacontract.breaking.detector import BreakingChangeDetector
 from datacontract.config import Config
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.data_contract_test import execute_data_contract_test
@@ -18,6 +19,7 @@ from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
 from datacontract.lint import resolve
+from datacontract.model.breaking import BreakingChangeResult
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.run import Check, ResultEnum, Run
@@ -285,6 +287,11 @@ class DataContract:
                 )
             )
         return result
+
+    def breaking(self, other: "DataContract", detector: BreakingChangeDetector | None = None) -> BreakingChangeResult:
+        """Classify the changelog between this contract and another for compatibility impact."""
+        changelog = self.changelog(other)
+        return (detector or BreakingChangeDetector()).detect(changelog)
 
     @classmethod
     def import_from_source(

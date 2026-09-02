@@ -28,6 +28,7 @@ COMMAND_ORDER = [
     "edit",
     "lint",
     "changelog",
+    "breaking",
     "sync",  # `dbt sync` subcommand; no top-level `sync`, so this only orders the dbt group
     "test",
     "ci",
@@ -271,6 +272,7 @@ def _print_publish_failure(run, out=None):
 # Display order for `--help` is controlled by COMMAND_ORDER above, not by import order.
 from datacontract import (  # noqa: E402, F401
     command_api,
+    command_breaking,
     command_catalog,
     command_changelog,
     command_ci,

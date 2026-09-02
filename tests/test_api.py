@@ -69,6 +69,28 @@ def test_changelog_invalid_yaml():
     assert "Cannot parse YAML" in detail
 
 
+def test_breaking():
+    with open("fixtures/changelog/integration/changelog_integration_v1.yaml", "r") as f:
+        v1 = f.read()
+    with open("fixtures/changelog/integration/changelog_integration_v2.yaml", "r") as f:
+        v2 = f.read()
+    response = client.post(url="/breaking", json={"v1": v1, "v2": v2})
+    assert response.status_code == 200
+    data = response.json()
+    assert "v1" not in data
+    assert "v2" not in data
+    assert data["is_breaking"] is True
+    assert "summary" in data
+    assert "entries" in data
+    assert data["entries"][0]["level"] in ("info", "warning", "error")
+    assert "message" in data["entries"][0]
+
+
+def test_breaking_invalid_yaml():
+    response = client.post(url="/breaking", json={"v1": "invalid: yaml: [", "v2": "valid: yaml"})
+    assert response.status_code == 422
+
+
 def test_changelog_invalid_data_contract():
     invalid_contract = """
     apiVersion: '1.0'

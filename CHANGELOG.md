@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection (#1016)
 - Add `DATACONTRACT_KAFKA_GROUP_PREFIX` environment variable to customise the consumer group ID prefix used during Kafka testing (#1553)
 - `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514)
 - `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status`
