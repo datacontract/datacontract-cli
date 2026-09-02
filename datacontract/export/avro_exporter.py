@@ -106,7 +106,7 @@ def _parse_default_value(value: str):
 
 
 def to_avro_field(prop: SchemaProperty) -> dict:
-    avro_field = {"name": prop.name}
+    avro_field = {"name": prop.physicalName or prop.name}
     if prop.description is not None:
         avro_field["doc"] = prop.description
     is_required_avro = prop.required if prop.required is not None else True
