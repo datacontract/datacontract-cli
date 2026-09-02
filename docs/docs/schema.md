@@ -28,7 +28,7 @@ datacontract test --checks schema datacontract.yaml
 | `logicalTypeOptions.minimum` / `maximum` | property | Value within bounds (inclusive) |
 | `logicalTypeOptions.exclusiveMinimum` / `exclusiveMaximum` | property | Value within bounds (exclusive) |
 | `logicalTypeOptions.pattern` | property | Value matches the regular expression |
-| `logicalTypeOptions.enum` | property | Value is one of the listed values |
+| `enum` | property | Value is one of the listed values (ODCS v3.2.0; `logicalTypeOptions.enum` is still accepted) |
 | `logicalTypeOptions.minItems` / `maxItems` | array property | Number of elements within bounds |
 | `logicalTypeOptions.uniqueItems` | array property | Elements of the array are distinct |
 | `quality` | schema, property | See [Define your Quality Rules](./quality-rules/index.md) |
@@ -47,8 +47,13 @@ schema:
       - name: order_status
         logicalType: string
         required: true
-        logicalTypeOptions:
-          enum: ['pending', 'shipped', 'delivered']
+        enum:
+          - value: pending
+          - value: shipped
+            label: Shipped
+          - value: delivered
+            label: Delivered
+            description: Handed over to the customer
       - name: order_total
         logicalType: integer
         physicalType: integer
@@ -147,8 +152,10 @@ properties:
       pattern: '^[A-Z]{2}$'
   - name: order_status
     logicalType: string
-    logicalTypeOptions:
-      enum: ['pending', 'shipped', 'delivered']
+    enum:
+      - value: pending
+      - value: shipped
+      - value: delivered
   - name: tags
     logicalType: array
     items:
@@ -165,7 +172,7 @@ properties:
 | `minimum` / `maximum` | below / above the bound (the bound itself passes) |
 | `exclusiveMinimum` / `exclusiveMaximum` | below / above **or equal to** the bound |
 | `pattern` | not matching the regular expression |
-| `enum` | not one of the listed values |
+| `enum` (property level, or `logicalTypeOptions.enum`) | not one of the listed values |
 | `minItems` / `maxItems` | an array with fewer / more elements than the bound |
 | `uniqueItems` | an array that repeats an element |
 

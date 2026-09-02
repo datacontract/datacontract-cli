@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 from open_data_contract_standard.model import (
     CustomProperty,
     DataQuality,
+    EnumValue,
     OpenDataContractStandard,
     Role,
     SchemaObject,
@@ -88,8 +89,12 @@ def create_property(
     custom_properties: Dict[str, Any] = None,
     id: str = None,
     quality: List[DataQuality] = None,
+    enum: List[Any] = None,
 ) -> SchemaProperty:
-    """Create a SchemaProperty (equivalent to DCS Field)."""
+    """Create a SchemaProperty (equivalent to DCS Field).
+
+    ``enum`` lists the allowed values, as plain values or ``EnumValue`` entries (ODCS v3.2.0).
+    """
     prop = SchemaProperty(name=name, id=id)
     prop.logicalType = logical_type
 
@@ -149,6 +154,9 @@ def create_property(
     # Data quality
     if quality:
         prop.quality = quality
+
+    if enum:
+        prop.enum = [entry if isinstance(entry, EnumValue) else EnumValue(value=entry) for entry in enum]
 
     return prop
 

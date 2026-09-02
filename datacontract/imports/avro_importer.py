@@ -126,6 +126,7 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
                 description=field.doc,
                 required=False,
                 custom_properties={**custom_props, "avroType": "enum"} if custom_props else {"avroType": "enum"},
+                enum=enum_schema.symbols,
             )
         else:
             logical_type, physical_type = import_type_of_optional_field(field)
@@ -189,9 +190,8 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
             physical_type="enum",
             description=field.doc,
             required=True,
-            custom_properties={**custom_props, "avroType": "enum", "avroSymbols": field.type.symbols}
-            if custom_props
-            else {"avroType": "enum", "avroSymbols": field.type.symbols},
+            custom_properties={**custom_props, "avroType": "enum"} if custom_props else {"avroType": "enum"},
+            enum=field.type.symbols,
         )
     else:
         # Primitive types

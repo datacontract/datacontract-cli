@@ -28,6 +28,7 @@ from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
+from datacontract.model.enum_values import get_enum_values
 from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
@@ -493,7 +494,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                 )
             )
 
-        enum_values = _get_logical_type_option(prop, "enum")
+        enum_values = get_enum_values(prop, include_quality_rule=False)
         if enum_values:
             checks.append(
                 _invalid_count_check(

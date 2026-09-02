@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from open_data_contract_standard.model import SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
+from datacontract.model.enum_values import get_enum_values
 
 
 class AvroExporter(Exporter):
@@ -58,31 +59,6 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
-def _get_enum_values(prop: SchemaProperty):
-    """Get enum values from logicalTypeOptions, customProperties, or quality rules."""
-    import json
-
-    # First check logicalTypeOptions (legacy/direct ODCS)
-    enum_values = _get_logical_type_option(prop, "enum")
-    if enum_values:
-        return enum_values
-    # Then check customProperties (converted from DCS)
-    enum_str = _get_config_value(prop, "enum")
-    if enum_str:
-        try:
-            return json.loads(enum_str)
-        except (json.JSONDecodeError, TypeError):
-            pass
-    # Finally check quality rules for invalidValues with validValues
-    if prop.quality:
-        for q in prop.quality:
-            if q.metric == "invalidValues" and q.arguments:
-                valid_values = q.arguments.get("validValues")
-                if valid_values:
-                    return valid_values
-    return None
-
-
 def _parse_default_value(value: str):
     """Parse a default value string to its proper type (bool, int, float, or string)."""
     if value.lower() == "true":
@@ -114,7 +90,7 @@ def to_avro_field(prop: SchemaProperty) -> dict:
     avro_field["type"] = avro_type if is_required_avro else ["null", avro_type]
 
     # Handle enum types - both required and optional
-    enum_values = _get_enum_values(prop)
+    enum_values = get_enum_values(prop)
     avro_config_type = _get_config_value(prop, "avroType")
 
     if avro_type == "enum" or (isinstance(avro_field["type"], list) and "enum" in avro_field["type"]):
@@ -159,14 +135,13 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
     if avro_type:
         return avro_type
 
-    # Check for enum fields based on presence of enum list and avroType config
-    enum_values = _get_enum_values(prop)
-    if enum_values and avro_type == "enum":
-        return "enum"
-
     # Use physicalType for more specific type mappings, fall back to logicalType
     physical_type = prop.physicalType.lower() if prop.physicalType else None
     field_type = prop.logicalType
+
+    # A property declared as an enum with allowed values becomes an Avro enum
+    if physical_type == "enum" and get_enum_values(prop):
+        return "enum"
 
     # Handle specific physical types that need special treatment
     if physical_type in ["float"]:
