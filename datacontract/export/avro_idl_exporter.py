@@ -52,6 +52,13 @@ class AvroArrayField(AvroField):
 
 
 @dataclass
+class AvroMapField(AvroField):
+    """A map with string keys, as in Avro; `type` describes the values."""
+
+    type: AvroField
+
+
+@dataclass
 class AvroModelType:
     name: str
     description: typing.Optional[str]
@@ -218,6 +225,29 @@ def _to_avro_idl_type(field_name: str, prop: SchemaProperty) -> AvroField:
                     result="failed",
                     message="Avro IDL type conversion failed.",
                 )
+        elif logical_type == "map":
+            if prop.map and prop.map.value:
+                return AvroMapField(
+                    field_name, prop.required or False, prop.description, _to_avro_idl_type(field_name, prop.map.value)
+                )
+            else:
+                raise DataContractException(
+                    type="general",
+                    name="avro-idl-export",
+                    model=prop,
+                    reason="Map type requires a map block with key and value",
+                    result="failed",
+                    message="Avro IDL type conversion failed.",
+                )
+        elif logical_type == "vector":
+            element_type = (prop.logicalTypeOptions or {}).get("elementType")
+            avro_type = AvroPrimitiveType.double if element_type == "float64" else AvroPrimitiveType.float
+            return AvroArrayField(
+                field_name,
+                prop.required or False,
+                prop.description,
+                AvroPrimitiveField(field_name, True, None, avro_type),
+            )
         elif logical_type == "object" or physical_type in ["record", "struct"]:
             if prop.properties:
                 return AvroComplexField(
@@ -331,6 +361,12 @@ def _write_field_type_definition(field: AvroField, indent: int, stream: typing.T
                 return f"array<{subfield_type}>"
             else:
                 return f"array<{subfield_type}>?"
+        case AvroMapField(name, required, _, value_type):
+            subfield_type = _write_field_type_definition(value_type, indent, stream)
+            if required is True:
+                return f"map<{subfield_type}>"
+            else:
+                return f"map<{subfield_type}>?"
         case _:
             raise RuntimeError(f"Unknown Avro field type {field}")
 

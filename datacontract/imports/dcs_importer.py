@@ -51,7 +51,7 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
     odcs = OpenDataContractStandard(
         id=dcs.id,
         kind="DataContract",
-        apiVersion="v3.1.0",
+        apiVersion="v3.2.0",
     )
 
     # Convert basic info

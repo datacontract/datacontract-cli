@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Support for ODCS v3.2.0: contracts declaring `apiVersion: v3.2.0` with `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types lint and round-trip; `datacontract init` and all importers now write `apiVersion: v3.2.0`
 - Add `DATACONTRACT_KAFKA_GROUP_PREFIX` environment variable to customise the consumer group ID prefix used during Kafka testing (#1553)
 - `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514)
 - `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status`
@@ -19,9 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529)
 - `datacontract test` now supports ISO 8601 retention periods correctly (previously, only the first component was considered) (#1538)
 - `datacontract test` reports each freshness and retention check result on its own check, instead of writing every result to the first one (#1515)
-
-### Changed
-- The `open-data-contract-standard` dependency is pinned to 3.1.x; ODCS v3.2.0 support will come with a dedicated release
 
 ## [1.1.2] - 2026-08-26
 

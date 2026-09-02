@@ -23,7 +23,7 @@ def create_odcs(
 ) -> OpenDataContractStandard:
     """Create a new OpenDataContractStandard instance with default values."""
     return OpenDataContractStandard(
-        apiVersion="v3.1.0",
+        apiVersion="v3.2.0",
         kind="DataContract",
         id=id or "my-data-contract",
         name=name or "My Data Contract",
