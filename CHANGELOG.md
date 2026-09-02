@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test --dry-run` reports the checks a run would execute without connecting to the server or reading any data (#1510)
 
 ### Fixed
-- `datacontract export jsonschema` and `datacontract export avro` use a property's `physicalName` as the field name when set, instead of the logical `name` (#1494)
+- `datacontract export jsonschema`, `datacontract export avro` and `datacontract test` on local files use a property's `physicalName` as the field name when set, instead of the logical `name` (#1494)
 - `datacontract import sql` takes the server's `database` and `schema` from a qualified `CREATE TABLE`, instead of always writing placeholders (#651)
 - `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529)
 - `datacontract test` now supports ISO 8601 retention periods correctly (previously, only the first component was considered) (#1538)

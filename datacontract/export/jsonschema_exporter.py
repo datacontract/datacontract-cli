@@ -94,7 +94,7 @@ def to_property(prop: SchemaProperty) -> dict:
     if json_type == "object":
         nested_props = prop.properties or []
         # TODO: any better idea to distinguish between properties and patternProperties?
-        if nested_props and nested_props[0].name.startswith("^"):
+        if nested_props and (nested_props[0].physicalName or nested_props[0].name).startswith("^"):
             property_dict["patternProperties"] = to_properties(nested_props)
         else:
             property_dict["properties"] = to_properties(nested_props)
