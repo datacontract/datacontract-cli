@@ -214,8 +214,9 @@ def connect_ibis(
 
 def _connect_databricks(ibis, server: Server, run: Run, config: Config):
     """Connect to Databricks SQL directly, selecting the auth method from env vars.
-    Uses a _NoVolumeBackend subclass to skip ibis' hardcoded CREATE VOLUME call,
-    enabling read-only contract checks on Databricks warehouses.
+    Delegates to ``_databricks_connect``, which temporarily replaces ibis'
+    ``Backend._post_connect`` with a no-op to skip its hardcoded CREATE VOLUME
+    call, enabling read-only contract checks on Databricks warehouses.
     Auth is resolved in priority order, so an existing token-based setup keeps
     working unchanged:
     1. personal access token (DATACONTRACT_DATABRICKS_TOKEN) - the default

@@ -1,6 +1,6 @@
 """Unit tests for Databricks auth-method selection in connect_ibis.
 
-These do not hit Databricks: we patch the _NoVolumeBackend.connect method and only
+These do not hit Databricks: we patch ``DatabricksBackend.connect`` and only
 assert which auth kwargs the dispatch passes for a given set of env vars.
 """
 
@@ -226,7 +226,9 @@ def test_no_create_volume_on_connect(clean_databricks_env, monkeypatch):
         original_post_connect(self, memtable_volume=memtable_volume)
 
     try:
-        # Patch to spy on all calls (including _NoVolumeBackend overrides via MRO).
+        # Install a spy on the class attribute. _databricks_connect will save
+        # this spy as its "original", replace it with a no-op lambda for the
+        # duration of the connect call, and then restore it.
         DatabricksBackend._post_connect = spy_post_connect
 
         # Also patch connect to return early so we don't hit actual Databricks.
@@ -239,9 +241,10 @@ def test_no_create_volume_on_connect(clean_databricks_env, monkeypatch):
 
         _connect()
 
-        # Since _NoVolumeBackend overrides _post_connect with a no-op, the spy
-        # should never be invoked by the do_connect flow (it goes to _NoVolumeBackend's
-        # override first via MRO).
+        # _databricks_connect swaps in a no-op lambda before calling
+        # ibis.databricks.connect and restores the spy afterwards, so any
+        # _post_connect call issued during connect resolves to the no-op and
+        # the spy is never invoked.
         assert post_connect_called == []
     finally:
         DatabricksBackend._post_connect = original_post_connect
