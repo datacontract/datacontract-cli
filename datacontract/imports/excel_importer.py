@@ -336,6 +336,18 @@ def parse_boolean(value):
     return value == "true" or value == "yes" or value == "1"
 
 
+def parse_port(value):
+    """Parse a port cell: an integer, or a string such as a ``${DB_PORT}`` reference (ODCS v3.2.0)."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    text = str(value).strip()
+    if not text:
+        return None
+    return int(text) if text.isdigit() else text
+
+
 def parse_integer(value):
     """Parse a string value to integer"""
     if value is None:
@@ -699,7 +711,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
                 elif server_type == "postgres":
                     server.database = get_server_cell_value(workbook, sheet, "servers.postgres.database", index)
                     server.host = get_server_cell_value(workbook, sheet, "servers.postgres.host", index)
-                    server.port = parse_integer(get_server_cell_value(workbook, sheet, "servers.postgres.port", index))
+                    server.port = parse_port(get_server_cell_value(workbook, sheet, "servers.postgres.port", index))
                     server.schema_ = get_server_cell_value(workbook, sheet, "servers.postgres.schema", index)
                 elif server_type == "s3":
                     server.delimiter = get_server_cell_value(workbook, sheet, "servers.s3.delimiter", index)
@@ -710,17 +722,17 @@ def import_servers(workbook) -> Optional[List[Server]]:
                     server.account = get_server_cell_value(workbook, sheet, "servers.snowflake.account", index)
                     server.database = get_server_cell_value(workbook, sheet, "servers.snowflake.database", index)
                     server.host = get_server_cell_value(workbook, sheet, "servers.snowflake.host", index)
-                    server.port = parse_integer(get_server_cell_value(workbook, sheet, "servers.snowflake.port", index))
+                    server.port = parse_port(get_server_cell_value(workbook, sheet, "servers.snowflake.port", index))
                     server.schema_ = get_server_cell_value(workbook, sheet, "servers.snowflake.schema", index)
                     server.warehouse = get_server_cell_value(workbook, sheet, "servers.snowflake.warehouse", index)
                 elif server_type == "sqlserver":
                     server.database = get_server_cell_value(workbook, sheet, "servers.sqlserver.database", index)
                     server.host = get_server_cell_value(workbook, sheet, "servers.sqlserver.host", index)
-                    server.port = parse_integer(get_server_cell_value(workbook, sheet, "servers.sqlserver.port", index))
+                    server.port = parse_port(get_server_cell_value(workbook, sheet, "servers.sqlserver.port", index))
                     server.schema_ = get_server_cell_value(workbook, sheet, "servers.sqlserver.schema", index)
                 elif server_type == "oracle":
                     server.host = get_server_cell_value(workbook, sheet, "servers.oracle.host", index)
-                    server.port = parse_integer(get_server_cell_value(workbook, sheet, "servers.oracle.port", index))
+                    server.port = parse_port(get_server_cell_value(workbook, sheet, "servers.oracle.port", index))
                     server.serviceName = get_server_cell_value(workbook, sheet, "servers.oracle.servicename", index)
                 else:
                     # Custom server type - grab all possible fields
@@ -734,7 +746,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
                     server.host = get_server_cell_value(workbook, sheet, "servers.custom.host", index)
                     server.location = get_server_cell_value(workbook, sheet, "servers.custom.location", index)
                     server.path = get_server_cell_value(workbook, sheet, "servers.custom.path", index)
-                    server.port = parse_integer(get_server_cell_value(workbook, sheet, "servers.custom.port", index))
+                    server.port = parse_port(get_server_cell_value(workbook, sheet, "servers.custom.port", index))
                     server.project = get_server_cell_value(workbook, sheet, "servers.custom.project", index)
                     server.schema_ = get_server_cell_value(workbook, sheet, "servers.custom.schema", index)
                     server.stagingDir = get_server_cell_value(workbook, sheet, "servers.custom.stagingDir", index)
