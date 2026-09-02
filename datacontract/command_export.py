@@ -66,6 +66,7 @@ def _export(
     inline_references: bool = True,
     clickhouse_engine: Optional[str] = None,
     clickhouse_order_by: Optional[str] = None,
+    suite_name: Optional[str] = None,
 ):
     result = DataContract(
         config=cli_config(),
@@ -83,6 +84,7 @@ def _export(
         template=template,
         clickhouse_engine=clickhouse_engine,
         clickhouse_order_by=clickhouse_order_by,
+        suite_name=suite_name,
     )
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
@@ -587,6 +589,10 @@ def export_great_expectations(
     schema: schema_option = None,
     inline_references: inline_references_option = True,
     debug: debug_option = None,
+    suite_name: Annotated[
+        Optional[str],
+        typer.Option(help="The suite name for the Great Expectations run."),
+    ] = None,
 ):
     """Export a data contract to Great Expectations suite."""
     enable_debug_logging(debug)
@@ -600,6 +606,7 @@ def export_great_expectations(
         engine=engine.value if engine is not None else None,
         sql_server_type=dialect.value,
         inline_references=inline_references,
+        suite_name=suite_name,
     )
 
 
