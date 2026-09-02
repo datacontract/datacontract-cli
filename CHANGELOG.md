@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` now supports ISO 8601 retention periods correctly (previously, only the first component was considered) (#1538)
 - `datacontract test` reports each freshness and retention check result on its own check, instead of writing every result to the first one (#1515)
 
+### Changed
+- The `open-data-contract-standard` dependency is pinned to 3.1.x; ODCS v3.2.0 support will come with a dedicated release
+
 ## [1.1.2] - 2026-08-26
 
 ### Added
