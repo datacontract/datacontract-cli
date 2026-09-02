@@ -376,7 +376,7 @@ def _resolve_data_contract_from_str(
         # class would reject.
         custom_schema = schema_location is not None
         if schema_location is None:
-            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.1.0.schema.json")
+            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.2.0.schema.json")
         _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors)
 
         odcs = _parse_odcs_from_dict(yaml_dict, lax=custom_schema)

@@ -19,7 +19,7 @@ from datacontract.model.changelog import ChangelogEntry
 from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 from datacontract.model.run import Check, ResultEnum, Run
 
-DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.1.0
+DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.2.0
 kind: DataContract
 id: orders
 name: Orders

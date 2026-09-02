@@ -475,5 +475,5 @@ def test_import_bim_yaml_is_valid():
     yaml_str = result.to_yaml()
     parsed = yaml.safe_load(yaml_str)
     assert parsed["kind"] == "DataContract"
-    assert parsed["apiVersion"] == "v3.1.0"
+    assert parsed["apiVersion"] == "v3.2.0"
     assert any(s["name"] == "Sales" for s in parsed["schema"])

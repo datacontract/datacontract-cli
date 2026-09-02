@@ -83,6 +83,7 @@ def to_sqlalchemy_model_str(odcs: OpenDataContractStandard, sql_server_type: str
                     ast.alias("Boolean"),
                     ast.alias("Date"),
                     ast.alias("ARRAY"),
+                    ast.alias("JSON"),
                     ast.alias("LargeBinary"),
                 ],
             ),
@@ -151,6 +152,10 @@ def constant_field_value(field_name: str, prop: SchemaProperty) -> tuple[ast.Cal
             new_type = Call("ARRAY", sqlalchemy_primitive(prop.items))
         else:
             new_type = Call("ARRAY", ast.Name("String"))
+    elif prop_type and prop_type.lower() == "map":
+        new_type = ast.Name("JSON")
+    elif prop_type and prop_type.lower() == "vector":
+        new_type = Call("ARRAY", ast.Name("Float"))
 
     if new_type is None:
         raise RuntimeError(f"Unsupported field type {prop_type}.")

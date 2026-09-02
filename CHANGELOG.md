@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - ODCS v3.2.0
+
+This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md). Development happens on the `odcs-3.2.0` branch, tracked in #1557.
+
+### Added
+- Contracts declaring `apiVersion: v3.2.0` lint and round-trip, including `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types (#1558)
+- `datacontract export avro-idl` writes `map<...>` and `array<float>` for `map` and `vector` properties; `datacontract export sqlalchemy` writes `JSON` and `ARRAY(Float)` (#1558)
+
+### Changed
+- `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)
+- `open-data-contract-standard` dependency bumped to 3.2.x (#1558)
+
 ## [Unreleased]
 
 ### Added
@@ -19,9 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529)
 - `datacontract test` now supports ISO 8601 retention periods correctly (previously, only the first component was considered) (#1538)
 - `datacontract test` reports each freshness and retention check result on its own check, instead of writing every result to the first one (#1515)
-
-### Changed
-- The `open-data-contract-standard` dependency is pinned to 3.1.x; ODCS v3.2.0 support will come with a dedicated release
 
 ## [1.1.2] - 2026-08-26
 

@@ -35,7 +35,7 @@ def test_to_rdf():
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <orders-unit-test> a odcs:DataContract ;
-    odcs:apiVersion "v3.1.0" ;
+    odcs:apiVersion "v3.2.0" ;
     odcs:id "orders-unit-test" ;
     odcs:info [ a odcs:Info ;
             odcs:name "Orders Unit Test" ;
@@ -88,7 +88,7 @@ def test_to_rdf_complex():
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <orders-latest> a odcs:DataContract ;
-    odcs:apiVersion "v3.1.0" ;
+    odcs:apiVersion "v3.2.0" ;
     odcs:id "orders-latest" ;
     odcs:info [ a odcs:Info ;
             odcs:description \"\"\"Successful customer orders in the webshop. All orders since 2020-01-01. Orders with their line items are in their current state (no history included).

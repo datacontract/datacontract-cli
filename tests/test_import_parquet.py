@@ -31,7 +31,7 @@ def test_import_parquet():
 
     expected = """version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft

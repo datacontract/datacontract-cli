@@ -29,7 +29,7 @@ def test_import_avro_schema():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -124,7 +124,7 @@ def test_import_avro_arrays_of_records_and_nested_arrays():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -193,7 +193,7 @@ def test_import_avro_nested_records():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -230,7 +230,7 @@ def test_import_avro_nested_records_with_arrays():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -319,7 +319,7 @@ def test_import_avro_logical_types():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -388,7 +388,7 @@ def test_import_avro_optional_enum():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
