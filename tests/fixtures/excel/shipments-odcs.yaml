@@ -36,7 +36,7 @@ schema:
     description: Unique identifier for each shipment.
     businessName: Shipment ID
     authoritativeDefinitions:
-    - url: http://localhost:8080/demo203502625092/definitions/fulfillment/shipment_id
+    - url: definitions/shipment_id.odcs.yaml
       type: businessDefinition
     tags:
     - businesskey
@@ -53,7 +53,7 @@ schema:
     physicalType: text
     physicalName: oid
     authoritativeDefinitions:
-    - url: http://localhost:8080/demo203502625092/definitions/sales/order_id
+    - url: definitions/order_id.odcs.yaml
       type: businessDefinition
     primaryKey: false
     partitioned: false

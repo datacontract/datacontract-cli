@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- An `authoritativeDefinitions` link can reference a file next to the contract, either a property in another contract (`url: business.odcs.yaml#schema/orders/properties/order_id`) or a file that is the definition itself (`url: definitions/order_id.odcs.yaml`), resolved relative to the referencing contract (#1453)
 - `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection (#1016)
 - Add `DATACONTRACT_KAFKA_GROUP_PREFIX` environment variable to customise the consumer group ID prefix used during Kafka testing (#1553)
 - `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514)

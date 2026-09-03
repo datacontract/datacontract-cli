@@ -1,0 +1,51 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: top_artists_by_year_view
+name: Top Artists by Year - Materialized View
+version: 1.0.0
+status: active
+domain: media
+
+description:
+  purpose: Physical materialization of the top artists per calendar year.
+  usage: see top-artists-by-year.odcs.yaml
+  limitation: see top-artists-by-year.odcs.yaml
+
+servers:
+  - server: production
+    type: databricks
+    catalog: media_prod
+    schema: media_gold
+    host: https://my-workspace.cloud.databricks.com
+
+schema:
+  # The technical object: this contract owns the physical shape, and links every
+  # field to the business attribute that carries its meaning. The description,
+  # business name, and examples are inlined from there when the contract is
+  # linted, tested, or exported.
+  - name: top_artists_by_year
+    id: top_artists_by_year_to
+    physicalName: mv_top_artists_by_year
+    physicalType: materialized view
+    properties:
+      - name: artist_name
+        logicalType: string
+        physicalType: character
+        primaryKey: true
+        authoritativeDefinitions:
+          - type: businessDefinition
+            url: top-artists-by-year.odcs.yaml#schema/top_artists_by_year_ba/properties/artist_name
+
+      - name: year
+        logicalType: integer
+        physicalType: integer
+        authoritativeDefinitions:
+          - type: businessDefinition
+            url: top-artists-by-year.odcs.yaml#schema/top_artists_by_year_ba/properties/year
+
+      - name: total_number_of_songs
+        logicalType: integer
+        physicalType: long
+        authoritativeDefinitions:
+          - type: businessDefinition
+            url: top-artists-by-year.odcs.yaml#schema/top_artists_by_year_ba/properties/total_number_of_songs

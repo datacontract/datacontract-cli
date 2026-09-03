@@ -288,19 +288,59 @@ def test_array_item_is_resolved(env):
 
 
 @responses.activate
-def test_non_definition_authoritative_type_is_ignored(env):
-    """Only `type: definition` triggers resolution; other ODCS types --
-    `businessDefinition`, `documentation`, etc. -- are informational links
-    only and must not cause an HTTP request."""
+def test_non_resolvable_authoritative_type_is_ignored(env):
+    """ODCS types that point at material for humans -- `videoTutorial`,
+    `tutorial`, `implementation` -- are informational links only and must not
+    cause an HTTP request."""
     prop = SchemaProperty(
         name="shipment_id",
-        authoritativeDefinitions=[AuthoritativeDefinition(type="businessDefinition", url=f"{_HOST}/anything")],
+        authoritativeDefinitions=[AuthoritativeDefinition(type="videoTutorial", url=f"{_HOST}/anything")],
     )
 
     inline_definitions_into_data_contract(_contract(prop))
 
     assert len(responses.calls) == 0
     assert prop.logicalType is None
+
+
+@responses.activate
+def test_business_definition_url_is_resolved(env):
+    """`businessDefinition` resolves like `definition`: the type says what the
+    link means, not whether it is fetchable."""
+    responses.add(
+        responses.GET,
+        f"{_HOST}/glossary/shipment_id",
+        body=_definition_body(logicalType="string", businessName="Shipment ID"),
+        status=200,
+    )
+
+    prop = SchemaProperty(
+        name="shipment_id",
+        authoritativeDefinitions=[
+            AuthoritativeDefinition(type="businessDefinition", url=f"{_HOST}/glossary/shipment_id")
+        ],
+    )
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert prop.businessName == "Shipment ID"
+
+
+@responses.activate
+def test_business_definition_on_another_host_does_not_send_api_key(env):
+    """An off-host `businessDefinition` is an address, not an IRI: it is
+    fetched directly and anonymously rather than routed through
+    `/api/semantics`."""
+    other_host_url = "https://glossary.example.com/terms/shipment_id"
+    responses.add(responses.GET, other_host_url, body=_definition_body(logicalType="string"), status=200)
+
+    prop = SchemaProperty(
+        name="shipment_id",
+        authoritativeDefinitions=[AuthoritativeDefinition(type="businessDefinition", url=other_host_url)],
+    )
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert responses.calls[0].request.url == other_host_url
+    assert "x-api-key" not in responses.calls[0].request.headers
 
 
 @responses.activate

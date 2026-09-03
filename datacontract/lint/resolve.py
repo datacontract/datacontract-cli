@@ -139,32 +139,55 @@ def resolve_data_contract_from_location(
     config: "Config | None" = None,
 ) -> OpenDataContractStandard:
     data_contract_str = read_resource(location, config)
-    return _resolve_data_contract_from_str(data_contract_str, schema_location, inline_references, all_errors, config)
+    return _resolve_data_contract_from_str(
+        data_contract_str, schema_location, inline_references, all_errors, config, base_location=location
+    )
 
 
 # Precedence-ordered: a property with both semantics and definition references
 # resolves through semantics (matches the editor's useInheritedDefinition).
 # "semantic" (singular) is accepted for back-compat with contracts written
-# before the entropy-data type migration.
-_RESOLVABLE_AUTHORITATIVE_TYPES = ("semantics", "semantic", "definition")
+# before the entropy-data type migration. `businessDefinition` is the ODCS type
+# for "the business meaning of this field lives over there" -- it resolves like
+# the others, and whether the target is a file or a URL is decided by the url's
+# own shape, not by the type.
+_RESOLVABLE_AUTHORITATIVE_TYPES = ("semantics", "semantic", "definition", "businessDefinition")
+
+# A fragment-less url with one of these suffixes is read from disk. Everything
+# else without a fragment stays a path on the configured host.
+_DEFINITION_FILE_SUFFIXES = frozenset({".yaml", ".yml", ".json"})
 
 # `name` and `id` are the property's own; `authoritativeDefinitions` is the link itself;
 # `properties`/`items` are the contract author's structure.
 _NON_MERGEABLE_FIELDS = frozenset({"id", "name", "authoritativeDefinitions", "properties", "items"})
 
-# Per-process success-only cache: transient failures aren't cached so they
+# Per-process success-only caches: transient failures aren't cached so they
 # can retry on the next run.
 _definition_cache: dict[str, SchemaProperty] = {}
+_local_contract_cache: dict[str, OpenDataContractStandard] = {}
+_local_definition_cache: dict[str, SchemaProperty] = {}
 
 
 def clear_definition_cache() -> None:
-    """Drop the per-process definition cache. Used by tests."""
+    """Drop the per-process definition caches. Used by tests."""
     _definition_cache.clear()
+    _local_contract_cache.clear()
+    _local_definition_cache.clear()
 
 
-def inline_definitions_into_data_contract(data_contract: OpenDataContractStandard, config: "Config | None" = None):
-    """Resolve `authoritativeDefinitions[type in {semantics, definition}]` on
-    every property.
+def inline_definitions_into_data_contract(
+    data_contract: OpenDataContractStandard,
+    config: "Config | None" = None,
+    base_location: str | None = None,
+    visited: frozenset[str] = frozenset(),
+):
+    """Resolve `authoritativeDefinitions[type in {semantics, definition,
+    businessDefinition}]` on every property.
+
+    `base_location` is the location the contract itself was read from; local
+    file references resolve relative to it. `visited` carries the chain of files
+    already being resolved, so a reference cycle is reported instead of
+    recursing forever.
 
     In-memory only. Inline values always win. Resolution failures raise
     `DataContractException` -- a broken reference rejects the contract.
@@ -175,34 +198,248 @@ def inline_definitions_into_data_contract(data_contract: OpenDataContractStandar
     for schema_obj in data_contract.schema_:
         if schema_obj.properties:
             for prop in schema_obj.properties:
-                inline_definition_into_property(prop, config)
+                inline_definition_into_property(prop, config, base_location, visited)
 
 
-def inline_definition_into_property(prop: SchemaProperty, config: "Config | None" = None):
+def inline_definition_into_property(
+    prop: SchemaProperty,
+    config: "Config | None" = None,
+    base_location: str | None = None,
+    visited: frozenset[str] = frozenset(),
+):
     """Resolve and inline; recurse into nested properties and array items."""
     if prop.items is not None:
-        inline_definition_into_property(prop.items, config)
+        inline_definition_into_property(prop.items, config, base_location, visited)
     if prop.properties is not None:
         for nested_prop in prop.properties:
-            inline_definition_into_property(nested_prop, config)
+            inline_definition_into_property(nested_prop, config, base_location, visited)
 
     resolved = _resolvable_reference(prop)
     if resolved is None:
         return
 
     type_, url = resolved
-    definition = _resolve_definition(url, type_, config)
+    if _is_local_reference(url):
+        definition = _resolve_local_definition(url, base_location, visited, config)
+    else:
+        definition = _resolve_definition(url, type_, config)
     _apply_definition_to_property(prop, definition)
+
+
+def _is_local_reference(url: str) -> bool:
+    """True for references into a file on disk, in either of its two shapes:
+    `<contract>#<fragment>`, and a bare `<file>` that is itself the definition.
+
+    The route is chosen by the URL's shape, not by the link's type: any
+    resolvable type may point at either a file or a URL, so the same syntax
+    works everywhere.
+
+    A bare file is recognized by its suffix, because a fragment-less url with
+    no scheme is otherwise a path on the configured host (`url: /definitions/…`),
+    which must keep resolving over HTTP.
+    """
+    if url.startswith("http://") or url.startswith("https://"):
+        return False
+    if "#" in url:
+        return True
+    return Path(url).suffix.lower() in _DEFINITION_FILE_SUFFIXES
 
 
 def _resolvable_reference(prop: SchemaProperty) -> tuple[str, str] | None:
     """`(type, url)` of the highest-precedence resolvable authoritativeDefinition
-    on `prop`, or None. Precedence: semantics > semantic > definition."""
+    on `prop`, or None. Precedence: semantics > semantic > definition >
+    businessDefinition."""
     for wanted_type in _RESOLVABLE_AUTHORITATIVE_TYPES:
         for ad in prop.authoritativeDefinitions or []:
             if ad.type == wanted_type and ad.url:
                 return wanted_type, ad.url
     return None
+
+
+def _resolve_local_definition(
+    url: str, base_location: str | None, visited: frozenset[str], config: "Config | None" = None
+) -> SchemaProperty:
+    """Resolve a reference to a file on disk, in either of its two shapes:
+
+      - `<contract>#schema/<schema>/properties/<property>` addresses one property
+        inside a contract file.
+      - `<file>` without a fragment: the file *is* the definition and holds the
+        property's own elements (`businessName`, `description`, `examples`, …)
+        at the top level.
+
+    The file path is relative to the contract that holds the reference, so a set
+    of files stays resolvable wherever the directory is checked out. Cached per
+    resolved path, and per `path#fragment` where there is a fragment.
+    """
+    path_part, hash_, fragment = url.partition("#")
+    if not path_part:
+        raise _local_resolution_error(url, "the reference must name a contract file before the '#'")
+    if hash_ and not fragment:
+        raise _local_resolution_error(url, "the reference must name a fragment after the '#'")
+
+    target_path = _resolve_local_path(url, path_part, base_location)
+    cache_key = f"{target_path}#{fragment}" if fragment else str(target_path)
+    if cache_key in _local_definition_cache:
+        return _local_definition_cache[cache_key]
+
+    if fragment:
+        contract = _load_local_contract(url, target_path, visited, config)
+        definition = _lookup_fragment(url, contract, fragment)
+    else:
+        definition = _load_local_property(url, target_path, visited, config)
+
+    _local_definition_cache[cache_key] = definition
+    return definition
+
+
+def _resolve_local_path(url: str, path_part: str, base_location: str | None) -> Path:
+    """Absolute path of the referenced file, relative to the referencing file."""
+    if base_location is None:
+        raise _local_resolution_error(
+            url,
+            "the contract was not read from a file, so there is no directory to resolve the reference against; "
+            "pass the contract by file location, or use an absolute URL",
+        )
+    if base_location.startswith("http://") or base_location.startswith("https://"):
+        raise _local_resolution_error(
+            url,
+            f"the contract was read from '{base_location}', and file references are only resolved for contracts "
+            "read from the local file system",
+        )
+    return (Path(base_location).parent / path_part).resolve()
+
+
+def _load_local_contract(
+    url: str, contract_path: Path, visited: frozenset[str], config: "Config | None" = None
+) -> OpenDataContractStandard:
+    """Parse the referenced contract and resolve its own references first, so a
+    chain (technical field -> business attribute -> semantic concept) resolves.
+    """
+    key = str(contract_path)
+    if key in _local_contract_cache:
+        return _local_contract_cache[key]
+    if key in visited:
+        raise _local_resolution_error(url, f"'{key}' is already being resolved, so the references form a cycle")
+    if not contract_path.is_file():
+        raise _local_resolution_error(url, f"the file '{key}' does not exist")
+
+    try:
+        contract = _resolve_data_contract_from_str(read_resource(key, config))
+    except DataContractException as e:
+        raise _local_resolution_error(url, f"'{key}' is not a valid data contract: {e.reason}", original_exception=e)
+
+    inline_definitions_into_data_contract(contract, config, base_location=key, visited=visited | {key})
+    _local_contract_cache[key] = contract
+    return contract
+
+
+def _load_local_property(
+    url: str, property_path: Path, visited: frozenset[str], config: "Config | None" = None
+) -> SchemaProperty:
+    """Parse a file that is a definition on its own: no fragment, so the document
+    holds the property's elements directly instead of a whole contract.
+
+    Its own `authoritativeDefinitions` are resolved first, so a chain of files
+    resolves the same way a chain of contracts does.
+    """
+    key = str(property_path)
+    if key in visited:
+        raise _local_resolution_error(url, f"'{key}' is already being resolved, so the references form a cycle")
+    if not property_path.is_file():
+        raise _local_resolution_error(url, f"the file '{key}' does not exist")
+
+    try:
+        document = _to_yaml(read_resource(key, config))
+    except DataContractException as e:
+        raise _local_resolution_error(url, f"'{key}' is not valid YAML: {e.reason}", original_exception=e)
+
+    if isinstance(document, dict) and is_open_data_contract_standard(document):
+        raise _local_resolution_error(
+            url,
+            f"'{key}' is a data contract, not a single property; add a fragment such as "
+            "'#schema/<schema>/properties/<property>' to say which property is meant",
+        )
+
+    try:
+        definition = SchemaProperty.model_validate(document)
+    except Exception as e:
+        raise _local_resolution_error(url, f"'{key}' is not a valid ODCS property: {e}", original_exception=e)
+
+    inline_definition_into_property(definition, config, base_location=key, visited=visited | {key})
+    return definition
+
+
+def _lookup_fragment(url: str, contract: OpenDataContractStandard, fragment: str) -> SchemaProperty:
+    """Walk `schema/<schema>/properties/<property>[/properties/<nested>|/items]…`.
+
+    Each step matches on `id` first and falls back to `name`: contracts that
+    carry stable ids use them as the referencing anchor, while `name` keeps the
+    syntax usable for contracts that don't.
+    """
+    segments = [segment for segment in fragment.split("/") if segment]
+    if len(segments) < 2 or segments[0] != "schema":
+        raise _local_resolution_error(
+            url, f"the fragment '{fragment}' must start with 'schema/<schema>' and end at a property"
+        )
+
+    schema_objects = contract.schema_ or []
+    current = _match_by_id_or_name(schema_objects, segments[1])
+    if current is None:
+        raise _local_resolution_error(
+            url, f"no schema object '{segments[1]}' in the contract{_available(schema_objects)}"
+        )
+
+    index = 2
+    while index < len(segments):
+        step = segments[index]
+        if step == "items":
+            if current.items is None:
+                raise _local_resolution_error(url, f"'{segments[index - 1]}' has no 'items'")
+            current = current.items
+            index += 1
+            continue
+        if step != "properties" or index + 1 >= len(segments):
+            raise _local_resolution_error(
+                url, f"the fragment '{fragment}' must continue with 'properties/<property>' or 'items'"
+            )
+        wanted = segments[index + 1]
+        candidates = current.properties or []
+        match = _match_by_id_or_name(candidates, wanted)
+        if match is None:
+            raise _local_resolution_error(
+                url, f"no property '{wanted}' in '{segments[index - 1]}'{_available(candidates)}"
+            )
+        current = match
+        index += 2
+
+    if not isinstance(current, SchemaProperty):
+        raise _local_resolution_error(
+            url, f"the fragment '{fragment}' points at a schema object; it must point at a property"
+        )
+    return current
+
+
+def _match_by_id_or_name(candidates, wanted: str):
+    for candidate in candidates:
+        if getattr(candidate, "id", None) == wanted:
+            return candidate
+    for candidate in candidates:
+        if candidate.name == wanted:
+            return candidate
+    return None
+
+
+def _available(candidates) -> str:
+    names = [getattr(c, "id", None) or c.name for c in candidates]
+    return f" (available: {', '.join(names)})" if names else ""
+
+
+def _local_resolution_error(
+    url: str, detail: str, original_exception: Exception | None = None
+) -> DefinitionResolutionError:
+    reason = f"Could not resolve business definition '{url}': {detail}"
+    logging.warning(reason)
+    return DefinitionResolutionError(url=url, reason=reason, original_exception=original_exception)
 
 
 def _resolve_definition(url: str, type_: str, config: "Config | None" = None) -> SchemaProperty:
@@ -211,7 +448,7 @@ def _resolve_definition(url: str, type_: str, config: "Config | None" = None) ->
     `type_` controls how an absolute URL on a different host is handled:
     a `semantics`/`semantic` URL whose host differs from the configured
     entropy-data host is treated as an IRI and routed through
-    `/api/semantics?iri=...`; a `definition` URL is fetched directly
+    `/api/semantics?iri=...`; every other type is fetched directly
     (anonymously, so the API key never leaks). The `x-api-key` is only
     ever sent to the configured host.
 
@@ -255,12 +492,13 @@ def _build_request(url: str, type_: str, config: "Config | None" = None) -> tupl
     Three cases:
       - URL on the configured host (relative path or matching absolute URL):
         fetched directly, x-api-key sent when configured.
-      - Off-host `definition` URL: fetched directly and anonymously -- a
-        contract may legitimately reference a third-party REST URL, and the
-        API key must never leak across hosts.
+      - Off-host `definition`/`businessDefinition` URL: fetched directly and
+        anonymously -- a contract may legitimately reference a third-party REST
+        URL, and the API key must never leak across hosts.
       - Off-host `semantics`/`semantic` URL: treated as an IRI and routed
         through `/api/semantics?iri=...` on the configured host. Requires an
-        API key (that endpoint is API-key only).
+        API key (that endpoint is API-key only). Only these two types name
+        concepts by IRI; everything else is an address.
     """
     from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
 
@@ -276,7 +514,7 @@ def _build_request(url: str, type_: str, config: "Config | None" = None) -> tupl
             headers["x-api-key"] = api_key
         return direct_url, headers, None
 
-    if type_ == "definition":
+    if type_ not in ("semantics", "semantic"):
         # Third-party REST URL: fetch anonymously, no IRI fallback.
         return direct_url, headers, None
 
@@ -347,6 +585,7 @@ def _resolve_data_contract_from_str(
     inline_references: bool = False,
     all_errors: bool = False,
     config: "Config | None" = None,
+    base_location: str | None = None,
 ) -> OpenDataContractStandard:
     yaml_dict = _to_yaml(data_contract_str)
 
@@ -381,7 +620,9 @@ def _resolve_data_contract_from_str(
 
         odcs = _parse_odcs_from_dict(yaml_dict, lax=custom_schema)
         if inline_references:
-            inline_definitions_into_data_contract(odcs, config)
+            inline_definitions_into_data_contract(
+                odcs, config, base_location=base_location, visited=_initial_visited(base_location)
+            )
         return odcs
 
     # For DCS format, we need to convert it to ODCS
@@ -391,8 +632,18 @@ def _resolve_data_contract_from_str(
     dcs = parse_dcs_from_dict(yaml_dict)
     odcs = convert_dcs_to_odcs(dcs)
     if inline_references:
-        inline_definitions_into_data_contract(odcs, config)
+        inline_definitions_into_data_contract(
+            odcs, config, base_location=base_location, visited=_initial_visited(base_location)
+        )
     return odcs
+
+
+def _initial_visited(base_location: str | None) -> frozenset[str]:
+    """Seed the cycle guard with the contract being resolved, so a file that
+    references itself (directly or through a chain) is reported as a cycle."""
+    if base_location is None or base_location.startswith("http://") or base_location.startswith("https://"):
+        return frozenset()
+    return frozenset({str(Path(base_location).resolve())})
 
 
 def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContractStandard:
