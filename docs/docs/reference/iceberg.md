@@ -30,6 +30,7 @@ servers:
 | `DATACONTRACT_ICEBERG_CATALOG_URL`, `DATACONTRACT_ICEBERG_CATALOG`, `DATACONTRACT_ICEBERG_NAMESPACE`, `DATACONTRACT_ICEBERG_WAREHOUSE` | Override the matching field of the contract's `servers` block |
 | `DATACONTRACT_ICEBERG_CATALOG_TYPE` | The pyiceberg catalog implementation: `rest` (default), `sql`, `glue`, `hive`, `dynamodb`. For `sql`, `catalogUrl` is the SQLAlchemy connection URI |
 | `DATACONTRACT_S3_ACCESS_KEY_ID`, `DATACONTRACT_S3_SECRET_ACCESS_KEY`, `DATACONTRACT_S3_SESSION_TOKEN`, `DATACONTRACT_S3_REGION` | Credentials for the data files on S3; not needed when the catalog vends them |
+| `DATACONTRACT_ICEBERG_S3_ENDPOINT` | Endpoint of an S3-compatible store (MinIO, Ceph) holding the data files |
 
 The full list is on the [Configuration](../configuration.md) page.
 

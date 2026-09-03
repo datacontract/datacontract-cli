@@ -150,6 +150,7 @@ class Config(BaseSettings):
     iceberg_catalog_type: str | None = None
     iceberg_credential: SecretStr | None = None
     iceberg_token: SecretStr | None = None
+    iceberg_s3_endpoint: str | None = None
     # overrides for the contract's servers block
     iceberg_catalog_url: str | None = None
     iceberg_catalog: str | None = None
@@ -558,6 +559,9 @@ class Config(BaseSettings):
     # --- iceberg ---
     def get_iceberg_catalog_type(self, required: bool = False) -> str | None:
         return self._str_option("iceberg_catalog_type", required)
+
+    def get_iceberg_s3_endpoint(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_s3_endpoint", required)
 
     def get_iceberg_credential(self, required: bool = False) -> str | None:
         return self._str_option("iceberg_credential", required)
