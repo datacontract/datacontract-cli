@@ -59,10 +59,10 @@ def catalog_properties(server: Server, config: Config | None = None) -> dict[str
     ):
         if option:
             properties[key] = option
-    endpoint = getattr(config, "get_s3_endpoint_url", None)
-    endpoint_url = endpoint() if callable(endpoint) else None
-    if endpoint_url:
-        properties["s3.endpoint"] = endpoint_url
+    endpoint = config.get_iceberg_s3_endpoint()
+    if endpoint:
+        # an S3-compatible store such as MinIO; pyarrow's S3 file system then uses path-style addressing
+        properties["s3.endpoint"] = endpoint
     return properties
 
 

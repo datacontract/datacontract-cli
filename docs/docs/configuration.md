@@ -204,6 +204,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_ICEBERG_CATALOG_TYPE` | `iceberg_catalog_type` | string |  |
 | `DATACONTRACT_ICEBERG_CREDENTIAL` | `iceberg_credential` | string (secret) |  |
 | `DATACONTRACT_ICEBERG_TOKEN` | `iceberg_token` | string (secret) |  |
+| `DATACONTRACT_ICEBERG_S3_ENDPOINT` | `iceberg_s3_endpoint` | string |  |
 | `DATACONTRACT_ICEBERG_CATALOG_URL` | `iceberg_catalog_url` | string | Overrides `catalogUrl` from the contract's `servers` block |
 | `DATACONTRACT_ICEBERG_CATALOG` | `iceberg_catalog` | string | Overrides `catalog` from the contract's `servers` block |
 | `DATACONTRACT_ICEBERG_NAMESPACE` | `iceberg_namespace` | string | Overrides `namespace` from the contract's `servers` block |
