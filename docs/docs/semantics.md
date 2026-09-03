@@ -47,7 +47,69 @@ properties:
 
 A `definition` URL on a different host is fetched **directly and anonymously** — a contract may legitimately point at a third-party URL, and the API key is never sent across hosts.
 
-When a property carries several links, the highest-precedence one wins and is the only one fetched: **`semantics`** → `semantic` (the legacy singular spelling, still accepted) → `definition`.
+When a property carries several links, the highest-precedence one wins and is the only one fetched: **`semantics`** → `semantic` (the legacy singular spelling, still accepted) → `definition` → `businessDefinition`.
+
+## Reference a file
+
+A link may also point at a file next to the contract instead of a server. This is the shape to reach for when the business meaning of a field is described in the same repository, and no server is involved. There are two ways to write it, depending on where the definition lives.
+
+### A property in another contract
+
+Use a `<file>#<fragment>` reference when the meaning belongs to a property of another contract — typically a business-level contract that a technical contract materializes:
+
+```yaml
+# top-artists-by-year-view.odcs.yaml
+properties:
+  - name: artist_name
+    logicalType: string
+    physicalType: character
+    authoritativeDefinitions:
+      - type: businessDefinition
+        url: top-artists-by-year.odcs.yaml#schema/top_artists_by_year_ba/properties/artist_name
+```
+
+The technical contract keeps `logicalType`, `physicalType`, and `primaryKey`, and inherits `businessName`, `description`, `examples`, and everything else the business attribute defines. See [`examples/business-definitions`](https://github.com/datacontract/datacontract-cli/tree/main/examples/business-definitions) for the full pair.
+
+**The fragment** walks the referenced contract:
+
+```
+#schema/<schema>/properties/<property>[/properties/<nested>]…[/items]
+```
+
+Each step matches on `id` first and falls back to `name`. Contracts that carry stable ids should reference by `id` — that keeps the link intact when a human-readable `name` changes. The fragment has to end at a property; it cannot point at a schema object.
+
+### A file that is the definition
+
+Leave the fragment off, and the file *is* the definition: it holds the elements of the property directly, with no contract around them. This is the shape for a glossary kept as one file per term:
+
+```yaml
+# definitions/shipment_id.odcs.yaml
+businessName: Shipment ID
+description: Unique identifier for each shipment.
+logicalType: string
+examples:
+  - 123e4567-e89b-12d3-a456-426614174000
+```
+
+```yaml
+# shipments.odcs.yaml
+properties:
+  - name: sid
+    physicalType: uuid
+    authoritativeDefinitions:
+      - type: businessDefinition
+        url: definitions/shipment_id.odcs.yaml
+```
+
+A fragment-less url is read from disk when it names a `.yaml`, `.yml`, or `.json` file. Everything else without a fragment stays what it has always been — a path on the configured host, e.g. `url: /definitions/shipment_id`.
+
+### Both shapes
+
+**The file path** is relative to the contract that holds the reference, so a checked-out directory resolves from any working directory. Absolute paths work too. A contract read from an HTTP URL cannot resolve a file reference.
+
+The type of the link says what the reference *means*; the shape of the `url` says where it *lives*. Every resolvable type — `semantics`, `semantic`, `definition`, `businessDefinition` — accepts a file reference and a URL alike, so the two are never tied together.
+
+Chains resolve: if the referenced business attribute itself links to a glossary file or a semantic concept, that link is resolved before the value is inlined. A cycle between files is reported as an error rather than followed.
 
 ## How the definition is merged
 
@@ -63,6 +125,8 @@ properties:
 ```
 
 These are never merged, because they belong to the contract author: `id`, `name`, `authoritativeDefinitions` itself, and the `properties` / `items` that make up the structure.
+
+This is the same for a link to a semantic concept, a reusable definition, and a business attribute in another file.
 
 Resolution recurses into nested `properties` and array `items`, so a link on a deeply nested field resolves too. Successful lookups are cached per run; failures are not, so a transient error retries on the next run.
 

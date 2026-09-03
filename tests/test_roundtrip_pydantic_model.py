@@ -48,7 +48,8 @@ def round_trip(contract_file: Path, tmp_path: Path):
 
 @pytest.mark.parametrize("contract_file", EXAMPLES, ids=lambda path: path.parent.name)
 def test_every_example_contract_survives_the_round_trip(contract_file, tmp_path):
-    original = resolve.resolve_data_contract(data_contract_location=str(contract_file))
+    # The exporter inlines authoritativeDefinitions, so compare against the same view of the contract.
+    original = resolve.resolve_data_contract(data_contract_location=str(contract_file), inline_references=True)
     _, reimported = round_trip(contract_file, tmp_path)
 
     assert [schema.name.lower() for schema in reimported.schema_] == [

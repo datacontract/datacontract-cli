@@ -1,0 +1,112 @@
+Summary
+[ 3 Error ]  [ 5 Info ]
+╭──────────┬─────────┬───────────────────────────────────────╮
+│ Severity │ Change  │ Field                                 │
+├──────────┼─────────┼───────────────────────────────────────┤
+│ INFO     │ Added   │ schema.customers                      │
+│ ERROR    │ Removed │ schema.orders.properties.customer_id  │
+│ ERROR    │ Updated │ schema.orders.properties.order_date   │
+│ INFO     │ Updated │ schema.orders.properties.order_id     │
+│ INFO     │ Added   │ schema.orders.properties.region       │
+│ ERROR    │ Updated │ schema.orders.properties.total_amount │
+│ INFO     │ Updated │ slaProperties.availability            │
+│ INFO     │ Updated │ version                               │
+╰──────────┴─────────┴───────────────────────────────────────╯
+
+Details
+╭──────────┬─────────┬──────────────────────────────────────────────────────────┬────────────────────────────────┬───────────────────────────────┬────────────────────────────────╮
+│ Severity │ Change  │ Path                                                     │ Old Value                      │ New Value                     │ Message                        │
+├──────────┼─────────┼──────────────────────────────────────────────────────────┼────────────────────────────────┼───────────────────────────────┼────────────────────────────────┤
+│ INFO     │ Added   │ schema.customers                                         │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers               │
+│ INFO     │ Added   │ schema.customers.physicalName                            │                                │ customers_tbl                 │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.physicalName  │
+│ INFO     │ Added   │ schema.customers.properties                              │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties    │
+│ INFO     │ Added   │ schema.customers.properties.country                      │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.country.logicalType          │                                │ string                        │ Added type at                  │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.country.partitionKeyPosition │                                │ 1                             │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.country.partitioned          │                                │ True                          │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.country.required             │                                │ False                         │ Added requiredness at          │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.created_at                   │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.created_at.description       │                                │ Record creation timestamp     │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.created_at.logicalType       │                                │ timestamp                     │ Added type at                  │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.created_at.required          │                                │ True                          │ Added requiredness at          │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.customer_id                  │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.customer_id.description      │                                │ Unique order ID               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.customer_id.logicalType      │                                │ string                        │ Added type at                  │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.customer_id.primaryKey       │                                │ True                          │ Added key constraint at        │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.customer_id.required         │                                │ True                          │ Added requiredness at          │
+│          │         │                                                          │                                │                               │ schema.customers.properties.c… │
+│ INFO     │ Added   │ schema.customers.properties.date_of_birth                │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.d… │
+│ INFO     │ Added   │ schema.customers.properties.date_of_birth.classification │                                │ restricted                    │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.d… │
+│ INFO     │ Added   │ schema.customers.properties.date_of_birth.logicalType    │                                │ date                          │ Added type at                  │
+│          │         │                                                          │                                │                               │ schema.customers.properties.d… │
+│ INFO     │ Added   │ schema.customers.properties.date_of_birth.required       │                                │ False                         │ Added requiredness at          │
+│          │         │                                                          │                                │                               │ schema.customers.properties.d… │
+│ INFO     │ Added   │ schema.customers.properties.email                        │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.e… │
+│ INFO     │ Added   │ schema.customers.properties.email.classification         │                                │ confidential                  │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.e… │
+│ INFO     │ Added   │ schema.customers.properties.email.encryptedName          │                                │ email_encrypt                 │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.e… │
+│ INFO     │ Added   │ schema.customers.properties.email.logicalType            │                                │ string                        │ Added type at                  │
+│          │         │                                                          │                                │                               │ schema.customers.properties.e… │
+│ INFO     │ Added   │ schema.customers.properties.email.required               │                                │ True                          │ Added requiredness at          │
+│          │         │                                                          │                                │                               │ schema.customers.properties.e… │
+│ INFO     │ Added   │ schema.customers.properties.full_name                    │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.f… │
+│ INFO     │ Added   │ schema.customers.properties.full_name.businessName       │                                │ Customer Full Name            │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.customers.properties.f… │
+│ INFO     │ Added   │ schema.customers.properties.full_name.logicalType        │                                │ string                        │ Added type at                  │
+│          │         │                                                          │                                │                               │ schema.customers.properties.f… │
+│ INFO     │ Added   │ schema.customers.properties.full_name.required           │                                │ True                          │ Added requiredness at          │
+│          │         │                                                          │                                │                               │ schema.customers.properties.f… │
+│ ERROR    │ Removed │ schema.orders.properties.customer_id                     │                                │                               │ Removed property customer_id   │
+│ WARNING  │ Removed │ schema.orders.properties.customer_id.logicalType         │ string                         │                               │ Removed type at                │
+│          │         │                                                          │                                │                               │ schema.orders.properties.cust… │
+│ INFO     │ Removed │ schema.orders.properties.customer_id.required            │ True                           │                               │ Removed requiredness at        │
+│          │         │                                                          │                                │                               │ schema.orders.properties.cust… │
+│ ERROR    │ Updated │ schema.orders.properties.order_date.logicalType          │ string                         │ date                          │ Changed type at                │
+│          │         │                                                          │                                │                               │ schema.orders.properties.orde… │
+│          │         │                                                          │                                │                               │ from 'string' to 'date'        │
+│ INFO     │ Updated │ schema.orders.properties.order_id.description            │ Unique order ID and a rather   │ Unique order ID and another   │ Changed contract at            │
+│          │         │                                                          │ lenghty description that       │ rather lenghty description    │ schema.orders.properties.orde… │
+│          │         │                                                          │ should be wrapped in the table │ that should be wrapped in the │ from 'Unique order ID and a    │
+│          │         │                                                          │                                │ table                         │ rather lenghty description     │
+│          │         │                                                          │                                │                               │ that should be wrapped in the  │
+│          │         │                                                          │                                │                               │ table' to 'Unique order ID and │
+│          │         │                                                          │                                │                               │ another rather lenghty         │
+│          │         │                                                          │                                │                               │ description that should be     │
+│          │         │                                                          │                                │                               │ wrapped in the table'          │
+│ INFO     │ Added   │ schema.orders.properties.region                          │                                │                               │ Added contract at              │
+│          │         │                                                          │                                │                               │ schema.orders.properties.regi… │
+│ INFO     │ Added   │ schema.orders.properties.region.logicalType              │                                │ string                        │ Added type at                  │
+│          │         │                                                          │                                │                               │ schema.orders.properties.regi… │
+│ INFO     │ Added   │ schema.orders.properties.region.required                 │                                │ False                         │ Added requiredness at          │
+│          │         │                                                          │                                │                               │ schema.orders.properties.regi… │
+│ ERROR    │ Updated │ schema.orders.properties.total_amount.required           │ False                          │ True                          │ Changed requiredness at        │
+│          │         │                                                          │                                │                               │ schema.orders.properties.tota… │
+│          │         │                                                          │                                │                               │ from 'False' to 'True'         │
+│ INFO     │ Updated │ slaProperties.availability.value                         │ 99.9%                          │ 99.5%                         │ Changed contract at            │
+│          │         │                                                          │                                │                               │ slaProperties.availability.va… │
+│          │         │                                                          │                                │                               │ from '99.9%' to '99.5%'        │
+│ INFO     │ Updated │ version                                                  │ 1.0.0                          │ 2.0.0                         │ Changed contract at version    │
+│          │         │                                                          │                                │                               │ from '1.0.0' to '2.0.0'        │
+╰──────────┴─────────┴──────────────────────────────────────────────────────────┴────────────────────────────────┴───────────────────────────────┴────────────────────────────────╯
+
