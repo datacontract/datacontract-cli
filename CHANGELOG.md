@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2026-09-03
+## [1.1.3] - 2026-09-03
 
 ### Added
 - An `authoritativeDefinitions` link can reference a file next to the contract, either a property in another contract (`url: business.odcs.yaml#schema/orders/properties/order_id`) or a file that is the definition itself (`url: definitions/order_id.odcs.yaml`), resolved relative to the referencing contract (#1453)
