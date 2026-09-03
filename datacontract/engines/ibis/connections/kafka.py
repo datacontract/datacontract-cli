@@ -109,7 +109,7 @@ def read_kafka_topic(
     if server.format == "avro":
         table = _decode_avro(values, model_name, schema_obj, config)
     else:
-        table = _decode_json(values, schema_obj)
+        table = _decode_json(values, schema_obj, encoding=getattr(server, "encoding", None) or "utf-8")
 
     duckdb = _import("duckdb")
     con = duckdb_connection if duckdb_connection is not None else duckdb.connect(database=":memory:")
@@ -408,7 +408,7 @@ def fetch_writer_schema(registry: dict, schema_id: int) -> str:
 # ---------------------------------------------------------------------------
 # json
 # ---------------------------------------------------------------------------
-def _decode_json(values: List[bytes], schema_obj: SchemaObject):
+def _decode_json(values: List[bytes], schema_obj: SchemaObject, encoding: str = "utf-8"):
     """Decode JSON messages into the column types the data contract declares.
 
     A message that is not a JSON object becomes a row of nulls rather than an
@@ -420,7 +420,7 @@ def _decode_json(values: List[bytes], schema_obj: SchemaObject):
     records = []
     for value in values:
         try:
-            record = json.loads(value.decode("utf-8"))
+            record = json.loads(value.decode(encoding))
         except (UnicodeDecodeError, json.JSONDecodeError):
             record = None
         records.append(record if isinstance(record, dict) else {})

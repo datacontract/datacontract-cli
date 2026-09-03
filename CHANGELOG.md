@@ -24,6 +24,9 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 - `datacontract import` from sql, postgres and snowflake reads `vector(n)`, `halfvec(n)` and `VECTOR(FLOAT, n)` columns as `logicalType: vector` with their dimensions, and parquet reads a fixed-size list of floats the same way (#1563)
 - `datacontract export html` renders `semanticType`, `synonyms`, `deprecated` and `context` on schema objects and properties, the contract-level `context`, `vendor` on custom properties, and `customProperties` and `authoritativeDefinitions` on SLA entries; `export rdf` writes `enum` entries, `synonyms`, `map` definitions, `customProperties` and other nested definitions as nodes of their own instead of dropping them or printing a model repr (#1561)
 - `datacontract changelog` matches `synonyms`, `enum` entries, `context` statements and constraints, and the nested lists of SLA entries by their natural key, and relationships by `id` when present, instead of by position (#1561)
+- `datacontract test` reads CSV files from local, s3, gcs and azure servers and Kafka JSON messages in the server's declared `encoding`, and uses the Athena `workgroup` (also `DATACONTRACT_ATHENA_WORKGROUP`), which makes `stagingDir` optional (#1564)
+- The ODCS v3.2.0 server types `hana`, `iceberg`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant` and `poet` lint and export; `test` explains that it cannot connect to them yet, and the synonyms `fastobjects` and `btrieve` resolve to `poet` and `zen` (#1564)
+- `datacontract export sql --sql-server-type auto` warns before falling back to the snowflake dialect for a server type without one (#1564)
 
 ### Changed
 - `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)

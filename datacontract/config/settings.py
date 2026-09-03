@@ -32,6 +32,7 @@ SERVER_OVERRIDE_OPTIONS = {
     "athena_catalog": "catalog",
     "athena_schema": "schema",
     "athena_staging_dir": "stagingDir",
+    "athena_workgroup": "workgroup",
     "bigquery_project": "project",
     "bigquery_dataset": "dataset",
     "databricks_server_hostname": "host",
@@ -103,6 +104,7 @@ class Config(BaseSettings):
     athena_catalog: str | None = None
     athena_schema: str | None = None
     athena_staging_dir: str | None = None
+    athena_workgroup: str | None = None
 
     # azure
     azure_connection_string: SecretStr | None = None
@@ -468,6 +470,9 @@ class Config(BaseSettings):
 
     def get_athena_staging_dir(self, required: bool = False) -> str | None:
         return self._str_option("athena_staging_dir", required)
+
+    def get_athena_workgroup(self, required: bool = False) -> str | None:
+        return self._str_option("athena_workgroup", required)
 
     # --- azure ---
     def get_azure_connection_string(self, required: bool = False) -> str | None:

@@ -76,6 +76,8 @@ The command exits with code `1`, so the same call works as a gate in [CI/CD pipe
 
 No environment variables are needed for local files. Data type inference and the per-format type handling: **[Local Files Reference](../reference/local.md)**.
 
+CSV files are read as UTF-8 unless the server declares an `encoding` (ODCS v3.2.0), such as `ISO-8859-1` or `UTF-16`. JSON files are always read as UTF-8.
+
 ## Troubleshooting
 
 - **`No files found that match the pattern`** — the `path` is a glob over file paths, not a directory, and it is resolved relative to the working directory rather than to the contract.

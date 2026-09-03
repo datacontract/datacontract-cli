@@ -92,6 +92,8 @@ Run `datacontract test datacontract.yaml` again: every violation is listed as an
 
 All authentication options and the data type mappings: **[Athena Reference](../reference/athena.md)**.
 
+Since ODCS v3.2.0 the server may name a `workgroup` (override: `DATACONTRACT_ATHENA_WORKGROUP`). A workgroup can enforce the query result location, so `stagingDir` is optional when one is set.
+
 ## Troubleshooting
 
 - **`Access Denied` on query start** — the credentials need `athena:StartQueryExecution` plus write access to the `stagingDir` bucket.

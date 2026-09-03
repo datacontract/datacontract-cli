@@ -21,7 +21,7 @@ from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.model.server import get_server_type
+from datacontract.model.server import LINT_ONLY_SERVER_TYPES, get_server_type
 
 if typing.TYPE_CHECKING:
     import ibis
@@ -187,7 +187,14 @@ def connect_ibis(
     if server_type == "impala":
         return _connect_impala(ibis, server, config)
 
-    _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
+    if server_type in LINT_ONLY_SERVER_TYPES:
+        _unsupported(
+            run,
+            f"Server type '{server_type}' is valid in ODCS, but datacontract test cannot connect to it yet. "
+            "The contract still lints and exports; open an issue if you need to test against it.",
+        )
+    else:
+        _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
     return None
 
 
@@ -720,6 +727,7 @@ def _connect_athena(ibis, server: Server, config: Config):
     schema = config.get_athena_schema() or server.schema_
     staging_dir = config.get_athena_staging_dir() or getattr(server, "stagingDir", None)
     catalog = config.get_athena_catalog() or server.catalog
+    workgroup = config.get_athena_workgroup() or getattr(server, "workgroup", None)
     if not schema:
         raise DataContractException(
             type="athena-connection",
@@ -727,21 +735,26 @@ def _connect_athena(ibis, server: Server, config: Config):
             reason="Schema is required for Athena connection.",
             engine="datacontract-cli",
         )
-    if not staging_dir:
+    # A workgroup can enforce the query result location, so the staging
+    # directory is only required when no workgroup is named (ODCS v3.2.0).
+    if not staging_dir and not workgroup:
         raise DataContractException(
             type="athena-connection",
             name="missing_s3_staging_dir",
-            reason="S3 staging directory is required for Athena connection.",
+            reason="S3 staging directory is required for Athena connection unless a workgroup is set.",
             engine="datacontract-cli",
         )
     kwargs = dict(
-        s3_staging_dir=staging_dir,
         aws_access_key_id=credentials["aws_access_key_id"],
         aws_secret_access_key=credentials["aws_secret_access_key"],
         aws_session_token=credentials["aws_session_token"],
         region_name=credentials["region_name"],
         schema_name=schema,
     )
+    if staging_dir:
+        kwargs["s3_staging_dir"] = staging_dir
+    if workgroup:
+        kwargs["work_group"] = workgroup
     # Optional data source / catalog; pyathena defaults it to `awsdatacatalog`.
     if catalog:
         kwargs["catalog_name"] = catalog
