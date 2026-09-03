@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.map_type import get_map_key, get_map_value, is_map
 
 if TYPE_CHECKING:
     from pyspark.sql import types
@@ -328,26 +329,14 @@ def to_spark_data_type(prop: SchemaProperty) -> SparkDataType:
             return SparkArrayType(element_type=to_spark_data_type(prop.items))
         return SparkArrayType(element_type=SparkDataType("StringType"))
 
-    # Handle map type (check physical type) - MUST be before object/struct check
-    if physical_type == "map":
-        # Get key type from customProperties, default to string
-        key_type = SparkDataType("StringType")
-        value_type = SparkDataType("StringType")
-
-        # Check for mapKeyType and mapValueType in customProperties
-        map_key_type = _get_custom_property_value(prop, "mapKeyType")
-        map_value_type = _get_custom_property_value(prop, "mapValueType")
-
-        if map_key_type:
-            key_type = _logical_type_to_spark_type(map_key_type)
-
-        # If map has struct values with properties, use them
-        if prop.properties:
-            value_type = to_struct_type(prop.properties)
-        elif map_value_type:
-            value_type = _logical_type_to_spark_type(map_value_type)
-
-        return SparkMapType(key_type=key_type, value_type=value_type)
+    # Handle map type - MUST be before object/struct check
+    if is_map(prop):
+        key = get_map_key(prop)
+        value = get_map_value(prop)
+        return SparkMapType(
+            key_type=to_spark_data_type(key) if key is not None else SparkDataType("StringType"),
+            value_type=to_spark_data_type(value) if value is not None else SparkDataType("StringType"),
+        )
 
     # Handle object/struct type
     if logical_type == "object" or physical_type in ["object", "record", "struct"]:

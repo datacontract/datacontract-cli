@@ -6,6 +6,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_key, get_map_value
 
 
 class PydanticExporter(Exporter):
@@ -127,6 +128,21 @@ def constant_field_annotation(
         case "object":
             classdef = generate_field_class(field_name.capitalize(), prop)
             return (ast.Name(field_name.capitalize(), ctx=ast.Load()), classdef)
+        case "map":
+            key, value = get_map_key(prop), get_map_value(prop)
+            key_type = constant_field_annotation(field_name, key)[0] if key is not None else ast.Name("str")
+            if value is not None:
+                (value_type, new_class) = constant_field_annotation(field_name, value)
+            else:
+                (value_type, new_class) = (ast.Name("typing.Any", ctx=ast.Load()), None)
+            return (
+                ast.Subscript(
+                    value=ast.Name(id="dict", ctx=ast.Load()),
+                    slice=ast.Tuple(elts=[key_type, value_type], ctx=ast.Load()),
+                    ctx=ast.Load(),
+                ),
+                new_class,
+            )
         case _:
             # Check physical type for more specific mappings
             if physical_type:

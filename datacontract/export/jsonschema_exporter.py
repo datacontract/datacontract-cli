@@ -5,6 +5,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_value
 
 
 class JsonSchemaExporter(Exporter):
@@ -80,7 +81,7 @@ def to_property(prop: SchemaProperty) -> dict:
     if prop.unique:
         property_dict["unique"] = True
 
-    if json_type == "object":
+    if json_type == "object" and not (field_type and field_type.lower() == "map"):
         nested_props = prop.properties or []
         # TODO: any better idea to distinguish between properties and patternProperties?
         if nested_props and (nested_props[0].physicalName or nested_props[0].name).startswith("^"):
@@ -91,6 +92,10 @@ def to_property(prop: SchemaProperty) -> dict:
 
     if json_type == "array" and prop.items:
         property_dict["items"] = to_property(prop.items)
+
+    if field_type and field_type.lower() == "map":
+        value = get_map_value(prop)
+        property_dict["additionalProperties"] = to_property(value) if value is not None else True
 
     pattern = _get_logical_type_option(prop, "pattern")
     if pattern:
@@ -175,6 +180,8 @@ def convert_type_format(type_str: Optional[str], format_str: Optional[str]) -> t
         return "object", None
     if type_str.lower() in ["array"]:
         return "array", None
+    if type_str.lower() in ["map"]:
+        return "object", None
     return None, None
 
 

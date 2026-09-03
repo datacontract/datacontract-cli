@@ -892,6 +892,9 @@ def _run_nested_type(
     expected = spec.expected_schema_property
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual_prop.logicalType or actual_prop.physicalType)
+    if expected_base == "object" and actual_base == "map":
+        # a map column declared as an object: the comparator reads it as an untyped object
+        actual_base = "object"
     if actual_base is None:
         # A dynamically-typed column (json / variant / jsonb) holds a different
         # structure per row, so there is nothing to compare the children against.

@@ -49,3 +49,14 @@ schema:
         logicalType: integer
   - name: attributes
     physicalType: map<string,bigint>
+    logicalType: map
+    map:
+      key:
+        name: key
+        physicalType: string
+        logicalType: string
+        required: true
+      value:
+        name: value
+        physicalType: bigint
+        logicalType: integer

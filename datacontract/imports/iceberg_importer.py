@@ -79,24 +79,15 @@ def _property_from_nested_field(nested_field: iceberg_types.NestedField) -> Sche
 
     nested_properties = None
     items_prop = None
+    map_key = map_value = None
     physical_type = str(nested_field.field_type)
 
     if logical_type == "array":
         items_prop = _type_to_property(
             "items", nested_field.field_type.element_type, nested_field.field_type.element_required
         )
-    elif isinstance(nested_field.field_type, iceberg_types.MapType):
-        # For map types, store key/value types in customProperties and use "map" as physicalType
-        physical_type = "map"
-        custom_props["mapKeyType"] = _data_type_from_iceberg(nested_field.field_type.key_type)
-        custom_props["mapValueType"] = _data_type_from_iceberg(nested_field.field_type.value_type)
-        custom_props["mapValueRequired"] = str(nested_field.field_type.value_required).lower()
-        # Handle nested maps in value type
-        if isinstance(nested_field.field_type.value_type, iceberg_types.MapType):
-            custom_props["mapValuePhysicalType"] = "map"
-            custom_props["mapNestedKeyType"] = _data_type_from_iceberg(nested_field.field_type.value_type.key_type)
-            custom_props["mapNestedValueType"] = _data_type_from_iceberg(nested_field.field_type.value_type.value_type)
-            custom_props["mapNestedValueRequired"] = str(nested_field.field_type.value_type.value_required).lower()
+    elif logical_type == "map":
+        map_key, map_value = _map_key_value(nested_field.field_type)
     elif logical_type == "object" and hasattr(nested_field.field_type, "fields"):
         nested_properties = [_property_from_nested_field(nf) for nf in nested_field.field_type.fields]
 
@@ -108,7 +99,17 @@ def _property_from_nested_field(nested_field: iceberg_types.NestedField) -> Sche
         required=nested_field.required if nested_field.required else None,
         properties=nested_properties,
         items=items_prop,
+        map_key=map_key,
+        map_value=map_value,
         custom_properties=custom_props if custom_props else None,
+    )
+
+
+def _map_key_value(map_type: iceberg_types.MapType) -> tuple[SchemaProperty, SchemaProperty]:
+    """The key and value properties of an Iceberg map; Iceberg keys are always required."""
+    return (
+        _type_to_property("key", map_type.key_type, True),
+        _type_to_property("value", map_type.value_type, map_type.value_required),
     )
 
 
@@ -118,9 +119,12 @@ def _type_to_property(name: str, iceberg_type: iceberg_types.IcebergType, requir
 
     nested_properties = None
     items_prop = None
+    map_key = map_value = None
 
     if logical_type == "array":
         items_prop = _type_to_property("items", iceberg_type.element_type, iceberg_type.element_required)
+    elif logical_type == "map":
+        map_key, map_value = _map_key_value(iceberg_type)
     elif logical_type == "object" and hasattr(iceberg_type, "fields"):
         nested_properties = [_property_from_nested_field(nf) for nf in iceberg_type.fields]
 
@@ -131,6 +135,8 @@ def _type_to_property(name: str, iceberg_type: iceberg_types.IcebergType, requir
         required=required if required else None,
         properties=nested_properties,
         items=items_prop,
+        map_key=map_key,
+        map_value=map_value,
     )
 
 
@@ -165,7 +171,7 @@ def _data_type_from_iceberg(iceberg_type: iceberg_types.IcebergType) -> str:
     if isinstance(iceberg_type, iceberg_types.FixedType):
         return "array"
     if isinstance(iceberg_type, iceberg_types.MapType):
-        return "object"
+        return "map"
     if isinstance(iceberg_type, iceberg_types.ListType):
         return "array"
     if isinstance(iceberg_type, iceberg_types.StructType):

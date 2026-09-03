@@ -5,6 +5,7 @@ from pyiceberg import types
 from pyiceberg.schema import Schema, assign_fresh_schema_ids
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.map_type import get_map_key, get_map_value, is_map
 
 
 class IcebergExporter(Exporter):
@@ -182,35 +183,12 @@ def _get_custom_prop(prop: SchemaProperty, key: str) -> Optional[str]:
 
 
 def make_map(prop: SchemaProperty) -> types.MapType:
-    # For ODCS, read key/value types from customProperties
-    # Default to string -> string if not specified
-    key_type = types.StringType()
-    value_type = types.StringType()
-
-    key_type_str = _get_custom_prop(prop, "mapKeyType")
-    value_type_str = _get_custom_prop(prop, "mapValueType")
-    value_physical_type = _get_custom_prop(prop, "mapValuePhysicalType")
-    value_required_str = _get_custom_prop(prop, "mapValueRequired")
-    value_required = value_required_str == "true" if value_required_str else False
-
-    if key_type_str:
-        key_type = _type_str_to_iceberg_type(key_type_str)
-
-    # Handle nested map in value type
-    if value_physical_type == "map":
-        nested_key_type = _get_custom_prop(prop, "mapNestedKeyType") or "string"
-        nested_value_type = _get_custom_prop(prop, "mapNestedValueType") or "string"
-        nested_value_required_str = _get_custom_prop(prop, "mapNestedValueRequired")
-        nested_value_required = nested_value_required_str == "true" if nested_value_required_str else True
-        value_type = types.MapType(
-            key_id=0,
-            key_type=_type_str_to_iceberg_type(nested_key_type),
-            value_id=0,
-            value_type=_type_str_to_iceberg_type(nested_value_type),
-            value_required=nested_value_required,
-        )
-    elif value_type_str:
-        value_type = _type_str_to_iceberg_type(value_type_str)
+    """The Iceberg MapType of a map property, from its ``map`` block (or the pre-3.2.0 custom properties)."""
+    key = get_map_key(prop)
+    value = get_map_value(prop)
+    key_type = get_field_type(key) if key is not None else types.StringType()
+    value_type = get_field_type(value) if value is not None else types.StringType()
+    value_required = value.required is True if value is not None else False
 
     # key_id and value_id defaults to 0 to signify that the exporter is not attempting to populate meaningful values (see #make_field)
     return types.MapType(key_id=0, key_type=key_type, value_id=0, value_type=value_type, value_required=value_required)
@@ -259,7 +237,7 @@ def get_field_type(prop: SchemaProperty) -> types.IcebergType:
         return types.ListType(element_id=0, element_type=types.StringType(), element_required=False)
 
     # Handle map type
-    if physical_type == "map":
+    if is_map(prop):
         return make_map(prop)
 
     # Handle object/struct type

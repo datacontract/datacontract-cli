@@ -66,8 +66,17 @@ schema:
         physicalType: int
         logicalType: integer
   - name: field_eight
-    physicalType: map
-    logicalType: object
+    physicalType: map<string,int>
+    logicalType: map
+    map:
+      key:
+        name: key
+        physicalType: string
+        logicalType: string
+      value:
+        name: value
+        physicalType: int
+        logicalType: integer
   - name: field_nine
     physicalType: decimal
     logicalType: number

@@ -17,6 +17,9 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 - `enum` on properties is read by `datacontract test`, the jsonschema, avro, avro-idl, protobuf, pydantic-model, dcs, great-expectations, sodacl and data-caterer exporters, and dbt test mapping, ahead of `logicalTypeOptions.enum`, the `enum` custom property and the `invalidValues` rule; HTML export lists the values with labels and descriptions (#1560)
 - `datacontract import` from JSON Schema, Avro, Protobuf and DCS writes allowed values as `enum` entries instead of an `invalidValues` quality rule or custom properties (#1560)
 - `datacontract export pydantic-model` types an enumerated string or integer property as `typing.Literal` (#1560)
+- `logicalType: map` with a `map` block (`key` and `value` as full property definitions) is a first-class type: `datacontract test` checks the key and value types, including nested objects and maps, on DuckDB, Databricks, Snowflake, Trino, Kafka and the file sources (#1562)
+- `datacontract export` writes native map types for snowflake, databricks, dataframe, duckdb (local, s3), clickhouse, trino, spark, iceberg, avro, avro-idl, protobuf, pydantic-model, go and dcs, JSON for postgres, mysql, sqlserver, oracle and bigquery, and `additionalProperties` for jsonschema; HTML shows the key and value types (#1562)
+- `datacontract import` from sql, databricks/unity, spark, glue, iceberg, avro, parquet and dcs writes `logicalType: map` with the key and value instead of `physicalType: map` with custom properties; the `mapKeyType`, `mapValueType`, `mapKeys` and `mapValues` custom properties are still read but deprecated (#1562)
 
 ### Changed
 - `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)

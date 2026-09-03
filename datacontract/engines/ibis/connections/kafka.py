@@ -34,6 +34,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.config import Config
 from datacontract.export.avro_exporter import to_avro_schema_json
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.map_type import get_map_key, get_map_value
 from datacontract.model.run import ResultEnum, Run
 
 logger = logging.getLogger(__name__)
@@ -511,6 +512,12 @@ def to_arrow_type(pa, prop: SchemaProperty):
             return pa.time64("us")
         case "object" | "record" | "struct":
             return pa.struct(to_arrow_schema(pa, prop.properties or []))
+        case "map":
+            key, value = get_map_key(prop), get_map_value(prop)
+            return pa.map_(
+                to_arrow_type(pa, key) if key is not None else pa.string(),
+                to_arrow_type(pa, value) if value is not None else pa.string(),
+            )
         case "binary":
             return pa.binary()
         case "array":

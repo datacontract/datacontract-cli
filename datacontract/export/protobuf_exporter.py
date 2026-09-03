@@ -5,6 +5,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.map_type import get_map_key, get_map_value
 
 OBJECT_TYPES: set = {"object", "record", "struct"}
 
@@ -304,6 +305,16 @@ def _get_field_type(prop: SchemaProperty) -> str:
                 return f"repeated {primitive_type}"
         else:
             return "repeated string"  # Default array type
+
+    # Handle maps: protobuf keys are scalar; an object value becomes a nested message
+    if lower_type == "map":
+        key, value = get_map_key(prop), get_map_value(prop)
+        key_type = _get_primitive_type(key) if key is not None else "string"
+        if value is not None and value.logicalType and value.logicalType.lower() in OBJECT_TYPES:
+            value_type = _get_type_name(prop)
+        else:
+            value_type = _get_primitive_type(value) if value is not None else "string"
+        return f"map<{key_type}, {value_type}>"
 
     # Handle regular objects
     if lower_type in OBJECT_TYPES:

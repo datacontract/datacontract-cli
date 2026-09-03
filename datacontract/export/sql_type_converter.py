@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, Protocol, Union
 from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.map_type import get_map_key, get_map_value
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +149,36 @@ def _get_items(field: Union[SchemaProperty, FieldLike]) -> Optional[Union[Schema
     return field.items
 
 
+def _get_map_key(field: Union[SchemaProperty, FieldLike]) -> Optional[Union[SchemaProperty, FieldLike]]:
+    """Get the key definition of a map field."""
+    if isinstance(field, SchemaProperty):
+        return get_map_key(field)
+    return getattr(field, "keys", None)
+
+
+def _get_map_value(field: Union[SchemaProperty, FieldLike]) -> Optional[Union[SchemaProperty, FieldLike]]:
+    """Get the value definition of a map field."""
+    if isinstance(field, SchemaProperty):
+        return get_map_value(field)
+    return getattr(field, "values", None)
+
+
+def _convert_map(field: Union[SchemaProperty, FieldLike], convert, default: str, template: str) -> str:
+    """Render a map field with ``template`` (``{key}``/``{value}``), converting each side with ``convert``.
+
+    A map that declares neither key nor value but carries a parameterized native
+    type (``map<string,bigint>``) is already spelled the way the platform wants it,
+    so it passes through verbatim. A missing side otherwise defaults to ``default``.
+    """
+    key, value = _get_map_key(field), _get_map_value(field)
+    declared = _get_type(field) or ""
+    if key is None and value is None and ("<" in declared or "(" in declared):
+        return declared
+    key_type = (convert(key) if key is not None else None) or default
+    value_type = (convert(value) if value is not None else None) or default
+    return template.format(key=key_type, value=value_type)
+
+
 def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Union[SchemaProperty, FieldLike]]:
     """Get nested fields from an object field."""
     if isinstance(field, SchemaProperty):
@@ -253,6 +284,8 @@ def convert_to_snowflake(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return _attach_params_if_present("BINARY", field)
     if base_type in ["array"]:
         return "ARRAY"
+    if base_type == "map":
+        return _convert_map(field, convert_to_snowflake, "VARCHAR", "MAP({key}, {value})")
     if _get_params(field):
         return _get_type(field)
     return _warn_cannot_map_type(field, "snowflake")
@@ -301,7 +334,7 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return "smallint"
     if base_type in ["boolean"]:
         return "boolean"
-    if base_type in ["object", "record", "struct"]:
+    if base_type in ["object", "record", "struct", "map"]:
         return "jsonb"
     if base_type in ["bytes", "binary"]:
         return "bytea"
@@ -361,7 +394,7 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "smallint"
     if base_type in ["boolean"]:
         return "boolean"
-    if base_type in ["object", "record", "struct"]:
+    if base_type in ["object", "record", "struct", "map"]:
         return "json"
     if base_type in ["bytes", "binary"]:
         return "blob"
@@ -427,6 +460,8 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
             item_type = convert_to_dataframe(items)
             return f"ARRAY<{item_type}>"
         return "ARRAY<STRING>"
+    if base_type == "map":
+        return _convert_map(field, convert_to_dataframe, "STRING", "MAP<{key},{value}>")
     if _get_params(field):
         return _get_type(field)
     return _warn_cannot_map_type(field, "dataframe")
@@ -490,6 +525,8 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
             item_type = convert_to_databricks(items)
             return f"ARRAY<{item_type}>"
         return "ARRAY<STRING>"
+    if base_type == "map":
+        return _convert_map(field, convert_to_databricks, "STRING", "MAP<{key},{value}>")
     if base_type in ["variant"]:
         return "VARIANT"
     # A parameterized type with no mapping (map<string,int>, geography(4326)) is
@@ -553,11 +590,7 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
             return f"{item_type}[]"
         return "VARCHAR[]"
     if base_type == "map":
-        keys = _get_config_value(field, "mapKeys")
-        values = _get_config_value(field, "mapValues")
-        key_type = keys if keys else "VARCHAR"
-        value_type = values if values else "VARCHAR"
-        return f"MAP({key_type}, {value_type})"
+        return _convert_map(field, convert_to_duckdb, "VARCHAR", "MAP({key}, {value})")
     if base_type in ["struct", "object", "record"]:
         structure_field = "STRUCT("
         field_strings = []
@@ -605,7 +638,7 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
         return "bigint"
     if base_type in ["boolean"]:
         return "bit"
-    if base_type in ["object", "record", "struct"]:
+    if base_type in ["object", "record", "struct", "map"]:
         return "nvarchar(max)"
     if base_type in ["bytes"]:
         return _attach_params_if_present("varbinary", field)
@@ -676,7 +709,7 @@ def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
 
     if logical_type.lower() in ["string", "varchar", "text"]:
         return "STRING"
-    elif logical_type.lower() == "json":
+    elif logical_type.lower() in ["json", "map"]:
         return "JSON"
     elif logical_type.lower() == "bytes":
         return "BYTES"
@@ -792,6 +825,8 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "json"
     if base_type in ["array"]:
         return "json"
+    if base_type == "map":
+        return _convert_map(field, convert_type_to_trino, "varchar", "map({key}, {value})")
     if _get_params(field):
         return _get_type(field)
     return _warn_cannot_map_type(field, "trino")
@@ -891,6 +926,7 @@ def convert_type_to_oracle(schema_property: SchemaProperty) -> None | str:
         "bytes": "RAW(2000)",
         "object": "CLOB",
         "array": "CLOB",
+        "map": "CLOB",
     }
 
     return mapping.get(logical_type)
@@ -905,7 +941,7 @@ def convert_type_to_clickhouse(field: Union[SchemaProperty, FieldLike]) -> None 
     Complex types are expanded recursively:
         - ``array`` → ``Array(T)``
         - ``object``, ``record``, ``struct`` with known fields → ``Tuple(name1 Type1, ...)``
-        - ``map`` → ``Map(KeyType, ValueType)`` (uses config keys ``mapKeys``/``mapValues``,
+        - ``map`` → ``Map(KeyType, ValueType)`` (from the ``map`` block, or ``mapKeys``/``mapValues``,
           defaults to ``String, String``)
     """
     clickhouse_type = _get_config_value(field, "clickhouseType")
@@ -975,11 +1011,7 @@ def convert_type_to_clickhouse(field: Union[SchemaProperty, FieldLike]) -> None 
         return f"Tuple({', '.join(nested_fields)})"
 
     if base_type == "map":
-        keys = _get_config_value(field, "mapKeys")
-        values = _get_config_value(field, "mapValues")
-        key_type = keys if keys else "String"
-        value_type = values if values else "String"
-        return f"Map({key_type}, {value_type})"
+        return _convert_map(field, convert_type_to_clickhouse, "String", "Map({key}, {value})")
 
     if base_type == "array":
         items = _get_items(field)
