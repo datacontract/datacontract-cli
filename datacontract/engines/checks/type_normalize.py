@@ -17,6 +17,7 @@ from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.model.map_type import get_map_key, get_map_value
+from datacontract.model.vector_type import vector_dimensions
 
 # logicalType marker for a field whose type the backend cannot describe: a
 # dynamically-typed column (ibis json: Snowflake VARIANT, Postgres JSONB,
@@ -36,6 +37,9 @@ def normalize_type_name(type_name: str | None) -> str | None:
     if not type_name:
         return None
     name = type_name.strip().lower()
+    if re.match(r"^(float|real|double|float4|float8)\s*\[\s*\d+\s*\]$", name):
+        # a fixed-size numeric array (DuckDB FLOAT[1536]) is the platform's vector
+        return "vector"
     # strip parameters like varchar(10) / decimal(10,2) and array<...> wrappers
     name = re.sub(r"\(.*\)", "", name)
     name = re.sub(r"<.*>", "", name).strip()
@@ -121,6 +125,8 @@ def normalize_type_name(type_name: str | None) -> str | None:
         return "array"
     if name == "map":
         return "map"
+    if name in {"vector", "halfvec"}:
+        return "vector"
     # binary, null, interval and other unrecognized types are not in the
     # allowed categories; return None so they are silently ignored.
     return None
@@ -159,6 +165,8 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
         # A map column declared as an object (the pre-3.2.0 spelling, and how an
         # untyped Snowflake OBJECT reflects): the base holds, the keys differ per row.
         actual_base, actual = "object", SchemaProperty(logicalType="object", properties=None)
+    if expected_base == "vector":
+        return _vector_matches(expected, actual, actual_base)
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         return False
 
@@ -192,6 +200,31 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
         return True
 
     return True
+
+
+def _vector_matches(expected: SchemaProperty, actual: SchemaProperty, actual_base: str | None) -> bool:
+    return _vector_mismatch(expected, actual, actual_base) is None
+
+
+def _vector_mismatch(expected: SchemaProperty, actual: SchemaProperty, actual_base: str | None) -> str | None:
+    """Why ``actual`` is not the declared vector, or ``None``.
+
+    A platform without a vector type stores embeddings as an array of numbers,
+    which counts as a vector of unknown dimensions. Dimensions are compared only
+    when both sides state them.
+    """
+    if actual_base == "array":
+        items_base = (
+            normalize_type_name(actual.items.logicalType or actual.items.physicalType) if actual.items else None
+        )
+        if items_base is not None and items_base not in _NUMERIC:
+            return f"expected a vector of numbers but got an array of '{actual.items.logicalType or actual.items.physicalType}'"
+    elif actual_base != "vector":
+        return f"expected type 'vector' but got '{actual.logicalType or actual.physicalType}'"
+    expected_dimensions, actual_dimensions = vector_dimensions(expected), vector_dimensions(actual)
+    if expected_dimensions is not None and actual_dimensions is not None and expected_dimensions != actual_dimensions:
+        return f"expected {expected_dimensions} dimensions but got {actual_dimensions}"
+    return None
 
 
 class TypeMismatch(NamedTuple):
@@ -284,6 +317,11 @@ def schema_property_mismatch_reasons(
         # see schema_property_matches: the map's keys can't be matched to declared properties
         actual_base = "object"
         actual = SchemaProperty(logicalType="object", physicalType=actual.physicalType, properties=None)
+    if expected_base == "vector":
+        reason = _vector_mismatch(expected, actual, actual_base)
+        if reason:
+            errors.append(TypeMismatch(f"{field_label}: {reason}", verifiable=True))
+        return errors
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         exp_str = expected.logicalType or expected.physicalType
         act_str = actual.logicalType or actual.physicalType

@@ -310,6 +310,12 @@ def import_logical_type_options(row, headers):
         "maxProperties": parse_integer(get_cell_value(row, headers.get("maximum properties"))),
         "minProperties": parse_integer(get_cell_value(row, headers.get("minimum properties"))),
         "required": required_props_list,
+        "dimensions": parse_integer(get_cell_value(row, headers.get("dimensions"))),
+        "elementType": get_cell_value(row, headers.get("element type")),
+        "distanceMetric": get_cell_value(row, headers.get("distance metric")),
+        "normalized": parse_boolean(get_cell_value(row, headers.get("normalized"))),
+        "embeddingModel": get_cell_value(row, headers.get("embedding model")),
+        "embeddingModelVersion": get_cell_value(row, headers.get("embedding model version")),
     }
 
     for dict_key in list(logical_type_options_dict.keys()):

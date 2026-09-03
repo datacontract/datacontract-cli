@@ -17,6 +17,7 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+from datacontract.model.vector_type import parse_vector_type
 
 
 class SqlDialect(str, Enum):
@@ -92,6 +93,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             tags = get_tags(column)
 
             map_key, map_value = map_key_value_from_type(col_type) if logical_type == "map" else (None, None)
+            dimensions, element_type = vector_from_type(col_type) if logical_type == "vector" else (None, None)
 
             prop = create_property(
                 name=col_name,
@@ -108,6 +110,8 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 tags=tags,
                 map_key=map_key,
                 map_value=map_value,
+                dimensions=dimensions,
+                element_type=element_type,
             )
 
             if is_primary_key:
@@ -344,6 +348,14 @@ def map_key_value_from_type(sql_type: str | None) -> tuple[SchemaProperty | None
     return prop.map.key, prop.map.value
 
 
+def vector_from_type(sql_type: str | None) -> tuple[int | None, str | None]:
+    """``(dimensions, elementType)`` of a native vector type string, or ``(None, None)``."""
+    parsed = parse_vector_type(sql_type)
+    if parsed is None:
+        return None, None
+    return parsed[0], parsed[1]
+
+
 def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     """Map SQL type to ODCS logical type and optional format.
 
@@ -356,6 +368,8 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
 
     sql_type_normed = sql_type.lower().strip()
 
+    if parse_vector_type(sql_type_normed) is not None:
+        return ("vector", None)
     if sql_type_normed.startswith("varchar"):
         return ("string", None)
     elif sql_type_normed.startswith("char"):

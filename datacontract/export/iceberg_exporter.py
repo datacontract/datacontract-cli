@@ -6,6 +6,7 @@ from pyiceberg.schema import Schema, assign_fresh_schema_ids
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.map_type import get_map_key, get_map_value, is_map
+from datacontract.model.vector_type import is_double
 
 
 class IcebergExporter(Exporter):
@@ -239,6 +240,11 @@ def get_field_type(prop: SchemaProperty) -> types.IcebergType:
     # Handle map type
     if is_map(prop):
         return make_map(prop)
+
+    # A vector is a list of floats
+    if logical_type == "vector":
+        element = types.DoubleType() if is_double(prop) else types.FloatType()
+        return types.ListType(element_id=0, element_type=element, element_required=True)
 
     # Handle object/struct type
     if logical_type == "object" or physical_type in ["object", "record", "struct"]:
