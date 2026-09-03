@@ -193,8 +193,10 @@ def add_field_expectations(
 
             field_type = convert_to_sql_type(prop, sql_server_type)
         else:
-            field_type = prop_type
-        expectations.append(to_column_types_exp(field_name, field_type))
+            # an embedding column has no engine-neutral type name
+            field_type = None if prop_type == "vector" else prop_type
+        if field_type:
+            expectations.append(to_column_types_exp(field_name, field_type))
     if prop.unique:
         expectations.append(to_column_unique_exp(field_name))
 

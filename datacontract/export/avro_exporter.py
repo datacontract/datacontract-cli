@@ -6,6 +6,7 @@ from open_data_contract_standard.model import SchemaObject, SchemaProperty
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_value
+from datacontract.model.vector_type import is_double
 
 
 class AvroExporter(Exporter):
@@ -234,6 +235,8 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         if prop.items:
             return {"type": "array", "items": to_avro_type(prop.items)}
         return {"type": "array", "items": "string"}
+    elif field_type.lower() == "vector":
+        return {"type": "array", "items": "double" if is_double(prop) else "float"}
     elif field_type.lower() in ["null"]:
         return "null"
     else:

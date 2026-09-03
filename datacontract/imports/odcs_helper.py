@@ -94,11 +94,14 @@ def create_property(
     enum: List[Any] = None,
     map_key: "SchemaProperty" = None,
     map_value: "SchemaProperty" = None,
+    dimensions: int = None,
+    element_type: str = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field).
 
     ``enum`` lists the allowed values, as plain values or ``EnumValue`` entries (ODCS v3.2.0).
     ``map_key`` and ``map_value`` describe a ``logicalType: map`` property; a missing side is a string.
+    ``dimensions`` and ``element_type`` describe a ``logicalType: vector`` property.
     """
     prop = SchemaProperty(name=name, id=id)
     prop.logicalType = logical_type
@@ -143,6 +146,10 @@ def create_property(
         logical_type_options["exclusiveMaximum"] = exclusive_maximum
     if format:
         logical_type_options["format"] = format
+    if dimensions is not None:
+        logical_type_options["dimensions"] = dimensions
+    if element_type:
+        logical_type_options["elementType"] = element_type
     if logical_type_options:
         prop.logicalTypeOptions = logical_type_options
 
@@ -299,6 +306,8 @@ SQL_TO_LOGICAL_TYPE = {
     "struct": "object",
     "record": "object",
     "map": "map",
+    "vector": "vector",
+    "halfvec": "vector",
     "json": "object",
     "jsonb": "object",
     "variant": "object",

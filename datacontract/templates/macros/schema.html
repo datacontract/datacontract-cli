@@ -44,6 +44,12 @@
       {% endif %}
       {% if opts.timezone is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "timezone: " ~ ("yes" if opts.timezone else "no") %}{% endif %}
       {% if opts.defaultTimezone is defined and opts.defaultTimezone %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "defaultTimezone: " ~ opts.defaultTimezone %}{% endif %}
+      {% if opts.dimensions is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "dimensions: " ~ opts.dimensions %}{% endif %}
+      {% if opts.elementType is defined and opts.elementType %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "elementType: " ~ opts.elementType %}{% endif %}
+      {% if opts.distanceMetric is defined and opts.distanceMetric %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "distanceMetric: " ~ opts.distanceMetric %}{% endif %}
+      {% if opts.normalized is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "normalized: " ~ ("yes" if opts.normalized else "no") %}{% endif %}
+      {% if opts.embeddingModel is defined and opts.embeddingModel %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "embeddingModel: " ~ opts.embeddingModel %}{% endif %}
+      {% if opts.embeddingModelVersion is defined and opts.embeddingModelVersion %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "embeddingModelVersion: " ~ opts.embeddingModelVersion %}{% endif %}
     {% endif %}
 
     {% set transform_tooltip = "" %}

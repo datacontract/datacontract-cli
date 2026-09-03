@@ -128,6 +128,8 @@ def constant_field_annotation(
         case "object":
             classdef = generate_field_class(field_name.capitalize(), prop)
             return (ast.Name(field_name.capitalize(), ctx=ast.Load()), classdef)
+        case "vector":
+            return (list_of(ast.Name("float", ctx=ast.Load())), None)
         case "map":
             key, value = get_map_key(prop), get_map_value(prop)
             key_type = constant_field_annotation(field_name, key)[0] if key is not None else ast.Name("str")

@@ -36,6 +36,7 @@ from datacontract.export.avro_exporter import to_avro_schema_json
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.map_type import get_map_key, get_map_value
 from datacontract.model.run import ResultEnum, Run
+from datacontract.model.vector_type import is_double, vector_dimensions
 
 logger = logging.getLogger(__name__)
 
@@ -512,6 +513,10 @@ def to_arrow_type(pa, prop: SchemaProperty):
             return pa.time64("us")
         case "object" | "record" | "struct":
             return pa.struct(to_arrow_schema(pa, prop.properties or []))
+        case "vector":
+            element = pa.float64() if is_double(prop) else pa.float32()
+            dimensions = vector_dimensions(prop)
+            return pa.list_(element, dimensions) if dimensions else pa.list_(element)
         case "map":
             key, value = get_map_key(prop), get_map_value(prop)
             return pa.map_(

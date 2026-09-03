@@ -27,6 +27,7 @@ from open_data_contract_standard.model import (
 from datacontract.export.exporter import Exporter
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_key, get_map_value, is_map
+from datacontract.model.vector_type import is_double
 
 
 class DcsExporter(Exporter):
@@ -246,6 +247,10 @@ def _convert_property_to_field(prop: SchemaProperty) -> Field:
     if enum_values:
         field.enum = enum_values
 
+    if prop.logicalType and prop.logicalType.lower() == "vector":
+        field.type = "array"
+        field.items = Field(type="double" if is_double(prop) else "float")
+
     if is_map(prop):
         field.type = "map"
         key, value = get_map_key(prop), get_map_value(prop)
@@ -335,5 +340,7 @@ def _convert_logical_to_dcs_type(logical_type: Optional[str], physical_type: Opt
         return "object"
     elif lt == "map":
         return "map"
+    elif lt == "vector":
+        return "array"
     else:
         return logical_type

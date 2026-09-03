@@ -6,6 +6,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_value
+from datacontract.model.vector_type import vector_dimensions
 
 
 class JsonSchemaExporter(Exporter):
@@ -92,6 +93,13 @@ def to_property(prop: SchemaProperty) -> dict:
 
     if json_type == "array" and prop.items:
         property_dict["items"] = to_property(prop.items)
+
+    if field_type and field_type.lower() == "vector":
+        property_dict["items"] = {"type": "number"}
+        dimensions = vector_dimensions(prop)
+        if dimensions is not None:
+            property_dict["minItems"] = dimensions
+            property_dict["maxItems"] = dimensions
 
     if field_type and field_type.lower() == "map":
         value = get_map_value(prop)
@@ -182,6 +190,8 @@ def convert_type_format(type_str: Optional[str], format_str: Optional[str]) -> t
         return "array", None
     if type_str.lower() in ["map"]:
         return "object", None
+    if type_str.lower() in ["vector"]:
+        return "array", None
     return None, None
 
 

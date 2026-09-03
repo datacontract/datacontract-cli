@@ -18,6 +18,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.map_type import get_map_key, get_map_value, is_map
+from datacontract.model.vector_type import is_double
 
 if TYPE_CHECKING:
     from pyspark.sql import types
@@ -328,6 +329,10 @@ def to_spark_data_type(prop: SchemaProperty) -> SparkDataType:
         if prop.items:
             return SparkArrayType(element_type=to_spark_data_type(prop.items))
         return SparkArrayType(element_type=SparkDataType("StringType"))
+
+    # A vector is an array of floats
+    if logical_type == "vector":
+        return SparkArrayType(element_type=SparkDataType("DoubleType" if is_double(prop) else "FloatType"))
 
     # Handle map type - MUST be before object/struct check
     if is_map(prop):

@@ -6,6 +6,7 @@ from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.map_type import get_map_key, get_map_value
+from datacontract.model.vector_type import is_double, vector_dimensions, vector_element_type
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +180,13 @@ def _convert_map(field: Union[SchemaProperty, FieldLike], convert, default: str,
     return template.format(key=key_type, value=value_type)
 
 
+def _vector_shape(field: Union[SchemaProperty, FieldLike]) -> tuple[Optional[int], bool]:
+    """``(dimensions, double)`` of a vector field; DCS fields have no vector shape."""
+    if isinstance(field, SchemaProperty):
+        return vector_dimensions(field), is_double(field)
+    return None, False
+
+
 def _get_nested_fields(field: Union[SchemaProperty, FieldLike]) -> Dict[str, Union[SchemaProperty, FieldLike]]:
     """Get nested fields from an object field."""
     if isinstance(field, SchemaProperty):
@@ -286,6 +294,10 @@ def convert_to_snowflake(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "ARRAY"
     if base_type == "map":
         return _convert_map(field, convert_to_snowflake, "VARCHAR", "MAP({key}, {value})")
+    if base_type == "vector":
+        dimensions, _ = _vector_shape(field)
+        element = "INT" if isinstance(field, SchemaProperty) and vector_element_type(field) == "int8" else "FLOAT"
+        return f"VECTOR({element}, {dimensions})" if dimensions else _warn_cannot_map_type(field, "snowflake")
     if _get_params(field):
         return _get_type(field)
     return _warn_cannot_map_type(field, "snowflake")
@@ -336,6 +348,11 @@ def convert_type_to_postgres(field: Union[SchemaProperty, FieldLike]) -> None | 
         return "boolean"
     if base_type in ["object", "record", "struct", "map"]:
         return "jsonb"
+    if base_type == "vector":
+        dimensions, _ = _vector_shape(field)
+        half = isinstance(field, SchemaProperty) and vector_element_type(field) == "float16"
+        base = "halfvec" if half else "vector"
+        return f"{base}({dimensions})" if dimensions else base
     if base_type in ["bytes", "binary"]:
         return "bytea"
     if base_type in ["array"]:
@@ -396,6 +413,9 @@ def convert_type_to_mysql(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "boolean"
     if base_type in ["object", "record", "struct", "map"]:
         return "json"
+    if base_type == "vector":
+        dimensions, _ = _vector_shape(field)
+        return f"vector({dimensions})" if dimensions else "vector"
     if base_type in ["bytes", "binary"]:
         return "blob"
     if base_type in ["array"]:
@@ -462,6 +482,8 @@ def convert_to_dataframe(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "ARRAY<STRING>"
     if base_type == "map":
         return _convert_map(field, convert_to_dataframe, "STRING", "MAP<{key},{value}>")
+    if base_type == "vector":
+        return "ARRAY<DOUBLE>" if _vector_shape(field)[1] else "ARRAY<FLOAT>"
     if _get_params(field):
         return _get_type(field)
     return _warn_cannot_map_type(field, "dataframe")
@@ -527,6 +549,8 @@ def convert_to_databricks(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "ARRAY<STRING>"
     if base_type == "map":
         return _convert_map(field, convert_to_databricks, "STRING", "MAP<{key},{value}>")
+    if base_type == "vector":
+        return "ARRAY<DOUBLE>" if _vector_shape(field)[1] else "ARRAY<FLOAT>"
     if base_type in ["variant"]:
         return "VARIANT"
     # A parameterized type with no mapping (map<string,int>, geography(4326)) is
@@ -591,6 +615,10 @@ def convert_to_duckdb(field: Union[SchemaProperty, FieldLike]) -> None | str:
         return "VARCHAR[]"
     if base_type == "map":
         return _convert_map(field, convert_to_duckdb, "VARCHAR", "MAP({key}, {value})")
+    if base_type == "vector":
+        dimensions, double = _vector_shape(field)
+        element = "DOUBLE" if double else "FLOAT"
+        return f"{element}[{dimensions}]" if dimensions else f"{element}[]"
     if base_type in ["struct", "object", "record"]:
         structure_field = "STRUCT("
         field_strings = []
@@ -680,6 +708,10 @@ def map_type_to_bigquery(prop: SchemaProperty) -> str:
     Used by the BigQuery exporter for JSON schema output. For string-based syntax
     (ARRAY<STRING>, STRUCT<field1 TYPE1>) needed by SodaCL, use convert_type_to_bigquery.
     """
+    if prop.logicalType and prop.logicalType.lower() == "vector":
+        # the platform's vector spelling in physicalType (vector(1536), FLOAT[3]) is not a BigQuery type
+        return "FLOAT64"
+
     if prop.physicalType:
         base_type = prop.physicalType.upper().split("(")[0].strip()
         if base_type in _BQ_TYPES:
@@ -731,7 +763,7 @@ def _map_logical_type_to_bigquery(logical_type: str, nested_fields) -> str:
         return "DATETIME"
     elif logical_type.lower() in ["number", "decimal", "numeric"]:
         return "NUMERIC"
-    elif logical_type.lower() == "double":
+    elif logical_type.lower() in ["double", "vector"]:
         return "FLOAT64"
     elif logical_type.lower() in ["object", "record"] and not nested_fields:
         return "JSON"
@@ -770,6 +802,8 @@ def convert_type_to_bigquery(field: Union[SchemaProperty, FieldLike]) -> None | 
         return bigquery_type
 
     # Complex types need string-based syntax for SodaCL
+    if field_type.lower() == "vector":
+        return "ARRAY<FLOAT64>"
     if field_type.lower() in ["array"]:
         items = _get_items(field)
         if items:
@@ -827,6 +861,8 @@ def convert_type_to_trino(field: Union[SchemaProperty, FieldLike]) -> None | str
         return "json"
     if base_type == "map":
         return _convert_map(field, convert_type_to_trino, "varchar", "map({key}, {value})")
+    if base_type == "vector":
+        return "array(double)" if _vector_shape(field)[1] else "array(real)"
     if _get_params(field):
         return _get_type(field)
     return _warn_cannot_map_type(field, "trino")
@@ -1012,6 +1048,8 @@ def convert_type_to_clickhouse(field: Union[SchemaProperty, FieldLike]) -> None 
 
     if base_type == "map":
         return _convert_map(field, convert_type_to_clickhouse, "String", "Map({key}, {value})")
+    if base_type == "vector":
+        return "Array(Float64)" if _vector_shape(field)[1] else "Array(Float32)"
 
     if base_type == "array":
         items = _get_items(field)

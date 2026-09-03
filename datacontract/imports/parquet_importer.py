@@ -112,6 +112,14 @@ def map_pyarrow_field_to_property(pyarrow_field: pyarrow.Field, field_name: str)
             physical_type=f"FIXED_SIZE_BINARY({pyarrow_field.type.byte_width})",
         )
     if pyarrow.types.is_fixed_size_list(pyarrow_field.type):
+        if pyarrow.types.is_floating(pyarrow_field.type.value_type):
+            return create_property(
+                name=field_name,
+                logical_type="vector",
+                physical_type=f"FIXED_SIZE_LIST<{pyarrow_field.type.value_type}, {pyarrow_field.type.list_size}>",
+                dimensions=pyarrow_field.type.list_size,
+                element_type="float64" if pyarrow.types.is_float64(pyarrow_field.type.value_type) else "float32",
+            )
         return create_property(name=field_name, logical_type="array", physical_type="FIXED_SIZE_LIST")
 
     raise DataContractException(
