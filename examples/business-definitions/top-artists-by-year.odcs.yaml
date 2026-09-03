@@ -14,12 +14,12 @@ description:
 schema:
   # The business object: what the data means, independent of where it is stored.
   # `id` is the stable anchor other contracts reference, `name` is free to change.
-  - name: Top Artists by Year
+  - name: top_artists_by_year
     id: top_artists_by_year_ba
     businessName: Top Artists by Year
     description: The top music artists of a calendar year.
     properties:
-      - name: Artist Name
+      - name: artist_name
         id: artist_name
         businessName: Artist Name
         description: The artist name (not the legal name found in the passport).
@@ -27,7 +27,7 @@ schema:
         examples:
           - Lola Young
 
-      - name: Year
+      - name: year
         id: year
         businessName: Year
         description: Calendar year used as aggregation dimension.
@@ -35,7 +35,7 @@ schema:
         examples:
           - 2025
 
-      - name: Total Number of Songs
+      - name: total_number_of_songs
         id: total_number_of_songs
         businessName: Total Number of Songs
         description: Number of songs of the artist that were in the top 10 for at least one week.
