@@ -38,6 +38,7 @@ COMMAND_ORDER = [
     "edit",
     "lint",
     "changelog",
+    "breaking",
     "test",
     "dbt",
     "ci",
@@ -59,6 +60,8 @@ GUIDES = {
     "api": ("Run as a web server", "../api.md"),
     "publish": ("Publish to Entropy Data", "../entropy-data.md"),
     "lint": ("Open Data Contract Standard", "../open-data-contract-standard.md"),
+    "changelog": ("Compare contract versions", "../compare-contract-versions.md"),
+    "breaking": ("Compare contract versions", "../compare-contract-versions.md"),
     "import": ("Imports", "../imports/index.md"),
     "export": ("Exports", "../exports/index.md"),
 }
