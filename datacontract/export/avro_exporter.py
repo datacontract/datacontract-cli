@@ -5,6 +5,7 @@ from open_data_contract_standard.model import SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_value
 
 
 class AvroExporter(Exporter):
@@ -115,6 +116,30 @@ def to_avro_field(prop: SchemaProperty) -> dict:
     return avro_field
 
 
+def _to_avro_map_type(prop: SchemaProperty) -> Union[str, dict]:
+    """An Avro map (string keys).
+
+    The ``values`` custom property, an Avro type or union such as ``["string", "long"]``
+    that ODCS cannot express, wins over the property's ``map`` block.
+    """
+    values_type = _get_config_value(prop, "values")
+    if values_type:
+        if isinstance(values_type, str):
+            # Parse JSON array if values is a string like '["string", "long"]'
+            import json
+
+            try:
+                values_type = json.loads(values_type)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return {"type": "map", "values": values_type}
+    value = get_map_value(prop)
+    if value is not None:
+        value_prop = value if value.name else value.model_copy(update={"name": f"{prop.name}_value"})
+        return {"type": "map", "values": to_avro_type(value_prop)}
+    return "bytes"
+
+
 def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
     avro_logical_type = _get_config_value(prop, "avroLogicalType")
     avro_type = _get_config_value(prop, "avroType")
@@ -160,19 +185,8 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         if precision is not None:
             typeVal["precision"] = int(precision)
         return typeVal
-    elif physical_type in ["map"]:
-        values_type = _get_config_value(prop, "values")
-        if values_type:
-            # Parse JSON array if values is a string like '["string", "long"]'
-            import json
-
-            try:
-                parsed_values = json.loads(values_type)
-                return {"type": "map", "values": parsed_values}
-            except (json.JSONDecodeError, TypeError):
-                return {"type": "map", "values": values_type}
-        else:
-            return "bytes"
+    elif physical_type in ["map"] or (field_type and field_type.lower() == "map"):
+        return _to_avro_map_type(prop)
     elif physical_type in ["timestamp_ntz"]:
         return {"type": "long", "logicalType": "local-timestamp-millis"}
 
@@ -211,12 +225,6 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         return {"type": "int", "logicalType": "date"}
     elif field_type.lower() in ["time"]:
         return "long"
-    elif field_type.lower() in ["map"]:
-        values_type = _get_config_value(prop, "values")
-        if values_type:
-            return {"type": "map", "values": values_type}
-        else:
-            return "bytes"
     elif field_type.lower() in ["object", "record", "struct"]:
         namespace = _get_config_value(prop, "namespace")
         return to_avro_record(prop.name, prop.properties or [], prop.description, namespace)

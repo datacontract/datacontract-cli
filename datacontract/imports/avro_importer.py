@@ -177,10 +177,12 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
     elif field.type.type == "map":
         prop = create_property(
             name=field.name,
-            logical_type="object",
+            logical_type="map",
             physical_type="map",
             description=field.doc,
             required=True,
+            map_key=create_property(name="key", logical_type="string", physical_type="string"),
+            map_value=import_avro_map_values(field.type),
             custom_properties={**custom_props, "avroType": "map"} if custom_props else {"avroType": "map"},
         )
     elif field.type.type == "enum":
@@ -256,7 +258,7 @@ def import_avro_map_values(map_schema: avro.schema.MapSchema) -> SchemaProperty:
     if map_schema.values.type == "record":
         nested_properties = import_record_fields(map_schema.values.fields)
         return create_property(
-            name="values",
+            name="value",
             logical_type="object",
             physical_type="record",
             properties=nested_properties,
@@ -264,7 +266,7 @@ def import_avro_map_values(map_schema: avro.schema.MapSchema) -> SchemaProperty:
     elif map_schema.values.type == "array":
         items_prop = import_avro_array_items(map_schema.values)
         return create_property(
-            name="values",
+            name="value",
             logical_type="array",
             physical_type="array",
             items=items_prop,
@@ -272,7 +274,7 @@ def import_avro_map_values(map_schema: avro.schema.MapSchema) -> SchemaProperty:
     else:
         logical_type = map_type_from_avro(map_schema.values.type)
         return create_property(
-            name="values",
+            name="value",
             logical_type=logical_type,
             physical_type=map_schema.values.type,
         )

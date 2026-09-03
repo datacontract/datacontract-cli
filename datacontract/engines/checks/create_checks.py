@@ -70,7 +70,7 @@ def _scalar_element_type(prop: SchemaProperty, physical: bool) -> Optional[str]:
     if items.properties or items.items is not None:
         return None
     label = (items.physicalType or items.logicalType) if physical else (items.logicalType or items.physicalType)
-    if normalize_type_name(label) in ("object", "array"):
+    if normalize_type_name(label) in ("object", "array", "map"):
         return None
     return label
 
@@ -255,8 +255,8 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         nested_checks_possible = (
             check_types
             and not uses_raw_view
-            and declared_base in ("object", "array")
-            and (bool(prop.properties) or prop.items is not None)
+            and declared_base in ("object", "array", "map")
+            and (bool(prop.properties) or prop.items is not None or prop.map is not None)
         )
         base_prop = (
             SchemaProperty(name=prop.name, logicalType=prop.logicalType, physicalType=prop.physicalType)

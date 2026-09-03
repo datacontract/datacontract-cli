@@ -26,6 +26,7 @@ from open_data_contract_standard.model import (
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_key, get_map_value, is_map
 
 
 class DcsExporter(Exporter):
@@ -245,6 +246,13 @@ def _convert_property_to_field(prop: SchemaProperty) -> Field:
     if enum_values:
         field.enum = enum_values
 
+    if is_map(prop):
+        field.type = "map"
+        key, value = get_map_key(prop), get_map_value(prop)
+        field.keys = _convert_property_to_field(key) if key is not None else Field(type="string")
+        field.values = _convert_property_to_field(value) if value is not None else Field(type="string")
+        field.fields = None
+
     # Convert custom properties
     if prop.customProperties:
         field.config = {}
@@ -325,5 +333,7 @@ def _convert_logical_to_dcs_type(logical_type: Optional[str], physical_type: Opt
         return "array"
     elif lt == "object":
         return "object"
+    elif lt == "map":
+        return "map"
     else:
         return logical_type

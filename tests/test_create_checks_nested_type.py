@@ -6,6 +6,7 @@ check next to the base type check, which verifies the nested structure.
 
 import ibis
 from open_data_contract_standard.model import (
+    MapDefinition,
     OpenDataContractStandard,
     SchemaObject,
     SchemaProperty,
@@ -146,18 +147,29 @@ def test_no_nested_check_on_parquet():
     assert _nested(_checks(_SIC_CODE, "local", fmt="parquet")) is None
 
 
-def test_no_nested_check_for_an_uninterpretable_container():
-    # A vendor type outside the 9 ODCS categories has no nested structure the
-    # CLI can name; the base check still compares it against the catalog.
-    prop = SchemaProperty(
-        name="attrs",
-        physicalType="MAP(VARCHAR, VARCHAR)",
-        properties=[SchemaProperty(name="a", physicalType="VARCHAR")],
-    )
+def test_no_nested_check_for_a_map_without_a_map_block():
+    # A map that declares neither a map block nor legacy children has no nested
+    # structure to check; the base check still compares it against the catalog.
+    prop = SchemaProperty(name="attrs", physicalType="MAP(VARCHAR, VARCHAR)")
     checks = _checks(prop, "snowflake")
 
     assert _nested(checks) is None
     assert _base(checks).expected_physical_type == "MAP(VARCHAR, VARCHAR)"
+
+
+def test_nested_check_for_a_map_block():
+    prop = SchemaProperty(
+        name="attrs",
+        logicalType="map",
+        physicalType="MAP(VARCHAR, OBJECT(a VARCHAR))",
+        map=MapDefinition(
+            key=SchemaProperty(logicalType="string"),
+            value=SchemaProperty(logicalType="object", properties=[SchemaProperty(name="a", logicalType="string")]),
+        ),
+    )
+    checks = _checks(prop, "snowflake")
+
+    assert _nested(checks) is not None
 
 
 def test_no_nested_check_for_a_scalar_with_items():
@@ -236,8 +248,8 @@ def test_nested_check_warns_for_a_dynamically_typed_column():
 
 
 def test_nested_check_warns_for_an_untyped_object():
-    # Snowflake's untyped OBJECT reads as a map: the keys differ per row, so the
-    # declared children are as unverifiable as those of a variant.
+    # Snowflake's untyped OBJECT reads as a map of json: the keys differ per row,
+    # so the declared children are as unverifiable as those of a variant.
     check = _run(_SIC_CODE, "map<string, json>")
 
     assert check.result == ResultEnum.warning

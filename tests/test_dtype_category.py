@@ -47,12 +47,20 @@ def test_unsupported_types_are_unknown_and_name_themselves():
         assert prop.physicalType == name
 
 
-def test_map_maps_to_untyped_object():
-    # Snowflake OBJECT reflects as ibis map<string, json>: base confirmable,
-    # inner structure unknowable (properties=None).
+def test_map_carries_its_key_and_value():
+    prop = ibis_dtype_to_schema_property(dt.Map(dt.string, dt.Array(dt.int64)))
+    assert prop.logicalType == "map"
+    assert prop.map.key.logicalType == "string"
+    assert prop.map.value.logicalType == "array"
+    assert prop.map.value.items.logicalType == "integer"
+
+
+def test_map_with_unverifiable_values_keeps_the_value_type():
+    # Snowflake OBJECT reflects as ibis map<string, json>; the comparator treats a
+    # map against a declared object as an untyped object.
     prop = ibis_dtype_to_schema_property(dt.Map(dt.string, dt.JSON()))
-    assert prop.logicalType == "object"
-    assert prop.properties is None
+    assert prop.logicalType == "map"
+    assert prop.map.value.logicalType == UNKNOWN_LOGICAL_TYPE
 
 
 def test_struct_keeps_unsupported_field_as_unknown():

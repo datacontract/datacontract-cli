@@ -110,8 +110,41 @@ schema:
     customProperties:
     - property: avroType
       value: map
-    logicalType: object
+    logicalType: map
     required: true
+    map:
+      key:
+        name: key
+        physicalType: string
+        logicalType: string
+      value:
+        name: value
+        physicalType: record
+        logicalType: object
+        properties:
+        - name: value
+          physicalType: string
+          logicalType: string
+          required: true
+        - name: type
+          physicalType: enum
+          customProperties:
+          - property: avroType
+            value: enum
+          logicalType: string
+          required: true
+          enum:
+          - value: STRING
+          - value: LONG
+          - value: DOUBLE
+        - name: timestamp
+          physicalType: long
+          logicalType: integer
+          required: true
+        - name: source
+          physicalType: string
+          logicalType: string
+          required: true
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

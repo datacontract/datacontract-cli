@@ -79,7 +79,15 @@ def map_pyarrow_field_to_property(pyarrow_field: pyarrow.Field, field_name: str)
         return create_property(name=field_name, logical_type="array", physical_type="BINARY")
     if pyarrow.types.is_string(pyarrow_field.type):
         return create_property(name=field_name, logical_type="string", physical_type="STRING")
-    if pyarrow.types.is_map(pyarrow_field.type) or pyarrow.types.is_dictionary(pyarrow_field.type):
+    if pyarrow.types.is_map(pyarrow_field.type):
+        return create_property(
+            name=field_name,
+            logical_type="map",
+            physical_type="MAP",
+            map_key=map_pyarrow_field_to_property(pyarrow.field("key", pyarrow_field.type.key_type), "key"),
+            map_value=map_pyarrow_field_to_property(pyarrow.field("value", pyarrow_field.type.item_type), "value"),
+        )
+    if pyarrow.types.is_dictionary(pyarrow_field.type):
         return create_property(name=field_name, logical_type="object", physical_type="MAP")
     if pyarrow.types.is_struct(pyarrow_field.type):
         return create_property(name=field_name, logical_type="object", physical_type="STRUCT")

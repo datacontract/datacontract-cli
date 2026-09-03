@@ -81,7 +81,16 @@ schema:
     logicalType: array
   - name: map_field
     physicalType: MAP
-    logicalType: object
+    logicalType: map
+    map:
+      key:
+        name: key
+        physicalType: STRING
+        logicalType: string
+      value:
+        name: value
+        physicalType: STRING
+        logicalType: string
   - name: date_field
     physicalType: DATE
     logicalType: date

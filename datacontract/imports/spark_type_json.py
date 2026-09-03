@@ -78,8 +78,10 @@ def logical_type(type_json: Any) -> str:
     kind = type_json.get("type")
     if kind == "array":
         return "array"
-    if kind in ("struct", "map"):
+    if kind == "struct":
         return "object"
+    if kind == "map":
+        return "map"
     raise ValueError(f"Unsupported Spark type: {type_json}")
 
 
@@ -105,9 +107,16 @@ def property_from_type_json(
 
     nested_properties: Optional[List[SchemaProperty]] = None
     items: Optional[SchemaProperty] = None
+    map_key: Optional[SchemaProperty] = None
+    map_value: Optional[SchemaProperty] = None
     if isinstance(type_json, dict):
         if logical == "array":
             items = property_from_type_json("items", type_json["elementType"], not type_json.get("containsNull", True))
+        elif logical == "map":
+            map_key = property_from_type_json("key", type_json["keyType"], True)
+            map_value = property_from_type_json(
+                "value", type_json["valueType"], not type_json.get("valueContainsNull", True)
+            )
         elif type_json.get("type") == "struct":
             nested_properties = [property_from_field_json(f) for f in type_json["fields"]]
 
@@ -119,4 +128,6 @@ def property_from_type_json(
         required=required if required else None,
         properties=nested_properties,
         items=items,
+        map_key=map_key,
+        map_value=map_value,
     )

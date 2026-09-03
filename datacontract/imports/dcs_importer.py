@@ -23,6 +23,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.imports.importer import Importer
+from datacontract.model.map_type import map_definition
 from datacontract.model.server import to_odcs_server_type
 
 logger = logging.getLogger(__name__)
@@ -525,19 +526,13 @@ def _convert_field_to_property(
     if field.items:
         prop.items = _convert_field_to_property("item", field.items, None, definitions)
 
-    # Convert keys/values (for map types) - store types in customProperties
-    if field.keys or field.values:
-        if field.keys and field.keys.type:
-            custom_properties.append(
-                CustomProperty(property="mapKeyType", value=_convert_type_to_logical_type(field.keys.type))
-            )
-        if field.values and field.values.type:
-            custom_properties.append(
-                CustomProperty(property="mapValueType", value=_convert_type_to_logical_type(field.values.type))
-            )
-            # For map with struct values, store the value fields in properties
-            if field.values.fields:
-                prop.properties = _convert_fields_to_properties(field.values.fields, None, definitions)
+    # Convert keys/values (for map types)
+    if field.keys or field.values or (field.type and field.type.lower() == "map"):
+        prop.logicalType = "map"
+        prop.map = map_definition(
+            _convert_field_to_property("key", field.keys, None, definitions) if field.keys else None,
+            _convert_field_to_property("value", field.values, None, definitions) if field.values else None,
+        )
 
     # Set customProperties after all have been added
     if custom_properties:
@@ -600,7 +595,7 @@ def _convert_type_to_logical_type(dcs_type: str) -> str | None:
         "object": "object",
         "record": "object",
         "struct": "object",
-        "map": None,  # not supported in ODCS
+        "map": "map",
         "interval": None,  # not supported in ODCS
         "bytes": None,  # not supported in ODCS
         "binary": None,  # not supported in ODCS

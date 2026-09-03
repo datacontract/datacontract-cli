@@ -16,6 +16,7 @@ from typing import NamedTuple
 from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.engines.checks.physical_type_match import physical_type_matches
+from datacontract.model.map_type import get_map_key, get_map_value
 
 # logicalType marker for a field whose type the backend cannot describe: a
 # dynamically-typed column (ibis json: Snowflake VARIANT, Postgres JSONB,
@@ -26,11 +27,11 @@ UNKNOWN_LOGICAL_TYPE = "__unknown__"
 
 
 def normalize_type_name(type_name: str | None) -> str | None:
-    """Map a contract type name (logical or physical) to one of the 9 ODCS categories.
+    """Map a contract type name (logical or physical) to one of the 10 ODCS categories.
 
     Returns ``None`` for types that are unsupported or unrecognized (binary,
-    map, null, interval …) so they can be silently ignored rather than
-    producing false type-check failures.
+    null, interval …) so they can be silently ignored rather than producing
+    false type-check failures.
     """
     if not type_name:
         return None
@@ -118,8 +119,10 @@ def normalize_type_name(type_name: str | None) -> str | None:
         return "object"
     if name in {"array", "list"}:
         return "array"
-    # binary, map, null, interval and other unrecognized types are not in the
-    # 9 allowed categories; return None so they are silently ignored.
+    if name == "map":
+        return "map"
+    # binary, null, interval and other unrecognized types are not in the
+    # allowed categories; return None so they are silently ignored.
     return None
 
 
@@ -152,6 +155,10 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
         # actual is unsupported or dynamically typed (json element/variant): a
         # declared concrete type can't be confirmed against it, so it fails.
         return False
+    if expected_base == "object" and actual_base == "map":
+        # A map column declared as an object (the pre-3.2.0 spelling, and how an
+        # untyped Snowflake OBJECT reflects): the base holds, the keys differ per row.
+        actual_base, actual = "object", SchemaProperty(logicalType="object", properties=None)
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         return False
 
@@ -159,6 +166,14 @@ def schema_property_matches(expected: SchemaProperty | None, actual: SchemaPrope
         if expected.items is None:
             return True
         return schema_property_matches(expected.items, actual.items)
+
+    if expected_base == "map":
+        expected_key, expected_value = get_map_key(expected), get_map_value(expected)
+        if expected_key is not None and not schema_property_matches(expected_key, get_map_key(actual)):
+            return False
+        if expected_value is not None and not schema_property_matches(expected_value, get_map_value(actual)):
+            return False
+        return True
 
     if expected_base == "object":
         if not expected.properties:
@@ -251,7 +266,7 @@ def schema_property_mismatch_reasons(
     # A leaf that declares a physicalType is compared against the column's real
     # native type, where the backend reports one. The declared type wins over the
     # logicalType, as it does for the column itself.
-    if expected_base not in ("object", "array") and expected.physicalType and actual.physicalType:
+    if expected_base not in ("object", "array", "map") and expected.physicalType and actual.physicalType:
         result, reason = physical_type_matches(expected.physicalType, actual.physicalType, dialect)
         if result is True:
             return errors
@@ -265,6 +280,10 @@ def schema_property_mismatch_reasons(
             errors.append(TypeMismatch(f"{field_label}: {reason}", verifiable=False))
             return errors
 
+    if expected_base == "object" and actual_base == "map":
+        # see schema_property_matches: the map's keys can't be matched to declared properties
+        actual_base = "object"
+        actual = SchemaProperty(logicalType="object", physicalType=actual.physicalType, properties=None)
     if expected_base != actual_base and not (expected_base in _NUMERIC and actual_base in _NUMERIC):
         exp_str = expected.logicalType or expected.physicalType
         act_str = actual.logicalType or actual.physicalType
@@ -275,6 +294,15 @@ def schema_property_mismatch_reasons(
         if expected.items is not None:
             child_path = f"{path}[]" if path else "[]"
             errors.extend(schema_property_mismatch_reasons(expected.items, actual.items, child_path, dialect))
+
+    if expected_base == "map":
+        expected_key, expected_value = get_map_key(expected), get_map_value(expected)
+        if expected_key is not None:
+            child_path = f"{path}[key]" if path else "[key]"
+            errors.extend(schema_property_mismatch_reasons(expected_key, get_map_key(actual), child_path, dialect))
+        if expected_value is not None:
+            child_path = f"{path}[value]" if path else "[value]"
+            errors.extend(schema_property_mismatch_reasons(expected_value, get_map_value(actual), child_path, dialect))
 
     if expected_base == "object":
         if not expected.properties:

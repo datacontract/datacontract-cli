@@ -10,6 +10,8 @@
     {% set property_custom_properties = property.customProperties if property.customProperties is defined else none %}
 
     {% set type_source = property.items if property.items is defined and property.items is mapping else property %}
+    {% set map_key = property.map.key if property.map is defined and property.map and property.map.key is defined and property.map.key else none %}
+    {% set map_value = property.map.value if property.map is defined and property.map and property.map.value is defined and property.map.value else none %}
     {% set logical_type = type_source.logicalType if type_source.logicalType is defined and type_source.logicalType else none %}
     {% set physical_type = type_source.physicalType if type_source.physicalType is defined and type_source.physicalType else none %}
     {% set fallback_type = property.type if property.type is defined and property.type else none %}
@@ -18,6 +20,9 @@
 
     {% set type_tooltip = "" %}
     {% if logical_type %}{% set type_tooltip = "logicalType: " ~ logical_type %}{% endif %}
+    {% if map_key or map_value %}
+      {% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "key: " ~ ((map_key.logicalType if map_key and map_key.logicalType is defined and map_key.logicalType else (map_key.physicalType if map_key and map_key.physicalType is defined else "string")) ~ "\nvalue: " ~ (map_value.logicalType if map_value and map_value.logicalType is defined and map_value.logicalType else (map_value.physicalType if map_value and map_value.physicalType is defined else "string"))) %}
+    {% endif %}
     {% if physical_type %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "physicalType: " ~ physical_type %}{% endif %}
     {% if opts %}
       {% if opts.minLength is defined %}{% set type_tooltip = type_tooltip ~ ("\n" if type_tooltip else "") ~ "minLength: " ~ opts.minLength %}{% endif %}
@@ -231,6 +236,9 @@
       {{ render_nested_properties(property.properties, schema_name, indent + 1) }}
     {% endif %}
 
+    {% if map_value is not none and ((map_value.properties is defined and map_value.properties) or (map_value.items is defined and map_value.items) or (map_value.map is defined and map_value.map)) %}
+      {{ render_nested_properties([map_value], schema_name, indent + 1) }}
+    {% endif %}
     {% if property.items is defined and property.items %}
       {% if property.items is mapping %}
         {{ render_nested_properties([property.items], schema_name, indent + 1) }}
