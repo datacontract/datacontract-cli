@@ -216,11 +216,14 @@ def test_exporters_read_the_vector():
     field = dcs["models"]["documents"]["fields"]["embedding"]
     assert field["type"] == "array" and field["items"]["type"] == "float"
 
+    # the type expectation carries a platform type, never the bare logical name
     great_expectations = json.loads(data_contract.export("great-expectations"))
-    assert not any(
-        e["expectation_type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "embedding"
+    type_expectations = [
+        e["kwargs"]["type_"]
         for e in great_expectations["expectations"]
-    )
+        if e["type"] == "expect_column_values_to_be_of_type" and e["kwargs"]["column"] == "embedding"
+    ]
+    assert "vector" not in type_expectations
 
     exported = yaml.safe_load(data_contract.export("odcs"))
     assert exported["schema"][0]["properties"][1]["logicalTypeOptions"]["dimensions"] == 3
