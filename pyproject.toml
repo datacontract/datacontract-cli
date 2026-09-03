@@ -130,7 +130,8 @@ databricks-runtime = [
 ]
 
 iceberg = [
-  "pyiceberg==0.11.1"
+  "pyiceberg[pyarrow]==0.11.1",
+  "datacontract-cli[duckdb]"
 ]
 
 # Kafka needs no JVM: the topic is consumed with confluent-kafka, decoded in

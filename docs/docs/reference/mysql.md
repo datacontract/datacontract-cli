@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 14
 title: "MySQL Reference"
 sidebar_label: "MySQL"
 description: "All MySQL authentication options and data type mappings."

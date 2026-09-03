@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: "Databricks"
 description: "Create a data contract from Unity Catalog and test the actual data against it — in about 5 minutes."
 ---

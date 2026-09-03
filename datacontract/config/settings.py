@@ -40,6 +40,10 @@ SERVER_OVERRIDE_OPTIONS = {
     "databricks_schema": "schema",
     "duckdb_database": "database",
     "duckdb_schema": "schema",
+    "iceberg_catalog_url": "catalogUrl",
+    "iceberg_catalog": "catalog",
+    "iceberg_namespace": "namespace",
+    "iceberg_warehouse": "warehouse",
     "impala_host": "host",
     "impala_port": "port",
     "impala_database": "database",
@@ -141,6 +145,16 @@ class Config(BaseSettings):
     # gcs
     gcs_key_id: str | None = None
     gcs_secret: SecretStr | None = None
+
+    # iceberg (REST catalog by default; data files use the s3_* options)
+    iceberg_catalog_type: str | None = None
+    iceberg_credential: SecretStr | None = None
+    iceberg_token: SecretStr | None = None
+    # overrides for the contract's servers block
+    iceberg_catalog_url: str | None = None
+    iceberg_catalog: str | None = None
+    iceberg_namespace: str | None = None
+    iceberg_warehouse: str | None = None
 
     # impala
     impala_username: str | None = None
@@ -540,6 +554,28 @@ class Config(BaseSettings):
 
     def get_gcs_secret(self, required: bool = False) -> str | None:
         return self._str_option("gcs_secret", required)
+
+    # --- iceberg ---
+    def get_iceberg_catalog_type(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_catalog_type", required)
+
+    def get_iceberg_credential(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_credential", required)
+
+    def get_iceberg_token(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_token", required)
+
+    def get_iceberg_catalog_url(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_catalog_url", required)
+
+    def get_iceberg_catalog(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_catalog", required)
+
+    def get_iceberg_namespace(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_namespace", required)
+
+    def get_iceberg_warehouse(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_warehouse", required)
 
     # --- impala ---
     def get_impala_username(self, required: bool = False) -> str | None:

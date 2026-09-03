@@ -34,7 +34,6 @@ LINT_ONLY_SERVER_TYPES = {
     "exasol",
     "hana",
     "hive",
-    "iceberg",
     "informix",
     "ingres",
     "poet",

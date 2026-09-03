@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # are read with duckdb, so naming the server type would send users to an extra
 # that does not exist (`local`) or to an unrelated one (`api` installs the web
 # server dependencies, not a test backend).
-_INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb"}
+_INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb", "iceberg": "iceberg"}
 
 
 def install_extra_for(server_type: Optional[str]) -> str:

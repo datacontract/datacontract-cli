@@ -197,6 +197,18 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_GCS_KEY_ID` | `gcs_key_id` | string |  |
 | `DATACONTRACT_GCS_SECRET` | `gcs_secret` | string (secret) |  |
 
+### Iceberg
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_ICEBERG_CATALOG_TYPE` | `iceberg_catalog_type` | string |  |
+| `DATACONTRACT_ICEBERG_CREDENTIAL` | `iceberg_credential` | string (secret) |  |
+| `DATACONTRACT_ICEBERG_TOKEN` | `iceberg_token` | string (secret) |  |
+| `DATACONTRACT_ICEBERG_CATALOG_URL` | `iceberg_catalog_url` | string | Overrides `catalogUrl` from the contract's `servers` block |
+| `DATACONTRACT_ICEBERG_CATALOG` | `iceberg_catalog` | string | Overrides `catalog` from the contract's `servers` block |
+| `DATACONTRACT_ICEBERG_NAMESPACE` | `iceberg_namespace` | string | Overrides `namespace` from the contract's `servers` block |
+| `DATACONTRACT_ICEBERG_WAREHOUSE` | `iceberg_warehouse` | string | Overrides `warehouse` from the contract's `servers` block |
+
 ### Impala
 
 | Environment variable | `Config` field | Type | Notes |
