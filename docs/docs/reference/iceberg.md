@@ -31,6 +31,24 @@ servers:
 | `DATACONTRACT_ICEBERG_CATALOG_TYPE` | The pyiceberg catalog implementation: `rest` (default), `sql`, `glue`, `hive`, `dynamodb`. For `sql`, `catalogUrl` is the SQLAlchemy connection URI |
 | `DATACONTRACT_S3_ACCESS_KEY_ID`, `DATACONTRACT_S3_SECRET_ACCESS_KEY`, `DATACONTRACT_S3_SESSION_TOKEN`, `DATACONTRACT_S3_REGION` | Credentials for the data files on S3; not needed when the catalog vends them |
 | `DATACONTRACT_ICEBERG_S3_ENDPOINT` | Endpoint of an S3-compatible store (MinIO, Ceph) holding the data files |
+| `DATACONTRACT_ICEBERG_SIGNING_NAME` | Sign catalog requests with SigV4 for this AWS service (`s3tables`, `glue`); detected from `catalogUrl` for the AWS endpoints, so only needed behind a proxy |
+| `DATACONTRACT_ICEBERG_PROPERTIES` | Extra pyiceberg catalog properties, as a JSON object or `key=value,key=value` |
+
+## Amazon S3 Tables
+
+S3 Tables exposes each table bucket as an Iceberg REST catalog. `catalogUrl` is the regional endpoint, `warehouse` the table bucket ARN, and `namespace` the S3 Tables namespace. Requests are signed with SigV4 using the AWS credentials (`DATACONTRACT_S3_*`, or the default AWS credential chain of the environment), and S3 Tables vends the credentials for the data files itself.
+
+```yaml
+servers:
+  - server: production
+    type: iceberg
+    catalog: s3tables
+    catalogUrl: https://s3tables.eu-central-1.amazonaws.com/iceberg
+    warehouse: arn:aws:s3tables:eu-central-1:123456789012:bucket/my-table-bucket
+    namespace: sales
+```
+
+The AWS Glue Data Catalog's Iceberg REST endpoint (`https://glue.<region>.amazonaws.com/iceberg`) works the same way, with the Glue catalog id as `warehouse`.
 
 The full list is on the [Configuration](../configuration.md) page.
 

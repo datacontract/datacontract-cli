@@ -138,6 +138,9 @@ def test_configuration_overrides_and_credentials(catalog, monkeypatch):
         "s3.access-key-id": "AKIA",
         "s3.secret-access-key": "s3cr3t",
         "s3.region": "eu-central-1",
+        "client.access-key-id": "AKIA",
+        "client.secret-access-key": "s3cr3t",
+        "client.region": "eu-central-1",
     }
 
 
@@ -227,3 +230,64 @@ def test_import_from_a_real_iceberg_table(sql_catalog):
     assert properties["attributes"].logicalType == "map"
     assert properties["attributes"].map.key.logicalType == "string"
     assert result.servers[0].catalogUrl == uri
+
+
+# --- AWS-hosted catalogs: S3 Tables and Glue sign with SigV4 ------------------------------------
+
+
+def test_s3_tables_endpoint_is_signed_with_sigv4(monkeypatch):
+    for name in [
+        "DATACONTRACT_ICEBERG_SIGNING_NAME",
+        "DATACONTRACT_ICEBERG_PROPERTIES",
+        "DATACONTRACT_S3_SESSION_TOKEN",
+    ]:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "AKIA")
+    monkeypatch.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "s3cr3t")
+    monkeypatch.delenv("DATACONTRACT_S3_REGION", raising=False)
+    server = Server(
+        server="production",
+        type="iceberg",
+        catalogUrl="https://s3tables.eu-central-1.amazonaws.com/iceberg",
+        warehouse="arn:aws:s3tables:eu-central-1:123456789012:bucket/my-bucket",
+    )
+
+    properties = catalog_properties(server)
+
+    assert properties["rest.sigv4-enabled"] == "true"
+    assert properties["rest.signing-name"] == "s3tables"
+    assert properties["rest.signing-region"] == "eu-central-1"
+    assert properties["warehouse"] == "arn:aws:s3tables:eu-central-1:123456789012:bucket/my-bucket"
+    # the AWS keys serve both the signing (client.*) and the data files (s3.*)
+    assert properties["client.access-key-id"] == "AKIA" and properties["s3.access-key-id"] == "AKIA"
+    assert "token" not in properties and "credential" not in properties
+
+
+def test_glue_endpoint_and_an_explicit_signing_name(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_ICEBERG_SIGNING_NAME", raising=False)
+    glue = Server(server="p", type="iceberg", catalogUrl="https://glue.us-east-1.amazonaws.com/iceberg")
+    assert catalog_properties(glue)["rest.signing-name"] == "glue"
+
+    monkeypatch.setenv("DATACONTRACT_ICEBERG_SIGNING_NAME", "s3tables")
+    monkeypatch.setenv("DATACONTRACT_S3_REGION", "eu-west-1")
+    proxied = Server(server="p", type="iceberg", catalogUrl="https://iceberg.internal.example.com")
+    properties = catalog_properties(proxied)
+    assert properties["rest.signing-name"] == "s3tables" and properties["rest.signing-region"] == "eu-west-1"
+
+    monkeypatch.delenv("DATACONTRACT_ICEBERG_SIGNING_NAME", raising=False)
+    polaris = Server(server="p", type="iceberg", catalogUrl="https://polaris.example.com/api/catalog")
+    assert "rest.sigv4-enabled" not in catalog_properties(polaris)
+
+
+def test_extra_catalog_properties_pass_through(monkeypatch):
+    server = Server(server="p", type="iceberg", catalogUrl="https://polaris.example.com/api/catalog")
+
+    monkeypatch.setenv("DATACONTRACT_ICEBERG_PROPERTIES", '{"scope": "PRINCIPAL_ROLE:ALL", "header.X-Custom": "1"}')
+    assert catalog_properties(server)["scope"] == "PRINCIPAL_ROLE:ALL"
+
+    monkeypatch.setenv("DATACONTRACT_ICEBERG_PROPERTIES", "scope=PRINCIPAL_ROLE:ALL, rest.signing-region=eu-west-1")
+    assert catalog_properties(server)["rest.signing-region"] == "eu-west-1"
+
+    monkeypatch.setenv("DATACONTRACT_ICEBERG_PROPERTIES", "{not json")
+    with pytest.raises(DataContractException, match="not valid JSON"):
+        catalog_properties(server)

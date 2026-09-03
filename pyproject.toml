@@ -130,7 +130,7 @@ databricks-runtime = [
 ]
 
 iceberg = [
-  "pyiceberg[pyarrow]==0.11.1",
+  "pyiceberg[pyarrow,rest-sigv4]==0.11.1",
   "datacontract-cli[duckdb]"
 ]
 

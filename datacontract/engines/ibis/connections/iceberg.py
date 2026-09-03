@@ -8,7 +8,9 @@ and registered in DuckDB, where the checks run like they do for file sources.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
+import re
+from typing import TYPE_CHECKING, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
@@ -27,9 +29,12 @@ def catalog_properties(server: Server, config: Config | None = None) -> dict[str
 
     The configuration overrides win over the contract, like the other server
     details. Credentials come from the configuration only: an OAuth2 client
-    credential (``DATACONTRACT_ICEBERG_CREDENTIAL``, ``client_id:client_secret``)
-    or a bearer token (``DATACONTRACT_ICEBERG_TOKEN``), plus the S3 options for
-    the data files.
+    credential (``DATACONTRACT_ICEBERG_CREDENTIAL``, ``client_id:client_secret``),
+    a bearer token (``DATACONTRACT_ICEBERG_TOKEN``), or SigV4 signing with the
+    AWS credentials for Amazon S3 Tables and Glue (detected from the endpoint,
+    or set with ``DATACONTRACT_ICEBERG_SIGNING_NAME``), plus the S3 options for
+    the data files. ``DATACONTRACT_ICEBERG_PROPERTIES`` passes anything else
+    through to pyiceberg.
     """
     config = Config.resolve(config)
     uri = config.get_iceberg_catalog_url() or getattr(server, "catalogUrl", None)
@@ -51,19 +56,68 @@ def catalog_properties(server: Server, config: Config | None = None) -> dict[str
     token = config.get_iceberg_token()
     if token:
         properties["token"] = token
+    # The S3 options serve the data files (``s3.*``) and, as pyiceberg's generic AWS
+    # client options (``client.*``), the SigV4 signing of catalog requests.
     for option, key in (
-        (config.get_s3_access_key_id(), "s3.access-key-id"),
-        (config.get_s3_secret_access_key(), "s3.secret-access-key"),
-        (config.get_s3_session_token(), "s3.session-token"),
-        (config.get_s3_region(), "s3.region"),
+        (config.get_s3_access_key_id(), "access-key-id"),
+        (config.get_s3_secret_access_key(), "secret-access-key"),
+        (config.get_s3_session_token(), "session-token"),
+        (config.get_s3_region(), "region"),
     ):
         if option:
-            properties[key] = option
+            properties[f"s3.{key}"] = option
+            properties[f"client.{key}"] = option
     endpoint = config.get_iceberg_s3_endpoint()
     if endpoint:
         # an S3-compatible store such as MinIO; pyarrow's S3 file system then uses path-style addressing
         properties["s3.endpoint"] = endpoint
+    signing_name = config.get_iceberg_signing_name() or aws_signing_name(uri)
+    if signing_name:
+        # Amazon S3 Tables and the Glue REST endpoint authenticate catalog requests
+        # with SigV4 instead of a token; boto3's credential chain supplies the keys
+        # when the S3 options are not set. S3 Tables vends the data file credentials.
+        properties["rest.sigv4-enabled"] = "true"
+        properties["rest.signing-name"] = signing_name
+        region = config.get_s3_region() or aws_region(uri)
+        if region:
+            properties["rest.signing-region"] = region
+    extra = config.get_iceberg_properties()
+    if extra:
+        properties.update(_parse_properties(extra))
     return properties
+
+
+_AWS_ENDPOINT = re.compile(r"^https?://(?P<service>s3tables|glue)\.(?P<region>[a-z0-9-]+)\.amazonaws\.com(/|$)", re.I)
+
+
+def aws_signing_name(catalog_url: str) -> Optional[str]:
+    """``s3tables`` or ``glue`` for the AWS-hosted Iceberg REST endpoints, else ``None``."""
+    match = _AWS_ENDPOINT.match(catalog_url or "")
+    return match.group("service").lower() if match else None
+
+
+def aws_region(catalog_url: str) -> Optional[str]:
+    """The region in an AWS-hosted catalog endpoint, else ``None``."""
+    match = _AWS_ENDPOINT.match(catalog_url or "")
+    return match.group("region") if match else None
+
+
+def _parse_properties(text: str) -> dict[str, str]:
+    """Extra pyiceberg catalog properties: a JSON object, or ``key=value`` pairs separated by commas."""
+    text = text.strip()
+    if text.startswith("{"):
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError as e:
+            raise DataContractException(
+                type="iceberg-connection",
+                name="invalid_properties",
+                reason=f"DATACONTRACT_ICEBERG_PROPERTIES is not valid JSON: {e}",
+                engine="datacontract-cli",
+            )
+        return {str(k): str(v) for k, v in parsed.items()}
+    pairs = (pair.partition("=") for pair in text.split(",") if pair.strip())
+    return {key.strip(): value.strip() for key, _, value in pairs if key.strip()}
 
 
 def load_iceberg_catalog(server: Server, config: Config | None = None) -> Catalog:
