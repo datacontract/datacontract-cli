@@ -1,0 +1,64 @@
+{# Renders an ODCS v3.2.0 context block: a plain string, or instructions, verifiedStatements and constraints. #}
+{% macro render_context(context) -%}
+  {% if context is string %}
+    <div class="text-sm text-gray-900 whitespace-pre-line">{{ context }}</div>
+  {% else %}
+    {% set instructions = context.instructions if context.instructions is defined and context.instructions else none %}
+    {% set statements = context.verifiedStatements if context.verifiedStatements is defined and context.verifiedStatements else [] %}
+    {% set constraints = context.constraints if context.constraints is defined and context.constraints else [] %}
+    {% if instructions %}
+      <div class="text-sm font-medium text-gray-500">Instructions</div>
+      <div class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ instructions }}</div>
+    {% endif %}
+    {% if statements|length > 0 %}
+      <div class="mt-3 text-sm font-medium text-gray-500">Verified statements</div>
+      <ul class="mt-1 list-disc ml-4 text-sm text-gray-900">
+        {% for statement in statements %}
+          <li>
+            {% if statement.question is defined and statement.question %}<span>{{ statement.question }}</span>{% endif %}
+            {% if statement.answer is defined and statement.answer %}<span class="ml-1 text-gray-500">{{ statement.answer }}</span>{% endif %}
+            {% if statement.tags is defined and statement.tags %}
+              {% for tag in statement.tags %}<span class="ml-1 inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ tag }}</span>{% endfor %}
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if constraints|length > 0 %}
+      <div class="mt-3 text-sm font-medium text-gray-500">Constraints</div>
+      <ul class="mt-1 list-disc ml-4 text-sm text-gray-900">
+        {% for constraint in constraints %}
+          <li>
+            {% if constraint.constraint is defined and constraint.constraint %}<span>{{ constraint.constraint }}</span>{% endif %}
+            {% if constraint.tags is defined and constraint.tags %}
+              {% for tag in constraint.tags %}<span class="ml-1 inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ tag }}</span>{% endfor %}
+            {% endif %}
+            {% if constraint.authoritativeDefinitions is defined and constraint.authoritativeDefinitions %}
+              {% for definition in constraint.authoritativeDefinitions %}
+                {% if definition.url is defined and definition.url %}
+                  <a class="ml-1 text-xs text-indigo-600 hover:underline" href="{{ definition.url }}" target="_blank" rel="noopener noreferrer" title="{{ definition.description if definition.description is defined and definition.description else '' }}">{{ definition.type if definition.type is defined and definition.type else 'link' }}</a>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endif %}
+{%- endmacro %}
+
+{# Renders a synonyms list as "Synonyms: a, b (fr-FR)" #}
+{% macro render_synonyms(synonyms) -%}
+  {% if synonyms and synonyms is sequence and synonyms is not string and synonyms|length > 0 %}
+    <div class="mt-1 text-sm text-gray-500">
+      <span>Synonyms:</span>
+      {% for synonym in synonyms %}
+        {% if synonym is string %}
+          <span class="text-gray-700">{{ synonym }}</span>{% if not loop.last %},{% endif %}
+        {% elif synonym.synonym is defined and synonym.synonym %}
+          <span class="text-gray-700" title="{{ synonym.description if synonym.description is defined and synonym.description else '' }}">{{ synonym.synonym }}{% if synonym.locale is defined and synonym.locale %} ({{ synonym.locale }}){% endif %}</span>{% if not loop.last %},{% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{%- endmacro %}

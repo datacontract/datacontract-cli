@@ -87,6 +87,36 @@
             </div>
           </div>
           {% endif %}
+
+          {% if sla.authoritativeDefinitions is defined and sla.authoritativeDefinitions %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Authoritative definitions</div>
+              <div class="mt-1 text-sm text-gray-900">
+                {% for definition in sla.authoritativeDefinitions %}
+                  {% if definition.url is defined and definition.url %}
+                    <a class="text-indigo-600 hover:underline" href="{{ definition.url }}" target="_blank" rel="noopener noreferrer" title="{{ definition.description if definition.description is defined and definition.description else '' }}">{{ definition.type if definition.type is defined and definition.type else definition.url }}</a>{% if not loop.last %}, {% endif %}
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.customProperties is defined and sla.customProperties %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Custom properties</div>
+              <div class="mt-1 flex flex-wrap gap-1">
+                {% for cp in sla.customProperties %}
+                  {% if cp.property is defined and cp.value is defined %}
+                    <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">{{ cp.property }}:{{ cp.value }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
         </div>
       </li>
     {% endfor %}

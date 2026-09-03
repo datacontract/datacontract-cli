@@ -1,3 +1,4 @@
+{% import 'macros/context.html' as context_macros %}
 {% macro render_nested_properties(properties, schema_name, indent=0) -%}
   {% for property in properties or [] %}
     {% set property_name = property.name if property.name is defined and property.name else "items" %}
@@ -117,6 +118,8 @@
           </div>
         {% endif %}
 
+        {{ context_macros.render_synonyms(property.synonyms if property.synonyms is defined else none) }}
+
         {% set property_enum = property.enum if property.enum is defined and property.enum and property.enum is sequence and property.enum is not string else [] %}
         {% if property_enum|length > 0 %}
           <div class="mt-1">
@@ -142,6 +145,14 @@
 
           {% if property.required %}
             <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">required</span>
+          {% endif %}
+
+          {% if property.deprecated is defined and property.deprecated %}
+            <span class="inline-flex items-center rounded-md bg-red-50 px-1 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-700/10">deprecated</span>
+          {% endif %}
+
+          {% if property.semanticType is defined and property.semanticType and property.semanticType != 'column' %}
+            <span class="inline-flex items-center rounded-md bg-indigo-50 px-1 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10" title="semanticType">{{ property.semanticType }}</span>
           {% endif %}
 
           {% if property.unique %}
