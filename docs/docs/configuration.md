@@ -147,6 +147,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_ATHENA_CATALOG` | `athena_catalog` | string | Overrides `catalog` from the contract's `servers` block |
 | `DATACONTRACT_ATHENA_SCHEMA` | `athena_schema` | string | Overrides `schema` from the contract's `servers` block |
 | `DATACONTRACT_ATHENA_STAGING_DIR` | `athena_staging_dir` | string | Overrides `stagingDir` from the contract's `servers` block |
+| `DATACONTRACT_ATHENA_WORKGROUP` | `athena_workgroup` | string | Overrides `workgroup` from the contract's `servers` block |
 
 ### Azure
 

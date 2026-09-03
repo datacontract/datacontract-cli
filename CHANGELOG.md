@@ -22,6 +22,9 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 - `datacontract import` from sql, databricks/unity, spark, glue, iceberg, avro, parquet and dcs writes `logicalType: map` with the key and value instead of `physicalType: map` with custom properties; the `mapKeyType`, `mapValueType`, `mapKeys` and `mapValues` custom properties are still read but deprecated (#1562)
 - `logicalType: vector` with `logicalTypeOptions.dimensions` is a first-class type: `datacontract test` accepts a native vector or an array of numbers and compares the dimensions when the column states them; `export` writes `vector(n)` for postgres, `VECTOR(FLOAT, n)` for snowflake, `FLOAT[n]` for duckdb, `vector(n)` for mysql, arrays of floats for databricks, dataframe, trino, clickhouse, bigquery, spark, iceberg, avro, avro-idl, protobuf, pydantic-model, go and dcs, and a fixed-length array of numbers for jsonschema (#1563)
 - `datacontract import` from sql, postgres and snowflake reads `vector(n)`, `halfvec(n)` and `VECTOR(FLOAT, n)` columns as `logicalType: vector` with their dimensions, and parquet reads a fixed-size list of floats the same way (#1563)
+- `datacontract test` reads CSV files from local, s3, gcs and azure servers and Kafka JSON messages in the server's declared `encoding`, and uses the Athena `workgroup` (also `DATACONTRACT_ATHENA_WORKGROUP`), which makes `stagingDir` optional (#1564)
+- The ODCS v3.2.0 server types `hana`, `iceberg`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant` and `poet` lint and export; `test` explains that it cannot connect to them yet, and the synonyms `fastobjects` and `btrieve` resolve to `poet` and `zen` (#1564)
+- `datacontract export sql --sql-server-type auto` warns before falling back to the snowflake dialect for a server type without one (#1564)
 
 ### Changed
 - `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)

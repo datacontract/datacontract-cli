@@ -100,6 +100,8 @@ Missing a source? [Open an issue on GitHub](https://github.com/datacontract/data
 
 Each connection requires the matching [optional dependency (extra)](../installation.md#optional-dependencies-extras), or install everything with `datacontract-cli[all]`.
 
+Every other server `type` in ODCS, including the ones added in v3.2.0 (`hana`, `iceberg`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant`, `poet`), lints and exports, but `test` reports a warning that it cannot connect. `fastobjects` and `btrieve` are the ODCS synonyms of `poet` and `zen`, and `postgresql` of `postgres`.
+
 ## How it works
 
 The CLI uses different engines based on the server `type`. Internally it connects with **DuckDB**, **Spark**, or a native connection, executes most checks with [_ibis_](https://ibis-project.org/) (compiling dialect-specific SQL per backend), and validates JSON with [_fastjsonschema_](https://pypi.org/project/fastjsonschema/).
