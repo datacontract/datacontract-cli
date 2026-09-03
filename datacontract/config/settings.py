@@ -151,6 +151,8 @@ class Config(BaseSettings):
     iceberg_credential: SecretStr | None = None
     iceberg_token: SecretStr | None = None
     iceberg_s3_endpoint: str | None = None
+    iceberg_signing_name: str | None = None
+    iceberg_properties: str | None = None
     # overrides for the contract's servers block
     iceberg_catalog_url: str | None = None
     iceberg_catalog: str | None = None
@@ -562,6 +564,12 @@ class Config(BaseSettings):
 
     def get_iceberg_s3_endpoint(self, required: bool = False) -> str | None:
         return self._str_option("iceberg_s3_endpoint", required)
+
+    def get_iceberg_signing_name(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_signing_name", required)
+
+    def get_iceberg_properties(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_properties", required)
 
     def get_iceberg_credential(self, required: bool = False) -> str | None:
         return self._str_option("iceberg_credential", required)

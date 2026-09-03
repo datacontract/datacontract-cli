@@ -6,7 +6,7 @@ description: "Test Apache Iceberg tables through a REST catalog (Polaris, Nessie
 
 # <img className="page-icon" src="/img/icons/iceberg.svg" alt="" /> Apache Iceberg
 
-Test Apache Iceberg tables through a REST catalog such as Polaris, Nessie, Unity Catalog, AWS Glue, or S3 Tables. The CLI loads each table with [pyiceberg](https://py.iceberg.apache.org/), scans it to Arrow, and runs the checks in DuckDB.
+Test Apache Iceberg tables through a REST catalog such as Polaris, Nessie, Unity Catalog, AWS Glue, or Amazon S3 Tables. The CLI loads each table with [pyiceberg](https://py.iceberg.apache.org/), scans it to Arrow, and runs the checks in DuckDB. For S3 Tables and Glue the requests are signed with your AWS credentials; see the [reference](../reference/iceberg.md#amazon-s3-tables).
 
 ## 1. Install
 
