@@ -178,6 +178,10 @@ properties:
 
 `exclusiveMinimum` and `exclusiveMaximum` each produce two checks — a bound check and an inequality check — so a violation of either is reported separately.
 
+## Descriptive metadata
+
+ODCS v3.2.0 adds fields that describe a schema object or property for people and tools without generating a check: `semanticType` (`column`, `measure`, `dimension`), `synonyms`, `deprecated`, and a `context` block with `instructions`, `verifiedStatements` and `constraints` for AI agents and semantic layers. The [HTML](./exports/html.md) and [Markdown](./exports/markdown.md) exports render them, [`changelog`](./commands/changelog.md) reports changes to them by their natural key (a synonym's `synonym` or `id`, an enum entry's `value` or `id`), and `export odcs` keeps them. The DCS export drops them, as the Data Contract Specification has no equivalent.
+
 ## What is not checked
 
 These are common sources of confusion. They are valid ODCS and appear in exports, but they generate no check:

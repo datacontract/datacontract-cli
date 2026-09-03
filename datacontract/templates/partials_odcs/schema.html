@@ -1,4 +1,5 @@
 {% import 'macros/schema.html' as schema_macros %}
+{% import 'macros/context.html' as context_macros %}
 
 {% set schemas = datacontract.schema_ if datacontract.schema_ is defined and datacontract.schema_ is not callable else [] %}
 {% if schemas is mapping %}
@@ -24,6 +25,9 @@
     {% set schema_tags = schema.tags if schema.tags is defined and schema.tags and schema.tags is sequence and schema.tags is not string else [] %}
     {% set schema_custom_properties = schema.customProperties if schema.customProperties is defined else none %}
     {% set schema_quality = schema.quality if schema.quality is defined and schema.quality and schema.quality is sequence and schema.quality is not string else [] %}
+    {% set schema_deprecated = schema.deprecated if schema.deprecated is defined and schema.deprecated else false %}
+    {% set schema_synonyms = schema.synonyms if schema.synonyms is defined and schema.synonyms else none %}
+    {% set schema_context = schema.context if schema.context is defined and schema.context else none %}
 
     <div class="mt-2 print:block">
       <div class="overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
@@ -49,10 +53,23 @@
                   </span>
                 {% endif %}
 
+                {% if schema_deprecated %}
+                  <span class="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-700/10">deprecated</span>
+                {% endif %}
+
                 {% if schema_description %}
                   <div class="text-sm font-normal text-gray-500 mt-1">{{ schema_description }}</div>
                 {% else %}
                   <div class="text-sm font-normal text-gray-400 mt-1">No description</div>
+                {% endif %}
+
+                <div class="font-normal">{{ context_macros.render_synonyms(schema_synonyms) }}</div>
+
+                {% if schema_context %}
+                  <div class="mt-2 font-normal rounded-md bg-gray-50 px-3 py-2 ring-1 ring-inset ring-gray-500/10">
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Context</div>
+                    {{ context_macros.render_context(schema_context) }}
+                  </div>
                 {% endif %}
 
                 {% if schema_custom_properties %}
