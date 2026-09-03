@@ -97,13 +97,12 @@ schema:
     customProperties:
     - property: avroType
       value: enum
-    - property: avroSymbols
-      value:
-      - PLACED
-      - SHIPPED
-      - DELIVERED
-      - CANCELLED
     logicalType: string
+    enum:
+    - value: PLACED
+    - value: SHIPPED
+    - value: DELIVERED
+    - value: CANCELLED
     required: true
   - name: metadata
     physicalType: map
@@ -403,12 +402,11 @@ schema:
     customProperties:
     - property: avroType
       value: enum
-    - property: avroSymbols
-      value:
-      - RED
-      - GREEN
-      - BLUE
     logicalType: string
+    enum:
+    - value: RED
+    - value: GREEN
+    - value: BLUE
     required: true
   - name: optional_enum
     physicalType: enum
@@ -417,6 +415,10 @@ schema:
       value: enum
     logicalType: string
     required: false
+    enum:
+    - value: ACTIVE
+    - value: INACTIVE
+    - value: PENDING
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

@@ -14,6 +14,9 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 - `datacontract export avro-idl` writes `map<...>` and `array<float>` for `map` and `vector` properties; `datacontract export sqlalchemy` writes `JSON` and `ARRAY(Float)` (#1558)
 - `datacontract test` resolves `${VAR}` and `${VAR:-default}` references in server fields and SQL quality queries from the environment; an unset variable without a default fails the run with its name, and `export` keeps the references (#1559)
 - Server `port` may be a string such as `${DB_PORT}`, including in Excel imports; config files accept `${VAR:-default}` (#1559)
+- `enum` on properties is read by `datacontract test`, the jsonschema, avro, avro-idl, protobuf, pydantic-model, dcs, great-expectations, sodacl and data-caterer exporters, and dbt test mapping, ahead of `logicalTypeOptions.enum`, the `enum` custom property and the `invalidValues` rule; HTML export lists the values with labels and descriptions (#1560)
+- `datacontract import` from JSON Schema, Avro, Protobuf and DCS writes allowed values as `enum` entries instead of an `invalidValues` quality rule or custom properties (#1560)
+- `datacontract export pydantic-model` types an enumerated string or integer property as `typing.Literal` (#1560)
 
 ### Changed
 - `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)

@@ -116,10 +116,10 @@ def _is_array_of_objects(prop: SchemaProperty) -> bool:
 
 def _is_enum_field(prop: SchemaProperty) -> bool:
     """
-    Returns True if the field has a non-empty "enumValues" property (via customProperties).
+    Returns True if the field declares allowed values: an ODCS ``enum`` or a non-empty
+    "enumValues" custom property (name -> number).
     """
-    values = _get_config_value(prop, "enumValues")
-    return bool(values)
+    return bool(prop.enum) or bool(_get_config_value(prop, "enumValues"))
 
 
 def _get_enum_name(prop: SchemaProperty) -> str:
@@ -135,11 +135,20 @@ def _get_enum_name(prop: SchemaProperty) -> str:
 
 def _get_enum_values(prop: SchemaProperty) -> dict:
     """
-    Returns the enum values from the field.
+    Returns the enum constants of the field as name -> number.
+
+    The "enumValues" custom property carries the numbers a protobuf import found. An ODCS
+    ``enum`` uses each entry's ``id`` when it is a number, and the position otherwise.
     """
     values = _get_config_value(prop, "enumValues")
     if values and isinstance(values, dict):
         return values
+    if prop.enum:
+        result = {}
+        for position, entry in enumerate(prop.enum):
+            number = int(entry.id) if entry.id is not None and str(entry.id).lstrip("-").isdigit() else position
+            result[str(entry.value)] = number
+        return result
     return {}
 
 

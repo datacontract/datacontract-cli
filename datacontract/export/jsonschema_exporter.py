@@ -4,6 +4,7 @@ from typing import List, Optional
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
+from datacontract.model.enum_values import get_enum_values
 
 
 class JsonSchemaExporter(Exporter):
@@ -47,18 +48,6 @@ def _get_config_value(prop: SchemaProperty, key: str):
     for cp in prop.customProperties:
         if cp.property == key:
             return cp.value
-    return None
-
-
-def _get_enum_from_quality(prop: SchemaProperty):
-    """Get enum values from quality rules (invalidValues metric with validValues)."""
-    if prop.quality is None:
-        return None
-    for q in prop.quality:
-        if q.metric == "invalidValues" and q.arguments:
-            valid_values = q.arguments.get("validValues")
-            if valid_values:
-                return valid_values
     return None
 
 
@@ -107,19 +96,7 @@ def to_property(prop: SchemaProperty) -> dict:
     if pattern:
         property_dict["pattern"] = pattern
 
-    # Check logicalTypeOptions, customProperties, or quality rules for enum
-    enum_values = _get_logical_type_option(prop, "enum")
-    if not enum_values:
-        enum_from_custom = _get_config_value(prop, "enum")
-        if enum_from_custom:
-            # Parse JSON string from customProperties
-            try:
-                enum_values = json.loads(enum_from_custom)
-            except (json.JSONDecodeError, TypeError):
-                enum_values = None
-    if not enum_values:
-        # Check quality rules for invalidValues metric with validValues
-        enum_values = _get_enum_from_quality(prop)
+    enum_values = get_enum_values(prop)
     if enum_values:
         property_dict["enum"] = enum_values
 

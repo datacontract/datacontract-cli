@@ -10,6 +10,7 @@ from open_data_contract_standard.model import (
     CustomProperty,
     DataQuality,
     Description,
+    EnumValue,
     OpenDataContractStandard,
     Relationship,
     SchemaObject,
@@ -478,17 +479,10 @@ def _convert_field_to_property(
 
     # Convert config to customProperties
     custom_properties = []
-    # Handle enum as quality rule (invalidValues with validValues, mustBe: 0)
-    quality_rules = []
     if field.enum:
-        quality_rules.append(
-            DataQuality(
-                type="library",
-                metric="invalidValues",
-                arguments={"validValues": field.enum},
-                mustBe=0,
-            )
-        )
+        prop.enum = [EnumValue(value=value) for value in field.enum]
+
+    quality_rules = []
     if field.pii is not None:
         custom_properties.append(CustomProperty(property="pii", value=str(field.pii)))
     if field.precision is not None:
@@ -549,7 +543,7 @@ def _convert_field_to_property(
     if custom_properties:
         prop.customProperties = custom_properties
 
-    # Convert quality rules (merge enum quality rule with field-level quality)
+    # Convert quality rules
     if field.quality:
         quality_rules.extend(_convert_quality_list(field.quality))
     if quality_rules:

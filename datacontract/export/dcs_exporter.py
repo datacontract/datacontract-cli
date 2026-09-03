@@ -25,6 +25,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.enum_values import get_enum_values
 
 
 class DcsExporter(Exporter):
@@ -237,10 +238,12 @@ def _convert_property_to_field(prop: SchemaProperty) -> Field:
             field.exclusiveMinimum = opts["exclusiveMinimum"]
         if "exclusiveMaximum" in opts:
             field.exclusiveMaximum = opts["exclusiveMaximum"]
-        if "enum" in opts:
-            field.enum = opts["enum"]
         if "format" in opts:
             field.format = opts["format"]
+
+    enum_values = get_enum_values(prop)
+    if enum_values:
+        field.enum = enum_values
 
     # Convert custom properties
     if prop.customProperties:

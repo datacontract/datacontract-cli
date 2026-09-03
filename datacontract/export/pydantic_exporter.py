@@ -5,6 +5,7 @@ from typing import Optional
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.enum_values import get_enum_values
 
 
 class PydanticExporter(Exporter):
@@ -87,6 +88,17 @@ def constant_field_annotation(
 ) -> tuple[type_annotation_type, typing.Optional[ast.ClassDef]]:
     prop_type = _get_type(prop)
     physical_type = _get_physical_type(prop)
+
+    enum_values = get_enum_values(prop)
+    if enum_values and prop_type in ("string", "integer") and all(isinstance(v, (str, int)) for v in enum_values):
+        return (
+            ast.Subscript(
+                value=ast.Attribute(value=ast.Name(id="typing", ctx=ast.Load()), attr="Literal", ctx=ast.Load()),
+                slice=ast.Tuple(elts=[ast.Constant(v) for v in enum_values], ctx=ast.Load()),
+                ctx=ast.Load(),
+            ),
+            None,
+        )
 
     match prop_type:
         case "string":

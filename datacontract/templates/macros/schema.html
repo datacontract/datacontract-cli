@@ -106,6 +106,22 @@
           </div>
         {% endif %}
 
+        {% set property_enum = property.enum if property.enum is defined and property.enum and property.enum is sequence and property.enum is not string else [] %}
+        {% if property_enum|length > 0 %}
+          <div class="mt-1">
+            <span class="text-gray-500">Allowed values</span>
+            <ul class="ml-4 list-disc">
+              {% for entry in property_enum %}
+                <li>
+                  <code class="text-xs">{{ entry.value }}</code>
+                  {% if entry.label is defined and entry.label %}<span class="ml-1">{{ entry.label }}</span>{% endif %}
+                  {% if entry.description is defined and entry.description %}<span class="ml-1 text-gray-500">{{ entry.description }}</span>{% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
         <div class="mt-1 flex gap-x-1 items-center flex-wrap">
           {% if property.primaryKey %}
             <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">

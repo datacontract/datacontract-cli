@@ -38,6 +38,15 @@ schema:
         CATEGORY_HOME_APPLIANCES: 3
     logicalType: string
     required: false
+    enum:
+    - id: '0'
+      value: CATEGORY_UNKNOWN
+    - id: '1'
+      value: CATEGORY_ELECTRONICS
+    - id: '2'
+      value: CATEGORY_CLOTHING
+    - id: '3'
+      value: CATEGORY_HOME_APPLIANCES
   - name: tags
     physicalType: '9'
     description: Field tags
