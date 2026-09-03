@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  One URL, because the editor is one page. Contract state lives in localStorage
+  and the URL never changes, so there is nothing else to advertise. /index.html
+  resolves to the same document and is deliberately left out — it would be a
+  duplicate of / rather than a second page.
+
+  No <lastmod> on purpose: it would have to be maintained by hand and would start
+  lying the first time someone forgot, and Google ignores a lastmod it has learned
+  not to trust. If this ever grows past a single entry, generate the file at build
+  time instead of adding the field back here.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://editor.datacontract.com/</loc>
+  </url>
+</urlset>
