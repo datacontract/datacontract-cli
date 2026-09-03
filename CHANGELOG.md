@@ -30,6 +30,7 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 
 ### Changed
 - `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.13 (#1566)
 - `open-data-contract-standard` dependency bumped to 3.2.x (#1558)
 
 ## [Unreleased]

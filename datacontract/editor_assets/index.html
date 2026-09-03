@@ -4,7 +4,30 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./logo_fuchsia_v2.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>datacontract-editor</title>
+
+    <!--
+      This file is the page editor.datacontract.com actually serves: the build is a
+      library build, so the root index.html never ships and only the Vite dev server
+      uses it. Everything below is what Google and link previews get, because the
+      editor itself renders client-side and leaves no crawlable text behind.
+
+      Self-hosting: the canonical points at the public instance so separate
+      deployments of the same tool do not compete in search. If you host this
+      publicly and want your own instance indexed, drop that one line.
+    -->
+    <title>Data Contract Editor — Create and Edit ODCS Data Contracts Online</title>
+    <meta name="description" content="Free online editor for ODCS data contracts. Write and validate Open Data Contract Standard YAML with autocomplete and a live form view — no signup required." />
+    <link rel="canonical" href="https://editor.datacontract.com/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Data Contract Editor" />
+    <meta property="og:url" content="https://editor.datacontract.com/" />
+    <meta property="og:title" content="Data Contract Editor" />
+    <meta property="og:description" content="Free online editor for ODCS data contracts. Write and validate Open Data Contract Standard YAML with autocomplete and a live form view — no signup required." />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Data Contract Editor" />
+    <meta name="twitter:description" content="Free online editor for ODCS data contracts. Write and validate Open Data Contract Standard YAML with autocomplete and a live form view — no signup required." />
+
     <link href="./datacontract-editor.css" rel="stylesheet">
     <style>
       html, body { height: 100%; margin: 0; }
@@ -12,9 +35,35 @@
     </style>
   </head>
   <body>
+    <!--
+      The editor renders entirely client-side, so without this the page carries no
+      text at all — which is why it ranks first for "data contract editor" (an exact
+      title match) and nowhere for "odcs". This is the real fallback for visitors
+      without JavaScript, and it gives crawlers something to read.
+    -->
+    <noscript>
+      <div style="max-width: 40rem; margin: 4rem auto; padding: 0 1.5rem; font-family: system-ui, sans-serif; line-height: 1.6;">
+        <h1>Data Contract Editor</h1>
+        <p>
+          A free browser-based editor for data contracts written in the
+          <a href="https://datacontract.com/">Open Data Contract Standard (ODCS)</a>.
+          Edit the YAML directly or through a form view, with schema-aware
+          autocomplete and validation as you type.
+        </p>
+        <p>
+          The editor needs JavaScript to run. To work with data contracts from the
+          command line instead, use the
+          <a href="https://cli.datacontract.com/">Data Contract CLI</a>, which lints,
+          tests and exports the same format.
+        </p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module">
-      import { init } from './datacontract-editor.es.js';
+      import { init, loadCustomizationYaml } from './datacontract-editor.es.js';
+
+      // Optional customization.yaml served next to the app, see CUSTOMIZATION.md
+      const customizations = await loadCustomizationYaml();
 
       init({
         container: '#root',
@@ -25,6 +74,7 @@
           enabled: true,
           dataContractCliApiServerUrl: 'https://api.datacontract.com'
         },
+        customizations,
       });
     </script>
   </body>

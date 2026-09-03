@@ -18,7 +18,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 
 ```python
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column, Date, Integer, Numeric, String, Text, VARCHAR, BigInteger, Float, Double, Boolean, Date, ARRAY, LargeBinary
+from sqlalchemy import Column, Date, Integer, Numeric, String, Text, VARCHAR, BigInteger, Float, Double, Boolean, Date, ARRAY, JSON, LargeBinary
 from sqlalchemy import TIMESTAMP
 'Tracks customer orders and their line items for analytics and reporting.'
 
