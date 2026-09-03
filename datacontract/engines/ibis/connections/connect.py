@@ -83,6 +83,13 @@ def connect_ibis(
     if server_type == "duckdb":
         return _connect_duckdb_database(ibis, server, run, config)
 
+    if server_type == "iceberg":
+        from datacontract.engines.ibis.connections.iceberg import read_iceberg_tables
+
+        run.log_info(f"Connecting to iceberg catalog {server.catalogUrl} via duckdb")
+        con = read_iceberg_tables(data_contract, server, run, duckdb_connection, schema_name=schema_name, config=config)
+        return ibis.duckdb.from_connection(con)
+
     if server_type == "kafka":
         from datacontract.engines.ibis.connections.kafka import read_kafka_topic
 

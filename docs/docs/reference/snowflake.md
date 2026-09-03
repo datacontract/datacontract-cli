@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 17
 title: "Snowflake Reference"
 sidebar_label: "Snowflake"
 description: "All Snowflake authentication options and data type mappings."

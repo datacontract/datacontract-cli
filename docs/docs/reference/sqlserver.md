@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 13
 title: "Microsoft SQL Server Reference"
 sidebar_label: "Microsoft SQL Server"
 description: "All SQL Server authentication options and data type mappings."

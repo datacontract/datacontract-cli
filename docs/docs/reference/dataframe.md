@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 18
 title: "Spark DataFrame Reference"
 sidebar_label: "Spark DataFrame"
 description: "Data type mappings for in-memory Spark DataFrames."

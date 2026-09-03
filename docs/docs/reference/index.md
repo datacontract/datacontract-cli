@@ -44,6 +44,10 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
     <img src="/img/icons/s3.svg" alt="" />
     <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">Authentication and data types</span></span>
   </a>
+  <a className="doc-card" href="/reference/iceberg">
+    <img src="/img/icons/iceberg.svg" alt="" />
+    <span><span className="doc-card-title">Apache Iceberg</span><span className="doc-card-desc">Authentication and data types</span></span>
+  </a>
   <a className="doc-card" href="/reference/impala">
     <img src="/img/icons/impala.svg" alt="" />
     <span><span className="doc-card-title">Apache Impala</span><span className="doc-card-desc">Authentication and data types</span></span>
