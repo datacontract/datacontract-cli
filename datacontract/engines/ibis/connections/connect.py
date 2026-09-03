@@ -97,6 +97,9 @@ def connect_ibis(
                 "please provide one with the DataContract class"
             )
             return None
+        from datacontract.engines.ibis.connections.kafka import add_spark_nested_views_for_contract
+
+        add_spark_nested_views_for_contract(spark, data_contract, schema_name=schema_name)
         return ibis.pyspark.connect(session=spark)
 
     if server_type == "databricks":
@@ -105,8 +108,26 @@ def connect_ibis(
             database_name = ".".join(filter(None, [server.catalog, server.schema_]))
             if database_name:
                 spark.sql(f"USE {database_name}")
+            from datacontract.engines.ibis.connections.kafka import add_spark_nested_views_for_contract
+
+            add_spark_nested_views_for_contract(spark, data_contract, schema_name=schema_name)
             return ibis.pyspark.connect(session=spark)
-        return _connect_databricks(ibis, server, run, config)
+        backend = _connect_databricks(ibis, server, run, config)
+        # Wire in CTE-based virtual models for nested array checks (read-only, no CREATE TABLE).
+        from datacontract.engines.ibis.connections.databricks_nested_models import (
+            build_databricks_virtual_model_queries_for_contract,
+        )
+
+        if backend and data_contract:
+            virtual_queries = build_databricks_virtual_model_queries_for_contract(
+                data_contract, schema_name=schema_name
+            )
+            if virtual_queries:
+                try:
+                    setattr(backend, "_dc_virtual_model_queries", virtual_queries)
+                except Exception:
+                    logger.debug("Could not attach databricks virtual model queries", exc_info=True)
+        return backend
 
     if server_type == "postgres":
         return ibis.postgres.connect(
@@ -193,23 +214,24 @@ def connect_ibis(
 
 def _connect_databricks(ibis, server: Server, run: Run, config: Config):
     """Connect to Databricks SQL directly, selecting the auth method from env vars.
-
+    Delegates to ``_databricks_connect``, which temporarily replaces ibis'
+    ``Backend._post_connect`` with a no-op to skip its hardcoded CREATE VOLUME
+    call, enabling read-only contract checks on Databricks warehouses.
     Auth is resolved in priority order, so an existing token-based setup keeps
     working unchanged:
-
-    1. personal access token (``DATACONTRACT_DATABRICKS_TOKEN``) — the default
+    1. personal access token (DATACONTRACT_DATABRICKS_TOKEN) - the default
     2. OAuth machine-to-machine / service principal, from
-       ``DATACONTRACT_DATABRICKS_CLIENT_ID`` + ``DATACONTRACT_DATABRICKS_CLIENT_SECRET``
+       DATACONTRACT_DATABRICKS_CLIENT_ID + DATACONTRACT_DATABRICKS_CLIENT_SECRET
        (the usual choice for CI/CD)
-    3. a local Databricks config profile (``DATACONTRACT_DATABRICKS_PROFILE``),
+    3. a local Databricks config profile (DATACONTRACT_DATABRICKS_PROFILE),
        delegating to the Databricks SDK's unified auth (also covers Azure CLI/MSI)
-    4. an explicit connector ``auth_type`` (``DATACONTRACT_DATABRICKS_AUTH_TYPE``),
-       e.g. ``databricks-oauth`` for the interactive user-to-machine browser flow
-
-    The OAuth credential providers build their SDK ``Config`` lazily, so token
+    4. an explicit connector auth_type (DATACONTRACT_DATABRICKS_AUTH_TYPE),
+       e.g. databricks-oauth for the interactive user-to-machine browser flow
+    The OAuth credential providers build their SDK Config lazily, so token
     exchange happens when the connection is opened rather than while reading env.
     """
     # the config option wins over the contract, like the other server-detail overrides
+
     host = (
         config.get_databricks_server_hostname() or server.host or config.get_databricks_server_hostname(required=True)
     )
