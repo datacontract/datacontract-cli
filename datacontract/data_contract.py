@@ -9,6 +9,8 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+    from datacontract.mock.mock_generator import MockResult
+
 from datacontract.breaking.detector import BreakingChangeDetector
 from datacontract.config import Config
 from datacontract.engines.checks.dimensions import default_dimension
@@ -254,6 +256,38 @@ class DataContract:
             server=self._server,
             sql_server_type=sql_server_type,
             export_args=kwargs,
+        )
+
+    def mock(
+        self,
+        schema_name: str = "all",
+        rows: int = 10,
+        seed: "int | None" = None,
+        locale: str = "EN",
+    ) -> "list[MockResult]":
+        """Generate fake datasets for the contract's schemas using mimesis.
+
+        `physicalType: table` schemas render SQL INSERT statements; `physicalType: file`
+        schemas render json/csv/parquet, picked from the resolved server's `format`.
+        """
+        from datacontract.mock.mock_generator import generate_mock_data
+
+        data_contract = resolve.resolve_data_contract(
+            self._data_contract_file,
+            self._data_contract_str,
+            self._data_contract,
+            schema_location=self._schema_location,
+            inline_references=self._inline_references,
+            config=self._config,
+        )
+
+        return generate_mock_data(
+            data_contract=data_contract,
+            schema_name=schema_name,
+            server=self._server,
+            rows=rows,
+            seed=seed,
+            locale=locale,
         )
 
     def changelog(self, other: "DataContract") -> ChangelogResult:

@@ -153,6 +153,12 @@ mysql = [
   "datacontract-cli[duckdb]",
 ]
 
+# Used by the `mock` command to generate fake datasets. json/csv are stdlib;
+# parquet output additionally needs the `parquet` extra (pyarrow).
+mock = [
+  "mimesis>=17.0.0,<22.0.0",
+]
+
 postgres = [
   "ibis-framework[postgres]>=10.0.0,<13.0.0",
   # psycopg's binary wheels bundle libpq, so the extra works without
@@ -260,7 +266,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,mock,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version
