@@ -33,6 +33,7 @@ COMMAND_ORDER = [
     "test",
     "ci",
     "export",
+    "mock",
     "dbt",
     "import",
     "catalog",
@@ -282,6 +283,7 @@ from datacontract import (  # noqa: E402, F401
     command_import,
     command_init,
     command_lint,
+    command_mock,
     command_publish,
     command_test,
 )

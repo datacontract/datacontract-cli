@@ -1,0 +1,124 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: mock-unit-test
+name: Mock Unit Test
+version: 1.0.0
+status: active
+servers:
+- server: production
+  type: postgres
+  environment: production
+  host: localhost
+  port: 5432
+  database: my-database
+  schema: my-schema
+- server: files
+  type: local
+  format: json
+  path: ./data/customers.json
+description:
+  purpose: The mock command unit test contract
+schema:
+- name: line_items
+  physicalType: table
+  description: A line item belonging to an order (declared before `orders` on purpose,
+    to check that the mock command still generates parents before children).
+  properties:
+  - name: line_item_id
+    physicalType: varchar
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+  - name: order_id
+    physicalType: varchar
+    logicalType: string
+    required: true
+    relationships:
+    - type: foreignKey
+      to: orders.order_id
+  - name: sku
+    physicalType: varchar
+    logicalType: string
+    required: true
+- name: orders
+  physicalType: table
+  description: The orders table
+  properties:
+  - name: order_id
+    physicalType: varchar
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    logicalTypeOptions:
+      minLength: 8
+      maxLength: 10
+      pattern: ^B[0-9]+$
+    required: true
+  - name: customer_id
+    physicalType: varchar
+    logicalType: string
+    required: true
+    relationships:
+    - type: foreignKey
+      to: customers.customer_id
+  - name: order_total
+    physicalType: bigint
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 10
+      maximum: 1000
+    required: true
+  - name: order_status
+    physicalType: text
+    logicalType: string
+    customProperties:
+    - property: enum
+      value:
+      - pending
+      - shipped
+      - delivered
+    required: true
+- name: customers
+  physicalType: file
+  description: The customers file
+  properties:
+  - name: customer_id
+    physicalType: string
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+  - name: email
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: full_name
+    physicalType: string
+    logicalType: string
+  - name: signup_date
+    physicalType: date
+    logicalType: date
+  - name: is_active
+    physicalType: boolean
+    logicalType: boolean
+- name: employees
+  physicalType: table
+  description: Employees, with a self-referencing manager relationship.
+  properties:
+  - name: employee_id
+    physicalType: varchar
+    primaryKey: true
+    primaryKeyPosition: 1
+    logicalType: string
+    required: true
+  - name: manager_id
+    physicalType: varchar
+    logicalType: string
+    relationships:
+    - type: foreignKey
+      to: employees.employee_id
+  - name: full_name
+    physicalType: string
+    logicalType: string
+    required: true

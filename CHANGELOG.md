@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract mock` command generates fake datasets with mimesis: SQL `INSERT` statements (via a Jinja template) for `physicalType: table` schemas, and json/csv/parquet for `physicalType: file` schemas based on the resolved server's `format`; ODCS `relationships` (foreign keys) are honored, so referenced schemas are generated first and referencing columns sample real generated values to keep datasets joinable; `--locale` picks the generated language: FR, EN (default), ES, DE, NL, IT, PT, ZH; identity/auto-increment primary key columns get dialect-specific `INSERT` directives (`SET IDENTITY_INSERT` for sqlserver, `OVERRIDING SYSTEM VALUE` plus a sequence resync for postgres, `OVERRIDING SYSTEM VALUE` for oracle)
+
 ## [1.1.3] - 2026-09-03
 
 ### Added
