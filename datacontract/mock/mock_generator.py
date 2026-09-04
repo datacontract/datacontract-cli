@@ -317,7 +317,7 @@ def _render_sql_insert(
     server: Optional[Server] = None,
 ) -> str:
     env = Environment(
-        loader=PackageLoader("datacontract", "mock/templates"),
+        loader=PackageLoader("datacontract", "templates/mock"),
         keep_trailing_newline=True,
         trim_blocks=True,
         lstrip_blocks=True,

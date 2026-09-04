@@ -1,5 +1,6 @@
 include datacontract/templates/style/output.css
 include datacontract/templates/excel/odcs-template.xlsx
 recursive-include datacontract/templates/ **/*.html
+recursive-include datacontract/templates/ **/*.j2
 recursive-include datacontract/schemas/ **/*.json **/*.yaml
 recursive-include datacontract/editor_assets/ *

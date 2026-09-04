@@ -40,7 +40,8 @@ def test_mock_table_renders_sql_insert_statements():
     assert result.schema_name == "orders"
     assert result.physical_type == "table"
     assert result.format == "sql"
-    assert result.content.count("INSERT INTO orders (order_id, customer_id, order_total, order_status) VALUES") == 3
+    assert result.content.count("INSERT INTO orders (order_id, customer_id, order_total, order_status)") == 1
+    assert _value_tuples(result.content) == 3
 
 
 def test_mock_table_respects_enum_and_pattern_constraints():
@@ -50,7 +51,7 @@ def test_mock_table_respects_enum_and_pattern_constraints():
     content = results[0].content
 
     for line in content.splitlines():
-        if not line.startswith("INSERT"):
+        if not line.strip().startswith("("):
             continue
         assert any(status in line for status in ("'pending'", "'shipped'", "'delivered'"))
         # order_id is the primary key with pattern `^B[0-9]+$`
@@ -168,15 +169,22 @@ def test_mock_unsupported_locale_raises():
 # ---------------------------------------------------------------------------
 
 
+def _value_tuple_lines(content: str) -> list[str]:
+    """The `(v1, v2, ...)` lines of the VALUES clause, one per generated row."""
+    return [line.strip().rstrip(",;") for line in content.splitlines() if line.strip().startswith("(")]
+
+
+def _value_tuples(content: str) -> int:
+    """Number of value tuples (i.e. generated rows) in the rendered INSERT statement."""
+    return len(_value_tuple_lines(content))
+
+
 def _extract_sql_column(content: str, table: str, columns: list[str], column: str) -> list[str]:
-    """Pull one column's literal values out of the generated INSERT statements."""
+    """Pull one column's literal values out of the generated multi-row INSERT statement."""
     index = columns.index(column)
     values = []
-    for line in content.splitlines():
-        prefix = f"INSERT INTO {table} ("
-        if not line.startswith(prefix):
-            continue
-        values_part = line.split("VALUES (", 1)[1].rstrip(");")
+    for tuple_line in _value_tuple_lines(content):
+        values_part = tuple_line.removeprefix("(").removesuffix(")")
         values.append([v.strip().strip("'") for v in values_part.split(", ")][index])
     return values
 
@@ -295,9 +303,10 @@ def test_mock_sqlserver_wraps_inserts_with_identity_insert_toggle():
     assert "SET IDENTITY_INSERT products OFF;" in lines
     on_index = lines.index("SET IDENTITY_INSERT products ON;")
     off_index = lines.index("SET IDENTITY_INSERT products OFF;")
-    insert_indexes = [i for i, line in enumerate(lines) if line.startswith("INSERT INTO products")]
-    assert all(on_index < i < off_index for i in insert_indexes)
-    assert content.count("INSERT INTO products") == 3
+    insert_index = lines.index("INSERT INTO products (product_id, product_name)")
+    assert on_index < insert_index < off_index
+    assert content.count("INSERT INTO products (product_id, product_name)") == 1
+    assert _value_tuples(content) == 3
     assert "OVERRIDING SYSTEM VALUE" not in content
 
 
@@ -306,7 +315,9 @@ def test_mock_postgres_uses_overriding_system_value_and_resyncs_sequence():
 
     content = generate_mock_data(data_contract, schema_name="products", rows=3, seed=1)[0].content
 
-    assert content.count("OVERRIDING SYSTEM VALUE") == 3
+    assert content.count("INSERT INTO products (product_id, product_name)") == 1
+    assert content.count("OVERRIDING SYSTEM VALUE") == 1
+    assert _value_tuples(content) == 3
     assert "SET IDENTITY_INSERT" not in content
     assert (
         "SELECT setval(pg_get_serial_sequence('products', 'product_id'), "
@@ -319,7 +330,9 @@ def test_mock_oracle_uses_overriding_system_value_without_sequence_resync():
 
     content = generate_mock_data(data_contract, schema_name="products", rows=3, seed=1)[0].content
 
-    assert content.count("OVERRIDING SYSTEM VALUE") == 3
+    assert content.count("INSERT INTO products (product_id, product_name)") == 1
+    assert content.count("OVERRIDING SYSTEM VALUE") == 1
+    assert _value_tuples(content) == 3
     assert "setval" not in content
     assert "SET IDENTITY_INSERT" not in content
 
@@ -330,7 +343,8 @@ def test_mock_other_dialects_render_plain_inserts(server_type):
 
     content = generate_mock_data(data_contract, schema_name="products", rows=3, seed=1)[0].content
 
-    assert content.count("INSERT INTO products (product_id, product_name) VALUES") == 3
+    assert content.count("INSERT INTO products (product_id, product_name)") == 1
+    assert _value_tuples(content) == 3
     assert "OVERRIDING SYSTEM VALUE" not in content
     assert "SET IDENTITY_INSERT" not in content
 
