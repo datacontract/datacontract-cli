@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 16
 title: "MySQL"
 description: "Create a data contract from your MySQL tables and test the actual data against it."
 ---

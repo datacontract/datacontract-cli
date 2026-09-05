@@ -17,7 +17,7 @@ datacontract import iceberg \
   --output datacontract.yaml
 ```
 
-The result includes a server ready for `datacontract test`. `--catalog` defaults to `default`; a qualified `--table sales.orders` also works without `--namespace`. See [testing Iceberg](../testing/iceberg.md) for authentication and [Amazon S3 Tables](../reference/iceberg.md#amazon-s3-tables) for the AWS endpoint, SSO, and required warehouse ARN.
+The result includes a server ready for `datacontract test`. `--catalog` defaults to `default`; a qualified `--table sales.orders` also works without `--namespace`. See [testing Iceberg](../testing/iceberg.md) for authentication and [Amazon S3 Tables](../testing/s3-tables.md) for the AWS endpoint, SSO, and required warehouse ARN.
 
 ## Import from a schema file
 

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 title: "Apache Iceberg"
 description: "Test Apache Iceberg tables through a REST catalog (Polaris, Nessie, Unity Catalog, Glue, S3 Tables) in 5 minutes."
 ---
@@ -18,7 +18,7 @@ See [Installation](../installation.md) for pip, pipx, and Docker.
 
 ## 2. Authenticate
 
-For **Amazon S3 Tables or AWS Glue**, use AWS credentials, not OAuth. The [S3 Tables walkthrough](../reference/iceberg.md#amazon-s3-tables) covers `AWS_PROFILE`, SSO login, the table bucket ARN, and import/test commands.
+For **Amazon S3 Tables or AWS Glue**, use AWS credentials, not OAuth. The dedicated [Amazon S3 Tables guide](./s3-tables.md) covers `AWS_PROFILE`, SSO login, the table bucket ARN, import/test commands, and a deliberate quality failure.
 
 For **OAuth-based REST catalogs**, the catalog and data-file authentication are separate. Supply a client credential or bearer token as required by your catalog; data files on S3 use the same `DATACONTRACT_S3_*` options as the [S3](./s3.md) source, unless the catalog vends credentials.
 

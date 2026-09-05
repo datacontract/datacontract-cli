@@ -38,22 +38,7 @@ servers:
 
 S3 Tables exposes each table bucket as an Iceberg REST catalog. `catalogUrl` is the regional endpoint, `warehouse` the **table bucket ARN** (not an `s3://` location), and `namespace` the S3 Tables namespace. The CLI detects the signing service and region from the endpoint. AWS uses SigV4, not OAuth, for this endpoint; see the [AWS endpoint documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-tables-integrating-open-source.html).
 
-For an IAM Identity Center (SSO) profile:
-
-```bash
-export AWS_PROFILE=my-playground-profile
-aws sso login --profile "$AWS_PROFILE"
-aws sts get-caller-identity
-
-datacontract import iceberg \
-  --catalog-url https://s3tables.eu-central-1.amazonaws.com/iceberg \
-  --warehouse arn:aws:s3tables:eu-central-1:123456789012:bucket/my-table-bucket \
-  --namespace sales --table orders \
-  --output datacontract.yaml
-
-datacontract lint datacontract.yaml
-datacontract test datacontract.yaml
-```
+For installation, AWS SSO sign-in, import/test commands, and a quality-check example, follow the dedicated [Amazon S3 Tables testing guide](../testing/s3-tables.md).
 
 Use your own region, account, bucket, namespace, and an existing populated table. No Glue integration, Athena workgroup, or OAuth token is required for this direct endpoint. For import and testing, the identity needs `s3tables:GetTableBucket` on the bucket and `s3tables:GetTableMetadataLocation` and `s3tables:GetTableData` on the table. Listing, creating, or modifying tables requires additional permissions; AWS documents the [operation-to-permission mapping](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-tables-integrating-open-source.html#endpoint-supported-api).
 
@@ -77,15 +62,7 @@ The AWS Glue Data Catalog's Iceberg REST endpoint (`https://glue.<region>.amazon
 
 ### Run the AWS integration test
 
-From a development checkout with the `dev` and `iceberg` extras installed:
-
-```bash
-AWS_PROFILE=my-playground-profile \
-DATACONTRACT_TEST_S3_TABLES_WAREHOUSE=arn:aws:s3tables:eu-central-1:123456789012:bucket/my-table-bucket \
-pytest -q tests/test_test_iceberg_s3tables.py
-```
-
-This opt-in test **creates and writes** a three-row table in a unique namespace, runs CLI import/lint/test with positive and deliberately failing contracts, and deletes its table and namespace afterward. Use a playground bucket in the signed-in account with create, read, write, and delete permissions. AWS request and storage charges apply. An interrupted run can leave resources named `datacontract_e2e_*`; inspect them before removing them. The normal test suite skips these AWS tests.
+The testing guide documents [running the opt-in AWS integration suite](../testing/s3-tables.md#run-the-clis-aws-integration-suite), including its resource creation, cleanup, and permission requirements.
 
 The full list is on the [Configuration](../configuration.md) page.
 
