@@ -17,7 +17,7 @@ from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.model.map_type import get_map_key, get_map_value
-from datacontract.model.vector_type import vector_dimensions
+from datacontract.model.vector_type import observed_vector_element_type, vector_dimensions, vector_element_type
 
 # logicalType marker for a field whose type the backend cannot describe: a
 # dynamically-typed column (ibis json: Snowflake VARIANT, Postgres JSONB,
@@ -224,6 +224,10 @@ def _vector_mismatch(expected: SchemaProperty, actual: SchemaProperty, actual_ba
     expected_dimensions, actual_dimensions = vector_dimensions(expected), vector_dimensions(actual)
     if expected_dimensions is not None and actual_dimensions is not None and expected_dimensions != actual_dimensions:
         return f"expected {expected_dimensions} dimensions but got {actual_dimensions}"
+    actual_element = observed_vector_element_type(actual)
+    expected_element = vector_element_type(expected)
+    if actual_element is not None and actual_element != expected_element:
+        return f"expected vector element type '{expected_element}' but got '{actual_element}'"
     return None
 
 
@@ -299,7 +303,7 @@ def schema_property_mismatch_reasons(
     # A leaf that declares a physicalType is compared against the column's real
     # native type, where the backend reports one. The declared type wins over the
     # logicalType, as it does for the column itself.
-    if expected_base not in ("object", "array", "map") and expected.physicalType and actual.physicalType:
+    if expected_base not in ("object", "array", "map", "vector") and expected.physicalType and actual.physicalType:
         result, reason = physical_type_matches(expected.physicalType, actual.physicalType, dialect)
         if result is True:
             return errors

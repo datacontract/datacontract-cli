@@ -103,6 +103,8 @@ ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be
 
 Property-level `enum` entries must have distinct values, even if their labels, IDs, or descriptions differ. Lint checks this throughout properties, array items, and map keys and values. JSON numbers compare by value (`1` equals `1.0`); strings and booleans remain distinct from numbers.
 
+Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
+
 :::note
 For file servers with `format: csv`, `json`, or `avro` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
 :::

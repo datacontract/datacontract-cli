@@ -15,6 +15,7 @@ import os
 import re
 
 from open_data_contract_standard.model import Server
+from pydantic import BaseModel
 
 _VARIABLE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}")
 
@@ -90,3 +91,43 @@ def resolve_server_variables(server: Server) -> Server:
 
 def _field_name(field: str) -> str:
     return "schema" if field == "schema_" else field
+
+
+# These fields document the contract rather than supply test inputs. SQL queries
+# resolve separately, after the engine substitutes its ${model}/${field} tokens;
+# servers resolve separately, after configuration overrides and server selection.
+_DEFERRED_FIELDS = {
+    "authoritativeDefinitions",
+    "businessName",
+    "context",
+    "description",
+    "examples",
+    "implementation",
+    "query",
+    "servers",
+    "synonyms",
+    "transformLogic",
+    "transformSourceObjects",
+}
+
+
+def resolve_runtime_variables(value, source: str = "contract"):
+    """Copy test inputs with variables resolved, recursively, without altering the contract.
+
+    Handles property names/types, enum values, logical type options, library
+    quality arguments, SLA values, and nested array/map definitions. Dictionary
+    keys are structural identifiers and are never interpolated.
+    """
+    if isinstance(value, BaseModel):
+        return value.model_copy(
+            update={
+                field: resolve_runtime_variables(getattr(value, field), f"{source}.{_field_name(field)}")
+                for field in type(value).model_fields
+                if field not in _DEFERRED_FIELDS
+            }
+        )
+    if isinstance(value, dict):
+        return {key: resolve_runtime_variables(item, f"{source}.{key}") for key, item in value.items()}
+    if isinstance(value, list):
+        return [resolve_runtime_variables(item, f"{source}[{index}]") for index, item in enumerate(value)]
+    return resolve_variables(value, source=source)

@@ -110,6 +110,84 @@ def test_vector_mismatches():
     assert not schema_property_matches(expected, SchemaProperty(logicalType="string"))
 
 
+@pytest.mark.parametrize(
+    "expected_element,actual_element",
+    [("float32", "float64"), ("float32", "int8"), ("float16", "bfloat16"), ("int8", "uint8")],
+)
+def test_vector_element_mismatches(expected_element, actual_element):
+    expected = _vector(3, elementType=expected_element)
+    actual = _vector(3, elementType=actual_element)
+    assert not schema_property_matches(expected, actual)
+    reason = schema_property_mismatch_reason(expected, actual)
+    assert expected_element in reason and actual_element in reason
+
+
+def test_unknown_actual_element_type_does_not_assume_float32():
+    assert schema_property_matches(_vector(3, elementType="float64"), SchemaProperty(logicalType="vector"))
+
+
+def test_equal_physical_types_do_not_hide_conflicting_vector_options():
+    expected = _vector(3, elementType="float64").model_copy(update={"physicalType": "FLOAT[3]"})
+    actual = SchemaProperty(logicalType="vector", physicalType="FLOAT[3]")
+    assert not schema_property_matches(expected, actual)
+    assert "float64" in schema_property_mismatch_reason(expected, actual)
+
+
+def test_nested_vector_elements_keep_catalog_information():
+    import ibis.expr.datatypes as dt
+
+    from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
+
+    actual = ibis_dtype_to_schema_property(dt.Struct({"vectors": dt.Map(dt.string, dt.Array(dt.float64))}))
+    expected = SchemaProperty.model_validate(
+        {
+            "logicalType": "object",
+            "properties": [
+                {
+                    "name": "vectors",
+                    "logicalType": "map",
+                    "map": {
+                        "key": {"logicalType": "string"},
+                        "value": {
+                            "logicalType": "vector",
+                            "logicalTypeOptions": {"dimensions": 3, "elementType": "float32"},
+                        },
+                    },
+                }
+            ],
+        }
+    )
+    assert not schema_property_matches(expected, actual)
+    reason = schema_property_mismatch_reason(expected, actual)
+    assert "vectors[value]" in reason and "float64" in reason
+
+
+@pytest.mark.parametrize(
+    "native,expected_element,passes",
+    [
+        ("FLOAT[3]", "float32", True),
+        ("DOUBLE[3]", "float32", False),
+        ("DOUBLE[3]", "float64", True),
+        ("TINYINT[3]", "float32", False),
+        ("TINYINT[3]", "int8", True),
+    ],
+)
+def test_runtime_vector_elements_without_declared_physical_type(tmp_path, native, expected_element, passes):
+    path = str(tmp_path / "vectors.duckdb")
+    con = duckdb.connect(path)
+    con.execute(f"CREATE TABLE documents (embedding {native})")
+    con.close()
+    document = yaml.safe_load(CONTRACT.format(database=path, dimensions=3))
+    prop = document["schema"][0]["properties"][1]
+    prop.pop("physicalType")
+    prop["logicalTypeOptions"]["elementType"] = expected_element
+    document["schema"][0]["properties"] = [prop]
+    run = DataContract(data_contract_str=yaml.safe_dump(document)).test()
+    assert (run.result == ResultEnum.passed) is passes, run.pretty()
+    if not passes:
+        assert any("vector element type" in (c.reason or "") for c in run.checks if c.result == ResultEnum.failed)
+
+
 # --- datacontract test against DuckDB -----------------------------------------------------------
 
 
