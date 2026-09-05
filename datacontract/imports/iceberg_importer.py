@@ -49,7 +49,7 @@ def import_from_catalog(import_args: dict, config: "Config", catalog_url: str) -
     server = create_server(
         name="production",
         server_type="iceberg",
-        catalog=import_args.get("iceberg_catalog") or config.get_iceberg_catalog(),
+        catalog=import_args.get("iceberg_catalog") or config.get_iceberg_catalog() or "default",
         warehouse=import_args.get("iceberg_warehouse") or config.get_iceberg_warehouse(),
     )
     server.catalogUrl = catalog_url
@@ -57,6 +57,9 @@ def import_from_catalog(import_args: dict, config: "Config", catalog_url: str) -
     catalog = load_iceberg_catalog(server, config)
     table = load_iceberg_table(catalog, server, table_name, config)
     odcs = import_iceberg(table.schema(), table_name.split(".")[-1])
+    # Preserve an explicitly qualified identifier, even when --namespace was
+    # omitted or names a different default namespace.
+    odcs.schema_[0].physicalName = table_name
     odcs.servers = [server]
     return odcs
 
@@ -180,7 +183,7 @@ def _type_to_property(name: str, iceberg_type: iceberg_types.IcebergType, requir
     )
 
 
-def _data_type_from_iceberg(iceberg_type: iceberg_types.IcebergType) -> str:
+def _data_type_from_iceberg(iceberg_type: iceberg_types.IcebergType) -> str | None:
     """Convert an Iceberg field type to an ODCS logical type."""
     if isinstance(iceberg_type, iceberg_types.BooleanType):
         return "boolean"
@@ -197,19 +200,19 @@ def _data_type_from_iceberg(iceberg_type: iceberg_types.IcebergType) -> str:
     if isinstance(iceberg_type, iceberg_types.DateType):
         return "date"
     if isinstance(iceberg_type, iceberg_types.TimeType):
-        return "string"
+        return "time"
     if isinstance(iceberg_type, iceberg_types.TimestampType):
-        return "date"
+        return "timestamp"
     if isinstance(iceberg_type, iceberg_types.TimestamptzType):
-        return "date"
+        return "timestamp"
     if isinstance(iceberg_type, iceberg_types.StringType):
         return "string"
     if isinstance(iceberg_type, iceberg_types.UUIDType):
         return "string"
-    if isinstance(iceberg_type, iceberg_types.BinaryType):
-        return "array"
-    if isinstance(iceberg_type, iceberg_types.FixedType):
-        return "array"
+    if isinstance(iceberg_type, (iceberg_types.BinaryType, iceberg_types.FixedType)):
+        # ODCS has no binary logical type. Keep physicalType without pretending
+        # that bytes are text or a list with an Iceberg element type.
+        return None
     if isinstance(iceberg_type, iceberg_types.MapType):
         return "map"
     if isinstance(iceberg_type, iceberg_types.ListType):

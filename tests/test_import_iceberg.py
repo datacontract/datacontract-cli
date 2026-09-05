@@ -1,11 +1,12 @@
 import pytest
 import yaml
+from pyiceberg import types
 from pyiceberg.schema import Schema
 from pyiceberg.types import IntegerType, NestedField
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.imports.iceberg_importer import load_and_validate_iceberg_schema
+from datacontract.imports.iceberg_importer import import_iceberg, load_and_validate_iceberg_schema
 from datacontract.model.exceptions import DataContractException
 
 expected = """
@@ -163,3 +164,29 @@ def test_load_and_validate_iceberg_schema_success():
 def test_load_and_validate_iceberg_schema_failure():
     with pytest.raises(DataContractException):
         load_and_validate_iceberg_schema("fixtures/iceberg/invalid_schema.json")
+
+
+@pytest.mark.parametrize(
+    "iceberg_type,logical_type",
+    [
+        (types.DateType(), "date"),
+        (types.TimeType(), "time"),
+        (types.TimestampType(), "timestamp"),
+        (types.TimestamptzType(), "timestamp"),
+        (types.BinaryType(), None),
+        (types.FixedType(16), None),
+    ],
+)
+def test_temporal_and_binary_types(iceberg_type, logical_type):
+    schema = Schema(
+        NestedField(1, "value", iceberg_type, required=False),
+        NestedField(2, "values", types.ListType(3, iceberg_type, element_required=False), required=False),
+    )
+
+    result = import_iceberg(schema, "types")
+
+    scalar, array = result.schema_[0].properties
+    assert scalar.logicalType == logical_type
+    assert scalar.physicalType == str(iceberg_type)
+    assert array.items.logicalType == logical_type
+    assert array.items.physicalType == str(iceberg_type)
