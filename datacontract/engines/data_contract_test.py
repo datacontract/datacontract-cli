@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
-from datacontract.config.variables import UnresolvedVariableError, resolve_server_variables
+from datacontract.config.variables import UnresolvedVariableError, resolve_runtime_variables, resolve_server_variables
 from datacontract.engines.datacontract.check_azure_blob_file import check_azure_blob_file
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
@@ -57,6 +57,26 @@ def execute_data_contract_test(
         server_name = data_contract.servers[0].server
     server = resolve_server_overrides(get_server(data_contract, server_name), config, run)
     server = _resolve_server_variables(server)
+    try:
+        # Leave unselected schemas untouched: their variables need not be set.
+        runtime_schemas = [
+            resolve_runtime_variables(schema, f"schema[{index}]")
+            if schema_name == "all" or schema.name == schema_name
+            else schema
+            for index, schema in enumerate(data_contract.schema_)
+        ]
+        data_contract = resolve_runtime_variables(data_contract.model_copy(update={"schema_": None})).model_copy(
+            update={"schema_": runtime_schemas}
+        )
+    except UnresolvedVariableError as e:
+        raise DataContractException(
+            type="schema",
+            name="Resolve contract variables",
+            result=ResultEnum.failed,
+            reason=str(e),
+            engine="datacontract-cli",
+            original_exception=e,
+        ) from e
     run.log_info(f"Running tests for data contract {data_contract.id} with server {server_name}")
     run.dataContractId = data_contract.id
     run.dataContractVersion = data_contract.version

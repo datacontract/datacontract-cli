@@ -114,3 +114,46 @@ def test_export_keeps_the_references(orders_db, monkeypatch):
         exported["schema"][0]["quality"][1]["query"]
         == "SELECT count(*) FROM orders WHERE order_total > ${ORDER_TOTAL_LIMIT}"
     )
+
+
+@pytest.mark.parametrize("version", ["v3.1.0", "v3.2.0"])
+def test_property_and_library_values_resolve_without_changing_yaml(orders_db, monkeypatch, version):
+    monkeypatch.setenv("ORDERS_DB", orders_db)
+    monkeypatch.setenv("ORDER_TOTAL_LIMIT", "500")
+    monkeypatch.setenv("RUNTIME_TABLE", "orders")
+    monkeypatch.setenv("RUNTIME_COLUMN", "order_id")
+    monkeypatch.setenv("FIRST_ORDER", "1")
+    document = yaml.safe_load(CONTRACT)
+    document["apiVersion"] = version
+    schema = document["schema"][0]
+    schema["physicalName"] = "${RUNTIME_TABLE}"
+    prop = schema["properties"][0]
+    prop["physicalName"] = "${RUNTIME_COLUMN}"
+    prop["enum"] = [{"value": "${FIRST_ORDER}"}, {"value": "2"}]
+    prop["quality"] = [
+        {
+            "type": "library",
+            "metric": "invalidValues",
+            "arguments": {"validValues": ["${FIRST_ORDER}", "2"]},
+            "mustBe": 0,
+        }
+    ]
+    schema["quality"][0]["query"] = "SELECT count(*) FROM ${model}"
+    contract = DataContract(data_contract_str=yaml.safe_dump(document))
+    assert contract.lint().result == ResultEnum.passed
+    run = contract.test()
+    assert run.result == ResultEnum.passed, run.pretty()
+    assert yaml.safe_load(contract.export("odcs")) == document
+
+
+def test_unset_property_variable_reports_its_path(orders_db, monkeypatch):
+    monkeypatch.setenv("ORDERS_DB", orders_db)
+    monkeypatch.delenv("MISSING_PHYSICAL_TABLE", raising=False)
+    document = yaml.safe_load(CONTRACT)
+    document["schema"][0]["physicalName"] = "${MISSING_PHYSICAL_TABLE}"
+    run = DataContract(data_contract_str=yaml.safe_dump(document)).test()
+    assert run.result == ResultEnum.failed
+    failed = [c for c in run.checks if c.result == ResultEnum.failed]
+    assert len(failed) == 1
+    assert "MISSING_PHYSICAL_TABLE" in failed[0].reason
+    assert "schema[0].physicalName" in failed[0].reason

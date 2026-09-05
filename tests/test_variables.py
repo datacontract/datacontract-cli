@@ -6,6 +6,7 @@ from open_data_contract_standard.model import CustomProperty, Server
 from datacontract.config.variables import (
     UnresolvedVariableError,
     contains_variables,
+    resolve_runtime_variables,
     resolve_server_variables,
     resolve_variables,
 )
@@ -125,3 +126,32 @@ def test_unresolvable_server_field_names_the_server_and_field(monkeypatch):
         resolve_server_variables(server)
 
     assert "server 'prod' host" in str(e.value)
+
+
+def test_runtime_resolution_covers_nested_maps_arrays_and_options(monkeypatch):
+    from open_data_contract_standard.model import SchemaProperty
+
+    monkeypatch.setenv("STATUS", "ready")
+    prop = SchemaProperty.model_validate(
+        {
+            "name": "attributes",
+            "logicalType": "map",
+            "description": "Keep ${DOCUMENTATION_TOKEN} verbatim",
+            "map": {
+                "key": {"logicalType": "string"},
+                "value": {
+                    "logicalType": "array",
+                    "items": {
+                        "logicalType": "string",
+                        "enum": [{"value": "${STATUS}"}],
+                        "logicalTypeOptions": {"pattern": "^${STATUS}$"},
+                    },
+                },
+            },
+        }
+    )
+    resolved = resolve_runtime_variables(prop)
+    assert resolved.map.value.items.enum[0].value == "ready"
+    assert resolved.map.value.items.logicalTypeOptions["pattern"] == "^ready$"
+    assert prop.map.value.items.enum[0].value == "${STATUS}"
+    assert resolved.description == prop.description
