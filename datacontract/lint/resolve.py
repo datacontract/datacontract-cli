@@ -13,6 +13,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 from pydantic import ConfigDict
 
 from datacontract.config import Config
+from datacontract.lint.constraints import enum_value_errors
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.model.exceptions import (
@@ -616,7 +617,17 @@ def _resolve_data_contract_from_str(
         custom_schema = schema_location is not None
         if schema_location is None:
             schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.2.0.schema.json")
-        _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors)
+        errors = []
+        try:
+            _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors)
+        except DataContractValidationErrors as e:
+            errors.extend(e.errors)
+        if not custom_schema:
+            errors.extend(enum_value_errors(yaml_dict))
+        if errors:
+            if all_errors:
+                raise DataContractValidationErrors(errors)
+            raise errors[0]
 
         odcs = _parse_odcs_from_dict(yaml_dict, lax=custom_schema)
         if inline_references:
