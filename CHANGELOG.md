@@ -31,6 +31,7 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 - `datacontract test` supports the `iceberg` server type: tables are read from the REST catalog named by `catalogUrl`, `namespace` and `warehouse` with pyiceberg (credentials via `DATACONTRACT_ICEBERG_CREDENTIAL` or `DATACONTRACT_ICEBERG_TOKEN`, data files via the S3 options; `DATACONTRACT_ICEBERG_CATALOG_TYPE` selects a `sql`, `glue` or `hive` catalog instead of `rest`, `DATACONTRACT_ICEBERG_S3_ENDPOINT` points at an S3-compatible store, Amazon S3 Tables and the Glue REST endpoint are signed with SigV4 from the AWS credentials, `DATACONTRACT_ICEBERG_PROPERTIES` passes further catalog properties through), and `datacontract import iceberg --catalog-url` creates a contract from a catalog table with a ready-to-test server (#1565)
 
 ### Changed
+- `datacontract breaking` detects enum restrictions and vector shape changes (#1584)
 - `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.13 (#1566)
 - `open-data-contract-standard` dependency bumped to 3.2.x (#1558)
