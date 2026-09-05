@@ -80,18 +80,14 @@ def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty:
             for field_name, ftype in dtype.fields.items():
                 # an unverifiable field type is still a field: keep it, so it is not reported missing
                 child = ibis_dtype_to_schema_property(ftype)
-                properties.append(
-                    SchemaProperty(
-                        name=field_name,
-                        logicalType=child.logicalType,
-                        physicalType=child.physicalType,
-                        items=child.items,
-                        properties=child.properties,
-                    )
-                )
+                properties.append(child.model_copy(update={"name": field_name}))
             return SchemaProperty(logicalType="object", properties=properties)
         if dtype.is_array():
             element = ibis_dtype_to_schema_property(dtype.value_type)
+            if dtype.value_type.is_floating() or dtype.value_type.is_integer():
+                # Keep numeric width/sign for vector checks without changing the
+                # coarse integer/number categories used for ordinary arrays.
+                element = element.model_copy(update={"physicalType": str(dtype.value_type)})
             return SchemaProperty(logicalType="array", items=element)
         if dtype.is_map():
             return SchemaProperty(
