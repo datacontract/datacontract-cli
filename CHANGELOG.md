@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md). Development happens on the `odcs-3.2.0` branch, tracked in #1557.
 
 ### Fixed
+- Iceberg testing uses AWS SSO credentials for S3 Tables data files and supports logical table aliases.
+- Iceberg catalog imports supply a catalog name, preserve qualified table identifiers, and correctly map temporal and binary fields.
 - `datacontract test` checks vector element types when the data source reports them (#1585)
 
 ### Added
