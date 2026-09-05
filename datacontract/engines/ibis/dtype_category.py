@@ -84,11 +84,12 @@ def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty:
             return SchemaProperty(logicalType="object", properties=properties)
         if dtype.is_array():
             element = ibis_dtype_to_schema_property(dtype.value_type)
+            options = None
             if dtype.value_type.is_floating() or dtype.value_type.is_integer():
                 # Keep numeric width/sign for vector checks without changing the
-                # coarse integer/number categories used for ordinary arrays.
-                element = element.model_copy(update={"physicalType": str(dtype.value_type)})
-            return SchemaProperty(logicalType="array", items=element)
+                # physical-type comparison or diagnostics of ordinary arrays.
+                options = {"elementType": str(dtype.value_type)}
+            return SchemaProperty(logicalType="array", items=element, logicalTypeOptions=options)
         if dtype.is_map():
             return SchemaProperty(
                 logicalType="map",
