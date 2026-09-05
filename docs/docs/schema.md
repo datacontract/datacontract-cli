@@ -99,6 +99,8 @@ A property can declare a portable `logicalType`, a native `physicalType`, or bot
 
 Properties of `logicalType: object`, `array` or `map` that declare `properties`, `items` or a `map` block (`key` and `value`, ODCS v3.2.0) also get a **nested type check** covering the full declared structure.
 
+Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
+
 :::note
 For file servers with `format: csv`, `json`, or `avro` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
 :::

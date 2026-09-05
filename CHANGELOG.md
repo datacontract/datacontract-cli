@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md). Development happens on the `odcs-3.2.0` branch, tracked in #1557.
 
+### Fixed
+- `datacontract test` checks vector element types when the data source reports them (#1585)
+
 ### Added
 - `datacontract test` resolves variables in property names, enum values, nested type options, library quality arguments, and service levels (#1583)
 - Contracts declaring `apiVersion: v3.2.0` lint and round-trip, including `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types (#1558)

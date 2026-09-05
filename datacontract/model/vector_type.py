@@ -78,3 +78,33 @@ def vector_element_type(prop: SchemaProperty) -> str:
 def is_double(prop: SchemaProperty) -> bool:
     """True when the elements need 64-bit floats."""
     return vector_element_type(prop) == "float64"
+
+
+def observed_vector_element_type(prop: SchemaProperty) -> Optional[str]:
+    """Return the element type a catalog actually reports, without inventing a default."""
+    explicit = (prop.logicalTypeOptions or {}).get("elementType")
+    if explicit:
+        return str(explicit).lower()
+    parsed = parse_vector_type(prop.physicalType)
+    if parsed:
+        return parsed[1]
+    if prop.items and prop.items.physicalType:
+        name = prop.items.physicalType.lower()
+        aliases = {
+            "half": "float16",
+            "float": "float32",
+            "real": "float32",
+            "float4": "float32",
+            "double": "float64",
+            "double precision": "float64",
+            "float8": "float64",
+            "tinyint": "int8",
+            "smallint": "int16",
+            "integer": "int32",
+            "int": "int32",
+            "bigint": "int64",
+        }
+        name = aliases.get(name, name)
+        if re.fullmatch(r"(?:u?int(?:8|16|32|64)|b?float(?:16|32|64)|binary)", name):
+            return name
+    return None
