@@ -44,7 +44,7 @@ def test_import_postgres():
     result = _import(schema="public", postgres_table=["orders"])
 
     expected = f"""
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract

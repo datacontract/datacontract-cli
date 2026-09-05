@@ -461,13 +461,29 @@ def import_spark(
 
 @import_app.command(
     name="iceberg",
-    epilog="Example: datacontract import iceberg --source schema.json --table orders --output datacontract.yaml",
+    epilog="Examples: datacontract import iceberg --source schema.json --table orders --output datacontract.yaml; "
+    "datacontract import iceberg --catalog-url https://polaris.example.com/api/catalog --namespace sales --table orders",
 )
 def import_iceberg(
-    source: Annotated[Optional[str], typer.Option(help="Path to the Iceberg schema JSON file.")] = None,
+    source: Annotated[
+        Optional[str], typer.Option(help="Path to the Iceberg schema JSON file. Omit to read from a REST catalog.")
+    ] = None,
     table: Annotated[
         Optional[str],
-        typer.Option(help="Table name to assign to the model created from the Iceberg schema."),
+        typer.Option(
+            help="Table name to assign to the model created from the Iceberg schema, or the table to load from the catalog."
+        ),
+    ] = None,
+    catalog_url: Annotated[
+        Optional[str],
+        typer.Option(help="REST catalog endpoint to load the table from (DATACONTRACT_ICEBERG_CATALOG_URL)."),
+    ] = None,
+    catalog: Annotated[Optional[str], typer.Option(help="Name of the catalog (DATACONTRACT_ICEBERG_CATALOG).")] = None,
+    namespace: Annotated[
+        Optional[str], typer.Option(help="Namespace of the table in the catalog (DATACONTRACT_ICEBERG_NAMESPACE).")
+    ] = None,
+    warehouse: Annotated[
+        Optional[str], typer.Option(help="Warehouse passed to the catalog (DATACONTRACT_ICEBERG_WAREHOUSE).")
     ] = None,
     output: output_option = None,
     schema: schema_option = None,
@@ -475,10 +491,20 @@ def import_iceberg(
     id: id_option = None,
     debug: debug_option = None,
 ):
-    """Import a data contract from an Iceberg schema."""
+    """Import a data contract from an Iceberg schema file or a REST catalog."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="iceberg", source=source, schema=schema, iceberg_table=table, owner=owner, id=id
+        config=cli_config(),
+        format="iceberg",
+        source=source,
+        schema=schema,
+        iceberg_table=table,
+        iceberg_catalog_url=catalog_url,
+        iceberg_catalog=catalog,
+        iceberg_namespace=namespace,
+        iceberg_warehouse=warehouse,
+        owner=owner,
+        id=id,
     )
     _write_result(result, output)
 

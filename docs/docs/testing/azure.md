@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: "Azure Blob / ADLS"
 description: "Create a data contract from files on Azure Blob storage or ADLS Gen2 and test them against it."
 ---

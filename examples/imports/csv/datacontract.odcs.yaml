@@ -1,6 +1,6 @@
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -30,22 +30,22 @@ schema:
     - ORD-1002
   - name: order_timestamp
     physicalType: VARCHAR
-    logicalType: date
+    logicalType: string
     required: true
     unique: true
     examples:
-    - '2024-01-03T09:15:00Z'
     - '2024-01-02T11:30:00Z'
     - '2024-01-01T10:00:00Z'
+    - '2024-01-03T09:15:00Z'
   - name: customer_id
     physicalType: VARCHAR
     logicalType: string
     required: true
     unique: true
     examples:
-    - CUST-1
     - CUST-2
     - CUST-3
+    - CUST-1
   - name: order_total
     physicalType: INTEGER
     logicalType: integer
@@ -55,8 +55,8 @@ schema:
     required: true
     unique: true
     examples:
-    - 1299
     - 2500
+    - 1299
     - 4999
   - name: status
     physicalType: VARCHAR
@@ -65,5 +65,5 @@ schema:
     unique: true
     examples:
     - delivered
-    - pending
     - shipped
+    - pending

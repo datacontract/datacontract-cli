@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 12
 title: "Kafka"
 description: "Create a data contract for a Kafka topic and test the messages against it (experimental)."
 ---

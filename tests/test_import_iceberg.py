@@ -11,7 +11,7 @@ from datacontract.model.exceptions import DataContractException
 expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -55,26 +55,34 @@ schema:
           - property: icebergFieldId
             value: 4
       - name: quux
-        logicalType: object
-        physicalType: map
+        logicalType: map
+        physicalType: map<string, map<string, int>>
         required: true
         customProperties:
           - property: icebergFieldId
             value: 6
-          - property: mapKeyType
-            value: string
-          - property: mapValueType
-            value: object
-          - property: mapValueRequired
-            value: 'true'
-          - property: mapValuePhysicalType
-            value: map
-          - property: mapNestedKeyType
-            value: string
-          - property: mapNestedValueType
-            value: integer
-          - property: mapNestedValueRequired
-            value: 'true'
+        map:
+          key:
+            name: key
+            logicalType: string
+            physicalType: string
+            required: true
+          value:
+            name: value
+            logicalType: map
+            physicalType: map<string, int>
+            required: true
+            map:
+              key:
+                name: key
+                logicalType: string
+                physicalType: string
+                required: true
+              value:
+                name: value
+                logicalType: integer
+                physicalType: int
+                required: true
       - name: location
         logicalType: array
         physicalType: 'list<struct<13: latitude: optional float, 14: longitude: optional float>>'

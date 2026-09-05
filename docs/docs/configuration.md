@@ -34,9 +34,32 @@ DATACONTRACT_POSTGRES_PASSWORD=postgres
 
 The `.env` values are exported into the process environment, so they also reach tools that read the environment directly, such as boto3 (`AWS_PROFILE`), the Databricks SDK, and Snowflake's `SNOWFLAKE_HOME`.
 
+## Variables in the data contract
+
+Since ODCS v3.2.0, any string value in a data contract may contain a `${VAR_NAME}` reference, optionally with an inline default: `${VAR_NAME:-default}`. This keeps hostnames, bucket paths, and other environment-specific values out of the contract, so the same file works in every environment.
+
+```yaml
+servers:
+  - server: production
+    type: postgresql
+    host: ${DB_HOST}
+    port: ${DB_PORT:-5432}
+    database: ${DB_NAME:-orders}
+schema:
+  - name: orders
+    quality:
+      - type: sql
+        query: SELECT COUNT(*) FROM orders WHERE created_at > '${CUTOFF_DATE}'
+        mustBe: 0
+```
+
+The CLI resolves references in test inputs: server fields, schema and property names, enum values, nested type options, library quality arguments, and service levels. SQL quality queries resolve when their checks are prepared; the CLI's own placeholders such as `${model}` and `${schema}` are substituted first. Values come from the environment, including a loaded `.env` file. A reference to an unset or empty variable without a default fails the run with the variable's name and field path; an empty string is never substituted silently. Unselected schemas and documentation fields such as descriptions and context do not need their variables set. The contract itself is never changed: `lint` accepts unresolved references, and `export` and `publish` write them back exactly as written.
+
+The [per-source override options](#all-options) such as `DATACONTRACT_POSTGRES_HOST` take precedence over the contract, so an override replaces a reference in the same field without resolving it.
+
 ## Config file (YAML)
 
-A YAML config file groups options in sections per data source. Pass it with the global `--config-file` option, or place it at one of the default locations: `./datacontract-config.yaml` or `~/.datacontract/config.yaml`.
+A YAML config file groups options in sections per data source. String values may contain `${VAR}` and `${VAR:-default}` references, resolved when the file is loaded. Pass it with the global `--config-file` option, or place it at one of the default locations: `./datacontract-config.yaml` or `~/.datacontract/config.yaml`.
 
 ```yaml
 # datacontract-config.yaml
@@ -124,6 +147,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_ATHENA_CATALOG` | `athena_catalog` | string | Overrides `catalog` from the contract's `servers` block |
 | `DATACONTRACT_ATHENA_SCHEMA` | `athena_schema` | string | Overrides `schema` from the contract's `servers` block |
 | `DATACONTRACT_ATHENA_STAGING_DIR` | `athena_staging_dir` | string | Overrides `stagingDir` from the contract's `servers` block |
+| `DATACONTRACT_ATHENA_WORKGROUP` | `athena_workgroup` | string | Overrides `workgroup` from the contract's `servers` block |
 
 ### Azure
 
@@ -172,6 +196,21 @@ Every option, by its environment variable name and the matching `Config` field. 
 |---|---|---|---|
 | `DATACONTRACT_GCS_KEY_ID` | `gcs_key_id` | string |  |
 | `DATACONTRACT_GCS_SECRET` | `gcs_secret` | string (secret) |  |
+
+### Iceberg
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_ICEBERG_CATALOG_TYPE` | `iceberg_catalog_type` | string |  |
+| `DATACONTRACT_ICEBERG_CREDENTIAL` | `iceberg_credential` | string (secret) |  |
+| `DATACONTRACT_ICEBERG_TOKEN` | `iceberg_token` | string (secret) |  |
+| `DATACONTRACT_ICEBERG_S3_ENDPOINT` | `iceberg_s3_endpoint` | string |  |
+| `DATACONTRACT_ICEBERG_SIGNING_NAME` | `iceberg_signing_name` | string |  |
+| `DATACONTRACT_ICEBERG_PROPERTIES` | `iceberg_properties` | string |  |
+| `DATACONTRACT_ICEBERG_CATALOG_URL` | `iceberg_catalog_url` | string | Overrides `catalogUrl` from the contract's `servers` block |
+| `DATACONTRACT_ICEBERG_CATALOG` | `iceberg_catalog` | string | Overrides `catalog` from the contract's `servers` block |
+| `DATACONTRACT_ICEBERG_NAMESPACE` | `iceberg_namespace` | string | Overrides `namespace` from the contract's `servers` block |
+| `DATACONTRACT_ICEBERG_WAREHOUSE` | `iceberg_warehouse` | string | Overrides `warehouse` from the contract's `servers` block |
 
 ### Impala
 

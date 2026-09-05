@@ -3,22 +3,62 @@ from pydantic import ValidationError
 from pyiceberg import types as iceberg_types
 from pyiceberg.schema import Schema
 
+from datacontract.config import Config
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
+    create_server,
 )
 from datacontract.model.exceptions import DataContractException
 
 
 class IcebergImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config: "Config | None" = None) -> OpenDataContractStandard:
+        config = Config.resolve(config)
+        catalog_url = import_args.get("iceberg_catalog_url") or config.get_iceberg_catalog_url()
+        if source is None and catalog_url:
+            return import_from_catalog(import_args, config, catalog_url)
+        if source is None:
+            raise DataContractException(
+                type="schema",
+                name="Import iceberg",
+                reason="Pass --source with a schema JSON file, or --catalog-url and --table to read from a REST catalog.",
+                engine="datacontract-cli",
+            )
         schema = load_and_validate_iceberg_schema(source)
         return import_iceberg(
             schema,
             import_args.get("iceberg_table"),
         )
+
+
+def import_from_catalog(import_args: dict, config: "Config", catalog_url: str) -> OpenDataContractStandard:
+    """Import a table's schema from a REST catalog and describe the catalog as the contract's server."""
+    from datacontract.engines.ibis.connections.iceberg import load_iceberg_catalog, load_iceberg_table
+
+    table_name = import_args.get("iceberg_table")
+    if not table_name:
+        raise DataContractException(
+            type="schema",
+            name="Import iceberg",
+            reason="--table is required when importing from a catalog.",
+            engine="datacontract-cli",
+        )
+    server = create_server(
+        name="production",
+        server_type="iceberg",
+        catalog=import_args.get("iceberg_catalog") or config.get_iceberg_catalog(),
+        warehouse=import_args.get("iceberg_warehouse") or config.get_iceberg_warehouse(),
+    )
+    server.catalogUrl = catalog_url
+    server.namespace = import_args.get("iceberg_namespace") or config.get_iceberg_namespace()
+    catalog = load_iceberg_catalog(server, config)
+    table = load_iceberg_table(catalog, server, table_name, config)
+    odcs = import_iceberg(table.schema(), table_name.split(".")[-1])
+    odcs.servers = [server]
+    return odcs
 
 
 def load_and_validate_iceberg_schema(source: str) -> Schema:
@@ -79,24 +119,15 @@ def _property_from_nested_field(nested_field: iceberg_types.NestedField) -> Sche
 
     nested_properties = None
     items_prop = None
+    map_key = map_value = None
     physical_type = str(nested_field.field_type)
 
     if logical_type == "array":
         items_prop = _type_to_property(
             "items", nested_field.field_type.element_type, nested_field.field_type.element_required
         )
-    elif isinstance(nested_field.field_type, iceberg_types.MapType):
-        # For map types, store key/value types in customProperties and use "map" as physicalType
-        physical_type = "map"
-        custom_props["mapKeyType"] = _data_type_from_iceberg(nested_field.field_type.key_type)
-        custom_props["mapValueType"] = _data_type_from_iceberg(nested_field.field_type.value_type)
-        custom_props["mapValueRequired"] = str(nested_field.field_type.value_required).lower()
-        # Handle nested maps in value type
-        if isinstance(nested_field.field_type.value_type, iceberg_types.MapType):
-            custom_props["mapValuePhysicalType"] = "map"
-            custom_props["mapNestedKeyType"] = _data_type_from_iceberg(nested_field.field_type.value_type.key_type)
-            custom_props["mapNestedValueType"] = _data_type_from_iceberg(nested_field.field_type.value_type.value_type)
-            custom_props["mapNestedValueRequired"] = str(nested_field.field_type.value_type.value_required).lower()
+    elif logical_type == "map":
+        map_key, map_value = _map_key_value(nested_field.field_type)
     elif logical_type == "object" and hasattr(nested_field.field_type, "fields"):
         nested_properties = [_property_from_nested_field(nf) for nf in nested_field.field_type.fields]
 
@@ -108,7 +139,17 @@ def _property_from_nested_field(nested_field: iceberg_types.NestedField) -> Sche
         required=nested_field.required if nested_field.required else None,
         properties=nested_properties,
         items=items_prop,
+        map_key=map_key,
+        map_value=map_value,
         custom_properties=custom_props if custom_props else None,
+    )
+
+
+def _map_key_value(map_type: iceberg_types.MapType) -> tuple[SchemaProperty, SchemaProperty]:
+    """The key and value properties of an Iceberg map; Iceberg keys are always required."""
+    return (
+        _type_to_property("key", map_type.key_type, True),
+        _type_to_property("value", map_type.value_type, map_type.value_required),
     )
 
 
@@ -118,9 +159,12 @@ def _type_to_property(name: str, iceberg_type: iceberg_types.IcebergType, requir
 
     nested_properties = None
     items_prop = None
+    map_key = map_value = None
 
     if logical_type == "array":
         items_prop = _type_to_property("items", iceberg_type.element_type, iceberg_type.element_required)
+    elif logical_type == "map":
+        map_key, map_value = _map_key_value(iceberg_type)
     elif logical_type == "object" and hasattr(iceberg_type, "fields"):
         nested_properties = [_property_from_nested_field(nf) for nf in iceberg_type.fields]
 
@@ -131,6 +175,8 @@ def _type_to_property(name: str, iceberg_type: iceberg_types.IcebergType, requir
         required=required if required else None,
         properties=nested_properties,
         items=items_prop,
+        map_key=map_key,
+        map_value=map_value,
     )
 
 
@@ -165,7 +211,7 @@ def _data_type_from_iceberg(iceberg_type: iceberg_types.IcebergType) -> str:
     if isinstance(iceberg_type, iceberg_types.FixedType):
         return "array"
     if isinstance(iceberg_type, iceberg_types.MapType):
-        return "object"
+        return "map"
     if isinstance(iceberg_type, iceberg_types.ListType):
         return "array"
     if isinstance(iceberg_type, iceberg_types.StructType):

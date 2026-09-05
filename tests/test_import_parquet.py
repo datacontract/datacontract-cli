@@ -31,7 +31,7 @@ def test_import_parquet():
 
     expected = """version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -81,7 +81,16 @@ schema:
     logicalType: array
   - name: map_field
     physicalType: MAP
-    logicalType: object
+    logicalType: map
+    map:
+      key:
+        name: key
+        physicalType: STRING
+        logicalType: string
+      value:
+        name: value
+        physicalType: STRING
+        logicalType: string
   - name: date_field
     physicalType: DATE
     logicalType: date

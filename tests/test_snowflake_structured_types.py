@@ -81,12 +81,19 @@ def test_leaf_token_mapping():
     assert _prop('{"type":"REAL"}').logicalType == "number"
 
 
-def test_untyped_object_array_and_map_keep_their_base_type():
-    # untyped OBJECT/ARRAY and MAP confirm their base type but carry no nesting.
+def test_untyped_object_and_array_keep_their_base_type():
+    # untyped OBJECT/ARRAY confirm their base type but carry no nesting.
     assert _to_property({"type": "OBJECT"}).properties is None
     assert _to_property({"type": "ARRAY"}).items is None
-    assert _to_property({"type": "MAP", "keyType": {"type": "TEXT"}, "valueType": {"type": "FIXED"}}).properties is None
-    assert _to_property({"type": "MAP"}).logicalType == "object"
+
+
+def test_map_carries_its_key_and_value():
+    prop = _to_property({"type": "MAP", "keyType": {"type": "TEXT"}, "valueType": {"type": "FIXED"}})
+    assert prop.logicalType == "map"
+    assert prop.physicalType == "MAP(VARCHAR, NUMBER(38,0))"
+    assert prop.map.key.logicalType == "string"
+    assert prop.map.value.logicalType == "number"
+    assert _to_property({"type": "MAP"}).logicalType == "map"
 
 
 def test_variant_and_unmapped_leaves_are_unknown_and_keep_their_token():

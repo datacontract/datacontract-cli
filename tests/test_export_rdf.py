@@ -35,7 +35,7 @@ def test_to_rdf():
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <orders-unit-test> a odcs:DataContract ;
-    odcs:apiVersion "v3.1.0" ;
+    odcs:apiVersion "v3.2.0" ;
     odcs:id "orders-unit-test" ;
     odcs:info [ a odcs:Info ;
             odcs:name "Orders Unit Test" ;
@@ -53,19 +53,23 @@ def test_to_rdf():
             odcs:physicalType "bigint" ;
             odcs:required true ],
         [ a odcs:Property ;
+            odcs:enum [ odcs:value "pending" ],
+                [ odcs:value "delivered" ],
+                [ odcs:value "shipped" ] ;
             odcs:logicalType "string" ;
             odcs:name "order_status" ;
             odcs:physicalType "text" ;
             odcs:required true ],
         [ a odcs:Property ;
-            odcsx:tags "order_id" ;
             odcs:classification "sensitive" ;
+            odcs:customProperties [ odcs:property "pii" ;
+                    odcs:value "True" ] ;
+            odcsx:tags "order_id" ;
             odcs:logicalType "string" ;
             odcs:name "order_id" ;
             odcs:physicalType "varchar" ;
             odcs:required true ;
             odcs:unique true ] .
-
 """
     g = Graph().parse(format="n3", data=expected_rdf)
 
@@ -88,7 +92,7 @@ def test_to_rdf_complex():
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <orders-latest> a odcs:DataContract ;
-    odcs:apiVersion "v3.1.0" ;
+    odcs:apiVersion "v3.2.0" ;
     odcs:id "orders-latest" ;
     odcs:info [ a odcs:Info ;
             odcs:description \"\"\"Successful customer orders in the webshop. All orders since 2020-01-01. Orders with their line items are in their current state (no history included).
@@ -104,19 +108,21 @@ def test_to_rdf_complex():
 <line_items> a odcs:Schema ;
     odcs:description "A single article that is part of an order." ;
     odcs:property [ a odcs:Property ;
-            odcs:classification "restricted" ;
-            odcs:description "An internal ID that identifies an order in the online shop." ;
-            odcsx:businessName "Order ID" ;
-            odcsx:examples "243c25e5-a081-43a9-aeab-6d5d5b6cb5e2" ;
-            odcs:logicalType "string" ;
-            odcs:name "order_id" ;
-            odcs:physicalType "text" ],
-        [ a odcs:Property ;
             odcs:description "The purchased article number" ;
             odcsx:businessName "Stock Keeping Unit" ;
             odcsx:examples "96385074" ;
             odcs:logicalType "string" ;
             odcs:name "sku" ;
+            odcs:physicalType "text" ],
+        [ a odcs:Property ;
+            odcs:classification "restricted" ;
+            odcs:customProperties [ odcs:property "pii" ;
+                    odcs:value "True" ] ;
+            odcs:description "An internal ID that identifies an order in the online shop." ;
+            odcsx:businessName "Order ID" ;
+            odcsx:examples "243c25e5-a081-43a9-aeab-6d5d5b6cb5e2" ;
+            odcs:logicalType "string" ;
+            odcs:name "order_id" ;
             odcs:physicalType "text" ],
         [ a odcs:Property ;
             odcs:description "Primary key of the lines_item_id table" ;
@@ -129,15 +135,16 @@ def test_to_rdf_complex():
 <orders> a odcs:Schema ;
     odcs:description "One record per order. Includes cancelled and deleted orders." ;
     odcs:property [ a odcs:Property ;
-            odcs:classification "restricted" ;
-            odcs:description "An internal ID that identifies an order in the online shop." ;
-            odcsx:businessName "Order ID" ;
-            odcsx:examples "243c25e5-a081-43a9-aeab-6d5d5b6cb5e2" ;
+            odcs:description "Unique identifier for the customer." ;
             odcs:logicalType "string" ;
-            odcs:name "order_id" ;
-            odcs:physicalType "text" ;
-            odcs:required true ;
-            odcs:unique true ],
+            odcs:name "customer_id" ;
+            odcs:physicalType "text" ],
+        [ a odcs:Property ;
+            odcs:description "Total amount the smallest monetary unit (e.g., cents)." ;
+            odcs:logicalType "integer" ;
+            odcs:name "order_total" ;
+            odcs:physicalType "long" ;
+            odcs:required true ],
         [ a odcs:Property ;
             odcs:description "The business timestamp in UTC when the order was successfully registered in the source system and the payment was successful." ;
             odcs:logicalType "timestamp" ;
@@ -145,22 +152,23 @@ def test_to_rdf_complex():
             odcs:physicalType "timestamp" ;
             odcs:required true ],
         [ a odcs:Property ;
-            odcs:description "Unique identifier for the customer." ;
-            odcs:logicalType "string" ;
-            odcs:name "customer_id" ;
-            odcs:physicalType "text" ],
-        [ a odcs:Property ;
             odcs:description "The email address, as entered by the customer. The email address was not verified." ;
             odcs:logicalType "string" ;
             odcs:name "customer_email_address" ;
             odcs:physicalType "text" ;
             odcs:required true ],
         [ a odcs:Property ;
-            odcs:description "Total amount the smallest monetary unit (e.g., cents)." ;
-            odcs:logicalType "integer" ;
-            odcs:name "order_total" ;
-            odcs:physicalType "long" ;
-            odcs:required true ] .
+            odcs:classification "restricted" ;
+            odcs:customProperties [ odcs:property "pii" ;
+                    odcs:value "True" ] ;
+            odcs:description "An internal ID that identifies an order in the online shop." ;
+            odcsx:businessName "Order ID" ;
+            odcsx:examples "243c25e5-a081-43a9-aeab-6d5d5b6cb5e2" ;
+            odcs:logicalType "string" ;
+            odcs:name "order_id" ;
+            odcs:physicalType "text" ;
+            odcs:required true ;
+            odcs:unique true ] .
 
 <production> a odcs:Server ;
     odcs:delimiter "new_line" ;
@@ -168,7 +176,6 @@ def test_to_rdf_complex():
     odcs:format "json" ;
     odcs:location "s3://multiple-bucket/fixtures/s3-json-multiple-models/data/{model}/*.json" ;
     odcs:type "s3" .
-
 """
 
     g = Graph().parse(format="n3", data=expected_rdf)

@@ -63,6 +63,8 @@ Instead of hard-coding names, the query can reference the schema, the property, 
 
 The `$` is optional: `{schema}` works the same as `${schema}`. A placeholder the server has no value for falls back to the name of the schema object.
 
+Any other `${NAME}` or `${NAME:-default}` in the query is an ODCS v3.2.0 [variable reference](../configuration.md#variables-in-the-data-contract), resolved from the environment after the placeholders above. A reference to an unset variable without a default fails the check with the variable's name.
+
 ```yaml
 quality:
   - type: sql

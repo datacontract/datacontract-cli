@@ -29,7 +29,7 @@ def test_import_avro_schema():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -97,13 +97,12 @@ schema:
     customProperties:
     - property: avroType
       value: enum
-    - property: avroSymbols
-      value:
-      - PLACED
-      - SHIPPED
-      - DELIVERED
-      - CANCELLED
     logicalType: string
+    enum:
+    - value: PLACED
+    - value: SHIPPED
+    - value: DELIVERED
+    - value: CANCELLED
     required: true
   - name: metadata
     physicalType: map
@@ -111,8 +110,41 @@ schema:
     customProperties:
     - property: avroType
       value: map
-    logicalType: object
+    logicalType: map
     required: true
+    map:
+      key:
+        name: key
+        physicalType: string
+        logicalType: string
+      value:
+        name: value
+        physicalType: record
+        logicalType: object
+        properties:
+        - name: value
+          physicalType: string
+          logicalType: string
+          required: true
+        - name: type
+          physicalType: enum
+          customProperties:
+          - property: avroType
+            value: enum
+          logicalType: string
+          required: true
+          enum:
+          - value: STRING
+          - value: LONG
+          - value: DOUBLE
+        - name: timestamp
+          physicalType: long
+          logicalType: integer
+          required: true
+        - name: source
+          physicalType: string
+          logicalType: string
+          required: true
     """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
@@ -124,7 +156,7 @@ def test_import_avro_arrays_of_records_and_nested_arrays():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -193,7 +225,7 @@ def test_import_avro_nested_records():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -230,7 +262,7 @@ def test_import_avro_nested_records_with_arrays():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -319,7 +351,7 @@ def test_import_avro_logical_types():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -388,7 +420,7 @@ def test_import_avro_optional_enum():
     expected = """
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -403,12 +435,11 @@ schema:
     customProperties:
     - property: avroType
       value: enum
-    - property: avroSymbols
-      value:
-      - RED
-      - GREEN
-      - BLUE
     logicalType: string
+    enum:
+    - value: RED
+    - value: GREEN
+    - value: BLUE
     required: true
   - name: optional_enum
     physicalType: enum
@@ -417,6 +448,10 @@ schema:
       value: enum
     logicalType: string
     required: false
+    enum:
+    - value: ACTIVE
+    - value: INACTIVE
+    - value: PENDING
 """
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

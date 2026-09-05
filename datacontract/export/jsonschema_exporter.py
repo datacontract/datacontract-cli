@@ -4,6 +4,9 @@ from typing import List, Optional
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
+from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_value
+from datacontract.model.vector_type import vector_dimensions
 
 
 class JsonSchemaExporter(Exporter):
@@ -50,18 +53,6 @@ def _get_config_value(prop: SchemaProperty, key: str):
     return None
 
 
-def _get_enum_from_quality(prop: SchemaProperty):
-    """Get enum values from quality rules (invalidValues metric with validValues)."""
-    if prop.quality is None:
-        return None
-    for q in prop.quality:
-        if q.metric == "invalidValues" and q.arguments:
-            valid_values = q.arguments.get("validValues")
-            if valid_values:
-                return valid_values
-    return None
-
-
 def to_property(prop: SchemaProperty) -> dict:
     property_dict = {}
     field_type = prop.logicalType
@@ -91,7 +82,7 @@ def to_property(prop: SchemaProperty) -> dict:
     if prop.unique:
         property_dict["unique"] = True
 
-    if json_type == "object":
+    if json_type == "object" and not (field_type and field_type.lower() == "map"):
         nested_props = prop.properties or []
         # TODO: any better idea to distinguish between properties and patternProperties?
         if nested_props and (nested_props[0].physicalName or nested_props[0].name).startswith("^"):
@@ -103,23 +94,22 @@ def to_property(prop: SchemaProperty) -> dict:
     if json_type == "array" and prop.items:
         property_dict["items"] = to_property(prop.items)
 
+    if field_type and field_type.lower() == "vector":
+        property_dict["items"] = {"type": "number"}
+        dimensions = vector_dimensions(prop)
+        if dimensions is not None:
+            property_dict["minItems"] = dimensions
+            property_dict["maxItems"] = dimensions
+
+    if field_type and field_type.lower() == "map":
+        value = get_map_value(prop)
+        property_dict["additionalProperties"] = to_property(value) if value is not None else True
+
     pattern = _get_logical_type_option(prop, "pattern")
     if pattern:
         property_dict["pattern"] = pattern
 
-    # Check logicalTypeOptions, customProperties, or quality rules for enum
-    enum_values = _get_logical_type_option(prop, "enum")
-    if not enum_values:
-        enum_from_custom = _get_config_value(prop, "enum")
-        if enum_from_custom:
-            # Parse JSON string from customProperties
-            try:
-                enum_values = json.loads(enum_from_custom)
-            except (json.JSONDecodeError, TypeError):
-                enum_values = None
-    if not enum_values:
-        # Check quality rules for invalidValues metric with validValues
-        enum_values = _get_enum_from_quality(prop)
+    enum_values = get_enum_values(prop)
     if enum_values:
         property_dict["enum"] = enum_values
 
@@ -197,6 +187,10 @@ def convert_type_format(type_str: Optional[str], format_str: Optional[str]) -> t
     if type_str.lower() in ["object", "record", "struct"]:
         return "object", None
     if type_str.lower() in ["array"]:
+        return "array", None
+    if type_str.lower() in ["map"]:
+        return "object", None
+    if type_str.lower() in ["vector"]:
         return "array", None
     return None, None
 

@@ -66,7 +66,7 @@ dependencies = [
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
-  "open-data-contract-standard>=3.1.2,<3.2.0",
+  "open-data-contract-standard>=3.2.0,<4.0.0",
   "deepdiff>=6.0.0,<10.0.0",
 ]
 
@@ -130,7 +130,8 @@ databricks-runtime = [
 ]
 
 iceberg = [
-  "pyiceberg==0.11.1"
+  "pyiceberg[pyarrow,rest-sigv4]==0.11.1",
+  "datacontract-cli[duckdb]"
 ]
 
 # Kafka needs no JVM: the topic is consumed with confluent-kafka, decoded in

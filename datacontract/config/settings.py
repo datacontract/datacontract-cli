@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 from pathlib import Path
 
 from pydantic import Field, SecretStr
@@ -33,6 +32,7 @@ SERVER_OVERRIDE_OPTIONS = {
     "athena_catalog": "catalog",
     "athena_schema": "schema",
     "athena_staging_dir": "stagingDir",
+    "athena_workgroup": "workgroup",
     "bigquery_project": "project",
     "bigquery_dataset": "dataset",
     "databricks_server_hostname": "host",
@@ -40,6 +40,10 @@ SERVER_OVERRIDE_OPTIONS = {
     "databricks_schema": "schema",
     "duckdb_database": "database",
     "duckdb_schema": "schema",
+    "iceberg_catalog_url": "catalogUrl",
+    "iceberg_catalog": "catalog",
+    "iceberg_namespace": "namespace",
+    "iceberg_warehouse": "warehouse",
     "impala_host": "host",
     "impala_port": "port",
     "impala_database": "database",
@@ -104,6 +108,7 @@ class Config(BaseSettings):
     athena_catalog: str | None = None
     athena_schema: str | None = None
     athena_staging_dir: str | None = None
+    athena_workgroup: str | None = None
 
     # azure
     azure_connection_string: SecretStr | None = None
@@ -140,6 +145,19 @@ class Config(BaseSettings):
     # gcs
     gcs_key_id: str | None = None
     gcs_secret: SecretStr | None = None
+
+    # iceberg (REST catalog by default; data files use the s3_* options)
+    iceberg_catalog_type: str | None = None
+    iceberg_credential: SecretStr | None = None
+    iceberg_token: SecretStr | None = None
+    iceberg_s3_endpoint: str | None = None
+    iceberg_signing_name: str | None = None
+    iceberg_properties: str | None = None
+    # overrides for the contract's servers block
+    iceberg_catalog_url: str | None = None
+    iceberg_catalog: str | None = None
+    iceberg_namespace: str | None = None
+    iceberg_warehouse: str | None = None
 
     # impala
     impala_username: str | None = None
@@ -309,9 +327,10 @@ class Config(BaseSettings):
 
         Nested keys join with ``_`` to form the field name (``snowflake.username``
         → ``snowflake_username``); top-level scalars address the general options
-        (``max_errors``). ``${VAR}`` references in string values are replaced with
-        the environment variable's value at load time, so files can be committed
-        without holding secrets. Unknown option names raise a ValueError.
+        (``max_errors``). ``${VAR}`` and ``${VAR:-default}`` references in string
+        values are replaced with the environment variable's value at load time,
+        so files can be committed without holding secrets. Unknown option names
+        raise a ValueError.
         """
         import yaml
 
@@ -469,6 +488,9 @@ class Config(BaseSettings):
     def get_athena_staging_dir(self, required: bool = False) -> str | None:
         return self._str_option("athena_staging_dir", required)
 
+    def get_athena_workgroup(self, required: bool = False) -> str | None:
+        return self._str_option("athena_workgroup", required)
+
     # --- azure ---
     def get_azure_connection_string(self, required: bool = False) -> str | None:
         return self._str_option("azure_connection_string", required)
@@ -535,6 +557,37 @@ class Config(BaseSettings):
 
     def get_gcs_secret(self, required: bool = False) -> str | None:
         return self._str_option("gcs_secret", required)
+
+    # --- iceberg ---
+    def get_iceberg_catalog_type(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_catalog_type", required)
+
+    def get_iceberg_s3_endpoint(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_s3_endpoint", required)
+
+    def get_iceberg_signing_name(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_signing_name", required)
+
+    def get_iceberg_properties(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_properties", required)
+
+    def get_iceberg_credential(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_credential", required)
+
+    def get_iceberg_token(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_token", required)
+
+    def get_iceberg_catalog_url(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_catalog_url", required)
+
+    def get_iceberg_catalog(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_catalog", required)
+
+    def get_iceberg_namespace(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_namespace", required)
+
+    def get_iceberg_warehouse(self, required: bool = False) -> str | None:
+        return self._str_option("iceberg_warehouse", required)
 
     # --- impala ---
     def get_impala_username(self, required: bool = False) -> str | None:
@@ -909,18 +962,8 @@ def unknown_snowflake_env_names() -> list[str]:
     return sorted(name for name in os.environ if name.startswith("DATACONTRACT_SNOWFLAKE_") and name not in known)
 
 
-_ENV_REFERENCE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
-
-
 def _interpolate_env(value, path):
-    """Replace ``${VAR}`` references in string values with environment variable values."""
-    if not isinstance(value, str):
-        return value
+    """Replace ``${VAR}`` and ``${VAR:-default}`` references in string values with environment variable values."""
+    from datacontract.config.variables import resolve_variables
 
-    def replace(match):
-        name = match.group(1)
-        if name not in os.environ:
-            raise ValueError(f"Environment variable {name} referenced in {path} is not set.")
-        return os.environ[name]
-
-    return _ENV_REFERENCE.sub(replace, value)
+    return resolve_variables(value, source=f"config file {path}")

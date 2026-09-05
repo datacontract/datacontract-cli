@@ -5,6 +5,8 @@ from typing import Optional
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_key, get_map_value
 
 
 class PydanticExporter(Exporter):
@@ -88,6 +90,17 @@ def constant_field_annotation(
     prop_type = _get_type(prop)
     physical_type = _get_physical_type(prop)
 
+    enum_values = get_enum_values(prop)
+    if enum_values and prop_type in ("string", "integer") and all(isinstance(v, (str, int)) for v in enum_values):
+        return (
+            ast.Subscript(
+                value=ast.Attribute(value=ast.Name(id="typing", ctx=ast.Load()), attr="Literal", ctx=ast.Load()),
+                slice=ast.Tuple(elts=[ast.Constant(v) for v in enum_values], ctx=ast.Load()),
+                ctx=ast.Load(),
+            ),
+            None,
+        )
+
     match prop_type:
         case "string":
             return (ast.Name("str", ctx=ast.Load()), None)
@@ -115,6 +128,23 @@ def constant_field_annotation(
         case "object":
             classdef = generate_field_class(field_name.capitalize(), prop)
             return (ast.Name(field_name.capitalize(), ctx=ast.Load()), classdef)
+        case "vector":
+            return (list_of(ast.Name("float", ctx=ast.Load())), None)
+        case "map":
+            key, value = get_map_key(prop), get_map_value(prop)
+            key_type = constant_field_annotation(field_name, key)[0] if key is not None else ast.Name("str")
+            if value is not None:
+                (value_type, new_class) = constant_field_annotation(field_name, value)
+            else:
+                (value_type, new_class) = (ast.Name("typing.Any", ctx=ast.Load()), None)
+            return (
+                ast.Subscript(
+                    value=ast.Name(id="dict", ctx=ast.Load()),
+                    slice=ast.Tuple(elts=[key_type, value_type], ctx=ast.Load()),
+                    ctx=ast.Load(),
+                ),
+                new_class,
+            )
         case _:
             # Check physical type for more specific mappings
             if physical_type:

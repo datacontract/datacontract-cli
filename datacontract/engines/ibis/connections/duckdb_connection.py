@@ -79,6 +79,11 @@ def get_duckdb_connection(
             run.log_info(f"Creating table {model_name} for {model_path}")
 
             if server.format == "json":
+                encoding = _duckdb_encoding(server)
+                if encoding and encoding != "utf-8":
+                    run.log_warn(
+                        f"Server '{server.server}' declares encoding '{server.encoding}', but JSON files are read as UTF-8."
+                    )
                 json_format = "auto"
                 if server.delimiter == "new_line":
                     json_format = "newline_delimited"
@@ -101,7 +106,9 @@ def get_duckdb_connection(
             elif server.format == "parquet":
                 create_view_with_schema_union(con, schema_obj, model_path, "read_parquet", to_parquet_types)
             elif server.format == "csv":
-                create_view_with_schema_union(con, schema_obj, model_path, "read_csv", to_csv_types)
+                create_view_with_schema_union(
+                    con, schema_obj, model_path, "read_csv", to_csv_types, read_options=_csv_encoding_options(server)
+                )
             elif server.format == "delta":
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
             table_info = con.sql(f'PRAGMA table_info("{model_name}");').fetchall()
@@ -172,7 +179,38 @@ def _sql_list(values: list[str]) -> str:
     return "[" + ", ".join(f"'{_sql_literal(value)}'" for value in values) + "]"
 
 
-def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str, read_function: str, type_converter):
+# ODCS `encoding` values (IANA names) DuckDB's CSV reader understands
+_DUCKDB_ENCODINGS = {
+    "utf-8": "utf-8",
+    "utf8": "utf-8",
+    "utf-16": "utf-16",
+    "utf16": "utf-16",
+    "iso-8859-1": "latin-1",
+    "iso8859-1": "latin-1",
+    "latin-1": "latin-1",
+    "latin1": "latin-1",
+}
+
+
+def _duckdb_encoding(server: Server) -> str | None:
+    """The DuckDB spelling of the server's declared payload encoding, or ``None`` if not declared."""
+    declared = getattr(server, "encoding", None)
+    if not declared:
+        return None
+    return _DUCKDB_ENCODINGS.get(declared.strip().lower(), declared.strip().lower())
+
+
+def _csv_encoding_options(server: Server) -> str:
+    """Extra ``read_csv`` arguments for the server's encoding (ODCS v3.2.0); empty for UTF-8."""
+    encoding = _duckdb_encoding(server)
+    if not encoding or encoding == "utf-8":
+        return ""
+    return f", encoding='{encoding}'"
+
+
+def create_view_with_schema_union(
+    con, schema_obj: SchemaObject, model_path: str, read_function: str, type_converter, read_options: str = ""
+):
     """Create a view by unioning empty schema table with data files using union_by_name"""
     converted_types = type_converter(schema_obj)
     model_name = schema_obj.name
@@ -180,7 +218,7 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
     # Raw view to check for absent columns (check_property_is_present)
     con.sql(
         f"""CREATE VIEW "{model_name}__raw__" AS
-            SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+            SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1{read_options});"""
     )
 
     if converted_types:
@@ -191,7 +229,7 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
 
         # Read columns existing in both current data contract and data
         intersecting_columns = con.sql(f"""SELECT column_name
-            FROM (DESCRIBE SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1))
+            FROM (DESCRIBE SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1{read_options}))
             INTERSECT SELECT column_name
             FROM information_schema.columns
             WHERE table_name = '{model_name}'""").fetchall()
@@ -200,12 +238,12 @@ def create_view_with_schema_union(con, schema_obj: SchemaObject, model_path: str
         if intersecting_columns:
             selected_columns = ", ".join(f'"{column[0]}"' for column in intersecting_columns)
             insert_data_sql = f"""INSERT INTO "{model_name}" BY NAME
-                (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1));"""
+                (SELECT {selected_columns} FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1{read_options}));"""
             con.sql(insert_data_sql)
     else:
         # Fallback
         con.sql(
-            f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1);"""
+            f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1{read_options});"""
         )
 
 

@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # are read with duckdb, so naming the server type would send users to an extra
 # that does not exist (`local`) or to an unrelated one (`api` installs the web
 # server dependencies, not a test backend).
-_INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb"}
+_INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb", "iceberg": "iceberg"}
 
 
 def install_extra_for(server_type: Optional[str]) -> str:
@@ -306,7 +306,7 @@ def _run_model(
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
-                _run_type(run, schema, columns, spec, structured_types)
+                _run_type(run, schema, columns, spec, structured_types, native_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
                 _run_physical_type(run, con, server, schema, columns, native_types, spec, structured_types)
             elif spec.metric == MetricType.FIELD_NESTED_TYPE:
@@ -738,7 +738,14 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
     )
 
 
-def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types: dict[str, SchemaProperty] | None = None):
+def _run_type(
+    run: Run,
+    schema,
+    columns,
+    spec: CheckSpec,
+    structured_types: dict[str, SchemaProperty] | None = None,
+    native_types: dict[str, str] | None = None,
+):
     _set_impl(
         run,
         spec.key,
@@ -755,6 +762,10 @@ def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types: dict
     # tree recovered from SHOW COLUMNS when available.
     structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
     actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
+    native_type = native_types.get(spec.field.lower()) if native_types else None
+    if native_type and actual_prop.physicalType is None and spec.expected_category == "vector":
+        # ibis reports a vector as a plain array; the catalog's declared type carries the dimensions
+        actual_prop = actual_prop.model_copy(update={"physicalType": native_type})
     _set_diagnostics(
         run,
         spec.key,
@@ -892,6 +903,12 @@ def _run_nested_type(
     expected = spec.expected_schema_property
     expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
     actual_base = normalize_type_name(actual_prop.logicalType or actual_prop.physicalType)
+    if expected_base == "object" and actual_base == "map":
+        # a map column declared as an object: the comparator reads it as an untyped object
+        actual_base = "object"
+    if expected_base == "vector" and actual_base == "array":
+        # an array of numbers is how platforms without a vector type store one
+        actual_base = "vector"
     if actual_base is None:
         # A dynamically-typed column (json / variant / jsonb) holds a different
         # structure per row, so there is nothing to compare the children against.

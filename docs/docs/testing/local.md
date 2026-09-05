@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 13
 title: "Local files"
 description: "Test local files in Parquet, JSON, CSV, or Delta format — the fastest way to try the CLI, no credentials needed."
 ---
@@ -75,6 +75,8 @@ The command exits with code `1`, so the same call works as a gate in [CI/CD pipe
 ## Reference
 
 No environment variables are needed for local files. Data type inference and the per-format type handling: **[Local Files Reference](../reference/local.md)**.
+
+CSV files are read as UTF-8 unless the server declares an `encoding` (ODCS v3.2.0), such as `ISO-8859-1` or `UTF-16`. JSON files are always read as UTF-8.
 
 ## Troubleshooting
 

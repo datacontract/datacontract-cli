@@ -5,7 +5,7 @@ import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.imports.excel_importer import import_excel_as_odcs
+from datacontract.imports.excel_importer import import_excel_as_odcs, parse_port
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -38,3 +38,12 @@ def read_file(file):
     with open(file, "r") as file:
         file_content = file.read()
     return file_content
+
+
+def test_parse_port_keeps_variable_references():
+    assert parse_port(5432) == 5432
+    assert parse_port(5432.0) == 5432
+    assert parse_port(" 5432 ") == 5432
+    assert parse_port("${DB_PORT:-5432}") == "${DB_PORT:-5432}"
+    assert parse_port("") is None
+    assert parse_port(None) is None
