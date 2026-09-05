@@ -53,7 +53,7 @@ schema:
         mustBe: 0
 ```
 
-The CLI resolves a reference at the moment it uses the value: when `datacontract test` opens the connection, and when it prepares a SQL quality query for execution. In queries, the CLI's own placeholders such as `${model}` and `${schema}` are substituted first. Values come from the environment, including a loaded `.env` file. A reference to an unset or empty variable without a default fails the run with the variable's name; an empty string is never substituted silently. The contract itself is never changed: `lint` accepts unresolved references, and `export` and `publish` write them back exactly as written.
+The CLI resolves references in test inputs: server fields, schema and property names, enum values, nested type options, library quality arguments, and service levels. SQL quality queries resolve when their checks are prepared; the CLI's own placeholders such as `${model}` and `${schema}` are substituted first. Values come from the environment, including a loaded `.env` file. A reference to an unset or empty variable without a default fails the run with the variable's name and field path; an empty string is never substituted silently. Unselected schemas and documentation fields such as descriptions and context do not need their variables set. The contract itself is never changed: `lint` accepts unresolved references, and `export` and `publish` write them back exactly as written.
 
 The [per-source override options](#all-options) such as `DATACONTRACT_POSTGRES_HOST` take precedence over the contract, so an override replaces a reference in the same field without resolving it.
 
