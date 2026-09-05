@@ -99,6 +99,10 @@ A property can declare a portable `logicalType`, a native `physicalType`, or bot
 
 Properties of `logicalType: object`, `array` or `map` that declare `properties`, `items` or a `map` block (`key` and `value`, ODCS v3.2.0) also get a **nested type check** covering the full declared structure.
 
+ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
+
+Property-level `enum` entries must have distinct values, even if their labels, IDs, or descriptions differ. Lint checks this throughout properties, array items, and map keys and values. JSON numbers compare by value (`1` equals `1.0`); strings and booleans remain distinct from numbers.
+
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
 :::note

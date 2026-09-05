@@ -14,6 +14,7 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 
 ### Added
 - `datacontract test` resolves variables in property names, enum values, nested type options, library quality arguments, and service levels (#1583)
+- Lint requires vector dimensions and rejects duplicate enum values regardless of their labels (#1586)
 - Contracts declaring `apiVersion: v3.2.0` lint and round-trip, including `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types (#1558)
 - `datacontract export avro-idl` writes `map<...>` and `array<float>` for `map` and `vector` properties; `datacontract export sqlalchemy` writes `JSON` and `ARRAY(Float)` (#1558)
 - `datacontract test` resolves `${VAR}` and `${VAR:-default}` references in server fields and SQL quality queries from the environment; an unset variable without a default fails the run with its name, and `export` keeps the references (#1559)

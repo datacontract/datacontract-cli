@@ -12,3 +12,7 @@ curl -o odcs-3.2.0.schema.json https://raw.githubusercontent.com/bitol-io/open-d
 # forced to carry a `map` block. Reported upstream; drop the patch once the upstream schema has it.
 # It also adds `blob` to the schema-object `logicalType` enum, a CLI extension used by
 # `datacontract test` for Azure Blob file-metadata checks (same patch as in odcs-3.1.0.schema.json).
+# The vector conditional also requires logicalTypeOptions, so omitting the entire
+# options block cannot bypass its required dimensions field (#1586).
+# Enum value uniqueness is checked by lint/constraints.py: uniqueItems in JSON
+# Schema only rejects identical whole entries, including their metadata.
