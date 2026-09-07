@@ -163,6 +163,9 @@ $ datacontract import excel --source odcs.xlsx --output odcs.yaml
 
 # export to Excel template  
 $ datacontract export excel --output odcs.xlsx odcs.yaml
+
+# generate fake data with mimesis (SQL inserts for physicalType: table, json/csv/parquet for physicalType: file)
+$ datacontract mock odcs.yaml --rows 25 --output ./mock-data --locale FR
 ```
 
 ## Programmatic (Python)
@@ -282,6 +285,7 @@ A list of available extras:
 | Impala                                   | `pip install datacontract-cli[impala]`     |
 | Kafka Integration                        | `pip install datacontract-cli[kafka]`      |
 | MySQL Integration                        | `pip install datacontract-cli[mysql]`      |
+| Mock data generation (mimesis)            | `pip install datacontract-cli[mock]`       |
 | Oracle                                   | `pip install datacontract-cli[oracle]`     |
 | Parquet                                  | `pip install datacontract-cli[parquet]`    |
 | PostgreSQL Integration                   | `pip install datacontract-cli[postgres]`   |
