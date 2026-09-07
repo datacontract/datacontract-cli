@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
+
 ## [1.1.3] - 2026-09-03
 
 ### Added

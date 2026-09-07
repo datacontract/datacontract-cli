@@ -32,6 +32,9 @@ from datacontract.model.server import get_server_type
 logger = logging.getLogger(__name__)
 
 _FILE_SERVER_TYPES = {"local", "s3", "gcs", "azure"}
+_VERIFIED_NESTED_SQL_SERVER_TYPES = {"dataframe", "databricks"}
+_SUPPORTED_NESTED_STRUCT_SERVER_TYPES = {"dataframe", "databricks"}
+_SUPPORTED_NESTED_ARRAY_SERVER_TYPES = {"dataframe", "databricks"}
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +112,39 @@ def quality_definition_yaml(quality: DataQuality) -> str:
     """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
     know are dropped, and comments with them."""
     return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
+
+
+def _property_type(prop: SchemaProperty) -> str:
+    return normalize_type_name(prop.physicalType or prop.logicalType)
+
+
+def _iter_property_paths(
+    model: str,
+    properties: list[SchemaProperty] | None,
+    server_type: str | None,
+    prefix: str | None = None,
+    nested: bool = False,
+):
+    for prop in properties or []:
+        field = prop.physicalName or prop.name
+        field_path = f"{prefix}.{field}" if prefix else field
+        yield model, field_path, prop, nested
+
+        prop_type = _property_type(prop)
+        if (
+            server_type in _SUPPORTED_NESTED_STRUCT_SERVER_TYPES
+            and prop_type in {"object", "record", "struct"}
+            and prop.properties
+        ):
+            yield from _iter_property_paths(model, prop.properties, server_type, field_path, True)
+        elif (
+            server_type in _SUPPORTED_NESTED_ARRAY_SERVER_TYPES
+            and prop_type == "array"
+            and prop.items
+            and prop.items.properties
+        ):
+            nested_model = f"{model}__{field_path.replace('.', '__')}"
+            yield from _iter_property_paths(nested_model, prop.items.properties, server_type, None, True)
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -214,12 +250,12 @@ def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server])
 
 def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
-    server_type = server.type if server and server.type else None
+    server_type = get_server_type(server) if server is not None else None
     model = to_schema_name(schema_object, server_type)
     properties = schema_object.properties or []
     check_types = is_check_types(server)
     uses_raw_view = (
-        server is not None and server.type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
     )
 
     # A primary key is both not-null and unique. A composite key is unique as a
@@ -231,17 +267,16 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
-    for prop in properties:
+    for item_model, field, prop, is_nested in _iter_property_paths(model, properties, server_type):
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
-        field = prop.physicalName or prop.name
 
         checks.append(
             CheckSpec(
-                key=f"{model}__{field}__field_is_present",
+                key=f"{item_model}__{field}__field_is_present",
                 category="schema",
                 type="field_is_present",
                 name=f"Check that field '{field}' is present",
-                model=model,
+                model=item_model,
                 field=field,
                 metric=MetricType.FIELD_PRESENT,
                 uses_raw_view=uses_raw_view,
@@ -290,11 +325,11 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             label = prop.logicalType or ""
             checks.append(
                 CheckSpec(
-                    key=f"{model}__{field}__field_type",
+                    key=f"{item_model}__{field}__field_type",
                     category="schema",
                     type="field_type",
                     name=f"Check that field {field} has type {label}",
-                    model=model,
+                    model=item_model,
                     field=field,
                     metric=MetricType.FIELD_TYPE,
                     expected_category=label,
@@ -308,7 +343,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if prop.required:
             checks.append(
                 _missing_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_required",
                     Threshold(Op.EQ, 0),
@@ -319,7 +354,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if prop.unique:
             checks.append(
                 _duplicate_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_unique",
                     Threshold(Op.EQ, 0),
@@ -357,7 +392,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if min_length is not None:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_min_length",
                     name=f"Check that field {field} has a min length of {min_length}",
@@ -369,7 +404,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if max_length is not None:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_max_length",
                     name=f"Check that field {field} has a max length of {max_length}",
@@ -381,7 +416,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if minimum is not None:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_minimum",
                     name=f"Check that field {field} has a minimum of {minimum}",
@@ -393,7 +428,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if maximum is not None:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_maximum",
                     name=f"Check that field {field} has a maximum of {maximum}",
@@ -405,7 +440,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if exclusive_minimum is not None:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_minimum",
                     name=f"Check that field {field} has a minimum of {exclusive_minimum}",
@@ -414,7 +449,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_not_equal",
                     name=f"Check that field {field} is not equal to {exclusive_minimum}",
@@ -426,7 +461,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if exclusive_maximum is not None:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_maximum",
                     name=f"Check that field {field} has a maximum of {exclusive_maximum}",
@@ -435,7 +470,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_not_equal",
                     name=f"Check that field {field} is not equal to {exclusive_maximum}",
@@ -484,7 +519,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if pattern is not None:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_regex",
                     name=f"Check that field {field} matches regex pattern {pattern}",
@@ -496,7 +531,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         if enum_values:
             checks.append(
                 _invalid_count_check(
-                    model,
+                    item_model,
                     field,
                     "field_enum",
                     name=f"Check that field {field} only contains enum values {enum_values}",
@@ -505,7 +540,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
 
         if prop.quality:
-            checks.extend(_quality_checks(model, field, prop.quality, server))
+            checks.extend(_quality_checks(item_model, field, prop.quality, server, is_nested=is_nested))
 
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]
@@ -625,11 +660,11 @@ def _row_count_check(model, threshold: Threshold, severity=None, dimension=None)
 # quality list
 # ---------------------------------------------------------------------------
 def _quality_checks(
-    model: str, field: Optional[str], quality_list: List[DataQuality], server: Optional[Server]
+    model: str, field: Optional[str], quality_list: List[DataQuality], server: Optional[Server], is_nested: bool = False
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
-        rule_checks = _quality_rule_checks(model, field, quality, count, server)
+        rule_checks = _quality_rule_checks(model, field, quality, count, server, is_nested=is_nested)
         # Every check keeps a link back to the rule that declared it, so that
         # `test --quality-id` / `test --tag` can select it.
         for check in rule_checks:
@@ -641,7 +676,12 @@ def _quality_checks(
 
 
 def _quality_rule_checks(
-    model: str, field: Optional[str], quality: DataQuality, count: int, server: Optional[Server]
+    model: str,
+    field: Optional[str],
+    quality: DataQuality,
+    count: int,
+    server: Optional[Server],
+    is_nested: bool = False,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -663,6 +703,27 @@ def _quality_rule_checks(
             )
         ]
     if quality.type == "sql":
+        server_type = get_server_type(server) if server is not None else None
+        if is_nested and server_type not in _VERIFIED_NESTED_SQL_SERVER_TYPES:
+            if field is None:
+                check_key = f"{model}__quality_sql_{count}"
+                check_type = "model_quality_sql"
+            else:
+                check_key = f"{model}__{field}__quality_sql_{count}"
+                check_type = "field_quality_sql"
+            return [
+                CheckSpec(
+                    key=check_key,
+                    category="quality",
+                    type=check_type,
+                    name=quality.description or "Quality Check",
+                    model=model,
+                    field=field,
+                    metric=MetricType.UNSUPPORTED,
+                    preset_result="warning",
+                    preset_reason=("Nested SQL quality checks are only verified for Spark (dataframe) and Databricks."),
+                )
+            ]
         if field is None:
             check_key = f"{model}__quality_sql_{count}"
             check_type = "model_quality_sql"

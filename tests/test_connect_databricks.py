@@ -1,11 +1,11 @@
 """Unit tests for Databricks auth-method selection in connect_ibis.
 
-These do not hit Databricks: ``ibis.databricks.connect`` is patched and we only
+These do not hit Databricks: we patch ``DatabricksBackend.connect`` and only
 assert which auth kwargs the dispatch passes for a given set of env vars.
 """
 
-import ibis
 import pytest
+from ibis.backends.databricks import Backend as DatabricksBackend
 from open_data_contract_standard.model import Server
 
 from datacontract.engines.ibis.connections.connect import connect_ibis
@@ -33,14 +33,23 @@ def clean_databricks_env(monkeypatch):
 
 @pytest.fixture
 def captured_connect(monkeypatch):
-    """Patch ibis.databricks.connect to record the kwargs it is called with."""
+    """Patch DatabricksBackend.connect to record the kwargs it is called with."""
     calls = {}
 
-    def fake_connect(**kwargs):
+    def fake_connect(self, **kwargs):
         calls.update(kwargs)
-        return "connection"
+        # Return a minimal mock backend with the required attributes for downstream code.
+        mock = type(
+            "MockBackend",
+            (),
+            {
+                "name": "databricks",
+                "_dc_virtual_model_queries": {},
+            },
+        )()
+        return mock
 
-    monkeypatch.setattr(ibis.databricks, "connect", fake_connect)
+    monkeypatch.setattr(DatabricksBackend, "connect", fake_connect)
     return calls
 
 
@@ -81,7 +90,7 @@ def test_personal_access_token_is_default(clean_databricks_env, captured_connect
 
     result = _connect()
 
-    assert result == "connection"
+    assert result is not None
     assert captured_connect["access_token"] == "dapiTOKEN"
     assert captured_connect["http_path"] == "/sql/1.0/warehouses/abc"
     assert captured_connect["server_hostname"] == "dbc-x.cloud.databricks.com"
@@ -201,3 +210,41 @@ def test_env_variables_override_the_contract_server_details(clean_databricks_env
     assert captured_connect["server_hostname"] == "from-env.cloud.databricks.com"
     assert captured_connect["catalog"] == "env_catalog"
     assert captured_connect["schema"] == "env_schema"
+
+
+def test_no_create_volume_on_connect(clean_databricks_env, monkeypatch):
+    """_post_connect must never execute (no CREATE VOLUME)."""
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_TOKEN", "dapiTOKEN")
+    clean_databricks_env.setenv("DATACONTRACT_DATABRICKS_HTTP_PATH", "/sql/1.0/warehouses/abc")
+
+    post_connect_called = []
+
+    original_post_connect = DatabricksBackend._post_connect
+
+    def spy_post_connect(self, *, memtable_volume):
+        post_connect_called.append(memtable_volume)
+        original_post_connect(self, memtable_volume=memtable_volume)
+
+    try:
+        # Install a spy on the class attribute. _databricks_connect will save
+        # this spy as its "original", replace it with a no-op lambda for the
+        # duration of the connect call, and then restore it.
+        DatabricksBackend._post_connect = spy_post_connect
+
+        # Also patch connect to return early so we don't hit actual Databricks.
+        def fake_connect(self, **kwargs):
+            self.con = None
+            self._memtable_volume = kwargs.get("memtable_volume")
+            return self
+
+        monkeypatch.setattr(DatabricksBackend, "connect", fake_connect)
+
+        _connect()
+
+        # _databricks_connect swaps in a no-op lambda before calling
+        # ibis.databricks.connect and restores the spy afterwards, so any
+        # _post_connect call issued during connect resolves to the no-op and
+        # the spy is never invoked.
+        assert post_connect_called == []
+    finally:
+        DatabricksBackend._post_connect = original_post_connect

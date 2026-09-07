@@ -2,8 +2,11 @@ import os
 
 import pytest
 from dotenv import load_dotenv
+from open_data_contract_standard.model import Server
 
 from datacontract.data_contract import DataContract
+from datacontract.engines.checks.check_spec import MetricType
+from datacontract.engines.checks.create_checks import create_checks
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -127,6 +130,68 @@ def test_unconvertible_column_does_not_affect_the_other_columns(databricks_type_
     assert schema["id"] == dt.Int32(nullable=False)
     assert schema["geo"].srid == 4326
     assert schema["mystery"] == dt.unknown
+
+
+def test_nested_struct_and_array_checks_enabled_for_databricks():
+    contract = """
+apiVersion: v3.0.2
+kind: DataContract
+id: databricks-nested
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: customer
+        logicalType: object
+        properties:
+          - name: email
+            logicalType: string
+            quality:
+              - type: sql
+                query: SELECT COUNT(*) FROM {model} WHERE {field} IS NULL
+                mustBe: 0
+          - name: emails
+            logicalType: array
+            items:
+              logicalType: object
+              properties:
+                - name: address
+                  logicalType: string
+                  required: true
+      - name: discounts
+        logicalType: array
+        items:
+          logicalType: object
+          properties:
+            - name: discount_code
+              logicalType: string
+              required: true
+            - name: product
+              logicalType: object
+              properties:
+                - name: tags
+                  logicalType: array
+                  items:
+                    logicalType: object
+                    properties:
+                      - name: tag_id
+                        logicalType: string
+                        required: true
+"""
+    odcs = DataContract(data_contract_str=contract).get_data_contract()
+
+    checks = create_checks(odcs, Server(type="databricks"))
+
+    nested_sql = next(c for c in checks if c.type == "field_quality_sql")
+    assert nested_sql.field == "customer.email"
+    assert nested_sql.metric == MetricType.CUSTOM_SQL
+    assert nested_sql.model == "orders"
+    assert "customer.email" in (nested_sql.query or "")
+    # Array models must also be generated for Databricks (via virtual CTE models).
+    assert any(c.model == "orders__customer__emails" and c.field == "address" for c in checks)
+    assert any(c.model == "orders__discounts" for c in checks)
+    assert any(c.model == "orders__discounts__product__tags" and c.field == "tag_id" for c in checks)
 
 
 @pytest.mark.skipif(
