@@ -60,7 +60,8 @@ dependencies = [
   "pytz>=2024.1",
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<16.0",
-  "sqlglot>=26.6.0,<31.0.0",
+  # below 30.18 until an issue in ibis is fixed - see https://github.com/datacontract/datacontract-cli/issues/1592
+  "sqlglot>=26.6.0,<30.18",
   "python-dotenv>=1.0.0,<2.0.0",
   "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",
