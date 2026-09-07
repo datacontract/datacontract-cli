@@ -1,8 +1,11 @@
 import importlib.resources as resources
 import io
+import json
 import logging
+from collections import Counter
+from copy import copy
 from decimal import Decimal
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import openpyxl
 import requests
@@ -11,15 +14,28 @@ from open_data_contract_standard.model import (
     OpenDataContractStandard,
     SchemaObject,
     SchemaProperty,
+    Team,
 )
 from openpyxl.cell.cell import Cell
+from openpyxl.utils import range_boundaries
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.workbook import Workbook
+from openpyxl.worksheet.cell_range import MultiCellRange
 from openpyxl.worksheet.worksheet import Worksheet
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.workbook import (
+    SERVER_FIELDS,
+    Element,
+    InlineRoundTrip,
+    is_scalar,
+    iter_elements,
+    server_field_name,
+)
 
 logger = logging.getLogger(__name__)
+
+TEMPLATE_VERSION = 2  # the layout this exporter writes; older custom templates get one aggregated warning
 
 
 class ExcelExporter(Exporter):
@@ -29,69 +45,93 @@ class ExcelExporter(Exporter):
         super().__init__(export_format)
 
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> bytes:
-        """
-        Export data contract to Excel using the official ODCS template
-
-        Args:
-            data_contract: OpenDataContractStandard to export
-            model: Model name (not used for Excel export)
-            server: Server name (not used for Excel export)
-            sql_server_type: SQL server type (not used for Excel export)
-            export_args: Additional export arguments (template can be specified here)
-
-        Returns:
-            Excel file as bytes
-        """
-        # The data_contract is now always ODCS
-        odcs = data_contract
-
-        # Get template from export_args if provided, otherwise use default
         template = export_args.get("template") if export_args else None
-        return export_to_excel_bytes(odcs, template)
+        return export_to_excel_bytes(data_contract, template)
+
+
+class Export:
+    """State of one export: the workbook, where rich custom properties go, and what the template cannot hold."""
+
+    def __init__(self, workbook: Workbook, odcs: OpenDataContractStandard):
+        self.workbook = workbook
+        self.odcs = odcs
+        self.elements = {id(e.obj): e for e in iter_elements(odcs)}
+        self.round_trip = InlineRoundTrip(
+            prop.value for e in self.elements.values() for prop in (getattr(e.obj, "customProperties", None) or [])
+        )
+        self.custom_property_rows: list[tuple[Element, Any]] = []
+        self.authoritative_definition_rows: list[tuple[Element, Any]] = []
+        self.unsupported = Counter()
+        self.unaddressable: set[int] = set()
+
+    def element(self, obj) -> Element:
+        return self.elements.get(id(obj)) or Element("?", None, obj, "element", "is not addressable")
+
+    def inline_custom_properties(self, obj) -> list[tuple[str, Any]]:
+        """The (property, value) pairs written inline next to the element; the rest go to the Custom Properties sheet."""
+        pairs = []
+        for prop in getattr(obj, "customProperties", None) or []:
+            if not prop.property:
+                continue
+            simple = not (prop.id or prop.description or prop.vendor) and self.round_trip.survives(prop.value)
+            if simple:
+                pairs.append((prop.property, prop.value))
+            else:
+                self.custom_property_rows.append((self.element(obj), prop))
+        return pairs
+
+    def sheet_authoritative_definitions(self, obj, skip=0):
+        for definition in (getattr(obj, "authoritativeDefinitions", None) or [])[skip:]:
+            self.authoritative_definition_rows.append((self.element(obj), definition))
+
+    def warn_unaddressable(self, element: Element, what: str) -> bool:
+        """True (and a warning) when the element cannot be referenced from a child sheet."""
+        if element.ref is not None:
+            return False
+        if id(element.obj) not in self.unaddressable:
+            self.unaddressable.add(id(element.obj))
+            logger.warning(
+                f"Cannot reference {element.label} in the workbook: it {element.unaddressable_reason}; "
+                f"its {what} were dropped. Give it an id."
+            )
+        return True
 
 
 def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optional[str] = None) -> bytes:
-    """
-    Export ODCS to Excel format using the official template and return as bytes
-
-    Args:
-        odcs: OpenDataContractStandard object to export
-        template_path: Optional path/URL to custom Excel template. If None, uses the template bundled with the CLI.
-
-    Returns:
-        Excel file as bytes
-    """
+    """Export ODCS to Excel using the official template (or a custom one) and return the workbook bytes."""
     if template_path:
         workbook = create_workbook_from_template(template_path)
     else:
         workbook = create_workbook_from_bundled_template()
 
     try:
-        fill_fundamentals(workbook, odcs)
-        fill_schema(workbook, odcs)
-        fill_quality(workbook, odcs)
-        fill_custom_properties(workbook, odcs)
-        fill_support(workbook, odcs)
-        fill_team(workbook, odcs)
-        fill_roles(workbook, odcs)
-        fill_sla_properties(workbook, odcs)
-        fill_servers(workbook, odcs)
-        fill_pricing(workbook, odcs)
+        export = Export(workbook, odcs)
+        fill_fundamentals(export)
+        fill_schema(export)
+        fill_relationships(export)
+        fill_quality(export)
+        fill_support(export)
+        fill_team(export)
+        fill_roles(export)
+        fill_sla_properties(export)
+        fill_servers(export)
+        fill_pricing(export)
+        fill_enum(export)
+        fill_synonyms(export)
+        fill_context_sheets(export)
+        # last: the row fillers above decide what ends up here
+        fill_custom_properties(export)
+        fill_authoritative_definitions(export)
+        warn_unsupported(export)
 
-        # Set focus on the Fundamentals sheet
         workbook.active = workbook["Fundamentals"]
-
-        # Force formula recalculation
         try:
             workbook.calculation.calcMode = "auto"
         except (AttributeError, ValueError):
-            # Fallback for older openpyxl versions or if calcMode doesn't exist
             pass
 
-        # Write to output stream
         output = io.BytesIO()
         workbook.save(output)
-        output.seek(0)
         return output.getvalue()
     finally:
         workbook.close()
@@ -110,31 +150,36 @@ def create_workbook_from_bundled_template() -> Workbook:
 def create_workbook_from_template(template_path: str) -> Workbook:
     """Load Excel template from file path or URL"""
     try:
-        # Convert Path object to string if needed
         template_path_str = str(template_path)
-        logger.info(f"Processing template path: {template_path_str}")
-
-        # Check if it's a URL
         if template_path_str.startswith(("http://", "https://")):
-            logger.info(f"Identified as URL, downloading from: {template_path_str}")
-            # Download from URL
+            logger.info(f"Downloading template from: {template_path_str}")
             response = requests.get(template_path_str, timeout=30)
             response.raise_for_status()
-            template_bytes = response.content
-            workbook = openpyxl.load_workbook(io.BytesIO(template_bytes))
-        else:
-            logger.info(f"Identified as local file: {template_path_str}")
-            # Load from local file
-            workbook = openpyxl.load_workbook(template_path_str)
-
-        return workbook
+            return openpyxl.load_workbook(io.BytesIO(response.content))
+        logger.info(f"Loading template from local file: {template_path_str}")
+        return openpyxl.load_workbook(template_path_str)
     except Exception as e:
         logger.error(f"Failed to load Excel template from {template_path}: {e}")
         raise RuntimeError(f"Failed to load Excel template: {e}")
 
 
-def fill_fundamentals(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the Fundamentals sheet with basic contract information"""
+def warn_unsupported(export: Export):
+    if not export.unsupported:
+        return
+    version = find_cell_by_name(export.workbook, "templateVersion")
+    version = int(version.value) if version is not None and version.value is not None else 1
+    dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
+    logger.warning(
+        f"Custom template (templateVersion {version}) cannot hold: {dropped}. "
+        f"Upgrade to templateVersion {TEMPLATE_VERSION} to keep them."
+    )
+
+
+# --- Fundamentals, pricing ------------------------------------------------------------------------
+
+
+def fill_fundamentals(export: Export):
+    workbook, odcs = export.workbook, export.odcs
     set_cell_value_by_name(workbook, "apiVersion", odcs.apiVersion)
     set_cell_value_by_name(workbook, "kind", odcs.kind)
     set_cell_value_by_name(workbook, "id", odcs.id)
@@ -145,654 +190,772 @@ def fill_fundamentals(workbook: Workbook, odcs: OpenDataContractStandard):
     set_cell_value_by_name(workbook, "dataProduct", odcs.dataProduct)
     set_cell_value_by_name(workbook, "tenant", odcs.tenant)
 
-    # Set owner from custom properties
     owner_value = None
-    if odcs.customProperties:
-        for prop in odcs.customProperties:
-            if prop.property == "owner":
-                owner_value = prop.value
-                break
+    for prop in odcs.customProperties or []:
+        if prop.property == "owner":
+            owner_value = prop.value
+            break
     set_cell_value_by_name(workbook, "owner", owner_value)
 
     set_cell_value_by_name(workbook, "slaDefaultElement", odcs.slaDefaultElement)
 
-    # Set description fields
     if odcs.description:
         set_cell_value_by_name(workbook, "description.purpose", odcs.description.purpose)
         set_cell_value_by_name(workbook, "description.limitations", odcs.description.limitations)
         set_cell_value_by_name(workbook, "description.usage", odcs.description.usage)
 
-    # Set tags as comma-separated string
     if odcs.tags:
         set_cell_value_by_name(workbook, "tags", ",".join(odcs.tags))
 
-
-def fill_pricing(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill pricing information"""
-    if odcs.price:
-        set_cell_value_by_name(workbook, "price.priceAmount", odcs.price.priceAmount)
-        set_cell_value_by_name(workbook, "price.priceCurrency", odcs.price.priceCurrency)
-        set_cell_value_by_name(workbook, "price.priceUnit", odcs.price.priceUnit)
+    instructions = context_instructions(odcs.context)
+    if instructions and not set_optional_cell(export, "context.instructions", instructions):
+        export.unsupported["context instructions"] += 1
 
 
-def fill_schema(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill schema information by cloning template sheets"""
-    # Get template sheet "Schema <table_name>"
+def context_instructions(context) -> Optional[str]:
+    if context is None:
+        return None
+    return context if isinstance(context, str) else context.instructions
+
+
+def fill_pricing(export: Export):
+    if export.odcs.price:
+        set_cell_value_by_name(export.workbook, "price.priceAmount", export.odcs.price.priceAmount)
+        set_cell_value_by_name(export.workbook, "price.priceCurrency", export.odcs.price.priceCurrency)
+        set_cell_value_by_name(export.workbook, "price.priceUnit", export.odcs.price.priceUnit)
+
+
+# --- Schema sheets --------------------------------------------------------------------------------
+
+
+def fill_schema(export: Export):
+    """Fill schema information by cloning the template sheet once per schema"""
+    workbook = export.workbook
     schema_template_sheet = workbook["Schema <table_name>"]
 
-    if odcs.schema_:
-        # Create copies for all schemas first
-        new_sheets = []
-        for schema in odcs.schema_:
-            # Clone the template sheet
-            new_sheet = workbook.copy_worksheet(schema_template_sheet)
-            new_sheet.title = f"Schema {schema.name}"
-
-            # Copy defined names with schema sheet scope to the new sheet
-            copy_sheet_names(workbook, schema_template_sheet, new_sheet)
-
-            # Move the new sheet before the template sheet
-            schema_template_sheet_index = workbook.index(schema_template_sheet)
-            new_sheet_index = workbook.index(new_sheet)
-
-            workbook.move_sheet(new_sheet, offset=schema_template_sheet_index - new_sheet_index)
-
-            new_sheets.append((new_sheet, schema))
-
-        # Remove the template sheet before filling
+    if not export.odcs.schema_:
         workbook.remove(schema_template_sheet)
+        return
 
-        # Now fill in schema information for each copied sheet
-        for new_sheet, schema in new_sheets:
-            # Copy named ranges from template to new sheet (if needed)
-            # Note: copy_worksheet should have copied the named ranges already
+    new_sheets = []
+    for schema in export.odcs.schema_:
+        new_sheet = workbook.copy_worksheet(schema_template_sheet)
+        new_sheet.title = f"Schema {schema.name}"
+        copy_sheet_names(workbook, schema_template_sheet, new_sheet)
+        workbook.move_sheet(new_sheet, offset=workbook.index(schema_template_sheet) - workbook.index(new_sheet))
+        new_sheets.append((new_sheet, schema))
 
-            # Fill in schema information
-            fill_single_schema(new_sheet, schema)
-    else:
-        # Remove the template sheet even if no schemas
-        workbook.remove(schema_template_sheet)
+    workbook.remove(schema_template_sheet)
+
+    for new_sheet, schema in new_sheets:
+        fill_single_schema(export, new_sheet, schema)
 
 
 def copy_sheet_names(workbook: Workbook, template_sheet: Worksheet, new_sheet: Worksheet):
     """Copy worksheet-scoped named ranges from template sheet to new sheet"""
-    try:
-        # Copy worksheet-scoped defined names from template sheet to new sheet
-        for name_str in template_sheet.defined_names:
-            try:
-                # Get the DefinedName object
-                defined_name = template_sheet.defined_names[name_str]
-
-                # Get the original range reference
-                original_ref = defined_name.attr_text
-
-                # Create new defined name with same name and reference but scoped to new sheet
-                new_name = DefinedName(name_str, attr_text=original_ref.replace(template_sheet.title, new_sheet.title))
-
-                # Add to the new sheet's defined names (worksheet-scoped)
-                new_sheet.defined_names.add(new_name)
-
-            except Exception as e:
-                logger.warning(f"Failed to copy worksheet-scoped named range {name_str}: {e}")
-
-    except Exception as e:
-        logger.warning(f"Error copying sheet names: {e}")
+    for name_str in template_sheet.defined_names:
+        try:
+            original_ref = template_sheet.defined_names[name_str].attr_text
+            new_ref = original_ref.replace(f"'{template_sheet.title}'", quote_sheet_title(new_sheet.title))
+            new_sheet.defined_names.add(DefinedName(name_str, attr_text=new_ref))
+        except Exception as e:
+            logger.warning(f"Failed to copy worksheet-scoped named range {name_str}: {e}")
 
 
-def fill_single_schema(sheet: Worksheet, schema: SchemaObject):
-    """Fill a single schema sheet with schema information using named ranges"""
-    # Use worksheet-scoped named ranges that were copied from the template
+def quote_sheet_title(title: str) -> str:
+    return "'" + title.replace("'", "''") + "'"
+
+
+def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
     set_cell_value_by_name_in_sheet(sheet, "schema.name", schema.name)
-    set_cell_value_by_name_in_sheet(
-        sheet, "schema.physicalType", schema.physicalType if schema.physicalType else "table"
-    )
+    set_cell_value_by_name_in_sheet(sheet, "schema.physicalType", schema.physicalType or "table")
     set_cell_value_by_name_in_sheet(sheet, "schema.description", schema.description)
     set_cell_value_by_name_in_sheet(sheet, "schema.businessName", schema.businessName)
     set_cell_value_by_name_in_sheet(sheet, "schema.physicalName", schema.physicalName)
     set_cell_value_by_name_in_sheet(sheet, "schema.dataGranularityDescription", schema.dataGranularityDescription)
-
-    # Set tags as comma-separated string
     if schema.tags:
         set_cell_value_by_name_in_sheet(sheet, "schema.tags", ",".join(schema.tags))
 
-    # Fill properties using the template's properties table structure
+    for name, value, feature in (
+        ("schema.id", schema.id, "ids"),
+        ("schema.deprecated", schema.deprecated, "deprecated flags"),
+        ("schema.context.instructions", context_instructions(schema.context), "context instructions"),
+    ):
+        if value is None:
+            continue
+        cell = find_cell_by_name_in_sheet(sheet, name)
+        if cell is None:
+            export.unsupported[feature] += 1
+        else:
+            set_cell_value_direct(cell, value)
+
+    export.sheet_authoritative_definitions(schema)
+    header_row = properties_header_row(sheet)
+    write_vertical_pairs(sheet, header_row, export.inline_custom_properties(schema))
+
     if schema.properties:
-        fill_properties_in_schema_sheet(sheet, schema.properties)
+        header_row = properties_header_row(sheet)  # pair rows may have been inserted above the table
+        header_map = header_columns(sheet, header_row)
+        row_index = header_row + 1
+        for prop in schema.properties:
+            row_index = fill_property_row(export, sheet, header_row, header_map, row_index, "", prop)
 
 
-def fill_properties_in_schema_sheet(sheet: Worksheet, properties: List[SchemaProperty], prefix: str = ""):
-    """Fill properties in the schema sheet using the template's existing properties table"""
-    try:
-        # The template already has a properties table starting at row 13 with headers
-        # Find the header row and map column names to indices
-        header_row_index = 13
-        headers = get_headers_from_header_row(sheet, header_row_index)
-
-        # Reverse the headers dict to map header_name -> column_index
-        header_map = {header_name.lower(): col_idx for col_idx, header_name in headers.items()}
-
-        # Fill properties starting after header row
-        row_index = header_row_index + 1
-        for property in properties:
-            row_index = fill_single_property_template(sheet, row_index, prefix, property, header_map)
-
-    except Exception as e:
-        logger.warning(f"Error filling properties: {e}")
+def properties_header_row(sheet: Worksheet) -> int:
+    ref = name_to_ref_in_sheet(sheet, "schema.properties")
+    return parse_range_safely(ref) if ref else 13
 
 
-def fill_single_property_template(
-    sheet: Worksheet, row_index: int, prefix: str, property: SchemaProperty, header_map: dict
+LOGICAL_TYPE_OPTION_HEADERS = {
+    "Minimum Length": "minLength",
+    "Maximum Length": "maxLength",
+    "Pattern": "pattern",
+    "Format": "format",
+    "Exclusive Maximum": "exclusiveMaximum",
+    "Exclusive Minimum": "exclusiveMinimum",
+    "Minimum": "minimum",
+    "Maximum": "maximum",
+    "Multiple Of": "multipleOf",
+    "Minimum Items": "minItems",
+    "Maximum Items": "maxItems",
+    "Unique Items": "uniqueItems",
+    "Maximum Properties": "maxProperties",
+    "Minimum Properties": "minProperties",
+    "Required Properties": "required",
+    "Dimensions": "dimensions",
+    "Element Type": "elementType",
+    "Distance Metric": "distanceMetric",
+    "Normalized": "normalized",
+    "Embedding Model": "embeddingModel",
+    "Embedding Model Version": "embeddingModelVersion",
+}
+
+
+def fill_property_row(
+    export: Export,
+    sheet: Worksheet,
+    header_row: int,
+    header_map: dict,
+    row_index: int,
+    prefix: str,
+    prop: SchemaProperty,
+    is_items: bool = False,
 ) -> int:
-    """Fill a single property row using the template's column structure"""
-    property_name = f"{prefix}{'.' + property.name if property.name else ''}" if prefix else property.name
+    property_name = prefix if is_items else (f"{prefix}.{prop.name}" if prefix else prop.name)
 
-    # Helper function to set cell value by header name
-    def set_by_header(header_name: str, value: Any):
+    def set_by_header(header_name: str, value: Any, feature: Optional[str] = None):
         col_idx = header_map.get(header_name.lower())
         if col_idx is not None:
-            sheet.cell(row=row_index, column=col_idx + 1).value = value
+            set_cell_value_direct(sheet.cell(row=row_index, column=col_idx + 1), value)
+        elif feature and value is not None:
+            export.unsupported[feature] += 1
 
-    # Fill property fields based on template headers
     set_by_header("Property", property_name)
-    set_by_header("Business Name", property.businessName)
-    set_by_header("Logical Type", property.logicalType)
-    set_by_header("Physical Type", property.physicalType)
-    set_by_header("Physical Name", property.physicalName)
-    set_by_header("Description", property.description)
-    set_by_header("Required", property.required)
-    set_by_header("Unique", property.unique)
-    set_by_header("Primary Key", property.primaryKey)
-    set_by_header("Primary Key Position", property.primaryKeyPosition)
-    set_by_header("Partitioned", property.partitioned)
-    set_by_header("Partition Key Position", property.partitionKeyPosition)
-    set_by_header("Classification", property.classification)
-    set_by_header("Tags", ",".join(property.tags) if property.tags else "")
-    set_by_header(
-        "Example(s)", ",".join(map(str, property.examples)) if property.examples else ""
-    )  # Note: using "Example(s)" as in template
-    set_by_header("Encrypted Name", property.encryptedName)
-    set_by_header(
-        "Transform Sources", ",".join(property.transformSourceObjects) if property.transformSourceObjects else ""
-    )
-    set_by_header("Transform Logic", property.transformLogic)
-    set_by_header("Critical Data Element Status", property.criticalDataElement)
+    set_by_header("Business Name", prop.businessName)
+    set_by_header("Logical Type", prop.logicalType)
+    set_by_header("Physical Type", prop.physicalType)
+    set_by_header("Physical Name", prop.physicalName)
+    set_by_header("Description", prop.description)
+    set_by_header("Required", prop.required)
+    set_by_header("Unique", prop.unique)
+    set_by_header("Primary Key", prop.primaryKey)
+    set_by_header("Primary Key Position", prop.primaryKeyPosition)
+    set_by_header("Partitioned", prop.partitioned)
+    set_by_header("Partition Key Position", prop.partitionKeyPosition)
+    set_by_header("Classification", prop.classification)
+    set_by_header("Tags", ",".join(prop.tags) if prop.tags else "")
+    set_by_header("Example(s)", ",".join(map(str, prop.examples)) if prop.examples else "")
+    set_by_header("Encrypted Name", prop.encryptedName)
+    set_by_header("Transform Sources", ",".join(prop.transformSourceObjects) if prop.transformSourceObjects else "")
+    set_by_header("Transform Logic", prop.transformLogic)
+    set_by_header("Transform Description", prop.transformDescription)
+    set_by_header("Critical Data Element Status", prop.criticalDataElement)
+    for header, option in LOGICAL_TYPE_OPTION_HEADERS.items():
+        value = (prop.logicalTypeOptions or {}).get(option)
+        set_by_header(header, ",".join(value) if isinstance(value, list) else value)
+    set_by_header("Semantic Type", prop.semanticType, "semantic types")
+    set_by_header("Deprecated", prop.deprecated, "deprecated flags")
+    set_by_header("ID", prop.id, "ids")
 
-    # Authoritative definitions
-    if property.authoritativeDefinitions and len(property.authoritativeDefinitions) > 0:
-        set_by_header("Authoritative Definition URL", property.authoritativeDefinitions[0].url)
-        set_by_header("Authoritative Definition Type", property.authoritativeDefinitions[0].type)
+    # the first plain definition keeps its inline home, the rest go to the Authoritative Definitions sheet
+    definitions = prop.authoritativeDefinitions or []
+    inline = 0
+    if definitions and "authoritative definition url" in header_map:
+        first = definitions[0]
+        if not (first.id or first.description):
+            set_by_header("Authoritative Definition URL", first.url)
+            set_by_header("Authoritative Definition Type", first.type)
+            inline = 1
+    export.sheet_authoritative_definitions(prop, skip=inline)
+
+    write_inline_pairs(sheet, header_row, row_index, export.inline_custom_properties(prop))
 
     next_row_index = row_index + 1
-
-    # Handle nested properties
-    if property.properties:
-        for nested_property in property.properties:
-            next_row_index = fill_single_property_template(
-                sheet, next_row_index, property_name, nested_property, header_map
-            )
-
-    # Handle array items
-    if property.items:
-        next_row_index = fill_single_property_template(
-            sheet, next_row_index, f"{property_name}.items", property.items, header_map
+    for nested in prop.properties or []:
+        next_row_index = fill_property_row(export, sheet, header_row, header_map, next_row_index, property_name, nested)
+    if prop.items:
+        # array items are the row "<parent>.items"; their own name is not written
+        next_row_index = fill_property_row(
+            export, sheet, header_row, header_map, next_row_index, f"{property_name}.items", prop.items, is_items=True
         )
-
     return next_row_index
 
 
-def fill_single_property_simple(
-    sheet: Worksheet, row_index: int, prefix: str, property: SchemaProperty, header_map: dict = None
-) -> int:
-    """Fill a single property row using header names (deprecated - use fill_single_property_template instead)"""
-    # This function is kept for backward compatibility but should use header_map if provided
-    if header_map is None:
-        # Fallback to the template-based approach
-        header_row_index = 13
-        headers = get_headers_from_header_row(sheet, header_row_index)
-        header_map = {header_name.lower(): col_idx for col_idx, header_name in headers.items()}
-
-    # Delegate to the template-based function
-    return fill_single_property_template(sheet, row_index, prefix, property, header_map)
+# --- Row sheets ----------------------------------------------------------------------------------
 
 
-def fill_quality(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the Quality sheet with quality data"""
-    quality_sheet = workbook["Quality"]
+def row_sheet(export: Export, sheet_title: str, range_name: str, fallback_header_row=None, header=None):
+    """(sheet, header row index) of a row sheet, or None when the template has no such sheet.
 
-    try:
-        ref = name_to_ref(workbook, "quality")
-        if not ref:
-            logger.warning("No quality range found")
-            return
-
-        # Parse range to find header row
-        header_row_index = parse_range_safely(ref)
-
-        headers = get_headers_from_header_row(quality_sheet, header_row_index)
-        current_row_index = header_row_index + 1
-
-        # Iterate through all schemas
-        if odcs.schema_:
-            for schema in odcs.schema_:
-                # Add schema-level quality attributes
-                if schema.quality:
-                    for quality in schema.quality:
-                        row = get_or_create_row(quality_sheet, current_row_index)
-                        fill_quality_row(row, headers, schema.name, None, quality)
-                        current_row_index += 1
-
-                # Add property-level quality attributes
-                if schema.properties:
-                    current_row_index = fill_properties_quality(
-                        quality_sheet, headers, schema.name, schema.properties, current_row_index
-                    )
-
-    except Exception as e:
-        logger.warning(f"Error filling quality: {e}")
+    `header` names a column the header row must contain; a range starting on the first data row is stepped up one row.
+    """
+    workbook = export.workbook
+    if sheet_title not in workbook.sheetnames:
+        return None
+    sheet = workbook[sheet_title]
+    ref = name_to_ref(workbook, range_name) or name_to_ref_in_sheet(sheet, range_name)
+    if ref:
+        header_row = parse_range_safely(ref)
+        if header and header not in header_columns(sheet, header_row) and header_row > 1:
+            header_row -= 1
+        return sheet, header_row
+    if fallback_header_row:
+        return sheet, fallback_header_row
+    return None
 
 
-def fill_properties_quality(
-    sheet: Worksheet,
-    headers: dict,
-    schema_name: str,
-    properties: List[SchemaProperty],
-    start_row_index: int,
-    prefix: str = "",
-) -> int:
-    """Recursively fill quality data for properties"""
-    current_row_index = start_row_index
-
-    for property in properties:
-        if not property.name:
-            continue
-
-        full_property_name = f"{prefix}{'.' + property.name if property.name else ''}" if prefix else property.name
-
-        # Add quality attributes for this property
-        if property.quality:
-            for quality in property.quality:
-                row = get_or_create_row(sheet, current_row_index)
-                fill_quality_row(row, headers, schema_name, full_property_name, quality)
-                current_row_index += 1
-
-        # Recursively handle nested properties
-        if property.properties:
-            current_row_index = fill_properties_quality(
-                sheet, headers, schema_name, property.properties, current_row_index, full_property_name
-            )
-
-        # Handle array items
-        if property.items:
-            items_property_name = f"{full_property_name}.items"
-            if property.items.quality:
-                for quality in property.items.quality:
-                    row = get_or_create_row(sheet, current_row_index)
-                    fill_quality_row(row, headers, schema_name, items_property_name, quality)
-                    current_row_index += 1
-
-            # Handle nested properties in array items
-            if property.items.properties:
-                current_row_index = fill_properties_quality(
-                    sheet, headers, schema_name, property.items.properties, current_row_index, items_property_name
-                )
-
-    return current_row_index
-
-
-def fill_quality_row(row, headers: dict, schema_name: str, property_name: Optional[str], quality: DataQuality):
-    """Fill a single quality row"""
+def write_row(export: Export, sheet: Worksheet, header_row: int, row_index: int, values: dict, obj=None):
+    """Write one row: `values` maps lower-cased header names to values; `obj` supplies the id and inline pairs."""
+    headers = get_headers_from_header_row(sheet, header_row)
     for cell_index, header_name in headers.items():
-        header_lower = header_name.lower().strip()
+        key = header_name.lower().strip()
+        if key in values:
+            set_cell_value(sheet, row_index, cell_index, values[key])
+    if obj is not None:
+        if getattr(obj, "id", None) is not None:
+            if "id" in {h.lower().strip() for h in headers.values()}:
+                set_cell_value(
+                    sheet, row_index, [i for i, h in headers.items() if h.lower().strip() == "id"][0], obj.id
+                )
+            else:
+                export.unsupported["ids"] += 1
+        write_inline_pairs(sheet, header_row, row_index, export.inline_custom_properties(obj))
+        export.sheet_authoritative_definitions(obj)
 
-        if header_lower == "schema":
-            set_cell_value(row, cell_index, schema_name)
-        elif header_lower == "property":
-            set_cell_value(row, cell_index, property_name)
-        elif header_lower == "quality type":
-            set_cell_value(row, cell_index, quality.type)
-        elif header_lower == "description":
-            set_cell_value(row, cell_index, quality.description)
-        elif header_lower == "rule (library)":
-            set_cell_value(row, cell_index, quality.rule)
-        elif header_lower == "query (sql)":
-            set_cell_value(row, cell_index, quality.query)
-        elif header_lower == "threshold operator":
-            operator = get_threshold_operator(quality)
-            set_cell_value(row, cell_index, operator)
-        elif header_lower == "threshold value":
-            value = get_threshold_value(quality)
-            set_cell_value(row, cell_index, value)
-        elif header_lower == "quality engine (custom)":
-            set_cell_value(row, cell_index, quality.engine)
-        elif header_lower == "implementation (custom)":
-            set_cell_value(row, cell_index, quality.implementation)
-        elif header_lower == "severity":
-            set_cell_value(row, cell_index, quality.severity)
-        elif header_lower == "scheduler":
-            set_cell_value(row, cell_index, quality.scheduler)
-        elif header_lower == "schedule":
-            set_cell_value(row, cell_index, quality.schedule)
+
+def fill_quality(export: Export):
+    found = row_sheet(export, "Quality", "quality")
+    if not found:
+        return
+    sheet, header_row = found
+    row_index = header_row + 1
+    for schema in export.odcs.schema_ or []:
+        for quality in schema.quality or []:
+            write_row(export, sheet, header_row, row_index, quality_values(schema.name, None, quality), quality)
+            row_index += 1
+        row_index = fill_properties_quality(export, sheet, header_row, schema.name, schema.properties or [], row_index)
+
+
+def fill_properties_quality(export, sheet, header_row, schema_name, properties, row_index) -> int:
+    for path, prop in walk_properties(properties):
+        for quality in prop.quality or []:
+            write_row(export, sheet, header_row, row_index, quality_values(schema_name, path, quality), quality)
+            row_index += 1
+    return row_index
+
+
+def walk_properties(properties, prefix=""):
+    """(dotted path, property) of every property, depth first; array items are "<parent>.items"."""
+    for prop in properties or []:
+        if not prop.name:
+            continue
+        path = f"{prefix}.{prop.name}" if prefix else prop.name
+        yield path, prop
+        yield from walk_properties(prop.properties, path)
+        if prop.items:
+            yield f"{path}.items", prop.items
+            yield from walk_properties(prop.items.properties, f"{path}.items")
+
+
+def quality_values(schema_name: str, property_name: Optional[str], quality: DataQuality) -> dict:
+    return {
+        "schema": schema_name,
+        "property": property_name,
+        "quality type": quality.type,
+        "description": quality.description,
+        "rule (library)": quality.rule,
+        "query (sql)": quality.query,
+        "threshold operator": get_threshold_operator(quality),
+        "threshold value": get_threshold_value(quality),
+        "quality engine (custom)": quality.engine,
+        "implementation (custom)": quality.implementation,
+        "severity": quality.severity,
+        "scheduler": quality.scheduler,
+        "schedule": quality.schedule,
+    }
+
+
+THRESHOLD_OPERATORS = (
+    "mustBe",
+    "mustNotBe",
+    "mustBeGreaterThan",
+    "mustBeGreaterThanOrEqualTo",
+    "mustBeGreaterOrEqualTo",
+    "mustBeLessThan",
+    "mustBeLessThanOrEqualTo",
+    "mustBeLessOrEqualTo",
+    "mustBeBetween",
+    "mustNotBeBetween",
+)
 
 
 def get_threshold_operator(quality: DataQuality) -> Optional[str]:
-    """Get the threshold operator from quality object"""
-    if hasattr(quality, "mustBe") and quality.mustBe is not None:
-        return "mustBe"
-    elif hasattr(quality, "mustNotBe") and quality.mustNotBe is not None:
-        return "mustNotBe"
-    elif hasattr(quality, "mustBeGreaterThan") and quality.mustBeGreaterThan is not None:
-        return "mustBeGreaterThan"
-    elif hasattr(quality, "mustBeGreaterThanOrEqualTo") and quality.mustBeGreaterThanOrEqualTo is not None:
-        return "mustBeGreaterThanOrEqualTo"
-    elif hasattr(quality, "mustBeGreaterOrEqualTo") and quality.mustBeGreaterOrEqualTo is not None:
-        return "mustBeGreaterOrEqualTo"
-    elif hasattr(quality, "mustBeLessThan") and quality.mustBeLessThan is not None:
-        return "mustBeLessThan"
-    elif hasattr(quality, "mustBeLessThanOrEqualTo") and quality.mustBeLessThanOrEqualTo is not None:
-        return "mustBeLessThanOrEqualTo"
-    elif hasattr(quality, "mustBeLessOrEqualTo") and quality.mustBeLessOrEqualTo is not None:
-        return "mustBeLessOrEqualTo"
-    elif hasattr(quality, "mustBeBetween") and quality.mustBeBetween is not None:
-        return "mustBeBetween"
-    elif hasattr(quality, "mustNotBeBetween") and quality.mustNotBeBetween is not None:
-        return "mustNotBeBetween"
+    for operator in THRESHOLD_OPERATORS:
+        if getattr(quality, operator, None) is not None:
+            return operator
     return None
 
 
 def get_threshold_value(quality: DataQuality) -> Optional[str]:
-    """Get the threshold value from quality object"""
-    if hasattr(quality, "mustBe") and quality.mustBe is not None:
-        return str(quality.mustBe)
-    elif hasattr(quality, "mustNotBe") and quality.mustNotBe is not None:
-        return str(quality.mustNotBe)
-    elif hasattr(quality, "mustBeGreaterThan") and quality.mustBeGreaterThan is not None:
-        return str(quality.mustBeGreaterThan)
-    elif hasattr(quality, "mustBeGreaterThanOrEqualTo") and quality.mustBeGreaterThanOrEqualTo is not None:
-        return str(quality.mustBeGreaterThanOrEqualTo)
-    elif hasattr(quality, "mustBeGreaterOrEqualTo") and quality.mustBeGreaterOrEqualTo is not None:
-        return str(quality.mustBeGreaterOrEqualTo)
-    elif hasattr(quality, "mustBeLessThan") and quality.mustBeLessThan is not None:
-        return str(quality.mustBeLessThan)
-    elif hasattr(quality, "mustBeLessThanOrEqualTo") and quality.mustBeLessThanOrEqualTo is not None:
-        return str(quality.mustBeLessThanOrEqualTo)
-    elif hasattr(quality, "mustBeLessOrEqualTo") and quality.mustBeLessOrEqualTo is not None:
-        return str(quality.mustBeLessOrEqualTo)
-    elif hasattr(quality, "mustBeBetween") and quality.mustBeBetween is not None and len(quality.mustBeBetween) >= 2:
-        return f"[{quality.mustBeBetween[0]}, {quality.mustBeBetween[1]}]"
-    elif (
-        hasattr(quality, "mustNotBeBetween")
-        and quality.mustNotBeBetween is not None
-        and len(quality.mustNotBeBetween) >= 2
+    operator = get_threshold_operator(quality)
+    if operator is None:
+        return None
+    value = getattr(quality, operator)
+    if operator in ("mustBeBetween", "mustNotBeBetween"):
+        return f"[{value[0]}, {value[1]}]" if len(value) >= 2 else None
+    return str(value)
+
+
+def fill_relationships(export: Export):
+    found = row_sheet(export, "Relationships", "relationships")
+    rows = []
+    for schema in export.odcs.schema_ or []:
+        for rel in schema.relationships or []:
+            rows.append(({"level": "schema", "type": rel.type, "from": join(rel.from_), "to": join(rel.to)}, rel))
+        for path, prop in walk_properties(schema.properties):
+            for rel in prop.relationships or []:
+                values = {"level": "property", "type": rel.type, "from": f"{schema.name}.{path}", "to": join(rel.to)}
+                rows.append((values, rel))
+    if not rows:
+        return
+    if not found:
+        export.unsupported["relationships"] += len(rows)
+        return
+    sheet, header_row = found
+    for offset, (values, rel) in enumerate(rows):
+        write_row(export, sheet, header_row, header_row + 1 + offset, values, rel)
+
+
+def join(value) -> Optional[str]:
+    if value is None:
+        return None
+    return ", ".join(value) if isinstance(value, list) else str(value)
+
+
+def fill_support(export: Export):
+    found = row_sheet(export, "Support", "support")
+    if not found:
+        return
+    sheet, header_row = found
+    for offset, support in enumerate(export.odcs.support or []):
+        values = {
+            "channel": support.channel,
+            "channel url": support.url,
+            "description": support.description,
+            "tool": support.tool,
+            "scope": support.scope,
+            "invitation url": support.invitationUrl,
+        }
+        write_row(export, sheet, header_row, header_row + 1 + offset, values, support)
+
+
+def fill_team(export: Export):
+    team = export.odcs.team
+    members = team.members if isinstance(team, Team) else team
+    if isinstance(team, Team):
+        for name, value in (
+            ("team.name", team.name),
+            ("team.description", team.description),
+            ("team.tags", ",".join(team.tags) if team.tags else None),
+            ("team.id", team.id),
+        ):
+            if value is not None and not set_optional_cell(export, name, value):
+                export.unsupported["team details"] += 1
+        # the team block has no inline pairs: every custom property goes to the sheet
+        export.custom_property_rows += [(export.element(team), prop) for prop in team.customProperties or []]
+        export.sheet_authoritative_definitions(team)
+    found = row_sheet(export, "Team", "team")
+    if not found:
+        return
+    sheet, header_row = found
+    for offset, member in enumerate(members or []):
+        values = {
+            "username": member.username,
+            "name": member.name,
+            "description": member.description,
+            "role": member.role,
+            "date in": member.dateIn,
+            "date out": member.dateOut,
+            "replaced by username": member.replacedByUsername,
+        }
+        write_row(export, sheet, header_row, header_row + 1 + offset, values, member)
+
+
+def fill_roles(export: Export):
+    found = row_sheet(export, "Roles", "roles", fallback_header_row=4)
+    if not found:
+        return
+    sheet, header_row = found
+    for offset, role in enumerate(export.odcs.roles or []):
+        values = {
+            "role": role.role,
+            "description": role.description,
+            "access": role.access,
+            "1st level approvers": role.firstLevelApprovers,
+            "2nd level approvers": role.secondLevelApprovers,
+        }
+        write_row(export, sheet, header_row, header_row + 1 + offset, values, role)
+
+
+def fill_sla_properties(export: Export):
+    found = row_sheet(export, "SLA", "slaProperties", fallback_header_row=6)
+    if not found:
+        return
+    sheet, header_row = found
+    for offset, sla in enumerate(export.odcs.slaProperties or []):
+        values = {
+            "property": sla.property,
+            "value": sla.value,
+            "extended value": sla.valueExt,
+            "unit": sla.unit,
+            "element": sla.element,
+            "driver": sla.driver,
+        }
+        write_row(export, sheet, header_row, header_row + 1 + offset, values, sla)
+
+
+# --- Servers -------------------------------------------------------------------------------------
+
+
+def fill_servers(export: Export):
+    workbook = export.workbook
+    if "Servers" not in workbook.sheetnames or not export.odcs.servers:
+        return
+    sheet = workbook["Servers"]
+    for index, server in enumerate(export.odcs.servers):
+        set_cell_value_by_column_index(sheet, "servers.server", index, server.server)
+        set_cell_value_by_column_index(sheet, "servers.description", index, server.description)
+        set_cell_value_by_column_index(sheet, "servers.environment", index, server.environment)
+        set_cell_value_by_column_index(sheet, "servers.type", index, server.type)
+        for field in SERVER_FIELDS:
+            value = getattr(server, "schema_" if field == "schema" else field)
+            if value is None:
+                continue
+            name = server_field_name(workbook, server.type, field)
+            if name:
+                set_cell_value_by_column_index(sheet, name, index, value)
+            else:
+                export.unsupported[f"server field {field}"] += 1
+        if server.id is not None:
+            if find_cell_by_name(workbook, "servers.id"):
+                set_cell_value_by_column_index(sheet, "servers.id", index, server.id)
+            else:
+                export.unsupported["ids"] += 1
+        write_server_pairs(sheet, index, export.inline_custom_properties(server))
+
+
+def write_server_pairs(sheet: Worksheet, index: int, pairs: list):
+    """Inline pairs on the Servers sheet are row pairs labelled in column B, one value column per server."""
+    if not pairs:
+        return
+    first = find_cell_by_name(sheet.parent, "servers.server")
+    column = first.column + index if first else 3 + index
+    label_rows = [
+        row
+        for row in range(1, sheet.max_row + 1)
+        if str(sheet.cell(row=row, column=2).value).strip() == "Custom Property"
+    ]
+    while len(label_rows) < len(pairs):
+        row = sheet.max_row + 1
+        style = sheet.cell(row=label_rows[-1], column=2) if label_rows else None
+        for offset, label in enumerate(("Custom Property", "Custom Value")):
+            cell = sheet.cell(row=row + offset, column=2, value=label)
+            if style is not None:
+                cell._style = copy(style._style)
+        label_rows.append(row)
+    for row, (key, value) in zip(label_rows, pairs):
+        set_cell_value_direct(sheet.cell(row=row, column=column), key)
+        set_cell_value_direct(sheet.cell(row=row + 1, column=column), value)
+
+
+# --- Child sheets: enum, synonyms, context, custom properties, authoritative definitions -------------
+
+
+def fill_enum(export: Export):
+    rows = []
+    for schema in export.odcs.schema_ or []:
+        for path, prop in walk_properties(schema.properties):
+            for enum_value in prop.enum or []:
+                values = {
+                    "schema": schema.name,
+                    "property": path,
+                    "value": enum_value.value,
+                    "label": enum_value.label,
+                    "description": enum_value.description,
+                    "tags": ",".join(enum_value.tags) if enum_value.tags else None,
+                }
+                rows.append((values, enum_value))
+    if not rows:
+        return
+    found = row_sheet(export, "Enum", "enum")
+    if not found:
+        export.unsupported["enum values"] += len(rows)
+        return
+    sheet, header_row = found
+    for offset, (values, enum_value) in enumerate(rows):
+        write_row(export, sheet, header_row, header_row + 1 + offset, values, enum_value)
+
+
+def fill_synonyms(export: Export):
+    rows = []
+    for schema in export.odcs.schema_ or []:
+        for synonym in schema.synonyms or []:
+            rows.append((synonym_values(schema.name, None, synonym), synonym))
+        for path, prop in walk_properties(schema.properties):
+            for synonym in prop.synonyms or []:
+                rows.append((synonym_values(schema.name, path, synonym), synonym))
+    if not rows:
+        return
+    found = row_sheet(export, "Synonyms", "synonyms")
+    if not found:
+        export.unsupported["synonyms"] += len(rows)
+        return
+    sheet, header_row = found
+    for offset, (values, synonym) in enumerate(rows):
+        write_row(export, sheet, header_row, header_row + 1 + offset, values, synonym)
+
+
+def synonym_values(schema_name, property_path, synonym) -> dict:
+    return {
+        "schema": schema_name,
+        "property": property_path,
+        "synonym": synonym.synonym,
+        "description": synonym.description,
+        "locale": synonym.locale,
+        "source": synonym.source,
+        "status": synonym.status,
+    }
+
+
+def fill_context_sheets(export: Export):
+    statements, constraints = [], []
+    contexts = [("Contract", None, export.odcs.context)]
+    contexts += [("Schema", schema.name, schema.context) for schema in export.odcs.schema_ or []]
+    for level, schema_name, context in contexts:
+        if context is None or isinstance(context, str):
+            continue
+        for statement in context.verifiedStatements or []:
+            values = {
+                "level": level,
+                "schema": schema_name,
+                "question": statement.question,
+                "answer": statement.answer,
+                "tags": ",".join(statement.tags) if statement.tags else None,
+            }
+            statements.append((values, statement))
+        for constraint in context.constraints or []:
+            values = {
+                "level": level,
+                "schema": schema_name,
+                "constraint": constraint.constraint,
+                "tags": ",".join(constraint.tags) if constraint.tags else None,
+            }
+            constraints.append((values, constraint))
+    for title, range_name, feature, rows in (
+        ("Verified Statements", "verifiedStatements", "verified statements", statements),
+        ("Constraints", "constraints", "constraints", constraints),
     ):
-        return f"[{quality.mustNotBeBetween[0]}, {quality.mustNotBeBetween[1]}]"
-    return None
+        if not rows:
+            continue
+        found = row_sheet(export, title, range_name)
+        if not found:
+            export.unsupported[feature] += len(rows)
+            continue
+        sheet, header_row = found
+        for offset, (values, obj) in enumerate(rows):
+            write_row(export, sheet, header_row, header_row + 1 + offset, values, obj)
 
 
-def fill_custom_properties(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the Custom Properties sheet"""
-    try:
-        ref = name_to_ref(workbook, "CustomProperties")
-        if not ref:
-            logger.warning("No CustomProperties range found")
-            return
-
-        custom_properties_sheet = workbook["Custom Properties"]
-
-        # Parse range to find header row
-        header_row_index = parse_range_safely(ref)
-
-        # Fill custom properties excluding owner
-        if odcs.customProperties:
-            row_index = header_row_index + 1
-            for prop in odcs.customProperties:
-                if prop.property != "owner" and prop.property:
-                    row = get_or_create_row(custom_properties_sheet, row_index)
-                    set_cell_value(row, 0, prop.property)  # Property column
-                    set_cell_value(row, 1, prop.value)  # Value column
-                    row_index += 1
-
-    except Exception as e:
-        logger.warning(f"Error filling custom properties: {e}")
-
-
-def fill_support(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the Support sheet"""
-    try:
-        ref = name_to_ref(workbook, "support")
-        if not ref:
-            logger.warning("No support range found")
-            return
-
-        support_sheet = workbook["Support"]
-
-        # Parse range to find header row
-        header_row_index = parse_range_safely(ref)
-
-        headers = get_headers_from_header_row(support_sheet, header_row_index)
-
-        if odcs.support:
-            for support_index, support_channel in enumerate(odcs.support):
-                row = get_or_create_row(support_sheet, header_row_index + 1 + support_index)
-
-                for cell_index, header_name in headers.items():
-                    header_lower = header_name.lower()
-                    if header_lower == "channel":
-                        set_cell_value(row, cell_index, support_channel.channel)
-                    elif header_lower == "channel url":
-                        set_cell_value(row, cell_index, support_channel.url)
-                    elif header_lower == "description":
-                        set_cell_value(row, cell_index, support_channel.description)
-                    elif header_lower == "tool":
-                        set_cell_value(row, cell_index, support_channel.tool)
-                    elif header_lower == "scope":
-                        set_cell_value(row, cell_index, support_channel.scope)
-                    elif header_lower == "invitation url":
-                        set_cell_value(row, cell_index, support_channel.invitationUrl)
-
-    except Exception as e:
-        logger.warning(f"Error filling support: {e}")
+def fill_custom_properties(export: Export):
+    """The Custom Properties sheet: rich properties of every element, plus the contract's own"""
+    rows = [(export.element(export.odcs), prop) for prop in export.odcs.customProperties or []]
+    if export.odcs.description:
+        rows += [
+            (export.element(export.odcs.description), prop) for prop in export.odcs.description.customProperties or []
+        ]
+    rows += export.custom_property_rows
+    found = row_sheet(export, "Custom Properties", "CustomProperties", header="property")
+    if not found:
+        export.unsupported["custom properties"] += len(rows)
+        return
+    sheet, header_row = found
+    headers = {h.lower().strip() for h in get_headers_from_header_row(sheet, header_row).values()}
+    row_index = header_row + 1
+    if "element type" not in headers:
+        # pre-3.2 layout: a flat Property / Value table for the contract root only
+        for element, prop in rows:
+            if element.kind != "Contract" or prop.property == "owner":
+                export.unsupported["custom properties"] += 1
+                continue
+            set_cell_value(sheet, row_index, 0, prop.property)
+            set_cell_value(sheet, row_index, 1, prop.value if is_scalar(prop.value) else json.dumps(prop.value))
+            row_index += 1
+        return
+    for element, prop in rows:
+        if element.kind == "Contract" and prop.property == "owner" and not (prop.id or prop.description or prop.vendor):
+            continue  # the Owner cell on Fundamentals holds it
+        if export.warn_unaddressable(element, "custom properties"):
+            continue
+        value, value_type = typed_value(export, prop.value)
+        values = {
+            "element type": element.kind,
+            "element": element.ref,
+            "property": prop.property,
+            "value": value,
+            "type": value_type,
+            "description": prop.description,
+            "vendor": prop.vendor,
+            "id": prop.id,
+        }
+        write_row(export, sheet, header_row, row_index, values)
+        row_index += 1
 
 
-def fill_team(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the Team sheet"""
-    try:
-        ref = name_to_ref(workbook, "team")
-        if not ref:
-            logger.warning("No team range found")
-            return
-
-        team_sheet = workbook["Team"]
-
-        # Parse range to find header row
-        header_row_index = parse_range_safely(ref)
-
-        headers = get_headers_from_header_row(team_sheet, header_row_index)
-
-        if odcs.team:
-            for team_index, team_member in enumerate(odcs.team):
-                row = get_or_create_row(team_sheet, header_row_index + 1 + team_index)
-
-                for cell_index, header_name in headers.items():
-                    header_lower = header_name.lower()
-                    if header_lower == "username":
-                        set_cell_value(row, cell_index, team_member.username)
-                    elif header_lower == "name":
-                        set_cell_value(row, cell_index, team_member.name)
-                    elif header_lower == "description":
-                        set_cell_value(row, cell_index, team_member.description)
-                    elif header_lower == "role":
-                        set_cell_value(row, cell_index, team_member.role)
-                    elif header_lower == "date in":
-                        set_cell_value(row, cell_index, team_member.dateIn)
-                    elif header_lower == "date out":
-                        set_cell_value(row, cell_index, team_member.dateOut)
-                    elif header_lower == "replaced by username":
-                        set_cell_value(row, cell_index, team_member.replacedByUsername)
-
-    except Exception as e:
-        logger.warning(f"Error filling team: {e}")
+def typed_value(export: Export, value: Any) -> tuple[Any, Optional[str]]:
+    """The cell value and `Type` that reproduce `value` on import."""
+    if not is_scalar(value):
+        return json.dumps(value), "JSON"
+    if export.round_trip.survives(value):
+        return value, None
+    if isinstance(value, str):
+        return value, "Text"
+    return json.dumps(value), "JSON"
 
 
-def fill_roles(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the Roles sheet using fixed table structure"""
-    try:
-        roles_sheet = workbook["Roles"]
-
-        # From template analysis: Row 4 has headers
-        header_row_index = 4
-        headers = get_headers_from_header_row(roles_sheet, header_row_index)
-
-        if odcs.roles:
-            for role_index, role in enumerate(odcs.roles):
-                row = get_or_create_row(roles_sheet, header_row_index + 1 + role_index)
-
-                for cell_index, header_name in headers.items():
-                    header_lower = header_name.lower()
-                    if header_lower == "role":
-                        set_cell_value(row, cell_index, role.role)
-                    elif header_lower == "description":
-                        set_cell_value(row, cell_index, role.description)
-                    elif header_lower == "access":
-                        set_cell_value(row, cell_index, role.access)
-                    elif header_lower == "1st level approvers":
-                        set_cell_value(row, cell_index, role.firstLevelApprovers)
-                    elif header_lower == "2nd level approvers":
-                        set_cell_value(row, cell_index, role.secondLevelApprovers)
-
-    except Exception as e:
-        logger.warning(f"Error filling roles: {e}")
-
-
-def fill_sla_properties(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the SLA sheet using fixed table structure"""
-    try:
-        sla_sheet = workbook["SLA"]
-
-        # From template analysis: Row 6 has the SLA properties table headers
-        header_row_index = 6
-
-        headers = get_headers_from_header_row(sla_sheet, header_row_index)
-
-        if odcs.slaProperties:
-            for sla_index, sla_prop in enumerate(odcs.slaProperties):
-                row = get_or_create_row(sla_sheet, header_row_index + 1 + sla_index)
-
-                for cell_index, header_name in headers.items():
-                    header_lower = header_name.lower()
-                    if header_lower == "property":
-                        set_cell_value(row, cell_index, sla_prop.property)
-                    elif header_lower == "value":
-                        set_cell_value(row, cell_index, sla_prop.value)
-                    elif header_lower == "extended value":
-                        set_cell_value(row, cell_index, sla_prop.valueExt)
-                    elif header_lower == "unit":
-                        set_cell_value(row, cell_index, sla_prop.unit)
-                    elif header_lower == "element":
-                        set_cell_value(row, cell_index, sla_prop.element)
-                    elif header_lower == "driver":
-                        set_cell_value(row, cell_index, sla_prop.driver)
-
-    except Exception as e:
-        logger.warning(f"Error filling SLA properties: {e}")
+def fill_authoritative_definitions(export: Export):
+    rows = list(export.authoritative_definition_rows)
+    for definition in export.odcs.authoritativeDefinitions or []:
+        rows.append((export.element(export.odcs), definition))
+    if export.odcs.description:
+        for definition in export.odcs.description.authoritativeDefinitions or []:
+            rows.append((export.element(export.odcs.description), definition))
+    if not rows:
+        return
+    found = row_sheet(export, "Authoritative Definitions", "authoritativeDefinitions")
+    if not found:
+        export.unsupported["authoritative definitions"] += len(rows)
+        return
+    sheet, header_row = found
+    row_index = header_row + 1
+    for element, definition in rows:
+        if export.warn_unaddressable(element, "authoritative definitions"):
+            continue
+        values = {
+            "element type": element.kind,
+            "element": element.ref,
+            "url": definition.url,
+            "type": definition.type,
+            "description": definition.description,
+            "id": definition.id,
+        }
+        write_row(export, sheet, header_row, row_index, values)
+        row_index += 1
 
 
-def fill_servers(workbook: Workbook, odcs: OpenDataContractStandard):
-    """Fill the Servers sheet"""
-    try:
-        servers_sheet = workbook["Servers"]
-
-        if odcs.servers:
-            for index, server in enumerate(odcs.servers):
-                set_cell_value_by_column_index(servers_sheet, "servers.server", index, server.server)
-                set_cell_value_by_column_index(servers_sheet, "servers.description", index, server.description)
-                set_cell_value_by_column_index(servers_sheet, "servers.environment", index, server.environment)
-                set_cell_value_by_column_index(servers_sheet, "servers.type", index, server.type)
-
-                # Type-specific fields
-                server_type = server.type
-                if server_type == "azure":
-                    set_cell_value_by_column_index(servers_sheet, "servers.azure.location", index, server.location)
-                    set_cell_value_by_column_index(servers_sheet, "servers.azure.format", index, server.format)
-                    set_cell_value_by_column_index(servers_sheet, "servers.azure.delimiter", index, server.delimiter)
-                elif server_type == "bigquery":
-                    set_cell_value_by_column_index(servers_sheet, "servers.bigquery.project", index, server.project)
-                    set_cell_value_by_column_index(servers_sheet, "servers.bigquery.dataset", index, server.dataset)
-                elif server_type == "databricks":
-                    set_cell_value_by_column_index(servers_sheet, "servers.databricks.catalog", index, server.catalog)
-                    set_cell_value_by_column_index(servers_sheet, "servers.databricks.host", index, server.host)
-                    set_cell_value_by_column_index(servers_sheet, "servers.databricks.schema", index, server.schema_)
-                elif server_type == "glue":
-                    set_cell_value_by_column_index(servers_sheet, "servers.glue.account", index, server.account)
-                    set_cell_value_by_column_index(servers_sheet, "servers.glue.database", index, server.database)
-                    set_cell_value_by_column_index(servers_sheet, "servers.glue.format", index, server.format)
-                    set_cell_value_by_column_index(servers_sheet, "servers.glue.location", index, server.location)
-                elif server_type == "kafka":
-                    set_cell_value_by_column_index(servers_sheet, "servers.kafka.format", index, server.format)
-                    set_cell_value_by_column_index(servers_sheet, "servers.kafka.host", index, server.host)
-                elif server_type == "oracle":
-                    set_cell_value_by_column_index(servers_sheet, "servers.oracle.host", index, server.host)
-                    set_cell_value_by_column_index(servers_sheet, "servers.oracle.port", index, server.port)
-                    set_cell_value_by_column_index(
-                        servers_sheet, "servers.oracle.servicename", index, server.serviceName
-                    )
-                elif server_type == "postgres":
-                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.database", index, server.database)
-                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.host", index, server.host)
-                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.port", index, server.port)
-                    set_cell_value_by_column_index(servers_sheet, "servers.postgres.schema", index, server.schema_)
-                elif server_type == "s3":
-                    set_cell_value_by_column_index(servers_sheet, "servers.s3.delimiter", index, server.delimiter)
-                    set_cell_value_by_column_index(servers_sheet, "servers.s3.endpointUrl", index, server.endpointUrl)
-                    set_cell_value_by_column_index(servers_sheet, "servers.s3.format", index, server.format)
-                    set_cell_value_by_column_index(servers_sheet, "servers.s3.location", index, server.location)
-                elif server_type == "snowflake":
-                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.account", index, server.account)
-                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.database", index, server.database)
-                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.host", index, server.host)
-                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.port", index, server.port)
-                    set_cell_value_by_column_index(servers_sheet, "servers.snowflake.schema", index, server.schema_)
-                    set_cell_value_by_column_index(
-                        servers_sheet, "servers.snowflake.warehouse", index, server.warehouse
-                    )
-                elif server_type == "sqlserver":
-                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.database", index, server.database)
-                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.host", index, server.host)
-                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.port", index, server.port)
-                    set_cell_value_by_column_index(servers_sheet, "servers.sqlserver.schema", index, server.schema_)
-                else:
-                    # Custom/unknown server type - export all possible fields
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.account", index, server.account)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.catalog", index, server.catalog)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.database", index, server.database)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.dataset", index, server.dataset)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.delimiter", index, server.delimiter)
-                    set_cell_value_by_column_index(
-                        servers_sheet, "servers.custom.endpointUrl", index, server.endpointUrl
-                    )
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.format", index, server.format)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.host", index, server.host)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.location", index, server.location)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.path", index, server.path)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.port", index, server.port)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.project", index, server.project)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.schema", index, server.schema_)
-                    set_cell_value_by_column_index(
-                        servers_sheet, "servers.custom.serviceName", index, server.serviceName
-                    )
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.stagingDir", index, server.stagingDir)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.warehouse", index, server.warehouse)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.region", index, server.region)
-                    set_cell_value_by_column_index(servers_sheet, "servers.custom.regionName", index, server.regionName)
-
-    except Exception as e:
-        logger.warning(f"Error filling servers: {e}")
+# --- Inline custom property pairs ----------------------------------------------------------------
 
 
-# Helper functions
+def pair_columns(sheet: Worksheet, header_row: int) -> list[int]:
+    """0-based indices of every `Custom Property` header cell; the value column is the one to its right."""
+    return [
+        i for i, h in get_headers_from_header_row(sheet, header_row).items() if h.lower().strip() == "custom property"
+    ]
+
+
+def write_inline_pairs(sheet: Worksheet, header_row: int, row_index: int, pairs: list):
+    if not pairs:
+        return
+    columns = pair_columns(sheet, header_row)
+    while len(columns) < len(pairs):
+        last = max((c.column for c in sheet[header_row] if c.value is not None), default=0)
+        style = sheet.cell(row=header_row, column=columns[-1] + 1) if columns else sheet.cell(row=header_row, column=1)
+        for offset, label in enumerate(("Custom Property", "Custom Value")):
+            cell = sheet.cell(row=header_row, column=last + 1 + offset, value=label)
+            cell._style = copy(style._style)
+        columns.append(last)
+    for column, (key, value) in zip(columns, pairs):
+        set_cell_value(sheet, row_index, column, key)
+        set_cell_value(sheet, row_index, column + 1, value)
+
+
+def write_vertical_pairs(sheet: Worksheet, header_row: int, pairs: list):
+    """Inline pairs of a schema's header block: `Custom Property` / `Custom Value` row pairs above the property table."""
+    if not pairs:
+        return
+    label_rows = [
+        row for row in range(1, header_row) if str(sheet.cell(row=row, column=1).value).strip() == "Custom Property"
+    ]
+    if len(label_rows) < len(pairs):
+        missing = len(pairs) - len(label_rows)
+        at = (label_rows[-1] + 2) if label_rows else header_row - 1
+        insert_rows_shifting(sheet, at, 2 * missing)
+        template_row = label_rows[-1] if label_rows else None
+        for n in range(missing):
+            for offset, label in enumerate(("Custom Property", "Custom Value")):
+                row = at + 2 * n + offset
+                sheet.cell(row=row, column=1, value=label)
+                if template_row is not None:
+                    for column in range(1, 6):
+                        sheet.cell(row=row, column=column)._style = copy(
+                            sheet.cell(row=template_row + offset, column=column)._style
+                        )
+                    sheet.merge_cells(start_row=row, start_column=2, end_row=row, end_column=5)
+            label_rows.append(at + 2 * n)
+    for row, (key, value) in zip(label_rows, pairs):
+        set_cell_value_direct(sheet.cell(row=row, column=2), key)
+        set_cell_value_direct(sheet.cell(row=row + 1, column=2), value)
+
+
+def insert_rows_shifting(sheet: Worksheet, at: int, count: int):
+    """openpyxl's insert_rows moves cells only; also move merged ranges, validations and the sheet's named ranges."""
+    sheet.insert_rows(at, count)
+    for merged in list(sheet.merged_cells.ranges):
+        if merged.min_row >= at:
+            sheet.merged_cells.remove(merged)
+            merged.shift(0, count)
+            sheet.merged_cells.add(merged)
+    for validation in sheet.data_validations.dataValidation:
+        validation.sqref = MultiCellRange(" ".join(shift_range(r, at, count) for r in str(validation.sqref).split()))
+    for name in list(sheet.defined_names):
+        defined = sheet.defined_names[name]
+        title, _, ref = defined.attr_text.rpartition("!")
+        sheet.defined_names[name] = DefinedName(name, attr_text=f"{title}!{shift_range(ref, at, count)}")
+
+
+def shift_range(ref: str, at: int, count: int) -> str:
+    def shift(coordinate: str) -> str:
+        column = "".join(ch for ch in coordinate if not ch.isdigit())
+        row = int("".join(ch for ch in coordinate if ch.isdigit()))
+        return f"{column}{row + count if row >= at else row}"
+
+    return ":".join(shift(part) for part in ref.split(":"))
+
+
+# --- Cell helpers --------------------------------------------------------------------------------
 
 
 def find_cell_by_name(workbook: Workbook, name: str) -> Optional[Cell]:
-    """Find a cell by its named range"""
+    """Find a cell by its (workbook-scoped) named range"""
     try:
         ref = name_to_ref(workbook, name)
         if not ref:
@@ -803,91 +966,47 @@ def find_cell_by_name(workbook: Workbook, name: str) -> Optional[Cell]:
 
 
 def find_cell_by_name_in_sheet(sheet: Worksheet, name: str) -> Optional[Cell]:
-    """Find a cell by its named range within a specific sheet"""
+    """Find a cell by its worksheet-scoped named range"""
     try:
-        # Access worksheet-scoped defined names directly
-        for named_range in sheet.defined_names:
-            if named_range == name:
-                destinations = sheet.defined_names[named_range].destinations
-                for sheet_title, coordinate in destinations:
-                    if sheet_title == sheet.title:
-                        return sheet[coordinate]
+        if name in sheet.defined_names:
+            for sheet_title, coordinate in sheet.defined_names[name].destinations:
+                if sheet_title == sheet.title:
+                    return sheet[coordinate]
     except Exception:
         return None
     return None
 
 
 def find_cell_by_ref(workbook: Workbook, cell_ref: str) -> Optional[Cell]:
-    """Find a cell by its reference"""
     try:
-        from openpyxl.utils.cell import column_index_from_string, coordinate_from_string
-
-        # Parse the reference
-        if "!" in cell_ref:
-            sheet_name, coord = cell_ref.split("!")
-            sheet_name = sheet_name.strip("'")
-            sheet = workbook[sheet_name]
-        else:
-            coord = cell_ref
-            sheet = workbook.active
-
-        # Remove $ signs
-        coord = coord.replace("$", "")
-        col_letter, row_num = coordinate_from_string(coord)
-        col_num = column_index_from_string(col_letter)
-
-        return sheet.cell(row=int(row_num), column=col_num)
-    except Exception:
-        return None
-
-
-def find_cell_by_ref_in_sheet(sheet: Worksheet, cell_ref: str) -> Optional[Cell]:
-    """Find a cell by its reference within a specific sheet"""
-    try:
-        from openpyxl.utils.cell import column_index_from_string, coordinate_from_string
-
-        # Remove sheet name if present
-        if "!" in cell_ref:
-            _, coord = cell_ref.split("!")
-        else:
-            coord = cell_ref
-
-        # Remove $ signs
-        coord = coord.replace("$", "")
-        col_letter, row_num = coordinate_from_string(coord)
-        col_num = column_index_from_string(col_letter)
-
-        return sheet.cell(row=int(row_num), column=col_num)
+        sheet_name, _, coord = cell_ref.rpartition("!")
+        sheet = workbook[sheet_name.strip("'").replace("''", "'")] if sheet_name else workbook.active
+        min_col, min_row, _, _ = range_boundaries(coord.replace("$", ""))
+        return sheet.cell(row=min_row, column=min_col)
     except Exception:
         return None
 
 
 def name_to_ref(workbook: Workbook, name: str) -> Optional[str]:
-    """Get the reference for a named range in the workbook"""
-    try:
-        defined_name = workbook.defined_names.get(name)
-        if defined_name:
-            return defined_name.attr_text
-    except Exception:
-        pass
-    return None
+    defined_name = workbook.defined_names.get(name)
+    return defined_name.attr_text if defined_name else None
 
 
 def name_to_ref_in_sheet(sheet: Worksheet, name: str) -> Optional[str]:
-    """Get the reference for a named range in a specific sheet"""
-    try:
-        workbook = sheet.parent
-        defined_names = [dn for dn in workbook.defined_names if dn.name == name]
-        for dn in defined_names:
-            if sheet.title in dn.attr_text:
-                return dn.attr_text
-    except Exception:
-        pass
-    return None
+    defined_name = sheet.defined_names.get(name)
+    return defined_name.attr_text if defined_name else None
+
+
+def set_optional_cell(export: Export, name: str, value: Any) -> bool:
+    """Set a named cell that only newer templates have; False when the template lacks it."""
+    cell = find_cell_by_name(export.workbook, name)
+    if cell is None:
+        return False
+    set_cell_value_direct(cell, value)
+    return True
 
 
 def set_cell_value_by_name(workbook: Workbook, cell_name: str, value: Any):
-    """Set cell value by named range"""
     cell = find_cell_by_name(workbook, cell_name)
     if cell:
         set_cell_value_direct(cell, value)
@@ -896,7 +1015,6 @@ def set_cell_value_by_name(workbook: Workbook, cell_name: str, value: Any):
 
 
 def set_cell_value_by_name_in_sheet(sheet: Worksheet, cell_name: str, value: Any):
-    """Set cell value by named range within a specific sheet"""
     cell = find_cell_by_name_in_sheet(sheet, cell_name)
     if cell:
         set_cell_value_direct(cell, value)
@@ -905,89 +1023,42 @@ def set_cell_value_by_name_in_sheet(sheet: Worksheet, cell_name: str, value: Any
 
 
 def set_cell_value_by_column_index(sheet: Worksheet, name: str, column_index: int, value: Any):
-    """Set cell value by column offset from named range"""
-    try:
-        workbook = sheet.parent
-        first_cell = find_cell_by_name(workbook, name)
-        if first_cell:
-            target_cell = sheet.cell(row=first_cell.row, column=first_cell.column + column_index)
-            set_cell_value_direct(target_cell, value)
-    except Exception as e:
-        logger.warning(f"Error setting cell value by column index: {e}")
+    """Set cell value by column offset from a named cell (servers are laid out horizontally)"""
+    first_cell = find_cell_by_name(sheet.parent, name)
+    if first_cell:
+        set_cell_value_direct(sheet.cell(row=first_cell.row, column=first_cell.column + column_index), value)
 
 
 def set_cell_value_direct(cell: Cell, value: Any):
-    """Set cell value directly"""
-    if value is not None:
-        if isinstance(value, bool):
-            cell.value = value
-        elif isinstance(value, (int, float, Decimal)):
-            cell.value = float(value)
-        else:
-            cell.value = str(value)
-    else:
+    if value is None:
         cell.value = None
+    elif isinstance(value, (bool, int, float)):
+        cell.value = value
+    elif isinstance(value, Decimal):
+        cell.value = int(value) if value == value.to_integral_value() else float(value)
+    else:
+        cell.value = str(value)
 
 
-def set_cell_value(row, cell_index: int, value: Any):
-    """Set cell value in a row at specific index"""
-    cell = get_or_create_cell(row, cell_index)
-    set_cell_value_direct(cell, value)
-
-
-def get_or_create_row(sheet: Worksheet, row_index: int):
-    """Get or create a row at the specified index"""
-    try:
-        return sheet[row_index]
-    except (IndexError, KeyError):
-        # If row doesn't exist, create it
-        while len(list(sheet.rows)) < row_index:
-            sheet.append([])
-        return sheet[row_index]
-
-
-def get_or_create_cell(row, cell_index: int) -> Cell:
-    """Get or create a cell at the specified index in a row"""
-    try:
-        return row[cell_index]
-    except IndexError:
-        # Extend the row if needed
-        while len(row) <= cell_index:
-            row.append(None)
-        return row[cell_index]
+def set_cell_value(sheet: Worksheet, row_index: int, cell_index: int, value: Any):
+    set_cell_value_direct(sheet.cell(row=row_index, column=cell_index + 1), value)
 
 
 def parse_range_safely(ref: str) -> int:
-    """Parse a range reference and return the starting row number"""
-    try:
-        from openpyxl.utils import range_boundaries
-
-        min_col, min_row, max_col, max_row = range_boundaries(ref)
-        return min_row
-    except Exception:
-        # Handle malformed ranges - extract row number from range like "Quality!$A$4:$AZ$300"
-        if ":" in ref:
-            start_ref = ref.split(":")[0]
-            if "!" in start_ref:
-                start_ref = start_ref.split("!")[-1]
-            start_ref = start_ref.replace("$", "")
-            # Extract row number
-            import re
-
-            row_match = re.search(r"(\d+)", start_ref)
-            if row_match:
-                return int(row_match.group(1))
-        return 1
+    """The first row of a range reference such as Quality!$A$4:$AZ$300"""
+    _, _, coord = ref.rpartition("!")
+    _, min_row, _, _ = range_boundaries(coord.replace("$", ""))
+    return min_row
 
 
 def get_headers_from_header_row(sheet: Worksheet, header_row_index: int) -> dict:
-    """Get headers from a row and return as dict mapping cell_index -> header_name"""
-    headers = {}
-    try:
-        header_row = sheet[header_row_index]
-        for cell_index, cell in enumerate(header_row):
-            if cell.value:
-                headers[cell_index] = str(cell.value).strip()
-    except Exception as e:
-        logger.warning(f"Error getting headers from row {header_row_index}: {e}")
-    return headers
+    """Headers of a row as dict mapping 0-based cell index -> header name"""
+    return {cell.column - 1: str(cell.value).strip() for cell in sheet[header_row_index] if cell.value}
+
+
+def header_columns(sheet: Worksheet, header_row_index: int) -> dict:
+    """Lower-cased header name -> 0-based column index (the first occurrence wins)"""
+    columns = {}
+    for index, header in get_headers_from_header_row(sheet, header_row_index).items():
+        columns.setdefault(header.lower(), index)
+    return columns
