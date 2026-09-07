@@ -9,6 +9,7 @@ import openpyxl
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
+import datacontract.model.workbook as workbook_module
 from datacontract.cli import app
 from datacontract.export import excel_exporter
 from datacontract.export.excel_exporter import export_to_excel_bytes
@@ -327,10 +328,7 @@ schema:
 
 def test_code_only_uses_named_ranges_the_bundled_template_has():
     """Every named range the exporter and importer look up by string exists in the bundled template"""
-    source = "".join(
-        Path(module.__file__).read_text()
-        for module in (excel_exporter, excel_importer, __import__("datacontract.model.workbook").model.workbook)
-    )
+    source = "".join(Path(module.__file__).read_text() for module in (excel_exporter, excel_importer, workbook_module))
     names = set(
         re.findall(r'[(,] ?"((?:servers|schema|description|price|team|context|instructions)\.[A-Za-z.]+)"', source)
     )

@@ -18,6 +18,8 @@ import openpyxl
 import yaml
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Team
 
+from datacontract.model.natural_keys import NATURAL_KEYS
+
 logger = logging.getLogger(__name__)
 
 SERVER_FIELDS = [
@@ -90,9 +92,9 @@ def iter_elements(odcs: OpenDataContractStandard) -> Iterator[Element]:
     yield Element("Contract", "", odcs, "the contract")
     if odcs.description:
         yield Element("Description", "", odcs.description, "the description")
-    for server in _keyed(odcs.servers, "server", "Server", "server"):
+    for server in _keyed(odcs.servers, NATURAL_KEYS["servers"], "Server", "server"):
         yield server
-    for schema in _keyed(odcs.schema_, "name", "Schema", "schema"):
+    for schema in _keyed(odcs.schema_, NATURAL_KEYS["schema"], "Schema", "schema"):
         yield schema
         if schema.obj.context is not None and not isinstance(schema.obj.context, str):
             yield from _context_elements(schema.obj.context, schema.label)
@@ -103,25 +105,25 @@ def iter_elements(odcs: OpenDataContractStandard) -> Iterator[Element]:
         for quality in _by_id(schema.obj.quality, "Quality", f"quality rule of {schema.label}"):
             yield quality
         yield from _property_elements(schema.obj.properties, schema.ref, schema.label)
-    for support in _keyed(odcs.support, "channel", "Support", "support channel"):
+    for support in _keyed(odcs.support, NATURAL_KEYS["support"], "Support", "support channel"):
         yield support
     if isinstance(odcs.team, Team):
         yield Element("Team", "", odcs.team, "the team")
         members = odcs.team.members
     else:
         members = odcs.team
-    for member in _keyed(members, "username", "Team Member", "team member"):
+    for member in _keyed(members, NATURAL_KEYS["team.members"], "Team Member", "team member"):
         yield member
-    for role in _keyed(odcs.roles, "role", "Role", "role"):
+    for role in _keyed(odcs.roles, NATURAL_KEYS["roles"], "Role", "role"):
         yield role
-    for sla in _keyed(odcs.slaProperties, "property", "SLA", "SLA property"):
+    for sla in _keyed(odcs.slaProperties, NATURAL_KEYS["slaProperties"], "SLA", "SLA property"):
         yield sla
     if odcs.context is not None and not isinstance(odcs.context, str):
         yield from _context_elements(odcs.context, "the contract")
 
 
 def _property_elements(properties, schema_ref, schema_label, prefix="") -> Iterator[Element]:
-    for prop in _keyed(properties, "name", "Property", f"property of {schema_label}"):
+    for prop in _keyed(properties, NATURAL_KEYS["schema.properties"], "Property", f"property of {schema_label}"):
         path = None if prop.ref is None else f"{prefix}{prop.ref}"
         prop.ref = None if path is None or schema_ref is None else f"{schema_ref}.{path}"
         prop.label = f"property {path or '?'} of {schema_label}"
@@ -131,7 +133,7 @@ def _property_elements(properties, schema_ref, schema_label, prefix="") -> Itera
 def _property_element_and_children(prop: Element, schema_ref, schema_label, path) -> Iterator[Element]:
     yield prop
     p: SchemaProperty = prop.obj
-    for enum_value in _keyed(p.enum, "value", "Enum Value", f"enum value of {prop.label}"):
+    for enum_value in _keyed(p.enum, NATURAL_KEYS["enum"], "Enum Value", f"enum value of {prop.label}"):
         enum_value.ref = None if prop.ref is None or enum_value.ref is None else f"{prop.ref}={enum_value.ref}"
         yield enum_value
     yield from _synonyms(p, prop.ref, prop.label)
@@ -149,7 +151,7 @@ def _property_element_and_children(prop: Element, schema_ref, schema_label, path
 
 
 def _synonyms(owner, owner_ref, owner_label) -> Iterator[Element]:
-    for synonym in _keyed(owner.synonyms, "synonym", "Synonym", f"synonym of {owner_label}"):
+    for synonym in _keyed(owner.synonyms, NATURAL_KEYS["synonyms"], "Synonym", f"synonym of {owner_label}"):
         synonym.ref = None if owner_ref is None or synonym.ref is None else f"{owner_ref}={synonym.ref}"
         yield synonym
 

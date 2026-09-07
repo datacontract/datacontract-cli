@@ -435,11 +435,6 @@ def get_cell_value_by_name_in_sheet(sheet: Worksheet, name: str) -> str | None:
     return None
 
 
-def get_cell_value_by_position(sheet, row_idx, col_idx):
-    """Get cell text by 0-based row and column indices"""
-    return cell_text(sheet.cell(row=row_idx + 1, column=col_idx + 1).value)
-
-
 # --- Support, team, roles, SLA, servers, pricing -------------------------------------------------
 
 

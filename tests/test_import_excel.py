@@ -2,7 +2,9 @@ import logging
 import os
 import sys
 
+import openpyxl
 import yaml
+from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -44,8 +46,6 @@ def test_import_pre_3_2_workbook():
 
 def test_sheet_wins_over_inline_pair(tmp_path, caplog):
     """The same custom property inline and on the Custom Properties sheet: a warning, and the sheet's value is taken"""
-    import openpyxl
-
     odcs = _contract("""
 support:
 - channel: slack
@@ -67,8 +67,6 @@ support:
 
 
 def test_unresolvable_element_reference_is_dropped(tmp_path, caplog):
-    import openpyxl
-
     path = tmp_path / "dangling.xlsx"
     path.write_bytes(export_to_excel_bytes(_contract("support:\n- channel: slack\n")))
     workbook = openpyxl.load_workbook(path)
@@ -95,8 +93,6 @@ def test_resolve_cell_value():
 
 
 def _contract(body: str):
-    from open_data_contract_standard.model import OpenDataContractStandard
-
     return OpenDataContractStandard.from_string(
         "apiVersion: v3.2.0\nkind: DataContract\nid: c\nname: c\nversion: 1.0.0\nstatus: draft\n" + body
     )
