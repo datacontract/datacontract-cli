@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 title: "Apache Iceberg"
 description: "Test Apache Iceberg tables through a REST catalog (Polaris, Nessie, Unity Catalog, Glue, S3 Tables) in 5 minutes."
 ---
@@ -18,7 +18,9 @@ See [Installation](../installation.md) for pip, pipx, and Docker.
 
 ## 2. Authenticate
 
-The catalog and the data files are separate. The catalog takes an OAuth2 client credential or a bearer token; the data files on S3 use the same `DATACONTRACT_S3_*` options as the [S3](./s3.md) source.
+For **Amazon S3 Tables or AWS Glue**, use AWS credentials, not OAuth. The dedicated [Amazon S3 Tables guide](./s3-tables.md) covers `AWS_PROFILE`, SSO login, the table bucket ARN, import/test commands, and a deliberate quality failure.
+
+For **OAuth-based REST catalogs**, the catalog and data-file authentication are separate. Supply a client credential or bearer token as required by your catalog; data files on S3 use the same `DATACONTRACT_S3_*` options as the [S3](./s3.md) source, unless the catalog vends credentials.
 
 ```bash
 # catalog: one of
@@ -35,7 +37,7 @@ export DATACONTRACT_S3_REGION=eu-central-1
 
 ```bash
 datacontract import iceberg --catalog-url https://polaris.example.com/api/catalog \
-  --namespace sales --table orders --output datacontract.yaml
+  --catalog main --namespace sales --table orders --output datacontract.yaml
 ```
 
 The contract gets the table's schema, with `map`, `list`, and `struct` columns expanded, and a ready-to-test `servers` block:
@@ -71,7 +73,7 @@ Add a `quality` rule to the contract and run the test again:
         mustBe: 0
 ```
 
-The query runs in DuckDB against the scanned table, so DuckDB's SQL dialect applies.
+The query runs in DuckDB against the scanned table, so DuckDB's SQL dialect applies. Use the schema object's logical `name` in SQL, not its `physicalName`. The full selected tables are read into memory before the checks run.
 
 ## Reference
 
@@ -81,4 +83,6 @@ All options and the data type handling: **[Apache Iceberg Reference](../referenc
 
 - **`catalogUrl is required`** — the server needs the REST endpoint in `catalogUrl`, or `DATACONTRACT_ICEBERG_CATALOG_URL`.
 - **`Table 'sales.orders' was not found`** — check `namespace`; the identifier the CLI asked for is in the message.
-- **`403` while reading data files** — the catalog answered, but the data files on object storage did not. Set the `DATACONTRACT_S3_*` options, or use a catalog that vends credentials.
+- **Expired AWS SSO session** — run `aws sso login --profile "$AWS_PROFILE"` again and retry. Check the selected account with `aws sts get-caller-identity`.
+- **`403` while reading S3 Tables data files** — verify `s3tables:GetTableData` on the table and that temporary credentials include their session token. A successful catalog connection does not prove data-file access.
+- **`403` with other catalogs** — check the data-file credentials (`DATACONTRACT_S3_*`) or the catalog's credential-vending configuration.

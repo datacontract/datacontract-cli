@@ -75,7 +75,7 @@ def catalog_properties(server: Server, config: Config | None = None) -> dict[str
     if signing_name:
         # Amazon S3 Tables and the Glue REST endpoint authenticate catalog requests
         # with SigV4 instead of a token; boto3's credential chain supplies the keys
-        # when the S3 options are not set. S3 Tables vends the data file credentials.
+        # when the S3 options are not set.
         properties["rest.sigv4-enabled"] = "true"
         properties["rest.signing-name"] = signing_name
         region = config.get_s3_region() or aws_region(uri)
@@ -133,7 +133,26 @@ def load_iceberg_catalog(server: Server, config: Config | None = None) -> Catalo
         )
     config = Config.resolve(config)
     name = config.get_iceberg_catalog() or server.catalog or "default"
-    return load_catalog(name, **catalog_properties(server, config))
+    properties = catalog_properties(server, config)
+    if properties.get("rest.sigv4-enabled", "").lower() == "true":
+        # Arrow's AWS SDK does not support every boto3 credential provider (notably
+        # SSO profiles). Forward a snapshot for the data files; keep the REST
+        # client's refreshable chain intact. Catalog-vended properties take
+        # precedence over these defaults when pyiceberg loads a table.
+        if not properties.get("s3.access-key-id") and not properties.get("client.access-key-id"):
+            import boto3
+
+            credentials = boto3.Session().get_credentials()
+            if credentials is not None:
+                frozen = credentials.get_frozen_credentials()
+                properties["s3.access-key-id"] = frozen.access_key
+                properties["s3.secret-access-key"] = frozen.secret_key
+                if frozen.token:
+                    properties["s3.session-token"] = frozen.token
+        region = properties.get("client.region") or properties.get("rest.signing-region")
+        if region:
+            properties.setdefault("s3.region", region)
+    return load_catalog(name, **properties)
 
 
 def table_identifier(server: Server, table_name: str, config: Config | None = None) -> str:

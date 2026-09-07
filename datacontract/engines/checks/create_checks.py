@@ -54,8 +54,9 @@ def is_check_types(server: Optional[Server]) -> bool:
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
     # Kafka messages are loaded into a table named after the schema object (the logical
-    # name), not after the topic the physicalName holds.
-    if server_type == "kafka":
+    # name), not after the topic the physicalName holds. Iceberg likewise scans
+    # the physical table into an Arrow view registered under the logical name.
+    if server_type in {"kafka", "iceberg"}:
         return schema_object.name
     if schema_object.physicalName:
         return schema_object.physicalName

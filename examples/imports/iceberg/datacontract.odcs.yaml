@@ -24,7 +24,7 @@ schema:
     customProperties:
     - property: icebergFieldId
       value: 2
-    logicalType: date
+    logicalType: timestamp
     required: true
   - name: customer_id
     physicalType: string
