@@ -131,7 +131,7 @@ databricks-runtime = [
 ]
 
 iceberg = [
-  "pyiceberg==0.11.1"
+  "pyiceberg==0.12.0"
 ]
 
 # Kafka needs no JVM: the topic is consumed with confluent-kafka, decoded in
