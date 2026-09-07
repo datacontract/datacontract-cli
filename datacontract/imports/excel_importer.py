@@ -32,7 +32,13 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from datacontract.imports.importer import Importer
 from datacontract.model.exceptions import DataContractException
-from datacontract.model.workbook import SERVER_FIELDS, element_index, resolve_cell_value, server_field_name
+from datacontract.model.workbook import (
+    CUSTOM_PROPERTIES_GROUP,
+    SERVER_FIELDS,
+    element_index,
+    resolve_cell_value,
+    server_field_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -126,14 +132,17 @@ class RowSheet:
         self.sheet = sheet
         self.header_row = header_row
         self.columns: Dict[str, int] = {}
-        self.pair_columns: List[int] = []
         for cell in sheet[header_row]:
-            if cell.value is None:
-                continue
-            header = str(cell.value).strip().lower()
-            self.columns.setdefault(header, cell.column)
-            if header == "custom property":
-                self.pair_columns.append(cell.column)
+            if cell.value is not None:
+                self.columns.setdefault(str(cell.value).strip().lower(), cell.column)
+        # the columns under "Custom Properties (add as needed)", each named after one property
+        self.custom_columns: Dict[str, int] = {}
+        start = next((c.column for c in sheet[header_row - 1] if cell_text(c.value) == CUSTOM_PROPERTIES_GROUP), None)
+        if start is not None:
+            for cell in sheet[header_row]:
+                name = cell_text(cell.value)
+                if cell.column >= start and name:
+                    self.custom_columns.setdefault(name, cell.column)
 
     def rows(self):
         for row_index in range(self.header_row + 1, self.sheet.max_row + 1):
@@ -156,8 +165,8 @@ class Row:
         sheet = self.row_sheet.sheet
         return inline_custom_properties(
             [
-                (sheet.cell(row=self.row_index, column=col).value, sheet.cell(row=self.row_index, column=col + 1).value)
-                for col in self.row_sheet.pair_columns
+                (name, sheet.cell(row=self.row_index, column=col).value)
+                for name, col in self.row_sheet.custom_columns.items()
             ]
         )
 
@@ -187,11 +196,11 @@ def open_row_sheet(workbook: Workbook, sheet_title: str, range_name: str, fallba
 
 
 def inline_custom_properties(pairs) -> Optional[List[CustomProperty]]:
-    """Custom properties from `Custom Property` / `Custom Value` cell pairs"""
+    """Custom properties from (property name, cell value) pairs; an empty cell means the row has no such property"""
     properties = [
         CustomProperty(property=cell_text(key), value=resolve_cell_value(value))
         for key, value in pairs
-        if cell_text(key)
+        if cell_text(key) and cell_text(value)
     ]
     return properties or None
 
@@ -237,7 +246,6 @@ def import_schemas(workbook) -> Optional[List[SchemaObject]]:
                 context=context_from(get_cell_value_by_name_in_sheet(sheet, "schema.context.instructions"), None, None),
                 properties=import_properties(sheet),
                 tags=split_list(get_cell_value_by_name_in_sheet(sheet, "schema.tags")),
-                customProperties=schema_block_custom_properties(sheet),
             )
             schemas.append(schema)
 
@@ -247,16 +255,6 @@ def import_schemas(workbook) -> Optional[List[SchemaObject]]:
 def properties_header_row(sheet: Worksheet) -> Optional[int]:
     properties_range = get_range_by_name_in_sheet(sheet, "schema.properties")
     return properties_range[0] if properties_range else None
-
-
-def schema_block_custom_properties(sheet: Worksheet) -> Optional[List[CustomProperty]]:
-    """Inline pairs of the schema header block: a `Custom Property` row holding the key, a `Custom Value` row below it"""
-    header_row = properties_header_row(sheet) or sheet.max_row + 1
-    pairs = []
-    for row in range(1, header_row):
-        if cell_text(sheet.cell(row=row, column=1).value) == "Custom Property":
-            pairs.append((sheet.cell(row=row, column=2).value, sheet.cell(row=row + 1, column=2).value))
-    return inline_custom_properties(pairs)
 
 
 def import_properties(sheet) -> Optional[List[SchemaProperty]]:
@@ -551,11 +549,15 @@ def import_servers(workbook) -> Optional[List[Server]]:
     if not server_cell:
         return None
 
-    pair_rows = [
-        row
-        for row in range(1, sheet.max_row + 1)
-        if cell_text(sheet.cell(row=row, column=2).value) == "Custom Property"
-    ]
+    label_row = next(
+        (
+            r
+            for r in range(1, sheet.max_row + 1)
+            if cell_text(sheet.cell(row=r, column=1).value) == CUSTOM_PROPERTIES_GROUP
+        ),
+        sheet.max_row,
+    )
+    property_rows = range(label_row + 1, sheet.max_row + 1)
     servers = []
     index = 0
     while True:
@@ -579,10 +581,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
                 value = parse_port(value)
             setattr(server, "schema_" if field == "schema" else field, value)
         server.customProperties = inline_custom_properties(
-            [
-                (sheet.cell(row=row, column=column).value, sheet.cell(row=row + 1, column=column).value)
-                for row in pair_rows
-            ]
+            [(sheet.cell(row=row, column=2).value, sheet.cell(row=row, column=column).value) for row in property_rows]
         )
         servers.append(server)
         index += 1
@@ -733,7 +732,7 @@ def find_property(schemas, schema_name, property_path):
 
 
 def attach_enum_values(schemas, workbook: Workbook):
-    table = open_row_sheet(workbook, "Enum", "enum")
+    table = open_row_sheet(workbook, "Enums", "enum")
     if not table:
         return
     for row in table.rows():
@@ -742,7 +741,7 @@ def attach_enum_values(schemas, workbook: Workbook):
             continue
         schema, prop = find_property(schemas, schema_name, property_path)
         if prop is None:
-            logger.warning(f"Enum row {row.row_index}: property {schema_name}.{property_path} does not exist; dropped")
+            logger.warning(f"Enums row {row.row_index}: property {schema_name}.{property_path} does not exist; dropped")
             continue
         value = row.raw("value")
         if isinstance(value, float) and value.is_integer():

@@ -22,6 +22,9 @@ from datacontract.model.natural_keys import NATURAL_KEYS
 
 logger = logging.getLogger(__name__)
 
+# the merged header above the inline custom property columns; each column is named after one property
+CUSTOM_PROPERTIES_GROUP = "Custom Properties (add as needed)"
+
 SERVER_FIELDS = [
     "account",
     "catalog",

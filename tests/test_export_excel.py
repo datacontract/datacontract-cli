@@ -195,8 +195,6 @@ support:
     value: 3.5
   - property: plain
     value: hello
-  - property: empty
-    value: null
   - property: flag
     value: 'true'
   - property: zip
@@ -215,9 +213,10 @@ support:
 """)
     imported, workbook = _roundtrip(odcs, tmp_path)
 
-    support_row = [c.value for c in workbook["Support"][5]]
-    inline = [support_row[i] for i, h in enumerate([c.value for c in workbook["Support"][4]]) if h == "Custom Property"]
-    assert inline == ["pii", "count", "ratio", "plain", "empty"]
+    headers = [c.value for c in workbook["Support"][4]]
+    first = [c.value for c in workbook["Support"][3]].index("Custom Properties (add as needed)")
+    assert headers[first:] == ["pii", "count", "ratio", "plain"]
+    assert [c.value for c in workbook["Support"][5]][first:] == [False, 42, 3.5, "hello"]
 
     sheet_rows = [
         [c.value for c in row][:5] for row in workbook["Custom Properties"].iter_rows(min_row=5) if row[2].value
@@ -234,8 +233,8 @@ support:
     assert imported.support[0].model_dump() == odcs.support[0].model_dump()
 
 
-def test_more_inline_pairs_than_the_template_has(tmp_path):
-    """Export adds pair columns (row sheets), pair rows (schema block, servers) as the contract needs"""
+def test_more_custom_properties_than_the_template_has_columns(tmp_path):
+    """A property name takes the next empty column under the group header; beyond that, columns (or server rows) are added"""
     odcs = _contract("""
 servers:
 - server: prod
@@ -248,6 +247,8 @@ servers:
     value: 2
   - property: c
     value: 3
+  - property: d
+    value: 4
 schema:
 - name: orders
   physicalType: table
@@ -255,8 +256,6 @@ schema:
   customProperties:
   - property: a
     value: 1
-  - property: b
-    value: 2
   properties:
   - name: id
     logicalType: string
@@ -267,21 +266,43 @@ schema:
       value: 2
     - property: c
       value: 3
+    - property: d
+      value: 4
 support:
 - channel: slack
   customProperties:
   - property: a
     value: 1
-  - property: b
-    value: 2
+  - property: d
+    value: 4
+- channel: teams
+  customProperties:
+  - property: d
+    value: 5
+  - property: e
+    value: 6
 """)
     imported, workbook = _roundtrip(odcs, tmp_path)
     assert imported.to_yaml() == odcs.to_yaml()
-    assert [c.value for c in workbook["Support"][4]].count("Custom Property") == 2
-    assert [c.value for c in workbook["Schema orders"]["A"]].count("Custom Property") == 2
-    assert workbook["Schema orders"].defined_names["schema.properties"].attr_text == "'Schema orders'!$A$20:$AZ$983"
-    assert [c.value for c in workbook["Servers"]["B"]].count("Custom Property") == 3
-    assert workbook["Custom Properties"]["C6"].value is None
+    support = workbook["Support"]
+    first = [c.value for c in support[3]].index("Custom Properties (add as needed)")
+    assert [c.value for c in support[4]][first:] == ["a", "d", "e"]
+    assert [c.value for c in support[5]][first:] == [1, 4, None]
+    assert [c.value for c in support[6]][first:] == [None, 5, 6]
+    schema = workbook["Schema orders"]
+    first = [c.value for c in schema[15]].index("Custom Properties (add as needed)")
+    assert [c.value for c in schema[16]][first:] == ["a", "b", "c", "d"]
+    assert str(next(m for m in schema.merged_cells.ranges if m.min_row == 15)) == "AP15:AS15"
+    servers = workbook["Servers"]
+    label = next(
+        r
+        for r in range(1, servers.max_row + 1)
+        if servers.cell(row=r, column=1).value == "Custom Properties (add as needed)"
+    )
+    assert [servers.cell(row=r, column=2).value for r in range(label + 1, label + 5)] == ["a", "b", "c", "d"]
+    assert [servers.cell(row=r, column=3).value for r in range(label + 1, label + 5)] == [1, 2, 3, 4]
+    # schema-level custom properties have no inline home
+    assert [c.value for c in workbook["Custom Properties"][5]][:4] == ["Schema", "orders", "a", 1]
 
 
 def test_old_template_export_warns_exactly_once(tmp_path, caplog):

@@ -20,11 +20,11 @@ from openpyxl.cell.cell import Cell
 from openpyxl.utils import range_boundaries
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.workbook import Workbook
-from openpyxl.worksheet.cell_range import MultiCellRange
 from openpyxl.worksheet.worksheet import Worksheet
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.workbook import (
+    CUSTOM_PROPERTIES_GROUP,
     SERVER_FIELDS,
     Element,
     InlineRoundTrip,
@@ -67,13 +67,18 @@ class Export:
     def element(self, obj) -> Element:
         return self.elements.get(id(obj)) or Element("?", None, obj, "element", "is not addressable")
 
-    def inline_custom_properties(self, obj) -> list[tuple[str, Any]]:
+    def inline_custom_properties(self, obj, inline: bool = True) -> list[tuple[str, Any]]:
         """The (property, value) pairs written inline next to the element; the rest go to the Custom Properties sheet."""
         pairs = []
         for prop in getattr(obj, "customProperties", None) or []:
             if not prop.property:
                 continue
-            simple = not (prop.id or prop.description or prop.vendor) and self.round_trip.survives(prop.value)
+            simple = (
+                inline
+                and not (prop.id or prop.description or prop.vendor)
+                and prop.value is not None
+                and self.round_trip.survives(prop.value)
+            )
             if simple:
                 pairs.append((prop.property, prop.value))
             else:
@@ -290,11 +295,10 @@ def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
             set_cell_value_direct(cell, value)
 
     export.sheet_authoritative_definitions(schema)
-    header_row = properties_header_row(sheet)
-    write_vertical_pairs(sheet, header_row, export.inline_custom_properties(schema))
+    export.inline_custom_properties(schema, inline=False)  # the schema block has no inline columns
 
     if schema.properties:
-        header_row = properties_header_row(sheet)  # pair rows may have been inserted above the table
+        header_row = properties_header_row(sheet)
         header_map = header_columns(sheet, header_row)
         row_index = header_row + 1
         for prop in schema.properties:
@@ -388,7 +392,7 @@ def fill_property_row(
             inline = 1
     export.sheet_authoritative_definitions(prop, skip=inline)
 
-    write_inline_pairs(sheet, header_row, row_index, export.inline_custom_properties(prop))
+    write_inline_custom_properties(export, sheet, header_row, row_index, prop)
 
     next_row_index = row_index + 1
     for nested in prop.properties or []:
@@ -439,7 +443,7 @@ def write_row(export: Export, sheet: Worksheet, header_row: int, row_index: int,
                 )
             else:
                 export.unsupported["ids"] += 1
-        write_inline_pairs(sheet, header_row, row_index, export.inline_custom_properties(obj))
+        write_inline_custom_properties(export, sheet, header_row, row_index, obj)
         export.sheet_authoritative_definitions(obj)
 
 
@@ -661,31 +665,36 @@ def fill_servers(export: Export):
                 set_cell_value_by_column_index(sheet, "servers.id", index, server.id)
             else:
                 export.unsupported["ids"] += 1
-        write_server_pairs(sheet, index, export.inline_custom_properties(server))
+        write_server_custom_properties(export, sheet, index, server)
 
 
-def write_server_pairs(sheet: Worksheet, index: int, pairs: list):
-    """Inline pairs on the Servers sheet are row pairs labelled in column B, one value column per server."""
+def write_server_custom_properties(export: Export, sheet: Worksheet, index: int, server):
+    """Servers are columns: property names go in column B below the group label, values in the server's column."""
+    label_row = next(
+        (
+            row
+            for row in range(1, sheet.max_row + 1)
+            if cell_text(sheet.cell(row=row, column=1)) == CUSTOM_PROPERTIES_GROUP
+        ),
+        None,
+    )
+    pairs = export.inline_custom_properties(server, inline=label_row is not None)
     if not pairs:
         return
     first = find_cell_by_name(sheet.parent, "servers.server")
     column = first.column + index if first else 3 + index
-    label_rows = [
-        row
-        for row in range(1, sheet.max_row + 1)
-        if str(sheet.cell(row=row, column=2).value).strip() == "Custom Property"
-    ]
-    while len(label_rows) < len(pairs):
-        row = sheet.max_row + 1
-        style = sheet.cell(row=label_rows[-1], column=2) if label_rows else None
-        for offset, label in enumerate(("Custom Property", "Custom Value")):
-            cell = sheet.cell(row=row + offset, column=2, value=label)
-            if style is not None:
-                cell._style = copy(style._style)
-        label_rows.append(row)
-    for row, (key, value) in zip(label_rows, pairs):
-        set_cell_value_direct(sheet.cell(row=row, column=column), key)
-        set_cell_value_direct(sheet.cell(row=row + 1, column=column), value)
+    rows = list(range(label_row + 1, sheet.max_row + 1))
+    for key, value in pairs:
+        row = next((r for r in rows if cell_text(sheet.cell(row=r, column=2)) == key), None)
+        if row is None:
+            row = next((r for r in rows if cell_text(sheet.cell(row=r, column=2)) is None), None)
+        if row is None:
+            row = rows[-1] + 1
+            rows.append(row)
+            for col in range(2, 27):
+                sheet.cell(row=row, column=col)._style = copy(sheet.cell(row=row - 1, column=col)._style)
+        sheet.cell(row=row, column=2).value = key
+        set_cell_value_direct(sheet.cell(row=row, column=column), value)
 
 
 # --- Child sheets: enum, synonyms, context, custom properties, authoritative definitions -------------
@@ -707,7 +716,7 @@ def fill_enum(export: Export):
                 rows.append((values, enum_value))
     if not rows:
         return
-    found = row_sheet(export, "Enum", "enum")
+    found = row_sheet(export, "Enums", "enum")
     if not found:
         export.unsupported["enum values"] += len(rows)
         return
@@ -872,83 +881,53 @@ def fill_authoritative_definitions(export: Export):
         row_index += 1
 
 
-# --- Inline custom property pairs ----------------------------------------------------------------
+# --- Inline custom property columns ------------------------------------------------------------
 
 
-def pair_columns(sheet: Worksheet, header_row: int) -> list[int]:
-    """0-based indices of every `Custom Property` header cell; the value column is the one to its right."""
-    return [
-        i for i, h in get_headers_from_header_row(sheet, header_row).items() if h.lower().strip() == "custom property"
-    ]
+def custom_property_columns(sheet: Worksheet, header_row: int) -> Optional[tuple[int, list[Optional[str]]]]:
+    """(first column, header names) of the columns under the "Custom Properties (add as needed)" group header, else None."""
+    group_row = header_row - 1
+    start = next((c.column for c in sheet[group_row] if cell_text(c) == CUSTOM_PROPERTIES_GROUP), None)
+    if start is None:
+        return None
+    last = max([c.column for c in sheet[header_row] if c.value is not None] + [start + 2])
+    return start, [cell_text(sheet.cell(row=header_row, column=col)) for col in range(start, last + 1)]
 
 
-def write_inline_pairs(sheet: Worksheet, header_row: int, row_index: int, pairs: list):
+def write_inline_custom_properties(export: Export, sheet: Worksheet, header_row: int, row_index: int, obj):
+    """One column per property name under the group header; a new name takes the next empty column or a new one."""
+    region = custom_property_columns(sheet, header_row)
+    pairs = export.inline_custom_properties(obj, inline=region is not None)
     if not pairs:
         return
-    columns = pair_columns(sheet, header_row)
-    while len(columns) < len(pairs):
-        last = max((c.column for c in sheet[header_row] if c.value is not None), default=0)
-        style = sheet.cell(row=header_row, column=columns[-1] + 1) if columns else sheet.cell(row=header_row, column=1)
-        for offset, label in enumerate(("Custom Property", "Custom Value")):
-            cell = sheet.cell(row=header_row, column=last + 1 + offset, value=label)
-            cell._style = copy(style._style)
-        columns.append(last)
-    for column, (key, value) in zip(columns, pairs):
-        set_cell_value(sheet, row_index, column, key)
-        set_cell_value(sheet, row_index, column + 1, value)
+    start, names = region
+    for key, value in pairs:
+        if key in names:
+            offset = names.index(key)
+        elif None in names:
+            offset = names.index(None)
+            names[offset] = key
+            sheet.cell(row=header_row, column=start + offset).value = key
+        else:
+            offset = len(names)
+            names.append(key)
+            column = start + offset
+            sheet.cell(row=header_row, column=column, value=key)._style = copy(
+                sheet.cell(row=header_row, column=column - 1)._style
+            )
+            for row in range(header_row + 1, header_row + 18):
+                sheet.cell(row=row, column=column)._style = copy(sheet.cell(row=row, column=column - 1)._style)
+            for merged in list(sheet.merged_cells.ranges):
+                if merged.min_row == header_row - 1 and merged.min_col == start:
+                    sheet.merged_cells.remove(merged)
+                    sheet.merge_cells(
+                        start_row=merged.min_row, start_column=start, end_row=merged.min_row, end_column=column
+                    )
+        set_cell_value_direct(sheet.cell(row=row_index, column=start + offset), value)
 
 
-def write_vertical_pairs(sheet: Worksheet, header_row: int, pairs: list):
-    """Inline pairs of a schema's header block: `Custom Property` / `Custom Value` row pairs above the property table."""
-    if not pairs:
-        return
-    label_rows = [
-        row for row in range(1, header_row) if str(sheet.cell(row=row, column=1).value).strip() == "Custom Property"
-    ]
-    if len(label_rows) < len(pairs):
-        missing = len(pairs) - len(label_rows)
-        at = (label_rows[-1] + 2) if label_rows else header_row - 1
-        insert_rows_shifting(sheet, at, 2 * missing)
-        template_row = label_rows[-1] if label_rows else None
-        for n in range(missing):
-            for offset, label in enumerate(("Custom Property", "Custom Value")):
-                row = at + 2 * n + offset
-                sheet.cell(row=row, column=1, value=label)
-                if template_row is not None:
-                    for column in range(1, 6):
-                        sheet.cell(row=row, column=column)._style = copy(
-                            sheet.cell(row=template_row + offset, column=column)._style
-                        )
-                    sheet.merge_cells(start_row=row, start_column=2, end_row=row, end_column=5)
-            label_rows.append(at + 2 * n)
-    for row, (key, value) in zip(label_rows, pairs):
-        set_cell_value_direct(sheet.cell(row=row, column=2), key)
-        set_cell_value_direct(sheet.cell(row=row + 1, column=2), value)
-
-
-def insert_rows_shifting(sheet: Worksheet, at: int, count: int):
-    """openpyxl's insert_rows moves cells only; also move merged ranges, validations and the sheet's named ranges."""
-    sheet.insert_rows(at, count)
-    for merged in list(sheet.merged_cells.ranges):
-        if merged.min_row >= at:
-            sheet.merged_cells.remove(merged)
-            merged.shift(0, count)
-            sheet.merged_cells.add(merged)
-    for validation in sheet.data_validations.dataValidation:
-        validation.sqref = MultiCellRange(" ".join(shift_range(r, at, count) for r in str(validation.sqref).split()))
-    for name in list(sheet.defined_names):
-        defined = sheet.defined_names[name]
-        title, _, ref = defined.attr_text.rpartition("!")
-        sheet.defined_names[name] = DefinedName(name, attr_text=f"{title}!{shift_range(ref, at, count)}")
-
-
-def shift_range(ref: str, at: int, count: int) -> str:
-    def shift(coordinate: str) -> str:
-        column = "".join(ch for ch in coordinate if not ch.isdigit())
-        row = int("".join(ch for ch in coordinate if ch.isdigit()))
-        return f"{column}{row + count if row >= at else row}"
-
-    return ":".join(shift(part) for part in ref.split(":"))
+def cell_text(cell: Cell) -> Optional[str]:
+    return str(cell.value).strip() or None if cell.value is not None else None
 
 
 # --- Cell helpers --------------------------------------------------------------------------------
