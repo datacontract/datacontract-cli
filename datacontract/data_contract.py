@@ -24,6 +24,8 @@ from datacontract.model.changelog import ChangelogEntry, ChangelogResult, Change
 from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
 from datacontract.model.run import Check, ResultEnum, Run
 
+logger = logging.getLogger(__name__)
+
 
 class DataContract:
     def __init__(
@@ -208,7 +210,7 @@ class DataContract:
                     engine="datacontract-cli",
                 )
             )
-            logging.exception("Exception occurred")
+            logger.exception("Exception occurred")
             run.log_error(str(e))
 
         run.finish()

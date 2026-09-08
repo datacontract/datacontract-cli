@@ -17,6 +17,8 @@ from datacontract.imports.odcs_helper import (
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 class SqlDialect(str, Enum):
     postgres = "postgres"
@@ -45,7 +47,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         # not parse_one: sqlglot below 29 gives it only the first statement of a script
         statements = [s for s in sqlglot.parse(sql=sql, read=dialect) if s is not None]
     except Exception as e:
-        logging.error(f"Error sqlglot SQL: {str(e)}")
+        logger.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
@@ -64,7 +66,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         server_defaults.update(location)
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
         placeholders = ", ".join(field for field in server_defaults if field not in location)
-        logging.warning(
+        logger.warning(
             f"SQL import generated a server block with placeholder connection values. "
             f"Update the following values before use: {placeholders}"
         )

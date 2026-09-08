@@ -16,6 +16,8 @@ from datacontract.export.jsonschema_exporter import to_jsonschema
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 
+logger = logging.getLogger(__name__)
+
 # Thread-safe cache for primaryKey fields.
 _primary_key_cache = {}
 _cache_lock = threading.Lock()
@@ -92,13 +94,13 @@ def process_exceptions(run, exceptions: List[DataContractException], config: Con
 def validate_json_stream(
     schema: dict, model_name: str, validate: Callable, json_stream: Generator[Any, Any, None]
 ) -> List[DataContractException]:
-    logging.info(f"Validating JSON stream for model: '{model_name}'.")
+    logger.info(f"Validating JSON stream for model: '{model_name}'.")
     exceptions: List[DataContractException] = []
     for json_obj in json_stream:
         try:
             validate(json_obj)
         except JsonSchemaValueException as e:
-            logging.warning(f"Validation failed for JSON object with type: '{model_name}'.")
+            logger.warning(f"Validation failed for JSON object with type: '{model_name}'.")
             primary_key_value = get_primary_key_value(schema, model_name, json_obj)
             exceptions.append(
                 DataContractException(
@@ -112,7 +114,7 @@ def validate_json_stream(
                 )
             )
     if not exceptions:
-        logging.info(f"All JSON objects in the stream passed validation for model: '{model_name}'.")
+        logger.info(f"All JSON objects in the stream passed validation for model: '{model_name}'.")
     return exceptions
 
 
@@ -201,7 +203,7 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
         )
 
     for file in all_files:
-        logging.info(f"Processing file: {file}")
+        logger.info(f"Processing file: {file}")
         with open(file, "r") as f:
             process_json_file(run, schema, model_name, validate, f, server.delimiter, config)
 

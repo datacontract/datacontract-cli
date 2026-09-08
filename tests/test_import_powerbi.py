@@ -409,7 +409,6 @@ def test_import_bim_calculated_table_physical_type():
 
 
 def test_import_pbit_from_zip(tmp_path):
-
     result = import_powerbi_from_file(PBIT_FIXTURE)
 
     assert result is not None

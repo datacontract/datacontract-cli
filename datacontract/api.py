@@ -20,6 +20,8 @@ from datacontract.model.changelog import ChangelogEntry
 from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 from datacontract.model.run import Check, ResultEnum, Run
 
+logger = logging.getLogger(__name__)
+
 DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.1.0
 kind: DataContract
 id: orders
@@ -665,21 +667,21 @@ def _reject_request_platform_host_with_environment_key(config) -> None:
 def check_api_key(api_key_header: str | None):
     correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
-        logging.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
+        logger.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
         return
     if api_key_header is None or api_key_header == "":
-        logging.info("The API key is missing.")
+        logger.info("The API key is missing.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
     if not secrets.compare_digest(api_key_header, correct_api_key):
-        logging.info("The provided API key is not correct.")
+        logger.info("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The provided API key is not correct.",
         )
-    logging.info("Request authenticated with API key.")
+    logger.info("Request authenticated with API key.")
     pass
 
 
@@ -777,8 +779,8 @@ async def test(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Use either the filter or the filters parameter, not both.",
         )
-    logging.info("Testing data contract...")
-    logging.info(body)
+    logger.info("Testing data contract...")
+    logger.info(body)
     config = config_from_headers(request.headers)
     untrusted_contract = getattr(request.app.state, "untrusted_contracts", False)
     if untrusted_contract:

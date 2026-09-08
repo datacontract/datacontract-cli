@@ -54,6 +54,8 @@ _METADATA_TIMEOUT_SECONDS = 30
 
 _SASL_MECHANISMS = ("PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512")
 
+logger = logging.getLogger(__name__)
+
 
 def _import(module: str):
     try:

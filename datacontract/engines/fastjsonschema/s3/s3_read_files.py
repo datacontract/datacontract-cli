@@ -5,13 +5,15 @@ from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 def yield_s3_files(s3_endpoint_url, s3_location, config: Config | None = None):
     fs = s3_fs(s3_endpoint_url, config)
     files = fs.glob(s3_location)
     for file in files:
         with fs.open(file) as f:
-            logging.info(f"Downloading file {file}")
+            logger.info(f"Downloading file {file}")
             yield f.read()
 
 
