@@ -60,13 +60,14 @@ dependencies = [
   "pytz>=2024.1",
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<16.0",
-  "sqlglot>=26.6.0,<31.0.0",
+  # below 30.18 until an issue in ibis is fixed - see https://github.com/datacontract/datacontract-cli/issues/1592
+  "sqlglot>=26.6.0,<30.18",
   "python-dotenv>=1.0.0,<2.0.0",
   "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
-  "open-data-contract-standard>=3.2.0,<4.0.0",
+  "open-data-contract-standard>=3.2.0,<3.3.0",
   "deepdiff>=6.0.0,<10.0.0",
 ]
 
@@ -117,7 +118,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.5.0",
-  "databricks-sdk<0.134.0",
+  "databricks-sdk<0.136.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -130,7 +131,7 @@ databricks-runtime = [
 ]
 
 iceberg = [
-  "pyiceberg[pyarrow,rest-sigv4]==0.11.1",
+  "pyiceberg[pyarrow,rest-sigv4]==0.12.0",
   "datacontract-cli[duckdb]"
 ]
 
@@ -277,13 +278,13 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-xdist",
-  "pymssql==2.3.13",
+  "pymssql==2.4.0",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
   # test fixtures to load seed SQL (the engine connects via ibis-postgres'
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.16.5",
+  "ruff==0.16.6",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.339.0",
 ]
