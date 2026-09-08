@@ -41,6 +41,7 @@ def _deprecated_alias(old_name: str, new_name: str) -> property:
 
     return property(getter, setter, doc=message)
 
+
 logger = logging.getLogger(__name__)
 
 
