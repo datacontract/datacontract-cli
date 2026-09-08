@@ -30,6 +30,7 @@ GROUPS = {
     "databricks": "Databricks",
     "duckdb": "DuckDB",
     "gcs": "GCS",
+    "iceberg": "Iceberg",
     "impala": "Impala",
     "kafka": "Kafka",
     "mysql": "MySQL",

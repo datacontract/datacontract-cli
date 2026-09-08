@@ -130,7 +130,7 @@ def test_import_snowflake_from_connector_success():
             result = import_snowflake_from_connector(account, database, schema)
 
             # Verify the result
-            assert result.apiVersion == "v3.1.0"
+            assert result.apiVersion == "v3.2.0"
             assert result.kind == "DataContract"
             assert result.name == "My Data Contract"
 

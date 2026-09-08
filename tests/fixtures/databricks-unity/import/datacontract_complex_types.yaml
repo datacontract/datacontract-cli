@@ -1,5 +1,5 @@
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 version: 1.0.0
@@ -49,3 +49,14 @@ schema:
         logicalType: integer
   - name: attributes
     physicalType: map<string,bigint>
+    logicalType: map
+    map:
+      key:
+        name: key
+        physicalType: string
+        logicalType: string
+        required: true
+      value:
+        name: value
+        physicalType: bigint
+        logicalType: integer

@@ -4,6 +4,9 @@ from typing import List, Optional, Union
 from open_data_contract_standard.model import SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
+from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_value
+from datacontract.model.vector_type import is_double
 
 
 class AvroExporter(Exporter):
@@ -58,31 +61,6 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
-def _get_enum_values(prop: SchemaProperty):
-    """Get enum values from logicalTypeOptions, customProperties, or quality rules."""
-    import json
-
-    # First check logicalTypeOptions (legacy/direct ODCS)
-    enum_values = _get_logical_type_option(prop, "enum")
-    if enum_values:
-        return enum_values
-    # Then check customProperties (converted from DCS)
-    enum_str = _get_config_value(prop, "enum")
-    if enum_str:
-        try:
-            return json.loads(enum_str)
-        except (json.JSONDecodeError, TypeError):
-            pass
-    # Finally check quality rules for invalidValues with validValues
-    if prop.quality:
-        for q in prop.quality:
-            if q.metric == "invalidValues" and q.arguments:
-                valid_values = q.arguments.get("validValues")
-                if valid_values:
-                    return valid_values
-    return None
-
-
 def _parse_default_value(value: str):
     """Parse a default value string to its proper type (bool, int, float, or string)."""
     if value.lower() == "true":
@@ -114,7 +92,7 @@ def to_avro_field(prop: SchemaProperty) -> dict:
     avro_field["type"] = avro_type if is_required_avro else ["null", avro_type]
 
     # Handle enum types - both required and optional
-    enum_values = _get_enum_values(prop)
+    enum_values = get_enum_values(prop)
     avro_config_type = _get_config_value(prop, "avroType")
 
     if avro_type == "enum" or (isinstance(avro_field["type"], list) and "enum" in avro_field["type"]):
@@ -139,6 +117,30 @@ def to_avro_field(prop: SchemaProperty) -> dict:
     return avro_field
 
 
+def _to_avro_map_type(prop: SchemaProperty) -> Union[str, dict]:
+    """An Avro map (string keys).
+
+    The ``values`` custom property, an Avro type or union such as ``["string", "long"]``
+    that ODCS cannot express, wins over the property's ``map`` block.
+    """
+    values_type = _get_config_value(prop, "values")
+    if values_type:
+        if isinstance(values_type, str):
+            # Parse JSON array if values is a string like '["string", "long"]'
+            import json
+
+            try:
+                values_type = json.loads(values_type)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        return {"type": "map", "values": values_type}
+    value = get_map_value(prop)
+    if value is not None:
+        value_prop = value if value.name else value.model_copy(update={"name": f"{prop.name}_value"})
+        return {"type": "map", "values": to_avro_type(value_prop)}
+    return "bytes"
+
+
 def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
     avro_logical_type = _get_config_value(prop, "avroLogicalType")
     avro_type = _get_config_value(prop, "avroType")
@@ -159,14 +161,13 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
     if avro_type:
         return avro_type
 
-    # Check for enum fields based on presence of enum list and avroType config
-    enum_values = _get_enum_values(prop)
-    if enum_values and avro_type == "enum":
-        return "enum"
-
     # Use physicalType for more specific type mappings, fall back to logicalType
     physical_type = prop.physicalType.lower() if prop.physicalType else None
     field_type = prop.logicalType
+
+    # A property declared as an enum with allowed values becomes an Avro enum
+    if physical_type == "enum" and get_enum_values(prop):
+        return "enum"
 
     # Handle specific physical types that need special treatment
     if physical_type in ["float"]:
@@ -185,19 +186,8 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         if precision is not None:
             typeVal["precision"] = int(precision)
         return typeVal
-    elif physical_type in ["map"]:
-        values_type = _get_config_value(prop, "values")
-        if values_type:
-            # Parse JSON array if values is a string like '["string", "long"]'
-            import json
-
-            try:
-                parsed_values = json.loads(values_type)
-                return {"type": "map", "values": parsed_values}
-            except (json.JSONDecodeError, TypeError):
-                return {"type": "map", "values": values_type}
-        else:
-            return "bytes"
+    elif physical_type in ["map"] or (field_type and field_type.lower() == "map"):
+        return _to_avro_map_type(prop)
     elif physical_type in ["timestamp_ntz"]:
         return {"type": "long", "logicalType": "local-timestamp-millis"}
 
@@ -236,12 +226,6 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         return {"type": "int", "logicalType": "date"}
     elif field_type.lower() in ["time"]:
         return "long"
-    elif field_type.lower() in ["map"]:
-        values_type = _get_config_value(prop, "values")
-        if values_type:
-            return {"type": "map", "values": values_type}
-        else:
-            return "bytes"
     elif field_type.lower() in ["object", "record", "struct"]:
         namespace = _get_config_value(prop, "namespace")
         return to_avro_record(prop.name, prop.properties or [], prop.description, namespace)
@@ -251,6 +235,8 @@ def to_avro_type(prop: SchemaProperty) -> Union[str, dict]:
         if prop.items:
             return {"type": "array", "items": to_avro_type(prop.items)}
         return {"type": "array", "items": "string"}
+    elif field_type.lower() == "vector":
+        return {"type": "array", "items": "double" if is_double(prop) else "float"}
     elif field_type.lower() in ["null"]:
         return "null"
     else:

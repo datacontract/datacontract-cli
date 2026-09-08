@@ -23,6 +23,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
+from datacontract.model.enum_values import get_enum_values
 from datacontract.model.run import Check
 
 logger = logging.getLogger(__name__)
@@ -226,8 +227,8 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
         if pattern is not None:
             checks.append(check_property_regex(schema_name, property_name, pattern, quoting_config))
 
-        enum_values = _get_logical_type_option(prop, "enum")
-        if enum_values is not None and len(enum_values) > 0:
+        enum_values = get_enum_values(prop, include_quality_rule=False)
+        if enum_values:
             checks.append(check_property_enum(schema_name, property_name, enum_values, quoting_config))
 
         if prop.quality is not None and len(prop.quality) > 0:

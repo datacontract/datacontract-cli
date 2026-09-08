@@ -65,7 +65,7 @@ def test_import_mysql():
     result = _import(mysql_table=["orders"])
 
     expected = f"""
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract

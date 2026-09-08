@@ -40,6 +40,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/s3.svg" alt="" />
     <span><span className="doc-card-title">Amazon S3</span><span className="doc-card-desc">CSV, JSON, Delta, Parquet on S3 / S3-compatible storage</span></span>
   </a>
+  <a className="doc-card" href="/testing/s3-tables">
+    <img src="/img/icons/s3.svg" alt="" />
+    <span><span className="doc-card-title">Amazon S3 Tables</span><span className="doc-card-desc">Import and test Iceberg tables using AWS credentials</span></span>
+  </a>
   <a className="doc-card" href="/testing/duckdb">
     <img src="/img/icons/database.svg" alt="" />
     <span><span className="doc-card-title">DuckDB</span><span className="doc-card-desc">Tables inside a DuckDB database file</span></span>
@@ -51,6 +55,10 @@ datacontract test --server production datacontract.yaml
   <a className="doc-card" href="/testing/athena">
     <img src="/img/icons/athena.svg" alt="" />
     <span><span className="doc-card-title">Amazon Athena</span><span className="doc-card-desc">Athena over data in S3</span></span>
+  </a>
+  <a className="doc-card" href="/testing/iceberg">
+    <img src="/img/icons/iceberg.svg" alt="" />
+    <span><span className="doc-card-title">Apache Iceberg</span><span className="doc-card-desc">Tables in a REST catalog (Polaris, Nessie, Unity, Glue, S3 Tables)</span></span>
   </a>
   <a className="doc-card" href="/testing/impala">
     <img src="/img/icons/impala.svg" alt="" />
@@ -99,6 +107,8 @@ Missing a source? [Open an issue on GitHub](https://github.com/datacontract/data
 :::
 
 Each connection requires the matching [optional dependency (extra)](../installation.md#optional-dependencies-extras), or install everything with `datacontract-cli[all]`.
+
+Every other server `type` in ODCS, including the ones added in v3.2.0 (`hana`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant`, `poet`), lints and exports, but `test` reports a warning that it cannot connect. `fastobjects` and `btrieve` are the ODCS synonyms of `poet` and `zen`, and `postgresql` of `postgres`.
 
 ## How it works
 
@@ -165,6 +175,8 @@ Environment variables are also loaded from a `.env` file in the current working 
 DATACONTRACT_POSTGRES_USERNAME=postgres
 DATACONTRACT_POSTGRES_PASSWORD=postgres
 ```
+
+Server fields may also hold `${VAR}` or `${VAR:-default}` references (ODCS v3.2.0), which `test` resolves from the environment when it connects; see [Variables in the data contract](../configuration.md#variables-in-the-data-contract).
 
 The page for each source above lists its `servers` fields and the environment variables it expects. Credentials can also come from a YAML config file (`--config-file`), the Python `Config` class, or per-request API headers; see [Configuration](../configuration.md) for all mechanisms and their precedence.
 

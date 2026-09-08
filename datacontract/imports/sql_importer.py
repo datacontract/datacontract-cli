@@ -4,7 +4,7 @@ import re
 from enum import Enum
 
 import sqlglot
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
@@ -13,9 +13,11 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    property_from_type_string,
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+from datacontract.model.vector_type import parse_vector_type
 
 
 class SqlDialect(str, Enum):
@@ -90,6 +92,9 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
             tags = get_tags(column)
 
+            map_key, map_value = map_key_value_from_type(col_type) if logical_type == "map" else (None, None)
+            dimensions, element_type = vector_from_type(col_type) if logical_type == "vector" else (None, None)
+
             prop = create_property(
                 name=col_name,
                 logical_type=logical_type,
@@ -103,6 +108,10 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 primary_key_position=primary_key_position if is_primary_key else None,
                 required=is_required if is_required else None,
                 tags=tags,
+                map_key=map_key,
+                map_value=map_value,
+                dimensions=dimensions,
+                element_type=element_type,
             )
 
             if is_primary_key:
@@ -329,11 +338,29 @@ def get_precision_scale(column):
     return None, None
 
 
+def map_key_value_from_type(sql_type: str | None) -> tuple[SchemaProperty | None, SchemaProperty | None]:
+    """The key and value properties of a ``map<k,v>`` / ``MAP(k, v)`` type string, or ``(None, None)``."""
+    if not sql_type:
+        return None, None
+    prop = property_from_type_string("map", sql_type)
+    if prop.map is None:
+        return None, None
+    return prop.map.key, prop.map.value
+
+
+def vector_from_type(sql_type: str | None) -> tuple[int | None, str | None]:
+    """``(dimensions, elementType)`` of a native vector type string, or ``(None, None)``."""
+    parsed = parse_vector_type(sql_type)
+    if parsed is None:
+        return None, None
+    return parsed[0], parsed[1]
+
+
 def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     """Map SQL type to ODCS logical type and optional format.
 
     Returns (logicalType, format). logicalType is None for unknown or unmappable
-    types (e.g. maps), leaving the field's logicalType unset.
+    types, leaving the field's logicalType unset.
     The format corresponds to ODCS logicalTypeOptions.format (e.g. "binary", "uuid").
     """
     if sql_type is None:
@@ -341,6 +368,8 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
 
     sql_type_normed = sql_type.lower().strip()
 
+    if parse_vector_type(sql_type_normed) is not None:
+        return ("vector", None)
     if sql_type_normed.startswith("varchar"):
         return ("string", None)
     elif sql_type_normed.startswith("char"):
@@ -417,9 +446,7 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     elif sql_type_normed.startswith("struct"):
         return ("object", None)
     elif sql_type_normed.startswith("map"):
-        # ODCS v3.1 has no map logical type; RFC 0030 adds logicalType: map in v3.2.
-        # "object" only validates against structs, so leave logicalType unset for maps.
-        return (None, None)
+        return ("map", None)
     else:
         return (None, None)
 

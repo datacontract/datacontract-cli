@@ -17,7 +17,7 @@ from pydantic import TypeAdapter
 from datacontract.config import Config
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
-from datacontract.imports.sql_importer import map_type_from_sql
+from datacontract.imports.sql_importer import map_type_from_sql, vector_from_type
 from datacontract.model.exceptions import DataContractException
 
 
@@ -296,6 +296,7 @@ def schema_properties_cleansing(
             continue  # Skip properties that don't have required fields
 
         logical_type, fmt = map_type_from_sql(prop.physicalType)
+        dimensions, element_type = vector_from_type(prop.physicalType) if logical_type == "vector" else (None, None)
         max_length = prop.logicalTypeOptions.get("maxLength", None) if prop.logicalTypeOptions else None
 
         precision = [cp.value for cp in (prop.customProperties or []) if cp.property == "precision"]
@@ -323,6 +324,8 @@ def schema_properties_cleansing(
             custom_properties={cp.property: cp.value for cp in (prop.customProperties or [])},
             id=prop.id,
             quality=quality_adapter.validate_json(quality[0] if len(quality) > 0 else "[]"),
+            dimensions=dimensions,
+            element_type=element_type,
         )
         cleansed_properties.append(prop)
 

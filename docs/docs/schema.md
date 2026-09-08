@@ -28,7 +28,7 @@ datacontract test --checks schema datacontract.yaml
 | `logicalTypeOptions.minimum` / `maximum` | property | Value within bounds (inclusive) |
 | `logicalTypeOptions.exclusiveMinimum` / `exclusiveMaximum` | property | Value within bounds (exclusive) |
 | `logicalTypeOptions.pattern` | property | Value matches the regular expression |
-| `logicalTypeOptions.enum` | property | Value is one of the listed values |
+| `enum` | property | Value is one of the listed values (ODCS v3.2.0; `logicalTypeOptions.enum` is still accepted) |
 | `logicalTypeOptions.minItems` / `maxItems` | array property | Number of elements within bounds |
 | `logicalTypeOptions.uniqueItems` | array property | Elements of the array are distinct |
 | `quality` | schema, property | See [Define your Quality Rules](./quality-rules/index.md) |
@@ -47,8 +47,13 @@ schema:
       - name: order_status
         logicalType: string
         required: true
-        logicalTypeOptions:
-          enum: ['pending', 'shipped', 'delivered']
+        enum:
+          - value: pending
+          - value: shipped
+            label: Shipped
+          - value: delivered
+            label: Delivered
+            description: Handed over to the customer
       - name: order_total
         logicalType: integer
         physicalType: integer
@@ -92,7 +97,13 @@ A property can declare a portable `logicalType`, a native `physicalType`, or bot
 - **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the nine backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, and Athena. It takes precedence over `logicalType`.
 - **`logicalType`** is used everywhere else, and as the fallback when the native type cannot be read. Both the declared and the actual type are normalized to an ODCS category before comparison, so `integer` and `number` are mutually compatible.
 
-Properties of `logicalType: object` or `array` that declare `properties` or `items` also get a **nested type check** covering the full declared structure.
+Properties of `logicalType: object`, `array` or `map` that declare `properties`, `items` or a `map` block (`key` and `value`, ODCS v3.2.0) also get a **nested type check** covering the full declared structure.
+
+ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
+
+Property-level `enum` entries must have distinct values, even if their labels, IDs, or descriptions differ. Lint checks this throughout properties, array items, and map keys and values. JSON numbers compare by value (`1` equals `1.0`); strings and booleans remain distinct from numbers.
+
+Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
 :::note
 For file servers with `format: csv`, `json`, or `avro` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
@@ -147,8 +158,10 @@ properties:
       pattern: '^[A-Z]{2}$'
   - name: order_status
     logicalType: string
-    logicalTypeOptions:
-      enum: ['pending', 'shipped', 'delivered']
+    enum:
+      - value: pending
+      - value: shipped
+      - value: delivered
   - name: tags
     logicalType: array
     items:
@@ -165,11 +178,15 @@ properties:
 | `minimum` / `maximum` | below / above the bound (the bound itself passes) |
 | `exclusiveMinimum` / `exclusiveMaximum` | below / above **or equal to** the bound |
 | `pattern` | not matching the regular expression |
-| `enum` | not one of the listed values |
+| `enum` (property level, or `logicalTypeOptions.enum`) | not one of the listed values |
 | `minItems` / `maxItems` | an array with fewer / more elements than the bound |
 | `uniqueItems` | an array that repeats an element |
 
 `exclusiveMinimum` and `exclusiveMaximum` each produce two checks — a bound check and an inequality check — so a violation of either is reported separately.
+
+## Descriptive metadata
+
+ODCS v3.2.0 adds fields that describe a schema object or property for people and tools without generating a check: `semanticType` (`column`, `measure`, `dimension`), `synonyms`, `deprecated`, and a `context` block with `instructions`, `verifiedStatements` and `constraints` for AI agents and semantic layers. The [HTML](./exports/html.md) and [Markdown](./exports/markdown.md) exports render them, [`changelog`](./commands/changelog.md) reports changes to them by their natural key (a synonym's `synonym` or `id`, an enum entry's `value` or `id`), and `export odcs` keeps them. The DCS export drops them, as the Data Contract Specification has no equivalent.
 
 ## What is not checked
 

@@ -5,3 +5,14 @@ curl -o datacontract-1.2.1.init.yaml https://datacontract.com/datacontract.init.
 curl -o datacontract-1.2.1.schema.json https://datacontract.com/datacontract.schema.json
 curl -o odcs-3.0.2.schema.json https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-v3.0.2.json
 
+curl -o odcs-3.1.0.schema.json https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-v3.1.0.json
+curl -o odcs-3.2.0.schema.json https://raw.githubusercontent.com/bitol-io/open-data-contract-standard/refs/heads/main/schema/odcs-json-schema-v3.2.0.json
+# odcs-3.2.0.schema.json is patched after download: the `logicalType: map` and `vector` conditionals
+# need `"required": ["logicalType"]` in their `if`, otherwise a property without logicalType is
+# forced to carry a `map` block. Reported upstream; drop the patch once the upstream schema has it.
+# It also adds `blob` to the schema-object `logicalType` enum, a CLI extension used by
+# `datacontract test` for Azure Blob file-metadata checks (same patch as in odcs-3.1.0.schema.json).
+# The vector conditional also requires logicalTypeOptions, so omitting the entire
+# options block cannot bypass its required dimensions field (#1586).
+# Enum value uniqueness is checked by lint/constraints.py: uniqueItems in JSON
+# Schema only rejects identical whole entries, including their metadata.

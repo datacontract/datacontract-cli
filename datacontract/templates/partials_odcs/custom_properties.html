@@ -41,6 +41,9 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
               <dt class="text-sm font-medium text-gray-900">
                 {{ prop.property }}
+                {% if prop.vendor is defined and prop.vendor %}
+                  <span class="ml-1 inline-flex items-center rounded-md bg-gray-50 px-1 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10" title="vendor">{{ prop.vendor }}</span>
+                {% endif %}
                 {% if prop.description is defined and prop.description %}
                   <span class="ml-1 text-gray-400 cursor-help" title="{{ prop.description }}">ⓘ</span>
                 {% endif %}

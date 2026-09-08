@@ -23,11 +23,38 @@ class BreakingChangeDetector:
     def detect(self, changelog: ChangelogResult) -> BreakingChangeResult:
         entries = [self._classify(entry) for entry in changelog.entries]
         # Nothing inside a newly added element can break a consumer: it did not exist before.
-        added = {entry.path for entry in entries if entry.change_type == ChangelogType.added}
+        added = {
+            entry.path
+            for entry in entries
+            if entry.change_type == ChangelogType.added
+            and (
+                entry.path.startswith("schema.")
+                and (len(entry.path.split(".")) == 2 or entry.path.split(".")[-2] == "properties")
+            )
+        }
+        removed_enums = {
+            entry.path
+            for entry in entries
+            if entry.change_type == ChangelogType.removed and entry.path.endswith(".enum")
+        }
+        # Stable IDs may change or swap without changing the set of allowed
+        # values. Match removed/updated values against additions in the same enum.
+        added_values = defaultdict(set)
+        for entry in entries:
+            if entry.rule_id == "enum-constraint-changed" and entry.path.endswith(".value"):
+                if entry.change_type in (ChangelogType.added, ChangelogType.updated):
+                    added_values[entry.path.rsplit(".enum.", 1)[0]].add(entry.new_value)
         for entry in entries:
             segments = entry.path.split(".")
             if any(".".join(segments[:i]) in added for i in range(1, len(segments))):
                 entry.level = BreakingChangeLevel.INFO
+            if entry.rule_id == "enum-constraint-changed":
+                if any(entry.path.startswith(path + ".") for path in removed_enums):
+                    entry.level = BreakingChangeLevel.INFO
+                elif entry.path.endswith(".value") and entry.old_value in added_values.get(
+                    entry.path.rsplit(".enum.", 1)[0], set()
+                ):
+                    entry.level = BreakingChangeLevel.INFO
         entries_by_prefix = defaultdict(list)
         for entry in entries:
             prefix = ""

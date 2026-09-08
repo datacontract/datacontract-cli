@@ -140,6 +140,43 @@ class MetadataFallbackRule(BreakingChangeRule):
         return RuleEvaluation(self.rule_id, BreakingChangeLevel.INFO, _change_message("contract", entry))
 
 
+class EnumConstraintRule(BreakingChangeRule):
+    rule_id = "enum-constraint-changed"
+
+    def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
+        if not entry.path.startswith("schema.") or ".properties." not in entry.path:
+            return None
+        if entry.path.endswith(".enum"):
+            level = BreakingChangeLevel.ERROR if entry.type == ChangelogType.added else BreakingChangeLevel.INFO
+        elif (
+            ".enum." in entry.path
+            and entry.path.endswith(".value")
+            and ".customProperties." not in entry.path.rsplit(".enum.", 1)[1]
+            and ".authoritativeDefinitions." not in entry.path.rsplit(".enum.", 1)[1]
+        ):
+            level = BreakingChangeLevel.INFO if entry.type == ChangelogType.added else BreakingChangeLevel.ERROR
+        else:
+            return None
+        return RuleEvaluation(self.rule_id, level, _change_message("allowed values", entry))
+
+
+class VectorShapeRule(BreakingChangeRule):
+    rule_id = "vector-shape-changed"
+
+    def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
+        if not entry.path.startswith("schema.") or not entry.path.endswith(
+            (".logicalTypeOptions.dimensions", ".logicalTypeOptions.elementType")
+        ):
+            return None
+        if entry.path.endswith(".elementType"):
+            old = entry.old_value or "float32"
+            new = entry.new_value or "float32"
+            level = BreakingChangeLevel.INFO if old == new else BreakingChangeLevel.ERROR
+        else:
+            level = BreakingChangeLevel.WARNING if entry.type == ChangelogType.removed else BreakingChangeLevel.ERROR
+        return RuleEvaluation(self.rule_id, level, _change_message("vector shape", entry))
+
+
 def _is_schema_property_path(segments: list[str]) -> bool:
     return len(segments) >= 3 and segments[0] == "schema" and segments[-2] == "properties"
 
@@ -192,5 +229,7 @@ DEFAULT_RULES: tuple[BreakingChangeRule, ...] = (
     UniqueConstraintRule(),
     KeyConstraintRule(),
     ValidationConstraintRule(),
+    EnumConstraintRule(),
+    VectorShapeRule(),
     MetadataFallbackRule(),
 )

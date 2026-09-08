@@ -13,7 +13,7 @@ A data contract written in ODCS is a single YAML file that describes a data set'
 ## A minimal contract
 
 ```yaml
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: urn:datacontract:checkout:orders-latest
 name: orders
@@ -53,7 +53,19 @@ schema:
             mustBeBetween: [1000, 99900]
 ```
 
-`v3.1.0` is the current version of the standard and the one [`datacontract init`](./commands/init.md) writes. The CLI also validates contracts declaring `v3.0.2`, `v3.0.1`, `v3.0.0`, and the v2.2.x line.
+`v3.2.0` is the current version of the standard and the one [`datacontract init`](./commands/init.md) writes. The CLI also validates contracts declaring `v3.1.0`, `v3.0.2`, `v3.0.1`, `v3.0.0`, and the v2.2.x line.
+
+New in ODCS v3.2.0 (see the [ODCS changelog](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md)):
+
+- `enum` on properties: allowed values as objects with `value`, `label`, `description`, and more
+- `logicalType: map` with a `map` block defining `key` and `value`, and `logicalType: vector` with `dimensions` and other embedding options in `logicalTypeOptions`
+- `semanticType` on properties (`column`, `measure`, `dimension`), `synonyms` and `deprecated` on schema objects and properties
+- `context` on the contract and on schema objects, with `instructions`, `verifiedStatements`, and `constraints` for AI agents and semantic tools
+- Variables: `${VAR_NAME}` and `${VAR_NAME:-default}` in any string value, and a server `port` that may hold such a reference
+- New server types `hana`, `iceberg`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant`, and `poet`, an `encoding` on file and stream servers, and an Athena `workgroup`
+- `vendor` on custom properties, `id` on relationships, and `customProperties` and `authoritativeDefinitions` on `slaProperties`
+
+The CLI validates and round-trips all of these. Interpretation of the new types and fields by `test`, `export`, and `import` is added step by step; see the [release notes](./release-notes.md).
 
 :::note
 The CLI also accepts the older Data Contract Specification format (which uses `models`/`fields` instead of ODCS `schema`/`properties`), but new contracts should follow ODCS — all examples in this documentation use ODCS. To convert an existing one, see [Migrate from DCS to ODCS](./migrate-dcs-to-odcs.md).

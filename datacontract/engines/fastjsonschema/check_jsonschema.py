@@ -202,7 +202,7 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
 
     for file in all_files:
         logging.info(f"Processing file: {file}")
-        with open(file, "r") as f:
+        with open(file, "r", encoding=getattr(server, "encoding", None) or "utf-8") as f:
             process_json_file(run, schema, model_name, validate, f, server.delimiter, config)
 
 

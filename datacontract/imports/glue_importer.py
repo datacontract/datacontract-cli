@@ -177,10 +177,13 @@ def create_typed_property(name: str, dtype: str) -> SchemaProperty:
             properties=nested_props,
         )
     elif dtype.startswith("map"):
+        key_type, value_type = (split_struct(dtype[4:-1]) + [None, None])[:2]
         return create_property(
             name=name,
-            logical_type="object",
-            physical_type="map",
+            logical_type="map",
+            physical_type=dtype,
+            map_key=create_typed_property("key", key_type) if key_type else None,
+            map_value=create_typed_property("value", value_type) if value_type else None,
         )
     elif dtype.startswith("decimal"):
         precision = None

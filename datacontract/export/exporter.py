@@ -1,3 +1,4 @@
+import logging
 import typing
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -139,7 +140,11 @@ def _determine_sql_server_type(
         elif "clickhouse" in server_types:
             return "clickhouse"
         else:
-            # default to snowflake dialect
+            logging.getLogger(__name__).warning(
+                "No SQL dialect for server type(s) %s; falling back to the snowflake dialect. "
+                "Pass --sql-server-type to choose one.",
+                ", ".join(sorted(t for t in server_types if t)) or "none",
+            )
             return "snowflake"
     else:
         return sql_server_type

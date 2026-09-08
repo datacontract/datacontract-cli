@@ -23,7 +23,7 @@ def test_import_sql_postgres():
     result = DataContract.import_from_source("sql", sql_file_path, dialect="postgres")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -65,7 +65,7 @@ def test_import_sql_constraints():
     result = DataContract.import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract

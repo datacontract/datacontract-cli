@@ -39,7 +39,7 @@ to produce the data contract:
 ```yaml
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: orders
 status: draft

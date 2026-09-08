@@ -21,7 +21,7 @@ from datacontract.config import Config
 from datacontract.engines.ibis.native_type import reconstruct_native_type
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
-from datacontract.imports.sql_importer import map_type_from_sql
+from datacontract.imports.sql_importer import map_type_from_sql, vector_from_type
 from datacontract.model.exceptions import DataContractException
 
 DEFAULT_PORT = 5432
@@ -226,6 +226,7 @@ def _create_property(row: Dict[str, Any], primary_keys: Dict[str, int]) -> Schem
     scale = row.get("numeric_scale")
     physical_type = reconstruct_native_type(row.get("data_type"), max_length, precision, scale)
     logical_type, format = map_type_from_sql(physical_type)
+    dimensions, element_type = vector_from_type(physical_type) if logical_type == "vector" else (None, None)
     # Precision/scale describe the declared type of decimals only; for integers
     # Postgres still reports a numeric_precision, which is not part of the type.
     is_decimal = physical_type is not None and physical_type.lower().startswith(("decimal", "numeric"))
@@ -242,6 +243,8 @@ def _create_property(row: Dict[str, Any], primary_keys: Dict[str, int]) -> Schem
         precision=precision if is_decimal else None,
         scale=scale if is_decimal else None,
         format=format,
+        dimensions=dimensions,
+        element_type=element_type,
     )
 
 

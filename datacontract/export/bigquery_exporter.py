@@ -65,8 +65,13 @@ def to_bigquery_field(prop: SchemaProperty) -> dict:
 
     field_type = prop.logicalType or ""
 
+    # a vector is a repeated float
+    if field_type.lower() == "vector":
+        bq_field["mode"] = "REPEATED"
+        bq_field["type"] = "FLOAT64"
+
     # handle arrays
-    if field_type.lower() == "array":
+    elif field_type.lower() == "array":
         bq_field["mode"] = "REPEATED"
         if prop.items:
             items_type = prop.items.logicalType or ""

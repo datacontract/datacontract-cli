@@ -75,7 +75,7 @@ def test_simple_string_matches_spark(type_json, expected):
         ("timestamp_ntz", "date"),
         ("binary", "array"),
         ({"type": "array", "elementType": "string", "containsNull": True}, "array"),
-        ({"type": "map", "keyType": "string", "valueType": "long", "valueContainsNull": True}, "object"),
+        ({"type": "map", "keyType": "string", "valueType": "long", "valueContainsNull": True}, "map"),
         ({"type": "struct", "fields": []}, "object"),
     ],
 )

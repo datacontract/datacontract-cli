@@ -10,6 +10,7 @@ from open_data_contract_standard.model import (
     CustomProperty,
     DataQuality,
     Description,
+    EnumValue,
     OpenDataContractStandard,
     Relationship,
     SchemaObject,
@@ -22,6 +23,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.imports.importer import Importer
+from datacontract.model.map_type import map_definition
 from datacontract.model.server import to_odcs_server_type
 
 logger = logging.getLogger(__name__)
@@ -51,7 +53,7 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
     odcs = OpenDataContractStandard(
         id=dcs.id,
         kind="DataContract",
-        apiVersion="v3.1.0",
+        apiVersion="v3.2.0",
     )
 
     # Convert basic info
@@ -478,17 +480,10 @@ def _convert_field_to_property(
 
     # Convert config to customProperties
     custom_properties = []
-    # Handle enum as quality rule (invalidValues with validValues, mustBe: 0)
-    quality_rules = []
     if field.enum:
-        quality_rules.append(
-            DataQuality(
-                type="library",
-                metric="invalidValues",
-                arguments={"validValues": field.enum},
-                mustBe=0,
-            )
-        )
+        prop.enum = [EnumValue(value=value) for value in field.enum]
+
+    quality_rules = []
     if field.pii is not None:
         custom_properties.append(CustomProperty(property="pii", value=str(field.pii)))
     if field.precision is not None:
@@ -531,25 +526,19 @@ def _convert_field_to_property(
     if field.items:
         prop.items = _convert_field_to_property("item", field.items, None, definitions)
 
-    # Convert keys/values (for map types) - store types in customProperties
-    if field.keys or field.values:
-        if field.keys and field.keys.type:
-            custom_properties.append(
-                CustomProperty(property="mapKeyType", value=_convert_type_to_logical_type(field.keys.type))
-            )
-        if field.values and field.values.type:
-            custom_properties.append(
-                CustomProperty(property="mapValueType", value=_convert_type_to_logical_type(field.values.type))
-            )
-            # For map with struct values, store the value fields in properties
-            if field.values.fields:
-                prop.properties = _convert_fields_to_properties(field.values.fields, None, definitions)
+    # Convert keys/values (for map types)
+    if field.keys or field.values or (field.type and field.type.lower() == "map"):
+        prop.logicalType = "map"
+        prop.map = map_definition(
+            _convert_field_to_property("key", field.keys, None, definitions) if field.keys else None,
+            _convert_field_to_property("value", field.values, None, definitions) if field.values else None,
+        )
 
     # Set customProperties after all have been added
     if custom_properties:
         prop.customProperties = custom_properties
 
-    # Convert quality rules (merge enum quality rule with field-level quality)
+    # Convert quality rules
     if field.quality:
         quality_rules.extend(_convert_quality_list(field.quality))
     if quality_rules:
@@ -606,7 +595,7 @@ def _convert_type_to_logical_type(dcs_type: str) -> str | None:
         "object": "object",
         "record": "object",
         "struct": "object",
-        "map": None,  # not supported in ODCS
+        "map": "map",
         "interval": None,  # not supported in ODCS
         "bytes": None,  # not supported in ODCS
         "binary": None,  # not supported in ODCS

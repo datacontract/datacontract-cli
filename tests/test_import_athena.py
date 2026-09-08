@@ -65,7 +65,7 @@ def test_import_athena(setup_mock_glue):
     result = _import(region="eu-central-1", athena_table=["orders"])
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
