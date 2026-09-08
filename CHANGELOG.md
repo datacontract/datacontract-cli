@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - ODCS v3.2.0
+## [1.2.0] - 2026-09-08
 
-This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md). Development happens on the `odcs-3.2.0` branch, tracked in #1557.
+This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md) (#1557).
 
 ### Fixed
 - Iceberg testing uses AWS SSO credentials for S3 Tables data files and supports logical table aliases.
@@ -41,6 +41,7 @@ This release adds support for the [Open Data Contract Standard v3.2.0](https://g
 - `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.13 (#1566)
 - `open-data-contract-standard` dependency bumped to 3.2.x (#1558)
+- Lint accepts stable ids with any character except whitespace and `.#/\@!%&^`, as in the released ODCS v3.2.0 schema
 
 ## [1.1.3] - 2026-09-03
 
