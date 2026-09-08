@@ -11,6 +11,8 @@ from open_data_contract_standard.model import OpenDataContractStandard
 from datacontract.data_contract import DataContract
 from datacontract.export.html_exporter import get_version
 
+logger = logging.getLogger(__name__)
+
 
 def _get_owner(odcs: OpenDataContractStandard) -> Optional[str]:
     """Get the owner from ODCS customProperties or team."""
@@ -24,7 +26,7 @@ def _get_owner(odcs: OpenDataContractStandard) -> Optional[str]:
 
 
 def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
-    logging.debug(f"Creating data contract html for file {file} and schema {schema}")
+    logger.debug(f"Creating data contract html for file {file} and schema {schema}")
     data_contract = DataContract(
         data_contract_file=f"{file.absolute()}", inline_references=True, schema_location=schema
     )

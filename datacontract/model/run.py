@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
+
 
 class ResultEnum(str, Enum):
     passed = "passed"
@@ -79,15 +81,15 @@ class Run(BaseModel):
             self.result = ResultEnum.unknown
 
     def log_info(self, message: str):
-        logging.info(message)
+        logger.info(message)
         self.logs.append(Log(level="INFO", message=message, timestamp=datetime.now(timezone.utc)))
 
     def log_warn(self, message: str):
-        logging.warning(message)
+        logger.warning(message)
         self.logs.append(Log(level="WARN", message=message, timestamp=datetime.now(timezone.utc)))
 
     def log_error(self, message: str):
-        logging.error(message)
+        logger.error(message)
         self.logs.append(Log(level="ERROR", message=message, timestamp=datetime.now(timezone.utc)))
 
     def pretty(self):

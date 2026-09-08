@@ -18,6 +18,8 @@ from datacontract.model.exceptions import DataContractException, DataContractVal
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 class _LaxOpenDataContractStandard(OpenDataContractStandard):
     """ODCS variant that accepts unknown top-level fields.
@@ -66,7 +68,7 @@ def _resolve_jsonschema_compliance_error_message_path(yaml_str, message):
                 f"properties.{yaml_str['schema'][int(schema_index)]['properties'][int(property_index)]['name']}",
             )
     except Exception:
-        logging.warning("YAML doesn't conform to JSON schema. Could not resolve indexed schema or property names.")
+        logger.warning("YAML doesn't conform to JSON schema. Could not resolve indexed schema or property names.")
         except_message = message
     finally:
         return except_message
@@ -295,7 +297,7 @@ def _definition_resolution_error(
     url: str, target_url: str, detail: str, original_exception: Exception | None = None
 ) -> DataContractException:
     reason = f"Could not resolve business definition '{url}' from {target_url}: {detail}"
-    logging.warning(reason)
+    logger.warning(reason)
     return DataContractException(
         type="lint",
         result=ResultEnum.failed,
@@ -312,7 +314,7 @@ def _resolve_data_contract_from_str(
     yaml_dict = _to_yaml(data_contract_str)
 
     if is_open_data_product_standard(yaml_dict):
-        logging.info("Cannot import ODPS, as not supported")
+        logger.info("Cannot import ODPS, as not supported")
         raise DataContractException(
             type="schema",
             result=ResultEnum.failed,
@@ -322,7 +324,7 @@ def _resolve_data_contract_from_str(
         )
 
     if is_open_data_contract_standard(yaml_dict):
-        logging.info("Importing ODCS v3")
+        logger.info("Importing ODCS v3")
         # When a custom JSON schema is provided, treat it as the source of
         # truth and accept extra top-level fields the standard ODCS Pydantic
         # class would reject.
@@ -337,7 +339,7 @@ def _resolve_data_contract_from_str(
         return odcs
 
     # For DCS format, we need to convert it to ODCS
-    logging.info("Importing DCS format - converting to ODCS")
+    logger.info("Importing DCS format - converting to ODCS")
     from datacontract.imports.dcs_importer import convert_dcs_to_odcs, parse_dcs_from_dict
 
     dcs = parse_dcs_from_dict(yaml_dict)
@@ -366,7 +368,7 @@ def _to_yaml(data_contract_str) -> dict:
     try:
         return yaml.load(data_contract_str, Loader=_SafeLoaderNoTimestamp)
     except Exception as e:
-        logging.warning(f"Cannot parse YAML. Error: {str(e)}")
+        logger.warning(f"Cannot parse YAML. Error: {str(e)}")
         raise DataContractException(
             type="lint",
             result="failed",
@@ -388,7 +390,7 @@ def _validation_error_to_exception(error_message: str, original_exception=None) 
 
 
 def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_errors: bool = False):
-    logging.debug(f"Linting data contract with schema at {schema_location}")
+    logger.debug(f"Linting data contract with schema at {schema_location}")
     schema = fetch_schema(schema_location)
     if all_errors:
         validator_cls = validators.validator_for(schema)
@@ -396,20 +398,20 @@ def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_erro
         validator = validator_cls(schema=schema)
         errors = sorted(validator.iter_errors(yaml_str), key=lambda error: list(error.path))
         if errors:
-            logging.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
+            logger.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
             raise DataContractValidationErrors(
                 [_validation_error_to_exception(error.message, original_exception=error) for error in errors]
             )
-        logging.debug("YAML data is valid.")
+        logger.debug("YAML data is valid.")
         return
     try:
         fastjsonschema.validate(schema, yaml_str, use_default=False)
-        logging.debug("YAML data is valid.")
+        logger.debug("YAML data is valid.")
     except JsonSchemaValueException as e:
         except_message = _resolve_jsonschema_compliance_error_message_path(yaml_str, e.message)
 
-        logging.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
+        logger.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
         raise _validation_error_to_exception(except_message, original_exception=e)
     except Exception as e:
-        logging.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
+        logger.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
         raise _validation_error_to_exception(str(e), original_exception=e)

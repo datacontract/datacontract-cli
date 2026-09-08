@@ -5,10 +5,12 @@ import requests
 
 DEFAULT_DATA_CONTRACT_INIT_TEMPLATE = "odcs-3.1.0.init.yaml"
 
+logger = logging.getLogger(__name__)
+
 
 def get_init_template(location: str = None) -> str:
     if location is None:
-        logging.info("Use default bundled template " + DEFAULT_DATA_CONTRACT_INIT_TEMPLATE)
+        logger.info("Use default bundled template " + DEFAULT_DATA_CONTRACT_INIT_TEMPLATE)
         schemas = resources.files("datacontract")
         template = schemas.joinpath("schemas", DEFAULT_DATA_CONTRACT_INIT_TEMPLATE)
         with template.open("r") as file:

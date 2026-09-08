@@ -10,6 +10,8 @@ from open_data_contract_standard.model import OpenDataContractStandard
 from datacontract.export.exporter import Exporter
 from datacontract.export.mermaid_exporter import to_mermaid
 
+logger = logging.getLogger(__name__)
+
 
 class HtmlExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
@@ -64,5 +66,5 @@ def get_version() -> str:
     try:
         return version("datacontract_cli")
     except Exception as e:
-        logging.debug("Ignoring exception", e)
+        logger.debug("Ignoring exception", e)
         return ""

@@ -16,6 +16,8 @@ from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
+logger = logging.getLogger(__name__)
+
 DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.1.0
 kind: DataContract
 id: orders
@@ -254,21 +256,21 @@ api_key_header = APIKeyHeader(
 def check_api_key(api_key_header: str | None):
     correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
-        logging.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
+        logger.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
         return
     if api_key_header is None or api_key_header == "":
-        logging.info("The API key is missing.")
+        logger.info("The API key is missing.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
     if api_key_header != correct_api_key:
-        logging.info("The provided API key is not correct.")
+        logger.info("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The provided API key is not correct.",
         )
-    logging.info("Request authenticated with API key.")
+    logger.info("Request authenticated with API key.")
     pass
 
 
@@ -331,8 +333,8 @@ async def test(
     ] = None,
 ) -> Run:
     check_api_key(api_key)
-    logging.info("Testing data contract...")
-    logging.info(body)
+    logger.info("Testing data contract...")
+    logger.info(body)
     return DataContract(
         data_contract_str=body, server=server, publish_url=publish_url, fastapi_url=str(request.url)
     ).test()

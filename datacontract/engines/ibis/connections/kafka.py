@@ -10,6 +10,8 @@ from datacontract.export.avro_exporter import to_avro_schema_json
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 def _scala_binary_version() -> str:
     """Return the Scala binary version the installed PySpark was built against.
@@ -108,7 +110,7 @@ def read_kafka_topic(spark, data_contract: OpenDataContractStandard, server: Ser
     model_name = schema_obj.name
     topic = schema_obj.physicalName or schema_obj.name
 
-    logging.info("Reading data from Kafka server %s topic %s", server.host, topic)
+    logger.info("Reading data from Kafka server %s topic %s", server.host, topic)
     df = (
         spark.read.format("kafka")
         .options(**get_auth_options())
