@@ -18,15 +18,9 @@ schema:
   properties:
   - name: id
     physicalType: bigint
-    customProperties:
-    - property: databricksType
-      value: bigint
     logicalType: integer
   - name: id_list
     physicalType: array<bigint>
-    customProperties:
-    - property: databricksType
-      value: array<bigint>
     logicalType: array
     items:
       name: items
@@ -34,9 +28,6 @@ schema:
       logicalType: integer
   - name: id_struct
     physicalType: struct<value:bigint>
-    customProperties:
-    - property: databricksType
-      value: struct<value:bigint>
     logicalType: object
     properties:
     - name: value
@@ -44,9 +35,6 @@ schema:
       logicalType: integer
   - name: struct_list
     physicalType: array<struct<key:string,value:bigint>>
-    customProperties:
-    - property: databricksType
-      value: array<struct<key:string,value:bigint>>
     logicalType: array
     items:
       name: items
@@ -61,6 +49,3 @@ schema:
         logicalType: integer
   - name: attributes
     physicalType: map<string,bigint>
-    customProperties:
-    - property: databricksType
-      value: map<string,bigint>

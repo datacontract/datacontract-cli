@@ -13,7 +13,7 @@ A data contract written in ODCS is a single YAML file that describes a data set'
 ## A minimal contract
 
 ```yaml
-apiVersion: v3.0.2
+apiVersion: v3.1.0
 kind: DataContract
 id: urn:datacontract:checkout:orders-latest
 name: orders
@@ -21,6 +21,11 @@ version: 1.0.0
 status: active
 description:
   purpose: One record per order. Includes cancelled and deleted orders.
+team:
+  name: Checkout
+  members:
+    - username: dataeng@example.com
+      role: Owner
 servers:
   - server: production
     type: postgres
@@ -48,8 +53,10 @@ schema:
             mustBeBetween: [1000, 99900]
 ```
 
+`v3.1.0` is the current version of the standard and the one [`datacontract init`](./commands/init.md) writes. The CLI also validates contracts declaring `v3.0.2`, `v3.0.1`, `v3.0.0`, and the v2.2.x line.
+
 :::note
-The CLI also accepts the older Data Contract Specification format (which uses `models`/`fields` instead of ODCS `schema`/`properties`), but new contracts should follow ODCS — all examples in this documentation use ODCS. Use [`datacontract init`](./commands/init.md) to start from a current template.
+The CLI also accepts the older Data Contract Specification format (which uses `models`/`fields` instead of ODCS `schema`/`properties`), but new contracts should follow ODCS — all examples in this documentation use ODCS. To convert an existing one, see [Migrate from DCS to ODCS](./migrate-dcs-to-odcs.md).
 :::
 
 ## Key sections
@@ -60,18 +67,19 @@ The CLI also accepts the older Data Contract Specification format (which uses `m
 | `id`, `name`, `version`, `status` | Identity and lifecycle of the contract. |
 | `description` | Human-readable purpose, usage, and limitations. |
 | `servers` | Where the data physically lives — the connection details used by [`test`](./commands/test.md). One contract can have several servers. |
-| `schema` | The logical structure: schemas (tables/objects) and their properties (columns/fields), types, constraints, and semantics. |
+| `schema` | The logical structure: schemas (tables/objects) and their properties (columns/fields), types, constraints, and semantics. See [Define your Schema](./schema.md). |
 | `quality` | Data quality rules, attached to the schema or to individual properties. See [Quality Rules](./quality-rules/index.md). |
-| `slaProperties` | Service-level expectations such as freshness, retention, and frequency. |
-| `team` / `roles` | Ownership and access information. |
+| `slaProperties` | Service-level expectations such as freshness, retention, and frequency. See [Service Levels](./service-levels.md). |
+| `team` / `roles` | Ownership and access information. `team` is an object with a `members` array. |
 | `customProperties` | Extension point for backend-specific settings (for example `clickhouseType`, `trinoType`, `avroLogicalType`). |
+| `authoritativeDefinitions` | Links from a property to a shared semantic concept or reusable definition, by URL or IRI. See [Link your Semantics](./semantics.md). |
 
 ## Logical vs. physical types
 
 ODCS separates the **logical type** (`logicalType`, e.g. `string`, `integer`, `number`, `boolean`, `date`, `timestamp`) from the **physical type** (`physicalType`, e.g. `varchar`, `uuid`, `INT64`).
 
 - The CLI uses the logical type as the portable, server-independent description.
-- When you select a server (via `--server` or the server `type`), the CLI maps logical types to that backend's physical types for [exports](./exports/index.md) and [tests](./testing.md).
+- When you select a server (via `--server` or the server `type`), the CLI maps logical types to that backend's physical types for [exports](./exports/index.md) and [tests](./testing/index.md).
 - You can always override the physical type per field, or pin a backend-specific type via `customProperties` / `config` (for example `clickhouseType`, `trinoType`).
 
 ## Working with ODCS in the CLI

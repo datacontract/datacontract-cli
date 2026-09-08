@@ -145,3 +145,51 @@ schema:
     assert "sample_data" in table_names
     assert "sample_data__metadata" not in table_names
     assert "sample_data__settings" not in table_names
+
+
+def test_physical_name_columns():
+    """Columns come from physicalName when it is set, so the checks find them."""
+    data_contract_str = """
+kind: DataContract
+apiVersion: v3.1.0
+id: "61111-0003"
+name: Sample data with physical names
+version: 1.0.0
+status: active
+servers:
+  - server: sample
+    type: local
+    path: ./fixtures/local-json/data/nested_types.json
+    format: json
+    delimiter: array
+schema:
+  - name: sample_data
+    physicalType: object
+    properties:
+      - name: Identifier
+        physicalName: id
+        logicalType: integer
+      - name: Tag List
+        physicalName: tags
+        logicalType: array
+        items:
+          logicalType: object
+          properties:
+            - name: Foo Value
+              physicalName: foo
+              logicalType: string
+      - name: Full Name
+        physicalName: name
+        logicalType: object
+        properties:
+          - name: First Name
+            physicalName: first
+            logicalType: string
+    """
+    data_contract = resolve.resolve_data_contract(data_contract_str=data_contract_str)
+    server = next(s for s in data_contract.servers if s.server == "sample")
+    con = get_duckdb_connection(data_contract, server, Run.create_run())
+    assert con.table("sample_data").columns == ["id", "tags", "name"]
+    # nested struct fields and the nested views are keyed on the physical name too
+    assert con.table("sample_data__tags").columns == ["foo"]
+    assert con.table("sample_data__name").columns == ["first"]

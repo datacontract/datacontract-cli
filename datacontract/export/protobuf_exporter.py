@@ -1,10 +1,15 @@
+import re
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.exceptions import DataContractException
 
 OBJECT_TYPES: set = {"object", "record", "struct"}
+
+# A valid proto package is a dot-separated sequence of identifiers.
+_PROTO_PACKAGE_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
 
 
 class ProtoBufExporter(Exporter):
@@ -29,6 +34,27 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     if prop.logicalTypeOptions is None:
         return None
     return prop.logicalTypeOptions.get(key)
+
+
+def _get_proto_package_name(data_contract: OpenDataContractStandard) -> str:
+    """
+    Returns the Protobuf package name from the contract's customProperties
+    ("protoPackageName"), falling back to "example".
+    """
+    if data_contract.customProperties is None:
+        return "example"
+    for cp in data_contract.customProperties:
+        if cp.property == "protoPackageName" and cp.value:
+            if not _PROTO_PACKAGE_PATTERN.match(cp.value):
+                raise DataContractException(
+                    type="protobuf-export",
+                    name="invalid-proto-package-name",
+                    reason=f"Invalid protoPackageName '{cp.value}'. "
+                    "Must be a dot-separated sequence of identifiers, e.g. 'com.example.mydata'.",
+                    engine="datacontract-cli",
+                )
+            return cp.value
+    return "example"
 
 
 def to_protobuf(data_contract: OpenDataContractStandard) -> str:
@@ -58,7 +84,7 @@ def to_protobuf(data_contract: OpenDataContractStandard) -> str:
 
     # Build header with syntax and package declarations.
     header = 'syntax = "proto3";\n\n'
-    package = "example"  # Default package, can be customized
+    package: str = _get_proto_package_name(data_contract)
     header += f"package {package};\n\n"
 
     # Append enum definitions before messages.
@@ -75,6 +101,17 @@ def to_protobuf(data_contract: OpenDataContractStandard) -> str:
         header += "}\n\n"
 
     return header + messages
+
+
+def _is_array_of_objects(prop: SchemaProperty) -> bool:
+    """Check if property is an array of objects."""
+    return (
+        prop.logicalType
+        and prop.logicalType.lower() == "array"
+        and prop.items
+        and prop.items.logicalType
+        and prop.items.logicalType.lower() in OBJECT_TYPES
+    )
 
 
 def _is_enum_field(prop: SchemaProperty) -> bool:
@@ -142,13 +179,7 @@ def _get_type_name(prop: SchemaProperty) -> str:
         return _snake_to_upper_camel(prop.name)
 
     # For objects inside arrays
-    if (
-        prop.logicalType
-        and prop.logicalType.lower() == "array"
-        and prop.items
-        and prop.items.logicalType
-        and prop.items.logicalType.lower() in OBJECT_TYPES
-    ):
+    if _is_array_of_objects(prop):
         # If explicit name is provided in items.name
         if hasattr(prop.items, "name") and prop.items.name:
             # Normalize items.name the same way as message declarations
@@ -175,9 +206,8 @@ def _should_create_nested_message(prop: SchemaProperty) -> bool:
         return True
 
     # Array of objects
-    if lower_type == "array" and prop.items:
-        items_lower_type = prop.items.logicalType.lower() if prop.items.logicalType else ""
-        return items_lower_type in OBJECT_TYPES
+    if _is_array_of_objects(prop):
+        return True
 
     return False
 
@@ -190,13 +220,7 @@ def _get_nested_properties(prop: SchemaProperty) -> Optional[List[SchemaProperty
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.properties or []
 
-    if (
-        prop.logicalType
-        and prop.logicalType.lower() == "array"
-        and prop.items
-        and prop.items.logicalType
-        and prop.items.logicalType.lower() in OBJECT_TYPES
-    ):
+    if _is_array_of_objects(prop):
         return prop.items.properties or []
 
     return None
@@ -209,13 +233,7 @@ def _get_nested_description(prop: SchemaProperty) -> str:
     if prop.logicalType and prop.logicalType.lower() in OBJECT_TYPES:
         return prop.description or ""
 
-    if (
-        prop.logicalType
-        and prop.logicalType.lower() == "array"
-        and prop.items
-        and prop.items.logicalType
-        and prop.items.logicalType.lower() in OBJECT_TYPES
-    ):
+    if _is_array_of_objects(prop):
         return prop.items.description or ""
 
     return ""
@@ -348,9 +366,8 @@ def _get_field_declaration(prop: SchemaProperty) -> str:
 
     logical_type = (prop.logicalType or "").lower()
     is_array = logical_type == "array"
-    is_message_type = logical_type in OBJECT_TYPES
 
-    # Add 'optional' only for non-required, non-array, non-message fields (scalars/enums)
-    if hasattr(prop, "required") and prop.required is False and not is_array and not is_message_type:
+    # Add 'optional' only for non-required, non-array
+    if hasattr(prop, "required") and prop.required is False and not is_array:
         return f"optional {field_type}"
     return field_type

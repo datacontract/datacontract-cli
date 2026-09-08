@@ -57,7 +57,7 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse excel contract",
             reason=f"Failed to open Excel file: {excel_file_path}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -127,7 +127,7 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse excel contract",
             reason=f"Failed to parse Excel file: {excel_file_path}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     finally:

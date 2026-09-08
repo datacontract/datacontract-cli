@@ -7,20 +7,20 @@ from datacontract.model.exceptions import DataContractException
 
 
 class OdcsImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_odcs(source)
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
+        return import_odcs(source, config)
 
 
-def import_odcs(source: str) -> OpenDataContractStandard:
+def import_odcs(source: str, config=None) -> OpenDataContractStandard:
     """Import an ODCS file directly - since ODCS is now the internal format, this is simpler."""
     try:
-        odcs_yaml = yaml.safe_load(read_resource(source))
+        odcs_yaml = yaml.safe_load(read_resource(source, config))
     except Exception as e:
         raise DataContractException(
             type="schema",
             name="Parse ODCS contract",
             reason=f"Failed to parse odcs contract from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -32,7 +32,7 @@ def import_odcs(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Importing ODCS contract",
             reason=f"Unsupported ODCS kind: {odcs_kind}. Is this a valid ODCS data contract?",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     if odcs_api_version.startswith("v2."):
@@ -40,7 +40,7 @@ def import_odcs(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Importing ODCS contract",
             reason=f"Unsupported ODCS API version: {odcs_api_version}. Only v3.x is supported.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     elif odcs_api_version.startswith("v3."):
         # Parse directly as ODCS
@@ -50,5 +50,5 @@ def import_odcs(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Importing ODCS contract",
             reason=f"Unsupported ODCS API version: {odcs_api_version}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )

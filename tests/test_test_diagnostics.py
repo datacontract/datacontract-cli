@@ -8,6 +8,7 @@ report the validity rule they enforced.
 
 import ibis
 import pandas as pd
+from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
@@ -60,6 +61,7 @@ def test_diagnostics_passing_check_reports_zero_fraction():
 def test_diagnostics_duplicate_and_present():
     run = DataContract(data_contract_file="fixtures/diagnostics/datacontract.yaml").test()
 
+    # One order_id occurs twice: one duplicated key value spanning two of the five rows.
     unique = _find(run, "field_unique", "order_id")
     assert unique.result == ResultEnum.failed
     assert unique.diagnostics == {
@@ -67,6 +69,8 @@ def test_diagnostics_duplicate_and_present():
         "field": "order_id",
         "value": 1,
         "threshold": "= 0",
+        "row_count": 5,
+        "failed_rows": 2,
     }
 
     present = _find(run, "field_is_present", "order_id")
@@ -89,8 +93,9 @@ def test_diagnostics_field_type_mismatch():
         model="m",
         metric=MetricType.FIELD_TYPE,
         field="amount",
-        expected_category="number",
+        expected_category="integer",
         expected_type_label="integer",
+        expected_schema_property=SchemaProperty(logicalType="integer"),
     )
     run = _run_with([spec])
 
@@ -99,7 +104,7 @@ def test_diagnostics_field_type_mismatch():
     check = run.checks[0]
     assert check.result == ResultEnum.failed
     assert check.diagnostics["metric"] == "field_type"
-    assert check.diagnostics["expected"] == "integer (number)"
+    assert check.diagnostics["expected"] == "integer"
     assert "string" in check.diagnostics["actual"]
 
 

@@ -1,0 +1,32 @@
+version: "1.0.0"
+kind: "DataContract"
+apiVersion: "v3.0.2"
+id: "weather-data-berlin-current-array-001"
+name: "Berlin Weather Data - Current Array"
+status: "active"
+domain: "meteorology"
+
+servers:
+  - server: "weather-api-prod"
+    type: "api"
+    format: "json"
+    delimiter: "array"
+    location: "https://api.weather.example.com/current"
+
+schema:
+  - name: "weather_reading"
+    logicalType: "object"
+    description: "Single weather reading returned as an element of a JSON array"
+    properties:
+      - name: "temperature"
+        logicalType: "number"
+        description: "Temperature in Celsius"
+      - name: "humidity"
+        logicalType: "number"
+        description: "Humidity percentage"
+      - name: "wind_speed"
+        logicalType: "number"
+        description: "Wind speed in km/h"
+      - name: "condition"
+        logicalType: "string"
+        description: "Weather condition description"

@@ -1,0 +1,91 @@
+{% set roles = datacontract.roles if datacontract.roles is defined and datacontract.roles is not callable else [] %}
+{% if roles is mapping %}
+  {% set roles = [roles] %}
+{% elif roles is not sequence or roles is string %}
+  {% set roles = [] %}
+{% endif %}
+
+{% if roles and roles|length > 0 %}
+<section id="roles">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900" id="roles">Roles</h1>
+    <p class="text-sm text-gray-500">Roles that a consumer may need to access the dataset, depending on the type of access they require</p>
+  </div>
+
+  <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+    {% for role in roles %}
+      {% set role_name = role.role if role.role is defined and role.role else none %}
+      {% set access = role.access if role.access is defined and role.access else none %}
+      {% set first_level = role.firstLevelApprovers if role.firstLevelApprovers is defined and role.firstLevelApprovers else none %}
+      {% set second_level = role.secondLevelApprovers if role.secondLevelApprovers is defined and role.secondLevelApprovers else none %}
+      {% set custom_properties = role.customProperties if role.customProperties is defined else none %}
+      {% set has_custom_properties = (custom_properties is mapping and custom_properties|length > 0) or (custom_properties is sequence and custom_properties is not string and custom_properties|length > 0) %}
+
+      <li class="relative flex flex-col gap-y-2 px-4 py-3 sm:px-6">
+        <div class="flex flex-wrap gap-x-6 gap-y-2">
+          {% if role_name %}
+          <div class="flex items-center gap-x-4">
+            <div class="sm:flex sm:flex-col">
+              <div class="text-sm font-medium text-gray-500">Role</div>
+              <div class="mt-1 text-sm text-gray-900">{{ role_name }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if access %}
+          <div class="flex items-center gap-x-4">
+            <div class="sm:flex sm:flex-col">
+              <div class="text-sm font-medium text-gray-500">Access</div>
+              <div class="mt-1 text-sm text-gray-900">{{ access }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if first_level %}
+          <div class="flex items-center gap-x-4">
+            <div class="sm:flex sm:flex-col">
+              <div class="text-sm font-medium text-gray-500">First Level Approver</div>
+              <div class="mt-1 text-sm text-gray-900">{{ first_level }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if second_level %}
+          <div class="flex items-center gap-x-4">
+            <div class="sm:flex sm:flex-col">
+              <div class="text-sm font-medium text-gray-500">Second Level Approver</div>
+              <div class="mt-1 text-sm text-gray-900">{{ second_level }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if has_custom_properties %}
+          <div class="flex items-center gap-x-4">
+            <div class="sm:flex sm:flex-col">
+              <div class="text-sm font-medium text-gray-500">Custom Properties</div>
+              <div class="mt-1 flex flex-wrap gap-1">
+                {% if custom_properties is mapping %}
+                  {% for key, value in custom_properties.items() %}
+                    <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                      {{ key }}:{% if value is sameas true %}true{% elif value is sameas false %}false{% elif value is mapping or (value is sequence and value is not string) %}{{ value|tojson }}{% else %}{{ value }}{% endif %}
+                    </span>
+                  {% endfor %}
+                {% elif custom_properties is sequence and custom_properties is not string %}
+                  {% for cp in custom_properties %}
+                    {% if cp.property is defined and cp.value is defined %}
+                      <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                        {{ cp.property }}:{% if cp.value is sameas true %}true{% elif cp.value is sameas false %}false{% elif cp.value is mapping or (cp.value is sequence and cp.value is not string) %}{{ cp.value|tojson }}{% else %}{{ cp.value }}{% endif %}
+                      </span>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

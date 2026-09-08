@@ -59,7 +59,7 @@ def load_and_validate_json_schema(source: str) -> dict:
             type="schema",
             name="Parse json schema",
             reason=f"Failed to validate json schema from {source}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     except Exception as e:
@@ -67,7 +67,7 @@ def load_and_validate_json_schema(source: str) -> dict:
             type="schema",
             name="Parse json schema",
             reason=f"Failed to parse json schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     return json_schema
@@ -164,7 +164,7 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
                         type="schema",
                         name="Parse json schema",
                         reason=f"Union types for arrays are currently not supported ({nested_items})",
-                        engine="datacontract",
+                        engine="datacontract-cli",
                     )
             else:
                 items_prop = schema_to_property("items", nested_items)

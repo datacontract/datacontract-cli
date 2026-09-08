@@ -1,7 +1,7 @@
 version: 1.0.0
 kind: DataContract
 apiVersion: v3.1.0
-id: my-data-contract
+id: jaffle_shop
 name: jaffle_shop
 status: draft
 schema:

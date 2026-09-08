@@ -19,44 +19,23 @@ schema:
   properties:
   - name: id
     physicalType: int
-    customProperties:
-    - property: databricksType
-      value: int
     logicalType: integer
     required: true
   - name: name
     physicalType: varchar(255)
-    customProperties:
-    - property: databricksType
-      value: varchar(255)
     logicalType: string
   - name: age
     physicalType: smallint
-    customProperties:
-    - property: databricksType
-      value: smallint
     logicalType: integer
   - name: salary
     physicalType: decimal(10,2)
-    customProperties:
-    - property: databricksType
-      value: decimal(10,2)
     logicalType: number
   - name: join_date
     physicalType: date
-    customProperties:
-    - property: databricksType
-      value: date
     logicalType: date
   - name: updated_at
     physicalType: timestamp
-    customProperties:
-    - property: databricksType
-      value: timestamp
     logicalType: timestamp
   - name: is_active
     physicalType: boolean
-    customProperties:
-    - property: databricksType
-      value: boolean
     logicalType: boolean

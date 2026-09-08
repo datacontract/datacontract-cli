@@ -119,7 +119,7 @@ def generate_field(field_name: str, prop: SchemaProperty, model_name: str, serve
                     name="Primary key fields cannot have required == False.",
                     result="error",
                     reason="Primary key fields cannot have required == False.",
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
         else:
             prop.required = True
@@ -130,7 +130,7 @@ def generate_field(field_name: str, prop: SchemaProperty, model_name: str, serve
                     name="Primary key fields cannot have unique == False",
                     result="error",
                     reason="Primary key fields cannot have unique == False.",
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
         else:
             prop.unique = True

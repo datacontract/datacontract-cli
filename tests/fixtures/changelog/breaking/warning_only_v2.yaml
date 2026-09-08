@@ -1,0 +1,17 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-contract-001
+status: active
+version: 2.0.0
+schema:
+  - name: orders
+    physicalName: orders_tbl
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: "^ORD-[0-9]{4}$"
+      - name: region
+        logicalType: string
+        required: false

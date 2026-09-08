@@ -1,44 +1,80 @@
 [project]
 name = "datacontract-cli"
-version = "1.0.3"
+version = "1.1.3"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
 authors = [
-  { name = "Jochen Christ", email = "jochen.christ@innoq.com" },
+  { name = "Jochen Christ", email = "jochen.christ@entropy-data.com" },
   { name = "Stefan Negele", email = "stefan.negele@innoq.com" },
-  { name = "Simon Harrer", email = "simon.harrer@innoq.com" },
+  { name = "Simon Harrer", email = "simon.harrer@entropy-data.com" },
 ]
+# No "License :: OSI Approved :: MIT License" classifier: PEP 639 makes the SPDX
+# `license` expression above and the License classifiers mutually exclusive, and
+# setuptools >= 77 errors out when both are present.
 classifiers = [
-  "Programming Language :: Python :: 3",
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
   "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  # Keep in sync with `requires-python` below.
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Database",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+]
+keywords = [
+  "data-contract",
+  "data-contracts",
+  "odcs",
+  "open-data-contract-standard",
+  "data-quality",
+  "data-governance",
+  "data-mesh",
+  "data-product",
+  "data-engineering",
+  "schema",
+  "dbt",
+  "snowflake",
+  "databricks",
+  "bigquery",
 ]
 requires-python = ">=3.10,<3.15"
 dependencies = [
-  "typer>=0.18.0,<0.27",
+  "typer>=0.18.0,<0.28",
   "click>=8.1.0,<9.0.0",
   "pydantic>=2.8.2,<2.14.0",
+  "pydantic-settings>=2.5.0,<3.0.0",
   "pyyaml~=6.0.1",
+  "ruamel.yaml>=0.17,<0.20",
   "requests>=2.31,<2.35",
-  "fastjsonschema>=2.19.1,<2.22.0",
+  "truststore>=0.10,<1.0",
+  "fastjsonschema>=2.19.1,<2.23.0",
   "jsonschema>=4.23.0,<5.0.0",
   "pytz>=2024.1",
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<16.0",
-  "sqlglot>=26.6.0,<31.0.0",
+  # below 30.18 until an issue in ibis is fixed - see https://github.com/datacontract/datacontract-cli/issues/1592
+  "sqlglot>=26.6.0,<30.18",
   "python-dotenv>=1.0.0,<2.0.0",
   "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
-  "open-data-contract-standard>=3.1.2,<4.0.0",
+  "open-data-contract-standard>=3.1.2,<3.3.0",
   "deepdiff>=6.0.0,<10.0.0",
 ]
 
 [project.optional-dependencies]
 
 avro = [
-  "avro==1.12.1"
+  "avro==1.12.2"
 ]
 
 bigquery = [
@@ -54,28 +90,60 @@ excel = [
 ]
 
 
+# The dataframe server type runs against a Spark session the caller passes to
+# `DataContract(spark=...)`, so pyspark is necessarily importable in that process
+# already. Declaring it here would only risk pip shadowing the build a Spark
+# runtime (Databricks, EMR) provides, so it is left to the caller.
+#
+# ibis ships the pyspark backend module in its base wheel but declares that
+# backend's dependencies behind its `pyspark` extra, so what is listed here is
+# that extra minus pyspark itself.
+dataframe = [
+  "ibis-framework>=10.0.0,<13.0.0",
+  "numpy>=1.23.2,<3",
+  "packaging>=21.3,<27.0",
+  "pandas>=1.5.3,<4",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  "rich>=12.4.4",
+]
+
+# No pyspark: the SQL-connector path never needs it, and the Spark path runs
+# against a session the caller passes to `DataContract(spark=...)` — which they
+# cannot have built without pyspark already importable. Declaring it here only
+# risks pip shadowing the build a Databricks Runtime or EMR cluster provides.
+# ibis ships the pyspark backend module in its base wheel and declares the
+# pyspark dependency only behind its `pyspark` extra, so
+# `ibis.pyspark.connect(session=spark)` still works against that session.
 databricks = [
-  "ibis-framework[databricks,pyspark]>=10.0.0,<13.0.0",
-  "databricks-sql-connector>=3.7.0,<4.4.0",
-  "databricks-sdk<0.118.0",
-  # Not capped to Spark 3.5.x like older builds were: the databricks path uses a
-  # caller-provided Spark session (or the databricks SQL connector) and never
-  # loads the Kafka/Avro connector jars, so it isn't tied to a Scala/Spark line.
-  "pyspark>=3.5.0,<5.0.0",
+  "ibis-framework[databricks]>=10.0.0,<13.0.0",
+  "databricks-sql-connector>=3.7.0,<4.5.0",
+  "databricks-sdk<0.136.0",
+  # ibis's pyspark backend imports packaging, which ibis declares only in its
+  # `pyspark` extra — the one deliberately left out above.
+  "packaging>=21.3,<27.0",
+]
+
+# Kept as an alias of `databricks`, which no longer installs pyspark either.
+# Existing `datacontract-cli[databricks-runtime]` installs keep working.
+databricks-runtime = [
+  "datacontract-cli[databricks]",
 ]
 
 iceberg = [
-  "pyiceberg==0.11.1"
+  "pyiceberg==0.12.0"
 ]
 
+# Kafka needs no JVM: the topic is consumed with confluent-kafka, decoded in
+# Python, and checked in DuckDB (see engines/ibis/connections/kafka.py).
 kafka = [
-  "datacontract-cli[avro]",
-  "ibis-framework[pyspark]>=10.0.0,<13.0.0",
-  # kafka.py derives the Kafka/Avro connector jar coordinates (Spark version and
-  # Scala binary version) from the installed pyspark at runtime, so both 3.5.x
-  # (Scala 2.12) and 4.x (Scala 2.13) work. ibis-framework[pyspark] currently
-  # caps pyspark to <4.1, so this resolves to the 4.0.x line.
-  "pyspark>=3.5.0,<5.0.0",
+  "datacontract-cli[duckdb,parquet]",
+  "confluent-kafka>=2.6.0,<3.0.0",
+  # fastavro rather than the `avro` reference implementation the avro importer
+  # uses: schemaless_reader decodes a bare message against the writer schema,
+  # which is exactly the operation here, and it is an order of magnitude faster
+  # per message.
+  "fastavro>=1.9.7,<2.0.0",
 ]
 
 # MySQL is tested through DuckDB's `mysql` extension (ATTACH), not ibis's
@@ -91,6 +159,8 @@ postgres = [
   # psycopg's binary wheels bundle libpq, so the extra works without
   # PostgreSQL client libraries installed on the system.
   "psycopg[binary]>=3.1,<4.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 redshift = [
@@ -99,52 +169,65 @@ redshift = [
   # psycopg's binary wheels bundle libpq, so the extra works without
   # PostgreSQL client libraries installed on the system.
   "psycopg[binary]>=3.1,<4.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 # DuckDB extension wheels are bundled for air-gapped installs. The 1.5.x line
 # publishes wheels for all platforms including manylinux2014_aarch64, so no
 # platform markers are needed.
 s3 = [
+  "datacontract-cli[duckdb]",
   "s3fs>=2025.2.0,<2027.0.0",
   "duckdb-extension-httpfs>=1.5.0,<1.6.0",
   "duckdb-extension-aws>=1.5.0,<1.6.0",
 ]
 
+# GCS is an S3-compatible server, tested through the same connection setup.
 gcs = [
-  "datacontract-cli[duckdb]",
-  "duckdb-extension-httpfs>=1.5.0,<1.6.0",
+  "datacontract-cli[s3]",
 ]
 
 azure = [
   "datacontract-cli[duckdb]",
-  'duckdb-extension-azure>=1.0.3,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
-  "azure-identity>=1.17.1,<1.18",
-  "azure-storage-blob>=12.24,<12.30",
+  "duckdb-extension-azure>=1.5.0,<1.6.0",
+  "azure-identity>=1.17.1,<1.26",
+  "azure-storage-blob>=12.24,<12.31",
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.7",
+  "snowflake-connector-python[pandas]>=3.6,<4.8",
   "ibis-framework[snowflake]>=10.0.0,<13.0.0"
 ]
 
 sqlserver = [
-  "ibis-framework[mssql]>=10.0.0,<13.0.0"
+  "ibis-framework[mssql]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 oracle = [
-  "ibis-framework[oracle]>=10.0.0,<13.0.0"
+  "ibis-framework[oracle]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 athena = [
-  "ibis-framework[athena]>=10.0.0,<13.0.0"
+  "ibis-framework[athena]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 trino = [
-  "ibis-framework[trino]>=10.0.0,<13.0.0"
+  "ibis-framework[trino]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 impala = [
-  "ibis-framework[impala]>=10.0.0,<13.0.0"
+  "ibis-framework[impala]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
 ]
 
 dbml = [
@@ -168,8 +251,8 @@ rdf = [
 ]
 
 api = [
-  "fastapi>=0.115.0,<0.138.0",
-  "uvicorn>=0.44.0,<0.50.0",
+  "fastapi>=0.115.0,<0.142.0",
+  "uvicorn>=0.44.0,<0.53.0",
 ]
 
 protobuf = [
@@ -178,7 +261,7 @@ protobuf = [
 ]
 
 all = [
-  "datacontract-cli[kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version
@@ -187,25 +270,32 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.2.2",
+  "moto==5.2.3",
+  "openapi-spec-validator>=0.7,<0.10",  # asserts that `datacontract api` serves a valid OpenAPI document
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
   "pytest",
+  "pytest-cov",
   "pytest-xdist",
-  "pymssql==2.3.13",
+  "pymssql==2.4.0",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
   # test fixtures to load seed SQL (the engine connects via ibis-postgres'
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
-  "mysql-connector-python>=8.0.30,<9.7.0",
-  "ruff==0.15.17",
-  "testcontainers[minio,postgres,kafka,mssql,mysql]==4.14.2",
-  "trino==0.337.0",
+  "mysql-connector-python>=8.0.30,<26.8.0",
+  "ruff==0.16.6",
+  "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
+  "trino==0.339.0",
 ]
 
+# PyPI special-cases these exact names (icon + prominent placement in the
+# "Project links" sidebar); unrecognised names render as plain bullets.
 [project.urls]
 Homepage = "https://cli.datacontract.com"
+Documentation = "https://docs.datacontract.com"
+Repository = "https://github.com/datacontract/datacontract-cli"
 Issues = "https://github.com/datacontract/datacontract-cli/issues"
+Changelog = "https://docs.datacontract.com/release-notes"
 
 [project.scripts]
 datacontract = "datacontract.cli:main"
@@ -224,17 +314,54 @@ override-dependencies = [
 ]
 
 [tool.pytest.ini_options]
-#addopts = "-n 8" # run tests in parallel, you can disable parallel test execution with "pytest -n0" command
+# Exclude slow tests by default; run them with `pytest -m slow` (or `-m "slow or not slow"` for everything).
+# Append parallel execution with "-n 8" if desired (disable with "-n0").
+addopts = "-m 'not slow'"
 testpaths = ["tests"]
+markers = [
+    "slow: tests that are slow to run (e.g. pull large containers); deselect with '-m \"not slow\"'",
+]
 log_level = "INFO"
 #log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"
 
+# Coverage is measured to make the number visible (the `coverage` CI job prints
+# the least-covered modules to the run summary), not to gate a pull request:
+# there is deliberately no `fail_under`, so nothing here can block a merge.
+# Run it locally with `pytest --cov`.
+[tool.coverage.run]
+source = ["datacontract"]
+omit = [
+    # Vendored build output of the datacontract-editor npm package, not ours to test.
+    "datacontract/editor_assets/*",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    # Bodies that only exist for typing; never executed at runtime.
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
+
 [tool.ruff]
 line-length = 120
+# ruff 0.16 formats Python blocks inside markdown. The docs contain generated
+# CLI output (the AUTOGENERATED blocks under docs/docs/exports), which must
+# match what the tool actually prints and is rewritten by the update scripts,
+# so formatting it here would both misrepresent the output and churn.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
-extend-select = [
+# Pin the rule set explicitly. With only `extend-select`, the effective rules are
+# whatever ruff currently defaults to, so a ruff upgrade silently changes what CI
+# enforces (0.16.0 added ~1400 findings this way). New rule families are opted
+# into here deliberately.
+select = [
+    "E4",  # ruff's default: pycodestyle imports
+    "E7",  # ruff's default: pycodestyle statements
+    "E9",  # ruff's default: pycodestyle runtime errors
+    "F",   # ruff's default: pyflakes
     "I",   # re-order imports in alphabetic order
 ]
 

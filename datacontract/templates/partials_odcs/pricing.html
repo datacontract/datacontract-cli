@@ -1,0 +1,37 @@
+{% set price = datacontract.price if datacontract.price is defined and datacontract.price is not callable else none %}
+
+{% if price %}
+<section id="pricing">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900" id="price">Price</h1>
+    <p class="text-sm text-gray-500">This section covers pricing when you bill your customer for using this data product.</p>
+  </div>
+
+  <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+    <div class="px-4 py-4 sm:px-6">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
+        {% if price.priceAmount is defined and price.priceAmount %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Price Amount</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ price.priceAmount }}</dd>
+        </div>
+        {% endif %}
+
+        {% if price.priceCurrency is defined and price.priceCurrency %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Price Currency</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ price.priceCurrency }}</dd>
+        </div>
+        {% endif %}
+
+        {% if price.priceUnit is defined and price.priceUnit %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Price Unit</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ price.priceUnit }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</section>
+{% endif %}

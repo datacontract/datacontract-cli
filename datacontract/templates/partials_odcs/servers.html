@@ -1,0 +1,282 @@
+{% import 'macros/server.html' as server_macros %}
+
+{% set servers = datacontract.servers if datacontract.servers is defined and datacontract.servers is not callable else [] %}
+{% if servers is mapping %}
+  {% set servers = [servers] %}
+{% elif servers is not sequence or servers is string %}
+  {% set servers = [] %}
+{% endif %}
+
+{% if servers and servers|length > 0 %}
+<section id="servers">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900" id="servers">Servers</h1>
+    <p class="text-sm text-gray-500">This section covers connection details to physical data sets and infrastructure</p>
+  </div>
+
+  <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+    {% for server in servers %}
+      {% set server_name = server.server if server.server is defined and server.server else "server-" ~ loop.index %}
+      {% set custom_properties = server.customProperties if server.customProperties is defined else none %}
+      {% set roles = server.roles if server.roles is defined and server.roles and server.roles is sequence and server.roles is not string else [] %}
+
+      <li class="relative flex flex-col gap-x-6 gap-y-2 px-4 py-3 sm:px-6" id="server-{{ server_name }}">
+        <div class="flex items-start gap-x-4">
+          {% if server.type is defined and server.type %}
+            <div class="flex-none h-12 w-12 rounded-lg bg-white p-2.5 ring-1 ring-gray-900/10 flex items-center justify-center self-start">
+              {{ server_macros.server_icon(server.type) }}
+            </div>
+          {% endif %}
+
+          <div class="flex-1">
+            <div class="flex flex-wrap items-start gap-x-6 gap-y-2">
+              <div class="flex flex-col">
+                <div class="text-sm font-medium text-gray-500">Server</div>
+                <div class="mt-1 text-sm text-gray-900">{{ server.server }}</div>
+              </div>
+
+              {% if server.type is defined and server.type %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Type</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.type }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.project is defined and server.project %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Project</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.project }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.dataset is defined and server.dataset %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Dataset</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.dataset }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.endpointUrl is defined and server.endpointUrl %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Endpoint</div>
+                  <div class="mt-1 text-sm text-gray-900 break-all">{{ server.endpointUrl }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.location is defined and server.location %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Location</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.location }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.path is defined and server.path %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Path</div>
+                  <div class="mt-1 text-sm text-gray-900 break-all">{{ server.path }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.account is defined and server.account %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Account</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.account }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.catalog is defined and server.catalog %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Catalog</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.catalog }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.database is defined and server.database %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Database</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.database }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.schema_ is defined and server.schema_ and server.schema_ is not callable %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Schema</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.schema_ }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.table is defined and server.table %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Table</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.table }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.view is defined and server.view %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">View</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.view }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.host is defined and server.host %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Host</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.host }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.port is defined and server.port %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Port</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.port }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.topic is defined and server.topic %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Topic</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.topic }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.format is defined and server.format %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Format</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.format }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.delimiter is defined and server.delimiter %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Delimiter</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.delimiter }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.stagingDir is defined and server.stagingDir %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Staging Dir</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.stagingDir }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.stream is defined and server.stream %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Stream</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.stream }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.serviceName is defined and server.serviceName %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Service Name</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.serviceName }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.warehouse is defined and server.warehouse %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Warehouse</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.warehouse }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.region is defined and server.region %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Region</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.region }}</div>
+                </div>
+              {% endif %}
+
+              {% if server.regionName is defined and server.regionName %}
+                <div class="flex flex-col">
+                  <div class="text-sm font-medium text-gray-500">Region Name</div>
+                  <div class="mt-1 text-sm text-gray-900">{{ server.regionName }}</div>
+                </div>
+              {% endif %}
+
+              {% if custom_properties %}
+                {% if custom_properties is mapping and custom_properties|length > 0 %}
+                  {% for key, value in custom_properties.items() %}
+                    <div class="flex flex-col">
+                      <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ key }}</div>
+                      <div class="mt-1 text-sm text-gray-900">
+                        {% if value is mapping or (value is sequence and value is not string) %}
+                          {{ value | tojson }}
+                        {% elif value is sameas true %}
+                          true
+                        {% elif value is sameas false %}
+                          false
+                        {% else %}
+                          {{ value }}
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% elif custom_properties is sequence and custom_properties is not string and custom_properties|length > 0 %}
+                  {% for cp in custom_properties %}
+                    {% if cp.property is defined and cp.value is defined %}
+                      <div class="flex flex-col">
+                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                          {{ cp.property }}
+                          {% if cp.description is defined and cp.description %}
+                            <span class="ml-1 text-gray-400 cursor-help" title="{{ cp.description }}">ⓘ</span>
+                          {% endif %}
+                        </div>
+                        <div class="mt-1 text-sm text-gray-900">
+                          {% if cp.value is mapping or (cp.value is sequence and cp.value is not string) %}
+                            {{ cp.value | tojson }}
+                          {% elif cp.value is sameas true %}
+                            true
+                          {% elif cp.value is sameas false %}
+                            false
+                          {% else %}
+                            {{ cp.value }}
+                          {% endif %}
+                        </div>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% endif %}
+
+              {% if roles and roles|length > 0 %}
+                <div>
+                  <div class="text-sm font-medium text-gray-500 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+                    </svg>
+                    Roles
+                  </div>
+                  <div class="mt-1 flex flex-wrap gap-1">
+                    {% for role in roles %}
+                      {% set role_name = role.role if role.role is defined and role.role else "Role " ~ loop.index %}
+                      {% set role_display = role_name[:30] ~ "..." if role_name|length > 30 else role_name %}
+                      {% set role_title = role_name %}
+                      {% if role.access is defined and role.access %}{% set role_title = role_title ~ "\naccess: " ~ role.access %}{% endif %}
+                      {% if role.description is defined and role.description %}{% set role_title = role_title ~ "\n" ~ role.description %}{% endif %}
+                      {% if role.firstLevelApprovers is defined and role.firstLevelApprovers %}{% set role_title = role_title ~ "\nfirstLevelApprovers: " ~ role.firstLevelApprovers %}{% endif %}
+                      {% if role.secondLevelApprovers is defined and role.secondLevelApprovers %}{% set role_title = role_title ~ "\nsecondLevelApprovers: " ~ role.secondLevelApprovers %}{% endif %}
+
+                      <span
+                        class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10"
+                        title="{{ role_title }}"
+                      >
+                        {{ role_display }}
+                        {% if role.access is defined and role.access %}
+                          <span class="text-indigo-500">({{ role.access }})</span>
+                        {% endif %}
+                      </span>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

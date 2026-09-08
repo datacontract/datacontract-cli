@@ -90,10 +90,9 @@ schema:
         - CS
       - name: dateAvailable
         physicalType: string
-        customProperties:
-        - property: format
-          value: date
         logicalType: string
+        logicalTypeOptions:
+          format: date
         examples:
         - '2021-02-01'
       - name: shapeDescriptionEnglish
@@ -205,10 +204,9 @@ schema:
         - s.o.
       - name: dateEffective
         physicalType: string
-        customProperties:
-        - property: format
-          value: date
         logicalType: string
+        logicalTypeOptions:
+          format: date
         examples:
         - '2021-02-01'
       - name: totalUnits
@@ -611,10 +609,9 @@ schema:
                 - '75400000002020002241395'
               - name: digitalAssetImageVersionDateTimePharmaceutical
                 physicalType: string
-                customProperties:
-                - property: format
-                  value: date-time
                 logicalType: string
+                logicalTypeOptions:
+                  format: date-time
                 examples:
                 - '2020-10-10T23:01:07.578-04:00'
                 - '2022-06-07T18:59:59.000-04:00'
@@ -658,10 +655,9 @@ schema:
                 - en
               - name: digitalAssetStartDatePharmaceutical
                 physicalType: string
-                customProperties:
-                - property: format
-                  value: date
                 logicalType: string
+                logicalTypeOptions:
+                  format: date
                 examples:
                 - '2022-06-07'
       - name: identification
@@ -670,19 +666,17 @@ schema:
         properties:
         - name: initialContentReceivedDate
           physicalType: string
-          customProperties:
-          - property: format
-            value: date-time
           logicalType: string
+          logicalTypeOptions:
+            format: date-time
           examples:
           - '2020-10-10T23:01:07.578-04:00'
           - '2022-06-07T19:00:00.000-04:00'
         - name: dateUpdated
           physicalType: string
-          customProperties:
-          - property: format
-            value: date-time
           logicalType: string
+          logicalTypeOptions:
+            format: date-time
           examples:
           - '2020-10-16T08:52:02.030-04:00'
           - '2023-06-07T15:05:47.357-04:00'
@@ -715,10 +709,9 @@ schema:
           - Certified
         - name: systemVersion
           physicalType: string
-          customProperties:
-          - property: format
-            value: date-time
           logicalType: string
+          logicalTypeOptions:
+            format: date-time
           examples:
           - '2020-10-15T05:16:28.097-04:00'
           - '2023-06-01T00:36:26.517-04:00'
@@ -1190,10 +1183,9 @@ schema:
           - Bayer Inc. Consumer Health
         - name: dateUpdated
           physicalType: string
-          customProperties:
-          - property: format
-            value: date-time
           logicalType: string
+          logicalTypeOptions:
+            format: date-time
           examples:
           - '2022-05-11T12:25:11.477-04:00'
           - '2024-10-24T12:25:58.887-04:00'
@@ -1219,10 +1211,9 @@ schema:
           - '00056500371706'
         - name: systemVersion
           physicalType: string
-          customProperties:
-          - property: format
-            value: date-time
           logicalType: string
+          logicalTypeOptions:
+            format: date-time
           examples:
           - '2022-04-29T20:16:17.523-04:00'
           - '2024-10-09T18:06:55.420-04:00'
@@ -1487,10 +1478,9 @@ schema:
         - CS
       - name: dateAvailable
         physicalType: string
-        customProperties:
-        - property: format
-          value: date
         logicalType: string
+        logicalTypeOptions:
+          format: date
         examples:
         - '2021-02-01'
       - name: shapeDescriptionEnglish
@@ -1607,10 +1597,9 @@ schema:
           logicalType: string
       - name: dateEffective
         physicalType: string
-        customProperties:
-        - property: format
-          value: date
         logicalType: string
+        logicalTypeOptions:
+          format: date
         examples:
         - '2021-02-01'
       - name: totalUnits
@@ -2240,10 +2229,9 @@ schema:
             - '754000000015800000000535769325'
           - name: digitalAssetImageVersionDateTimePlanogram
             physicalType: string
-            customProperties:
-            - property: format
-              value: date-time
             logicalType: string
+            logicalTypeOptions:
+              format: date-time
             examples:
             - '2024-10-08T18:15:01.827-04:00'
           - name: digitalAssetLanguagePlanogram
@@ -2254,10 +2242,9 @@ schema:
             - en
           - name: digitalAssetStartDatePlanogram
             physicalType: string
-            customProperties:
-            - property: format
-              value: date
             logicalType: string
+            logicalTypeOptions:
+              format: date
             examples:
             - '2024-10-07'
           - name: url
@@ -2586,10 +2573,9 @@ schema:
             - '754000000015800000000535769325'
           - name: digitalAssetImageVersionDateTimePlanogram
             physicalType: string
-            customProperties:
-            - property: format
-              value: date-time
             logicalType: string
+            logicalTypeOptions:
+              format: date-time
             examples:
             - '2024-10-08T18:15:01.827-04:00'
           - name: digitalAssetLanguagePlanogram
@@ -2601,10 +2587,9 @@ schema:
             - en
           - name: digitalAssetStartDatePlanogram
             physicalType: string
-            customProperties:
-            - property: format
-              value: date
             logicalType: string
+            logicalTypeOptions:
+              format: date
             examples:
             - '2024-10-07'
           - name: url
@@ -2859,10 +2844,9 @@ schema:
             - A
           - name: digitalAssetImageVersionDateTimeMarketing
             physicalType: string
-            customProperties:
-            - property: format
-              value: date-time
             logicalType: string
+            logicalTypeOptions:
+              format: date-time
             examples:
             - '2024-10-09T17:20:27.747-04:00'
           - name: digitalAssetLanguageMarketing
@@ -2979,4 +2963,3 @@ schema:
         logicalType: string
         examples:
         - ALEVE NPRXN SOD 220MG DOS CORP
-

@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 
 from datacontract.cli import (
     _print_logs,
+    _print_publish_failure,
     app,
     console,
     debug_option,
@@ -15,6 +16,7 @@ from datacontract.cli import (
     resolve_output_format,
     validate_publish_url,
 )
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
@@ -34,7 +36,7 @@ class FailOn(str, Enum):
 def ci(
     locations: Annotated[
         Optional[list[str]],
-        typer.Argument(help="The location(s) (url or path) of the data contract yaml file(s)."),
+        typer.Argument(help="The location(s) (url, s3 url, or local path) of the data contract yaml file(s)."),
     ] = None,
     schema: Annotated[
         str,
@@ -60,6 +62,13 @@ def ci(
         OutputFormat,
         typer.Option(help="The target format for the test results. Accepted values: json, junit."),
     ] = None,
+    metadata_only: Annotated[
+        bool,
+        typer.Option(
+            help="Run only checks that read the schema (field presence and types). "
+            "Checks that read row values are skipped."
+        ),
+    ] = False,
     logs: Annotated[bool, typer.Option(help="Print logs")] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Print test results as JSON to stdout.")] = False,
     fail_on: Annotated[
@@ -83,7 +92,7 @@ def ci(
     Run tests for CI/CD pipelines. Emits GitHub Actions annotations and step summary.
     """
     enable_debug_logging(debug, otherwise_disable_stderr=True)
-    validate_publish_url(publish)
+    publish = validate_publish_url(publish)
 
     if not locations:
         locations = ["datacontract.yaml"]
@@ -111,12 +120,14 @@ def ci(
     for location in locations:
         out.print(f"Testing {location}")
         run = DataContract(
+            config=cli_config(),
             data_contract_file=location,
             schema_location=schema,
             publish_url=publish,
             server=server,
             ssl_verification=ssl_verification,
             inline_references=inline_references,
+            metadata_only=metadata_only,
         ).test()
         if logs:
             _print_logs(run, out)
@@ -126,6 +137,10 @@ def ci(
             write_test_result(run, out, output_format, output)
         except typer.Exit:
             pass
+        if run.publish_succeeded is False:
+            # A publish that was asked for and failed is a failed run, regardless of --fail-on.
+            _print_publish_failure(run, out)
+            should_fail = True
         if run.result in fail_results[fail_on]:
             should_fail = True
 

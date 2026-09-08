@@ -1,0 +1,24 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: quality-id
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    quality:
+      # Passes: the fixture has 5 rows.
+      - id: orders_not_empty
+        type: library
+        metric: rowCount
+        mustBeGreaterThan: 1
+        tags: ["critical", "cheap"]
+    properties:
+      - name: order_id
+        logicalType: integer
+      - name: email
+        logicalType: string

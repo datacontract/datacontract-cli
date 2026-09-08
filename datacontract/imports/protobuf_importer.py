@@ -75,7 +75,7 @@ def parse_imports_raw(proto_file: str) -> list:
             type="file",
             name="Parse proto imports",
             reason=f"Failed to read proto file: {proto_file}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     return re.findall(r'import\s+"(.+?)";', content)
@@ -90,7 +90,7 @@ def _parse_proto(proto_file: str) -> proto_ast.File:
             type="schema",
             name="Parse proto file",
             reason=f"Failed to parse proto file: {proto_file}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

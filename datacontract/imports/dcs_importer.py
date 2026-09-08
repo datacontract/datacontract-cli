@@ -30,12 +30,12 @@ logger = logging.getLogger(__name__)
 class DcsImporter(Importer):
     """Importer for Data Contract Specification (DCS) format."""
 
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
         import yaml
 
         from datacontract.lint.resources import read_resource
 
-        source_str = read_resource(source)
+        source_str = read_resource(source, config)
         dcs_dict = yaml.safe_load(source_str)
         dcs = parse_dcs_from_dict(dcs_dict)
         return convert_dcs_to_odcs(dcs)
@@ -78,6 +78,8 @@ def convert_dcs_to_odcs(dcs: DataContractSpecification) -> OpenDataContractStand
     # Convert status
     if dcs.info and dcs.info.status:
         odcs.status = dcs.info.status
+    else:
+        odcs.status = "draft"
 
     # Convert servers
     if dcs.servers:
@@ -570,10 +572,10 @@ def _convert_field_to_property(
     return prop
 
 
-def _convert_type_to_logical_type(dcs_type: str) -> str:
+def _convert_type_to_logical_type(dcs_type: str) -> str | None:
     """Convert DCS type to ODCS logical type."""
     if dcs_type is None:
-        return "string"
+        return None
 
     t = dcs_type.lower()
 
@@ -598,19 +600,26 @@ def _convert_type_to_logical_type(dcs_type: str) -> str:
         "timestamp_tz": "timestamp",
         "timestamp_ntz": "timestamp",
         "date": "date",
-        "time": "string",  # not supported in ODCS
+        "time": None,  # not supported in ODCS
         "datetime": "timestamp",
         "array": "array",
         "object": "object",
         "record": "object",
         "struct": "object",
-        "map": "object",
-        "bytes": "string",  # not supported in ODCS
-        "binary": "string",  # not supported in ODCS
-        "null": "string",  # not supported in ODCS
+        "map": None,  # not supported in ODCS
+        "interval": None,  # not supported in ODCS
+        "bytes": None,  # not supported in ODCS
+        "binary": None,  # not supported in ODCS
+        "varbinary": None,  # not supported in ODCS
+        "blob": None,  # not supported in ODCS
+        "bytea": None,  # not supported in ODCS
+        "raw": None,  # not supported in ODCS
+        "null": None,  # not supported in ODCS
+        "none": None,  # not supported in ODCS
+        "void": None,  # not supported in ODCS
     }
 
-    return type_mapping.get(t, t)
+    return type_mapping.get(t, None)
 
 
 def _convert_quality_list(quality_list: list) -> List[DataQuality]:

@@ -41,7 +41,7 @@ schema:
           - ORD-1001
           - ORD-1002
       - name: order_timestamp
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
         required: true
         description: Timestamp when the order was placed.

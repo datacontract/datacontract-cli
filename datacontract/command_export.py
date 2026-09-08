@@ -6,6 +6,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat, SqlServerType
 from datacontract.export.great_expectations_exporter import GreatExpectationsEngine
@@ -17,7 +18,10 @@ export_app = typer.Typer(cls=OrderedCommandsWithMigrationHints, no_args_is_help=
 # ---------------------------------------------------------------------------
 # Shared option type aliases
 # ---------------------------------------------------------------------------
-location_arg = Annotated[str, typer.Argument(help="The location (url or path) of the data contract yaml.")]
+location_arg = Annotated[
+    str,
+    typer.Argument(help="The location (url, s3 url, or local path) of the data contract yaml."),
+]
 output_option = Annotated[
     Optional[Path],
     typer.Option(
@@ -62,8 +66,10 @@ def _export(
     inline_references: bool = True,
     clickhouse_engine: Optional[str] = None,
     clickhouse_order_by: Optional[str] = None,
+    suite_name: Optional[str] = None,
 ):
     result = DataContract(
+        config=cli_config(),
         data_contract_file=location,
         schema_location=schema,
         server=server,
@@ -78,6 +84,7 @@ def _export(
         template=template,
         clickhouse_engine=clickhouse_engine,
         clickhouse_order_by=clickhouse_order_by,
+        suite_name=suite_name,
     )
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
@@ -582,6 +589,10 @@ def export_great_expectations(
     schema: schema_option = None,
     inline_references: inline_references_option = True,
     debug: debug_option = None,
+    suite_name: Annotated[
+        Optional[str],
+        typer.Option(help="The suite name for the Great Expectations run."),
+    ] = None,
 ):
     """Export a data contract to Great Expectations suite."""
     enable_debug_logging(debug)
@@ -595,6 +606,7 @@ def export_great_expectations(
         engine=engine.value if engine is not None else None,
         sql_server_type=dialect.value,
         inline_references=inline_references,
+        suite_name=suite_name,
     )
 
 
@@ -662,7 +674,7 @@ def export_excel(
     location: location_arg = "datacontract.yaml",
     template: Annotated[
         Optional[str],
-        typer.Option(help="Path or URL to a custom Excel template."),
+        typer.Option(help="Path or URL to a custom Excel template. Defaults to the bundled ODCS template."),
     ] = None,
     output: output_option = None,
     server: server_option = None,

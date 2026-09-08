@@ -7,6 +7,7 @@ from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
+from datacontract.export import excel_exporter
 from datacontract.export.excel_exporter import export_to_excel_bytes
 from datacontract.imports.excel_importer import import_excel_as_odcs
 
@@ -76,6 +77,66 @@ def test_export_excel_odcs():
         assert sheet_name in workbook.sheetnames, f"Missing sheet: {sheet_name}"
 
     workbook.close()
+
+
+def test_export_excel_uses_bundled_template(monkeypatch):
+    """Export works offline: the default template ships with the CLI, it is not downloaded"""
+
+    def fail(*args, **kwargs):
+        raise AssertionError("Excel export must not download the template")
+
+    monkeypatch.setattr(excel_exporter.requests, "get", fail)
+
+    with open("./fixtures/excel/shipments-odcs.yaml", "r") as f:
+        odcs = OpenDataContractStandard.from_string(f.read())
+
+    excel_bytes = export_to_excel_bytes(odcs)
+
+    workbook = openpyxl.load_workbook(io.BytesIO(excel_bytes))
+    assert "Fundamentals" in workbook.sheetnames
+    assert "Schema shipments" in workbook.sheetnames
+    workbook.close()
+
+
+def test_cli_export_excel_with_custom_template():
+    """Test Excel export via CLI with a custom template"""
+    runner = CliRunner()
+
+    # Build a custom template: the bundled one plus a marker sheet
+    template = excel_exporter.create_workbook_from_bundled_template()
+    template.create_sheet("Custom Marker")
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as template_file:
+        template_path = template_file.name
+    template.save(template_path)
+    template.close()
+
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp_file:
+        tmp_path = tmp_file.name
+
+    try:
+        result = runner.invoke(
+            app,
+            [
+                "export",
+                "excel",
+                "./fixtures/excel/shipments-odcs.yaml",
+                "--template",
+                template_path,
+                "--output",
+                tmp_path,
+            ],
+        )
+        assert result.exit_code == 0
+
+        workbook = openpyxl.load_workbook(tmp_path)
+        assert "Custom Marker" in workbook.sheetnames
+        assert "Schema shipments" in workbook.sheetnames
+        workbook.close()
+
+    finally:
+        for path in (template_path, tmp_path):
+            if os.path.exists(path):
+                os.unlink(path)
 
 
 def test_excel_roundtrip():

@@ -30,7 +30,7 @@ def load_and_validate_iceberg_schema(source: str) -> Schema:
                 type="schema",
                 name="Parse iceberg schema",
                 reason=f"Failed to validate iceberg schema from {source}: {e}",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
 

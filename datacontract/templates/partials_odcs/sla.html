@@ -1,0 +1,95 @@
+{% set sla_properties = datacontract.slaProperties if datacontract.slaProperties is defined and datacontract.slaProperties is not callable else [] %}
+{% if sla_properties is mapping %}
+  {% set sla_properties = [sla_properties] %}
+{% elif sla_properties is not sequence or sla_properties is string %}
+  {% set sla_properties = [] %}
+{% endif %}
+
+{% if sla_properties and sla_properties|length > 0 %}
+<section id="sla">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900" id="sla">Service-Level Agreement (SLA)</h1>
+    <p class="text-sm text-gray-500">This section describes the service-level agreements (SLA).</p>
+  </div>
+
+  <ul role="list" class="mt-2 divide-y divide-gray-100 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+    {% for sla in sla_properties %}
+      <li class="relative flex items-start gap-x-4 px-4 py-3 sm:px-6">
+        <div class="flex-1 flex flex-wrap gap-x-6 gap-y-2">
+          {% if sla.property is defined and sla.property %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Property</div>
+              <div class="mt-1 text-sm font-medium text-gray-900">{{ sla.property }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.value is defined and sla.value is not none %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Value</div>
+              <div class="mt-1 text-sm font-medium text-gray-900">{{ sla.value }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.unit is defined and sla.unit %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Unit</div>
+              <div class="mt-1 text-sm text-gray-900">{{ sla.unit }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.element is defined and sla.element %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Element</div>
+              <div class="mt-1 text-sm text-gray-900">{{ sla.element }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.driver is defined and sla.driver %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Driver</div>
+              <div class="mt-1 text-sm text-gray-900">{{ sla.driver }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.scheduler is defined and sla.scheduler %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Scheduler</div>
+              <div class="mt-1 text-sm text-gray-900">{{ sla.scheduler }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.schedule is defined and sla.schedule %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Schedule</div>
+              <div class="mt-1 text-sm text-gray-900 font-mono">{{ sla.schedule }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if sla.description is defined and sla.description %}
+          <div class="flex items-center gap-x-4">
+            <div class="flex flex-col">
+              <div class="text-sm font-medium text-gray-500">Description</div>
+              <div class="mt-1 text-sm text-gray-900">{{ sla.description }}</div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

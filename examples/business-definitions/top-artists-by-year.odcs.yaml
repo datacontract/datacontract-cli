@@ -1,0 +1,44 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: top_artists_by_year
+name: Top Artists by Year
+version: 1.0.0
+status: active
+domain: media
+
+description:
+  purpose: Overview of the top music artists per calendar year.
+  usage: Data provided in tabular form to build playlists.
+  limitation: Do not use for management reporting purposes.
+
+schema:
+  # The business object: what the data means, independent of where it is stored.
+  # `id` is the stable anchor other contracts reference, `name` is free to change.
+  - name: top_artists_by_year
+    id: top_artists_by_year_ba
+    businessName: Top Artists by Year
+    description: The top music artists of a calendar year.
+    properties:
+      - name: artist_name
+        id: artist_name
+        businessName: Artist Name
+        description: The artist name (not the legal name found in the passport).
+        logicalType: string
+        examples:
+          - Lola Young
+
+      - name: year
+        id: year
+        businessName: Year
+        description: Calendar year used as aggregation dimension.
+        logicalType: integer
+        examples:
+          - 2025
+
+      - name: total_number_of_songs
+        id: total_number_of_songs
+        businessName: Total Number of Songs
+        description: Number of songs of the artist that were in the top 10 for at least one week.
+        logicalType: integer
+        examples:
+          - 5

@@ -25,7 +25,7 @@ def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
             if schema.properties:
                 for prop in schema.properties:
                     clean_name = _sanitize_name(prop.name)
-                    prop_type = prop.logicalType or prop.physicalType or "unknown"
+                    prop_type = _sanitize_name(prop.logicalType or prop.physicalType or "unknown")
 
                     is_pk = bool(prop.primaryKey)
                     is_uk = bool(prop.unique)
@@ -60,8 +60,17 @@ def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
         return None
 
 
+# Characters that must never reach the rendered diagram. The HTML exporter
+# embeds the Mermaid source verbatim inside a `<pre class="mermaid">` block
+# (marked `| safe`, since Mermaid's own arrow syntax must not be HTML-escaped),
+# so any `<`, `>`, `&`, or quote coming from a model/field/type name would
+# otherwise break out of that block and execute as HTML.
+_HTML_UNSAFE = str.maketrans({c: "" for c in "<>&\"'`"})
+
+
 def _sanitize_name(name: str) -> str:
-    return name.replace("#", "Nb").replace(" ", "_").replace("/", "by")
+    name = name.replace("#", "Nb").replace(" ", "_").replace("/", "by")
+    return name.translate(_HTML_UNSAFE)
 
 
 def _field_line(name: str, field_type: str, pk: bool = False, uk: bool = False, fk: bool = False) -> str:

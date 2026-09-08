@@ -12,7 +12,7 @@ def check_that_datacontract_contains_valid_server_configuration(
             name="Check that data contract contains valid server configuration",
             result="warning",
             reason="Servers block is missing. Skip executing tests.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if len(data_contract.servers) > 1 and server_name is None:
         raise DataContractException(
@@ -20,7 +20,7 @@ def check_that_datacontract_contains_valid_server_configuration(
             name="Check that data contract contains valid server configuration",
             result="warning",
             reason="Data contract contains multiple server configurations. Specify the server you want to test. Skip executing tests.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if server_name is not None:
         # Check if server_name exists in the servers list
@@ -31,7 +31,7 @@ def check_that_datacontract_contains_valid_server_configuration(
                 name="Check that data contract contains valid servers configuration",
                 result="failed",
                 reason=f"Server '{server_name}' not found in data contract. Available servers: {', '.join(sorted(server_names))}",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
 

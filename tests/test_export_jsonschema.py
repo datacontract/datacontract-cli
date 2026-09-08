@@ -2,11 +2,12 @@ import json
 import os
 import sys
 
+from open_data_contract_standard.model import SchemaObject, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.export.jsonschema_exporter import to_jsonschemas
+from datacontract.export.jsonschema_exporter import to_jsonschema, to_jsonschemas
 from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
@@ -173,6 +174,23 @@ def test_to_jsonschemas_complex_2():
 """
     result = to_jsonschemas(data_contract)
     assert result["sts_data"] == json.loads(expected_json_schema)
+
+
+def test_to_jsonschema_uses_physical_name():
+    schema = SchemaObject(
+        name="equipment",
+        properties=[
+            SchemaProperty(name="Equipment Name", physicalName="name", logicalType="string", required=True),
+            SchemaProperty(name="location", logicalType="string", required=False),
+        ],
+    )
+
+    result = to_jsonschema("equipment", schema)
+
+    # physicalName wins over the logical name; falls back to name when unset
+    assert set(result["properties"].keys()) == {"name", "location"}
+    assert result["properties"]["name"]["type"] == "string"
+    assert result["required"] == ["name"]
 
 
 def read_file(data_contract_file):

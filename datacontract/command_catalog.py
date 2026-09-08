@@ -28,7 +28,7 @@ def catalog(
     debug: debug_option = None,
 ):
     """
-    Create a html catalog of data contracts.
+    Create an HTML catalog of data contracts.
     """
     enable_debug_logging(debug)
 

@@ -4,6 +4,11 @@ apiVersion: v3.1.0
 id: my-data-contract
 name: My Data Contract
 status: draft
+servers:
+- server: bigquery
+  type: bigquery
+  dataset: orders
+  project: my-gcp-project
 schema:
 - name: orders
   physicalType: table
@@ -18,7 +23,7 @@ schema:
     required: true
   - name: order_timestamp
     physicalType: TIMESTAMP
-    logicalType: date
+    logicalType: timestamp
     required: true
   - name: customer_id
     physicalType: STRING

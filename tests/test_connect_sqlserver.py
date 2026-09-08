@@ -7,11 +7,19 @@ Building the kwargs as a pure function keeps the test independent of the ODBC
 driver, which is not loadable on every dev machine.
 """
 
+import logging
+
 import pytest
 from open_data_contract_standard.model import Server
 
-from datacontract.engines.ibis.connections.connect import _sqlserver_connection_kwargs
+from datacontract.config import Config
+from datacontract.engines.ibis.connections.connect import _sqlserver_connection_kwargs as _kwargs_with_config
 from datacontract.model.exceptions import DataContractException
+
+
+def _sqlserver_connection_kwargs(server):
+    return _kwargs_with_config(server, Config.resolve(None))
+
 
 SQLSERVER_ENV_VARS = [
     "DATACONTRACT_SQLSERVER_AUTHENTICATION",
@@ -23,6 +31,9 @@ SQLSERVER_ENV_VARS = [
     "DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION",
     "DATACONTRACT_SQLSERVER_DRIVER",
     "DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION",
+    "DATACONTRACT_SQLSERVER_HOST",
+    "DATACONTRACT_SQLSERVER_PORT",
+    "DATACONTRACT_SQLSERVER_DATABASE",
 ]
 
 
@@ -78,14 +89,37 @@ def test_legacy_trusted_connection_means_windows(env):
     assert kwargs["user"] is None
 
 
-def test_legacy_trusted_connection_takes_precedence(env):
+def test_explicit_authentication_wins_over_legacy_trusted_connection(env):
+    """A leftover trusted-connection flag must not downgrade a configured Entra ID login."""
     env.setenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", "true")
     env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "ActiveDirectoryPassword")
+    env.setenv("DATACONTRACT_SQLSERVER_USERNAME", "user@domain.com")
+    env.setenv("DATACONTRACT_SQLSERVER_PASSWORD", "ad_secret")
 
     kwargs = _sqlserver_connection_kwargs(_server())
 
-    assert kwargs["Trusted_Connection"] == "yes"
-    assert "Authentication" not in kwargs
+    assert kwargs["Authentication"] == "ActiveDirectoryPassword"
+    assert kwargs["user"] == "user@domain.com"
+    assert "Trusted_Connection" not in kwargs
+
+
+def test_ignored_trusted_connection_is_reported(env, caplog):
+    env.setenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", "true")
+    env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "cli")
+
+    with caplog.at_level(logging.WARNING):
+        _sqlserver_connection_kwargs(_server())
+
+    assert "TRUSTED_CONNECTION is ignored" in caplog.text
+
+
+def test_legacy_trusted_connection_warns_that_it_is_deprecated(env, caplog):
+    env.setenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", "true")
+
+    with caplog.at_level(logging.WARNING):
+        _sqlserver_connection_kwargs(_server())
+
+    assert "TRUSTED_CONNECTION is deprecated" in caplog.text
 
 
 def test_active_directory_password(env):
@@ -176,3 +210,17 @@ def test_server_fields_and_driver(env):
     assert kwargs["port"] == 1433
     assert kwargs["database"] == "mydb"
     assert kwargs["driver"] == "ODBC Driver 18 for SQL Server"
+
+
+def test_env_variables_override_the_contract_server_details(env):
+    env.setenv("DATACONTRACT_SQLSERVER_USERNAME", "sa")
+    env.setenv("DATACONTRACT_SQLSERVER_PASSWORD", "secret")
+    env.setenv("DATACONTRACT_SQLSERVER_HOST", "env-host")
+    env.setenv("DATACONTRACT_SQLSERVER_PORT", "1444")
+    env.setenv("DATACONTRACT_SQLSERVER_DATABASE", "env_db")
+
+    kwargs = _sqlserver_connection_kwargs(_server())
+
+    assert kwargs["host"] == "env-host"
+    assert kwargs["port"] == 1444
+    assert kwargs["database"] == "env_db"

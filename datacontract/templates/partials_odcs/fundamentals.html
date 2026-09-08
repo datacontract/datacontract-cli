@@ -1,0 +1,113 @@
+{% import 'macros/authoritative_definitions.html' as ad_macros %}
+
+{% set has_tags = datacontract.tags and datacontract.tags|length > 0 %}
+{% set has_authoritative_definitions = datacontract.authoritativeDefinitions and datacontract.authoritativeDefinitions|length > 0 %}
+{% set has_custom_properties = datacontract.customProperties and datacontract.customProperties|length > 0 %}
+{% set has_data = datacontract.id or datacontract.name or datacontract.version or has_tags or has_authoritative_definitions or has_custom_properties %}
+
+{% if has_data %}
+<section id="fundamentals">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900">Fundamentals</h1>
+    <p class="text-sm text-gray-500">Information about the data contract</p>
+  </div>
+
+  <div class="mt-2 overflow-hidden shadow sm:rounded-lg bg-white">
+    <div class="px-4 py-4 sm:px-6">
+
+      {% if has_authoritative_definitions %}
+      <div class="flex flex-wrap gap-2 mb-6">
+        {% for definition in datacontract.authoritativeDefinitions %}
+        <a
+          href="{{ definition.url }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex flex-col text-center rounded-md bg-white px-3 py-3 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 hover:ring-indigo-300 transition-colors"
+          style="min-width: 120px"
+          title="{{ definition.description }}"
+        >
+          <div class="mx-auto w-8 h-8 mb-2 text-gray-500">
+            {{ ad_macros.icon_for(definition) }}
+          </div>
+          <div class="text-xs font-medium">{{ definition.type }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        {% if datacontract.name %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Name</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.name }}</dd>
+        </div>
+        {% endif %}
+
+        {% if datacontract.version %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Version</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.version }}</dd>
+        </div>
+        {% endif %}
+
+        {% if datacontract.id %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">ID</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.id }}</dd>
+        </div>
+        {% endif %}
+
+        {% if datacontract.status %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Status</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.status }}</dd>
+        </div>
+        {% endif %}
+
+        {% if datacontract.tenant %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Tenant</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.tenant }}</dd>
+        </div>
+        {% endif %}
+
+        {% if datacontract.domain %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Domain</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.domain }}</dd>
+        </div>
+        {% endif %}
+
+        {% if datacontract.dataProduct %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Data Product</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.dataProduct }}</dd>
+        </div>
+        {% endif %}
+
+        {% if datacontract.contractCreatedTs %}
+        <div class="sm:col-span-1">
+          <dt class="text-sm font-medium text-gray-500">Contract Created</dt>
+          <dd class="mt-1 text-sm text-gray-900">{{ datacontract.contractCreatedTs }}</dd>
+        </div>
+        {% endif %}
+
+        {% if has_tags %}
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-gray-500">Tags</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <div class="flex flex-wrap gap-1">
+              {% for tag in datacontract.tags %}
+              <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                {{ tag }}
+              </span>
+              {% endfor %}
+            </div>
+          </dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</section>
+{% endif %}

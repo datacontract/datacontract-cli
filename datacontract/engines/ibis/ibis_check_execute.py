@@ -10,21 +10,42 @@ onto the pre-registered ``Check`` objects in the run.
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from collections import defaultdict
+from functools import cache
 from typing import List, Optional
 
-from open_data_contract_standard.model import OpenDataContractStandard, Server
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
-from datacontract.engines.checks.type_normalize import category_matches
+from datacontract.engines.checks.physical_type_match import physical_type_matches
+from datacontract.engines.checks.type_normalize import (
+    format_mismatch_reason,
+    normalize_type_name,
+    schema_property_matches,
+    schema_property_mismatch_reason,
+    schema_property_mismatch_reasons,
+)
 from datacontract.engines.ibis.connections.connect import connect_ibis
-from datacontract.engines.ibis.dtype_category import ibis_dtype_category
+from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
+from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
+from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types, has_nesting
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
+
+# Most server types have an install extra of the same name. These do not: they
+# are read with duckdb, so naming the server type would send users to an extra
+# that does not exist (`local`) or to an unrelated one (`api` installs the web
+# server dependencies, not a test backend).
+_INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb"}
+
+
+def install_extra_for(server_type: Optional[str]) -> str:
+    return _INSTALL_EXTRAS.get(server_type, server_type)
 
 
 class _ColumnNotFound(Exception):
@@ -46,7 +67,11 @@ def build_check_stubs(specs: List[CheckSpec]) -> List[Check]:
                 name=spec.name,
                 model=spec.model,
                 field=spec.field,
-                engine="ibis",
+                qualityId=spec.quality_id,
+                tags=spec.tags,
+                dimension=spec.dimension,
+                qualityDefinition=spec.quality_definition,
+                engine="datacontract-cli",
                 implementation=_describe(spec),
             )
         )
@@ -58,6 +83,10 @@ def _describe(spec: CheckSpec) -> str:
         return spec.query or ""
     if spec.metric == MetricType.FIELD_TYPE:
         return f"type({spec.field}) == {spec.expected_type_label}"
+    if spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
+        return f"physical_type({spec.field}) == {spec.expected_physical_type}"
+    if spec.metric == MetricType.FIELD_NESTED_TYPE:
+        return f"nested_types({spec.field}) match the contract"
     if spec.metric == MetricType.FIELD_PRESENT:
         return f"present({spec.field})"
     if spec.threshold is not None:
@@ -78,32 +107,37 @@ def execute_ibis_checks(
     duckdb_connection=None,
     schema_name: str = "all",
     include_failed_samples: bool = False,
+    model_filters: Optional[dict[str, str]] = None,
+    config=None,
+    untrusted_contract: bool = False,
 ):
     if data_contract is None:
-        run.log_warn("Cannot run engine ibis, as data contract is invalid")
+        run.log_warn("Cannot run the checks, as the data contract is invalid")
         return
 
     # Checks the new engine cannot run (e.g. raw SodaCL) get their preset result.
     executable: List[CheckSpec] = []
     for spec in specs:
         if spec.metric == MetricType.UNSUPPORTED:
-            _set_result(run, spec.key, ResultEnum(spec.preset_result or "warning"), spec.preset_reason)
+            set_result(run, spec.key, ResultEnum(spec.preset_result or "warning"), spec.preset_reason)
         else:
             executable.append(spec)
 
     if not executable:
         return
 
-    run.log_info("Running engine ibis")
+    run.log_info("Running checks with ibis")
     try:
-        con = connect_ibis(run, data_contract, server, spark, duckdb_connection, schema_name)
+        con = connect_ibis(
+            run, data_contract, server, spark, duckdb_connection, schema_name, config, untrusted_contract
+        )
     except DataContractException:
         raise
     except ImportError:
         server_type = get_server_type(server)
         reason = (
             f"The '{server_type}' backend is not installed. "
-            f"Install it with: pip install 'datacontract-cli[{server_type}]'"
+            f"Install it with: pip install 'datacontract-cli[{install_extra_for(server_type)}]'"
         )
         logger.exception("ibis backend import failed")
         run.log_error(reason)
@@ -113,21 +147,21 @@ def execute_ibis_checks(
                 name="Data Contract Tests",
                 result=ResultEnum.failed,
                 reason=reason,
-                engine="ibis",
+                engine="datacontract-cli",
             )
         )
         return
     except Exception as e:
-        reason = _first_line(str(e)) or "Engine ibis could not connect to the data source."
+        reason = _first_line(str(e)) or "Could not connect to the data source."
         logger.exception("ibis connection failed")
-        run.log_error(f"Engine ibis could not connect: {reason}")
+        run.log_error(f"Could not connect to the data source: {reason}")
         run.checks.append(
             Check(
                 type="general",
                 name="Data Contract Tests",
                 result=ResultEnum.failed,
                 reason=reason,
-                engine="ibis",
+                engine="datacontract-cli",
             )
         )
         return
@@ -142,7 +176,16 @@ def execute_ibis_checks(
 
     try:
         for model, model_specs in by_model.items():
-            _run_model(run, con, model, model_specs, data_contract, server, include_failed_samples)
+            _run_model(
+                run,
+                con,
+                model,
+                model_specs,
+                data_contract,
+                server,
+                include_failed_samples,
+                row_filter=(model_filters or {}).get(model),
+            )
     finally:
         _maybe_disconnect(con, spark, duckdb_connection)
 
@@ -175,9 +218,10 @@ def _run_model(
     data_contract: Optional[OpenDataContractStandard] = None,
     server: Optional[Server] = None,
     include_failed_samples: bool = False,
+    row_filter: Optional[str] = None,
 ):
     try:
-        t = _resolve_table(con, model)
+        t = _resolve_table(con, model, _table_database(con, server))
     except Exception as e:
         logger.warning("Could not read model '%s': %s", model, e)
         _fail_all(run, specs, ResultEnum.failed, f"Could not read model '{model}': {e}")
@@ -185,6 +229,48 @@ def _run_model(
 
     columns = {c.lower(): c for c in t.columns}
     schema = t.schema()
+
+    # Physical type checks read the real declared native types from the catalog;
+    # fetch once per model, and only when such a check exists.
+    native_types = None
+    if any(spec.metric == MetricType.FIELD_PHYSICAL_TYPE for spec in specs):
+        native_types = fetch_native_types(con, server, model)
+
+    # Snowflake collapses structured OBJECT/ARRAY nesting in the ibis dtype; read
+    # the real nested types from SHOW COLUMNS so field_type checks can recurse.
+    structured_types = None
+    if get_server_type(server) == "snowflake" and any(
+        spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE, MetricType.FIELD_NESTED_TYPE)
+        for spec in specs
+    ):
+        structured_types = fetch_structured_types(con, server, t.get_name())
+
+    # Applied after the catalog reads above: those need the real table name, and
+    # the schema/type checks compare declared types, which no row filter changes.
+    if row_filter:
+        try:
+            t = _apply_row_filter(t, model, row_filter)
+        except Exception as e:
+            logger.warning("Could not apply row filter to model '%s': %s", model, e)
+            # A predicate that does not compile is a configuration problem, not a
+            # data violation, so the checks error rather than fail. Only the checks
+            # that read rows are affected.
+            _fail_all(
+                run,
+                [s for s in specs if s.requires_data_read],
+                ResultEnum.error,
+                f"Could not apply row filter '{row_filter}': {e}",
+            )
+            specs = [s for s in specs if not s.requires_data_read]
+            if not specs:
+                return
+
+    # Read at most once, and only for a check that needs a denominator; the batched
+    # aggregation reads its own row count within the same query.
+    @cache
+    def model_row_count() -> int:
+        rc = t.count().execute()
+        return 0 if rc is None else int(rc)
 
     agg_exprs = []  # list[(spec, named_expr)]
     for spec in specs:
@@ -197,19 +283,34 @@ def _run_model(
                 named = _count_true(_missing_expr(t, col, spec.missing_values)).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 col = _resolve_col(columns, spec.field)
+                if _has_array_constraints(spec) and not schema[col].is_array():
+                    # Silently dropping the constraint would report the check as
+                    # passed, which is worse than saying it could not be run.
+                    _set_impl(run, spec.key, _describe(spec), None)
+                    set_result(
+                        run,
+                        spec.key,
+                        ResultEnum.error,
+                        f"Column {spec.field} is {schema[col]}, not an array, so the constraint cannot be measured.",
+                    )
+                    continue
                 expr = _invalid_expr(t, col, schema[col], spec)
                 if expr is None:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
-                    _evaluate(run, spec, 0)
+                    _evaluate(run, spec, 0, row_count=model_row_count())
                 else:
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
-                _run_duplicate(run, t, columns, spec)
+                _run_duplicate(run, t, columns, spec, model_row_count())
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
-                _run_type(run, schema, columns, spec)
+                _run_type(run, schema, columns, spec, structured_types)
+            elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
+                _run_physical_type(run, con, server, schema, columns, native_types, spec, structured_types)
+            elif spec.metric == MetricType.FIELD_NESTED_TYPE:
+                _run_nested_type(run, schema, columns, spec, structured_types, sqlglot_dialect(con))
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
                 _run_freshness(run, t, columns, spec)
             elif spec.metric == MetricType.CUSTOM_SQL:
@@ -221,10 +322,10 @@ def _run_model(
                 _record_sql(run, spec, t.aggregate([named]))
                 agg_exprs.append((spec, named))
         except _ColumnNotFound as e:
-            _set_result(run, spec.key, ResultEnum.failed, str(e))
+            set_result(run, spec.key, ResultEnum.failed, str(e))
         except Exception as e:
             logger.warning("Check '%s' errored: %s", spec.key, e)
-            _set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
+            set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
 
     if agg_exprs:
         _run_aggregation(run, t, agg_exprs)
@@ -245,7 +346,7 @@ def _run_aggregation(run: Run, t, agg_exprs):
     except Exception as e:
         logger.warning("Aggregation query failed: %s", e)
         for spec, _ in agg_exprs:
-            _set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
+            set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
         return
 
     row = df.iloc[0]
@@ -296,7 +397,7 @@ def _collect_failed_samples(run, t, columns, schema, model, specs, data_contract
             logger.debug("Could not collect failed samples for '%s': %s", spec.key, e)
             continue
         if samples:
-            check.failed_samples = samples
+            check.failedSamples = samples
 
 
 def _sample_field_meta(data_contract, server, model):
@@ -502,6 +603,11 @@ def _regex_search_expr(t, column, pattern: str):
     return column.re_search(pattern)
 
 
+def _has_array_constraints(spec: CheckSpec) -> bool:
+    """Whether the check measures the elements of an array."""
+    return spec.valid_min_items is not None or spec.valid_max_items is not None or bool(spec.valid_unique_items)
+
+
 def _valid_expr(t, col, dtype, spec: CheckSpec):
     """Boolean: a non-missing value satisfies all configured validity constraints."""
     conds = []
@@ -517,6 +623,16 @@ def _valid_expr(t, col, dtype, spec: CheckSpec):
         conds.append(_as_string(t[col], dtype).length() >= spec.valid_min_length)
     if spec.valid_max_length is not None:
         conds.append(_as_string(t[col], dtype).length() <= spec.valid_max_length)
+    # Array constraints count the elements of the row's array. A column the
+    # contract calls an array but the server does not cannot be measured that
+    # way, so the constraint is left off rather than compiled into invalid SQL.
+    if dtype is not None and dtype.is_array():
+        if spec.valid_min_items is not None:
+            conds.append(t[col].length() >= spec.valid_min_items)
+        if spec.valid_max_items is not None:
+            conds.append(t[col].length() <= spec.valid_max_items)
+        if spec.valid_unique_items:
+            conds.append(t[col].unique().length() == t[col].length())
     if not conds:
         return None
     expr = conds[0]
@@ -565,22 +681,41 @@ def _constraint_info(spec: CheckSpec) -> dict:
         info["min_length"] = spec.valid_min_length
     if spec.valid_max_length is not None:
         info["max_length"] = spec.valid_max_length
+    if spec.valid_min_items is not None:
+        info["min_items"] = spec.valid_min_items
+    if spec.valid_max_items is not None:
+        info["max_items"] = spec.valid_max_items
+    if spec.valid_unique_items:
+        info["unique_items"] = True
     return info
 
 
 # ---------------------------------------------------------------------------
 # dedicated check runners
 # ---------------------------------------------------------------------------
-def _run_duplicate(run: Run, t, columns, spec: CheckSpec):
+def _run_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
+    """The threshold is compared against the duplicated key count; the rows those
+    keys span are what is reported as failed."""
+    import pandas as pd
+
     cols = [_resolve_col(columns, c) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
-    dup_count = dup_groups.count().execute()
-    dup_count = int(dup_count) if dup_count is not None else 0
-    _evaluate(run, spec, dup_count)
+    totals = dup_groups.aggregate(
+        _dup_keys=dup_groups["_dup_n"].count(), _dup_rows=dup_groups["_dup_n"].sum()
+    ).execute()
+
+    def _int(value) -> int:
+        return 0 if (value is None or pd.isna(value)) else int(value)
+
+    row = totals.iloc[0]
+    dup_count = _int(row["_dup_keys"])
+    _evaluate(run, spec, dup_count, row_count=row_count)
+    extra = {"failed_rows": _int(row["_dup_rows"])}
     if len(cols) > 1:
-        _update_diagnostics(run, spec.key, {"columns": cols})
+        extra["columns"] = cols
+    _update_diagnostics(run, spec.key, extra)
 
 
 def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
@@ -595,7 +730,7 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
             pass
     ok = spec.field.lower() in present
     _set_diagnostics(run, spec.key, _diag(metric="field_present", field=spec.field, present=ok))
-    _set_result(
+    set_result(
         run,
         spec.key,
         ResultEnum.passed if ok else ResultEnum.failed,
@@ -603,36 +738,194 @@ def _run_present(run: Run, con, model: str, columns, spec: CheckSpec):
     )
 
 
-def _run_type(run: Run, schema, columns, spec: CheckSpec):
+def _run_type(run: Run, schema, columns, spec: CheckSpec, structured_types: dict[str, SchemaProperty] | None = None):
     _set_impl(
         run,
         spec.key,
-        f"type of '{spec.field}' is compatible with '{spec.expected_type_label}' ({spec.expected_category})",
+        f"type of '{spec.field}' is compatible with '{spec.expected_type_label}'",
         "introspection",
     )
-    expected_label = f"{spec.expected_type_label} ({spec.expected_category})"
     actual_col = columns.get(spec.field.lower())
     if actual_col is None:
-        _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=expected_label))
-        _set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label))
+        set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
     dtype = schema[actual_col]
-    actual_category = ibis_dtype_category(dtype)
+    # Snowflake structured types come back collapsed from ibis; prefer the nested
+    # tree recovered from SHOW COLUMNS when available.
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
     _set_diagnostics(
         run,
         spec.key,
-        _diag(metric="field_type", field=spec.field, expected=expected_label, actual=f"{dtype} ({actual_category})"),
+        _diag(
+            metric="field_type",
+            field=spec.field,
+            expected=spec.expected_type_label,
+            actual=structured_prop.physicalType if structured_prop else str(dtype),
+        ),
     )
-    if category_matches(spec.expected_category, actual_category):
-        _set_result(run, spec.key, ResultEnum.passed, None)
+    if schema_property_matches(spec.expected_schema_property, actual_prop):
+        set_result(run, spec.key, ResultEnum.passed, None)
     else:
-        _set_result(
+        reason = schema_property_mismatch_reason(spec.expected_schema_property, actual_prop)
+        set_result(
             run,
             spec.key,
             ResultEnum.failed,
-            f"Expected type '{spec.expected_type_label}' ({spec.expected_category}) "
-            f"but column is '{dtype}' ({actual_category})",
+            reason or f"Expected type '{spec.expected_type_label}' but column is '{dtype}'",
         )
+
+
+def _run_physical_type(
+    run: Run,
+    con,
+    server,
+    schema,
+    columns,
+    native_types,
+    spec: CheckSpec,
+    structured_types: dict[str, SchemaProperty] | None = None,
+):
+    """Compare a column's real native type against the contract's physicalType.
+
+    When the native type cannot be read for this backend, or the declared
+    physicalType cannot be interpreted in the server's dialect, fall back to the
+    coarse logicalType category check if the property declares one, and only warn
+    (skip) when there is nothing left to compare against.
+    """
+    _set_impl(
+        run,
+        spec.key,
+        f"physical type of '{spec.field}' is '{spec.expected_physical_type}'",
+        "introspection",
+    )
+    actual_col = columns.get(spec.field.lower())
+    if actual_col is None:
+        _set_diagnostics(
+            run, spec.key, _diag(metric="field_physical_type", field=spec.field, expected=spec.expected_physical_type)
+        )
+        set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        return
+
+    # The catalog reports a structured OBJECT/ARRAY as its bare token, dropping the
+    # nested types; the tree recovered from SHOW COLUMNS renders the real native type.
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    if structured_prop is not None and has_nesting(structured_prop):
+        actual_native = structured_prop.physicalType
+    else:
+        actual_native = native_types.get(spec.field.lower()) if native_types else None
+    _set_diagnostics(
+        run,
+        spec.key,
+        _diag(
+            metric="field_physical_type",
+            field=spec.field,
+            expected=spec.expected_physical_type,
+            actual=actual_native,
+        ),
+    )
+
+    result, reason = (None, "")
+    if actual_native is not None:
+        result, reason = physical_type_matches(spec.expected_physical_type, actual_native, sqlglot_dialect(con))
+    else:
+        reason = f"Could not read the native type of '{spec.field}' from the {get_server_type(server)} catalog"
+
+    if result is True:
+        set_result(run, spec.key, ResultEnum.passed, None)
+        return
+    if result is False:
+        set_result(run, spec.key, ResultEnum.failed, reason)
+        return
+
+    # result is None: the physical type could not be evaluated. Fall back to the
+    # logicalType category check when the property declares one.
+    fallback = spec.expected_schema_property
+    if fallback is not None and fallback.logicalType is not None:
+        actual_prop = structured_prop or ibis_dtype_to_schema_property(schema[actual_col])
+        if schema_property_matches(fallback, actual_prop):
+            set_result(run, spec.key, ResultEnum.passed, None)
+        else:
+            mismatch = schema_property_mismatch_reason(fallback, actual_prop)
+            actual_label = actual_native or schema[actual_col]
+            set_result(
+                run,
+                spec.key,
+                ResultEnum.failed,
+                mismatch or f"Expected type '{fallback.logicalType}' but column is '{actual_label}'",
+            )
+        return
+
+    set_result(run, spec.key, ResultEnum.warning, f"{reason}; skipping the physical type check")
+
+
+def _run_nested_type(
+    run: Run,
+    schema,
+    columns,
+    spec: CheckSpec,
+    structured_types: dict[str, SchemaProperty] | None = None,
+    dialect=None,
+):
+    """Compare the children a property declares (``properties:`` / ``items:``) against
+    the column's real nested structure. The column's own type is the base check's job.
+    """
+    metric = spec.type
+    _set_impl(run, spec.key, f"nested types of '{spec.field}' match the contract", "introspection")
+    actual_col = columns.get(spec.field.lower())
+    if actual_col is None:
+        _set_diagnostics(run, spec.key, _diag(metric=metric, field=spec.field, expected=spec.expected_type_label))
+        set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
+        return
+
+    dtype = schema[actual_col]
+    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
+    actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
+    actual_label = (structured_prop.physicalType if structured_prop else None) or str(dtype)
+    _set_diagnostics(
+        run,
+        spec.key,
+        _diag(metric=metric, field=spec.field, expected=spec.expected_type_label, actual=actual_label),
+    )
+
+    expected = spec.expected_schema_property
+    expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
+    actual_base = normalize_type_name(actual_prop.logicalType or actual_prop.physicalType)
+    if actual_base is None:
+        # A dynamically-typed column (json / variant / jsonb) holds a different
+        # structure per row, so there is nothing to compare the children against.
+        set_result(
+            run,
+            spec.key,
+            ResultEnum.warning,
+            f"The structure of the '{actual_label}' column '{spec.field}' cannot be read; "
+            f"skipping the nested type check",
+        )
+        return
+    if expected_base != actual_base:
+        # The base type check names the actual type; repeating it here would print
+        # the column's whole rendered structure.
+        set_result(
+            run,
+            spec.key,
+            ResultEnum.failed,
+            f"Cannot verify the nested types of '{spec.field}': the column is not an {expected_base}",
+        )
+        return
+
+    errors = schema_property_mismatch_reasons(expected, actual_prop, spec.field, dialect)
+    if not errors:
+        set_result(run, spec.key, ResultEnum.passed, None)
+        return
+    _update_diagnostics(run, spec.key, {"errors": [error.message for error in errors]})
+    verified = any(error.verifiable for error in errors)
+    set_result(
+        run,
+        spec.key,
+        ResultEnum.failed if verified else ResultEnum.warning,
+        format_mismatch_reason(errors),
+    )
 
 
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
@@ -646,7 +939,7 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
         _set_diagnostics(
             run, spec.key, _diag(metric=spec.metric.value, field=spec.field, threshold_seconds=spec.seconds)
         )
-        _set_result(run, spec.key, ResultEnum.failed, f"No timestamp value found in '{spec.field}'")
+        set_result(run, spec.key, ResultEnum.failed, f"No timestamp value found in '{spec.field}'")
         return
     ts = pd.Timestamp(raw)
     if ts.tzinfo is None:
@@ -668,7 +961,7 @@ def _run_freshness(run: Run, t, columns, spec: CheckSpec):
             **{ts_key: ts.isoformat()},
         ),
     )
-    _set_result(
+    set_result(
         run,
         spec.key,
         ResultEnum.passed if ok else ResultEnum.failed,
@@ -693,7 +986,12 @@ def _run_scalar(con, query: str, dialect: Optional[str]):
         logger.debug("con.sql failed (%s); falling back to raw_sql", primary_error)
         cursor = con.raw_sql(query)
         try:
-            row = cursor.fetchone()
+            if hasattr(cursor, "fetchone"):
+                row = cursor.fetchone()
+            else:
+                # Some backends (e.g. BigQuery) return an iterable result set
+                # (RowIterator) instead of a DBAPI cursor.
+                row = next(iter(cursor), None)
         finally:
             # On DuckDB, raw_sql returns the shared connection itself; closing it
             # would tear down the connection and break every subsequent check.
@@ -725,9 +1023,10 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
         severity=spec.severity,
         threshold=spec.threshold.describe() if spec.threshold is not None else None,
     )
+    if row_count is not None:
+        diag["row_count"] = row_count
     # For "bad row" metrics, show how many of the total rows failed.
     if row_count is not None and is_bad_row:
-        diag["row_count"] = row_count
         diag["failed_fraction"] = round(value / row_count, 6) if row_count else 0.0
     if percent is not None:
         diag["percent"] = percent
@@ -741,7 +1040,7 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
     _set_diagnostics(run, spec.key, diag)
 
     if spec.threshold is None:
-        _set_result(run, spec.key, ResultEnum.passed, None)
+        set_result(run, spec.key, ResultEnum.passed, None)
         return
     ok = spec.threshold.passes(compare_value)
     target = spec.field or spec.model
@@ -754,7 +1053,7 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
         )
     else:
         reason = f"Actual {spec.metric.value}({target}) was {value}, expected {spec.threshold.describe()}"
-    _set_result(run, spec.key, ResultEnum.passed if ok else _fail_result(spec), reason)
+    set_result(run, spec.key, ResultEnum.passed if ok else _fail_result(spec), reason)
 
 
 # Severities (ODCS quality.severity) that downgrade a failing check to a warning
@@ -774,7 +1073,8 @@ def _fail_result(spec: CheckSpec) -> ResultEnum:
     return ResultEnum.failed
 
 
-def _set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]):
+def set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]) -> None:
+    """Set the result of the pre-registered check identified by ``key``."""
     check = next((c for c in run.checks if c.key == key), None)
     if check is None:
         return
@@ -839,7 +1139,7 @@ def _to_sql(expr) -> Optional[str]:
 
 def _fail_all(run: Run, specs: List[CheckSpec], result: ResultEnum, reason: str):
     for spec in specs:
-        _set_result(run, spec.key, result, reason)
+        set_result(run, spec.key, result, reason)
 
 
 def _resolve_col(columns: dict, field: str) -> str:
@@ -849,21 +1149,75 @@ def _resolve_col(columns: dict, field: str) -> str:
     return actual
 
 
-def _resolve_table(con, model: str):
+def _table_database(con, server: Optional[Server]) -> Optional[str]:
+    """The schema to qualify the table with during introspection, or ``None``.
+
+    Two backends need the contract's ``server.schema`` passed explicitly instead
+    of relying on ibis's default:
+
+    - **Oracle** logs in as one user but the tables may be owned by a different
+      schema (``server.schema``). ibis defaults the owner to the login user, so
+      an unqualified lookup raises ``TableNotFound``.
+    - **SQL Server** (``mssql`` backend) has no ``schema`` kwarg on
+      ``do_connect()`` either, so it has the same limitation as Oracle: an
+      unqualified lookup falls back to the login's default schema.
+    - **Redshift** has no dedicated ibis backend and goes through the Postgres
+      backend (``con.name == "postgres"``). When no schema is passed, ibis's
+      Postgres introspection resolves the active schema with ``SELECT
+      current_schema`` (no parentheses) — valid on PostgreSQL but rejected by
+      Redshift with ``column "current_schema" does not exist``, since Redshift
+      only supports the parenthesized ``current_schema()``. Passing the schema
+      explicitly skips that query.
+
+    Other backends pin the schema at connect time and need no qualifier.
+    """
+    if server is None or not server.schema_:
+        return None
+    if getattr(con, "name", None) in ("oracle", "mssql"):
+        return server.schema_
+    # A duckdb database file is opened without a schema (`connect()` takes none),
+    # so a table outside `main` has to be qualified at lookup.
+    if get_server_type(server) == "duckdb":
+        return server.schema_
+    # Redshift rides the Postgres backend, so detect it by the contract's server
+    # type rather than con.name.
+    if get_server_type(server) == "redshift":
+        return server.schema_
+    return None
+
+
+_SIMPLE_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _apply_row_filter(t, model: str, predicate: str):
+    """Restrict a bound table to the rows matching a raw SQL predicate.
+
+    The predicate is written in the backend's dialect and references columns
+    unqualified. Wrapping the aliased relation via ``Table.sql`` keeps the
+    result a regular table expression, so every downstream query (batched
+    aggregation, duplicates, freshness, failed samples) compiles with the
+    WHERE clause included and the recorded per-check SQL shows it.
+    """
+    alias = f"{model}_filtered" if _SIMPLE_IDENTIFIER.match(model) else "filtered_rows"
+    return t.alias(alias).sql(f"SELECT * FROM {alias} WHERE {predicate}")
+
+
+def _resolve_table(con, model: str, database: Optional[str] = None):
     """Resolve a table by name, tolerating case differences across dialects."""
     if getattr(con, "name", None) == "pyspark":
         return _pyspark_table_unconvertible_as_unknown(con, model)
+    kwargs = {"database": database} if database else {}
     try:
-        return con.table(model)
+        return con.table(model, **kwargs)
     except Exception:
         try:
-            available = con.list_tables()
+            available = con.list_tables(**kwargs)
         except Exception:
             raise
         match = next((name for name in available if name.lower() == model.lower()), None)
         if match is None:
             raise
-        return con.table(match)
+        return con.table(match, **kwargs)
 
 
 def _pyspark_table_unconvertible_as_unknown(con, name: str):

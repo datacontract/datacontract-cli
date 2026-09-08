@@ -1,12 +1,12 @@
 import json
 import logging
-import os
 from typing import List, Optional, Tuple
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import ColumnInfo, TableInfo
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
+from datacontract.config import Config
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -27,13 +27,14 @@ class UnityImporter(Importer):
         self,
         source: str,
         import_args: dict,
+        config: "Config | None" = None,
     ) -> OpenDataContractStandard:
         """Import data contract specification from a source."""
         if source is not None:
             return import_unity_from_json(source)
         else:
             unity_table_full_name_list = import_args.get("unity_table_full_name")
-            return import_unity_from_api(unity_table_full_name_list)
+            return import_unity_from_api(unity_table_full_name_list, config)
 
 
 def import_unity_from_json(source: str) -> OpenDataContractStandard:
@@ -47,7 +48,7 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse unity schema",
             reason=f"Failed to parse unity schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -55,16 +56,22 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
     return convert_unity_schema(odcs, unity_schema)
 
 
-def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenDataContractStandard:
+def import_unity_from_api(
+    unity_table_full_name_list: List[str] = None, config: "Config | None" = None
+) -> OpenDataContractStandard:
     """Import data contract specification from Unity Catalog API."""
+    config = Config.resolve(config)
     try:
-        profile = os.getenv("DATACONTRACT_DATABRICKS_PROFILE")
-        host, token = os.getenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME"), os.getenv("DATACONTRACT_DATABRICKS_TOKEN")
+        profile = config.get_databricks_profile()
+        host, token = (
+            config.get_databricks_server_hostname(),
+            config.get_databricks_token(),
+        )
         exception = DataContractException(
             type="configuration",
             name="Databricks configuration",
             reason="",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
         if not profile and not host and not token:
             reason = "Either DATACONTRACT_DATABRICKS_PROFILE or both DATACONTRACT_DATABRICKS_SERVER_HOSTNAME and DATACONTRACT_DATABRICKS_TOKEN environment variables must be set"
@@ -84,7 +91,7 @@ def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenD
             type="schema",
             name="Retrieve unity catalog schema",
             reason="Failed to connect to unity catalog schema",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -99,7 +106,7 @@ def import_unity_from_api(unity_table_full_name_list: List[str] = None) -> OpenD
                 type="schema",
                 name="Retrieve unity catalog schema",
                 reason=f"Unity table {unity_table_full_name} not found",
-                engine="datacontract",
+                engine="datacontract-cli",
                 original_exception=e,
             )
         odcs = convert_unity_schema(odcs, unity_schema)
@@ -168,7 +175,6 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
         required=required if required else None,
         properties=nested_properties,
         items=items,
-        custom_properties={"databricksType": sql_type} if sql_type else None,
     )
 
 
@@ -183,22 +189,17 @@ def _to_nested_types(column: ColumnInfo) -> Tuple[Optional[List[SchemaProperty]]
     if not column.type_json:
         return None, None
     try:
-        from pyspark.sql import types
+        from datacontract.imports.spark_type_json import property_from_field_json, property_from_type_json
 
-        from datacontract.imports.spark_importer import _property_from_struct_type, _type_to_property
-
-        field = types.StructField.fromJson(json.loads(column.type_json))
-        data_type = field.dataType
-        if isinstance(data_type, types.ArrayType):
-            return None, _type_to_property("items", data_type.elementType, not data_type.containsNull)
-        if isinstance(data_type, types.StructType):
-            return [_property_from_struct_type(sf) for sf in data_type.fields], None
-    except ImportError:
-        logger.warning(
-            "pyspark is not installed, skipping nested type resolution for column %s; "
-            "install datacontract-cli[databricks] to import struct and array types as nested properties",
-            column.name,
-        )
+        data_type = json.loads(column.type_json)["type"]
+        if isinstance(data_type, dict):
+            if data_type.get("type") == "array":
+                items = property_from_type_json(
+                    "items", data_type["elementType"], not data_type.get("containsNull", True)
+                )
+                return None, items
+            if data_type.get("type") == "struct":
+                return [property_from_field_json(f) for f in data_type["fields"]], None
     except Exception as e:
         logger.warning("Could not resolve nested type for column %s from type_json: %s", column.name, e)
     return None, None

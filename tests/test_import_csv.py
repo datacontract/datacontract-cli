@@ -87,10 +87,9 @@ schema:
     required: true
   - name: field_six
     physicalType: VARCHAR
-    customProperties:
-    - property: format
-      value: email
     logicalType: string
+    logicalTypeOptions:
+      format: email
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

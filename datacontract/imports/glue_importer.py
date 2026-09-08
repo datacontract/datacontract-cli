@@ -1,9 +1,9 @@
 import re
 from typing import Dict, Generator, List
 
-import boto3
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
+from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -14,13 +14,18 @@ from datacontract.imports.odcs_helper import (
 
 
 class GlueImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_glue(source, import_args.get("glue_table"))
+    def import_source(self, source: str, import_args: dict, config=None) -> OpenDataContractStandard:
+        return import_glue(source, import_args.get("glue_table"), config=config)
 
 
-def get_glue_database(database_name: str):
+def glue_client(region: str = None, config=None):
+    """Return a Glue client honouring the same credentials as every other AWS call."""
+    return aws_credentials.client("glue", region, config)
+
+
+def get_glue_database(database_name: str, region: str = None, config=None):
     """Get the details Glue database."""
-    glue = boto3.client("glue")
+    glue = glue_client(region, config)
     try:
         response = glue.get_database(Name=database_name)
     except glue.exceptions.EntityNotFoundException:
@@ -36,9 +41,9 @@ def get_glue_database(database_name: str):
     )
 
 
-def get_glue_tables(database_name: str) -> List[str]:
+def get_glue_tables(database_name: str, region: str = None, config=None) -> List[str]:
     """Get the list of tables in a Glue database."""
-    glue = boto3.client("glue")
+    glue = glue_client(region, config)
     paginator = glue.get_paginator("get_tables")
     table_names = []
 
@@ -55,9 +60,9 @@ def get_glue_tables(database_name: str) -> List[str]:
     return table_names
 
 
-def get_glue_table_schema(database_name: str, table_name: str) -> List[Dict]:
+def get_glue_table_schema(database_name: str, table_name: str, region: str = None, config=None) -> List[Dict]:
     """Get the schema of a Glue table."""
-    glue = boto3.client("glue")
+    glue = glue_client(region, config)
 
     try:
         response = glue.get_table(DatabaseName=database_name, Name=table_name)
@@ -86,15 +91,16 @@ def get_glue_table_schema(database_name: str, table_name: str) -> List[Dict]:
 def import_glue(
     source: str,
     table_names: List[str],
+    config=None,
 ) -> OpenDataContractStandard:
     """Import the schema of a Glue database."""
-    catalogid, location_uri = get_glue_database(source)
+    catalogid, location_uri = get_glue_database(source, config=config)
 
     if catalogid is None:
         return create_odcs()
 
     if table_names is None:
-        table_names = get_glue_tables(source)
+        table_names = get_glue_tables(source, config=config)
 
     odcs = create_odcs()
 
@@ -108,10 +114,19 @@ def import_glue(
     )
     odcs.servers = [server]
 
-    odcs.schema_ = []
+    odcs.schema_ = create_schema_objects(source, table_names, config=config)
+
+    return odcs
+
+
+def create_schema_objects(
+    database_name: str, table_names: List[str], region: str = None, config=None
+) -> List[SchemaObject]:
+    """Read each table from the Glue Data Catalog and turn it into a schema object."""
+    schemas = []
 
     for table_name in table_names:
-        table_schema = get_glue_table_schema(source, table_name)
+        table_schema = get_glue_table_schema(database_name, table_name, region, config)
 
         properties = []
         for column in table_schema:
@@ -126,15 +141,15 @@ def import_glue(
 
             properties.append(prop)
 
-        schema_obj = create_schema_object(
-            name=table_name,
-            physical_type="table",
-            properties=properties,
+        schemas.append(
+            create_schema_object(
+                name=table_name,
+                physical_type="table",
+                properties=properties,
+            )
         )
 
-        odcs.schema_.append(schema_obj)
-
-    return odcs
+    return schemas
 
 
 def create_typed_property(name: str, dtype: str) -> SchemaProperty:
@@ -234,7 +249,7 @@ def map_glue_type_to_odcs(sql_type: str) -> str:
         "float": "number",
         "double": "number",
         "boolean": "boolean",
-        "timestamp": "date",
+        "timestamp": "timestamp",
         "date": "date",
     }
 

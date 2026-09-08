@@ -1,0 +1,71 @@
+kind: DataContract
+apiVersion: v3.1.0
+id: test-all-constraints
+name: All Constraints Test
+version: 1.0.0
+status: active
+description:
+  purpose: Test contract covering all supported constraint types
+schema:
+  - name: products
+    description: Products table with all constraint types
+    properties:
+      - name: product_id
+        logicalType: string
+        primaryKey: true
+        required: true
+        unique: true
+        logicalTypeOptions:
+          minLength: 5
+          maxLength: 20
+          pattern: "^PRD-[0-9]+$"
+      - name: email
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          format: email
+      - name: website
+        logicalType: string
+        logicalTypeOptions:
+          format: url
+      - name: quantity
+        logicalType: integer
+        required: true
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 9999
+          exclusiveMinimum: -1
+          exclusiveMaximum: 10000
+      - name: discount
+        logicalType: number
+        logicalTypeOptions:
+          exclusiveMinimum: 0
+          exclusiveMaximum: 1
+      - name: score
+        logicalType: number
+        logicalTypeOptions:
+          minimum: 0.0
+          maximum: 100.0
+      - name: category
+        logicalType: string
+        customProperties:
+          - property: enum
+            value:
+              - electronics
+              - clothing
+              - food
+      - name: event_date
+        logicalType: date
+        logicalTypeOptions:
+          minimum: "2020-01-01"
+          maximum: "2030-12-31"
+    quality:
+      - type: custom
+        engine: great-expectations
+        description: Row Count Check
+        implementation:
+          type: expect_table_row_count_to_be_between
+          kwargs:
+            min_value: 1
+            max_value: 1000000
+          meta: {}

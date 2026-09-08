@@ -1,3 +1,4 @@
+import importlib.resources as resources
 import io
 import logging
 from decimal import Decimal
@@ -19,10 +20,6 @@ from openpyxl.worksheet.worksheet import Worksheet
 from datacontract.export.exporter import Exporter
 
 logger = logging.getLogger(__name__)
-
-ODCS_EXCEL_TEMPLATE_URL = (
-    "https://github.com/datacontract/open-data-contract-standard-excel-template/raw/refs/heads/main/odcs-template.xlsx"
-)
 
 
 class ExcelExporter(Exporter):
@@ -59,7 +56,7 @@ def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optiona
 
     Args:
         odcs: OpenDataContractStandard object to export
-        template_path: Optional path/URL to custom Excel template. If None, uses default template.
+        template_path: Optional path/URL to custom Excel template. If None, uses the template bundled with the CLI.
 
     Returns:
         Excel file as bytes
@@ -67,7 +64,7 @@ def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optiona
     if template_path:
         workbook = create_workbook_from_template(template_path)
     else:
-        workbook = create_workbook_from_template(ODCS_EXCEL_TEMPLATE_URL)
+        workbook = create_workbook_from_bundled_template()
 
     try:
         fill_fundamentals(workbook, odcs)
@@ -98,6 +95,16 @@ def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optiona
         return output.getvalue()
     finally:
         workbook.close()
+
+
+def create_workbook_from_bundled_template() -> Workbook:
+    """Load the official ODCS Excel template that ships with the CLI"""
+    template = resources.files("datacontract").joinpath("templates", "excel", "odcs-template.xlsx")
+    try:
+        return openpyxl.load_workbook(io.BytesIO(template.read_bytes()))
+    except Exception as e:
+        logger.error(f"Failed to load the bundled Excel template: {e}")
+        raise RuntimeError(f"Failed to load Excel template: {e}")
 
 
 def create_workbook_from_template(template_path: str) -> Workbook:

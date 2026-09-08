@@ -10,6 +10,7 @@ import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import app, console, debug_option, enable_debug_logging
+from datacontract.config import cli_config
 from datacontract.init.init_template import get_init_template
 from datacontract.lint.urls import fetch_resource
 from datacontract.model.exceptions import DataContractException
@@ -56,7 +57,7 @@ def _download_local_copy(url: str) -> str:
         console.print("Aborted.")
         raise typer.Exit(code=1)
     try:
-        content = fetch_resource(url)
+        content = fetch_resource(url, cli_config())
     except DataContractException as e:
         console.print(f"[red]Error: {e.reason}[/red]")
         raise typer.Exit(code=1)

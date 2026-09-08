@@ -5,13 +5,16 @@ from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
 
+import pydantic
 import typer
 from click import Context
 from dotenv import find_dotenv, load_dotenv
 from rich.console import Console
+from rich.markup import escape
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
+from datacontract.config import Config, set_cli_config
 from datacontract.output.output_format import OutputFormat
 
 console = Console()
@@ -25,6 +28,8 @@ COMMAND_ORDER = [
     "edit",
     "lint",
     "changelog",
+    "breaking",
+    "sync",  # `dbt sync` subcommand; no top-level `sync`, so this only orders the dbt group
     "test",
     "ci",
     "export",
@@ -46,6 +51,10 @@ class OrderedCommands(TyperGroup):
 class OrderedCommandsWithMigrationHints(OrderedCommands):
     """Intercepts removed or renamed options on import/export and points the user to the v0.12.0 migration notes."""
 
+    # Import formats where `--schema` still means the database schema, so it must
+    # not be rewritten to the v0.12.0 `--json-schema`.
+    DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver", "oracle", "trino"}
+
     RENAMED_FLAGS = {
         "--format": None,
         "--rdf-base": "--base",
@@ -64,13 +73,17 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
         subcommand = positionals[0] if positionals else None
 
         # this function is called by both `datacontract` and `datacontract import`
-        is_import_snowflake = (positionals[:1] == ["snowflake"]) or (positionals[:2] == ["import", "snowflake"])
+        if subcommand == "import":
+            import_format = positionals[1] if len(positionals) > 1 else None
+        else:
+            import_format = subcommand
+        takes_database_schema = import_format in self.DATABASE_SCHEMA_IMPORTS
 
         rewritten_args = []
         for arg in args:
             if isinstance(arg, str) and arg.startswith("--"):
                 flag, _, value = arg.partition("=")
-                if flag == "--schema" and not is_import_snowflake:
+                if flag == "--schema" and not takes_database_schema:
                     typer.secho(
                         "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
                         err=True,
@@ -111,6 +124,19 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
+def inject_system_truststore() -> None:
+    """Verify TLS using the operating system's certificate trust store instead of the
+    bundled CA certificates. This lets the CLI work behind corporate proxies or with
+    internal CAs whose root certificates are installed in the OS trust store but not in
+    the certifi bundle that requests uses by default."""
+    try:
+        import truststore
+    except ImportError:
+        console.print("[red]--system-truststore requires the 'truststore' package, which is not installed.[/red]")
+        raise typer.Exit(code=1)
+    truststore.inject_into_ssl()
+
+
 @app.callback()
 def common(
     ctx: typer.Context,
@@ -120,6 +146,20 @@ def common(
         help="Prints the current version.",
         callback=version_callback,
         is_eager=True,
+    ),
+    system_truststore: bool = typer.Option(
+        False,
+        "--system-truststore",
+        help="Verify TLS using the operating system's certificate trust store "
+        "instead of the bundled CA certificates (e.g. behind a corporate proxy or internal CA).",
+        envvar="DATACONTRACT_SYSTEM_TRUSTSTORE",
+    ),
+    config_file: Optional[Path] = typer.Option(
+        None,
+        "--config-file",
+        help="Path to a YAML file with credentials and connection options "
+        "(sections per data source, ${VAR} references resolve from the environment). "
+        "Defaults to ./datacontract-config.yaml or ~/.datacontract/config.yaml if present.",
     ),
 ):
     """
@@ -133,6 +173,29 @@ def common(
     # current working directory, walking up parent directories until one is found.
     # Already-set environment variables take precedence.
     load_dotenv(dotenv_path=find_dotenv(usecwd=True), override=False)
+
+    set_cli_config(_load_config_file(config_file))
+
+    if system_truststore:
+        inject_system_truststore()
+
+
+def _load_config_file(config_file: "Optional[Path]"):
+    """Load the --config-file, or the first default location that exists."""
+    candidates = (
+        [config_file]
+        if config_file
+        else [Path("datacontract-config.yaml"), Path.home() / ".datacontract" / "config.yaml"]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            try:
+                return Config.from_yaml(candidate)
+            except (ValueError, pydantic.ValidationError) as e:
+                raise typer.BadParameter(str(e), param_hint="--config-file")
+    if config_file:
+        raise typer.BadParameter(f"Config file {config_file} does not exist.", param_hint="--config-file")
+    return None
 
 
 def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
@@ -155,11 +218,19 @@ def enable_debug_logging(debug: bool, otherwise_disable_stderr: bool = False):
             logging.getLogger(noisy_logger).setLevel(logging.ERROR)
 
 
-def validate_publish_url(publish: str | None) -> None:
-    """Reject `--publish` values that aren't http/https before any real work runs."""
-    if publish is not None and not (publish.startswith("http://") or publish.startswith("https://")):
+def validate_publish_url(publish: str | None) -> str | None:
+    """Normalize `--publish` and reject values that aren't http/https before any real work runs.
+
+    An empty value means "don't publish". CI templates that render the URL from an unset variable
+    pass `--publish ''` rather than omitting the option, e.g. GitHub Actions container actions,
+    where an argument list cannot drop an entry conditionally.
+    """
+    if not publish:
+        return None
+    if not (publish.startswith("http://") or publish.startswith("https://")):
         console.print(f"[red]--publish URL must start with http:// or https:// (got: {publish!r}).[/red]")
         raise typer.Exit(code=1)
+    return publish
 
 
 def resolve_output_format(output_format: Optional[OutputFormat], output: Optional[Path]) -> Optional[OutputFormat]:
@@ -183,6 +254,17 @@ def _print_logs(run, out=None):
         out.print(log.timestamp.strftime("%y-%m-%d %H:%M:%S"), log.level.ljust(5), log.message)
 
 
+def _print_publish_failure(run, out=None):
+    """Surface the publish log messages on the console; logging is suppressed without --debug."""
+    if out is None:
+        out = console
+    for log in run.logs:
+        if log.level in ("WARN", "ERROR") and "publish" in log.message.lower():
+            color = "red" if log.level == "ERROR" else "yellow"
+            # highlight=False: render as prose, not rich's code-like repr highlighting.
+            out.print(f"[{color}]{escape(log.message)}[/{color}]", highlight=False)
+
+
 # ---------------------------------------------------------------------------
 # Register commands (must be after app and shared helpers are defined so the
 # command_* modules can import from this module without circular-import issues)
@@ -190,6 +272,7 @@ def _print_logs(run, out=None):
 # Display order for `--help` is controlled by COMMAND_ORDER above, not by import order.
 from datacontract import (  # noqa: E402, F401
     command_api,
+    command_breaking,
     command_catalog,
     command_changelog,
     command_ci,
@@ -237,7 +320,9 @@ def main():
         from datacontract.model.exceptions import DataContractException
 
         message = e.reason if isinstance(e, DataContractException) else str(e)
-        console.print(f"[red]Error:[/red] {message}")
+        # Escape the message: bracketed text in an exception (e.g. a driver's
+        # `pip install "botocore[crt]"` hint) would otherwise be eaten as rich markup.
+        console.print(f"[red]Error:[/red] {escape(message)}")
         console.print("[dim]Pass --debug (or set DATACONTRACT_CLI_DEBUG=1) for the full traceback.[/dim]")
         sys.exit(1)
 

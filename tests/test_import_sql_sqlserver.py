@@ -21,7 +21,7 @@ servers:
     host: my_host
     port: 1433
     database: my_database
-    schema: my_schema
+    schema: dbo
 schema:
   - name: my_table
     physicalType: table

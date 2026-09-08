@@ -14,6 +14,7 @@ from open_data_contract_standard.model import (
 )
 from pydantic import TypeAdapter
 
+from datacontract.config import Config
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
 from datacontract.imports.sql_importer import map_type_from_sql
@@ -21,19 +22,20 @@ from datacontract.model.exceptions import DataContractException
 
 
 class SnowflakeImporter(Importer):
-    def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
+    def import_source(self, source: str, import_args: dict, config: "Config | None" = None) -> OpenDataContractStandard:
         if source is not None:
             return import_snowflake_from_connector(
                 account=source,
                 database=import_args.get("database"),
                 schema=import_args.get("schema"),
+                config=config,
             )
         else:
             raise DataContractException(
                 type="source",
                 name="snowflake import source",
                 reason="Account is required for snowflake import and should be the account name",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
 
 
@@ -253,7 +255,7 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
                     result="failed",
                     name="snowflake query timeout",
                     reason=f"Snowflake queries did not complete within {_QUERY_TIMEOUT_S} seconds.",
-                    engine="datacontract",
+                    engine="datacontract-cli",
                 )
             time.sleep(0.2)
 
@@ -270,7 +272,7 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
                 result="failed",
                 name=f"snowflake query failed: {name}",
                 reason=f"Snowflake query '{name}' failed with status {status}. Check permissions and query syntax.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         with conn.cursor(DictCursor) as cur:
             cur.get_results_from_sfqid(qid)
@@ -341,7 +343,10 @@ def property_customs_ordinal_position_sort(col: SchemaProperty) -> Any:
     return (ord_val is None, ord_val or 0, col.name.lower())
 
 
-def import_snowflake_from_connector(account: str, database: str, schema: str) -> OpenDataContractStandard:
+def import_snowflake_from_connector(
+    account: str, database: str, schema: str, config: "Config | None" = None
+) -> OpenDataContractStandard:
+    config = Config.resolve(config)
 
     try:
         # Verify the snowflake extra is fully installed
@@ -352,12 +357,12 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
             result="failed",
             name="snowflake extra missing",
             reason="Install the extra datacontract-cli[snowflake] to use snowflake",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
     result_sets = {}
-    cnx = snowflake_cursor(account, database, schema)
+    cnx = snowflake_cursor(account, database, schema, config)
     try:
         with cnx.cursor() as cur:
             # Always use quoted identifiers to prevent SQL injection and handle case-sensitive names
@@ -447,7 +452,8 @@ def import_snowflake_from_connector(account: str, database: str, schema: str) ->
     return odcs
 
 
-def snowflake_cursor(account: str, database: str, schema: str):
+def snowflake_cursor(account: str, database: str, schema: str, config: "Config | None" = None):
+    config = Config.resolve(config)
     try:
         from snowflake.connector import connect
     except ImportError as e:
@@ -456,7 +462,7 @@ def snowflake_cursor(account: str, database: str, schema: str):
             result="failed",
             name="snowflake extra missing",
             reason="Install the extra datacontract-cli[snowflake] to use snowflake",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -465,33 +471,27 @@ def snowflake_cursor(account: str, database: str, schema: str):
     ## https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-connect
     ###
     # gather connection parameters from environment variables
-    user_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_USERNAME", None)
-    password_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_PASSWORD", None)
+    user_connect = config.get_snowflake_username()
+    password_connect = config.get_snowflake_password()
     account_connect = account
-    role_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_ROLE", None)
+    role_connect = config.get_snowflake_role()
     authenticator_connect = (
-        "externalbrowser"
-        if password_connect is None
-        else os.environ.get("DATACONTRACT_SNOWFLAKE_AUTHENTICATOR", "snowflake")
+        "externalbrowser" if password_connect is None else (config.get_snowflake_authenticator() or "snowflake")
     )
-    warehouse_connect = os.environ.get("DATACONTRACT_SNOWFLAKE_WAREHOUSE", None)
+    warehouse_connect = config.get_snowflake_warehouse()
     database_connect = database
     schema_connect = schema
-    snowflake_home = os.environ.get("DATACONTRACT_SNOWFLAKE_HOME") or os.environ.get("SNOWFLAKE_HOME")
-    snowflake_connections_file = os.environ.get("DATACONTRACT_SNOWFLAKE_CONNECTIONS_FILE") or os.environ.get(
-        "SNOWFLAKE_CONNECTIONS_FILE"
-    )
+    snowflake_home = config.get_snowflake_home() or os.environ.get("SNOWFLAKE_HOME")
+    snowflake_connections_file = config.get_snowflake_connections_file() or os.environ.get("SNOWFLAKE_CONNECTIONS_FILE")
     if not snowflake_connections_file and snowflake_home:
         snowflake_connections_file = os.path.join(snowflake_home, "connections.toml")
 
-    default_connection = os.environ.get("DATACONTRACT_SNOWFLAKE_DEFAULT_CONNECTION_NAME") or os.environ.get(
+    default_connection = config.get_snowflake_default_connection_name() or os.environ.get(
         "SNOWFLAKE_DEFAULT_CONNECTION_NAME"
     )
 
-    private_key_file = os.environ.get("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE") or os.environ.get(
-        "SNOWFLAKE_PRIVATE_KEY_FILE"
-    )
-    private_key_file_pwd = os.environ.get("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD") or os.environ.get(
+    private_key_file = config.get_snowflake_private_key_file() or os.environ.get("SNOWFLAKE_PRIVATE_KEY_FILE")
+    private_key_file_pwd = config.get_snowflake_private_key_file_pwd() or os.environ.get(
         "SNOWFLAKE_PRIVATE_KEY_FILE_PWD"
     )
 
