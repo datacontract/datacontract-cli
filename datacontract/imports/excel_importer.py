@@ -85,6 +85,7 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
         odcs = OpenDataContractStandard(
             apiVersion=get_cell_value_by_name(workbook, "apiVersion"),
             kind=get_cell_value_by_name(workbook, "kind"),
+            contractCreatedTs=get_cell_value_by_name(workbook, "contractCreatedTs"),
             id=get_cell_value_by_name(workbook, "id"),
             name=get_cell_value_by_name(workbook, "name"),
             version=get_cell_value_by_name(workbook, "version"),
@@ -361,6 +362,8 @@ def import_logical_type_options(row: Row):
         "minLength": parse_integer(row.text("minimum length")),
         "maxLength": parse_integer(row.text("maximum length")),
         "pattern": row.text("pattern"),
+        "timezone": parse_boolean(row.text("timezone")),
+        "defaultTimezone": row.text("default timezone"),
         "format": row.text("format"),
         "exclusiveMaximum": resolve_cell_value(row.raw("exclusive maximum")),
         "exclusiveMinimum": resolve_cell_value(row.raw("exclusive minimum")),
@@ -503,6 +506,7 @@ def import_team(workbook: Workbook):
                     dateIn=row.text("date in"),
                     dateOut=row.text("date out"),
                     replacedByUsername=row.text("replaced by username"),
+                    tags=split_list(row.text("tags")),
                     id=row.text("id"),
                     customProperties=row.custom_properties(),
                 )
