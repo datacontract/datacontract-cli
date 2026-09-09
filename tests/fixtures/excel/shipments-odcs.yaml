@@ -1,31 +1,81 @@
-version: 1.0.2
+apiVersion: v3.2.0
 kind: DataContract
-apiVersion: v3.0.0
 id: fulfillment_shipments_v1
 name: Shipments
+version: 1.0.0
+domain: sales-team
+status: draft
 tenant: company-A
+dataProduct: shipments
 tags:
 - datalocation:EU
-status: draft
-servers:
-- server: production
-  type: bigquery
-  environment: production
-  dataset: shipments_v1
-  project: acme_shipments_prod
 description:
-  usage: Use this to analyze shipments
   purpose: This data can be used for analytical purposes
+  usage: Use this to analyze shipments
   limitations: Not suitable for real-time use cases
+  authoritativeDefinitions:
+  - url: https://example.com/data-guidelines.html
+    type: tutorial
+    description: Company-wide data guidelines
+  customProperties:
+  - property: github_link
+    value: https://github.example.com/shipment-specification.yaml
+customProperties:
+- property: owner
+  value: controlling-team
+- property: additionalField
+  value: some value
+- property: pii
+  value: false
+- property: retentionDays
+  value: 30
+- property: sourceSystem
+  value: SAP
+  description: The system of record
+  vendor: acme
+  id: cp-source-system
+- property: dbtVersion
+  value: '3.10'
+- property: regions
+  value:
+  - eu-west
+  - eu-central
+- property: costCenter
+  value:
+    id: 4711
+    name: Fulfillment
+context:
+  instructions: Join on shipment_id only; delivery_date is in UTC.
+  verifiedStatements:
+  - question: Does this table contain cancelled shipments?
+    answer: No, cancelled shipments are excluded before loading.
+    tags:
+    - completeness
+    id: vs-cancelled
+    customProperties:
+    - property: verifiedBy
+      value: data-steward
+  constraints:
+  - constraint: Do not join to customer PII without a legal basis.
+    tags:
+    - privacy
+    id: c-pii
 schema:
 - name: shipments
   physicalType: table
-  description: This table contains shipment data, including details about shipment
-    IDs, associated orders, delivery dates, carriers, tracking numbers, statuses,
-    and additional shipment information in JSON format.
+  description: Shipment data with orders, delivery dates, carriers and statuses.
   businessName: Shipments
+  authoritativeDefinitions:
+  - url: https://example.com/definitions/shipments
+    type: implementation
   tags:
   - pii
+  customProperties:
+  - property: sourceTable
+    value: sap.vbak
+  - property: retention
+    value: P1Y
+    description: ISO 8601 retention period
   logicalType: object
   physicalName: shipments_v1
   dataGranularityDescription: Not Aggregated
@@ -35,99 +85,90 @@ schema:
     physicalName: sid
     description: Unique identifier for each shipment.
     businessName: Shipment ID
+    synonyms:
+    - synonym: Sendungsnummer
+      locale: de-DE
     authoritativeDefinitions:
     - url: definitions/shipment_id.odcs.yaml
       type: businessDefinition
+    - url: https://example.com/tutorials/shipment_id
+      type: tutorial
+      description: How shipment ids are minted
     tags:
     - businesskey
+    customProperties:
+    - property: masked
+      value: true
+    - property: external
+      value: 'true'
     primaryKey: true
     logicalType: string
-    required: false
-    unique: false
-    partitioned: false
+    semanticType: dimension
+    required: true
+    unique: true
     classification: internal
     examples:
     - 123e4567-e89b-12d3-a456-426614174000
-    criticalDataElement: false
+    id: prop-shipment-id
   - name: order_id
     physicalType: text
     physicalName: oid
-    authoritativeDefinitions:
-    - url: definitions/order_id.odcs.yaml
-      type: businessDefinition
-    primaryKey: false
-    partitioned: false
-  - name: delivery_date
-    physicalType: timestamp_tz
-    description: The actual or expected delivery date of the shipment.
-    businessName: Delivery Date
-    primaryKey: false
-    logicalType: date
-    required: false
-    unique: false
-    partitioned: false
+    description: Identifier for the order associated with the shipment.
+    businessName: Order ID
+    logicalType: string
+    logicalTypeOptions:
+      minLength: 8
+      maxLength: 10
+    required: true
     classification: internal
     examples:
-    - '2023-10-01T10:00:00Z'
-    criticalDataElement: false
-  - name: carrier
-    physicalType: text
-    description: The shipping carrier used for the delivery.
-    businessName: Carrier
-    primaryKey: false
-    logicalType: string
-    required: false
-    unique: false
-    partitioned: false
-    classification: internal
-    examples:
-    - FedEx
-    - UPS
-    criticalDataElement: false
-  - name: tracking_number
-    physicalType: text
-    description: Tracking number provided by the carrier.
-    businessName: Tracking Number
-    primaryKey: false
-    logicalType: string
-    required: false
-    unique: false
-    partitioned: false
-    classification: restricted
-    examples:
-    - 1Z999AA10123456784
-    criticalDataElement: false
+    - ORD12345
+    relationships:
+    - id: rel-order
+      type: foreignKey
+      to: orders.order_id
   - name: status
     physicalType: text
     description: Current status of the shipment.
     businessName: Status
-    primaryKey: false
+    deprecated: false
     logicalType: string
-    required: false
-    unique: false
-    partitioned: false
-    classification: internal
+    semanticType: dimension
     examples:
     - Delivered
     - In Transit
-    criticalDataElement: false
-  - name: inline_object_definition
-    physicalType: json
-    description: A JSON representation of additional shipment info
-    businessName: Inline Object Definition
-    primaryKey: false
-    logicalType: object
-    required: false
-    unique: false
-    partitioned: false
-    partitionKeyPosition: -1
-    classification: internal
-    examples:
-    - '{"destination": "New York"}'
-    criticalDataElement: false
+    enum:
+    - value: Delivered
+      label: Delivered to the customer
+      description: The carrier confirmed the delivery.
+      tags:
+      - final
+      id: enum-delivered
+      customProperties:
+      - property: color
+        value: green
+    - value: In Transit
+      label: On its way
+    - value: 3
+      label: Lost
+      description: Numeric legacy code
     quality:
-    - description: '{field} must contain the field "destination"'
+    - id: q-status-values
+      description: Status must be one of the known values
       type: text
+      customProperties:
+      - property: owner
+        value: quality-team
+  - name: weight_kg
+    physicalType: decimal
+    description: Weight of the parcel.
+    businessName: Weight
+    logicalType: number
+    semanticType: measure
+    deprecated: true
+    customProperties:
+    - property: unit
+      value: kg
   - name: address
     physicalType: JSON
     description: Shipping address details.
@@ -139,89 +180,140 @@ schema:
     - name: street
       physicalType: text
       description: Street address.
-      businessName: Street
-      primaryKey: false
       logicalType: string
       required: true
-      unique: false
-      partitioned: false
-      classification: restricted
-      examples:
-      - Marienplatz 1
-    - name: city
-      physicalType: text
-      description: City of the shipping address.
-      businessName: City
-      primaryKey: false
-      logicalType: string
-      required: true
-      unique: false
-      partitioned: false
-      classification: restricted
-      examples:
-      - Munich
     - name: country
       physicalType: text
       description: Country of the shipping address.
-      businessName: Country
-      primaryKey: false
       logicalType: string
       required: true
-      partitioned: false
-      classification: restricted
-      examples:
-      - DE
+      enum:
+      - value: DE
+      - value: AT
+  - name: items
+    physicalType: array
+    description: Line items of the shipment.
+    logicalType: array
+    items:
+      logicalType: object
+      physicalType: json
+      properties:
+      - name: sku
+        logicalType: string
+        physicalType: text
+        customProperties:
+        - property: catalog
+          value: main
+  relationships:
+  - id: rel-orders
+    type: foreignKey
+    from: shipments.order_id
+    to: orders.order_id
   quality:
-  - description: testscenario for mustBeGreaterOrEqualTo
+  - id: q-rowcount
+    description: Table shall contain at least 1 row
     type: sql
     mustBeGreaterOrEqualTo: 1
     query: SELECT COUNT(*) FROM shipments
-  - description: testscenario for mustBe (integer)
-    type: sql
-    mustBe: 7
-    query: SELECT COUNT(*) FROM shipments
-  - description: testscenario for mustBe (float)
-    type: sql
-    mustBe: 3.5
-    query: SELECT AVG(duration) FROM shipments
-  - description: testscenario for mustBeLessThan (integer)
-    type: sql
-    mustBeLessThan: 1
-    query: SELECT COUNT(*) FROM shipments where carries='active'
-  - description: testscenario for mustBeLessThan (float)
-    type: sql
-    mustBeLessOrEqualTo: 6.8
-    query: SELECT AVG(duration) FROM shipments
-  - description: testscenario for mustBeBetween
-    type: sql
-    mustBeBetween:
-    - 25.0
-    - 75.0
-    query: SELECT AVG(*) FROM shipments
+  context:
+    instructions: Filter on status = 'Delivered' for fulfilment KPIs.
+    verifiedStatements:
+    - question: Is weight_kg always populated?
+      answer: No, it is null for letters.
+      id: vs-weight
+    constraints:
+    - constraint: Never aggregate weight_kg across carriers.
+      id: c-weight
+  synonyms:
+  - synonym: Sendungen
+    description: German name
+    locale: de-DE
+    source: business glossary
+    status: approved
+    customProperties:
+    - property: glossaryId
+      value: 4711
+servers:
+- server: production
+  type: bigquery
+  description: Production dataset
+  environment: production
+  dataset: shipments_v1
+  project: acme_shipments_prod
+  customProperties:
+  - property: costCenter
+    value: cc-42
+  id: srv-prod
+- server: lakehouse
+  type: trino
+  environment: dev
+  host: trino.example.com
+  port: ${TRINO_PORT}
+  catalog: iceberg
+  schema: shipments
+- server: events
+  type: kafka
+  environment: production
+  format: avro
+  host: kafka.example.com:9092
 support:
 - channel: slackname
   url: http://find.me.here
   tool: slack
   scope: interactive
+  id: sup-slack
+  customProperties:
+  - property: sla
+    value: 24h
+authoritativeDefinitions:
+- url: https://example.com/guidelines
+  type: tutorial
 price:
   priceAmount: 1.0
   priceCurrency: EUR
   priceUnit: Per 1000 requests
 team:
-- username: vimportant
-  role: administrator
-  dateIn: '2020-01-01'
-- username: nimportant
-  role: reader
-  dateIn: '2020-01-01'
-  dateOut: '2024-10-10'
+  name: Fulfillment Data Team
+  description: Owns the shipment data product
+  members:
+  - username: vimportant
+    role: administrator
+    dateIn: '2020-01-01'
+    id: tm-vi
+    customProperties:
+    - property: onCall
+      value: true
+  - username: nimportant
+    role: reader
+    dateIn: '2020-01-01'
+    dateOut: '2024-10-10'
+  tags:
+  - platform
+  id: team-fulfillment
+  customProperties:
+  - property: costCenter
+    value: 42
+  - property: slack
+    value: '#fulfillment-data'
+roles:
+- role: analyst
+  description: Read access for analysts
+  access: read
+  firstLevelApprovers: data-owner
+  id: role-analyst
+  customProperties:
+  - property: ticketQueue
+    value: DATA
+slaDefaultElement: shipments.delivery_date
 slaProperties:
 - property: availability
   value: 95%
   unit: '%'
   driver: operational
-customProperties:
-- property: owner
-  value: fulfillment
-- property: additionalField
-  value: We added an addition field - b
+  id: sla-availability
+  customProperties:
+  - property: measuredBy
+    value: statuspage
+  authoritativeDefinitions:
+  - url: https://example.com/sla
+    type: implementation

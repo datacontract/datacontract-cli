@@ -12,4 +12,8 @@ Creates a data contract from an ODCS Excel template — the round-trip counterpa
 datacontract import excel --source odcs.xlsx --output datacontract.yaml
 ```
 
+You can customize the template as you like.
+Start from a copy of the official template and adapt it (branding, extra sheets, additional columns).
+Note that the import will not read sheets or columns that are named differently than in the template.
+
 All options: **[`datacontract import excel`](../commands/import/excel.md)**.

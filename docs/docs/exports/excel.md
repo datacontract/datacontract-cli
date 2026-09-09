@@ -31,6 +31,8 @@ Use `--template` to export into your own workbook instead — a local path or a 
 datacontract export excel orders.odcs.yaml --template ./my-odcs-template.xlsx --output orders.xlsx
 ```
 
-A custom template must keep the sheets and named ranges of the official template, as those are what the export fills in. Start from a copy of the official template and adapt it (branding, extra sheets, additional columns).
+You can customize the template as you like.
+Start from a copy of the official template and adapt it (branding, extra sheets, additional columns).
+Note that if you drop or rename sheet names or column headers, the export will drop the associated information from the contract.
 
 All options: **[`datacontract export excel`](../commands/export/excel.md)**.

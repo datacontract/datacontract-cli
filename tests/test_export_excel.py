@@ -1,14 +1,19 @@
 import io
+import logging
 import os
+import re
 import tempfile
+from pathlib import Path
 
 import openpyxl
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
+import datacontract.model.workbook as workbook_module
 from datacontract.cli import app
 from datacontract.export import excel_exporter
 from datacontract.export.excel_exporter import export_to_excel_bytes
+from datacontract.imports import excel_importer
 from datacontract.imports.excel_importer import import_excel_as_odcs
 
 
@@ -162,3 +167,199 @@ def test_excel_roundtrip():
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+def _contract(body: str) -> OpenDataContractStandard:
+    return OpenDataContractStandard.from_string(
+        "apiVersion: v3.2.0\nkind: DataContract\nid: c\nname: c\nversion: 1.0.0\nstatus: draft\n" + body
+    )
+
+
+def _roundtrip(odcs: OpenDataContractStandard, tmp_path, template=None):
+    path = tmp_path / "export.xlsx"
+    path.write_bytes(export_to_excel_bytes(odcs, template))
+    return import_excel_as_odcs(str(path)), openpyxl.load_workbook(path)
+
+
+def test_inline_or_sheet_by_round_trip_of_the_value(tmp_path):
+    """A custom property is inline only when its value survives a plain cell; otherwise it goes to the sheet, typed"""
+    odcs = _contract("""
+support:
+- channel: slack
+  customProperties:
+  - property: pii
+    value: false
+  - property: count
+    value: 42
+  - property: ratio
+    value: 3.5
+  - property: plain
+    value: hello
+  - property: flag
+    value: 'true'
+  - property: zip
+    value: '007'
+  - property: version
+    value: '3.10'
+  - property: whole
+    value: 1.0
+  - property: regions
+    value: [eu, us]
+  - property: nested
+    value: {a: 1}
+  - property: described
+    value: x
+    description: with a description
+""")
+    imported, workbook = _roundtrip(odcs, tmp_path)
+
+    headers = [c.value for c in workbook["Support"][4]]
+    first = [c.value for c in workbook["Support"][3]].index("Custom Properties (add as needed)")
+    assert headers[first:] == ["pii", "count", "ratio", "plain"]
+    assert [c.value for c in workbook["Support"][5]][first:] == [False, 42, 3.5, "hello"]
+
+    sheet_rows = [
+        [c.value for c in row][:5] for row in workbook["Custom Properties"].iter_rows(min_row=5) if row[2].value
+    ]
+    assert sheet_rows == [
+        ["Support", "slack", "flag", "true", "Text"],
+        ["Support", "slack", "zip", "007", "Text"],
+        ["Support", "slack", "version", "3.10", "Text"],
+        ["Support", "slack", "whole", "1.0", "JSON"],
+        ["Support", "slack", "regions", '["eu", "us"]', "JSON"],
+        ["Support", "slack", "nested", '{"a": 1}', "JSON"],
+        ["Support", "slack", "described", "x", None],
+    ]
+    assert imported.support[0].model_dump() == odcs.support[0].model_dump()
+
+
+def test_more_custom_properties_than_the_template_has_columns(tmp_path):
+    """A property name takes the next empty column under the group header; beyond that, columns (or server rows) are added"""
+    odcs = _contract("""
+servers:
+- server: prod
+  type: postgresql
+  host: db
+  customProperties:
+  - property: a
+    value: 1
+  - property: b
+    value: 2
+  - property: c
+    value: 3
+  - property: d
+    value: 4
+schema:
+- name: orders
+  physicalType: table
+  logicalType: object
+  customProperties:
+  - property: a
+    value: 1
+  properties:
+  - name: id
+    logicalType: string
+    customProperties:
+    - property: a
+      value: 1
+    - property: b
+      value: 2
+    - property: c
+      value: 3
+    - property: d
+      value: 4
+support:
+- channel: slack
+  customProperties:
+  - property: a
+    value: 1
+  - property: d
+    value: 4
+- channel: teams
+  customProperties:
+  - property: d
+    value: 5
+  - property: e
+    value: 6
+""")
+    imported, workbook = _roundtrip(odcs, tmp_path)
+    assert imported.to_yaml() == odcs.to_yaml()
+    support = workbook["Support"]
+    first = [c.value for c in support[3]].index("Custom Properties (add as needed)")
+    assert [c.value for c in support[4]][first:] == ["a", "d", "e"]
+    assert [c.value for c in support[5]][first:] == [1, 4, None]
+    assert [c.value for c in support[6]][first:] == [None, 5, 6]
+    schema = workbook["Schema orders"]
+    first = [c.value for c in schema[15]].index("Custom Properties (add as needed)")
+    assert [c.value for c in schema[16]][first:] == ["a", "b", "c", "d"]
+    assert str(next(m for m in schema.merged_cells.ranges if m.min_row == 15)) == "AP15:AS15"
+    servers = workbook["Servers"]
+    label = next(
+        r
+        for r in range(1, servers.max_row + 1)
+        if servers.cell(row=r, column=1).value == "Custom Properties (add as needed)"
+    )
+    assert [servers.cell(row=r, column=2).value for r in range(label + 1, label + 5)] == ["a", "b", "c", "d"]
+    assert [servers.cell(row=r, column=3).value for r in range(label + 1, label + 5)] == [1, 2, 3, 4]
+    # schema-level custom properties have no inline home
+    assert [c.value for c in workbook["Custom Properties"][5]][:4] == ["Schema", "orders", "a", 1]
+
+
+def test_old_template_export_warns_exactly_once(tmp_path, caplog):
+    """Exporting into a pre-3.2 template drops what it cannot hold, with one aggregated warning"""
+    with open("./fixtures/excel/shipments-odcs.yaml", "r") as f:
+        odcs = OpenDataContractStandard.from_string(f.read())
+
+    with caplog.at_level(logging.WARNING):
+        imported, workbook = _roundtrip(odcs, tmp_path, template="./fixtures/excel/odcs-template-v1.xlsx")
+
+    warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert warnings[0].startswith("The Excel template cannot hold: ")
+    assert "enum values (5)" in warnings[0]
+    assert "Export against a newer template to keep them." in warnings[0]
+    assert "Enum" not in workbook.sheetnames
+    # what the old layout can hold still round-trips
+    assert imported.schema_[0].properties[0].name == "shipment_id"
+    assert imported.servers[0].project == "acme_shipments_prod"
+    assert imported.servers[1].host == "trino.example.com"  # no per-type block: the legacy custom block
+    # the legacy block's field labels are not custom properties: this template has no group header
+    assert imported.servers[1].customProperties is None
+    assert [p.property for p in imported.customProperties][:2] == ["owner", "additionalField"]
+
+
+def test_unreferenceable_element_warns_and_drops_its_rich_custom_properties(tmp_path, caplog):
+    odcs = _contract("""
+schema:
+- name: orders
+  quality:
+  - type: sql
+    query: SELECT 1
+    customProperties:
+    - property: owner
+      value: qa
+      description: rich, so it needs the sheet
+""")
+    with caplog.at_level(logging.WARNING):
+        imported, workbook = _roundtrip(odcs, tmp_path)
+    assert [r.message for r in caplog.records] == [
+        "Cannot reference quality rule of schema orders in the workbook: it has no id; "
+        "its custom properties were dropped. Give it an id."
+    ]
+    assert imported.schema_[0].quality[0].customProperties is None
+
+
+def test_code_only_uses_named_ranges_the_bundled_template_has():
+    """Every named range the exporter and importer look up by string exists in the bundled template"""
+    source = "".join(Path(module.__file__).read_text() for module in (excel_exporter, excel_importer, workbook_module))
+    names = set(
+        re.findall(r'[(,] ?"((?:servers|schema|description|price|team|context|instructions)\.[A-Za-z.]+)"', source)
+    )
+    names |= set(re.findall(r'_by_name(?:_in_sheet)?\(\w+, "([A-Za-z.]+)"', source))
+    names |= set(re.findall(r'(?:row_sheet|open_row_sheet)\(\w+, "[^"]+", "([A-Za-z]+)"', source))
+    names |= {f"servers.{field}" for field in excel_exporter.SERVER_FIELDS} | {"servers.id"}
+    names -= {"servers.custom.", "servers.postgres."}
+    workbook = excel_exporter.create_workbook_from_bundled_template()
+    defined = set(workbook.defined_names) | {n for sheet in workbook.worksheets for n in sheet.defined_names}
+    assert names, "the regexes found nothing"
+    assert names <= defined, f"unknown named ranges: {sorted(names - defined)}"
