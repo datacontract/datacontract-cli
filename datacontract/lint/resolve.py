@@ -24,6 +24,17 @@ from datacontract.model.exceptions import (
 from datacontract.model.odcs import is_open_data_contract_standard, is_open_data_product_standard
 from datacontract.model.run import ResultEnum
 
+# v3.0.0 and v3.0.1 are the 3.0.2 grammar apart from the Athena staging_dir/stagingDir
+# rename, and the rest of the CLI reads stagingDir.
+ODCS_SCHEMA_VERSIONS = {
+    "v3.0.0": "3.0.2",
+    "v3.0.1": "3.0.2",
+    "v3.0.2": "3.0.2",
+    "v3.1.0": "3.1.0",
+    "v3.2.0": "3.2.0",
+}
+DEFAULT_ODCS_SCHEMA_VERSION = "3.2.0"
+
 
 class _LaxOpenDataContractStandard(OpenDataContractStandard):
     """ODCS variant that accepts unknown top-level fields.
@@ -112,16 +123,48 @@ def resolve_data_contract(
     config: "Config | None" = None,
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
+    return resolve_data_contract_with_schema_version(
+        data_contract_location, data_contract_str, data_contract, schema_location, inline_references, all_errors, config
+    )[0]
+
+
+def resolve_data_contract_with_schema_version(
+    data_contract_location: str = None,
+    data_contract_str: str = None,
+    data_contract: OpenDataContractStandard = None,
+    schema_location: str = None,
+    inline_references: bool = False,
+    all_errors: bool = False,
+    config: "Config | None" = None,
+    use_declared_api_version: bool = False,
+) -> tuple[OpenDataContractStandard, str | None]:
+    """Resolve a data contract and report the ODCS version it was validated against.
+
+    With use_declared_api_version, the schema is the one for the contract's own
+    apiVersion. The reported version is None when no bundled ODCS schema was used: a
+    custom schema, a DCS contract, or an already-parsed contract.
+    """
     if data_contract_location is not None:
-        return resolve_data_contract_from_location(
-            data_contract_location, schema_location, inline_references, all_errors, config
+        return _resolve_data_contract_from_str(
+            read_resource(data_contract_location, config),
+            schema_location,
+            inline_references,
+            all_errors,
+            config,
+            base_location=data_contract_location,
+            use_declared_api_version=use_declared_api_version,
         )
     elif data_contract_str is not None:
         return _resolve_data_contract_from_str(
-            data_contract_str, schema_location, inline_references, all_errors, config
+            data_contract_str,
+            schema_location,
+            inline_references,
+            all_errors,
+            config,
+            use_declared_api_version=use_declared_api_version,
         )
     elif data_contract is not None:
-        return data_contract
+        return data_contract, None
     else:
         raise DataContractException(
             type="lint",
@@ -142,7 +185,7 @@ def resolve_data_contract_from_location(
     data_contract_str = read_resource(location, config)
     return _resolve_data_contract_from_str(
         data_contract_str, schema_location, inline_references, all_errors, config, base_location=location
-    )
+    )[0]
 
 
 # Precedence-ordered: a property with both semantics and definition references
@@ -325,7 +368,7 @@ def _load_local_contract(
         raise _local_resolution_error(url, f"the file '{key}' does not exist")
 
     try:
-        contract = _resolve_data_contract_from_str(read_resource(key, config))
+        contract, _ = _resolve_data_contract_from_str(read_resource(key, config))
     except DataContractException as e:
         raise _local_resolution_error(url, f"'{key}' is not a valid data contract: {e.reason}", original_exception=e)
 
@@ -587,7 +630,8 @@ def _resolve_data_contract_from_str(
     all_errors: bool = False,
     config: "Config | None" = None,
     base_location: str | None = None,
-) -> OpenDataContractStandard:
+    use_declared_api_version: bool = False,
+) -> tuple[OpenDataContractStandard, str | None]:
     yaml_dict = _to_yaml(data_contract_str)
 
     if not isinstance(yaml_dict, dict):
@@ -615,11 +659,16 @@ def _resolve_data_contract_from_str(
         # truth and accept extra top-level fields the standard ODCS Pydantic
         # class would reject.
         custom_schema = schema_location is not None
+        schema_version = None
         if schema_location is None:
-            schema_location = resources.files("datacontract").joinpath("schemas", "odcs-3.2.0.schema.json")
+            if use_declared_api_version:
+                schema_version = ODCS_SCHEMA_VERSIONS.get(yaml_dict.get("apiVersion"), DEFAULT_ODCS_SCHEMA_VERSION)
+            schema_location = resources.files("datacontract").joinpath(
+                "schemas", f"odcs-{schema_version or DEFAULT_ODCS_SCHEMA_VERSION}.schema.json"
+            )
         errors = []
         try:
-            _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors)
+            _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors, schema_version=schema_version)
         except DataContractValidationErrors as e:
             errors.extend(e.errors)
         if not custom_schema:
@@ -634,7 +683,7 @@ def _resolve_data_contract_from_str(
             inline_definitions_into_data_contract(
                 odcs, config, base_location=base_location, visited=_initial_visited(base_location)
             )
-        return odcs
+        return odcs, schema_version
 
     # For DCS format, we need to convert it to ODCS
     logging.info("Importing DCS format - converting to ODCS")
@@ -646,7 +695,7 @@ def _resolve_data_contract_from_str(
         inline_definitions_into_data_contract(
             odcs, config, base_location=base_location, visited=_initial_visited(base_location)
         )
-    return odcs
+    return odcs, None
 
 
 def _initial_visited(base_location: str | None) -> frozenset[str]:
@@ -686,18 +735,24 @@ def _to_yaml(data_contract_str) -> dict:
         )
 
 
-def _validation_error_to_exception(error_message: str, original_exception=None) -> DataContractException:
+def _validation_error_to_exception(
+    error_message: str, original_exception=None, schema_version: str | None = None
+) -> DataContractException:
     return DataContractException(
         type="lint",
         result=ResultEnum.failed,
-        name="Check that data contract YAML is valid",
+        name="Check that data contract YAML is valid"
+        if schema_version is None
+        else f"Check that data contract is valid against ODCS v{schema_version}",
         reason=error_message,
         engine="datacontract-cli",
         original_exception=original_exception,
     )
 
 
-def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_errors: bool = False):
+def _validate_json_schema(
+    yaml_str, schema_location: str | Path = None, all_errors: bool = False, schema_version: str | None = None
+):
     logging.debug(f"Linting data contract with schema at {schema_location}")
     schema = fetch_schema(schema_location)
     if all_errors:
@@ -708,7 +763,12 @@ def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_erro
         if errors:
             logging.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
             raise DataContractValidationErrors(
-                [_validation_error_to_exception(error.message, original_exception=error) for error in errors]
+                [
+                    _validation_error_to_exception(
+                        error.message, original_exception=error, schema_version=schema_version
+                    )
+                    for error in errors
+                ]
             )
         logging.debug("YAML data is valid.")
         return
@@ -719,7 +779,7 @@ def _validate_json_schema(yaml_str, schema_location: str | Path = None, all_erro
         except_message = _resolve_jsonschema_compliance_error_message_path(yaml_str, e.message)
 
         logging.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
-        raise _validation_error_to_exception(except_message, original_exception=e)
+        raise _validation_error_to_exception(except_message, original_exception=e, schema_version=schema_version)
     except Exception as e:
         logging.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
-        raise _validation_error_to_exception(str(e), original_exception=e)
+        raise _validation_error_to_exception(str(e), original_exception=e, schema_version=schema_version)
