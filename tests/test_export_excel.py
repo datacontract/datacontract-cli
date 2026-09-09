@@ -320,9 +320,9 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
 
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
-    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold: ")
+    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold the following contract features: ")
     assert "enum values (7)" in warnings[0]
-    assert "Export against a newer template to keep them." in warnings[0]
+    assert "Consider raising the apiVersion field of the contract" in warnings[0]
     assert "Enum" not in workbook.sheetnames
     # what the old layout can hold still round-trips
     assert imported.schema_[1].properties[0].name == "shipment_id"
@@ -423,7 +423,7 @@ def test_export_of_an_older_contract_uses_its_template_and_warns(tmp_path, caplo
     assert "Enums" not in workbook.sheetnames
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
-    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold: ")
+    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold the following contract features: ")
     # what the v3.0 layout does hold still round-trips
     assert [s.name for s in imported.schema_] == [s.name for s in odcs.schema_]
     assert imported.slaProperties[0].property == "latency"

@@ -23,7 +23,7 @@ The Excel format enables:
 
 ## Templates
 
-The official ODCS Excel templates ship with the CLI, so the export works offline: one for ODCS v3.0, one for v3.1 and one for v3.2. The export picks the one matching the contract's `apiVersion` — on the major and minor version, so `v3.0.2` and `v3.0.0` both get the v3.0 template. A contract with no `apiVersion`, or one newer than the newest bundled template, gets the newest. For the template structure, see the [ODCS Excel Template repository](https://github.com/datacontract/open-data-contract-standard-excel-template).
+The official ODCS Excel templates ship with the CLI, so the export works offline. For the template structure, see the [ODCS Excel Template repository](https://github.com/datacontract/open-data-contract-standard-excel-template).
 
 Use `--template` to export into your own workbook instead — a local path or a URL:
 

@@ -188,11 +188,13 @@ def create_workbook_from_template(template_path: str) -> Workbook:
 def warn_unsupported(export: Export):
     if not export.unsupported:
         return
-    version = export.template_version or "custom"
     dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
-    logger.warning(
-        f"The {version} Excel template cannot hold: {dropped}. Export against a newer template to keep them."
-    )
+    if (version := export.template_version) is not None:
+        logger.warning(
+            f"The {version} Excel template cannot hold the following contract features: {dropped}. Consider raising the apiVersion field of the contract (supported: 3.0.2, 3.1.0, 3.2.0)."
+        )
+    else:
+        logger.warning(f"The custom Excel template cannot hold the following contract features: {dropped}.")
 
 
 # --- Fundamentals, pricing ------------------------------------------------------------------------
