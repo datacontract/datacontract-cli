@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 import openpyxl
+import pytest
 import yaml
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
@@ -319,9 +320,9 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
 
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
-    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold: ")
+    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold the following contract features: ")
     assert "enum values (7)" in warnings[0]
-    assert "Export against a newer template to keep them." in warnings[0]
+    assert "Consider raising the apiVersion field of the contract" in warnings[0]
     assert "Enum" not in workbook.sheetnames
     # what the old layout can hold still round-trips
     assert imported.schema_[1].properties[0].name == "shipment_id"
@@ -389,3 +390,40 @@ def test_code_only_uses_named_ranges_the_bundled_template_has():
     defined = set(workbook.defined_names) | {n for sheet in workbook.worksheets for n in sheet.defined_names}
     assert names, "the regexes found nothing"
     assert names <= defined, f"unknown named ranges: {sorted(names - defined)}"
+
+
+@pytest.mark.parametrize(
+    "api_version, expected_sheets, missing_sheets, warns",
+    [
+        ("v3.0.2", [], ["Relationships", "Enums"], False),
+        ("v3.0.0", [], ["Relationships", "Enums"], False),
+        ("v3.1.0", ["Relationships"], ["Enums"], False),
+        ("v3.2.0", ["Relationships", "Enums"], [], False),
+        ("v3.3.0", ["Relationships", "Enums"], [], True),
+        (None, ["Relationships", "Enums"], [], False),
+    ],
+)
+def test_bundled_template_follows_the_api_version(api_version, expected_sheets, missing_sheets, warns, caplog):
+    with caplog.at_level(logging.WARNING):
+        workbook = excel_exporter.create_workbook_from_bundled_template(api_version)
+    assert all(sheet in workbook.sheetnames for sheet in expected_sheets)
+    assert not any(sheet in workbook.sheetnames for sheet in missing_sheets)
+    assert bool([r for r in caplog.records if r.levelno == logging.WARNING]) == warns
+
+
+def test_export_of_an_older_contract_uses_its_template_and_warns(tmp_path, caplog):
+    """A v3.0 contract exports into the v3.0 template: what it cannot hold is dropped, with one warning"""
+    with open("./fixtures/excel/full-odcs-3.2.yaml", "r") as f:
+        odcs = OpenDataContractStandard.from_string(f.read())
+    odcs.apiVersion = "v3.0.2"
+
+    with caplog.at_level(logging.WARNING):
+        imported, workbook = _roundtrip(odcs, tmp_path)
+
+    assert "Enums" not in workbook.sheetnames
+    warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold the following contract features: ")
+    # what the v3.0 layout does hold still round-trips
+    assert [s.name for s in imported.schema_] == [s.name for s in odcs.schema_]
+    assert imported.slaProperties[0].property == "latency"

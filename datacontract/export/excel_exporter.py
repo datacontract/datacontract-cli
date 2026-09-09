@@ -108,7 +108,7 @@ def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optiona
     if template_path:
         workbook = create_workbook_from_template(template_path)
     else:
-        workbook = create_workbook_from_bundled_template()
+        workbook = create_workbook_from_bundled_template(odcs.apiVersion)
 
     try:
         export = Export(workbook, odcs)
@@ -143,9 +143,25 @@ def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optiona
         workbook.close()
 
 
-def create_workbook_from_bundled_template() -> Workbook:
-    """Load the official ODCS Excel template that ships with the CLI"""
-    template = resources.files("datacontract").joinpath("templates", "excel", "odcs-template.xlsx")
+BUNDLED_TEMPLATES = {
+    "3.0": "odcs-template-v3.0.xlsx",
+    "3.1": "odcs-template-v3.1.xlsx",
+    "3.2": "odcs-template-v3.2.xlsx",
+}
+NEWEST_BUNDLED_TEMPLATE = "3.2"
+
+
+def create_workbook_from_bundled_template(api_version: Optional[str] = None) -> Workbook:
+    """Load the bundled ODCS Excel template for an apiVersion; the newest one when it is unknown or absent"""
+    minor = ".".join(str(api_version or "").lstrip("vV").split(".")[:2])
+    name = BUNDLED_TEMPLATES.get(minor)
+    if name is None:
+        name = BUNDLED_TEMPLATES[NEWEST_BUNDLED_TEMPLATE]
+        if api_version:
+            logger.warning(
+                f"No Excel template for ODCS {api_version}; using the v{NEWEST_BUNDLED_TEMPLATE} template instead."
+            )
+    template = resources.files("datacontract").joinpath("templates", "excel", name)
     try:
         return openpyxl.load_workbook(io.BytesIO(template.read_bytes()))
     except Exception as e:
@@ -172,11 +188,13 @@ def create_workbook_from_template(template_path: str) -> Workbook:
 def warn_unsupported(export: Export):
     if not export.unsupported:
         return
-    version = export.template_version or "custom"
     dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
-    logger.warning(
-        f"The {version} Excel template cannot hold: {dropped}. Export against a newer template to keep them."
-    )
+    if (version := export.template_version) is not None:
+        logger.warning(
+            f"The {version} Excel template cannot hold the following contract features: {dropped}. Consider raising the apiVersion field of the contract (supported: 3.0.2, 3.1.0, 3.2.0)."
+        )
+    else:
+        logger.warning(f"The custom Excel template cannot hold the following contract features: {dropped}.")
 
 
 # --- Fundamentals, pricing ------------------------------------------------------------------------
