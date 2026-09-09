@@ -1,8 +1,9 @@
 """Vendor the official ODCS Excel template and its conformance pair into the CLI.
 
 Downloads from the Open Data Contract Standard Excel Template repository:
-- odcs-template.xlsx into datacontract/templates/excel/, which `datacontract export excel` uses by
-  default so that no network access is needed at runtime (committed and shipped with the package)
+- one template per supported ODCS version into datacontract/templates/excel/, which
+  `datacontract export excel` picks from so that no network access is needed at runtime
+  (committed and shipped with the package)
 - the examples/*.xlsx and examples/*.yaml conformance pairs into tests/fixtures/excel/, the
   workbooks + expected YAML the Excel tests assert against
 
@@ -22,8 +23,11 @@ ODCS_EXCEL_TEMPLATE_BASE_URL = (
     "https://github.com/datacontract/open-data-contract-standard-excel-template/raw/refs/heads/main"
 )
 ROOT = Path(__file__).parent
+TEMPLATES = ROOT / "datacontract" / "templates" / "excel"
 FILES = {
-    "odcs-template.xlsx": ROOT / "datacontract" / "templates" / "excel" / "odcs-template.xlsx",
+    "odcs-template-v3.0.xlsx": TEMPLATES / "odcs-template-v3.0.xlsx",
+    "odcs-template-v3.1.xlsx": TEMPLATES / "odcs-template-v3.1.xlsx",
+    "odcs-template-v3.2.xlsx": TEMPLATES / "odcs-template-v3.2.xlsx",
     "examples/full-odcs-3.2.xlsx": ROOT / "tests" / "fixtures" / "excel" / "full-odcs-3.2.xlsx",
     "examples/full-odcs-3.2.yaml": ROOT / "tests" / "fixtures" / "excel" / "full-odcs-3.2.yaml",
 }
