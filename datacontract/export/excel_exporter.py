@@ -60,6 +60,9 @@ class Export:
         self.custom_property_rows: list[tuple[Element, Any]] = []
         self.authoritative_definition_rows: list[tuple[Element, Any]] = []
         self.unsupported = Counter()
+        # the template's own apiVersion, read before fill_fundamentals overwrites it with the contract's
+        cell = find_cell_by_name(workbook, "apiVersion")
+        self.template_version = cell.value if cell is not None and cell.value else None
         self.unaddressable: set[int] = set()
 
     def element(self, obj) -> Element:
@@ -169,8 +172,11 @@ def create_workbook_from_template(template_path: str) -> Workbook:
 def warn_unsupported(export: Export):
     if not export.unsupported:
         return
+    version = export.template_version or "custom"
     dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
-    logger.warning(f"The Excel template cannot hold: {dropped}. Export against a newer template to keep them.")
+    logger.warning(
+        f"The {version} Excel template cannot hold: {dropped}. Export against a newer template to keep them."
+    )
 
 
 # --- Fundamentals, pricing ------------------------------------------------------------------------
@@ -483,7 +489,7 @@ def quality_values(schema_name: str, property_name: Optional[str], quality: Data
         "property": property_name,
         "quality type": quality.type,
         "description": quality.description,
-        "rule (library)": quality.rule,
+        "metric (library)": quality.metric or quality.rule,
         "query (sql)": quality.query,
         "threshold operator": get_threshold_operator(quality),
         "threshold value": get_threshold_value(quality),
@@ -806,7 +812,7 @@ def fill_custom_properties(export: Export):
     sheet, header_row = found
     headers = {h.lower().strip() for h in get_headers_from_header_row(sheet, header_row).values()}
     row_index = header_row + 1
-    if "element type" not in headers:
+    if "scope" not in headers:
         # pre-3.2 layout: a flat Property / Value table for the contract root only
         for element, prop in rows:
             if element.kind != "Contract" or prop.property == "owner":
@@ -823,8 +829,8 @@ def fill_custom_properties(export: Export):
             continue
         value, value_type = typed_value(export, prop.value)
         values = {
-            "element type": element.kind,
-            "element": element.ref,
+            "scope": element.kind,
+            "scope name": element.ref,
             "property": prop.property,
             "value": value,
             "type": value_type,
@@ -866,8 +872,8 @@ def fill_authoritative_definitions(export: Export):
         if export.warn_unaddressable(element, "authoritative definitions"):
             continue
         values = {
-            "element type": element.kind,
-            "element": element.ref,
+            "scope": element.kind,
+            "scope name": element.ref,
             "url": definition.url,
             "type": definition.type,
             "description": definition.description,
@@ -881,9 +887,9 @@ def fill_authoritative_definitions(export: Export):
 
 
 def custom_property_columns(sheet: Worksheet, header_row: int) -> Optional[tuple[int, list[Optional[str]]]]:
-    """(first column, header names) of the columns under the "Custom Properties (add as needed)" group header, else None."""
+    """(first column, header names) of the columns under the "Custom Properties" group header, else None."""
     group_row = header_row - 1
-    start = next((c.column for c in sheet[group_row] if cell_text(c) == CUSTOM_PROPERTIES_GROUP), None)
+    start = next((c.column for c in sheet[group_row] if (cell_text(c) or "").startswith(CUSTOM_PROPERTIES_GROUP)), None)
     if start is None:
         return None
     last = max([c.column for c in sheet[header_row] if c.value is not None] + [start + 2])

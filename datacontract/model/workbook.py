@@ -1,7 +1,7 @@
 """Shared vocabulary of the ODCS Excel workbook: element references and cell value typing.
 
 An element reference names the contract element a row on a child sheet belongs to: an
-`Element Type` and an `Element`, resolved through the element's natural key (see
+`Scope` and a `Scope Name`, resolved through the element's natural key (see
 datacontract.model.natural_keys) or its `id` where it has no natural key. There is no positional
 fallback: an element whose key is missing or duplicated cannot be referenced.
 """
@@ -22,8 +22,9 @@ from datacontract.model.natural_keys import NATURAL_KEYS
 
 logger = logging.getLogger(__name__)
 
-# the merged header above the inline custom property columns; each column is named after one property
-CUSTOM_PROPERTIES_GROUP = "Custom Properties (add as needed)"
+# the merged header above the inline custom property columns; each column is named after one property.
+# Matched as a prefix: the row sheets label it "Custom Properties", Servers "Custom Properties (add as needed)".
+CUSTOM_PROPERTIES_GROUP = "Custom Properties"
 
 SERVER_FIELDS = [
     "account",
