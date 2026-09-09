@@ -833,7 +833,7 @@ def fill_custom_properties(export: Export):
             "scope name": element.ref,
             "property": prop.property,
             "value": value,
-            "type": value_type,
+            "value type": value_type,
             "description": prop.description,
             "vendor": prop.vendor,
             "id": prop.id,

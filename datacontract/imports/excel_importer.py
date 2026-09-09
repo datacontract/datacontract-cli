@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import openpyxl
@@ -674,7 +673,7 @@ def attach_custom_properties(odcs: OpenDataContractStandard, workbook: Workbook)
         if element is None:
             continue
         try:
-            value = resolve_cell_value(row.raw("value"), row.text("type"))
+            value = resolve_cell_value(row.raw("value"), row.text("value type"))
         except ValueError as e:
             logger.warning(f"Custom property {property_name} on row {row.row_index} has an invalid JSON value: {e}")
             continue
@@ -933,7 +932,7 @@ def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dic
         content = threshold_value[1:-1] if threshold_value.startswith("[") else threshold_value
         if True:
             try:
-                values = [Decimal(v.strip()) for v in content.split(",") if v.strip()]
+                values = [resolve_cell_value(v.strip()) for v in content.split(",") if v.strip()]
                 if len(values) >= 2:
                     threshold_dict[threshold_operator] = values[:2]
             except (ValueError, TypeError) as e:

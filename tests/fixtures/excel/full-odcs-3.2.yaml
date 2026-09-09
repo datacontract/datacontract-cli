@@ -69,13 +69,13 @@ context:
       vendor: opa
       id: constraintEnforcer
 customProperties:
+- property: owner
+  value: logistics-platform-team
 - property: retentionDays
   value: 730
   description: How long rows are kept before they move to the archive.
   vendor: entropy-data
   id: retentionDays
-- property: owner
-  value: logistics-platform-team
 authoritativeDefinitions:
 - type: Guidelines
   url: https://example.com/contract-guidelines.html
