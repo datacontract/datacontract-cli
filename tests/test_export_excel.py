@@ -323,7 +323,7 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
     # what the old layout can hold still round-trips
     assert imported.schema_[0].properties[0].name == "shipment_id"
     assert imported.servers[0].project == "acme_shipments_prod"
-    assert imported.servers[1].host == "trino.example.com"  # no per-type block: the legacy custom block
+    assert imported.servers[1].host == "staging-db.example.com"  # no per-type block: the legacy custom block
     # the legacy block's field labels are not custom properties: this template has no group header
     assert imported.servers[1].customProperties is None
     assert [p.property for p in imported.customProperties][:2] == ["owner", "additionalField"]
