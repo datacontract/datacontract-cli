@@ -11,12 +11,15 @@ import yaml
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
+import datacontract
 import datacontract.model.workbook as workbook_module
 from datacontract.cli import app
 from datacontract.export import excel_exporter
 from datacontract.export.excel_exporter import export_to_excel_bytes
 from datacontract.imports import excel_importer
 from datacontract.imports.excel_importer import import_excel_as_odcs
+
+BUNDLED_TEMPLATE_DIR = Path(datacontract.__file__).parent / "templates" / "excel"
 
 
 def test_cli_export_excel():
@@ -239,6 +242,39 @@ support:
     assert imported.support[0].model_dump() == odcs.support[0].model_dump()
 
 
+def test_sla_value_keeps_its_type(tmp_path):
+    """A text SLA value stays text; a number stays a number"""
+    odcs = _contract("""
+slaProperties:
+- property: deliveryTime
+  value: "12:30"
+- property: accountCode
+  value: "01234"
+- property: availability
+  value: 99.9
+""")
+    imported, _ = _roundtrip(odcs, tmp_path)
+    assert [sla.value for sla in imported.slaProperties] == ["12:30", "01234", 99.9]
+
+
+def test_schema_logical_type_round_trips(tmp_path):
+    """A schema object keeps its logical type, and an unset one stays unset"""
+    odcs = _contract(
+        "schema:\n- name: files\n  logicalType: blob\n- name: rows\n- name: table\n  logicalType: object\n"
+    )
+    imported, _ = _roundtrip(odcs, tmp_path)
+    assert [schema.logicalType for schema in imported.schema_] == ["blob", None, "object"]
+
+
+def test_schema_logical_type_a_template_cannot_hold_warns(tmp_path, caplog):
+    """The v3.0 template has no cell for it, so a blob schema object is reported as dropped rather than read back as an object"""
+    odcs = _contract("schema:\n- name: files\n  logicalType: blob\n")
+    with caplog.at_level(logging.WARNING):
+        imported, _ = _roundtrip(odcs, tmp_path, template=str(BUNDLED_TEMPLATE_DIR / "odcs-template-v3.0.xlsx"))
+    assert imported.schema_[0].logicalType == "object"
+    assert "schema logical types (1)" in caplog.records[0].message
+
+
 def test_more_custom_properties_than_the_template_has_columns(tmp_path):
     """A property name takes the next empty column under the group header; beyond that, columns (or server rows) are added"""
     odcs = _contract("""
@@ -296,8 +332,8 @@ support:
     assert [c.value for c in support[5]][first:] == [1, 4, None]
     assert [c.value for c in support[6]][first:] == [None, 5, 6]
     schema = workbook["Schema orders"]
-    first = [c.value for c in schema[15]].index("Custom Properties")
-    assert [c.value for c in schema[16]][first:] == ["a", "b", "c", "d"]
+    first = [c.value for c in schema[16]].index("Custom Properties")
+    assert [c.value for c in schema[17]][first:] == ["a", "b", "c", "d"]
     servers = workbook["Servers"]
     label = next(
         r
