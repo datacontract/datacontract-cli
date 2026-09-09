@@ -891,8 +891,9 @@ def import_quality(workbook: Workbook) -> Dict[str, List[DataQuality]]:
         property_name = row.text("property")
         quality_type = row.text("quality type")
         description = row.text("description")
-        rule = row.text("metric (library)")
-        if not schema_name or (not quality_type and not description and not rule):
+        metric = row.text("metric (library)")
+        rule = row.text("rule (library)")  # what the v3.0 template calls the same column
+        if not schema_name or (not quality_type and not description and not metric and not rule):
             continue
         threshold_dict = parse_threshold_values(row.text("threshold operator"), row.text("threshold value"))
         # a custom check is written verbatim: its trailing newline is part of the implementation
@@ -901,7 +902,8 @@ def import_quality(workbook: Workbook) -> Dict[str, List[DataQuality]]:
             name=row.text("name"),
             description=description,
             type=quality_type,
-            metric=rule,
+            metric=metric,
+            rule=rule,
             dimension=row.text("dimension"),
             method=row.text("method"),
             businessImpact=row.text("business impact"),
@@ -951,13 +953,12 @@ def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dic
 
     if threshold_operator in ["mustBeBetween", "mustNotBeBetween"]:
         content = threshold_value[1:-1] if threshold_value.startswith("[") else threshold_value
-        if True:
-            try:
-                values = [resolve_cell_value(v.strip()) for v in content.split(",") if v.strip()]
-                if len(values) >= 2:
-                    threshold_dict[threshold_operator] = values[:2]
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Failed to parse between values: {threshold_value}, error: {e}")
+        try:
+            values = [resolve_cell_value(v.strip()) for v in content.split(",") if v.strip()]
+            if len(values) >= 2:
+                threshold_dict[threshold_operator] = values[:2]
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse between values: {threshold_value}, error: {e}")
     else:
         try:
             isFraction = "." in threshold_value

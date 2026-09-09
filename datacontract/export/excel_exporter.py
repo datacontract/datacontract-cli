@@ -468,18 +468,24 @@ def fill_quality(export: Export):
     if not found:
         return
     sheet, header_row = found
+    # the v3.0 template names this column Rule (Library); v3.1 renamed it to Metric (Library)
+    metric_header = "metric (library)" if "metric (library)" in header_columns(sheet, header_row) else "rule (library)"
     row_index = header_row + 1
     for schema in export.odcs.schema_ or []:
         for quality in schema.quality or []:
-            write_row(export, sheet, header_row, row_index, quality_values(schema.name, None, quality), quality)
+            values = quality_values(schema.name, None, quality, metric_header)
+            write_row(export, sheet, header_row, row_index, values, quality)
             row_index += 1
-        row_index = fill_properties_quality(export, sheet, header_row, schema.name, schema.properties or [], row_index)
+        row_index = fill_properties_quality(
+            export, sheet, header_row, schema.name, schema.properties or [], row_index, metric_header
+        )
 
 
-def fill_properties_quality(export, sheet, header_row, schema_name, properties, row_index) -> int:
+def fill_properties_quality(export, sheet, header_row, schema_name, properties, row_index, metric_header) -> int:
     for path, prop in walk_properties(properties):
         for quality in prop.quality or []:
-            write_row(export, sheet, header_row, row_index, quality_values(schema_name, path, quality), quality)
+            values = quality_values(schema_name, path, quality, metric_header)
+            write_row(export, sheet, header_row, row_index, values, quality)
             row_index += 1
     return row_index
 
@@ -497,7 +503,7 @@ def walk_properties(properties, prefix=""):
             yield from walk_properties(prop.items.properties, f"{path}.items")
 
 
-def quality_values(schema_name: str, property_name: Optional[str], quality: DataQuality) -> dict:
+def quality_values(schema_name: str, property_name: Optional[str], quality: DataQuality, metric_header: str) -> dict:
     return {
         "schema": schema_name,
         "property": property_name,
@@ -510,7 +516,7 @@ def quality_values(schema_name: str, property_name: Optional[str], quality: Data
         "unit": quality.unit,
         "tags": ",".join(quality.tags) if quality.tags else None,
         "arguments": json.dumps(quality.arguments) if quality.arguments else None,
-        "metric (library)": quality.metric or quality.rule,
+        metric_header: quality.metric or quality.rule,
         "query (sql)": quality.query,
         "threshold operator": get_threshold_operator(quality),
         "threshold value": get_threshold_value(quality),

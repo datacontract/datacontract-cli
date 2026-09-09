@@ -332,6 +332,28 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
     assert [p.property for p in imported.customProperties][:2] == ["owner", "retentionDays"]
 
 
+def test_library_rule_follows_the_template_column(tmp_path):
+    """ODCS renamed `rule` to `metric` in v3.1: each template's column maps to the field it is named after"""
+    odcs = _contract("""
+schema:
+- name: orders
+  properties:
+  - name: id
+    logicalType: string
+    quality:
+    - type: library
+      rule: nullValues
+      mustBe: 0
+""")
+    on_v1, _ = _roundtrip(odcs, tmp_path, template="./fixtures/excel/odcs-template-v1.xlsx")
+    quality = on_v1.schema_[0].properties[0].quality[0]
+    assert (quality.rule, quality.metric) == ("nullValues", None)  # Rule (Library) keeps the deprecated field
+
+    on_bundled, _ = _roundtrip(odcs, tmp_path)
+    quality = on_bundled.schema_[0].properties[0].quality[0]
+    assert (quality.rule, quality.metric) == (None, "nullValues")  # Metric (Library) upgrades it
+
+
 def test_unreferenceable_element_warns_and_drops_its_rich_custom_properties(tmp_path, caplog):
     odcs = _contract("""
 schema:
