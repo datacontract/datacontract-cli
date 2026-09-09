@@ -315,6 +315,13 @@ def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
         else:
             set_cell_value_direct(cell, value)
 
+    logical_type_cell = find_cell_by_name_in_sheet(sheet, "schema.logicalType")
+    if logical_type_cell is not None:
+        set_cell_value_direct(logical_type_cell, schema.logicalType)
+    elif schema.logicalType not in (None, "object"):
+        # a template without the cell reads every schema object back as an object
+        export.unsupported["schema logical types"] += 1
+
     export.sheet_authoritative_definitions(schema)
     export.inline_custom_properties(schema, inline=False)  # the schema block has no inline columns
 
@@ -678,6 +685,7 @@ def fill_sla_properties(export: Export):
     if not found:
         return
     sheet, header_row = found
+    columns = header_columns(sheet, header_row)
     for offset, sla in enumerate(export.odcs.slaProperties or []):
         values = {
             "property": sla.property,
@@ -690,7 +698,12 @@ def fill_sla_properties(export: Export):
             "scheduler": sla.scheduler,
             "schedule": sla.schedule,
         }
-        write_row(export, sheet, header_row, header_row + 1 + offset, values, sla)
+        row_index = header_row + 1 + offset
+        write_row(export, sheet, header_row, row_index, values, sla)
+        # a text value keeps the text cell format, so that "12:30" or "01234" is not read back as a number
+        for header in ("value", "extended value"):
+            if header in columns and isinstance(values[header], str):
+                sheet.cell(row=row_index, column=columns[header] + 1).number_format = "@"
 
 
 # --- Servers -------------------------------------------------------------------------------------

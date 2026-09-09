@@ -79,6 +79,14 @@ def test_unresolvable_element_reference_is_dropped(tmp_path, caplog):
     assert "references Support 'teams', which does not exist" in caplog.text
 
 
+def test_whole_price_amount_stays_an_integer(tmp_path):
+    path = tmp_path / "price.xlsx"
+    path.write_bytes(export_to_excel_bytes(_contract("price:\n  priceAmount: 1000\n  priceCurrency: USD\n")))
+    price_amount = import_excel_as_odcs(str(path)).price.priceAmount
+    assert price_amount == 1000
+    assert isinstance(price_amount, int)
+
+
 def test_resolve_cell_value():
     assert resolve_cell_value("true") is True
     assert resolve_cell_value("007") == 7

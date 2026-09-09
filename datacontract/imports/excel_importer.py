@@ -187,6 +187,14 @@ class Row:
     def text(self, header: str) -> Optional[str]:
         return cell_text(self.raw(header))
 
+    def typed(self, header: str) -> Any:
+        """The value a cell stands for; a cell Excel formats as text stays text, so that "12:30" is not a number."""
+        column = self.row_sheet.columns.get(header)
+        if column is None:
+            return None
+        cell = self.row_sheet.sheet.cell(row=self.row_index, column=column)
+        return resolve_cell_value(cell.value, "Text" if cell.number_format == "@" else None)
+
     def custom_properties(self) -> Optional[List[CustomProperty]]:
         sheet = self.row_sheet.sheet
         return inline_custom_properties(
@@ -261,7 +269,10 @@ def import_schemas(workbook) -> Optional[List[SchemaObject]]:
 
             schema = SchemaObject(
                 name=schema_name,
-                logicalType="object",
+                # a template without the cell held no logical type, and every schema object is an object
+                logicalType=get_cell_value_by_name_in_sheet(sheet, "schema.logicalType")
+                if "schema.logicalType" in sheet.defined_names
+                else "object",
                 physicalType=get_cell_value_by_name_in_sheet(sheet, "schema.physicalType"),
                 physicalName=get_cell_value_by_name_in_sheet(sheet, "schema.physicalName"),
                 description=get_cell_value_by_name_in_sheet(sheet, "schema.description"),
@@ -572,8 +583,8 @@ def import_sla_properties(workbook: Workbook) -> Optional[List[ServiceLevelAgree
         sla_properties.append(
             ServiceLevelAgreementProperty(
                 property=property_name,
-                value=resolve_cell_value(row.raw("value")),
-                valueExt=resolve_cell_value(row.raw("extended value")),
+                value=row.typed("value"),
+                valueExt=row.typed("extended value"),
                 unit=row.text("unit"),
                 element=row.text("element"),
                 driver=row.text("driver"),
@@ -644,10 +655,12 @@ def get_server_cell_value(workbook: Workbook, sheet: Worksheet, name: str, col_o
 
 
 def import_price(workbook) -> Optional[Dict[str, Any]]:
-    price_amount = get_cell_value_by_name(workbook, "price.priceAmount")
+    # the raw cell value, so that a whole amount stays an integer instead of being read back as a float
+    amount_cell = get_cell_by_name_in_workbook(workbook, "price.priceAmount")
+    price_amount = resolve_cell_value(amount_cell.value) if amount_cell is not None else None
     price_currency = get_cell_value_by_name(workbook, "price.priceCurrency")
     price_unit = get_cell_value_by_name(workbook, "price.priceUnit")
-    if not (price_amount or price_currency or price_unit):
+    if price_amount is None and not (price_currency or price_unit):
         return None
     return {
         "priceAmount": price_amount,

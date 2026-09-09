@@ -204,7 +204,7 @@ support:
   tool: slack
   scope: interactive
 price:
-  priceAmount: 1.0
+  priceAmount: 1
   priceCurrency: EUR
   priceUnit: Per 1000 requests
 team:
