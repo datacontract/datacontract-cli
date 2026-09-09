@@ -686,7 +686,7 @@ def merge_custom_property(element, prop: CustomProperty, element_label: str):
                 return
             logger.warning(
                 f"Custom property {prop.property} of {element_label} is both inline and on the Custom Properties sheet; "
-                "the sheet wins"
+                "the sheet overrides it."
             )
             existing[index] = prop
             element.customProperties = existing

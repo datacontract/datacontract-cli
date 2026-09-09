@@ -63,7 +63,7 @@ support:
     with caplog.at_level(logging.WARNING):
         result = import_excel_as_odcs(str(path))
     assert [(p.property, p.value) for p in result.support[0].customProperties] == [("sla", "48h")]
-    assert "the sheet wins" in caplog.text
+    assert "the sheet overrides it." in caplog.text
 
 
 def test_unresolvable_element_reference_is_dropped(tmp_path, caplog):
