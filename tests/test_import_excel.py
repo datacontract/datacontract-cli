@@ -38,7 +38,7 @@ def test_import_excel_odcs():
 
 
 def test_import_pre_3_2_workbook():
-    """A workbook made with the templateVersion 1 layout (per-type server blocks, no child sheets) still imports"""
+    """A workbook made with the pre-3.2 layout (per-type server blocks, no child sheets) still imports"""
     result = import_excel_as_odcs("./fixtures/excel/shipments-odcs-template-v1.xlsx")
     expected_datacontract = read_file("fixtures/excel/shipments-odcs-template-v1.yaml")
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected_datacontract)

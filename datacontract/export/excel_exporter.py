@@ -35,8 +35,6 @@ from datacontract.model.workbook import (
 
 logger = logging.getLogger(__name__)
 
-TEMPLATE_VERSION = 2  # the layout this exporter writes; older custom templates get one aggregated warning
-
 
 class ExcelExporter(Exporter):
     """Excel exporter that uses the official ODCS template"""
@@ -171,17 +169,8 @@ def create_workbook_from_template(template_path: str) -> Workbook:
 def warn_unsupported(export: Export):
     if not export.unsupported:
         return
-    cell = find_cell_by_name(export.workbook, "templateVersion")
-    try:
-        # the bundled template formats the version as a date, so openpyxl reads it back as a datetime
-        version = int(cell.value) if cell is not None and cell.value is not None else 1
-    except (TypeError, ValueError):
-        version = 1
     dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
-    logger.warning(
-        f"Custom template (templateVersion {version}) cannot hold: {dropped}. "
-        f"Upgrade to templateVersion {TEMPLATE_VERSION} to keep them."
-    )
+    logger.warning(f"The Excel template cannot hold: {dropped}. Export against a newer template to keep them.")
 
 
 # --- Fundamentals, pricing ------------------------------------------------------------------------

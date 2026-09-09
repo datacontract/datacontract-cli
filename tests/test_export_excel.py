@@ -306,7 +306,7 @@ support:
 
 
 def test_old_template_export_warns_exactly_once(tmp_path, caplog):
-    """Exporting into a templateVersion 1 template drops what it cannot hold, with one aggregated warning"""
+    """Exporting into a pre-3.2 template drops what it cannot hold, with one aggregated warning"""
     with open("./fixtures/excel/shipments-odcs.yaml", "r") as f:
         odcs = OpenDataContractStandard.from_string(f.read())
 
@@ -315,9 +315,9 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
 
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
-    assert warnings[0].startswith("Custom template (templateVersion 1) cannot hold: ")
+    assert warnings[0].startswith("The Excel template cannot hold: ")
     assert "enum values (5)" in warnings[0]
-    assert "Upgrade to templateVersion 2 to keep them." in warnings[0]
+    assert "Export against a newer template to keep them." in warnings[0]
     assert "Enum" not in workbook.sheetnames
     # what the old layout can hold still round-trips
     assert imported.schema_[0].properties[0].name == "shipment_id"
@@ -355,7 +355,7 @@ def test_code_only_uses_named_ranges_the_bundled_template_has():
     )
     names |= set(re.findall(r'_by_name(?:_in_sheet)?\(\w+, "([A-Za-z.]+)"', source))
     names |= set(re.findall(r'(?:row_sheet|open_row_sheet)\(\w+, "[^"]+", "([A-Za-z]+)"', source))
-    names |= {f"servers.{field}" for field in excel_exporter.SERVER_FIELDS} | {"servers.id", "templateVersion"}
+    names |= {f"servers.{field}" for field in excel_exporter.SERVER_FIELDS} | {"servers.id"}
     names -= {"servers.custom.", "servers.postgres."}
     workbook = excel_exporter.create_workbook_from_bundled_template()
     defined = set(workbook.defined_names) | {n for sheet in workbook.worksheets for n in sheet.defined_names}
