@@ -569,16 +569,16 @@ def import_servers(workbook) -> Optional[List[Server]]:
     if not server_cell:
         return None
 
-    labels_end = last_row(sheet, 1, (1,))
     label_row = next(
         (
             r
-            for r in range(1, labels_end + 1)
+            for r in range(1, last_row(sheet, 1, (1,)) + 1)
             if cell_text(sheet.cell(row=r, column=1).value) == CUSTOM_PROPERTIES_GROUP
         ),
-        labels_end,
+        None,
     )
-    property_rows = range(label_row + 1, last_row(sheet, label_row + 1, (2,)) + 1)
+    # a template without the group label has no custom property rows, only the per-type server blocks
+    property_rows = range(label_row + 1, last_row(sheet, label_row + 1, (2,)) + 1) if label_row else range(0)
     servers = []
     index = 0
     while True:
