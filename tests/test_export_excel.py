@@ -30,6 +30,7 @@ def test_cli_export_excel():
             [
                 "export",
                 "excel",
+                "--no-inline-references",
                 "./fixtures/excel/shipments-odcs.yaml",
                 "--output",
                 tmp_path,
@@ -124,6 +125,7 @@ def test_cli_export_excel_with_custom_template():
             [
                 "export",
                 "excel",
+                "--no-inline-references",
                 "./fixtures/excel/shipments-odcs.yaml",
                 "--template",
                 template_path,
@@ -214,7 +216,7 @@ support:
     imported, workbook = _roundtrip(odcs, tmp_path)
 
     headers = [c.value for c in workbook["Support"][4]]
-    first = [c.value for c in workbook["Support"][3]].index("Custom Properties (add as needed)")
+    first = [c.value for c in workbook["Support"][3]].index("Custom Properties")
     assert headers[first:] == ["pii", "count", "ratio", "plain"]
     assert [c.value for c in workbook["Support"][5]][first:] == [False, 42, 3.5, "hello"]
 
@@ -285,12 +287,12 @@ support:
     imported, workbook = _roundtrip(odcs, tmp_path)
     assert imported.to_yaml() == odcs.to_yaml()
     support = workbook["Support"]
-    first = [c.value for c in support[3]].index("Custom Properties (add as needed)")
+    first = [c.value for c in support[3]].index("Custom Properties")
     assert [c.value for c in support[4]][first:] == ["a", "d", "e"]
     assert [c.value for c in support[5]][first:] == [1, 4, None]
     assert [c.value for c in support[6]][first:] == [None, 5, 6]
     schema = workbook["Schema orders"]
-    first = [c.value for c in schema[15]].index("Custom Properties (add as needed)")
+    first = [c.value for c in schema[15]].index("Custom Properties")
     assert [c.value for c in schema[16]][first:] == ["a", "b", "c", "d"]
     assert str(next(m for m in schema.merged_cells.ranges if m.min_row == 15)) == "AP15:AS15"
     servers = workbook["Servers"]
@@ -315,7 +317,7 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
 
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
-    assert warnings[0].startswith("The Excel template cannot hold: ")
+    assert warnings[0].startswith("The v3.0.2 Excel template cannot hold: ")
     assert "enum values (5)" in warnings[0]
     assert "Export against a newer template to keep them." in warnings[0]
     assert "Enum" not in workbook.sheetnames

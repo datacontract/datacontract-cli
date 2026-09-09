@@ -665,7 +665,7 @@ def attach_custom_properties(odcs: OpenDataContractStandard, workbook: Workbook)
         return
     for row in table.rows():
         property_name = row.text("property")
-        if not property_name:
+        if not property_name or not row.text("scope"):
             continue
         if row.text("scope") == "Contract" and property_name == "owner":
             if not (row.text("description") or row.text("vendor") or row.text("id")):
@@ -875,6 +875,8 @@ def import_quality(workbook: Workbook) -> Dict[str, List[DataQuality]]:
         if not schema_name or (not quality_type and not description and not rule):
             continue
         threshold_dict = parse_threshold_values(row.text("threshold operator"), row.text("threshold value"))
+        # a custom check is written verbatim: its trailing newline is part of the implementation
+        implementation = row.raw("implementation (custom)")
         quality = DataQuality(
             name=row.text("name"),
             description=description,
@@ -888,7 +890,7 @@ def import_quality(workbook: Workbook) -> Dict[str, List[DataQuality]]:
             arguments=parse_arguments(row.text("arguments")),
             query=row.text("query (sql)"),
             engine=row.text("quality engine (custom)"),
-            implementation=row.text("implementation (custom)"),
+            implementation=None if implementation is None else str(implementation),
             severity=row.text("severity"),
             scheduler=row.text("scheduler"),
             schedule=row.text("schedule"),

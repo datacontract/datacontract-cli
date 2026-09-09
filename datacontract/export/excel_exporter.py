@@ -676,7 +676,7 @@ def write_server_custom_properties(export: Export, sheet: Worksheet, index: int,
         (
             row
             for row in range(1, sheet.max_row + 1)
-            if cell_text(sheet.cell(row=row, column=1)) == CUSTOM_PROPERTIES_GROUP
+            if (cell_text(sheet.cell(row=row, column=1)) or "").startswith(CUSTOM_PROPERTIES_GROUP)
         ),
         None,
     )
