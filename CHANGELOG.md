@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract export excel` and `datacontract import excel` support the ODCS v3.2 workbook layout
+- `datacontract export excel` bundles an Excel template for ODCS v3.0, v3.1 and v3.2 and writes the one matching the contract's `apiVersion`; a template that cannot hold everything the contract carries logs one warning listing what was dropped
 
 ### Fixed
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
