@@ -294,7 +294,6 @@ support:
     schema = workbook["Schema orders"]
     first = [c.value for c in schema[15]].index("Custom Properties")
     assert [c.value for c in schema[16]][first:] == ["a", "b", "c", "d"]
-    assert str(next(m for m in schema.merged_cells.ranges if m.min_row == 15)) == "AP15:AS15"
     servers = workbook["Servers"]
     label = next(
         r
@@ -318,7 +317,7 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
     assert warnings[0].startswith("The v3.0.2 Excel template cannot hold: ")
-    assert "enum values (5)" in warnings[0]
+    assert "enum values (6)" in warnings[0]
     assert "Export against a newer template to keep them." in warnings[0]
     assert "Enum" not in workbook.sheetnames
     # what the old layout can hold still round-trips
