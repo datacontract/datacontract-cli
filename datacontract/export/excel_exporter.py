@@ -190,6 +190,10 @@ def fill_fundamentals(export: Export):
     set_cell_value_by_name(export, "name", odcs.name)
     set_cell_value_by_name(export, "version", odcs.version)
     set_cell_value_by_name(export, "status", odcs.status)
+    if odcs.contractCreatedTs is not None and not set_optional_cell(
+        export, "contractCreatedTs", odcs.contractCreatedTs
+    ):
+        export.unsupported["contract created"] += 1
     set_cell_value_by_name(export, "domain", odcs.domain)
     set_cell_value_by_name(export, "dataProduct", odcs.dataProduct)
     set_cell_value_by_name(export, "tenant", odcs.tenant)
@@ -227,6 +231,7 @@ def fill_pricing(export: Export):
         set_cell_value_by_name(export, "price.priceAmount", export.odcs.price.priceAmount)
         set_cell_value_by_name(export, "price.priceCurrency", export.odcs.price.priceCurrency)
         set_cell_value_by_name(export, "price.priceUnit", export.odcs.price.priceUnit)
+        set_optional_cell(export, "price.id", export.odcs.price.id)
 
 
 # --- Schema sheets --------------------------------------------------------------------------------
@@ -330,6 +335,8 @@ LOGICAL_TYPE_OPTION_HEADERS = {
     "Normalized": "normalized",
     "Embedding Model": "embeddingModel",
     "Embedding Model Version": "embeddingModelVersion",
+    "Timezone": "timezone",
+    "Default Timezone": "defaultTimezone",
 }
 
 
@@ -400,6 +407,13 @@ def fill_property_row(
         next_row_index = fill_property_row(
             export, sheet, header_row, header_map, next_row_index, f"{property_name}.items", prop.items, is_items=True
         )
+    for part in ("key", "value"):
+        # a map's key and value are the rows "<parent>.key" and "<parent>.value"
+        nested = getattr(prop.map, part, None) if prop.map else None
+        if nested is not None:
+            next_row_index = fill_property_row(
+                export, sheet, header_row, header_map, next_row_index, f"{property_name}.{part}", nested, is_items=True
+            )
     return next_row_index
 
 
@@ -487,8 +501,15 @@ def quality_values(schema_name: str, property_name: Optional[str], quality: Data
     return {
         "schema": schema_name,
         "property": property_name,
+        "name": quality.name,
         "quality type": quality.type,
         "description": quality.description,
+        "dimension": quality.dimension,
+        "method": quality.method,
+        "business impact": quality.businessImpact,
+        "unit": quality.unit,
+        "tags": ",".join(quality.tags) if quality.tags else None,
+        "arguments": json.dumps(quality.arguments) if quality.arguments else None,
         "metric (library)": quality.metric or quality.rule,
         "query (sql)": quality.query,
         "threshold operator": get_threshold_operator(quality),
@@ -600,6 +621,7 @@ def fill_team(export: Export):
             "name": member.name,
             "description": member.description,
             "role": member.role,
+            "tags": ",".join(member.tags) if member.tags else None,
             "date in": member.dateIn,
             "date out": member.dateOut,
             "replaced by username": member.replacedByUsername,
@@ -612,8 +634,12 @@ def fill_roles(export: Export):
     if not found:
         return
     sheet, header_row = found
-    for offset, role in enumerate(export.odcs.roles or []):
+    scoped = [("Contract", None, role) for role in export.odcs.roles or []]
+    scoped += [("Server", server.server, role) for server in export.odcs.servers or [] for role in server.roles or []]
+    for offset, (scope, server_name, role) in enumerate(scoped):
         values = {
+            "scope": scope,
+            "server name": server_name,
             "role": role.role,
             "description": role.description,
             "access": role.access,
@@ -636,6 +662,9 @@ def fill_sla_properties(export: Export):
             "unit": sla.unit,
             "element": sla.element,
             "driver": sla.driver,
+            "description": sla.description,
+            "scheduler": sla.scheduler,
+            "schedule": sla.schedule,
         }
         write_row(export, sheet, header_row, header_row + 1 + offset, values, sla)
 
@@ -760,15 +789,15 @@ def synonym_values(schema_name, property_path, synonym) -> dict:
 
 def fill_context_sheets(export: Export):
     statements, constraints = [], []
-    contexts = [("Contract", None, export.odcs.context)]
-    contexts += [("Schema", schema.name, schema.context) for schema in export.odcs.schema_ or []]
+    contexts = [("contract", None, export.odcs.context)]
+    contexts += [("schema", schema.name, schema.context) for schema in export.odcs.schema_ or []]
     for level, schema_name, context in contexts:
         if context is None or isinstance(context, str):
             continue
         for statement in context.verifiedStatements or []:
             values = {
-                "level": level,
-                "schema": schema_name,
+                "scope": level,
+                "schema name": schema_name,
                 "question": statement.question,
                 "answer": statement.answer,
                 "tags": ",".join(statement.tags) if statement.tags else None,
@@ -776,8 +805,8 @@ def fill_context_sheets(export: Export):
             statements.append((values, statement))
         for constraint in context.constraints or []:
             values = {
-                "level": level,
-                "schema": schema_name,
+                "scope": level,
+                "schema name": schema_name,
                 "constraint": constraint.constraint,
                 "tags": ",".join(constraint.tags) if constraint.tags else None,
             }

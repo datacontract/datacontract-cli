@@ -23,22 +23,22 @@ def test_cli():
             "import",
             "excel",
             "--source",
-            "./fixtures/excel/shipments-odcs.xlsx",
+            "./fixtures/excel/full-odcs-3.2.xlsx",
         ],
     )
     assert result.exit_code == 0
     assert "kind: DataContract" in result.stdout
 
 
-def test_import_excel_odcs():
+def test_import_conformance_workbook():
     """Conformance pair from the template repository: the workbook imports to exactly the expected YAML"""
-    result = import_excel_as_odcs("./fixtures/excel/shipments-odcs.xlsx")
-    expected_datacontract = read_file("fixtures/excel/shipments-odcs.yaml")
+    result = import_excel_as_odcs("./fixtures/excel/full-odcs-3.2.xlsx")
+    expected_datacontract = read_file("fixtures/excel/full-odcs-3.2.yaml")
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected_datacontract)
 
 
 def test_import_pre_3_2_workbook():
-    """A workbook made with the pre-3.2 layout (per-type server blocks, no child sheets) still imports"""
+    """A legacy workbook (per-type server blocks, no child sheets) still imports"""
     result = import_excel_as_odcs("./fixtures/excel/shipments-odcs-template-v1.xlsx")
     expected_datacontract = read_file("fixtures/excel/shipments-odcs-template-v1.yaml")
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected_datacontract)

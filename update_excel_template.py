@@ -24,8 +24,6 @@ ODCS_EXCEL_TEMPLATE_BASE_URL = (
 ROOT = Path(__file__).parent
 FILES = {
     "odcs-template.xlsx": ROOT / "datacontract" / "templates" / "excel" / "odcs-template.xlsx",
-    "examples/shipments-odcs.xlsx": ROOT / "tests" / "fixtures" / "excel" / "shipments-odcs.xlsx",
-    "examples/shipments-odcs.yaml": ROOT / "tests" / "fixtures" / "excel" / "shipments-odcs.yaml",
     "examples/full-odcs-3.2.xlsx": ROOT / "tests" / "fixtures" / "excel" / "full-odcs-3.2.xlsx",
     "examples/full-odcs-3.2.yaml": ROOT / "tests" / "fixtures" / "excel" / "full-odcs-3.2.yaml",
 }

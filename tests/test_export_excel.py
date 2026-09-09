@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 import openpyxl
+import yaml
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
@@ -31,7 +32,7 @@ def test_cli_export_excel():
                 "export",
                 "excel",
                 "--no-inline-references",
-                "./fixtures/excel/shipments-odcs.yaml",
+                "./fixtures/excel/full-odcs-3.2.yaml",
                 "--output",
                 tmp_path,
             ],
@@ -54,7 +55,7 @@ def test_cli_export_excel():
 def test_export_excel_odcs():
     """Test Excel export from ODCS object"""
     # Load the test fixture
-    with open("./fixtures/excel/shipments-odcs.yaml", "r") as f:
+    with open("./fixtures/excel/full-odcs-3.2.yaml", "r") as f:
         odcs = OpenDataContractStandard.from_string(f.read())
 
     # Export to Excel
@@ -93,7 +94,7 @@ def test_export_excel_uses_bundled_template(monkeypatch):
 
     monkeypatch.setattr(excel_exporter.requests, "get", fail)
 
-    with open("./fixtures/excel/shipments-odcs.yaml", "r") as f:
+    with open("./fixtures/excel/full-odcs-3.2.yaml", "r") as f:
         odcs = OpenDataContractStandard.from_string(f.read())
 
     excel_bytes = export_to_excel_bytes(odcs)
@@ -126,7 +127,7 @@ def test_cli_export_excel_with_custom_template():
                 "export",
                 "excel",
                 "--no-inline-references",
-                "./fixtures/excel/shipments-odcs.yaml",
+                "./fixtures/excel/full-odcs-3.2.yaml",
                 "--template",
                 template_path,
                 "--output",
@@ -149,7 +150,7 @@ def test_cli_export_excel_with_custom_template():
 def test_excel_roundtrip():
     """Test that export then import produces equivalent data"""
     # Load original ODCS
-    with open("./fixtures/excel/shipments-odcs.yaml", "r") as f:
+    with open("./fixtures/excel/full-odcs-3.2.yaml", "r") as f:
         original_odcs = OpenDataContractStandard.from_string(f.read())
 
     # Export to Excel bytes
@@ -164,7 +165,9 @@ def test_excel_roundtrip():
         # Import back from Excel
         imported_odcs = import_excel_as_odcs(tmp_path)
 
-        assert imported_odcs.to_yaml() == original_odcs.to_yaml(), "Reimported ODCS should match original"
+        assert yaml.safe_load(imported_odcs.to_yaml()) == yaml.safe_load(original_odcs.to_yaml()), (
+            "Reimported ODCS should match original"
+        )
 
     finally:
         if os.path.exists(tmp_path):
@@ -308,7 +311,7 @@ support:
 
 def test_old_template_export_warns_exactly_once(tmp_path, caplog):
     """Exporting into a pre-3.2 template drops what it cannot hold, with one aggregated warning"""
-    with open("./fixtures/excel/shipments-odcs.yaml", "r") as f:
+    with open("./fixtures/excel/full-odcs-3.2.yaml", "r") as f:
         odcs = OpenDataContractStandard.from_string(f.read())
 
     with caplog.at_level(logging.WARNING):
@@ -317,16 +320,16 @@ def test_old_template_export_warns_exactly_once(tmp_path, caplog):
     warnings = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
     assert warnings[0].startswith("The v3.0.2 Excel template cannot hold: ")
-    assert "enum values (6)" in warnings[0]
+    assert "enum values (7)" in warnings[0]
     assert "Export against a newer template to keep them." in warnings[0]
     assert "Enum" not in workbook.sheetnames
     # what the old layout can hold still round-trips
-    assert imported.schema_[0].properties[0].name == "shipment_id"
-    assert imported.servers[0].project == "acme_shipments_prod"
-    assert imported.servers[1].host == "staging-db.example.com"  # no per-type block: the legacy custom block
+    assert imported.schema_[1].properties[0].name == "shipment_id"
+    assert imported.servers[0].project == "acme-shipments"
+    assert imported.servers[0].host == "warehouse.example.com"  # no per-type block: the legacy custom block
     # the legacy block's field labels are not custom properties: this template has no group header
-    assert imported.servers[1].customProperties is None
-    assert [p.property for p in imported.customProperties][:2] == ["owner", "additionalField"]
+    assert imported.servers[0].customProperties is None
+    assert [p.property for p in imported.customProperties][:2] == ["owner", "retentionDays"]
 
 
 def test_unreferenceable_element_warns_and_drops_its_rich_custom_properties(tmp_path, caplog):
