@@ -60,6 +60,9 @@ class Export:
         self.custom_property_rows: list[tuple[Element, Any]] = []
         self.authoritative_definition_rows: list[tuple[Element, Any]] = []
         self.unsupported = Counter()
+        # the template's own apiVersion, read before fill_fundamentals overwrites it with the contract's
+        cell = find_cell_by_name(workbook, "apiVersion")
+        self.template_version = cell.value if cell is not None and cell.value else None
         self.unaddressable: set[int] = set()
 
     def element(self, obj) -> Element:
@@ -169,8 +172,11 @@ def create_workbook_from_template(template_path: str) -> Workbook:
 def warn_unsupported(export: Export):
     if not export.unsupported:
         return
+    version = export.template_version or "custom"
     dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
-    logger.warning(f"The Excel template cannot hold: {dropped}. Export against a newer template to keep them.")
+    logger.warning(
+        f"The {version} Excel template cannot hold: {dropped}. Export against a newer template to keep them."
+    )
 
 
 # --- Fundamentals, pricing ------------------------------------------------------------------------
@@ -184,6 +190,10 @@ def fill_fundamentals(export: Export):
     set_cell_value_by_name(export, "name", odcs.name)
     set_cell_value_by_name(export, "version", odcs.version)
     set_cell_value_by_name(export, "status", odcs.status)
+    if odcs.contractCreatedTs is not None and not set_optional_cell(
+        export, "contractCreatedTs", odcs.contractCreatedTs
+    ):
+        export.unsupported["contract created"] += 1
     set_cell_value_by_name(export, "domain", odcs.domain)
     set_cell_value_by_name(export, "dataProduct", odcs.dataProduct)
     set_cell_value_by_name(export, "tenant", odcs.tenant)
@@ -221,6 +231,7 @@ def fill_pricing(export: Export):
         set_cell_value_by_name(export, "price.priceAmount", export.odcs.price.priceAmount)
         set_cell_value_by_name(export, "price.priceCurrency", export.odcs.price.priceCurrency)
         set_cell_value_by_name(export, "price.priceUnit", export.odcs.price.priceUnit)
+        set_optional_cell(export, "price.id", export.odcs.price.id)
 
 
 # --- Schema sheets --------------------------------------------------------------------------------
@@ -324,6 +335,8 @@ LOGICAL_TYPE_OPTION_HEADERS = {
     "Normalized": "normalized",
     "Embedding Model": "embeddingModel",
     "Embedding Model Version": "embeddingModelVersion",
+    "Timezone": "timezone",
+    "Default Timezone": "defaultTimezone",
 }
 
 
@@ -394,6 +407,13 @@ def fill_property_row(
         next_row_index = fill_property_row(
             export, sheet, header_row, header_map, next_row_index, f"{property_name}.items", prop.items, is_items=True
         )
+    for part in ("key", "value"):
+        # a map's key and value are the rows "<parent>.key" and "<parent>.value"
+        nested = getattr(prop.map, part, None) if prop.map else None
+        if nested is not None:
+            next_row_index = fill_property_row(
+                export, sheet, header_row, header_map, next_row_index, f"{property_name}.{part}", nested, is_items=True
+            )
     return next_row_index
 
 
@@ -448,18 +468,24 @@ def fill_quality(export: Export):
     if not found:
         return
     sheet, header_row = found
+    # the v3.0 template names this column Rule (Library); v3.1 renamed it to Metric (Library)
+    metric_header = "metric (library)" if "metric (library)" in header_columns(sheet, header_row) else "rule (library)"
     row_index = header_row + 1
     for schema in export.odcs.schema_ or []:
         for quality in schema.quality or []:
-            write_row(export, sheet, header_row, row_index, quality_values(schema.name, None, quality), quality)
+            values = quality_values(schema.name, None, quality, metric_header)
+            write_row(export, sheet, header_row, row_index, values, quality)
             row_index += 1
-        row_index = fill_properties_quality(export, sheet, header_row, schema.name, schema.properties or [], row_index)
+        row_index = fill_properties_quality(
+            export, sheet, header_row, schema.name, schema.properties or [], row_index, metric_header
+        )
 
 
-def fill_properties_quality(export, sheet, header_row, schema_name, properties, row_index) -> int:
+def fill_properties_quality(export, sheet, header_row, schema_name, properties, row_index, metric_header) -> int:
     for path, prop in walk_properties(properties):
         for quality in prop.quality or []:
-            write_row(export, sheet, header_row, row_index, quality_values(schema_name, path, quality), quality)
+            values = quality_values(schema_name, path, quality, metric_header)
+            write_row(export, sheet, header_row, row_index, values, quality)
             row_index += 1
     return row_index
 
@@ -477,13 +503,20 @@ def walk_properties(properties, prefix=""):
             yield from walk_properties(prop.items.properties, f"{path}.items")
 
 
-def quality_values(schema_name: str, property_name: Optional[str], quality: DataQuality) -> dict:
+def quality_values(schema_name: str, property_name: Optional[str], quality: DataQuality, metric_header: str) -> dict:
     return {
         "schema": schema_name,
         "property": property_name,
+        "name": quality.name,
         "quality type": quality.type,
         "description": quality.description,
-        "rule (library)": quality.rule,
+        "dimension": quality.dimension,
+        "method": quality.method,
+        "business impact": quality.businessImpact,
+        "unit": quality.unit,
+        "tags": ",".join(quality.tags) if quality.tags else None,
+        "arguments": json.dumps(quality.arguments) if quality.arguments else None,
+        metric_header: quality.metric or quality.rule,
         "query (sql)": quality.query,
         "threshold operator": get_threshold_operator(quality),
         "threshold value": get_threshold_value(quality),
@@ -594,6 +627,7 @@ def fill_team(export: Export):
             "name": member.name,
             "description": member.description,
             "role": member.role,
+            "tags": ",".join(member.tags) if member.tags else None,
             "date in": member.dateIn,
             "date out": member.dateOut,
             "replaced by username": member.replacedByUsername,
@@ -606,8 +640,12 @@ def fill_roles(export: Export):
     if not found:
         return
     sheet, header_row = found
-    for offset, role in enumerate(export.odcs.roles or []):
+    scoped = [("Contract", None, role) for role in export.odcs.roles or []]
+    scoped += [("Server", server.server, role) for server in export.odcs.servers or [] for role in server.roles or []]
+    for offset, (scope, server_name, role) in enumerate(scoped):
         values = {
+            "scope": scope,
+            "server name": server_name,
             "role": role.role,
             "description": role.description,
             "access": role.access,
@@ -630,6 +668,9 @@ def fill_sla_properties(export: Export):
             "unit": sla.unit,
             "element": sla.element,
             "driver": sla.driver,
+            "description": sla.description,
+            "scheduler": sla.scheduler,
+            "schedule": sla.schedule,
         }
         write_row(export, sheet, header_row, header_row + 1 + offset, values, sla)
 
@@ -670,7 +711,7 @@ def write_server_custom_properties(export: Export, sheet: Worksheet, index: int,
         (
             row
             for row in range(1, sheet.max_row + 1)
-            if cell_text(sheet.cell(row=row, column=1)) == CUSTOM_PROPERTIES_GROUP
+            if (cell_text(sheet.cell(row=row, column=1)) or "").startswith(CUSTOM_PROPERTIES_GROUP)
         ),
         None,
     )
@@ -754,15 +795,15 @@ def synonym_values(schema_name, property_path, synonym) -> dict:
 
 def fill_context_sheets(export: Export):
     statements, constraints = [], []
-    contexts = [("Contract", None, export.odcs.context)]
-    contexts += [("Schema", schema.name, schema.context) for schema in export.odcs.schema_ or []]
+    contexts = [("contract", None, export.odcs.context)]
+    contexts += [("schema", schema.name, schema.context) for schema in export.odcs.schema_ or []]
     for level, schema_name, context in contexts:
         if context is None or isinstance(context, str):
             continue
         for statement in context.verifiedStatements or []:
             values = {
-                "level": level,
-                "schema": schema_name,
+                "scope": level,
+                "schema name": schema_name,
                 "question": statement.question,
                 "answer": statement.answer,
                 "tags": ",".join(statement.tags) if statement.tags else None,
@@ -770,8 +811,8 @@ def fill_context_sheets(export: Export):
             statements.append((values, statement))
         for constraint in context.constraints or []:
             values = {
-                "level": level,
-                "schema": schema_name,
+                "scope": level,
+                "schema name": schema_name,
                 "constraint": constraint.constraint,
                 "tags": ",".join(constraint.tags) if constraint.tags else None,
             }
@@ -806,7 +847,7 @@ def fill_custom_properties(export: Export):
     sheet, header_row = found
     headers = {h.lower().strip() for h in get_headers_from_header_row(sheet, header_row).values()}
     row_index = header_row + 1
-    if "element type" not in headers:
+    if "scope" not in headers:
         # pre-3.2 layout: a flat Property / Value table for the contract root only
         for element, prop in rows:
             if element.kind != "Contract" or prop.property == "owner":
@@ -823,11 +864,11 @@ def fill_custom_properties(export: Export):
             continue
         value, value_type = typed_value(export, prop.value)
         values = {
-            "element type": element.kind,
-            "element": element.ref,
+            "scope": element.kind,
+            "scope name": element.ref,
             "property": prop.property,
             "value": value,
-            "type": value_type,
+            "value type": value_type,
             "description": prop.description,
             "vendor": prop.vendor,
             "id": prop.id,
@@ -866,8 +907,8 @@ def fill_authoritative_definitions(export: Export):
         if export.warn_unaddressable(element, "authoritative definitions"):
             continue
         values = {
-            "element type": element.kind,
-            "element": element.ref,
+            "scope": element.kind,
+            "scope name": element.ref,
             "url": definition.url,
             "type": definition.type,
             "description": definition.description,
@@ -881,9 +922,9 @@ def fill_authoritative_definitions(export: Export):
 
 
 def custom_property_columns(sheet: Worksheet, header_row: int) -> Optional[tuple[int, list[Optional[str]]]]:
-    """(first column, header names) of the columns under the "Custom Properties (add as needed)" group header, else None."""
+    """(first column, header names) of the columns under the "Custom Properties" group header, else None."""
     group_row = header_row - 1
-    start = next((c.column for c in sheet[group_row] if cell_text(c) == CUSTOM_PROPERTIES_GROUP), None)
+    start = next((c.column for c in sheet[group_row] if (cell_text(c) or "").startswith(CUSTOM_PROPERTIES_GROUP)), None)
     if start is None:
         return None
     last = max([c.column for c in sheet[header_row] if c.value is not None] + [start + 2])

@@ -1,6 +1,6 @@
+import json
 import logging
 import os
-from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 import openpyxl
@@ -12,6 +12,7 @@ from open_data_contract_standard.model import (
     DataQuality,
     Description,
     EnumValue,
+    MapDefinition,
     OpenDataContractStandard,
     Relationship,
     Role,
@@ -82,9 +83,11 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
         attach_enum_values(schemas, workbook)
         attach_synonyms(schemas, workbook)
 
+        servers = import_servers(workbook)
         odcs = OpenDataContractStandard(
             apiVersion=get_cell_value_by_name(workbook, "apiVersion"),
             kind=get_cell_value_by_name(workbook, "kind"),
+            contractCreatedTs=get_cell_value_by_name(workbook, "contractCreatedTs"),
             id=get_cell_value_by_name(workbook, "id"),
             name=get_cell_value_by_name(workbook, "name"),
             version=get_cell_value_by_name(workbook, "version"),
@@ -98,10 +101,10 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
             support=import_support(workbook),
             price=import_price(workbook),
             team=import_team(workbook),
-            roles=import_roles(workbook),
+            roles=import_roles(workbook, servers),
             slaDefaultElement=get_cell_value_by_name(workbook, "slaDefaultElement"),
             slaProperties=import_sla_properties(workbook),
-            servers=import_servers(workbook),
+            servers=servers,
             customProperties=import_root_custom_properties(workbook),
             context=context_from(get_cell_value_by_name(workbook, "context.instructions"), None, None),
         )
@@ -156,7 +159,10 @@ class RowSheet:
                 self.columns.setdefault(str(cell.value).strip().lower(), cell.column)
         # the columns under "Custom Properties (add as needed)", each named after one property
         self.custom_columns: Dict[str, int] = {}
-        start = next((c.column for c in sheet[header_row - 1] if cell_text(c.value) == CUSTOM_PROPERTIES_GROUP), None)
+        start = next(
+            (c.column for c in sheet[header_row - 1] if (cell_text(c.value) or "").startswith(CUSTOM_PROPERTIES_GROUP)),
+            None,
+        )
         if start is not None:
             for cell in sheet[header_row]:
                 name = cell_text(cell.value)
@@ -311,7 +317,7 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
                 transformDescription=row.text("transform description"),
                 transformSourceObjects=split_list(row.text("transform sources")),
                 encryptedName=row.text("encrypted name"),
-                examples=split_list(row.text("example(s)")),
+                examples=parse_examples(row, row.text("logical type")),
                 semanticType=row.text("semantic type"),
                 deprecated=parse_boolean(row.text("deprecated")),
                 id=row.text("id"),
@@ -339,6 +345,11 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
                     if parent_prop.logicalType == "array":
                         prop.name = None  # the row "<parent>.items" names the array's items
                         parent_prop.items = prop
+                    elif parent_prop.logicalType == "map" and child_name in ("key", "value"):
+                        prop.name = None  # the rows "<parent>.key" and "<parent>.value" name the map's types
+                        current = parent_prop.map or MapDefinition()
+                        setattr(current, child_name, prop)
+                        parent_prop.map = current
                     else:
                         if parent_prop.properties is None:
                             parent_prop.properties = []
@@ -358,12 +369,14 @@ def import_logical_type_options(row: Row):
         "minLength": parse_integer(row.text("minimum length")),
         "maxLength": parse_integer(row.text("maximum length")),
         "pattern": row.text("pattern"),
+        "timezone": parse_boolean(row.text("timezone")),
+        "defaultTimezone": row.text("default timezone"),
         "format": row.text("format"),
-        "exclusiveMaximum": parse_boolean(row.text("exclusive maximum")),
-        "exclusiveMinimum": parse_boolean(row.text("exclusive minimum")),
-        "minimum": row.text("minimum"),
-        "maximum": row.text("maximum"),
-        "multipleOf": row.text("multiple of"),
+        "exclusiveMaximum": resolve_cell_value(row.raw("exclusive maximum")),
+        "exclusiveMinimum": resolve_cell_value(row.raw("exclusive minimum")),
+        "minimum": resolve_cell_value(row.raw("minimum")),
+        "maximum": resolve_cell_value(row.raw("maximum")),
+        "multipleOf": resolve_cell_value(row.raw("multiple of")),
         "minItems": parse_integer(row.text("minimum items")),
         "maxItems": parse_integer(row.text("maximum items")),
         "uniqueItems": parse_boolean(row.text("unique items")),
@@ -500,6 +513,7 @@ def import_team(workbook: Workbook):
                     dateIn=row.text("date in"),
                     dateOut=row.text("date out"),
                     replacedByUsername=row.text("replaced by username"),
+                    tags=split_list(row.text("tags")),
                     id=row.text("id"),
                     customProperties=row.custom_properties(),
                 )
@@ -513,7 +527,8 @@ def import_team(workbook: Workbook):
     return members or None
 
 
-def import_roles(workbook: Workbook) -> Optional[List[Role]]:
+def import_roles(workbook: Workbook, servers: Optional[List[Server]] = None) -> Optional[List[Role]]:
+    """The contract's roles; a row scoped to a server is attached to that server instead"""
     table = open_row_sheet(workbook, "Roles", "roles", fallback_header_row=4)
     if not table:
         return None
@@ -522,7 +537,16 @@ def import_roles(workbook: Workbook) -> Optional[List[Role]]:
         role_name = row.text("role")
         if not role_name:
             continue
-        roles_list.append(
+        owner = roles_list
+        if (row.text("scope") or "").lower() == "server":
+            server_name = row.text("server name")
+            server = next((s for s in servers or [] if s.server == server_name), None)
+            if server is None:
+                logger.warning(f"Roles row {row.row_index}: server {server_name} does not exist; the role was dropped")
+                continue
+            server.roles = server.roles or []
+            owner = server.roles
+        owner.append(
             Role(
                 role=role_name,
                 description=row.text("description"),
@@ -548,11 +572,14 @@ def import_sla_properties(workbook: Workbook) -> Optional[List[ServiceLevelAgree
         sla_properties.append(
             ServiceLevelAgreementProperty(
                 property=property_name,
-                value=row.text("value"),
-                valueExt=row.text("extended value"),
+                value=resolve_cell_value(row.raw("value")),
+                valueExt=resolve_cell_value(row.raw("extended value")),
                 unit=row.text("unit"),
                 element=row.text("element"),
                 driver=row.text("driver"),
+                description=row.text("description"),
+                scheduler=row.text("scheduler"),
+                schedule=row.text("schedule"),
                 id=row.text("id"),
                 customProperties=row.custom_properties(),
             )
@@ -573,7 +600,7 @@ def import_servers(workbook) -> Optional[List[Server]]:
         (
             r
             for r in range(1, last_row(sheet, 1, (1,)) + 1)
-            if cell_text(sheet.cell(row=r, column=1).value) == CUSTOM_PROPERTIES_GROUP
+            if (cell_text(sheet.cell(row=r, column=1).value) or "").startswith(CUSTOM_PROPERTIES_GROUP)
         ),
         None,
     )
@@ -622,7 +649,12 @@ def import_price(workbook) -> Optional[Dict[str, Any]]:
     price_unit = get_cell_value_by_name(workbook, "price.priceUnit")
     if not (price_amount or price_currency or price_unit):
         return None
-    return {"priceAmount": price_amount, "priceCurrency": price_currency, "priceUnit": price_unit}
+    return {
+        "priceAmount": price_amount,
+        "priceCurrency": price_currency,
+        "priceUnit": price_unit,
+        "id": get_cell_value_by_name(workbook, "price.id"),
+    }
 
 
 # --- Custom properties and authoritative definitions ---------------------------------------------
@@ -636,7 +668,7 @@ def import_root_custom_properties(workbook: Workbook) -> Optional[List[CustomPro
         custom_properties.append(CustomProperty(property="owner", value=owner))
 
     table = open_row_sheet(workbook, "Custom Properties", "CustomProperties", header="property")
-    if table and "element type" not in table.columns:
+    if table and "scope" not in table.columns:
         for row in table.rows():
             property_name = row.text("property")
             if not property_name or property_name == "owner":
@@ -649,20 +681,20 @@ def import_root_custom_properties(workbook: Workbook) -> Optional[List[CustomPro
 def attach_custom_properties(odcs: OpenDataContractStandard, workbook: Workbook):
     """Rows of the Custom Properties sheet, joined to the element they reference; the sheet wins over an inline pair"""
     table = open_row_sheet(workbook, "Custom Properties", "CustomProperties", header="property")
-    if not table or "element type" not in table.columns:
+    if not table or "scope" not in table.columns:
         return
     for row in table.rows():
         property_name = row.text("property")
-        if not property_name:
+        if not property_name or not row.text("scope"):
             continue
-        if row.text("element type") == "Contract" and property_name == "owner":
+        if row.text("scope") == "Contract" and property_name == "owner":
             if not (row.text("description") or row.text("vendor") or row.text("id")):
                 continue  # the Owner cell on Fundamentals holds it
         element = resolve_element(odcs, row, "custom property")
         if element is None:
             continue
         try:
-            value = resolve_cell_value(row.raw("value"), row.text("type"))
+            value = resolve_cell_value(row.raw("value"), row.text("value type"))
         except ValueError as e:
             logger.warning(f"Custom property {property_name} on row {row.row_index} has an invalid JSON value: {e}")
             continue
@@ -673,7 +705,7 @@ def attach_custom_properties(odcs: OpenDataContractStandard, workbook: Workbook)
             vendor=row.text("vendor"),
             id=row.text("id"),
         )
-        merge_custom_property(element, prop, f"{row.text('element type')} {row.text('element') or ''}".strip())
+        merge_custom_property(element, prop, f"{row.text('scope')} {row.text('scope name') or ''}".strip())
 
 
 def merge_custom_property(element, prop: CustomProperty, element_label: str):
@@ -716,8 +748,8 @@ def attach_authoritative_definitions(odcs: OpenDataContractStandard, workbook: W
 
 def resolve_element(odcs: OpenDataContractStandard, row: Row, what: str):
     """The element a child-sheet row references, or None (with a warning) when it cannot be found"""
-    kind = row.text("element type")
-    ref = row.text("element") or ""
+    kind = row.text("scope")
+    ref = row.text("scope name") or ""
     if kind == "Description" and odcs.description is None:
         odcs.description = Description()
     if kind == "Team" and not isinstance(odcs.team, Team):
@@ -822,7 +854,7 @@ def attach_context_statements(odcs: OpenDataContractStandard, workbook: Workbook
             text = row.text(key)
             if not text:
                 continue
-            level, schema_name = (row.text("level") or "").lower(), row.text("schema")
+            level, schema_name = (row.text("scope") or "").lower(), row.text("schema name")
             owner = odcs
             if level == "schema" or schema_name:
                 owner = next((s for s in odcs.schema_ or [] if s.name == schema_name), None)
@@ -859,17 +891,28 @@ def import_quality(workbook: Workbook) -> Dict[str, List[DataQuality]]:
         property_name = row.text("property")
         quality_type = row.text("quality type")
         description = row.text("description")
-        rule = row.text("rule (library)")
-        if not schema_name or (not quality_type and not description and not rule):
+        metric = row.text("metric (library)")
+        rule = row.text("rule (library)")  # what the v3.0 template calls the same column
+        if not schema_name or (not quality_type and not description and not metric and not rule):
             continue
         threshold_dict = parse_threshold_values(row.text("threshold operator"), row.text("threshold value"))
+        # a custom check is written verbatim: its trailing newline is part of the implementation
+        implementation = row.raw("implementation (custom)")
         quality = DataQuality(
+            name=row.text("name"),
             description=description,
             type=quality_type,
+            metric=metric,
             rule=rule,
+            dimension=row.text("dimension"),
+            method=row.text("method"),
+            businessImpact=row.text("business impact"),
+            unit=row.text("unit"),
+            tags=split_list(row.text("tags")),
+            arguments=parse_arguments(row.text("arguments")),
             query=row.text("query (sql)"),
             engine=row.text("quality engine (custom)"),
-            implementation=row.text("implementation (custom)"),
+            implementation=None if implementation is None else str(implementation),
             severity=row.text("severity"),
             scheduler=row.text("scheduler"),
             schedule=row.text("schedule"),
@@ -882,6 +925,25 @@ def import_quality(workbook: Workbook) -> Dict[str, List[DataQuality]]:
     return quality_map
 
 
+def parse_examples(row, logical_type: Optional[str]) -> Optional[List[Any]]:
+    """Examples keep the cell verbatim on a string property and resolve on any other type."""
+    if logical_type in (None, "string", "object", "array", "map"):
+        return split_list(row.text("example(s)"))
+    values = split_list(row.text("example(s)"))
+    return None if values is None else [resolve_cell_value(value) for value in values]
+
+
+def parse_arguments(text: Optional[str]) -> Optional[dict]:
+    """The Arguments cell of a library quality rule, a JSON object."""
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except ValueError as e:
+        logger.warning(f"Quality arguments are not valid JSON: {text} ({e})")
+        return None
+
+
 def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dict[str, Any]:
     """Parse threshold operator and value into DataQuality threshold fields"""
     threshold_dict = {}
@@ -890,14 +952,13 @@ def parse_threshold_values(threshold_operator: str, threshold_value: str) -> Dic
         return threshold_dict
 
     if threshold_operator in ["mustBeBetween", "mustNotBeBetween"]:
-        if threshold_value.startswith("[") and threshold_value.endswith("]"):
-            content = threshold_value[1:-1]
-            try:
-                values = [Decimal(v.strip()) for v in content.split(",") if v.strip()]
-                if len(values) >= 2:
-                    threshold_dict[threshold_operator] = values[:2]
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Failed to parse between values: {threshold_value}, error: {e}")
+        content = threshold_value[1:-1] if threshold_value.startswith("[") else threshold_value
+        try:
+            values = [resolve_cell_value(v.strip()) for v in content.split(",") if v.strip()]
+            if len(values) >= 2:
+                threshold_dict[threshold_operator] = values[:2]
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse between values: {threshold_value}, error: {e}")
     else:
         try:
             isFraction = "." in threshold_value

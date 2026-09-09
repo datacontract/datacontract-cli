@@ -1,7 +1,7 @@
 """Shared vocabulary of the ODCS Excel workbook: element references and cell value typing.
 
 An element reference names the contract element a row on a child sheet belongs to: an
-`Element Type` and an `Element`, resolved through the element's natural key (see
+`Scope` and a `Scope Name`, resolved through the element's natural key (see
 datacontract.model.natural_keys) or its `id` where it has no natural key. There is no positional
 fallback: an element whose key is missing or duplicated cannot be referenced.
 """
@@ -22,8 +22,9 @@ from datacontract.model.natural_keys import NATURAL_KEYS
 
 logger = logging.getLogger(__name__)
 
-# the merged header above the inline custom property columns; each column is named after one property
-CUSTOM_PROPERTIES_GROUP = "Custom Properties (add as needed)"
+# the merged header above the inline custom property columns; each column is named after one property.
+# Matched as a prefix: the row sheets label it "Custom Properties", Servers "Custom Properties (add as needed)".
+CUSTOM_PROPERTIES_GROUP = "Custom Properties"
 
 SERVER_FIELDS = [
     "account",
@@ -77,6 +78,8 @@ def iter_elements(odcs: OpenDataContractStandard) -> Iterator[Element]:
         yield Element("Description", "", odcs.description, "the description")
     for server in _keyed(odcs.servers, NATURAL_KEYS["servers"], "Server", "server"):
         yield server
+        for role in _keyed(server.obj.roles, NATURAL_KEYS["roles"], "Role", f"role of {server.label}"):
+            yield role
     for schema in _keyed(odcs.schema_, NATURAL_KEYS["schema"], "Schema", "schema"):
         yield schema
         if schema.obj.context is not None and not isinstance(schema.obj.context, str):
@@ -91,7 +94,7 @@ def iter_elements(odcs: OpenDataContractStandard) -> Iterator[Element]:
     for support in _keyed(odcs.support, NATURAL_KEYS["support"], "Support", "support channel"):
         yield support
     if isinstance(odcs.team, Team):
-        yield Element("Team", "", odcs.team, "the team")
+        yield Element("Team", odcs.team.name or "", odcs.team, "the team")
         members = odcs.team.members
     else:
         members = odcs.team
@@ -117,7 +120,7 @@ def _property_element_and_children(prop: Element, schema_ref, schema_label, path
     yield prop
     p: SchemaProperty = prop.obj
     for enum_value in _keyed(p.enum, NATURAL_KEYS["enum"], "Enum Value", f"enum value of {prop.label}"):
-        enum_value.ref = None if prop.ref is None or enum_value.ref is None else f"{prop.ref}={enum_value.ref}"
+        enum_value.ref = _qualified(enum_value, prop.ref)
         yield enum_value
     yield from _synonyms(p, prop.ref, prop.label)
     yield from _by_id(p.relationships, "Relationship", f"relationship of {prop.label}")
@@ -135,7 +138,7 @@ def _property_element_and_children(prop: Element, schema_ref, schema_label, path
 
 def _synonyms(owner, owner_ref, owner_label) -> Iterator[Element]:
     for synonym in _keyed(owner.synonyms, NATURAL_KEYS["synonyms"], "Synonym", f"synonym of {owner_label}"):
-        synonym.ref = None if owner_ref is None or synonym.ref is None else f"{owner_ref}={synonym.ref}"
+        synonym.ref = _qualified(synonym, owner_ref)
         yield synonym
 
 
@@ -144,8 +147,15 @@ def _context_elements(context, owner_label) -> Iterator[Element]:
     yield from _by_id(context.constraints, "Constraint", f"constraint of {owner_label}")
 
 
+def _qualified(element: Element, owner_ref: Optional[str]) -> Optional[str]:
+    """A natural key is written under its owner's reference; an id resolves on its own (see element_index)."""
+    if element.ref is None or owner_ref is None:
+        return None
+    return f"{owner_ref}.{element.ref}"
+
+
 def _keyed(items, key_field, kind, noun) -> list[Element]:
-    """Elements of a list keyed by a natural key; missing or duplicated keys make an element unreferenceable."""
+    """Elements of a list keyed by their id, else by a natural key; missing or duplicated keys make an element unreferenceable."""
     if not items:
         return []
     keys = [getattr(item, key_field, None) for item in items]
@@ -177,7 +187,15 @@ def _by_id(items, kind, noun) -> list[Element]:
 
 
 def element_index(odcs: OpenDataContractStandard) -> dict[tuple[str, str], Element]:
-    return {(e.kind, e.ref): e for e in iter_elements(odcs) if e.ref is not None}
+    """Elements by (kind, reference); an element with an id is also reachable by that id alone."""
+    index = {}
+    for element in iter_elements(odcs):
+        if element.ref is not None:
+            index[(element.kind, element.ref)] = element
+        element_id = getattr(element.obj, "id", None)
+        if element_id:
+            index.setdefault((element.kind, str(element_id)), element)
+    return index
 
 
 def resolve_cell_value(value: Any, type_hint: Optional[str] = None) -> Any:

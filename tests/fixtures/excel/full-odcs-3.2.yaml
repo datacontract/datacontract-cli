@@ -1,0 +1,851 @@
+# An example data contract that demonstrates every element of ODCS v3.2.0 in one place,
+# together with its Excel counterpart, full-odcs-3.2.xlsx.
+apiVersion: v3.2.0
+kind: DataContract
+id: logistics_shipments_full_v1
+name: Shipments (Full Example)
+version: 2.1.0
+status: active
+domain: logistics
+dataProduct: shipment-analytics
+tenant: acme-eu
+contractCreatedTs: "2026-01-15T09:00:00Z"
+tags:
+- logistics
+- datalocation:EU
+description:
+  purpose: Analytical view of parcel shipments, used for delivery performance reporting. Demonstrates every element of ODCS v3.2.0.
+  usage: Use as a reference when authoring a data contract or filling in the Excel template.
+  limitations: Illustrative example data, not a production data set.
+  authoritativeDefinitions:
+  - type: Data Guidelines
+    url: https://example.com/description-guidelines.html
+    description: Guidelines that govern the description block.
+    id: descriptionGuidelines
+  customProperties:
+  - property: descriptionOwner
+    value: docs-team
+    description: Who maintains the description block.
+    vendor: entropy-data
+    id: descriptionOwnerProp
+context:
+  instructions: >-
+    One row in shipments is one physical parcel.
+    Join to orders through order_id. All timestamps are UTC.
+  verifiedStatements:
+  - id: contractVerifiedStatement
+    question: How many parcels shipped per day last month?
+    answer: Count shipments grouped by the date part of delivered_ts.
+    tags:
+    - reporting
+    - verified
+    authoritativeDefinitions:
+    - type: implementation
+      url: https://example.com/queries/parcels-per-day.sql
+      description: Reference implementation of the query.
+      id: parcelsPerDayQuery
+    customProperties:
+    - property: reviewedBy
+      value: analytics-guild
+      description: Who verified the answer.
+      vendor: entropy-data
+      id: verifiedStatementReviewer
+  - id: contractOpenQuestion
+    question: Which parcels are still in transit?
+  constraints:
+  - id: contractConstraint
+    constraint: Do not join this contract's data with customer identity data.
+    tags:
+    - privacy
+    authoritativeDefinitions:
+    - type: Data Guidelines
+      url: https://example.com/privacy-policy.html
+      description: The privacy policy this constraint follows from.
+      id: privacyPolicy
+    customProperties:
+    - property: enforcedBy
+      value: policy-engine
+      description: System enforcing the constraint.
+      vendor: opa
+      id: constraintEnforcer
+customProperties:
+- property: owner
+  value: logistics-platform-team
+- property: retentionDays
+  value: 730
+  description: How long rows are kept before they move to the archive.
+  vendor: entropy-data
+  id: retentionDays
+authoritativeDefinitions:
+- type: Guidelines
+  url: https://example.com/contract-guidelines.html
+  description: Data guidelines that govern this contract.
+  id: contractGuidelines
+price:
+  priceAmount: 9.95
+  priceCurrency: EUR
+  priceUnit: megabyte
+  id: contractPrice
+roles:
+- role: analyst
+  description: Read-only access to the curated shipment tables.
+  access: read
+  firstLevelApprovers: Jane Doe
+  secondLevelApprovers: John Roe
+  id: analystRole
+  customProperties:
+  - property: grantedVia
+    value: entitlement-service
+    description: How the role is granted.
+    vendor: sailpoint
+    id: analystRoleGrant
+- role: engineer
+  access: write
+team:
+  id: logisticsTeam
+  name: Logistics Platform Team
+  description: The team that owns and operates this contract.
+  tags:
+  - platform
+  authoritativeDefinitions:
+  - type: canonicalUrl
+    url: https://example.com/teams/logistics-platform
+    description: The team's home page.
+    id: teamHomePage
+  customProperties:
+  - property: costCenter
+    value: CC-4711
+    description: Cost center the team bills to.
+    vendor: sap
+    id: teamCostCenter
+  members:
+  - username: jdoe
+    name: Jane Doe
+    description: Data product owner.
+    role: owner
+    dateIn: "2020-01-01"
+    tags:
+    - oncall
+    id: memberJdoe
+    authoritativeDefinitions:
+    - type: canonicalUrl
+      url: https://example.com/people/jdoe
+      description: Directory entry.
+      id: memberJdoeDirectory
+    customProperties:
+    - property: slackHandle
+      value: "@jdoe"
+      description: Slack handle of the member.
+      vendor: slack
+      id: memberJdoeSlack
+  - username: jroe
+    name: John Roe
+    role: reader
+    dateIn: "2021-06-01"
+    dateOut: "2024-10-10"
+    replacedByUsername: jdoe
+support:
+- channel: shipments-support
+  url: https://example.slack.com/archives/C123
+  description: Interactive support channel.
+  tool: slack
+  scope: interactive
+  invitationUrl: https://example.slack.com/join/C123
+  id: supportSlack
+  customProperties:
+  - property: responseTimeHours
+    value: 4
+    description: Target first response time.
+    vendor: entropy-data
+    id: supportResponseTime
+- channel: shipments-announcements
+  url: mailto:shipments-announce@example.com
+  tool: email
+  scope: announcements
+slaDefaultElement: shipments.delivered_ts
+slaProperties:
+- property: latency
+  value: 4
+  valueExt: 6
+  unit: h
+  element: shipments.delivered_ts
+  driver: operational
+  description: Maximum age of the newest row.
+  schedule: 0 20 * * *
+  scheduler: cron
+  id: slaLatency
+  authoritativeDefinitions:
+  - type: Data Guidelines
+    url: https://example.com/sla/latency.html
+    description: How latency is measured.
+    id: slaLatencyDefinition
+  customProperties:
+  - property: measuredBy
+    value: soda-cloud-monitor
+    description: Monitor producing the measurement.
+    vendor: soda
+    id: slaLatencyMonitor
+- property: generalAvailability
+  value: "2026-03-01T00:00:00Z"
+servers:
+- server: all-fields
+  type: custom
+  environment: production
+  description: A server of type custom, showing every connection field the standard defines. A real server sets only the fields its type needs.
+  id: serverAllFields
+  account: acme-account
+  catalog: main_catalog
+  database: shipments_db
+  dataset: shipments_dataset
+  delimiter: ;
+  encoding: UTF-8
+  endpointUrl: https://s3.eu-central-1.example.com
+  format: parquet
+  host: warehouse.example.com
+  location: s3://acme-shipments/curated/
+  path: /data/shipments
+  port: 5439
+  project: acme-shipments
+  region: eu-central-1
+  regionName: eu-central-1
+  schema: curated
+  serviceName: ORCL
+  stagingDir: s3://acme-shipments/staging/
+  stream: shipments-stream
+  warehouse: COMPUTE_WH
+  roles:
+  - role: reader
+    description: Read access on this server.
+    access: SELECT
+    firstLevelApprovers: Jane Doe
+    secondLevelApprovers: John Roe
+    id: serverReaderRole
+    customProperties:
+    - property: grantedVia
+      value: iam
+      description: How server access is granted.
+      vendor: aws
+      id: serverRoleGrant
+  customProperties:
+  - property: networkZone
+    value: dmz
+    description: Network zone of the server.
+    vendor: entropy-data
+    id: serverNetworkZone
+- server: lakehouse
+  type: iceberg
+  environment: production
+  description: Iceberg catalog holding the curated tables.
+  id: serverLakehouse
+  catalog: acme_catalog
+  catalogUrl: https://catalog.example.com/api
+  namespace: logistics
+  warehouse: s3://acme-lakehouse/warehouse/
+- server: staging
+  type: postgresql
+  environment: staging
+  description: Staging database; its port comes from a runtime variable (RFC-0050).
+  id: serverStaging
+  host: staging-db.example.com
+  port: ${DB_PORT}
+  database: shipments
+  schema: public
+- server: reporting
+  type: athena
+  environment: production
+  description: Athena workgroup used for reporting queries.
+  id: serverReporting
+  catalog: awsdatacatalog
+  schema: shipments_reporting
+  stagingDir: s3://acme-reporting/staging/
+  regionName: eu-central-1
+  workgroup: analytics
+schema:
+- name: orders
+  id: orders
+  physicalName: orders_v2
+  physicalType: table
+  logicalType: object
+  businessName: Orders
+  description: Customer orders, the parent of shipments.
+  dataGranularityDescription: One row per order.
+  tags:
+  - core
+  deprecated: false
+  authoritativeDefinitions:
+  - type: businessDefinition
+    url: https://example.com/definitions/orders
+    description: Business definition of an order.
+    id: ordersDefinition
+  customProperties:
+  - property: sourceSystem
+    value: erp
+    description: System of record.
+    vendor: sap
+    id: ordersSourceSystem
+  synonyms:
+  - synonym: Purchase Orders
+    description: Term used by procurement.
+    locale: en-US
+    source: glossary
+    status: active
+    id: ordersSynonym
+    customProperties:
+    - property: approvedBy
+      value: data-governance
+      description: Who approved the synonym.
+      vendor: collibra
+      id: ordersSynonymApproval
+  context:
+    instructions: Orders are immutable once shipped.
+  quality:
+  - type: library
+    metric: rowCount
+    mustBeGreaterThan: 0
+    name: orders_not_empty
+    description: Orders must not be empty.
+    dimension: completeness
+    severity: error
+    businessImpact: operational
+    method: reconciliation
+    schedule: 0 6 * * *
+    scheduler: cron
+    unit: rows
+    tags:
+    - daily
+    id: ordersRowCount
+    arguments:
+      partition: ingest_date
+    authoritativeDefinitions:
+    - type: implementation
+      url: https://example.com/checks/orders-row-count
+      description: Check implementation.
+      id: ordersRowCountImpl
+    customProperties:
+    - property: runsOn
+      value: airflow
+      description: Orchestrator running the check.
+      vendor: airflow
+      id: ordersRowCountRunner
+  properties:
+  - name: order_id
+    id: ordersOrderId
+    logicalType: string
+    physicalType: text
+    primaryKey: true
+    primaryKeyPosition: 1
+    required: true
+  - name: carrier_code
+    id: ordersCarrierCode
+    logicalType: string
+    physicalType: text
+    primaryKey: true
+    primaryKeyPosition: 2
+  - name: customer_id
+    logicalType: string
+    physicalType: text
+- name: shipments
+  id: shipments
+  physicalName: shipments_v2
+  physicalType: table
+  logicalType: object
+  businessName: Shipments
+  description: One row per physical parcel handed over to a carrier.
+  dataGranularityDescription: One row per physical parcel.
+  tags:
+  - pii
+  - core
+  deprecated: false
+  authoritativeDefinitions:
+  - type: businessDefinition
+    url: https://example.com/definitions/shipments
+    description: Business definition of a shipment.
+    id: shipmentsDefinition
+  customProperties:
+  - property: refreshCadence
+    value: hourly
+    description: How often the table is refreshed.
+    vendor: entropy-data
+    id: shipmentsRefreshCadence
+  synonyms:
+  - synonym: Deliveries
+    description: Term used by the logistics team.
+    locale: en-US
+    source: glossary
+    status: active
+    id: shipmentsSynonymEn
+  - synonym: Sendungen
+    locale: de-DE
+    source: glossary
+    status: active
+    id: shipmentsSynonymDe
+  context:
+    instructions: Exclude cancelled shipments from delivery performance metrics.
+    verifiedStatements:
+    - id: shipmentsVerifiedStatement
+      question: What is the average delivery time by carrier?
+      answer: Average of delivered_ts minus shipped_ts, grouped by carrier.
+      tags:
+      - reporting
+      authoritativeDefinitions:
+      - type: implementation
+        url: https://example.com/queries/avg-delivery-time.sql
+        description: Reference query.
+        id: avgDeliveryTimeQuery
+      customProperties:
+      - property: reviewedBy
+        value: analytics-guild
+        description: Who verified the answer.
+        vendor: entropy-data
+        id: shipmentsStatementReviewer
+    constraints:
+    - id: shipmentsConstraint
+      constraint: Never use this table to contact recipients directly.
+      tags:
+      - privacy
+      authoritativeDefinitions:
+      - type: Data Guidelines
+        url: https://example.com/privacy-policy.html
+        description: Policy behind the constraint.
+        id: shipmentsConstraintPolicy
+      customProperties:
+      - property: enforcedBy
+        value: policy-engine
+        description: System enforcing the constraint.
+        vendor: opa
+        id: shipmentsConstraintEnforcer
+  quality:
+  - type: sql
+    query: SELECT COUNT(*) FROM shipments
+    mustBeGreaterOrEqualTo: 1
+    name: shipments_not_empty
+    description: Table shall contain at least one row.
+    dimension: completeness
+    severity: error
+    id: shipmentsNotEmpty
+  - type: custom
+    engine: soda
+    implementation: |
+      checks for shipments:
+        - freshness(delivered_ts) < 1d
+    name: shipments_fresh
+    description: Rows must be fresh.
+    dimension: timeliness
+    severity: warning
+    id: shipmentsFresh
+  - type: text
+    description: Shipment volumes are expected to peak in December.
+    id: shipmentsSeasonality
+  relationships:
+  - id: shipmentsToOrdersComposite
+    type: foreignKey
+    from:
+    - shipments.order_id
+    - shipments.carrier
+    to:
+    - orders.order_id
+    - orders.carrier_code
+    customProperties:
+    - property: enforced
+      value: "false"
+      description: Whether the database enforces the key.
+      vendor: entropy-data
+      id: compositeKeyEnforced
+  properties:
+  - name: shipment_id
+    id: shipmentsShipmentId
+    businessName: Shipment ID
+    physicalName: sid
+    encryptedName: sid_enc
+    logicalType: string
+    physicalType: uuid
+    description: Unique identifier of the parcel.
+    required: true
+    unique: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    partitioned: false
+    classification: internal
+    criticalDataElement: true
+    semanticType: column
+    deprecated: false
+    examples:
+    - 123e4567-e89b-12d3-a456-426614174000
+    tags:
+    - businesskey
+    authoritativeDefinitions:
+    - type: businessDefinition
+      url: https://example.com/definitions/shipment_id
+    customProperties:
+    - property: maskingPolicy
+      value: mask_uuid
+      description: Masking policy applied in the warehouse.
+      vendor: snowflake
+      id: shipmentIdMasking
+    synonyms:
+    - synonym: Delivery Number
+      description: Term used by the decommissioned system.
+      locale: en-US
+      source: legacy-system
+      status: deprecated
+      id: shipmentIdSynonym
+      customProperties:
+      - property: retiredOn
+        value: "2024-01-01"
+        description: When the synonym was retired.
+        vendor: entropy-data
+        id: shipmentIdSynonymRetired
+    quality:
+    - type: library
+      metric: duplicateValues
+      mustBe: 0
+      name: shipment_id_unique
+      description: No duplicate shipment ids.
+      dimension: uniqueness
+      severity: error
+      businessImpact: regulatory
+      method: reconciliation
+      schedule: 0 7 * * *
+      scheduler: cron
+      unit: rows
+      tags:
+      - daily
+      id: shipmentIdUnique
+      arguments:
+        column: sid
+      authoritativeDefinitions:
+      - type: implementation
+        url: https://example.com/checks/shipment-id-unique
+        description: Check implementation.
+        id: shipmentIdUniqueImpl
+      customProperties:
+      - property: runsOn
+        value: airflow
+        description: Orchestrator running the check.
+        vendor: airflow
+        id: shipmentIdUniqueRunner
+  - name: order_id
+    id: shipmentsOrderId
+    businessName: Order ID
+    physicalName: oid
+    logicalType: string
+    physicalType: text
+    description: Order the parcel belongs to.
+    required: true
+    classification: internal
+    logicalTypeOptions:
+      minLength: 8
+      maxLength: 10
+      pattern: ^ORD[0-9]+$
+    examples:
+    - ORD12345
+    relationships:
+    - id: shipmentsOrderFk
+      type: foreignKey
+      to: orders.order_id
+      customProperties:
+      - property: enforced
+        value: "true"
+        description: Whether the database enforces the key.
+        vendor: entropy-data
+        id: orderFkEnforced
+  - name: shipped_date
+    id: shipmentsShippedDate
+    businessName: Shipped Date
+    logicalType: date
+    physicalType: date
+    description: Calendar date the parcel left the warehouse.
+    partitioned: true
+    partitionKeyPosition: 1
+    classification: internal
+    logicalTypeOptions:
+      format: yyyy-MM-dd
+    examples:
+    - "2026-01-15"
+  - name: delivered_ts
+    id: shipmentsDeliveredTs
+    businessName: Delivered Timestamp
+    logicalType: timestamp
+    physicalType: timestamp_tz
+    description: Moment the parcel was handed over.
+    classification: internal
+    logicalTypeOptions:
+      format: yyyy-MM-dd'T'HH:mm:ssXXX
+      timezone: true
+      defaultTimezone: UTC
+    examples:
+    - "2026-01-16T10:00:00Z"
+  - name: carrier
+    id: shipmentsCarrier
+    businessName: Carrier
+    logicalType: string
+    physicalType: text
+    description: Carrier that delivered the parcel.
+    classification: internal
+    semanticType: dimension
+    transformSourceObjects:
+    - raw.carrier_assignments
+    transformLogic: COALESCE(carrier_override, carrier_default)
+    transformDescription: Carrier override wins over the default assignment.
+    synonyms:
+    - synonym: Shipping Provider
+      source: glossary
+      id: carrierSynonym
+    examples:
+    - FedEx
+    - UPS
+    enum:
+    - value: FedEx
+      label: FedEx
+      description: Federal Express.
+      id: carrierFedex
+      tags:
+      - global
+      authoritativeDefinitions:
+      - type: canonicalUrl
+        url: https://www.fedex.com
+        description: Carrier home page.
+        id: carrierFedexUrl
+      customProperties:
+      - property: label_de
+        value: FedEx
+        description: German label.
+        vendor: entropy-data
+        id: carrierFedexLabelDe
+    - value: UPS
+      label: UPS
+  - name: status
+    id: shipmentsStatus
+    businessName: Status
+    logicalType: string
+    physicalType: text
+    description: Delivery status of the parcel.
+    classification: internal
+    semanticType: dimension
+    enum:
+    - value: Delivered
+      label: Delivered
+      description: Reached the recipient.
+      id: statusDelivered
+    - value: In Transit
+      label: In Transit
+      description: On its way.
+      id: statusInTransit
+    - value: Cancelled
+      label: Cancelled
+      description: Cancelled before delivery.
+      id: statusCancelled
+    examples:
+    - Delivered
+  - name: parcel_count
+    id: shipmentsParcelCount
+    businessName: Parcel Count
+    logicalType: integer
+    physicalType: int
+    description: Number of parcels in the shipment.
+    classification: internal
+    logicalTypeOptions:
+      minimum: 1
+      maximum: 100
+      multipleOf: 1
+    examples:
+    - 3
+    quality:
+    - type: library
+      metric: rowCount
+      mustBeBetween:
+      - 1
+      - 100
+      name: parcel_count_range
+      description: Parcel counts stay within the expected range.
+      dimension: accuracy
+      id: parcelCountRange
+  - name: shipping_cost
+    id: shipmentsShippingCost
+    businessName: Shipping Cost
+    logicalType: number
+    physicalType: decimal
+    description: Carrier cost of the shipment.
+    classification: restricted
+    semanticType: measure
+    transformLogic: SUM(shipping_cost)
+    transformDescription: Summed over the group.
+    logicalTypeOptions:
+      minimum: 0
+      maximum: 10000
+      exclusiveMinimum: 0
+      exclusiveMaximum: 10000
+      multipleOf: 0.01
+    examples:
+    - 12.5
+  - name: is_express
+    id: shipmentsIsExpress
+    businessName: Express Flag
+    logicalType: boolean
+    physicalType: boolean
+    description: Whether express delivery was booked.
+    classification: internal
+    examples:
+    - true
+  - name: legacy_status_code
+    id: shipmentsLegacyStatus
+    businessName: Legacy Status Code
+    logicalType: string
+    physicalType: text
+    description: Status code of the decommissioned system.
+    deprecated: true
+    classification: internal
+    examples:
+    - DLV
+  - name: address
+    id: shipmentsAddress
+    businessName: Shipment Address
+    logicalType: object
+    physicalType: json
+    description: Recipient address.
+    required: true
+    classification: restricted
+    logicalTypeOptions:
+      minProperties: 2
+      maxProperties: 4
+      required:
+      - street
+      - city
+    properties:
+    - name: street
+      id: addressStreet
+      logicalType: string
+      physicalType: text
+      description: Street and house number.
+      required: true
+      classification: restricted
+      examples:
+      - Marienplatz 1
+    - name: city
+      id: addressCity
+      logicalType: string
+      physicalType: text
+      description: City.
+      required: true
+      classification: restricted
+      examples:
+      - Munich
+    - name: country
+      id: addressCountry
+      logicalType: string
+      physicalType: text
+      description: ISO country code.
+      classification: restricted
+      semanticType: dimension
+      enum:
+      - value: DE
+        label: Germany
+        id: countryDe
+      - value: AT
+        label: Austria
+        id: countryAt
+      examples:
+      - DE
+    - name: geo
+      id: addressGeo
+      logicalType: object
+      physicalType: json
+      description: Geo coordinates, nested one level deeper.
+      properties:
+      - name: latitude
+        id: geoLatitude
+        logicalType: number
+        physicalType: double
+        examples:
+        - 48.1372
+      - name: longitude
+        id: geoLongitude
+        logicalType: number
+        physicalType: double
+        examples:
+        - 11.5756
+  - name: handling_tags
+    id: shipmentsHandlingTags
+    businessName: Handling Tags
+    logicalType: array
+    physicalType: array
+    description: Handling instructions attached to the parcel.
+    classification: internal
+    logicalTypeOptions:
+      minItems: 0
+      maxItems: 5
+      uniqueItems: true
+    items:
+      logicalType: string
+      physicalType: text
+      logicalTypeOptions:
+        maxLength: 20
+  - name: attributes
+    id: shipmentsAttributes
+    businessName: Attributes
+    logicalType: map
+    physicalType: map
+    description: Free-form key/value attributes.
+    classification: internal
+    map:
+      key:
+        logicalType: string
+        physicalType: text
+      value:
+        logicalType: string
+        physicalType: text
+  - name: description_embedding
+    id: shipmentsEmbedding
+    businessName: Description Embedding
+    logicalType: vector
+    physicalType: vector
+    description: Embedding of the shipment description.
+    classification: internal
+    logicalTypeOptions:
+      dimensions: 1536
+      distanceMetric: cosine
+      elementType: float32
+      embeddingModel: text-embedding-3-small
+      embeddingModelVersion: "3"
+      normalized: true
+  - name: delivery_note
+    id: shipmentsDeliveryNote
+    businessName: Delivery Note
+    logicalType: string
+    physicalType: text
+    description: Free-text note captured at handover.
+    classification: restricted
+    quality:
+    - type: text
+      description: Notes must not contain recipient phone numbers.
+      id: deliveryNoteNoPhone
+    - type: sql
+      query: SELECT COUNT(*) FROM shipments WHERE delivery_note LIKE '%@%'
+      mustBe: 0
+      id: deliveryNoteNoEmail
+    - type: custom
+      engine: great-expectations
+      implementation: expect_column_value_lengths_to_be_between(0, 500)
+      id: deliveryNoteLength
+- name: shipments_archive
+  id: shipmentsArchive
+  physicalName: shipments_archive_v1
+  physicalType: table
+  logicalType: object
+  businessName: Shipments Archive
+  description: Deprecated archive of shipments before 2020.
+  dataGranularityDescription: One row per archived parcel.
+  deprecated: true
+  tags:
+  - archive
+  properties:
+  - name: shipment_id
+    id: archiveShipmentId
+    logicalType: string
+    physicalType: text
+    primaryKey: true
+    primaryKeyPosition: 1
+  - name: archived_at
+    id: archiveArchivedAt
+    logicalType: timestamp
+    physicalType: timestamp_tz
