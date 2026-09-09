@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `datacontract export excel` and `datacontract import excel` support the ODCS v3.2 workbook layout: custom properties and authoritative definitions on every element, the `Enums`, `Synonyms`, `Verified Statements` and `Constraints` sheets, context instructions, `semanticType`, `deprecated`, the team block, `id` columns, and one generic server block for all ODCS server types; a custom property value is typed by its cell, so strings such as `"007"` are no longer read as numbers (#1267)
+- `datacontract export excel` and `datacontract import excel` support the ODCS v3.2 workbook layout
 
 ### Fixed
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
