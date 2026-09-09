@@ -12,6 +12,7 @@ from open_data_contract_standard.model import (
     DataQuality,
     Description,
     EnumValue,
+    MapDefinition,
     OpenDataContractStandard,
     Relationship,
     Role,
@@ -82,6 +83,7 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
         attach_enum_values(schemas, workbook)
         attach_synonyms(schemas, workbook)
 
+        servers = import_servers(workbook)
         odcs = OpenDataContractStandard(
             apiVersion=get_cell_value_by_name(workbook, "apiVersion"),
             kind=get_cell_value_by_name(workbook, "kind"),
@@ -99,10 +101,10 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
             support=import_support(workbook),
             price=import_price(workbook),
             team=import_team(workbook),
-            roles=import_roles(workbook),
+            roles=import_roles(workbook, servers),
             slaDefaultElement=get_cell_value_by_name(workbook, "slaDefaultElement"),
             slaProperties=import_sla_properties(workbook),
-            servers=import_servers(workbook),
+            servers=servers,
             customProperties=import_root_custom_properties(workbook),
             context=context_from(get_cell_value_by_name(workbook, "context.instructions"), None, None),
         )
@@ -343,6 +345,11 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
                     if parent_prop.logicalType == "array":
                         prop.name = None  # the row "<parent>.items" names the array's items
                         parent_prop.items = prop
+                    elif parent_prop.logicalType == "map" and child_name in ("key", "value"):
+                        prop.name = None  # the rows "<parent>.key" and "<parent>.value" name the map's types
+                        current = parent_prop.map or MapDefinition()
+                        setattr(current, child_name, prop)
+                        parent_prop.map = current
                     else:
                         if parent_prop.properties is None:
                             parent_prop.properties = []
@@ -520,7 +527,8 @@ def import_team(workbook: Workbook):
     return members or None
 
 
-def import_roles(workbook: Workbook) -> Optional[List[Role]]:
+def import_roles(workbook: Workbook, servers: Optional[List[Server]] = None) -> Optional[List[Role]]:
+    """The contract's roles; a row scoped to a server is attached to that server instead"""
     table = open_row_sheet(workbook, "Roles", "roles", fallback_header_row=4)
     if not table:
         return None
@@ -529,7 +537,16 @@ def import_roles(workbook: Workbook) -> Optional[List[Role]]:
         role_name = row.text("role")
         if not role_name:
             continue
-        roles_list.append(
+        owner = roles_list
+        if (row.text("scope") or "").lower() == "server":
+            server_name = row.text("server name")
+            server = next((s for s in servers or [] if s.server == server_name), None)
+            if server is None:
+                logger.warning(f"Roles row {row.row_index}: server {server_name} does not exist; the role was dropped")
+                continue
+            server.roles = server.roles or []
+            owner = server.roles
+        owner.append(
             Role(
                 role=role_name,
                 description=row.text("description"),
