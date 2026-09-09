@@ -61,26 +61,6 @@ def server_field_name(workbook, server_type: Optional[str], field: str) -> Optio
     return None
 
 
-ELEMENT_TYPES = (
-    "Contract",
-    "Description",
-    "Server",
-    "Schema",
-    "Property",
-    "Quality",
-    "Support",
-    "Team",
-    "Team Member",
-    "Role",
-    "SLA",
-    "Relationship",
-    "Enum Value",
-    "Synonym",
-    "Verified Statement",
-    "Constraint",
-)
-
-
 @dataclass
 class Element:
     kind: str

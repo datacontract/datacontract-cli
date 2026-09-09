@@ -125,6 +125,25 @@ def import_excel_as_odcs(excel_file_path: str) -> OpenDataContractStandard:
 # --- Row sheets ----------------------------------------------------------------------------------
 
 
+BLANK_ROW_LIMIT = 100  # stop scanning a sheet after this many consecutive empty rows
+
+
+def last_row(sheet: Worksheet, first_row: int, columns) -> int:
+    """The last row with a value in `columns`, giving up after BLANK_ROW_LIMIT consecutive empty rows.
+
+    A named range is no upper bound: the export writes as many rows as the contract has, past the range's end.
+    """
+    last, blank = first_row - 1, 0
+    for row in range(first_row, sheet.max_row + 1):
+        if all(sheet.cell(row=row, column=column).value is None for column in columns):
+            blank += 1
+            if blank > BLANK_ROW_LIMIT:
+                break
+        else:
+            last, blank = row, 0
+    return last
+
+
 class RowSheet:
     """A sheet with a header row and one element per row, located by its named range."""
 
@@ -145,7 +164,8 @@ class RowSheet:
                     self.custom_columns.setdefault(name, cell.column)
 
     def rows(self):
-        for row_index in range(self.header_row + 1, self.sheet.max_row + 1):
+        columns = set(self.columns.values()) | set(self.custom_columns.values())
+        for row_index in range(self.header_row + 1, last_row(self.sheet, self.header_row + 1, columns) + 1):
             yield Row(self, row_index)
 
 
@@ -549,15 +569,16 @@ def import_servers(workbook) -> Optional[List[Server]]:
     if not server_cell:
         return None
 
+    labels_end = last_row(sheet, 1, (1,))
     label_row = next(
         (
             r
-            for r in range(1, sheet.max_row + 1)
+            for r in range(1, labels_end + 1)
             if cell_text(sheet.cell(row=r, column=1).value) == CUSTOM_PROPERTIES_GROUP
         ),
-        sheet.max_row,
+        labels_end,
     )
-    property_rows = range(label_row + 1, sheet.max_row + 1)
+    property_rows = range(label_row + 1, last_row(sheet, label_row + 1, (2,)) + 1)
     servers = []
     index = 0
     while True:

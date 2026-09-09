@@ -171,8 +171,12 @@ def create_workbook_from_template(template_path: str) -> Workbook:
 def warn_unsupported(export: Export):
     if not export.unsupported:
         return
-    version = find_cell_by_name(export.workbook, "templateVersion")
-    version = int(version.value) if version is not None and version.value is not None else 1
+    cell = find_cell_by_name(export.workbook, "templateVersion")
+    try:
+        # the bundled template formats the version as a date, so openpyxl reads it back as a datetime
+        version = int(cell.value) if cell is not None and cell.value is not None else 1
+    except (TypeError, ValueError):
+        version = 1
     dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
     logger.warning(
         f"Custom template (templateVersion {version}) cannot hold: {dropped}. "
@@ -184,33 +188,33 @@ def warn_unsupported(export: Export):
 
 
 def fill_fundamentals(export: Export):
-    workbook, odcs = export.workbook, export.odcs
-    set_cell_value_by_name(workbook, "apiVersion", odcs.apiVersion)
-    set_cell_value_by_name(workbook, "kind", odcs.kind)
-    set_cell_value_by_name(workbook, "id", odcs.id)
-    set_cell_value_by_name(workbook, "name", odcs.name)
-    set_cell_value_by_name(workbook, "version", odcs.version)
-    set_cell_value_by_name(workbook, "status", odcs.status)
-    set_cell_value_by_name(workbook, "domain", odcs.domain)
-    set_cell_value_by_name(workbook, "dataProduct", odcs.dataProduct)
-    set_cell_value_by_name(workbook, "tenant", odcs.tenant)
+    odcs = export.odcs
+    set_cell_value_by_name(export, "apiVersion", odcs.apiVersion)
+    set_cell_value_by_name(export, "kind", odcs.kind)
+    set_cell_value_by_name(export, "id", odcs.id)
+    set_cell_value_by_name(export, "name", odcs.name)
+    set_cell_value_by_name(export, "version", odcs.version)
+    set_cell_value_by_name(export, "status", odcs.status)
+    set_cell_value_by_name(export, "domain", odcs.domain)
+    set_cell_value_by_name(export, "dataProduct", odcs.dataProduct)
+    set_cell_value_by_name(export, "tenant", odcs.tenant)
 
     owner_value = None
     for prop in odcs.customProperties or []:
         if prop.property == "owner":
             owner_value = prop.value
             break
-    set_cell_value_by_name(workbook, "owner", owner_value)
+    set_cell_value_by_name(export, "owner", owner_value)
 
-    set_cell_value_by_name(workbook, "slaDefaultElement", odcs.slaDefaultElement)
+    set_cell_value_by_name(export, "slaDefaultElement", odcs.slaDefaultElement)
 
     if odcs.description:
-        set_cell_value_by_name(workbook, "description.purpose", odcs.description.purpose)
-        set_cell_value_by_name(workbook, "description.limitations", odcs.description.limitations)
-        set_cell_value_by_name(workbook, "description.usage", odcs.description.usage)
+        set_cell_value_by_name(export, "description.purpose", odcs.description.purpose)
+        set_cell_value_by_name(export, "description.limitations", odcs.description.limitations)
+        set_cell_value_by_name(export, "description.usage", odcs.description.usage)
 
     if odcs.tags:
-        set_cell_value_by_name(workbook, "tags", ",".join(odcs.tags))
+        set_cell_value_by_name(export, "tags", ",".join(odcs.tags))
 
     instructions = context_instructions(odcs.context)
     if instructions and not set_optional_cell(export, "context.instructions", instructions):
@@ -225,9 +229,9 @@ def context_instructions(context) -> Optional[str]:
 
 def fill_pricing(export: Export):
     if export.odcs.price:
-        set_cell_value_by_name(export.workbook, "price.priceAmount", export.odcs.price.priceAmount)
-        set_cell_value_by_name(export.workbook, "price.priceCurrency", export.odcs.price.priceCurrency)
-        set_cell_value_by_name(export.workbook, "price.priceUnit", export.odcs.price.priceUnit)
+        set_cell_value_by_name(export, "price.priceAmount", export.odcs.price.priceAmount)
+        set_cell_value_by_name(export, "price.priceCurrency", export.odcs.price.priceCurrency)
+        set_cell_value_by_name(export, "price.priceUnit", export.odcs.price.priceUnit)
 
 
 # --- Schema sheets --------------------------------------------------------------------------------
@@ -261,25 +265,24 @@ def copy_sheet_names(workbook: Workbook, template_sheet: Worksheet, new_sheet: W
     for name_str in template_sheet.defined_names:
         try:
             original_ref = template_sheet.defined_names[name_str].attr_text
-            new_ref = original_ref.replace(f"'{template_sheet.title}'", quote_sheet_title(new_sheet.title))
+            quoted_title = "'" + new_sheet.title.replace("'", "''") + "'"
+            new_ref = original_ref.replace(f"'{template_sheet.title}'", quoted_title)
             new_sheet.defined_names.add(DefinedName(name_str, attr_text=new_ref))
         except Exception as e:
             logger.warning(f"Failed to copy worksheet-scoped named range {name_str}: {e}")
 
 
-def quote_sheet_title(title: str) -> str:
-    return "'" + title.replace("'", "''") + "'"
-
-
 def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
-    set_cell_value_by_name_in_sheet(sheet, "schema.name", schema.name)
-    set_cell_value_by_name_in_sheet(sheet, "schema.physicalType", schema.physicalType or "table")
-    set_cell_value_by_name_in_sheet(sheet, "schema.description", schema.description)
-    set_cell_value_by_name_in_sheet(sheet, "schema.businessName", schema.businessName)
-    set_cell_value_by_name_in_sheet(sheet, "schema.physicalName", schema.physicalName)
-    set_cell_value_by_name_in_sheet(sheet, "schema.dataGranularityDescription", schema.dataGranularityDescription)
+    set_cell_value_by_name_in_sheet(export, sheet, "schema.name", schema.name)
+    set_cell_value_by_name_in_sheet(export, sheet, "schema.physicalType", schema.physicalType or "table")
+    set_cell_value_by_name_in_sheet(export, sheet, "schema.description", schema.description)
+    set_cell_value_by_name_in_sheet(export, sheet, "schema.businessName", schema.businessName)
+    set_cell_value_by_name_in_sheet(export, sheet, "schema.physicalName", schema.physicalName)
+    set_cell_value_by_name_in_sheet(
+        export, sheet, "schema.dataGranularityDescription", schema.dataGranularityDescription
+    )
     if schema.tags:
-        set_cell_value_by_name_in_sheet(sheet, "schema.tags", ",".join(schema.tags))
+        set_cell_value_by_name_in_sheet(export, sheet, "schema.tags", ",".join(schema.tags))
 
     for name, value, feature in (
         ("schema.id", schema.id, "ids"),
@@ -351,8 +354,8 @@ def fill_property_row(
         col_idx = header_map.get(header_name.lower())
         if col_idx is not None:
             set_cell_value_direct(sheet.cell(row=row_index, column=col_idx + 1), value)
-        elif feature and value is not None:
-            export.unsupported[feature] += 1
+        else:
+            note_unsupported(export, feature or f"schema {header_name.lower()}", value)
 
     set_by_header("Property", property_name)
     set_by_header("Business Name", prop.businessName)
@@ -431,13 +434,17 @@ def row_sheet(export: Export, sheet_title: str, range_name: str, fallback_header
 def write_row(export: Export, sheet: Worksheet, header_row: int, row_index: int, values: dict, obj=None):
     """Write one row: `values` maps lower-cased header names to values; `obj` supplies the id and inline pairs."""
     headers = get_headers_from_header_row(sheet, header_row)
+    present = {header_name.lower().strip() for header_name in headers.values()}
     for cell_index, header_name in headers.items():
         key = header_name.lower().strip()
         if key in values:
             set_cell_value(sheet, row_index, cell_index, values[key])
+    for key, value in values.items():
+        if key not in present:
+            note_unsupported(export, f"{sheet.title} {key}", value)
     if obj is not None:
         if getattr(obj, "id", None) is not None:
-            if "id" in {h.lower().strip() for h in headers.values()}:
+            if "id" in present:
                 set_cell_value(
                     sheet, row_index, [i for i, h in headers.items() if h.lower().strip() == "id"][0], obj.id
                 )
@@ -647,22 +654,22 @@ def fill_servers(export: Export):
         return
     sheet = workbook["Servers"]
     for index, server in enumerate(export.odcs.servers):
-        set_cell_value_by_column_index(sheet, "servers.server", index, server.server)
-        set_cell_value_by_column_index(sheet, "servers.description", index, server.description)
-        set_cell_value_by_column_index(sheet, "servers.environment", index, server.environment)
-        set_cell_value_by_column_index(sheet, "servers.type", index, server.type)
+        set_cell_value_by_column_index(export, sheet, "servers.server", index, server.server)
+        set_cell_value_by_column_index(export, sheet, "servers.description", index, server.description)
+        set_cell_value_by_column_index(export, sheet, "servers.environment", index, server.environment)
+        set_cell_value_by_column_index(export, sheet, "servers.type", index, server.type)
         for field in SERVER_FIELDS:
             value = getattr(server, "schema_" if field == "schema" else field)
             if value is None:
                 continue
             name = server_field_name(workbook, server.type, field)
             if name:
-                set_cell_value_by_column_index(sheet, name, index, value)
+                set_cell_value_by_column_index(export, sheet, name, index, value)
             else:
                 export.unsupported[f"server field {field}"] += 1
         if server.id is not None:
             if find_cell_by_name(workbook, "servers.id"):
-                set_cell_value_by_column_index(sheet, "servers.id", index, server.id)
+                set_cell_value_by_column_index(export, sheet, "servers.id", index, server.id)
             else:
                 export.unsupported["ids"] += 1
         write_server_custom_properties(export, sheet, index, server)
@@ -976,6 +983,12 @@ def name_to_ref_in_sheet(sheet: Worksheet, name: str) -> Optional[str]:
     return defined_name.attr_text if defined_name else None
 
 
+def note_unsupported(export: Export, feature: str, value: Any):
+    """Count a value the template has no cell or column for; an empty value is not a loss."""
+    if value is not None and value != "":
+        export.unsupported[feature] += 1
+
+
 def set_optional_cell(export: Export, name: str, value: Any) -> bool:
     """Set a named cell that only newer templates have; False when the template lacks it."""
     cell = find_cell_by_name(export.workbook, name)
@@ -985,27 +998,29 @@ def set_optional_cell(export: Export, name: str, value: Any) -> bool:
     return True
 
 
-def set_cell_value_by_name(workbook: Workbook, cell_name: str, value: Any):
-    cell = find_cell_by_name(workbook, cell_name)
+def set_cell_value_by_name(export: Export, cell_name: str, value: Any):
+    cell = find_cell_by_name(export.workbook, cell_name)
     if cell:
         set_cell_value_direct(cell, value)
     else:
-        logger.warning(f"Cell with name {cell_name} not found in workbook")
+        note_unsupported(export, cell_name, value)
 
 
-def set_cell_value_by_name_in_sheet(sheet: Worksheet, cell_name: str, value: Any):
+def set_cell_value_by_name_in_sheet(export: Export, sheet: Worksheet, cell_name: str, value: Any):
     cell = find_cell_by_name_in_sheet(sheet, cell_name)
     if cell:
         set_cell_value_direct(cell, value)
     else:
-        logger.warning(f"Cell with name {cell_name} not found in sheet {sheet.title}")
+        note_unsupported(export, cell_name, value)
 
 
-def set_cell_value_by_column_index(sheet: Worksheet, name: str, column_index: int, value: Any):
+def set_cell_value_by_column_index(export: Export, sheet: Worksheet, name: str, column_index: int, value: Any):
     """Set cell value by column offset from a named cell (servers are laid out horizontally)"""
     first_cell = find_cell_by_name(sheet.parent, name)
     if first_cell:
         set_cell_value_direct(sheet.cell(row=first_cell.row, column=first_cell.column + column_index), value)
+    else:
+        note_unsupported(export, name, value)
 
 
 def set_cell_value_direct(cell: Cell, value: Any):

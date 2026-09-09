@@ -34,10 +34,33 @@ Example (schema list, inserting "customers" before "orders"):
         "dictionary_item_added":   {"root['schema']['customers']": {...}}
         "dictionary_item_removed": {"root['schema']['orders']": {...}}
 
-The natural keys come from datacontract.model.natural_keys, shared with the Excel workbook.
-"""
+# NOTE: Natural keys are hardcoded here because the open-data-contract-standard
+# Pydantic models don't yet expose them. The planned fix is to add a __natural_key__
+# class var or Field annotation to each model upstream, then replace this table with
+# a single reflection-based loop that derives both the list containers and their
+# natural keys from the model metadata.
 
-from datacontract.model.natural_keys import NATURAL_KEYS
+Current hardcoded natural keys:
+schema[]                                SchemaObject   -> .name     (required: [name])
+schema[].properties[]                   SchemaProperty -> .name     (required: [name], recursive)
+slaProperties[]                          SLAProperty    -> .property
+slaProperties[].customProperties[]       CustomProperty -> .property
+slaProperties[].authoritativeDefinitions[] AuthoritativeDefinition -> .url
+schema[].properties[].enum[]             EnumValue      -> .value (or .id)
+schema[]/properties[].synonyms[]         Synonym        -> .synonym (or .id)
+schema[]/properties[].relationships[]    Relationship   -> .id, else from:to
+context.verifiedStatements[]             VerifiedStatement -> .question (or .id)
+context.constraints[]                    Constraint     -> .constraint (or .id)
+servers[]                                Server         -> .server
+servers[].roles[]                        Role           -> .role
+servers[].customProperties[]             CustomProperty -> .property
+support[]                                SupportItem    -> .channel
+roles[]                                  Role           -> .role
+team.members[]                           TeamMember     -> .username
+authoritativeDefinitions[]               AuthoritativeDefinition -> .url
+description.authoritativeDefinitions[]   AuthoritativeDefinition -> .url
+description.customProperties[]           CustomProperty -> .property
+"""
 
 
 def _normalize_by(items: list[dict], key_field: str) -> dict:
@@ -61,7 +84,7 @@ def _normalize_auth_defs(items: list[dict]) -> dict:
     """
     result = {}
     for i, item in enumerate(items):
-        key = item.get(NATURAL_KEYS["authoritativeDefinitions"]) or item.get("id") or f"__pos_{i}__"
+        key = item.get("url") or item.get("id") or f"__pos_{i}__"
         result[key] = item
     return result
 
@@ -84,11 +107,9 @@ def _normalize_context(context) -> object:
         return context
     entry = dict(context)
     if isinstance(entry.get("verifiedStatements"), list):
-        entry["verifiedStatements"] = _normalize_keyed(
-            entry["verifiedStatements"], "id", NATURAL_KEYS["verifiedStatements"]
-        )
+        entry["verifiedStatements"] = _normalize_keyed(entry["verifiedStatements"], "id", "question")
     if isinstance(entry.get("constraints"), list):
-        entry["constraints"] = _normalize_keyed(entry["constraints"], "id", NATURAL_KEYS["constraints"])
+        entry["constraints"] = _normalize_keyed(entry["constraints"], "id", "constraint")
     return entry
 
 
@@ -117,10 +138,10 @@ def _normalize_quality(items: list[dict]) -> dict:
     """Key DataQuality items by name (with positional fallback)."""
     result = {}
     for i, item in enumerate(items):
-        key = item.get(NATURAL_KEYS["quality"]) or f"__pos_{i}__"
+        key = item.get("name") or f"__pos_{i}__"
         entry = {k: v for k, v in item.items() if k != "name"}
         if "customProperties" in entry and isinstance(entry["customProperties"], list):
-            entry["customProperties"] = _normalize_by(entry["customProperties"], NATURAL_KEYS["customProperties"])
+            entry["customProperties"] = _normalize_by(entry["customProperties"], "property")
         if "authoritativeDefinitions" in entry and isinstance(entry["authoritativeDefinitions"], list):
             entry["authoritativeDefinitions"] = _normalize_auth_defs(entry["authoritativeDefinitions"])
         result[key] = entry
@@ -132,15 +153,15 @@ def _normalize_schema_fields(entry: dict, *, schema_level: bool) -> dict:
     if "quality" in entry and isinstance(entry["quality"], list):
         entry["quality"] = _normalize_quality(entry["quality"])
     if "customProperties" in entry and isinstance(entry["customProperties"], list):
-        entry["customProperties"] = _normalize_by(entry["customProperties"], NATURAL_KEYS["customProperties"])
+        entry["customProperties"] = _normalize_by(entry["customProperties"], "property")
     if "authoritativeDefinitions" in entry and isinstance(entry["authoritativeDefinitions"], list):
         entry["authoritativeDefinitions"] = _normalize_auth_defs(entry["authoritativeDefinitions"])
     if "relationships" in entry and isinstance(entry["relationships"], list):
         entry["relationships"] = _normalize_relationships(entry["relationships"], schema_level=schema_level)
     if "synonyms" in entry and isinstance(entry["synonyms"], list):
-        entry["synonyms"] = _normalize_keyed(entry["synonyms"], "id", NATURAL_KEYS["synonyms"])
+        entry["synonyms"] = _normalize_keyed(entry["synonyms"], "id", "synonym")
     if "enum" in entry and isinstance(entry["enum"], list):
-        entry["enum"] = _normalize_keyed(entry["enum"], "id", NATURAL_KEYS["enum"])
+        entry["enum"] = _normalize_keyed(entry["enum"], "id", "value")
     if "context" in entry:
         entry["context"] = _normalize_context(entry["context"])
     return entry
@@ -196,10 +217,10 @@ def normalize(contract: dict) -> dict:
         out["schema"] = normalized_schema
 
     if "slaProperties" in out and isinstance(out["slaProperties"], list):
-        sla_properties = _normalize_by(out["slaProperties"], NATURAL_KEYS["slaProperties"])
+        sla_properties = _normalize_by(out["slaProperties"], "property")
         for entry in sla_properties.values():
             if isinstance(entry.get("customProperties"), list):
-                entry["customProperties"] = _normalize_by(entry["customProperties"], NATURAL_KEYS["customProperties"])
+                entry["customProperties"] = _normalize_by(entry["customProperties"], "property")
             if isinstance(entry.get("authoritativeDefinitions"), list):
                 entry["authoritativeDefinitions"] = _normalize_auth_defs(entry["authoritativeDefinitions"])
         out["slaProperties"] = sla_properties
@@ -215,27 +236,27 @@ def normalize(contract: dict) -> dict:
             key = s["server"]
             entry = {k: v for k, v in s.items() if k != "server"}
             if "roles" in entry and isinstance(entry["roles"], list):
-                entry["roles"] = _normalize_by(entry["roles"], NATURAL_KEYS["servers.roles"])
+                entry["roles"] = _normalize_by(entry["roles"], "role")
             if "customProperties" in entry and isinstance(entry["customProperties"], list):
-                entry["customProperties"] = _normalize_by(entry["customProperties"], NATURAL_KEYS["customProperties"])
+                entry["customProperties"] = _normalize_by(entry["customProperties"], "property")
             normalized_servers[key] = entry
         out["servers"] = normalized_servers
 
     if "support" in out and isinstance(out["support"], list):
-        out["support"] = _normalize_by(out["support"], NATURAL_KEYS["support"])
+        out["support"] = _normalize_by(out["support"], "channel")
 
     if "roles" in out and isinstance(out["roles"], list):
-        out["roles"] = _normalize_by(out["roles"], NATURAL_KEYS["roles"])
+        out["roles"] = _normalize_by(out["roles"], "role")
 
     if "customProperties" in out and isinstance(out["customProperties"], list):
-        out["customProperties"] = _normalize_by(out["customProperties"], NATURAL_KEYS["customProperties"])
+        out["customProperties"] = _normalize_by(out["customProperties"], "property")
 
     if "team" in out:
         team = out["team"]
         if isinstance(team, dict) and "members" in team and isinstance(team["members"], list):
-            out["team"] = {**team, "members": _normalize_by(team["members"], NATURAL_KEYS["team.members"])}
+            out["team"] = {**team, "members": _normalize_by(team["members"], "username")}
         elif isinstance(team, list):
-            out["team"] = _normalize_by(team, NATURAL_KEYS["team.members"])
+            out["team"] = _normalize_by(team, "username")
 
     if "authoritativeDefinitions" in out and isinstance(out["authoritativeDefinitions"], list):
         out["authoritativeDefinitions"] = _normalize_auth_defs(out["authoritativeDefinitions"])
@@ -246,9 +267,7 @@ def normalize(contract: dict) -> dict:
         if "authoritativeDefinitions" in desc and isinstance(desc["authoritativeDefinitions"], list):
             normalized_desc["authoritativeDefinitions"] = _normalize_auth_defs(desc["authoritativeDefinitions"])
         if "customProperties" in desc and isinstance(desc["customProperties"], list):
-            normalized_desc["customProperties"] = _normalize_by(
-                desc["customProperties"], NATURAL_KEYS["customProperties"]
-            )
+            normalized_desc["customProperties"] = _normalize_by(desc["customProperties"], "property")
         out["description"] = normalized_desc
 
     return out
