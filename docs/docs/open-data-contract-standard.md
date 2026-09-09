@@ -53,7 +53,7 @@ schema:
             mustBeBetween: [1000, 99900]
 ```
 
-`v3.2.0` is the current version of the standard and the one [`datacontract init`](./commands/init.md) writes. The CLI also validates contracts declaring `v3.1.0`, `v3.0.2`, `v3.0.1`, `v3.0.0`, and the v2.2.x line.
+`v3.2.0` is the current version of the standard and the one [`datacontract init`](./commands/init.md) writes. The CLI also validates contracts declaring `v3.1.0`, `v3.0.2`, `v3.0.1`, and `v3.0.0`.
 
 New in ODCS v3.2.0 (see the [ODCS changelog](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md)):
 

@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.config import Config
 from datacontract.data_contract import DataContract
+from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.INFO, force=True)
 
@@ -189,3 +190,56 @@ def test_lint_reads_data_contract_from_s3_with_configured_credentials():
         aws_secret_access_key="my-secret-key",
         aws_session_token=None,
     )
+
+
+def _contract(api_version: str, logical_type: str = "timestamp") -> str:
+    return f"""
+apiVersion: {api_version}
+kind: DataContract
+id: declared-version
+version: "1"
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: created_at
+        logicalType: {logical_type}
+"""
+
+
+def test_lint_uses_the_schema_for_the_declared_api_version():
+    # timestamp is a logicalType from ODCS v3.1.0, so a contract claiming v3.0.2 is invalid.
+    run = DataContract(data_contract_str=_contract("v3.0.2")).lint()
+
+    assert run.result == "failed"
+    assert run.checks[0].name == "Check that data contract is valid against ODCS v3.0.2"
+
+
+def test_lint_names_the_schema_that_ran():
+    run = DataContract(data_contract_str=_contract("v3.1.0")).lint()
+
+    assert run.result == "passed"
+    assert run.checks[0].name == "Data contract is valid against ODCS v3.1.0"
+
+
+def test_lint_maps_every_v3_0_x_to_the_v3_0_2_schema():
+    for api_version in ["v3.0.0", "v3.0.1", "v3.0.2"]:
+        run = DataContract(data_contract_str=_contract(api_version, logical_type="string")).lint()
+
+        assert run.result == "passed"
+        assert run.checks[0].name == "Data contract is valid against ODCS v3.0.2"
+
+
+def test_lint_falls_back_to_the_newest_schema_for_an_unknown_api_version():
+    run = DataContract(data_contract_str=_contract("v3.9.9")).lint()
+
+    assert run.result == "failed"
+    assert run.checks[0].name == "Check that data contract is valid against ODCS v3.2.0"
+    assert "apiVersion" in run.checks[0].reason
+
+
+def test_only_lint_honours_the_declared_api_version():
+    contract = _contract("v3.0.2")
+
+    assert DataContract(data_contract_str=contract).lint().result == "failed"
+    assert resolve_data_contract(data_contract_str=contract).apiVersion == "v3.0.2"
