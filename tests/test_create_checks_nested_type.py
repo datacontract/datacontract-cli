@@ -12,7 +12,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
-from datacontract.engines.checks.check_spec import MetricType
+from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.create_checks import create_checks
 from datacontract.engines.ibis.ibis_check_execute import _run_nested_type, build_check_stubs
 from datacontract.engines.ibis.snowflake_structured_types import _to_property
@@ -188,7 +188,7 @@ def _run(prop: SchemaProperty, dtype: str, server_type: str = "local", fmt: str 
     run.checks = build_check_stubs(specs)
     spec = _nested(specs)
     field = prop.physicalName or prop.name
-    _run_nested_type(run, ibis.schema({field: dtype}), {field.lower(): field}, spec)
+    _run_nested_type(run, ibis.schema({field: dtype}), spec)
     return next(c for c in run.checks if c.key == spec.key)
 
 
@@ -295,7 +295,7 @@ def _run_snowflake(prop: SchemaProperty, data_type: dict = _SHOW_COLUMNS_SIC_COD
     spec = _nested(specs)
     field = prop.physicalName or prop.name
     structured_types = {field.lower(): _to_property(data_type)}
-    _run_nested_type(run, ibis.schema({field: dtype}), {field.lower(): field}, spec, structured_types, "snowflake")
+    _run_nested_type(run, ibis.schema({field: dtype}), spec, structured_types, "snowflake")
     return next(c for c in run.checks if c.key == spec.key)
 
 
@@ -436,3 +436,28 @@ def test_the_mismatch_reason_does_not_repeat_the_columns_own_structure():
     assert check.result == ResultEnum.failed
     assert check.reason == "Cannot verify the nested types of 'primary_sic_code': the column is not an object"
     assert check.diagnostics["actual"] == "array<struct<sku: string, quantity: int64, price: decimal(12, 2)>>"
+
+
+def test_nested_type_resolves_a_dotted_struct_path():
+    spec = CheckSpec(
+        key="k",
+        category="schema",
+        type="field_nested_type",
+        name="nested type",
+        model="orders",
+        field="customer.address",
+        metric=MetricType.FIELD_TYPE,
+        expected_type_label="object",
+        expected_schema_property=SchemaProperty(
+            name="address",
+            logicalType="object",
+            properties=[SchemaProperty(name="city", logicalType="string")],
+        ),
+    )
+    run = Run.create_run()
+    run.checks = build_check_stubs([spec])
+    schema = ibis.schema({"customer": "struct<address: struct<city: string>>"})
+
+    _run_nested_type(run, schema, spec)
+
+    assert run.checks[0].result == ResultEnum.passed

@@ -166,9 +166,7 @@ def _physical_type_check(expected: SchemaProperty, structured_types):
     )
     run = Run.create_run()
     run.checks = [Check(id="k", key="k", category="schema", type=spec.type, name=spec.name, model="m", field="s_obj")]
-    _run_physical_type(
-        run, None, None, {"S_OBJ": "map<string, json>"}, {"s_obj": "S_OBJ"}, None, spec, structured_types
-    )
+    _run_physical_type(run, None, None, {"S_OBJ": "map<string, json>"}, None, spec, structured_types)
     return run.checks[0]
 
 
