@@ -45,7 +45,7 @@ datacontract test --server production datacontract.yaml
     <span><span className="doc-card-title">Amazon S3 Tables</span><span className="doc-card-desc">Import and test Iceberg tables using AWS credentials</span></span>
   </a>
   <a className="doc-card" href="/testing/duckdb">
-    <img src="/img/icons/database.svg" alt="" />
+    <img src="/img/icons/duckdb.svg" alt="" />
     <span><span className="doc-card-title">DuckDB</span><span className="doc-card-desc">Tables inside a DuckDB database file</span></span>
   </a>
   <a className="doc-card" href="/testing/local">
