@@ -28,6 +28,9 @@ schema:
       - property: scale
         value: 0
     required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    unique: true
   - name: field_not_null
     physicalType: INT
     description: Not null

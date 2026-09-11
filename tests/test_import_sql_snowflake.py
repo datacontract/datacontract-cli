@@ -39,6 +39,9 @@ schema:
       value: 0
     logicalType: number
     required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    unique: true
   - name: field_not_null
     physicalType: INT
     description: Not null
