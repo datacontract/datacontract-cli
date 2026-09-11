@@ -1573,6 +1573,7 @@ def test_checks_filter_quality_and_properties_matches_default(
 
 
 def test_cli_checks_quality_only():
+    """CLI equivalent of test_checks_filter_quality_only."""
     runner = CliRunner()
     result = runner.invoke(
         app,
@@ -1608,6 +1609,7 @@ def test_cli_checks_properties_only():
 
 
 def test_cli_checks_invalid_value():
+    """An unknown category must exit with an error, not a stack trace."""
     runner = CliRunner()
     result = runner.invoke(
         app,
@@ -1623,6 +1625,7 @@ def test_cli_checks_invalid_value():
 
 
 def test_cli_checks_empty_value():
+    """A --checks value with only separators/whitespace must be rejected."""
     runner = CliRunner()
     result = runner.invoke(
         app,
@@ -1638,6 +1641,7 @@ def test_cli_checks_empty_value():
 
 
 def test_checks_filter_invalid_value_raises(contract_quality_and_schema_rules: OpenDataContractStandard):
+    """Calling to_great_expectations directly must raise on an unknown category, not silently ignore it."""
     with pytest.raises(RuntimeError, match="Invalid check_categories specified"):
         to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"quality", "bogus"})
 
