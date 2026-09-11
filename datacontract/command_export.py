@@ -9,7 +9,7 @@ from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, en
 from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat, SqlServerType
-from datacontract.export.great_expectations_exporter import GreatExpectationsEngine
+from datacontract.export.great_expectations_exporter import GreatExpectationsCheckCategory, GreatExpectationsEngine
 
 console = Console()
 
@@ -67,6 +67,7 @@ def _export(
     clickhouse_engine: Optional[str] = None,
     clickhouse_order_by: Optional[str] = None,
     suite_name: Optional[str] = None,
+    check_categories: Optional[set[str]] = None,
 ):
     result = DataContract(
         config=cli_config(),
@@ -85,6 +86,7 @@ def _export(
         clickhouse_engine=clickhouse_engine,
         clickhouse_order_by=clickhouse_order_by,
         suite_name=suite_name,
+        check_categories=check_categories,
     )
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
@@ -572,6 +574,23 @@ def export_sodacl(
     _export(ExportFormat.sodacl, location, output, server, schema_name, schema, inline_references=inline_references)
 
 
+# `properties` is the ODCS section holding logical-type-inferred constraints.
+_GE_VALID_CHECKS = {c.value for c in GreatExpectationsCheckCategory}
+
+
+def _parse_great_expectations_checks(value: Optional[str]) -> Optional[set[str]]:
+    """Parse `--checks` into a set of `GreatExpectationsCheckCategory` values, or None if omitted."""
+    if value is None:
+        return None
+    categories = {v.strip().lower() for v in value.split(",") if v.strip()}
+    invalid = categories - _GE_VALID_CHECKS
+    if invalid:
+        console.print(f"[red]Invalid --checks specified: {', '.join(sorted(invalid))}[/red]")
+        console.print(f"Available categories: {', '.join(sorted(_GE_VALID_CHECKS))}")
+        raise typer.Exit(code=1)
+    return categories
+
+
 @export_app.command(
     name="great-expectations",
     epilog="Example: datacontract export great-expectations datacontract.yaml --engine sql --dialect postgres --output expectations.json",
@@ -593,9 +612,18 @@ def export_great_expectations(
         Optional[str],
         typer.Option(help="The suite name for the Great Expectations run."),
     ] = None,
+    checks: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Comma-separated list of check categories to export "
+            f"(available: {', '.join(sorted(_GE_VALID_CHECKS))}). Omit to export everything, matching the "
+            "current behavior."
+        ),
+    ] = None,
 ):
     """Export a data contract to Great Expectations suite."""
     enable_debug_logging(debug)
+    check_categories = _parse_great_expectations_checks(checks)
     _export(
         ExportFormat.great_expectations,
         location,
@@ -607,6 +635,7 @@ def export_great_expectations(
         sql_server_type=dialect.value,
         inline_references=inline_references,
         suite_name=suite_name,
+        check_categories=check_categories,
     )
 
 

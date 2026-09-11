@@ -50,6 +50,13 @@ class GreatExpectationsEngine(str, Enum):
     sql = "sql"
 
 
+class GreatExpectationsCheckCategory(str, Enum):
+    """`--checks` categories this exporter can filter on."""
+
+    properties = "properties"
+    quality = "quality"
+
+
 class GreatExpectationsExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         """Export a data contract as a Great Expectations suite JSON string.
@@ -59,16 +66,20 @@ class GreatExpectationsExporter(Exporter):
             schema_name: Name of the contract schema to export.
             server: Server configuration. Unused by this exporter.
             sql_server_type: SQL dialect used when the selected engine is SQL.
-            export_args: Export options, including optional ``suite_name`` and ``engine`` values.
+            export_args: Export options, including optional ``suite_name``, ``engine`` and
+                ``check_categories`` values.
 
         Returns:
             str: Serialized Great Expectations expectation suite.
         """
         expectation_suite_name = export_args.get("suite_name")
         engine = export_args.get("engine")
+        check_categories = export_args.get("check_categories")
         schema_name, _ = _check_schema_name_for_export(data_contract, schema_name, self.export_format)
         sql_server_type = "snowflake" if sql_server_type == "auto" else sql_server_type
-        return to_great_expectations(data_contract, schema_name, expectation_suite_name, engine, sql_server_type)
+        return to_great_expectations(
+            data_contract, schema_name, expectation_suite_name, engine, sql_server_type, check_categories
+        )
 
 
 def _get_logical_type_option(prop: SchemaProperty, key: str):
@@ -203,6 +214,7 @@ def to_great_expectations(
     expectation_suite_name: str | None = None,
     engine: str | None = None,
     sql_server_type: str = "snowflake",
+    check_categories: set[str] | None = None,
 ) -> str:
     """Converts a data contract model to a Great Expectations suite.
 
@@ -212,6 +224,10 @@ def to_great_expectations(
         expectation_suite_name (str | None): Optional suite name for the expectations.
         engine (str | None): Optional engine type (e.g., "pandas", "spark").
         sql_server_type (str): The type of SQL server (default is "snowflake").
+        check_categories (set[str] | None): Optional filter restricting the exported
+            expectations to ``"quality"`` (rules from the contract's `quality` blocks)
+            and/or ``"properties"`` (constraints inferred from logical types). Omit to
+            export everything, matching the current behavior.
 
     Returns:
         str: JSON string of the Great Expectations suite.
@@ -250,6 +266,15 @@ def to_great_expectations(
         add_field_expectations(prop.name, prop, expectations, engine, sql_server_type, contract_id)
         if prop.quality:
             expectations.extend(get_quality_checks(prop.quality, prop.name, contract_id))
+
+    if check_categories is not None:
+        # "quality" keeps rules from the contract's `quality` blocks, "properties" keeps
+        # constraints inferred from logical types (required, length, pattern, etc.).
+        origin_by_category = {"quality": "quality_block", "properties": "schema_inferred"}
+        allowed_origins = {origin_by_category[c] for c in check_categories if c in origin_by_category}
+        expectations = [
+            exp for exp in expectations if exp["meta"]["data_contract_rule_location"]["origin"] in allowed_origins
+        ]
 
     return json.dumps(
         {
