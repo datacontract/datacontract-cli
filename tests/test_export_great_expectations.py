@@ -1640,3 +1640,33 @@ def test_cli_checks_empty_value():
 def test_checks_filter_invalid_value_raises(contract_quality_and_schema_rules: OpenDataContractStandard):
     with pytest.raises(RuntimeError, match="Invalid check_categories specified"):
         to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"quality", "bogus"})
+
+
+def test_checks_quality_only_skips_unsupported_property_types():
+    """--checks quality must not fail on a property type the selected engine can't convert."""
+    yaml_content = """
+kind: DataContract
+apiVersion: v3.1.0
+id: test-checks-quality-skip
+version: 1.0.0
+schema:
+  - name: tbl
+    properties:
+      - name: tags
+        logicalType: array
+    quality:
+      - type: custom
+        engine: great-expectations
+        name: Minimum row count
+        implementation:
+          type: expect_table_row_count_to_be_between
+          kwargs:
+            min_value: 10
+          meta: {}
+"""
+    contract = OpenDataContractStandard.from_string(yaml_content)
+    # SQL Server can't represent array types; a `properties` check would raise NotImplementedError.
+    result = json.loads(
+        to_great_expectations(contract, "tbl", engine="sql", sql_server_type="sqlserver", check_categories={"quality"})
+    )
+    assert _origins(result["expectations"]) == {"quality_block"}

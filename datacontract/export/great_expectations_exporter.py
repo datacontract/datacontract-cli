@@ -57,8 +57,7 @@ class GreatExpectationsCheckCategory(str, Enum):
     quality = "quality"
 
 
-_GE_ORIGIN_BY_CHECK_CATEGORY = {"quality": "quality_block", "properties": "schema_inferred"}
-_GE_VALID_CHECK_CATEGORIES = set(_GE_ORIGIN_BY_CHECK_CATEGORY)
+_GE_VALID_CHECK_CATEGORIES = {c.value for c in GreatExpectationsCheckCategory}
 
 
 class GreatExpectationsExporter(Exporter):
@@ -240,37 +239,7 @@ def to_great_expectations(
     if schema is None:
         raise RuntimeError(f"Schema '{schema_name}' not found in data contract.")
 
-    contract_id = odcs.id or ""
-    expectations = []
-    if not expectation_suite_name:
-        expectation_suite_name = "{schema_name}.{contract_version}".format(
-            schema_name=schema_name, contract_version=odcs.version
-        )
-
-    column_names = [prop.name for prop in schema.properties or []]
-    if column_names:
-        expectations.append(
-            _build_exp(
-                "expect_table_columns_to_match_set",
-                {"column_set": column_names},
-                f"{schema_name} must contain exactly the contracted columns",
-                {
-                    "expectation_id": _build_expectation_id(contract_id, None, "column_set"),
-                    "data_contract_rule_location": {"origin": "schema_inferred", "scope": "table"},
-                    "name": f"{schema_name} must contain exactly the contracted columns",
-                    "dimension": "conformity",
-                },
-            )
-        )
-
-    if schema.quality:
-        expectations.extend(get_quality_checks(schema.quality, None, contract_id))
-
-    for prop in schema.properties or []:
-        add_field_expectations(prop.name, prop, expectations, engine, sql_server_type, contract_id)
-        if prop.quality:
-            expectations.extend(get_quality_checks(prop.quality, prop.name, contract_id))
-
+    include_properties, include_quality = True, True
     if check_categories is not None:
         check_categories = {c.strip().lower() for c in check_categories if c.strip()}
         if not check_categories:
@@ -285,12 +254,41 @@ def to_great_expectations(
                 f"{', '.join(sorted(invalid_categories))}. "
                 f"Available categories: {', '.join(sorted(_GE_VALID_CHECK_CATEGORIES))}."
             )
-        # "quality" keeps rules from the contract's `quality` blocks, "properties" keeps
-        # constraints inferred from logical types (required, length, pattern, etc.).
-        allowed_origins = {_GE_ORIGIN_BY_CHECK_CATEGORY[c] for c in check_categories}
-        expectations = [
-            exp for exp in expectations if exp["meta"]["data_contract_rule_location"]["origin"] in allowed_origins
-        ]
+        include_properties = "properties" in check_categories
+        include_quality = "quality" in check_categories
+
+    contract_id = odcs.id or ""
+    expectations = []
+    if not expectation_suite_name:
+        expectation_suite_name = "{schema_name}.{contract_version}".format(
+            schema_name=schema_name, contract_version=odcs.version
+        )
+
+    if include_properties:
+        column_names = [prop.name for prop in schema.properties or []]
+        if column_names:
+            expectations.append(
+                _build_exp(
+                    "expect_table_columns_to_match_set",
+                    {"column_set": column_names},
+                    f"{schema_name} must contain exactly the contracted columns",
+                    {
+                        "expectation_id": _build_expectation_id(contract_id, None, "column_set"),
+                        "data_contract_rule_location": {"origin": "schema_inferred", "scope": "table"},
+                        "name": f"{schema_name} must contain exactly the contracted columns",
+                        "dimension": "conformity",
+                    },
+                )
+            )
+
+    if include_quality and schema.quality:
+        expectations.extend(get_quality_checks(schema.quality, None, contract_id))
+
+    for prop in schema.properties or []:
+        if include_properties:
+            add_field_expectations(prop.name, prop, expectations, engine, sql_server_type, contract_id)
+        if include_quality and prop.quality:
+            expectations.extend(get_quality_checks(prop.quality, prop.name, contract_id))
 
     return json.dumps(
         {
