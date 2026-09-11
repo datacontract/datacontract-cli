@@ -583,6 +583,10 @@ def _parse_great_expectations_checks(value: Optional[str]) -> Optional[set[str]]
     if value is None:
         return None
     categories = {v.strip().lower() for v in value.split(",") if v.strip()}
+    if not categories:
+        console.print("[red]Empty --checks specified.[/red]")
+        console.print(f"Available categories: {', '.join(sorted(_GE_VALID_CHECKS))}")
+        raise typer.Exit(code=1)
     invalid = categories - _GE_VALID_CHECKS
     if invalid:
         console.print(f"[red]Invalid --checks specified: {', '.join(sorted(invalid))}[/red]")

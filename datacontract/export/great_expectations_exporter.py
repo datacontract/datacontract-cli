@@ -57,6 +57,10 @@ class GreatExpectationsCheckCategory(str, Enum):
     quality = "quality"
 
 
+_GE_ORIGIN_BY_CHECK_CATEGORY = {"quality": "quality_block", "properties": "schema_inferred"}
+_GE_VALID_CHECK_CATEGORIES = set(_GE_ORIGIN_BY_CHECK_CATEGORY)
+
+
 class GreatExpectationsExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
         """Export a data contract as a Great Expectations suite JSON string.
@@ -268,10 +272,22 @@ def to_great_expectations(
             expectations.extend(get_quality_checks(prop.quality, prop.name, contract_id))
 
     if check_categories is not None:
+        check_categories = {c.strip().lower() for c in check_categories if c.strip()}
+        if not check_categories:
+            raise RuntimeError(
+                "Empty check_categories specified. "
+                f"Available categories: {', '.join(sorted(_GE_VALID_CHECK_CATEGORIES))}."
+            )
+        invalid_categories = check_categories - _GE_VALID_CHECK_CATEGORIES
+        if invalid_categories:
+            raise RuntimeError(
+                "Invalid check_categories specified: "
+                f"{', '.join(sorted(invalid_categories))}. "
+                f"Available categories: {', '.join(sorted(_GE_VALID_CHECK_CATEGORIES))}."
+            )
         # "quality" keeps rules from the contract's `quality` blocks, "properties" keeps
         # constraints inferred from logical types (required, length, pattern, etc.).
-        origin_by_category = {"quality": "quality_block", "properties": "schema_inferred"}
-        allowed_origins = {origin_by_category[c] for c in check_categories if c in origin_by_category}
+        allowed_origins = {_GE_ORIGIN_BY_CHECK_CATEGORY[c] for c in check_categories}
         expectations = [
             exp for exp in expectations if exp["meta"]["data_contract_rule_location"]["origin"] in allowed_origins
         ]

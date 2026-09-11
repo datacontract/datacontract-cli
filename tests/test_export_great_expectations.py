@@ -1620,3 +1620,23 @@ def test_cli_checks_invalid_value():
         ],
     )
     assert result.exit_code == 1
+
+
+def test_cli_checks_empty_value():
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "great-expectations",
+            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
+            "--checks",
+            " , ",
+        ],
+    )
+    assert result.exit_code == 1
+
+
+def test_checks_filter_invalid_value_raises(contract_quality_and_schema_rules: OpenDataContractStandard):
+    with pytest.raises(RuntimeError, match="Invalid check_categories specified"):
+        to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"quality", "bogus"})
