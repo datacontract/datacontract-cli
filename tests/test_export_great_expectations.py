@@ -1506,3 +1506,171 @@ schema:
         "invoice_id must be unique",
     }
     assert "rental" not in json.dumps(result).lower()
+
+
+# ─── --checks filtering ─────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def contract_quality_and_schema_rules() -> OpenDataContractStandard:
+    """A contract with both a `quality` block rule and logical-type-inferred constraints."""
+    yaml_content = """
+kind: DataContract
+apiVersion: v3.1.0
+id: test-checks-filter
+version: 1.0.0
+schema:
+  - name: tbl
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+    quality:
+      - type: custom
+        engine: great-expectations
+        name: Minimum row count
+        implementation:
+          type: expect_table_row_count_to_be_between
+          kwargs:
+            min_value: 10
+          meta: {}
+"""
+    return OpenDataContractStandard.from_string(yaml_content)
+
+
+def _origins(expectations: list[Dict[str, Any]]) -> set[str]:
+    return {e["meta"]["data_contract_rule_location"]["origin"] for e in expectations}
+
+
+def test_checks_filter_omitted_exports_everything(contract_quality_and_schema_rules: OpenDataContractStandard):
+    """Without --checks, both quality-block and schema-inferred expectations are exported."""
+    result = json.loads(to_great_expectations(contract_quality_and_schema_rules, "tbl"))
+    assert _origins(result["expectations"]) == {"quality_block", "schema_inferred"}
+
+
+def test_checks_filter_quality_only(contract_quality_and_schema_rules: OpenDataContractStandard):
+    """--checks quality keeps only expectations coming from the contract's `quality` blocks."""
+    result = json.loads(to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"quality"}))
+    assert _origins(result["expectations"]) == {"quality_block"}
+
+
+def test_checks_filter_properties_only(contract_quality_and_schema_rules: OpenDataContractStandard):
+    """--checks properties keeps only expectations inferred from logical types."""
+    result = json.loads(
+        to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"properties"})
+    )
+    assert _origins(result["expectations"]) == {"schema_inferred"}
+
+
+def test_checks_filter_quality_and_properties_matches_default(
+    contract_quality_and_schema_rules: OpenDataContractStandard,
+):
+    """--checks quality,properties is equivalent to omitting --checks."""
+    result = json.loads(
+        to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"quality", "properties"})
+    )
+    assert _origins(result["expectations"]) == {"quality_block", "schema_inferred"}
+
+
+def test_cli_checks_quality_only():
+    """CLI equivalent of test_checks_filter_quality_only."""
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "great-expectations",
+            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
+            "--checks",
+            "quality",
+        ],
+    )
+    assert result.exit_code == 0
+    output = json.loads(result.output)
+    assert _origins(output["expectations"]) == {"quality_block"}
+
+
+def test_cli_checks_properties_only():
+    """`properties` is the ODCS section name for logical-type-inferred constraints."""
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "great-expectations",
+            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
+            "--checks",
+            "properties",
+        ],
+    )
+    assert result.exit_code == 0
+    output = json.loads(result.output)
+    assert _origins(output["expectations"]) == {"schema_inferred"}
+
+
+def test_cli_checks_invalid_value():
+    """An unknown category must exit with an error, not a stack trace."""
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "great-expectations",
+            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
+            "--checks",
+            "bogus",
+        ],
+    )
+    assert result.exit_code == 1
+
+
+def test_cli_checks_empty_value():
+    """A --checks value with only separators/whitespace must be rejected."""
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "export",
+            "great-expectations",
+            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
+            "--checks",
+            " , ",
+        ],
+    )
+    assert result.exit_code == 1
+
+
+def test_checks_filter_invalid_value_raises(contract_quality_and_schema_rules: OpenDataContractStandard):
+    """Calling to_great_expectations directly must raise on an unknown category, not silently ignore it."""
+    with pytest.raises(RuntimeError, match="Invalid check_categories specified"):
+        to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"quality", "bogus"})
+
+
+def test_checks_quality_only_skips_unsupported_property_types():
+    """--checks quality must not fail on a property type the selected engine can't convert."""
+    yaml_content = """
+kind: DataContract
+apiVersion: v3.1.0
+id: test-checks-quality-skip
+version: 1.0.0
+schema:
+  - name: tbl
+    properties:
+      - name: tags
+        logicalType: array
+    quality:
+      - type: custom
+        engine: great-expectations
+        name: Minimum row count
+        implementation:
+          type: expect_table_row_count_to_be_between
+          kwargs:
+            min_value: 10
+          meta: {}
+"""
+    contract = OpenDataContractStandard.from_string(yaml_content)
+    # SQL Server can't represent array types; a `properties` check would raise NotImplementedError.
+    result = json.loads(
+        to_great_expectations(contract, "tbl", engine="sql", sql_server_type="sqlserver", check_categories={"quality"})
+    )
+    assert _origins(result["expectations"]) == {"quality_block"}
