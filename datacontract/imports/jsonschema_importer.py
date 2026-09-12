@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, List
 
 import fastjsonschema
-from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -59,7 +59,7 @@ def load_and_validate_json_schema(source: str) -> dict:
             type="schema",
             name="Parse json schema",
             reason=f"Failed to validate json schema from {source}: {e}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     except Exception as e:
@@ -67,7 +67,7 @@ def load_and_validate_json_schema(source: str) -> dict:
             type="schema",
             name="Parse json schema",
             reason=f"Failed to parse json schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     return json_schema
@@ -125,18 +125,7 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
         # Draft-06+: number value
         exclusive_maximum = raw_exclusive_max
 
-    # Handle enum as quality rule (invalidValues with validValues, mustBe: 0)
     quality_rules = []
-    enum_values = prop_schema.get("enum")
-    if enum_values:
-        quality_rules.append(
-            DataQuality(
-                type="library",
-                metric="invalidValues",
-                arguments={"validValues": enum_values},
-                mustBe=0,
-            )
-        )
 
     # Build custom properties for attributes not directly mapped
     custom_props = {}
@@ -164,7 +153,7 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
                         type="schema",
                         name="Parse json schema",
                         reason=f"Union types for arrays are currently not supported ({nested_items})",
-                        engine="datacontract",
+                        engine="datacontract-cli",
                     )
             else:
                 items_prop = schema_to_property("items", nested_items)
@@ -186,6 +175,7 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
         properties=nested_properties,
         items=items_prop,
         custom_properties=custom_props if custom_props else None,
+        enum=prop_schema.get("enum"),
     )
 
     # Set title as businessName if present

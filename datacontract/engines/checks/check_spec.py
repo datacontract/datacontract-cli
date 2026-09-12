@@ -14,7 +14,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
+
+if TYPE_CHECKING:
+    from open_data_contract_standard.model import SchemaProperty
 
 
 class MetricType(str, Enum):
@@ -26,11 +29,23 @@ class MetricType(str, Enum):
     INVALID_COUNT = "invalid_count"
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"
+    FIELD_PHYSICAL_TYPE = "field_physical_type"
+    FIELD_NESTED_TYPE = "field_nested_type"
     FRESHNESS = "freshness"
     RETENTION = "retention"
     CUSTOM_SQL = "custom_sql"
     # A check the new engine cannot run (e.g. raw SodaCL custom checks).
     UNSUPPORTED = "unsupported"
+
+
+# Metrics answered from schema introspection alone, without reading row values.
+# A positive allowlist: any future metric defaults conservatively to data-reading.
+_METADATA_METRICS = {
+    MetricType.FIELD_PRESENT,
+    MetricType.FIELD_TYPE,
+    MetricType.FIELD_PHYSICAL_TYPE,
+    MetricType.FIELD_NESTED_TYPE,
+}
 
 
 class Op(str, Enum):
@@ -106,6 +121,25 @@ class CheckSpec:
     # downgrades a failing check to a warning instead of a failure. None => fail.
     severity: Optional[str] = None
 
+    # ODCS quality.dimension (accuracy, completeness, conformity, consistency,
+    # coverage, timeliness, uniqueness). Documentation metadata that `test`
+    # can filter on (--dimension). None for schema and service level checks,
+    # and for quality rules that do not declare one.
+    dimension: Optional[str] = None
+
+    # ODCS quality.id: the author-defined identifier of the quality rule this
+    # check comes from. `test --quality-id` selects a single rule by it.
+    # None for schema and service level checks, and for unidentified rules.
+    quality_id: Optional[str] = None
+
+    # ODCS quality.tags: the author-defined labels of the quality rule this
+    # check comes from. `test --tag` selects rules by them.
+    tags: Optional[List[str]] = None
+
+    # The ODCS quality rule this check comes from, rendered as YAML.
+    # None for schema and service level checks, which no rule declared.
+    quality_definition: Optional[str] = None
+
     # --- metric arguments -------------------------------------------------
     missing_values: Optional[List[Any]] = None  # MISSING_COUNT / INVALID_COUNT
     valid_values: Optional[List[Any]] = None  # INVALID_COUNT
@@ -115,9 +149,14 @@ class CheckSpec:
     valid_max: Any = None  # INVALID_COUNT
     valid_min_length: Optional[int] = None  # INVALID_COUNT
     valid_max_length: Optional[int] = None  # INVALID_COUNT
+    valid_min_items: Optional[int] = None  # INVALID_COUNT, array columns
+    valid_max_items: Optional[int] = None  # INVALID_COUNT, array columns
+    valid_unique_items: Optional[bool] = None  # INVALID_COUNT, array columns
 
-    expected_category: Optional[str] = None  # FIELD_TYPE: normalized type category
+    expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
+    expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
+    expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
     columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns
 
@@ -132,6 +171,12 @@ class CheckSpec:
     preset_result: Optional[str] = None
     preset_reason: Optional[str] = None
 
+    @property
+    def requires_data_read(self) -> bool:
+        if self.metric == MetricType.UNSUPPORTED:
+            return False
+        return self.metric not in _METADATA_METRICS
+
     def has_validity_constraints(self) -> bool:
         return any(
             v is not None
@@ -142,5 +187,8 @@ class CheckSpec:
                 self.valid_max,
                 self.valid_min_length,
                 self.valid_max_length,
+                self.valid_min_items,
+                self.valid_max_items,
+                self.valid_unique_items,
             )
         )

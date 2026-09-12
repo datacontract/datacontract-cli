@@ -43,7 +43,7 @@ def import_avro(source: str) -> OpenDataContractStandard:
             type="schema",
             name="Parse avro schema",
             reason=f"Failed to parse avro schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -115,7 +115,7 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
                 reason=f"Field '{field.name}' has a union type with multiple non-null types "
                 f"{non_null_type_names}, which is not supported by ODCS. "
                 f"Only unions with a single non-null type (optional fields) are supported.",
-                engine="datacontract",
+                engine="datacontract-cli",
             )
         enum_schema = get_enum_from_union_field(field)
         if enum_schema:
@@ -126,6 +126,7 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
                 description=field.doc,
                 required=False,
                 custom_properties={**custom_props, "avroType": "enum"} if custom_props else {"avroType": "enum"},
+                enum=enum_schema.symbols,
             )
         else:
             logical_type, physical_type = import_type_of_optional_field(field)
@@ -176,10 +177,12 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
     elif field.type.type == "map":
         prop = create_property(
             name=field.name,
-            logical_type="object",
+            logical_type="map",
             physical_type="map",
             description=field.doc,
             required=True,
+            map_key=create_property(name="key", logical_type="string", physical_type="string"),
+            map_value=import_avro_map_values(field.type),
             custom_properties={**custom_props, "avroType": "map"} if custom_props else {"avroType": "map"},
         )
     elif field.type.type == "enum":
@@ -189,9 +192,8 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
             physical_type="enum",
             description=field.doc,
             required=True,
-            custom_properties={**custom_props, "avroType": "enum", "avroSymbols": field.type.symbols}
-            if custom_props
-            else {"avroType": "enum", "avroSymbols": field.type.symbols},
+            custom_properties={**custom_props, "avroType": "enum"} if custom_props else {"avroType": "enum"},
+            enum=field.type.symbols,
         )
     else:
         # Primitive types
@@ -256,7 +258,7 @@ def import_avro_map_values(map_schema: avro.schema.MapSchema) -> SchemaProperty:
     if map_schema.values.type == "record":
         nested_properties = import_record_fields(map_schema.values.fields)
         return create_property(
-            name="values",
+            name="value",
             logical_type="object",
             physical_type="record",
             properties=nested_properties,
@@ -264,7 +266,7 @@ def import_avro_map_values(map_schema: avro.schema.MapSchema) -> SchemaProperty:
     elif map_schema.values.type == "array":
         items_prop = import_avro_array_items(map_schema.values)
         return create_property(
-            name="values",
+            name="value",
             logical_type="array",
             physical_type="array",
             items=items_prop,
@@ -272,7 +274,7 @@ def import_avro_map_values(map_schema: avro.schema.MapSchema) -> SchemaProperty:
     else:
         logical_type = map_type_from_avro(map_schema.values.type)
         return create_property(
-            name="values",
+            name="value",
             logical_type=logical_type,
             physical_type=map_schema.values.type,
         )
@@ -293,7 +295,7 @@ def import_type_of_optional_field(field: avro.schema.Field) -> tuple[str, str]:
         result="failed",
         name="Map avro type to data contract type",
         reason="Could not import optional field: union type does not contain a non-null type",
-        engine="datacontract",
+        engine="datacontract-cli",
     )
 
 
@@ -347,5 +349,5 @@ def map_type_from_avro(avro_type_str: str) -> str:
         result="failed",
         name="Map avro type to data contract type",
         reason=f"Unsupported type {avro_type_str} in avro schema.",
-        engine="datacontract",
+        engine="datacontract-cli",
     )

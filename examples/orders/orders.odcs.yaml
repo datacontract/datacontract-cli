@@ -1,4 +1,4 @@
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: urn:datacontract:checkout:orders
 name: Orders
@@ -41,7 +41,7 @@ schema:
           - ORD-1001
           - ORD-1002
       - name: order_timestamp
-        logicalType: date
+        logicalType: timestamp
         physicalType: TIMESTAMP
         required: true
         description: Timestamp when the order was placed.

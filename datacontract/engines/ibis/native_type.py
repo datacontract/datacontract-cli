@@ -1,0 +1,354 @@
+"""Read the real, declared native column types from a platform's catalog.
+
+The ibis dtype reported by ``table.schema()`` has already collapsed native types
+into ibis's own type system (SQL Server ``uniqueidentifier`` becomes ibis
+``UUID``, ``nvarchar(255)`` becomes ``String``), so it cannot answer "does the
+column exactly match the declared ``physicalType``". This module queries the
+platform's own catalog to recover the true declared type, including length and
+precision.
+
+``_CATALOG_STRATEGY`` (below) is the single source of truth for which server
+types are supported and which catalog-reading strategy each uses. Two catalog
+shapes exist:
+
+- engines that expose the type as separate parts (``data_type`` plus length /
+  precision / scale), reconstructed by ``reconstruct_native_type``; and
+- engines whose ``data_type`` is already a complete type string (Athena,
+  BigQuery), used verbatim.
+
+Everything here is best-effort: any failure (unsupported backend, missing
+catalog, permission error) returns ``None`` so the caller skips the physical
+type check with a warning rather than failing the run.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Optional
+
+from open_data_contract_standard.model import Server
+
+from datacontract.model.server import get_server_type
+
+logger = logging.getLogger(__name__)
+
+# Which server types support native physical type checks, and which catalog
+# strategy each uses. Server types not listed here (file sources, the DuckDB
+# MySQL scanner, impala, kafka/dataframe) have no usable native declared type,
+# so physicalType falls back to the logicalType check. The strategies are
+# implemented by the ``_read_*`` readers further down and wired in ``_READERS``.
+_CATALOG_STRATEGY = {
+    "sqlserver": "information_schema",
+    "mssql": "information_schema",  # the ODBC/ibis/dbt name for SQL Server
+    "postgres": "information_schema",
+    "redshift": "information_schema",
+    "snowflake": "information_schema",
+    "databricks": "databricks",
+    "oracle": "oracle",
+    "athena": "full_type",
+    "trino": "full_type",
+    "bigquery": "bigquery",
+}
+
+
+def supports_native_type_introspection(server_type: Optional[str]) -> bool:
+    """True when this backend exposes a real declared native type to check against."""
+    return server_type in _CATALOG_STRATEGY
+
+
+# Numeric types whose precision/scale form part of the declared type. Integer
+# types also report a numeric_precision, but ``int(10)`` is not a real declared
+# type, so precision is only appended for these.
+_DECIMAL_TYPES = {"decimal", "numeric", "number", "dec"}
+
+# Oracle reports DATA_LENGTH (in bytes) for every column, but the length is only
+# part of the declared type for character and raw types. Appending it elsewhere
+# would corrupt types such as ROWID or DATE (``rowid(10)``).
+_ORACLE_LENGTH_TYPES = {"char", "nchar", "varchar", "varchar2", "nvarchar2", "raw"}
+
+
+def oracle_char_length(data_type: Optional[str], data_length, char_length=None):
+    """The length Oracle's declared type carries, or ``None``.
+
+    DATA_LENGTH is only part of the declared type for character and raw types;
+    appending it elsewhere would corrupt types such as ROWID or DATE. It is also
+    measured in *bytes*, so ``NVARCHAR2(50)`` reports 100 and ``VARCHAR2(50
+    CHAR)`` reports up to 200 in a multibyte character set — CHAR_LENGTH is the
+    character count the type was declared with. RAW is declared in bytes and
+    reports CHAR_LENGTH 0, so it keeps DATA_LENGTH.
+    """
+    data_type = (data_type or "").strip().lower()
+    if data_type not in _ORACLE_LENGTH_TYPES:
+        return None
+    if data_type != "raw" and char_length:
+        return char_length
+    return data_length
+
+
+# Temporal types whose fractional-seconds precision is part of the declared type.
+# DATE and the legacy SQL Server DATETIME / SMALLDATETIME also report a
+# datetime_precision, but they take no precision argument (``date(0)`` is not a
+# type), so it is only appended for these.
+_DATETIME_PRECISION_TYPES = {
+    "timestamp",
+    "timestamptz",
+    "timestamp_ntz",
+    "timestamp_ltz",
+    "timestamp_tz",
+    "time",
+    "timetz",
+    "datetime2",
+    "datetimeoffset",
+}
+
+# Postgres and Redshift spell the time zone out as part of data_type, and the
+# precision goes on the leading word: ``timestamp(6) without time zone``.
+_TIME_ZONE_SUFFIXES = (" without time zone", " with time zone", " with local time zone")
+
+
+def _split_time_zone_suffix(base: str) -> tuple[str, str]:
+    for suffix in _TIME_ZONE_SUFFIXES:
+        if base.lower().endswith(suffix):
+            return base[: -len(suffix)].strip(), base[-len(suffix) :]
+    return base, ""
+
+
+def reconstruct_native_type(
+    data_type: Optional[str],
+    char_len=None,
+    num_precision=None,
+    num_scale=None,
+    datetime_precision=None,
+) -> Optional[str]:
+    """Rebuild a parameterized native type string from catalog columns.
+
+    ``varchar`` + char_len 255 -> ``varchar(255)`` (``-1`` means SQL Server MAX
+    -> ``varchar(max)``); ``decimal`` + precision 10 + scale 2 ->
+    ``decimal(10,2)``; ``timestamp_ntz`` + datetime_precision 9 ->
+    ``timestamp_ntz(9)``. Precision is only attached to the types that declare
+    one.
+    """
+    if not data_type:
+        return None
+    base = data_type.strip()
+    if not base:
+        return None
+
+    if char_len is not None:
+        try:
+            length = int(char_len)
+        except (TypeError, ValueError):
+            return base
+        return f"{base}(max)" if length < 0 else f"{base}({length})"
+
+    if base.lower() in _DECIMAL_TYPES and num_precision is not None:
+        # A zero scale is omitted (NUMBER(38), not NUMBER(38,0)): DECIMAL(p)
+        # means DECIMAL(p, 0) everywhere, and the shorter spelling is what a
+        # contract author would declare. The physical type comparison treats
+        # the two as equal.
+        if num_scale:
+            return f"{base}({int(num_precision)},{int(num_scale)})"
+        return f"{base}({int(num_precision)})"
+
+    if datetime_precision is not None and "(" not in base:
+        head, time_zone = _split_time_zone_suffix(base)
+        if head.lower() in _DATETIME_PRECISION_TYPES:
+            try:
+                return f"{head}({int(datetime_precision)}){time_zone}"
+            except (TypeError, ValueError):
+                return base
+
+    return base
+
+
+def sqlglot_dialect(con):
+    """Return the sqlglot dialect for an ibis connection, or ``None``."""
+    try:
+        return con.compiler.dialect
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# low-level catalog query helpers
+# ---------------------------------------------------------------------------
+def _quote(value: str) -> str:
+    return value.replace("'", "''")
+
+
+def _rows(con, query: str):
+    """Execute a raw catalog query and return a list of row tuples, or ``None``."""
+    try:
+        cursor = con.raw_sql(query)
+    except Exception as e:
+        logger.debug("native type catalog query failed: %s", e)
+        return None
+    try:
+        if hasattr(cursor, "fetchall"):
+            return list(cursor.fetchall())
+        # The pyspark backend (also used for databricks with a Spark session)
+        # returns a DataFrame; iterating it would yield Column objects.
+        if hasattr(cursor, "collect"):
+            return list(cursor.collect())
+        # Some backends (e.g. BigQuery) return an iterable result set
+        # (RowIterator) instead of a DBAPI cursor.
+        return list(cursor)
+    except Exception as e:
+        logger.debug("could not read native type catalog rows: %s", e)
+        return None
+    finally:
+        # On DuckDB, raw_sql returns the shared connection itself; closing it
+        # would tear down the connection and break subsequent checks.
+        if cursor is not getattr(con, "con", None):
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+
+def _map_reconstructed(con, query: str, oracle_length: bool = False) -> Optional[dict[str, str]]:
+    """Read ``(column_name, data_type, length, precision, scale, …)`` rows and
+    reconstruct each parameterized native type string.
+
+    The sixth column is the catalog's own: ``datetime_precision`` for
+    information_schema, ``char_length`` for Oracle, which has no
+    datetime_precision (it carries the fractional seconds in data_type itself,
+    as ``TIMESTAMP(6)``).
+    """
+    rows = _rows(con, query)
+    if not rows:
+        return None
+    result: dict[str, str] = {}
+    for row in rows:
+        column_name, data_type = row[0], row[1]
+        char_len, extra = row[2], row[5] if len(row) > 5 else None
+        datetime_precision = None
+        if oracle_length:
+            char_len = oracle_char_length(data_type, char_len, extra)
+        else:
+            datetime_precision = extra
+        native = reconstruct_native_type(data_type, char_len, row[3], row[4], datetime_precision)
+        if column_name and native:
+            result[str(column_name).lower()] = native
+    return result or None
+
+
+def _map_full_type(con, query: str) -> Optional[dict[str, str]]:
+    """Read ``(column_name, data_type)`` rows where ``data_type`` is already a
+    complete native type string."""
+    rows = _rows(con, query)
+    if not rows:
+        return None
+    result: dict[str, str] = {}
+    for row in rows:
+        column_name, data_type = row[0], row[1]
+        if column_name and data_type:
+            result[str(column_name).lower()] = str(data_type).strip()
+    return result or None
+
+
+# ---------------------------------------------------------------------------
+# per-backend catalog readers (one per strategy in _CATALOG_STRATEGY)
+# ---------------------------------------------------------------------------
+def _schema_filter(server: Server, column: str = "table_schema") -> str:
+    """``AND <column> = <server.schema>``, or ``""`` when the contract has no schema.
+
+    A catalog spans every schema in the database, so filtering on the table name
+    alone can pick up a same-named table in another schema and report its column
+    types — silently, since the query still returns rows. Matched
+    case-insensitively, like the table name, so a lowercase contract still
+    matches Snowflake's upper-cased catalog.
+    """
+    if not server.schema_:
+        return ""
+    return f" AND upper({column}) = upper('{_quote(server.schema_)}')"
+
+
+def _read_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Standard ``INFORMATION_SCHEMA.COLUMNS`` with separate length/precision.
+
+    ``datetime_precision`` is part of the declared type of a timestamp or time
+    column (Snowflake's own importer writes ``TIMESTAMP_NTZ(9)``), so it is read
+    alongside the character and numeric parts.
+    """
+    query = (
+        "SELECT column_name, data_type, character_maximum_length, "
+        "numeric_precision, numeric_scale, datetime_precision "
+        f"FROM information_schema.columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"{_schema_filter(server)}"
+    )
+    return _map_reconstructed(con, query)
+
+
+def _read_oracle(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Oracle exposes columns via ``ALL_TAB_COLUMNS`` instead of information_schema.
+
+    ``CHAR_LENGTH`` is read next to ``DATA_LENGTH`` because the latter is in
+    bytes, which is not the length ``NVARCHAR2(50)`` was declared with.
+    """
+    query = (
+        "SELECT column_name, data_type, data_length, data_precision, data_scale, char_length "
+        f"FROM all_tab_columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"{_schema_filter(server, 'owner')}"
+    )
+    return _map_reconstructed(con, query, oracle_length=True)
+
+
+def _read_databricks(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Databricks reports a complex column as the bare token in ``data_type``
+    (``array<string>`` as ``ARRAY``), which cannot be checked against the
+    declared element types; ``full_data_type`` carries the whole spelling.
+
+    It only exists in Unity Catalog, so a workspace whose ``information_schema``
+    lacks the column falls back to the reconstructed parts.
+    """
+    query = (
+        "SELECT column_name, full_data_type FROM information_schema.columns "
+        f"WHERE upper(table_name) = upper('{_quote(model)}'){_schema_filter(server)}"
+    )
+    return _map_full_type(con, query) or _read_information_schema(con, server, model)
+
+
+def _read_full_type_information_schema(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Athena and Trino report a complete type string in ``data_type``.
+
+    Their ``information_schema.columns`` has no length or precision columns at
+    all, so asking for them fails the whole query and silently skips the check.
+    """
+    query = (
+        "SELECT column_name, data_type FROM information_schema.columns "
+        f"WHERE lower(table_name) = lower('{_quote(model)}'){_schema_filter(server)}"
+    )
+    return _map_full_type(con, query)
+
+
+def _read_bigquery(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """BigQuery's INFORMATION_SCHEMA must be dataset-qualified; table names are
+    case-sensitive and data_type is already a full type string."""
+    if not server.project or not server.dataset:
+        return None
+    query = (
+        "SELECT column_name, data_type "
+        f"FROM `{server.project}.{server.dataset}`.INFORMATION_SCHEMA.COLUMNS "
+        f"WHERE table_name = '{_quote(model)}'"
+    )
+    return _map_full_type(con, query)
+
+
+_READERS = {
+    "information_schema": _read_information_schema,
+    "oracle": _read_oracle,
+    "databricks": _read_databricks,
+    "full_type": _read_full_type_information_schema,
+    "bigquery": _read_bigquery,
+}
+
+
+def fetch_native_types(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Return ``{column_name_lower: native_type_string}`` for ``model``.
+
+    Returns ``None`` when the native declared type is unavailable for this
+    backend, so the caller skips physical type checks rather than failing them.
+    """
+    strategy = _CATALOG_STRATEGY.get(get_server_type(server))
+    return _READERS[strategy](con, server, model) if strategy else None

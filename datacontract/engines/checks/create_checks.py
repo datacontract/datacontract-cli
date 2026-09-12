@@ -13,6 +13,7 @@ import logging
 import re
 from typing import List, Optional
 
+import yaml
 from open_data_contract_standard.model import (
     DataQuality,
     OpenDataContractStandard,
@@ -21,8 +22,14 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.config.variables import UnresolvedVariableError, resolve_variables
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.dimensions import default_dimension
+from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
 from datacontract.engines.checks.type_normalize import normalize_type_name
+from datacontract.engines.ibis.native_type import supports_native_type_introspection
+from datacontract.model.enum_values import get_enum_values
+from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
 
@@ -46,18 +53,65 @@ def is_check_types(server: Optional[Server]) -> bool:
 
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
-    # Kafka uses the Spark SQL view name (the logical name), not the topic (physicalName).
-    if server_type == "kafka":
+    # Kafka messages are loaded into a table named after the schema object (the logical
+    # name), not after the topic the physicalName holds. Iceberg likewise scans
+    # the physical table into an Arrow view registered under the logical name.
+    if server_type in {"kafka", "iceberg"}:
         return schema_object.name
     if schema_object.physicalName:
         return schema_object.physicalName
     return schema_object.name
 
 
-def expected_type_category(prop: SchemaProperty) -> tuple[str, str]:
-    """Return (normalized category, human label) for a property's declared type."""
-    label = prop.physicalType or prop.logicalType
-    return normalize_type_name(label), (label or "")
+def _scalar_element_type(prop: SchemaProperty, physical: bool) -> Optional[str]:
+    """The declared element type of an array of scalars, or None for anything else."""
+    if normalize_type_name(prop.logicalType or prop.physicalType) != "array" or prop.items is None:
+        return None
+    items = prop.items
+    if items.properties or items.items is not None:
+        return None
+    label = (items.physicalType or items.logicalType) if physical else (items.logicalType or items.physicalType)
+    if normalize_type_name(label) in ("object", "array", "map"):
+        return None
+    return label
+
+
+def _declared_type_label(prop: SchemaProperty, physical: bool) -> Optional[str]:
+    """Render the declared type with its children, e.g. ``OBJECT(code VARCHAR(10), description VARCHAR)``."""
+    label = (prop.physicalType or prop.logicalType) if physical else (prop.logicalType or prop.physicalType)
+    base = normalize_type_name(label)
+    if base == "array" and prop.items is not None:
+        return f"{label}({_declared_type_label(prop.items, physical)})"
+    if base == "object" and prop.properties:
+        children = ", ".join(f"{child.name} {_declared_type_label(child, physical)}" for child in prop.properties)
+        return f"{label}({children})"
+    return label
+
+
+def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: bool) -> CheckSpec:
+    check_type = "field_nested_physical_type" if physical else "field_nested_type"
+    element = _scalar_element_type(prop, physical)
+    if element is not None:
+        name = f"Check that items of array {field} have {'physical type' if physical else 'type'} {element}"
+    else:
+        name = f"Check that nested {'physical types' if physical else 'types'} of {field} are correct"
+    return CheckSpec(
+        key=f"{model}__{field}__{check_type}",
+        category="schema",
+        type=check_type,
+        name=name,
+        model=model,
+        field=field,
+        metric=MetricType.FIELD_NESTED_TYPE,
+        expected_type_label=_declared_type_label(prop, physical),
+        expected_schema_property=prop,
+    )
+
+
+def quality_definition_yaml(quality: DataQuality) -> str:
+    """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
+    know are dropped, and comments with them."""
+    return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -119,6 +173,10 @@ def prepare_query(
     schema_replacement = server.schema_ if server and server.schema_ else model_name
     query = re.sub(r'["\']?\$?\{schema}["\']?', schema_replacement, query)
 
+    for placeholder in ("dataset", "project", "catalog", "database"):
+        replacement = getattr(server, placeholder, None) if server else None
+        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
+
     if field_name is not None:
         query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)
         query = re.sub(r'["\']?\$?\{column}["\']?', field_name, query)
@@ -144,7 +202,13 @@ def create_checks(
             continue
         checks.extend(_to_schema_checks(schema_obj, server))
     checks.extend(_to_servicelevel_checks(data_contract, server))
-    return [c for c in checks if c is not None]
+    checks = [c for c in checks if c is not None]
+    # Schema and service level checks cannot declare an ODCS dimension, so fill
+    # in the one they measure. A rule that declared its own keeps it.
+    for check in checks:
+        if check.dimension is None:
+            check.dimension = default_dimension(check.type)
+    return checks
 
 
 def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server]) -> bool:
@@ -160,6 +224,15 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
     uses_raw_view = (
         server is not None and server.type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
     )
+
+    # A primary key is both not-null and unique. A composite key is unique as a
+    # tuple, not column by column, so its members are checked together after
+    # the loop instead of individually.
+    primary_key_props = sorted(
+        (prop for prop in properties if prop.primaryKey),
+        key=lambda prop: prop.primaryKeyPosition if prop.primaryKeyPosition is not None else 0,
+    )
+    primary_key_is_composite = len(primary_key_props) > 1
 
     for prop in properties:
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
@@ -178,8 +251,46 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
         )
 
-        if check_types and (prop.physicalType is not None or prop.logicalType is not None):
-            category, label = expected_type_category(prop)
+        # The raw view cannot provide nested type checks
+        declared_base = normalize_type_name(prop.logicalType or prop.physicalType)
+        nested_checks_possible = (
+            check_types
+            and not uses_raw_view
+            and declared_base in ("object", "array", "map")
+            and (bool(prop.properties) or prop.items is not None or prop.map is not None)
+        )
+        base_prop = (
+            SchemaProperty(name=prop.name, logicalType=prop.logicalType, physicalType=prop.physicalType)
+            if nested_checks_possible
+            else prop
+        )
+
+        # A declared physicalType is checked against the column's real native
+        # type in the platform catalog and takes precedence over logicalType,
+        # but only on backends that expose a meaningful native type. Elsewhere
+        # (file sources, etc.) fall through to the logicalType category check.
+        if check_types and prop.physicalType is not None and supports_native_type_introspection(server_type):
+            checks.append(
+                CheckSpec(
+                    key=f"{model}__{field}__field_physical_type",
+                    category="schema",
+                    type="field_physical_type",
+                    name=f"Check that field {field} has physical type {prop.physicalType}",
+                    model=model,
+                    field=field,
+                    metric=MetricType.FIELD_PHYSICAL_TYPE,
+                    expected_category=prop.physicalType,
+                    expected_type_label=prop.physicalType,
+                    expected_physical_type=prop.physicalType,
+                    # Carried for the logicalType fallback when the native type
+                    # cannot be read or the physicalType is cross-dialect.
+                    expected_schema_property=base_prop if prop.logicalType is not None else None,
+                )
+            )
+            if nested_checks_possible:
+                checks.append(_nested_type_check(model, field, prop, physical=True))
+        elif check_types and prop.logicalType is not None:
+            label = prop.logicalType or ""
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_type",
@@ -189,10 +300,13 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                     model=model,
                     field=field,
                     metric=MetricType.FIELD_TYPE,
-                    expected_category=category,
+                    expected_category=label,
                     expected_type_label=label,
+                    expected_schema_property=base_prop,
                 )
             )
+            if nested_checks_possible:
+                checks.append(_nested_type_check(model, field, prop, physical=False))
 
         if prop.required:
             checks.append(
@@ -216,6 +330,31 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                     category="schema",
                 )
             )
+        if prop.primaryKey:
+            # Skip whatever `required` and `unique` have already emitted, so a
+            # property declaring both does not produce two identical checks.
+            if not prop.required:
+                checks.append(
+                    _missing_count_check(
+                        model,
+                        field,
+                        "field_primary_key_required",
+                        Threshold(Op.EQ, 0),
+                        name=f"Check that primary key field {field} has no missing values",
+                        category="schema",
+                    )
+                )
+            if not primary_key_is_composite and not prop.unique:
+                checks.append(
+                    _duplicate_count_check(
+                        model,
+                        field,
+                        "field_primary_key_unique",
+                        Threshold(Op.EQ, 0),
+                        name=f"Check that primary key field {field} has no duplicate values",
+                        category="schema",
+                    )
+                )
 
         min_length = _get_logical_type_option(prop, "minLength")
         if min_length is not None:
@@ -307,6 +446,43 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                 )
             )
 
+        # Array constraints. ODCS allows these only on an array property, and
+        # they measure the elements of one row's array, not the rows.
+        min_items = _get_logical_type_option(prop, "minItems")
+        if min_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_min_items",
+                    name=f"Check that field {field} has at least {min_items} items",
+                    valid_min_items=min_items,
+                )
+            )
+
+        max_items = _get_logical_type_option(prop, "maxItems")
+        if max_items is not None:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_max_items",
+                    name=f"Check that field {field} has at most {max_items} items",
+                    valid_max_items=max_items,
+                )
+            )
+
+        if _get_logical_type_option(prop, "uniqueItems") is True:
+            checks.append(
+                _invalid_count_check(
+                    model,
+                    field,
+                    "field_unique_items",
+                    name=f"Check that field {field} has no duplicate items",
+                    valid_unique_items=True,
+                )
+            )
+
         pattern = _get_logical_type_option(prop, "pattern")
         if pattern is not None:
             checks.append(
@@ -319,7 +495,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
                 )
             )
 
-        enum_values = _get_logical_type_option(prop, "enum")
+        enum_values = get_enum_values(prop, include_quality_rule=False)
         if enum_values:
             checks.append(
                 _invalid_count_check(
@@ -333,6 +509,22 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
 
         if prop.quality:
             checks.extend(_quality_checks(model, field, prop.quality, server))
+
+    if primary_key_is_composite:
+        primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]
+        checks.append(
+            CheckSpec(
+                key=f"{model}__primary_key_unique",
+                category="schema",
+                type="primary_key_unique",
+                name=f"Check that primary key ({', '.join(primary_key_fields)}) has no duplicate values",
+                model=model,
+                field=None,
+                metric=MetricType.DUPLICATE_COUNT,
+                threshold=Threshold(Op.EQ, 0),
+                columns=primary_key_fields,
+            )
+        )
 
     if schema_object.quality:
         checks.extend(_quality_checks(model, None, schema_object.quality, server))
@@ -353,6 +545,7 @@ def _missing_count_check(
     missing_values=None,
     threshold_is_percent=False,
     severity=None,
+    dimension=None,
 ) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
@@ -365,11 +558,14 @@ def _missing_count_check(
         threshold=threshold,
         threshold_is_percent=threshold_is_percent,
         severity=severity,
+        dimension=dimension,
         missing_values=missing_values,
     )
 
 
-def _duplicate_count_check(model, field, check_type, threshold, name, category="quality", severity=None) -> CheckSpec:
+def _duplicate_count_check(
+    model, field, check_type, threshold, name, category="quality", severity=None, dimension=None
+) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__{field}__{check_type}",
         category=category,
@@ -380,6 +576,7 @@ def _duplicate_count_check(model, field, check_type, threshold, name, category="
         metric=MetricType.DUPLICATE_COUNT,
         threshold=threshold,
         severity=severity,
+        dimension=dimension,
         columns=[field],
     )
 
@@ -393,6 +590,7 @@ def _invalid_count_check(
     category="schema",
     threshold_is_percent=False,
     severity=None,
+    dimension=None,
     **kwargs,
 ) -> CheckSpec:
     return CheckSpec(
@@ -406,14 +604,15 @@ def _invalid_count_check(
         threshold=threshold or Threshold(Op.EQ, 0),
         threshold_is_percent=threshold_is_percent,
         severity=severity,
+        dimension=dimension,
         **kwargs,
     )
 
 
-def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
+def _row_count_check(model, threshold: Threshold, severity=None, dimension=None) -> CheckSpec:
     return CheckSpec(
         key=f"{model}__row_count",
-        category="schema",
+        category="quality",
         type="row_count",
         name=f"Check that model {model} has row_count {threshold.describe()}",
         model=model,
@@ -421,6 +620,7 @@ def _row_count_check(model, threshold: Threshold, severity=None) -> CheckSpec:
         metric=MetricType.ROW_COUNT,
         threshold=threshold,
         severity=severity,
+        dimension=dimension,
     )
 
 
@@ -431,43 +631,58 @@ def _quality_checks(
     model: str, field: Optional[str], quality_list: List[DataQuality], server: Optional[Server]
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
-    count = 0
-    for quality in quality_list:
-        if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
-            checks.append(
-                CheckSpec(
-                    key=f"{model}__quality_custom_{count}",
-                    category="quality",
-                    type="quality_custom_soda",
-                    name=quality.description or "Custom SodaCL Check",
-                    model=model,
-                    field=field,
-                    metric=MetricType.UNSUPPORTED,
-                    preset_result="warning",
-                    preset_reason=(
-                        "Raw SodaCL custom checks (quality.type: custom, engine: soda) are no longer "
-                        "supported since soda-core was removed. Migrate this check to quality.type: sql."
-                    ),
-                )
+    for count, quality in enumerate(quality_list):
+        rule_checks = _quality_rule_checks(model, field, quality, count, server)
+        # Every check keeps a link back to the rule that declared it, so that
+        # `test --quality-id` / `test --tag` can select it.
+        for check in rule_checks:
+            check.quality_id = quality.id
+            check.tags = list(quality.tags) if quality.tags else None
+            check.quality_definition = quality_definition_yaml(quality)
+        checks.extend(rule_checks)
+    return checks
+
+
+def _quality_rule_checks(
+    model: str, field: Optional[str], quality: DataQuality, count: int, server: Optional[Server]
+) -> List[CheckSpec]:
+    """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
+    if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
+        return [
+            CheckSpec(
+                key=f"{model}__quality_custom_{count}",
+                category="quality",
+                type="quality_custom_soda",
+                name=quality.description or "Custom SodaCL Check",
+                model=model,
+                field=field,
+                metric=MetricType.UNSUPPORTED,
+                dimension=quality.dimension,
+                preset_result="warning",
+                preset_reason=(
+                    "Raw SodaCL custom checks (quality.type: custom, engine: soda) are no longer "
+                    "supported since soda-core was removed. Migrate this check to quality.type: sql."
+                ),
             )
-        elif quality.type == "sql":
-            if field is None:
-                check_key = f"{model}__quality_sql_{count}"
-                check_type = "model_quality_sql"
-            else:
-                check_key = f"{model}__{field}__quality_sql_{count}"
-                check_type = "field_quality_sql"
-            threshold = to_threshold(quality)
-            query = prepare_query(quality, model, field, server)
-            if query is None:
-                logger.warning(f"Quality check {check_key} has no query")
-                count += 1
-                continue
-            if threshold is None:
-                logger.warning(f"Quality check {check_key} has no valid threshold")
-                count += 1
-                continue
-            checks.append(
+        ]
+    if quality.type == "sql":
+        if field is None:
+            check_key = f"{model}__quality_sql_{count}"
+            check_type = "model_quality_sql"
+        else:
+            check_key = f"{model}__{field}__quality_sql_{count}"
+            check_type = "field_quality_sql"
+        threshold = to_threshold(quality)
+        query = prepare_query(quality, model, field, server)
+        if query is None:
+            logger.warning(f"Quality check {check_key} has no query")
+            return []
+        if threshold is None:
+            logger.warning(f"Quality check {check_key} has no valid threshold")
+            return []
+
+        def not_executed(reason: str) -> List[CheckSpec]:
+            return [
                 CheckSpec(
                     key=check_key,
                     category="quality",
@@ -475,27 +690,59 @@ def _quality_checks(
                     name=quality.description or "Quality Check",
                     model=model,
                     field=field,
-                    metric=MetricType.CUSTOM_SQL,
-                    threshold=threshold,
-                    query=query,
-                    dialect=getattr(quality, "dialect", None),
+                    metric=MetricType.UNSUPPORTED,
+                    dimension=quality.dimension,
                     severity=quality.severity,
+                    preset_result="failed",
+                    preset_reason=reason,
                 )
+            ]
+
+        # ``${VAR}`` references (ODCS v3.2.0) resolve from the environment now that
+        # the query is about to be used; the CLI's own ``${model}``-style placeholders
+        # were substituted first, so they are not mistaken for variables. The
+        # contract keeps the references.
+        try:
+            query = resolve_variables(query, source=f"the query of quality check '{check_key}'")
+        except UnresolvedVariableError as e:
+            return not_executed(f"{e} Set it in the environment or a .env file, or use ${{{e.name}:-default}}.")
+        # The query is read as the dialect of the server it runs against, so
+        # dialect-specific syntax is not mistaken for something that is not a query.
+        parse_dialect = dialect_for_server_type(get_server_type(server))
+        if not is_read_only_query(query, parse_dialect):
+            return not_executed(
+                f"A quality rule query must be a single read-only query, and this one could "
+                f"not be read as one{f' ({parse_dialect} SQL)' if parse_dialect else ''}, "
+                f"so it was not executed."
             )
-        elif quality.metric is not None:
-            threshold = to_threshold(quality)
-            if threshold is None:
-                logger.warning(f"Quality metric {quality.metric} has no valid threshold")
-                count += 1
-                continue
-            checks.extend(_quality_metric_check(model, field, quality, threshold))
-        count += 1
-    return checks
+        return [
+            CheckSpec(
+                key=check_key,
+                category="quality",
+                type=check_type,
+                name=quality.description or "Quality Check",
+                model=model,
+                field=field,
+                metric=MetricType.CUSTOM_SQL,
+                threshold=threshold,
+                query=query,
+                severity=quality.severity,
+                dimension=quality.dimension,
+            )
+        ]
+    if quality.metric is not None:
+        threshold = to_threshold(quality)
+        if threshold is None:
+            logger.warning(f"Quality metric {quality.metric} has no valid threshold")
+            return []
+        return _quality_metric_check(model, field, quality, threshold)
+    return []
 
 
 def _quality_metric_check(model, field, quality: DataQuality, threshold: Threshold) -> List[CheckSpec]:
     metric = quality.metric
     severity = quality.severity
+    dimension = quality.dimension
     is_percent = is_percent_unit(quality)
 
     # Percent thresholds only make sense for the count-of-bad-rows metrics, where
@@ -506,7 +753,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
         is_percent = False
 
     if metric == "rowCount":
-        return [_row_count_check(model, threshold, severity=severity)]
+        return [_row_count_check(model, threshold, severity=severity, dimension=dimension)]
     if metric == "duplicateValues":
         if field is None:
             cols = quality.arguments.get("properties") if quality.arguments else None
@@ -523,6 +770,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                     threshold=threshold,
                     columns=cols,
                     severity=severity,
+                    dimension=dimension,
                 )
             ]
         return [
@@ -533,6 +781,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 threshold,
                 name=f"Check that field {field} has duplicate_count {threshold.describe()}",
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "nullValues":
@@ -548,13 +797,21 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 name=f"Check that field {field} has missing_count {threshold.describe()}",
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "invalidValues":
         if field is None:
             logger.warning("Quality check invalidValues is only supported at field level")
             return []
-        valid_values = quality.arguments.get("validValues") if quality.arguments else None
+        args = quality.arguments or {}
+        valid_values = args.get("validValues")
+        pattern = args.get("pattern")
+        if valid_values is None and pattern is None:
+            logger.warning(
+                f"Quality check invalidValues on field {field} has no validValues or pattern argument; skipping"
+            )
+            return []
         return [
             _invalid_count_check(
                 model,
@@ -564,8 +821,10 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 threshold=threshold,
                 category="quality",
                 valid_values=valid_values,
+                valid_regex=pattern,
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     if metric == "missingValues":
@@ -585,6 +844,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 missing_values=missing_values or None,
                 threshold_is_percent=is_percent,
                 severity=severity,
+                dimension=dimension,
             )
         ]
     logger.warning(f"Quality check {metric} is not yet supported")
@@ -606,11 +866,11 @@ def _to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opt
         return checks
     for sla in data_contract.slaProperties:
         if sla.property == "freshness":
-            check = _freshness_check(data_contract, sla)
+            check = _freshness_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
         elif sla.property == "retention":
-            check = _retention_check(data_contract, sla)
+            check = _retention_check(data_contract, sla, server)
             if check is not None:
                 checks.append(check)
     return checks
@@ -623,16 +883,34 @@ def _split_element(element: Optional[str]) -> Optional[tuple[str, str]]:
     return model, field
 
 
-def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[CheckSpec]:
-    if sla.element is None or sla.value is None:
-        return None
-    parts = _split_element(sla.element)
+def _resolve_sla_element(
+    data_contract: OpenDataContractStandard, element: Optional[str], server: Optional[Server]
+) -> Optional[tuple[str, str]]:
+    """The (model, field) a contract-language sla element points at, in warehouse terms."""
+    parts = _split_element(element)
     if parts is None:
-        logger.info("freshness element is not a single model.field, skipping")
+        logger.info(f"sla element {element!r} is not a single model.field, skipping")
         return None
     model, field = parts
-    if _get_schema_by_name(data_contract, model) is None:
+    schema_object = _get_schema_by_name(data_contract, model)
+    if schema_object is None:
         return None
+    server_type = server.type if server and server.type else None
+    prop = next((p for p in schema_object.properties or [] if p.name == field), None)
+    if prop is not None and prop.physicalName:
+        field = prop.physicalName
+    return to_schema_name(schema_object, server_type), field
+
+
+def _freshness_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Optional[CheckSpec]:
+    if sla.element is None or sla.value is None:
+        return None
+    resolved = _resolve_sla_element(data_contract, sla.element, server)
+    if resolved is None:
+        return None
+    model, field = resolved
 
     unit = (sla.unit or "d").lower()
     if unit in ("d", "day", "days"):
@@ -646,38 +924,39 @@ def _freshness_check(data_contract: OpenDataContractStandard, sla) -> Optional[C
         return None
 
     return CheckSpec(
-        key="servicelevel_freshness",
+        key=f"{model}__{field}__servicelevel_freshness",
         category="servicelevel",
         type="servicelevel_freshness",
         name=f"Freshness of {model}.{field} < {sla.value}{unit[0]}",
         model=model,
         field=field,
         metric=MetricType.FRESHNESS,
+        quality_id=sla.id,
         seconds=seconds,
     )
 
 
-def _retention_check(data_contract: OpenDataContractStandard, sla) -> Optional[CheckSpec]:
+def _retention_check(
+    data_contract: OpenDataContractStandard, sla, server: Optional[Server] = None
+) -> Optional[CheckSpec]:
     if sla.element is None or sla.value is None:
         return None
-    parts = _split_element(sla.element)
-    if parts is None:
-        logger.info("retention element is not a single model.field, skipping")
+    resolved = _resolve_sla_element(data_contract, sla.element, server)
+    if resolved is None:
         return None
-    model, field = parts
-    if _get_schema_by_name(data_contract, model) is None:
-        return None
+    model, field = resolved
     seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
         return None
     return CheckSpec(
-        key="servicelevel_retention",
+        key=f"{model}__{field}__servicelevel_retention",
         category="servicelevel",
         type="servicelevel_retention",
         name=f"Retention of {model}.{field} < {seconds}s",
         model=model,
         field=field,
         metric=MetricType.RETENTION,
+        quality_id=sla.id,
         seconds=seconds,
     )
 
@@ -707,19 +986,26 @@ def _retention_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
     return None
 
 
+# P followed by number-unit combinations (e.g. P1Y2M3W4DT5H6M7S), every component optional, but at least one required
+_ISO8601_DURATION = re.compile(
+    r"P(?=\d|T\d)"
+    r"(?:(\d+(?:\.\d+)?)Y)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)W)?"
+    r"(?:(\d+(?:\.\d+)?)D)?"
+    r"(?:T(?=\d)"
+    r"(?:(\d+(?:\.\d+)?)H)?"
+    r"(?:(\d+(?:\.\d+)?)M)?"
+    r"(?:(\d+(?:\.\d+)?)S)?)?"
+)
+_COMPONENT_SECONDS = (365 * 86400, 30 * 86400, 7 * 86400, 86400, 3600, 60, 1)
+
+
 def _parse_iso8601_to_seconds(duration: str) -> Optional[int]:
     if not duration:
         return None
-    duration = duration.upper()
-    for pat, mult in (
-        (r"P(\d+)Y", 365 * 86400),
-        (r"P(\d+)M", 30 * 86400),
-        (r"P(\d+)D", 86400),
-        (r"PT(\d+)H", 3600),
-        (r"PT(\d+)M", 60),
-        (r"PT(\d+)S", 1),
-    ):
-        m = re.match(pat, duration)
-        if m:
-            return int(m.group(1)) * mult
-    return None
+    match = _ISO8601_DURATION.fullmatch(duration.upper())
+    if match is None:
+        logger.info(f"Unsupported retention period: {duration}")
+        return None
+    return round(sum(float(amount) * seconds for amount, seconds in zip(match.groups(), _COMPONENT_SECONDS) if amount))

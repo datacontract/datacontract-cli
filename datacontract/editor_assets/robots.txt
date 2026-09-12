@@ -1,0 +1,17 @@
+# editor.datacontract.com
+#
+# This file exists mainly so the sitemap can be declared. Before it, Azure Static
+# Web Apps answered /robots.txt with its own branded 404 page, so crawlers asking
+# for it got an HTML error document instead of an empty-but-valid response.
+#
+# There is nothing to disallow: the build is a library build whose only HTML is
+# public/index.html, so the site is a single page.
+#
+# Do NOT block /assets/ or the Monaco chunks. The editor renders entirely
+# client-side; Google executes the JavaScript to see the page, and blocking those
+# would make it render as a blank document.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://editor.datacontract.com/sitemap.xml

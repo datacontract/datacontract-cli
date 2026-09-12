@@ -1,5 +1,3 @@
-import os
-
 from datacontract.model.run import ResultEnum
 
 
@@ -21,7 +19,7 @@ class DataContractException(Exception):
         type,
         name,
         reason,
-        engine="datacontract",
+        engine="datacontract-cli",
         model=None,
         original_exception=None,
         result: ResultEnum = ResultEnum.failed,
@@ -40,6 +38,21 @@ class DataContractException(Exception):
         )
 
 
+class DefinitionResolutionError(DataContractException):
+    """An authoritativeDefinition URL could not be fetched or parsed."""
+
+    def __init__(self, url: str, reason: str, original_exception: Exception | None = None):
+        self.url = url
+        super().__init__(
+            type="lint",
+            result=ResultEnum.failed,
+            name="Resolve business definition",
+            reason=reason,
+            engine="datacontract-cli",
+            original_exception=original_exception,
+        )
+
+
 class DataContractValidationErrors(DataContractException):
     def __init__(self, errors: list[DataContractException]):
         self.errors = errors
@@ -54,19 +67,3 @@ class DataContractValidationErrors(DataContractException):
             result=first_error.result,
             message="Run operation failed with multiple validation errors",
         )
-
-
-def require_env(name: str, *, server_type: str) -> str:
-    """Return the value of env var ``name`` or raise a DataContractException.
-
-    Empty strings count as missing — drivers typically reject them the same way they reject None.
-    """
-    value = os.getenv(name)
-    if not value:
-        raise DataContractException(
-            type=f"{server_type}-connection",
-            name=f"missing_env_{name}",
-            reason=f"Required environment variable {name} is not set. Set it to connect to {server_type}.",
-            engine="datacontract",
-        )
-    return value

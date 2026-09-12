@@ -66,5 +66,5 @@ def convert_to_duckdb_json_type(prop: SchemaProperty) -> None | str:
 
 
 def convert_to_duckdb_object(properties: List[SchemaProperty]):
-    columns = [f'"{prop.name}" {convert_to_duckdb_json_type(prop)}' for prop in properties]
+    columns = [f'"{prop.physicalName or prop.name}" {convert_to_duckdb_json_type(prop)}' for prop in properties]
     return f"STRUCT({', '.join(columns)})"

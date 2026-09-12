@@ -1,8 +1,11 @@
+import logging
 import typing
 from abc import ABC, abstractmethod
 from enum import Enum
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
+
+from datacontract.model.server import get_server_type
 
 
 class Exporter(ABC):
@@ -46,6 +49,8 @@ class SqlServerType(str, Enum):
 
 
 class ExportFormat(str, Enum):
+    """A format a data contract can be converted to."""
+
     jsonschema = "jsonschema"
     pydantic_model = "pydantic-model"
     sodacl = "sodacl"
@@ -119,10 +124,10 @@ def _determine_sql_server_type(
             raise RuntimeError("Export with server_type='auto' requires servers in the data contract.")
 
         if server is None:
-            server_types = set([s.type for s in data_contract.servers])
+            server_types = {get_server_type(s) for s in data_contract.servers}
         else:
             server_obj = next((s for s in data_contract.servers if s.server == server), None)
-            server_types = {server_obj.type} if server_obj else set()
+            server_types = {get_server_type(server_obj)} if server_obj else set()
 
         if "snowflake" in server_types:
             return "snowflake"
@@ -135,7 +140,11 @@ def _determine_sql_server_type(
         elif "clickhouse" in server_types:
             return "clickhouse"
         else:
-            # default to snowflake dialect
+            logging.getLogger(__name__).warning(
+                "No SQL dialect for server type(s) %s; falling back to the snowflake dialect. "
+                "Pass --sql-server-type to choose one.",
+                ", ".join(sorted(t for t in server_types if t)) or "none",
+            )
             return "snowflake"
     else:
         return sql_server_type

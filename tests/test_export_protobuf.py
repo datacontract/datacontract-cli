@@ -1,9 +1,11 @@
+import pytest
 import yaml
 from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.export.protobuf_exporter import to_protobuf
+from datacontract.model.exceptions import DataContractException
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -77,6 +79,14 @@ schema:
       - name: user
         logicalType: string
         description: Field user
+      - name: sub_review
+        description: Details of sub review.
+        required: False
+        logicalType: object
+        properties:
+          - name: comment
+            logicalType: string
+            description: Field comment
 """
     data_contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
 
@@ -117,16 +127,64 @@ message Product {
 
 // Details of Review.
 message Review {
+  // Details of sub review.
+  message SubReview {
+    // Field comment
+    string comment = 1;
+  }
+
   // Field comment
   string comment = 1;
   // Field rating
   int32 rating = 2;
   // Field user
   string user = 3;
+  // Details of sub review.
+  optional SubReview sub_review = 4;
 }
-
 
     """.strip()
     result = to_protobuf(data_contract).strip()
 
     assert result == expected_protobuf
+
+
+def test_to_protobuf_custom_package_name():
+    odcs_yaml = """
+kind: DataContract
+apiVersion: v3.1.0
+id: test_protobuf
+customProperties:
+  - property: protoPackageName
+    value: com.example.product
+schema:
+  - name: Product
+    properties:
+      - name: id
+        logicalType: string
+"""
+    data_contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
+
+    result = to_protobuf(data_contract)
+
+    assert "package com.example.product;\n" in result
+
+
+def test_to_protobuf_invalid_package_name():
+    odcs_yaml = """
+kind: DataContract
+apiVersion: v3.1.0
+id: test_protobuf
+customProperties:
+  - property: protoPackageName
+    value: "123 not a package!"
+schema:
+  - name: Product
+    properties:
+      - name: id
+        logicalType: string
+"""
+    data_contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
+
+    with pytest.raises(DataContractException):
+        to_protobuf(data_contract)

@@ -154,6 +154,12 @@
         "type": "JSON"
       },
       {
+        "description": "an interval field",
+        "mode": "NULLABLE",
+        "name": "INTERVAL_Field",
+        "type": "INTERVAL"
+      },
+      {
         "description": "list of string (REPEATED string)",
         "mode": "REPEATED",
         "name": "String_List_Field",

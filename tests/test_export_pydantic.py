@@ -71,6 +71,28 @@ def test_object_model_export():
     )
 
 
+def test_object_without_properties_model_export():
+    """An empty class body is not valid Python, so the class needs a `pass`."""
+    schema = SchemaObject(
+        name="Test",
+        properties=[SchemaProperty(name="f", logicalType="object")],
+    )
+    ast_class = conv.generate_model_class("Test", schema)
+    assert (
+        ast.unparse(ast_class)
+        == dedent(
+            """
+        class Test(pydantic.BaseModel):
+
+            class F(pydantic.BaseModel):
+                pass
+            f: typing.Optional[F]
+        """
+        ).strip()
+    )
+    ast.parse(ast.unparse(ast_class))
+
+
 def test_model_documentation_export():
     schema = SchemaObject(
         name="Test",

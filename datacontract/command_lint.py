@@ -4,6 +4,7 @@ import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import app, console, debug_option, enable_debug_logging, resolve_output_format
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.output_format import OutputFormat
 from datacontract.output.test_results_writer import write_test_result
@@ -16,7 +17,7 @@ from datacontract.output.test_results_writer import write_test_result
 def lint(
     location: Annotated[
         str,
-        typer.Argument(help="The location (url or path) of the data contract yaml."),
+        typer.Argument(help="The location (url, s3 url, or local path) of the data contract yaml."),
     ] = "datacontract.yaml",
     schema: Annotated[
         str,
@@ -55,6 +56,7 @@ def lint(
 
     output_format = resolve_output_format(output_format, output)
     run = DataContract(
+        config=cli_config(),
         data_contract_file=location,
         schema_location=schema,
         all_errors=all_errors,

@@ -11,3 +11,7 @@ def repr_str(dumper, data):
 
 
 yaml.add_representer(str, repr_str, Dumper=yaml.SafeDumper)
+
+from datacontract.config import Config  # noqa: E402
+
+__all__ = ["Config"]

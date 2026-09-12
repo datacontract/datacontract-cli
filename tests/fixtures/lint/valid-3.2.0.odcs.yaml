@@ -1,0 +1,182 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: 53581432-6c55-4ba2-a65f-72344a91553b
+name: Turnover
+version: 1.0.0
+status: active
+domain: sales
+description:
+  purpose: Turnover metrics per country for revenue analysis.
+context:
+  instructions: Use this contract for revenue analysis. Do not use it for individual customer PII queries.
+  verifiedStatements:
+    - question: What was total revenue in France last quarter?
+    - id: revenue-last-year
+      question: What was the total revenue last year?
+      answer: Query total_turnover_euros grouped by year.
+      tags: [finance]
+      customProperties:
+        - property: confidence
+          value: high
+  constraints:
+    - id: no-individual-order-exposure
+      constraint: Do not expose individual order details.
+      tags: [gdpr, pii]
+      authoritativeDefinitions:
+        - url: https://example.com/ontology
+          type: ontology
+          description: Link to the ontology
+    - constraint: Do not join with customer PII tables.
+servers:
+  - server: prod
+    type: postgresql
+    host: ${DB_HOST}
+    port: ${DB_PORT:-5432}
+    database: ${DB_NAME:-orders}
+    schema: public
+  - server: lake
+    type: iceberg
+    catalog: main
+    catalogUrl: https://polaris.example.com/api/catalog
+    namespace: sales
+    warehouse: s3://warehouse
+  - server: files
+    type: s3
+    location: s3://bucket/turnover/
+    format: csv
+    encoding: ISO-8859-1
+  - server: athena
+    type: athena
+    schema: sales
+    workgroup: analytics
+  - server: hana
+    type: hana
+    host: hana.example.com
+    port: 30015
+    database: HXE
+    schema: SALES
+  - server: exasol
+    type: exasol
+    host: n11..14.acme.com
+    schema: SALES
+  - server: teradata
+    type: teradata
+    host: teradata.example.com
+    database: SALES
+  - server: ingres
+    type: ingres
+    host: ingres.example.com
+    database: sales
+  - server: fastobjects
+    type: fastobjects
+    database: sales
+schema:
+  - name: turnover
+    physicalName: metrics_turnover
+    logicalType: object
+    physicalType: table
+    deprecated: false
+    synonyms:
+      - synonym: Sales metrics
+      - synonym: Chiffre d'affaires
+        locale: fr-FR
+        source: glossary
+        status: active
+        id: syn-ca
+        description: French term
+        customProperties:
+          - property: origin
+            value: finance-team
+    context:
+      instructions: Always filter by turnover_ts when querying time ranges.
+      constraints:
+        - constraint: Do not query without a date range filter.
+    relationships:
+      - id: rel-country
+        type: foreignKey
+        from: turnover.country_code
+        to: countries.code
+    properties:
+      - name: turnover_ts
+        logicalType: timestamp
+        physicalType: timestamp
+        required: true
+        semanticType: dimension
+      - name: total_turnover_euros
+        logicalType: number
+        physicalType: decimal(18,2)
+        semanticType: measure
+        transformLogic: SUM(turnover_euros)
+        synonyms:
+          - synonym: TO
+      - name: country_code
+        logicalType: string
+        physicalType: varchar(2)
+        semanticType: dimension
+        enum:
+          - value: FR
+            label: France
+            id: fr
+            description: Metropolitan France
+            tags: [eu]
+            customProperties:
+              - property: label_fr
+                value: France
+                vendor: acme
+            authoritativeDefinitions:
+              - url: https://example.com/glossary/fr
+                type: glossary
+          - value: DE
+            label: Germany
+      - name: attributes
+        logicalType: map
+        physicalType: map<string,struct<unit:string>>
+        map:
+          key:
+            logicalType: string
+          value:
+            logicalType: object
+            properties:
+              - name: unit
+                logicalType: string
+                enum:
+                  - value: EUR
+      - name: embedding
+        logicalType: vector
+        physicalType: vector(1536)
+        logicalTypeOptions:
+          dimensions: 1536
+          elementType: float32
+          distanceMetric: cosine
+          normalized: true
+          embeddingModel: openai/text-embedding-3-small
+      - name: legacy_flag
+        logicalType: boolean
+        physicalType: boolean
+        deprecated: true
+        description: Replaced by status.
+  - name: countries
+    logicalType: object
+    physicalType: table
+    context: Reference data, do not aggregate.
+    properties:
+      - name: code
+        logicalType: string
+        physicalType: varchar(2)
+        primaryKey: true
+slaProperties:
+  - property: latency
+    value: 4
+    unit: d
+    element: turnover.turnover_ts
+    customProperties:
+      - property: sla_source
+        value: contract-2024
+        vendor: acme
+    authoritativeDefinitions:
+      - url: https://example.com/sla-policy
+        type: policy
+customProperties:
+  - property: refRulesetName
+    value: gcsc.ruleset.name
+    vendor: acme

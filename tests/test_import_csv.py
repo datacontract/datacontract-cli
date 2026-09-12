@@ -43,7 +43,7 @@ def test_import_csv():
 
     expected = f"""version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -87,10 +87,9 @@ schema:
     required: true
   - name: field_six
     physicalType: VARCHAR
-    customProperties:
-    - property: format
-      value: email
     logicalType: string
+    logicalTypeOptions:
+      format: email
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)

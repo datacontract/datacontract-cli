@@ -4,7 +4,7 @@ import re
 from enum import Enum
 
 import sqlglot
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
@@ -13,9 +13,11 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    property_from_type_string,
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+from datacontract.model.vector_type import parse_vector_type
 
 
 class SqlDialect(str, Enum):
@@ -38,18 +40,19 @@ class SqlImporter(Importer):
 
 
 def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandard:
-    sql = read_file(source)
+    sql, variables = read_file(source)
     dialect = to_dialect(import_args)
 
     try:
-        parsed = sqlglot.parse_one(sql=sql, read=dialect)
+        # not parse_one: sqlglot below 29 gives it only the first statement of a script
+        statements = [s for s in sqlglot.parse(sql=sql, read=dialect) if s is not None]
     except Exception as e:
         logging.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
             reason=f"Error parsing SQL: {str(e)}",
-            engine="datacontract",
+            engine="datacontract-cli",
             result=ResultEnum.error,
         )
 
@@ -59,27 +62,26 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
     server_type = to_server_type(source, dialect)
     if server_type is not None:
         server_defaults = get_server_defaults(server_type)
+        location = get_created_location(statements, server_type, variables)
+        server_defaults.update(location)
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
+        placeholders = ", ".join(field for field in server_defaults if field not in location)
         logging.warning(
-            "SQL import generated a server block with placeholder connection values. "
-            "Update host, port, database, and schema in the output before use."
+            f"SQL import generated a server block with placeholder connection values. "
+            f"Update the following values before use: {placeholders}"
         )
 
-    tables = [
-        t
-        for t in parsed.find_all(sqlglot.expressions.Table)
-        if isinstance(t.find_ancestor(sqlglot.expressions.Create), sqlglot.expressions.Create)
-    ]
+    # Only a CREATE TABLE creates one. CREATE SCHEMA carries a table node with no table name,
+    # and a CTAS or CREATE VIEW carries its query sources.
+    creates = [create for create in find_all(statements, sqlglot.expressions.Create) if create.kind == "TABLE"]
 
-    for table in tables:
+    for create in creates:
+        table = create.this.find(sqlglot.expressions.Table)
         table_name = table.this.name
         properties = []
 
         primary_key_position = 1
-        for column in parsed.find_all(sqlglot.exp.ColumnDef):
-            if column.parent.this.name != table_name:
-                continue
-
+        for column in create.find_all(sqlglot.exp.ColumnDef):
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
             logical_type, format = map_type_from_sql(col_type)
@@ -89,6 +91,9 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             is_primary_key = get_primary_key(column)
             is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
             tags = get_tags(column)
+
+            map_key, map_value = map_key_value_from_type(col_type) if logical_type == "map" else (None, None)
+            dimensions, element_type = vector_from_type(col_type) if logical_type == "vector" else (None, None)
 
             prop = create_property(
                 name=col_name,
@@ -103,6 +108,10 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 primary_key_position=primary_key_position if is_primary_key else None,
                 required=is_required if is_required else None,
                 tags=tags,
+                map_key=map_key,
+                map_value=map_value,
+                dimensions=dimensions,
+                element_type=element_type,
             )
 
             if is_primary_key:
@@ -110,14 +119,14 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
 
             properties.append(prop)
 
-        table_comment_property = parsed.find(sqlglot.expressions.SchemaCommentProperty)
+        table_comment_property = find_first(statements, sqlglot.expressions.SchemaCommentProperty)
 
         table_description = None
         if table_comment_property:
             table_description = table_comment_property.this.this
 
         table_tags = None
-        table_props = parsed.find(sqlglot.expressions.Properties)
+        table_props = find_first(statements, sqlglot.expressions.Properties)
         if table_props:
             tags = table_props.find(sqlglot.expressions.Tags)
             if tags:
@@ -156,6 +165,56 @@ def to_dialect(import_args: dict) -> Dialects | None:
     if dialect.upper() in Dialects.__members__:
         return Dialects[dialect.upper()]
     return None
+
+
+# Server types whose qualified table names mean database.schema. Elsewhere the parts mean
+# something else, such as project.dataset on BigQuery or the database alone on MySQL, and
+# belong in other server fields, so their DDL is left to the placeholders.
+DATABASE_SCHEMA_SERVER_TYPES = ("snowflake", "sqlserver", "postgres", "redshift")
+
+
+def find_all(statements: list, *types):
+    for statement in statements:
+        yield from statement.find_all(*types)
+
+
+def find_first(statements: list, *types):
+    return next(find_all(statements, *types), None)
+
+
+def get_created_location(statements: list, server_type: str, variables: set[str]) -> dict:
+    """Database and schema of the created tables, when every one of them names the same."""
+    if server_type not in DATABASE_SCHEMA_SERVER_TYPES:
+        return {}
+
+    locations = set()
+    for create in find_all(statements, sqlglot.expressions.Create):
+        if (create.kind or "").upper() != "TABLE":
+            continue
+        target = create.this
+        if isinstance(target, sqlglot.expressions.Schema):
+            target = target.this
+        if isinstance(target, sqlglot.expressions.Table):
+            locations.add((target.catalog, target.db))
+    if len(locations) != 1:
+        return {}
+
+    catalog, db = locations.pop()
+    location = {}
+    if catalog and not is_templated(catalog, variables):
+        location["database"] = catalog
+    if db and not is_templated(db, variables):
+        location["schema"] = db
+    return location
+
+
+def is_templated(name: str, variables: set[str]) -> bool:
+    """Whether an identifier carries substituted text, so is no more usable than a placeholder.
+
+    Substring matching keeps names like ${env}_DB out. It can also hold back a literal name
+    that happens to contain a variable name, which leaves the placeholder in place.
+    """
+    return any(variable in name for variable in variables)
 
 
 def get_server_defaults(server_type: str) -> dict:
@@ -279,11 +338,29 @@ def get_precision_scale(column):
     return None, None
 
 
+def map_key_value_from_type(sql_type: str | None) -> tuple[SchemaProperty | None, SchemaProperty | None]:
+    """The key and value properties of a ``map<k,v>`` / ``MAP(k, v)`` type string, or ``(None, None)``."""
+    if not sql_type:
+        return None, None
+    prop = property_from_type_string("map", sql_type)
+    if prop.map is None:
+        return None, None
+    return prop.map.key, prop.map.value
+
+
+def vector_from_type(sql_type: str | None) -> tuple[int | None, str | None]:
+    """``(dimensions, elementType)`` of a native vector type string, or ``(None, None)``."""
+    parsed = parse_vector_type(sql_type)
+    if parsed is None:
+        return None, None
+    return parsed[0], parsed[1]
+
+
 def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     """Map SQL type to ODCS logical type and optional format.
 
     Returns (logicalType, format). logicalType is None for unknown or unmappable
-    types (e.g. maps), leaving the field's logicalType unset.
+    types, leaving the field's logicalType unset.
     The format corresponds to ODCS logicalTypeOptions.format (e.g. "binary", "uuid").
     """
     if sql_type is None:
@@ -291,6 +368,8 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
 
     sql_type_normed = sql_type.lower().strip()
 
+    if parse_vector_type(sql_type_normed) is not None:
+        return ("vector", None)
     if sql_type_normed.startswith("varchar"):
         return ("string", None)
     elif sql_type_normed.startswith("char"):
@@ -343,7 +422,10 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("string", "binary")
     elif sql_type_normed == "date":
         return ("date", None)
-    elif sql_type_normed == "time":
+    elif sql_type_normed == "time" or sql_type_normed.startswith("time(") or sql_type_normed.startswith("time "):
+        # TIME, TIME(9), TIME WITH TIME ZONE — but not TIMESTAMP, which is checked below
+        return ("time", None)
+    elif sql_type_normed == "timetz":  # postgres
         return ("time", None)
     elif sql_type_normed.startswith("timestamp"):
         return ("timestamp", None)
@@ -364,21 +446,29 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     elif sql_type_normed.startswith("struct"):
         return ("object", None)
     elif sql_type_normed.startswith("map"):
-        # ODCS v3.1 has no map logical type; RFC 0030 adds logicalType: map in v3.2.
-        # "object" only validates against structs, so leave logicalType unset for maps.
-        return (None, None)
+        return ("map", None)
     else:
         return (None, None)
 
 
-def remove_variable_tokens(sql_script: str) -> str:
-    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL."""
+def remove_variable_tokens(sql_script: str) -> tuple[str, set[str]]:
+    """Replace templating placeholders with bare variable names so sqlglot can parse the SQL.
+
+    Returns the rewritten script and the names that came from a placeholder.
+    """
     variable_pattern = re.compile(
         r"\$\((\w+)\)"  # $(var) — sqlcmd (T-SQL)
         r"|\$\{(\w+)\}"  # ${var} — Liquibase
         r"|\{\{(\w+)\}\}"  # {{var}} — Jinja / dbt
     )
-    return variable_pattern.sub(lambda m: m.group(1) or m.group(2) or m.group(3), sql_script)
+    variables = set()
+
+    def to_variable_name(match: re.Match) -> str:
+        name = match.group(1) or match.group(2) or match.group(3)
+        variables.add(name)
+        return name
+
+    return variable_pattern.sub(to_variable_name, sql_script), variables
 
 
 def read_file(path):
@@ -387,7 +477,7 @@ def read_file(path):
             type="import",
             name=f"Reading source from {path}",
             reason=f"The file '{path}' does not exist.",
-            engine="datacontract",
+            engine="datacontract-cli",
             result=ResultEnum.error,
         )
     with open(path, "r") as file:

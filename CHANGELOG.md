@@ -8,7 +8,352 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `hana` server type for `datacontract test`, supporting SAP HANA Cloud and SAP Datasphere (Open SQL schemas). Install with `pip install datacontract-cli[hana]`. (`hdbcli` is under SAP's proprietary license and is therefore not part of `[all]`.)
+- `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
+- `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
+
+### Fixed
+- `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
+
+## [1.2.0] - 2026-09-08
+
+This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md) (#1557).
+
+### Fixed
+- Iceberg testing uses AWS SSO credentials for S3 Tables data files and supports logical table aliases.
+- Iceberg catalog imports supply a catalog name, preserve qualified table identifiers, and correctly map temporal and binary fields.
+- `datacontract test` checks vector element types when the data source reports them (#1585)
+
+### Added
+- `datacontract test` resolves variables in property names, enum values, nested type options, library quality arguments, and service levels (#1583)
+- Lint requires vector dimensions and rejects duplicate enum values regardless of their labels (#1586)
+- Contracts declaring `apiVersion: v3.2.0` lint and round-trip, including `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types (#1558)
+- `datacontract export avro-idl` writes `map<...>` and `array<float>` for `map` and `vector` properties; `datacontract export sqlalchemy` writes `JSON` and `ARRAY(Float)` (#1558)
+- `datacontract test` resolves `${VAR}` and `${VAR:-default}` references in server fields and SQL quality queries from the environment; an unset variable without a default fails the run with its name, and `export` keeps the references (#1559)
+- Server `port` may be a string such as `${DB_PORT}`, including in Excel imports; config files accept `${VAR:-default}` (#1559)
+- `enum` on properties is read by `datacontract test`, the jsonschema, avro, avro-idl, protobuf, pydantic-model, dcs, great-expectations, sodacl and data-caterer exporters, and dbt test mapping, ahead of `logicalTypeOptions.enum`, the `enum` custom property and the `invalidValues` rule; HTML export lists the values with labels and descriptions (#1560)
+- `datacontract import` from JSON Schema, Avro, Protobuf and DCS writes allowed values as `enum` entries instead of an `invalidValues` quality rule or custom properties (#1560)
+- `datacontract export pydantic-model` types an enumerated string or integer property as `typing.Literal` (#1560)
+- `logicalType: map` with a `map` block (`key` and `value` as full property definitions) is a first-class type: `datacontract test` checks the key and value types, including nested objects and maps, on DuckDB, Databricks, Snowflake, Trino, Kafka and the file sources (#1562)
+- `datacontract export` writes native map types for snowflake, databricks, dataframe, duckdb (local, s3), clickhouse, trino, spark, iceberg, avro, avro-idl, protobuf, pydantic-model, go and dcs, JSON for postgres, mysql, sqlserver, oracle and bigquery, and `additionalProperties` for jsonschema; HTML shows the key and value types (#1562)
+- `datacontract import` from sql, databricks/unity, spark, glue, iceberg, avro, parquet and dcs writes `logicalType: map` with the key and value instead of `physicalType: map` with custom properties; the `mapKeyType`, `mapValueType`, `mapKeys` and `mapValues` custom properties are still read but deprecated (#1562)
+- `logicalType: vector` with `logicalTypeOptions.dimensions` is a first-class type: `datacontract test` accepts a native vector or an array of numbers and compares the dimensions when the column states them; `export` writes `vector(n)` for postgres, `VECTOR(FLOAT, n)` for snowflake, `FLOAT[n]` for duckdb, `vector(n)` for mysql, arrays of floats for databricks, dataframe, trino, clickhouse, bigquery, spark, iceberg, avro, avro-idl, protobuf, pydantic-model, go and dcs, and a fixed-length array of numbers for jsonschema (#1563)
+- `datacontract import` from sql, postgres and snowflake reads `vector(n)`, `halfvec(n)` and `VECTOR(FLOAT, n)` columns as `logicalType: vector` with their dimensions, and parquet reads a fixed-size list of floats the same way (#1563)
+- `datacontract export html` renders `semanticType`, `synonyms`, `deprecated` and `context` on schema objects and properties, the contract-level `context`, `vendor` on custom properties, and `customProperties` and `authoritativeDefinitions` on SLA entries; `export rdf` writes `enum` entries, `synonyms`, `map` definitions, `customProperties` and other nested definitions as nodes of their own instead of dropping them or printing a model repr (#1561)
+- `datacontract changelog` matches `synonyms`, `enum` entries, `context` statements and constraints, and the nested lists of SLA entries by their natural key, and relationships by `id` when present, instead of by position (#1561)
+- `datacontract test` reads CSV files from local, s3, gcs and azure servers and Kafka JSON messages in the server's declared `encoding`, and uses the Athena `workgroup` (also `DATACONTRACT_ATHENA_WORKGROUP`), which makes `stagingDir` optional (#1564)
+- The ODCS v3.2.0 server types `hana`, `iceberg`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant` and `poet` lint and export; `test` explains that it cannot connect to them yet, and the synonyms `fastobjects` and `btrieve` resolve to `poet` and `zen` (#1564)
+- `datacontract export sql --sql-server-type auto` warns before falling back to the snowflake dialect for a server type without one (#1564)
+- `datacontract test` supports the `iceberg` server type: tables are read from the REST catalog named by `catalogUrl`, `namespace` and `warehouse` with pyiceberg (credentials via `DATACONTRACT_ICEBERG_CREDENTIAL` or `DATACONTRACT_ICEBERG_TOKEN`, data files via the S3 options; `DATACONTRACT_ICEBERG_CATALOG_TYPE` selects a `sql`, `glue` or `hive` catalog instead of `rest`, `DATACONTRACT_ICEBERG_S3_ENDPOINT` points at an S3-compatible store, Amazon S3 Tables and the Glue REST endpoint are signed with SigV4 from the AWS credentials, `DATACONTRACT_ICEBERG_PROPERTIES` passes further catalog properties through), and `datacontract import iceberg --catalog-url` creates a contract from a catalog table with a ready-to-test server (#1565)
+
+### Changed
+- `datacontract breaking` detects enum restrictions and vector shape changes (#1584)
+- `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.13 (#1566)
+- `open-data-contract-standard` dependency bumped to 3.2.x (#1558)
+- Lint accepts stable ids with any character except whitespace and `.#/\@!%&^`, as in the released ODCS v3.2.0 schema
+
+## [1.1.3] - 2026-09-03
+
+### Added
+- An `authoritativeDefinitions` link can reference a file next to the contract, either a property in another contract (`url: business.odcs.yaml#schema/orders/properties/order_id`) or a file that is the definition itself (`url: definitions/order_id.odcs.yaml`), resolved relative to the referencing contract (#1453)
+- `datacontract breaking` command and `POST /breaking` endpoint for breaking change detection (#1016 @pierre-monnet)
+- `DATACONTRACT_KAFKA_GROUP_PREFIX` environment variable to customise the consumer group ID prefix used during Kafka testing (#1553 @philipp-lutz)
+- `datacontract test` checks the ODCS array options `minItems`, `maxItems` and `uniqueItems` (#1514 @OGsiji)
+- `datacontract export odcs` defaults `status` to `draft` when the source DCS contract has no `info.status` (#1542 @michal-swiatowy)
+- `datacontract export great-expectations` covers the `logicalTypeOptions` constraints, attaches contract metadata to every expectation, checks the column set instead of the column order and takes a `--suite-name` (#1544 @julienguilhempartner-spec)
+- `datacontract test --dry-run` reports the checks a run would execute without connecting to the server or reading any data (#1510 @OGsiji)
+
+### Fixed
+- `datacontract export jsonschema`, `datacontract export avro` and `datacontract test` on local files use a property's `physicalName` as the field name when set, instead of the logical `name` (#1494 @philipp-lutz)
+- `datacontract import sql` takes the server's `database` and `schema` from a qualified `CREATE TABLE`, instead of always writing placeholders (#651 @ReguiguiMohamed)
+- `datacontract import sql` no longer fails on a DDL file that contains `CREATE SCHEMA` (#1529 @ReguiguiMohamed)
+- `datacontract test` sums every component of an ISO 8601 retention period, instead of reading only the first one (#1538)
+- `datacontract test` reports each freshness and retention check result on its own check, instead of writing every result to the first one (#1515 @erikgrip2)
+- `datacontract test --publish` with an empty value runs without publishing, instead of failing (#1491)
+
+## [1.1.2] - 2026-08-26
+
+### Added
+- New server type `duckdb` to test the tables inside a DuckDB database file (the file is opened read-only)
+- `--dry-run` flag for `datacontract dbt sync` that reports the same plan as a real sync, but writes nothing to disk (#1513 @q-maze)
+- Test results report how many rows a check found bad out of the rows it read, plus the data quality dimension and the `quality` rule a check comes from (#1526)
+- `postgresql` is accepted as the ODCS synonym of the `postgres` server type
+- `datacontract import pydantic-model` reads the contract description from the module docstring (#1507 @OGsiji)
+
+### Changed
+- The `engine` field of test results is now always one of `datacontract-cli`, `dbt` or `jsonschema`; the values `datacontract`, `ibis` and `dbt-sync` no longer occur (#1505)
+- `datacontract test` and `datacontract ci` report a failed publish of the test results on the console and exit with code 1, instead of silently succeeding
+- `datacontract api`:
+  - only publishes test results to the Entropy Data platform or the host configured via `ENTROPY_DATA_HOST`; other `publish_url` targets are refused (#1541)
+  - no longer sends permissive `Access-Control-Allow-Origin: *` headers; it serves no CORS headers at all, since the only browser client is the same-origin Swagger UI
+  - no longer reloads on file changes by default; pass `--reload` to enable it (development only)
+- A JSON Schema check that could not be run is reported as `skipped`, not `info`
+
+### Security
+- `datacontract export html` and `datacontract catalog` now HTML-escape data contract field values, closing a stored cross-site scripting hole
+- The Entropy Data API key is only sent to the Entropy Data host, no longer to any host a data contract URL or `--publish` URL points at; set `ENTROPY_DATA_HOST` for a self-hosted deployment
+- A `quality.type: sql` rule must be a read-only query; DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed, for every data source
+- `datacontract api`:
+  - refuses `servers[].type: local`, so a posted data contract cannot read the files of the server running it; set `DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` to allow it
+  - confines the DuckDB connection of a file-based server to the data locations the posted data contract declares
+  - refuses to send an environment-held data source credential to a host named by the posted contract, preventing credential exfiltration through a crafted `servers` section
+  - compares the `x-api-key` header in constant time to avoid a timing side channel
+  - reports the URL of a failed `authoritativeDefinitions` lookup instead of echoing the server-side error reason, which is now logged instead
+
+### Fixed
+- A `quality.type: sql` rule is read in the SQL dialect of its server type, so dialect-specific syntax (BigQuery backticks, Snowflake `SAMPLE`, SQL Server `TOP`) is no longer mistaken for an invalid query
+- Configuration options that override a server's location (`DATACONTRACT_BIGQUERY_PROJECT`, `DATACONTRACT_POSTGRES_SCHEMA`, and the like) now apply to the whole test run, not just to the connection
+- Test results published to Entropy Data no longer drop the quality rule id, category, rule definition and failed samples
+- `datacontract test` and `datacontract export sodacl` freshness and retention checks now honor the schema object's and property's `physicalName` (#1488 @erikgrip2)
+- `datacontract test --publish` no longer fails for runs with skipped checks (skipped checks are omitted from the published test results)
+- BigQuery: `DATACONTRACT_BIGQUERY_BILLING_PROJECT` no longer overrides the server's `project`, so tables are still read from the data project (#1358)
+- `datacontract export pydantic-model` exports the ODCS `timestamp` and `time` logical types as `datetime.datetime` and `datetime.time` instead of guessing from the physical type, which turned a `TIMESTAMPTZ` column into a `str` (#1507 @OGsiji)
+- `datacontract export pydantic-model` exports the ODCS `date` logical type as `datetime.date` instead of `datetime.datetime` (#1507 @OGsiji)
+- `datacontract import pydantic-model` maps `datetime.datetime` to the `timestamp` logical type and `datetime.time` to `time` (#1507 @OGsiji)
+- `datacontract export dcs` exports a `pii` custom property as a boolean instead of the string `'True'`
+
+## [1.1.1] - 2026-08-14
+
+### Added
+- SQL quality rules support the `${dataset}`, `${project}`, `${catalog}`, and `${database}` placeholders for the server's values
+- `datacontract test --metadata-only` runs only checks that read the schema (field presence and types) and reports checks that read row values as skipped
+- `datacontract test --checks` accepts the ODCS terms `properties` and `slaProperties`, keeping `schema` and `servicelevel` as legacy aliases
+- Released Docker images are signed with cosign keyless signing, on Docker Hub and the Amazon ECR Public mirror; see [Installation](https://docs.datacontract.com/installation#verifying-the-image) for how to verify them
+- `datacontract import pydantic-model` creates a data contract from Pydantic models
+
+### Changed
+- `datacontract export excel` uses the ODCS Excel template bundled with the CLI instead of downloading it, so the export works offline; use `--template` for a custom template
+- The OpenAPI document of `datacontract api` reports the CLI version, describes every endpoint, parameter, and response model, and names its operations `testDataContract`, `lintDataContract`, `exportDataContract`, and `changelogBetweenDataContracts`
+- `DATACONTRACT_CLI_API_KEY` now also protects `POST /lint` and `POST /export`, which previously answered without an API key
+- Test results name the check fields `qualityId` and `failedSamples` instead of `quality_id` and `failed_samples`; the old names are deprecated, but still accepted as input and still written next to the new ones
+- `datacontract import unity` no longer writes the `databricksType` custom property, which duplicated `physicalType`
+- `datacontract export sql --server databricks` keeps the declared length of `varchar(n)` and `char(n)` instead of exporting `STRING`
+
+### Fixed
+- `datacontract test` for API servers with `delimiter: array` no longer fails JSON schema validation with `data must be object` (#1495)
+- `POST /export` answers `422` instead of `500` when the posted data contract cannot be parsed
+- `datacontract test` for Databricks no longer fails all checks of a model with a `GEOGRAPHY` or `GEOMETRY` column (#1483)
+- `datacontract export pydantic-model` no longer emits an unparseable empty class for an object property without properties
+- An empty `--publish` value now means "don't publish" instead of failing with a URL validation error
+
+## [1.1.0] - 2026-08-04
+
+This release drops the pyspark compile-time dependency. The server types `dataframe` and `databricks` still work with a provided Spark session.
+This removes the JVM dependency, makes the images much, much smaller (Docker image from 777 MB to 277 MB), and many CVEs are resolved.
+
+### Added
+- `DATACONTRACT_KAFKA_MAX_MESSAGES` limits how many messages `datacontract test` reads from a topic, and `DATACONTRACT_KAFKA_TIMEOUT` how long it waits for one
+
+### Changed
+- `datacontract test` for Kafka no longer needs PySpark or a Java runtime: `datacontract-cli[kafka]` now installs confluent-kafka, fastavro, and DuckDB instead
+- `datacontract-cli[databricks]` and `datacontract-cli[dataframe]` no longer install PySpark, so they can no longer shadow the build a Databricks Runtime or EMR cluster provides; supply your own PySpark for the Spark session these server types take, and `databricks-runtime` is now an alias of `databricks`
+- `datacontract-cli[all]` installs no PySpark at all, and so needs no Java runtime
+- The Docker image ships no JRE and uses a shell-less base image; a derived image can no longer `RUN pip install`, so `datacontract dbt test`, which needs a dbt adapter, is not available in the container
+- `datacontract import unity` resolves struct and array columns into nested properties without PySpark installed
+- `spark_exporter.to_spark_schema()`, `to_struct_type()`, `to_struct_field()`, and `to_spark_data_type()` return the exporter's own `SparkDataType` instead of `pyspark.sql.types` objects; use `to_spark_dict()` or the new `to_pyspark_schema()` for real PySpark schemas
+- Kafka topics with an Avro union of more than one non-null type are now reported as an error instead of being decoded into a struct of the union's members
+- Kafka messages without a value (compaction tombstones) are skipped instead of being checked as a row of nulls
+
+### Fixed
+- `datacontract export spark` and `datacontract export great-expectations --engine spark` no longer require PySpark to be installed
+- `spark_exporter.to_spark_dict()` reports which PySpark version lacks a type instead of raising a bare `AttributeError`, e.g. `VariantType` before PySpark 4.0
+- `datacontract test` for Databricks no longer creates ibis's memtable staging volume, so read-only service principals without `CREATE VOLUME` permission can run tests
+
+## [1.0.17] - 2026-08-01
+
+### Deprecated
+- `DATAMESH_MANAGER_API_KEY`, `DATAMESH_MANAGER_HOST`, `DATACONTRACT_MANAGER_API_KEY`, and `DATACONTRACT_MANAGER_HOST` (and the matching `Config` fields): use `ENTROPY_DATA_API_KEY` and `ENTROPY_DATA_HOST` instead
+
+### Added
+- `datacontract export html` fits to datacontract-editor visualization
+- `datacontract test --filter` and `--filters` test only the rows matching a SQL predicate, e.g., the latest partition; also available as `filter`/`filters` query parameters on the API server's `POST /test` (#1463)
+- Credentials and connection options can be passed programmatically via `DataContract(config=...)` and `DataContract.import_from_source(..., config=...)`, using the typed `datacontract.Config` class or a dict keyed by the environment variable names
+- The API server accepts per-request credentials on `POST /test` via `datacontract-*` headers (e.g. `datacontract-snowflake-password`)
+- Credentials and connection options can be provided in a YAML config file, via `--config-file` (defaults to `./datacontract-config.yaml` or `~/.datacontract/config.yaml`) or `Config.from_yaml()`, with `${VAR}` references resolved from the environment
+- New Snowflake connection options: `DATACONTRACT_SNOWFLAKE_TOKEN`, `DATACONTRACT_SNOWFLAKE_PASSCODE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY`, `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT`, `DATACONTRACT_SNOWFLAKE_HOST`, `DATACONTRACT_SNOWFLAKE_PORT`
+- Config options to override the server details from the data contract (host, port, database, schema, catalog, project, dataset, account, service name, staging directory) for Postgres, MySQL, SQL Server, Oracle, Redshift, Snowflake, BigQuery, Databricks, Trino, Athena, and Impala, e.g. `DATACONTRACT_POSTGRES_HOST` (#1076)
+- Data contract locations now support `s3://` URLs for commands that read contracts, including `lint`, `test`, `export`, `publish`, `changelog`, and `ci`
+- The documentation now supports raw Markdown access by adding a `.md` extension in url (#1464)
+
+### Changed
+- `datacontract test` against Snowflake only forwards the documented `DATACONTRACT_SNOWFLAKE_*` options to the connector; unknown variables are ignored with a warning
+- `DATACONTRACT_SNOWFLAKE_ACCOUNT` overrides the contract's `account` instead of being ignored with a warning
+- `DATACONTRACT_DATABRICKS_SERVER_HOSTNAME` overrides the contract's `host`; previously the contract value won when both were set
+
+### Fixed
+- `datacontract dbt sync` writes a description on all dbt tests, not only newly-generated ones
+
+## [1.0.16] - 2026-07-31
+
+### Added
+- `datacontract test` reads the Avro schema of a Kafka topic from the Confluent Schema Registry via `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`, `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_USERNAME`, and `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_PASSWORD` (#1347)
+
+### Deprecated
+- `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PASSPHRASE`, and `DATACONTRACT_SNOWFLAKE_CONNECTION_TIMEOUT`: use `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE`, `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD`, and `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` instead
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION`: use `DATACONTRACT_SQLSERVER_AUTHENTICATION=windows` instead
+
+### Fixed
+- `datacontract test` against a Kafka topic reports Avro messages it cannot decode as such, instead of reading every field as null (#1347)
+- `datacontract test` connects to Databricks with an OAuth service principal again, instead of failing with `Error during request to server` on databricks-sql-connector 4.3.0 and later (#1389)
+- `DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION` no longer overrides an explicitly set `DATACONTRACT_SQLSERVER_AUTHENTICATION`, so a leftover flag cannot silently downgrade an Entra ID login to Windows authentication
+- `datacontract test` passes `DATACONTRACT_IMPALA_AUTH_MECHANISM`, `DATACONTRACT_IMPALA_USE_HTTP_TRANSPORT`, and `DATACONTRACT_IMPALA_HTTP_PATH` to Impala again, so a Cloudera Virtual Warehouse can be reached instead of failing with `TSocket read 0 bytes`
+- `datacontract test` passes the `servers` block `catalog` to Athena again, instead of always querying `awsdatacatalog`
+- `datacontract test` supports `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` again to impersonate a service account
+- `datacontract test` applies the documented Snowflake key-pair and timeout variables instead of silently ignoring them: the names they were documented under are not accepted by the Snowflake driver, and now map to the ones that are
+- `datacontract dbt sync` does not assume `severity: warn` as default anymore: tests now fail with dbt's default severity unless the contract declares a non-blocking `quality.severity`
+- `datacontract dbt sync` no longer drops or misplaces YAML comments that introduce the next column, test, or key
+
+## [1.0.15] - 2026-07-30
+
+### Added
+- `datacontract test` treats a server typed `mssql` as SQL Server, so contracts carrying the ODBC/dbt spelling are testable (ODCS itself only defines `sqlserver`)
+- `datacontract test --quality-id` runs a single quality rule by its ODCS `quality.id`, and `--tag` runs every quality rule declaring one of the given `quality.tags` (#1080)
+- Test results report the `quality_id` and `tags` of the quality rule a check comes from
+- New `databricks-runtime` extra for installing inside a Databricks Runtime, where the cluster already provides PySpark: `pip install datacontract-cli[databricks-runtime]` (#1211 @chifu1234)
+- The docs Commands reference documents the global options `--version` and `--system-truststore`, and every import and export guide links to its command page and back
+- `datacontract test --dimension` runs only the checks measuring one data quality dimension, e.g. `--dimension uniqueness`; it matches the ODCS `quality.dimension` of a rule and the schema and service level checks that measure the same aspect
+- New `dataframe` extra installs just what testing Spark DataFrames needs: `pip install datacontract-cli[dataframe]`
+- `datacontract import trino` creates a data contract from a Trino catalog, including a ready-to-test `servers` block
+- `datacontract import oracle` creates a data contract from a live Oracle database, including a ready-to-test `servers` block
+- `datacontract import gcs` and `datacontract import adls` create a data contract from files in Google Cloud Storage or Azure Blob Storage, including a ready-to-test `servers` block
+- `datacontract import sqlserver` creates a data contract from a live SQL Server database, including a ready-to-test `servers` block
+- `datacontract import mysql` creates a data contract from a live MySQL database, including a ready-to-test `servers` block
+- The documentation has a [Release Notes](https://docs.datacontract.com/release-notes) page, generated from this changelog
+- The documentation has a guide to [migrate contracts from DCS to ODCS](https://docs.datacontract.com/migrate-dcs-to-odcs)
+- `datacontract import s3` creates a data contract from files in an S3 bucket, including a ready-to-test `servers` block
+- `datacontract import athena` creates a data contract from an Amazon Athena database, including a ready-to-test `servers` block
+- `datacontract import unity` is now `datacontract import databricks`; the `unity` format name keeps working
+- Redshift infers the authentication method: a password means a database login, otherwise your AWS session is used for IAM. `DATACONTRACT_REDSHIFT_AUTHENTICATION` is no longer required and remains as an override
+- `datacontract import postgres` creates a data contract from a live Postgres schema, including a ready-to-test `servers` block
+- `datacontract import redshift` creates a data contract from an Amazon Redshift schema, including a ready-to-test `servers` block
+- Redshift supports IAM authentication, using temporary credentials from your AWS session instead of a database password
+- `datacontract import bigquery` now generates a `servers` block, so `datacontract test` works right after the import
+- `datacontract test` verifies declared primary keys: each key column must have no missing values, and the key must have no duplicates (a composite key is checked as a tuple) (#1220 @DMZ22)
+
+### Fixed
+- `datacontract test` checked `physicalType` against a same-named table in another schema when one existed, because the native column types were read from the catalog without the contract's schema
+- `datacontract test` against SQL Server no longer fails every check with "Could not read model" when `server.schema` differs from the login's default schema
+- `datacontract-cli[s3]` could not run `datacontract test`, and `datacontract-cli[gcs]` was missing the AWS duckdb extension the GCS connection loads; each data source extra now installs everything its guide needs
+- The API testing guide stated that no extra is required, but the response is tested with duckdb; it installs `datacontract-cli[duckdb]` now
+- `datacontract test` told users to install `datacontract-cli[local]`, an extra that does not exist, and `datacontract-cli[api]`, which installs the web server rather than a test backend; both now point at `duckdb`
+- `datacontract import gcs` wrote `type: gcs`, which is not an ODCS server type, so the imported contract failed `datacontract lint` and `datacontract test`; GCS is now written as an `s3` server on the Google interoperability endpoint
+- A data contract could inject SQL into the duckdb session through `endpointUrl`, which is interpolated into the statement that stores the S3, GCS and Azure credentials; every value is escaped now
+- The `datacontract api` server accepted a local file path as the `schema` query parameter, so a caller could have it read files from the server's filesystem; only `http(s)` URLs are accepted now
+- Trino physical type checks were silently skipped: its `information_schema` has no length or precision columns, so the catalog query failed and a wrong `physicalType` still passed
+- `datacontract import athena` and `datacontract import glue` now honour `DATACONTRACT_S3_ACCESS_KEY_ID` and `DATACONTRACT_S3_SECRET_ACCESS_KEY`; the Glue catalog was read with ambient AWS credentials only
+- S3 now uses an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles) when no access key is configured; previously such a setup failed with `403 Forbidden`
+- Documented that Athena authenticates with an existing AWS session (`aws sso login`, `AWS_PROFILE`, instance roles); static access keys were presented as the only option
+- `regionName` in an Athena `servers` block was ignored, so the region could only be set via `DATACONTRACT_S3_REGION`
+- `datacontract import glue` mapped `timestamp` columns to `logicalType: date` instead of `timestamp`
+- Testing and importing Redshift failed with `codec not available in Python: 'UNICODE'`
+- Error messages no longer drop bracketed text such as `pip install "botocore[crt]"`
+- BigQuery export failed on fields with `logicalType: time`
+- Testing Parquet files failed for `number` fields without a declared precision and scale
+- CSV and JSON imports now write detected formats (`email`, `uuid`, `date-time`) to `logicalTypeOptions.format` instead of a custom property, so they are validated by `datacontract test`
+- SQL imports now map `TIME` types with precision or time zone (e.g. `TIME(9)`) to `logicalType: time`; previously the logical type was left unset
+- `datacontract test --checks quality` now runs `rowCount` quality rules, which were wrongly categorized as schema checks
+- `datacontract import dbt` derives the contract `id` from the dbt manifest's `project_name` instead of always emitting the placeholder `my-data-contract` (#1221 @DMZ22)
+- A `physicalType` declaring a zero scale (`NUMBER(38,0)`, `decimal(18,0)`) failed against its own column on Snowflake, Oracle, SQL Server and Databricks (#1377 @DMZ22)
+- Snowflake `physicalType` checks failed for structured `OBJECT`, `ARRAY` and `MAP` columns, whose fields are now compared field by field instead of as rendered strings (#1377 @DMZ22)
+- `datacontract test` on Athena failed a `physicalType` written in the Hive spelling `datacontract import athena` produces (`array<string>` against the reported `array(varchar)`) (#1377 @DMZ22)
+- A `physicalType` declaring fractional seconds (`TIMESTAMP_NTZ(9)`, `datetime2(7)`, `timestamp(3)`) failed against its own column, so every timestamp column imported from Snowflake failed the first `datacontract test`
+- `datacontract test` and `datacontract import oracle` read Oracle character lengths in bytes, so an `NVARCHAR2(50)` column was reported and checked as `NVARCHAR2(100)`
+- `datacontract test` on Databricks could not check the element types of `ARRAY`, `MAP` and `STRUCT` columns, which the catalog reports as a bare type name
+
+## [1.0.14] - 2026-07-23
+
+### Added
+- `datacontract export protobuf` supports a customizable package name via the `protoPackageName` custom property (#1381 @Schokuroff)
+- `datacontract export protobuf` emits `optional` for non-required message/object fields (#1390 @Schokuroff)
+
+### Fixed
+- `datacontract dbt sync` resolves `{object}`/`{property}` placeholders in custom `sql` quality checks to the dbt `ref()` and column name (#1397)
+- SyntaxWarning during installation: `datacontract/lint/resolve.py:72: SyntaxWarning: 'return' in a 'finally' block return except_message` is handled properly (#1384 @Cupprum)
+- `datacontract test` no longer reports "backend is not installed" for Athena and other ibis SQL backends when `packaging` is missing from the environment
+
+## [1.0.13] - 2026-07-14
+
+### Added
+- `datacontract test` reports the nested types of a property that declares `properties:` or `items:` as a separate check
+- `datacontract test` on Snowflake verifies the `physicalType` of nested properties against the real column type
+
+### Fixed
+- `datacontract test` on Snowflake matches a `physicalType` against the alias the catalog reports, such as `BIGINT` on a `NUMBER(38,0)` column
+- `datacontract test` no longer reports a mismatch for a `physicalType` without precision, such as `NUMBER` on a `NUMBER(12,2)` column
+
+## [1.0.12] - 2026-07-10
+
+### Fixed
+- `datacontract test` now recursively verifies nested `logicalType` for Snowflake structured `OBJECT`/`ARRAY` columns (#1373)
+- `datacontract test` now fails for complex types when the nested type definition cannot be verified (e.g. if array<integer> is required, array<json> will no longer be accepted) (#1373)
+
+## [1.0.11] - 2026-07-09
+
+### Added
+- `datacontract import` can now import BigQuery type `INTERVAL` (#1367,#1372 @fantastisch)
+
+### Fixed
+- Failed business definition IRI lookups now suggest the `ENTROPY_DATA_HOST` value to set when the IRI host does not match the configured entropy-data host.
+- `datacontract test` no longer reports a physical type mismatch for BigQuery type aliases, such as a `physicalType` of `INTEGER` on an `INT64` column (#1371 @fantastisch)
+- `datacontract test` no longer fails with `CANNOT_CONVERT_COLUMN_INTO_BOOL` on Databricks when a Spark session is used
+
+## [1.0.10] - 2026-07-08
+
+### Added
+- extended `datacontract dbt sync`:
+  - now edits existing properties files (schema.yaml) in-place instead of creating new ones
+  - preserve manual edits to a properties file
+  - edit schema incl. descriptions, column types and tags, not only tests
+  - add `--prune` flag to remove everything that's not specified in the contract (models, tags, checks) - per default, only generated content gets removed
+  - support for multiple contract versions (`versions:` block)
+  - possibility to sync multiple contracts at once
+  - store the contract id and version in the `meta:` block
+- added `datacontract dbt test`: Use local `dbt` to run all tests that have been generated using `datacontract dbt sync` earlier (scoped to a single data contract, or all data contracts in the opened dbt project)
+  - optionally publish to Entropy Data
+
+### Changed
+- `datacontract dbt sync`:
+  - no longer executes tests per default (use `--run-tests` or run `datacontract dbt test` afterwards)
+- `datacontract test` now verifies a field's `physicalType` against the column's real native type from the platform catalog (length and precision included), taking precedence over `logicalType` (#1354)
+- `datacontract test` JSON output now includes `datacontractCliVersion` (#1353 @hk8suva)
+- `datacontract test` type-check errors now report the first failing field and a count of the remaining errors (#1334 @jorgengranseth)
+
+### Fixed
+- `datacontract test` no longer fails the type check for SQL Server `uniqueidentifier` (UUID) columns with "the column type could not be determined" (#1354)
+- `datacontract test` against BigQuery no longer fails SQL quality checks with `'RowIterator' object has no attribute 'fetchone'`
+- `datacontract import` against BigQuery applies correct `logicalType` for BigQuery types `TIMESTAMP`, `DATETIME`, and `TIME` (#1366 @fantastisch) 
+
+## [1.0.9] - 2026-06-26
+
+### Fixed
+- `datacontract test` against Kafka no longer reports every field as null for plain (non-Confluent Schema Registry) Avro messages (#1344)
+- Honor the `pattern` argument in `invalidValues` quality checks (#1346)
+
+## [1.0.8] - 2026-06-25
+
+### Fixed
+- `datacontract test` against Redshift no longer fails with `relation "pg_catalog.pg_enum" does not exist`. Redshift rides the Postgres ibis backend, whose schema introspection joins `pg_catalog.pg_enum` to detect enum columns — a relation Redshift does not expose. Introspection now omits that join (Redshift has no enum types).
+
+## [1.0.7] - 2026-06-25
+
+### Added
+- New global option `--system-truststore` (env `DATACONTRACT_SYSTEM_TRUSTSTORE`) to verify TLS using the operating system's certificate trust store, for use behind corporate proxies or with internal CAs.
+
+## [1.0.6] - 2026-06-24
+
+### Fixed
+- `datacontract test` against Redshift no longer fails with `column "current_schema" does not exist`. Redshift rides the Postgres ibis backend, whose introspection resolved the active schema with `SELECT current_schema` (no parentheses) — valid on PostgreSQL but rejected by Redshift, which only supports `current_schema()`. The configured server `schema` is now passed explicitly during introspection, skipping that query.
+
+## [1.0.5] - 2026-06-24
+
+### Fixed
+- `datacontract test` now only supports logicalTypes. Previously physicalType was preferrerd and used even if logicalType did not exist. 
+- `datacontract test` field type check now compares the full structured type tree for `object` and `array` logical types.
+- Unknown and unsupported types are silently ignored rather than failing the check. Specifically the `map` type is not supported until ODCS version v3.2.0 and is also ignored. 
+- `datacontract --help` no longer fails with `ModuleNotFoundError: No module named 'ibis'` when the optional `ibis` extra is not installed.
+- `datacontract test` against Oracle now qualifies tables with the configured server `schema` (owner), fixing `Could not read model '<table>': <table>` when the login user differs from the table owner.
+
+
 
 ## [1.0.4] - 2026-06-22
 

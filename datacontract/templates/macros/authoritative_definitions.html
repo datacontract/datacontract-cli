@@ -1,0 +1,25 @@
+{% macro icon_for(definition) -%}
+  {% set type = definition.type|trim %}
+  {% set words = type.split() %}
+  {% set initials = ((words[0][:1] if words|length > 0 else "") ~ (words[1][:1] if words|length > 1 else ""))|upper %}
+  {% if not initials %}{% set initials = "?" %}{% endif %}
+
+  {% set url = definition.url|trim %}
+  {% if url %}
+    {% if url.startswith("http://") %}{% set scheme = "http" %}{% else %}{% set scheme = "https" %}{% endif %}
+    {% set host = url.replace("https://", "").replace("http://", "").split("/")[0] %}
+    {% set favicon = scheme ~ "://" ~ host ~ "/favicon.ico" %}
+  {% endif %}
+
+  <object
+    data="{{ favicon }}"
+    type="image/x-icon"
+    class="h-8 w-8 rounded-md object-contain"
+    aria-label="{{ type }}"
+  >
+    <span class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-slate-600 text-[10px] font-semibold">
+      {{ initials }}
+    </span>
+  </object>
+
+{%- endmacro %}

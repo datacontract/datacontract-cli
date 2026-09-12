@@ -5,6 +5,8 @@
     <img alt="Test Workflow" src="https://img.shields.io/github/actions/workflow/status/datacontract/datacontract-cli/ci.yaml?branch=main"></a>
   <a href="https://pypi.org/project/datacontract-cli/">
     <img alt="PyPI Version" src="https://img.shields.io/pypi/v/datacontract-cli" /></a>
+  <a href="https://pypistats.org/packages/datacontract-cli">
+    <img alt="PyPI Monthly Downloads" src="https://img.shields.io/badge/downloads-1.4M%2Fmonth-brightgreen" /></a>
   <a href="https://github.com/datacontract/datacontract-cli">
     <img alt="Stars" src="https://img.shields.io/github/stars/datacontract/datacontract-cli" /></a>
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
@@ -19,7 +21,9 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 
 > 📖 **Full documentation: [docs.datacontract.com](https://docs.datacontract.com)**
 >
-> Quick links: [Quickstart](https://docs.datacontract.com/quickstart) · [Commands](https://docs.datacontract.com/commands) · [Best Practices](https://docs.datacontract.com/best-practices) · [Custom Export and Import](https://docs.datacontract.com/extending) · [Development Setup](#development-setup)
+> Quick links: [Quickstart](https://docs.datacontract.com/quickstart) · [Commands](https://docs.datacontract.com/commands) · [Best Practices](https://docs.datacontract.com/best-practices) · [Custom Export and Import](https://docs.datacontract.com/extending) · [Release Notes](https://docs.datacontract.com/release-notes) · [Development Setup](#development-setup)
+>
+> For LLMs: [cli.datacontract.com/llms.txt](https://cli.datacontract.com/llms.txt) · [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt)
 
 ## Getting started
 
@@ -81,6 +85,15 @@ Server: production (type=postgres, host=aws-1-eu-central-2.pooler.supabase.com, 
 
 Voilà, the CLI tested that the YAML itself is valid, all records comply with the schema, and all quality attributes are met.
 
+To test your own data, import a contract straight from an existing table (this also generates the `servers` block) and run the tests against the actual data:
+
+```bash
+$ datacontract import snowflake --source <account> --database ORDER_DB --schema PUBLIC --output datacontract.yaml
+$ datacontract test datacontract.yaml
+```
+
+Copy-paste guides with credentials setup are available for [Snowflake](https://docs.datacontract.com/testing/snowflake), [BigQuery](https://docs.datacontract.com/testing/bigquery), [Databricks](https://docs.datacontract.com/testing/databricks), and [15+ other sources](https://docs.datacontract.com/testing).
+
 We can also use the data contract metadata to export in many [formats](https://docs.datacontract.com/exports), e.g., to generate a SQL DDL:
 
 ```bash
@@ -90,17 +103,17 @@ $ datacontract export sql https://datacontract.com/orders-v1.odcs.yaml
 -- Data Contract: orders
 -- SQL Dialect: postgres
 CREATE TABLE orders (
-  order_id None not null primary key,
+  order_id UUID not null primary key,
   customer_id text not null,
   order_total integer not null,
-  order_timestamp None,
+  order_timestamp TIMESTAMPTZ,
   order_status text
 );
 CREATE TABLE line_items (
-  line_item_id None not null primary key,
+  line_item_id UUID not null primary key,
   sku text not null,
   price integer not null,
-  order_id None
+  order_id UUID
 );
 ```
 
@@ -128,11 +141,16 @@ $ datacontract lint odcs.yaml
 # show a changelog between two data contracts
 $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 
+# fail when a contract change is backward-incompatible
+$ datacontract breaking v1.odcs.yaml v2.odcs.yaml
+
 # execute schema and quality checks (define credentials as environment variables)
 $ datacontract test odcs.yaml
 
-# generate dbt tests from a contract into your dbt project and run `dbt test`
+# generate dbt tests from a contract into your dbt project, then run them
+# (omit the contract to sync/test every *.odcs.yaml in the project)
 $ datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse
+$ datacontract dbt test orders.odcs.yaml --project-dir ./warehouse
 
 # export data contract as html (other formats: avro, dbt-models, dbt-sources, dbt-staging-sql, jsonschema, odcs, rdf, sql, sodacl, terraform, ...)
 $ datacontract export html datacontract.yaml --output odcs.html
@@ -231,6 +249,8 @@ alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/
 
 _Note:_ The output of Docker command line messages is limited to 80 columns and may include line breaks. Don't pipe docker output to files if you want to export code. Use the `--output` option instead.
 
+Released images are signed with [cosign](https://docs.sigstore.dev/cosign/signing/overview/) keyless signing. See [Verifying the image](https://docs.datacontract.com/installation#verifying-the-image) to check a signature before you run it.
+
 
 
 ## Optional Dependencies (Extras)
@@ -252,6 +272,8 @@ A list of available extras:
 | Google BigQuery                          | `pip install datacontract-cli[bigquery]`   |
 | CSV                                      | `pip install datacontract-cli[csv]`        |
 | Databricks Integration                   | `pip install datacontract-cli[databricks]` |
+| Databricks Runtime                       | `pip install datacontract-cli[databricks]` (also inside Databricks, using the cluster's own Spark session) |
+| DataFrame (Spark)                        | `pip install datacontract-cli[dataframe]` (PySpark not included — you supply the Spark session) |
 | DBML                                     | `pip install datacontract-cli[dbml]`       |
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]`     |
 | Excel                                    | `pip install datacontract-cli[excel]`      |
@@ -282,7 +304,7 @@ It covers everything in depth, including the complete command reference:
 
 - [Quickstart](https://docs.datacontract.com/quickstart) — install and run your first test
 - [Open Data Contract Standard](https://docs.datacontract.com/open-data-contract-standard) — the contract format
-- [Test your contract](https://docs.datacontract.com/testing) and [Connect your Data](https://docs.datacontract.com/connect) — schema & quality tests against 18+ data sources
+- [Test your Data](https://docs.datacontract.com/testing) — schema & quality tests against 18+ data sources
 - [Define your Quality Rules](https://docs.datacontract.com/quality-rules) — SQL, library, text, and custom checks
 - [Sync with dbt](https://docs.datacontract.com/dbt) · [Edit your contract](https://docs.datacontract.com/editor)
 - [Imports](https://docs.datacontract.com/imports) and [Exports](https://docs.datacontract.com/exports) — convert to/from 25+ formats
@@ -293,11 +315,9 @@ It covers everything in depth, including the complete command reference:
 
 - Install [uv](https://docs.astral.sh/uv/)
 - Python base interpreter should be 3.11.x.
-- A JDK (17 or 21) must be installed for the Spark-based tests (e.g. `test_test_kafka.py`, `test_test_delta.py`, `test_test_dataframe.py`, `test_import_spark.py`). Java 25 is not yet supported. On macOS and Linux you can install one with [SDKMAN](https://sdkman.io): `sdk install java 21.0.11-tem` (or any 21.x build from `sdk list java`). Verify with `java --version`.
 - Docker engine must be running to execute the tests.
 
 ```bash
-sdk use java 21.0.11-tem
 uv python pin 3.11
 uv venv
 uv pip install -e '.[dev]'
@@ -329,15 +349,6 @@ Try to sync all groups:
 ```
 uv sync --all-groups --all-extras
 ```
-
-#### Errors in tests that use PySpark (e.g. test_test_kafka.py)
-
-Ensure you have a JDK 17 or 21 installed. Java 25 causes issues.
-
-```
-java --version
-```
-
 
 ### Docker Build
 

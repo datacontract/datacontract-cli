@@ -27,7 +27,7 @@ def test_import_sql_oracle():
     result = DataContract.import_from_source("sql", data_definition_file, dialect="oracle")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -155,7 +155,7 @@ def test_import_sql_constraints():
     result = DataContract.import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -167,7 +167,7 @@ servers:
     host: my_host
     port: 5432
     database: my_database
-    schema: public
+    schema: my_schema
 schema:
   - name: customer_location
     physicalType: table

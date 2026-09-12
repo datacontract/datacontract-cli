@@ -8,6 +8,7 @@ import pytz
 from jinja2 import Environment, PackageLoader, select_autoescape
 from open_data_contract_standard.model import OpenDataContractStandard
 
+from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.export.html_exporter import get_version
 
@@ -26,7 +27,7 @@ def _get_owner(odcs: OpenDataContractStandard) -> Optional[str]:
 def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
     logging.debug(f"Creating data contract html for file {file} and schema {schema}")
     data_contract = DataContract(
-        data_contract_file=f"{file.absolute()}", inline_references=True, schema_location=schema
+        data_contract_file=f"{file.absolute()}", inline_references=True, schema_location=schema, config=cli_config()
     )
     html = data_contract.export(export_format="html")
     odcs = data_contract.get_data_contract()
@@ -122,7 +123,7 @@ def create_index_html(contracts, path):
         env = Environment(
             loader=package_loader,
             autoescape=select_autoescape(
-                enabled_extensions="html",
+                enabled_extensions=("html", "htm", "xml"),
                 default_for_string=True,
             ),
         )

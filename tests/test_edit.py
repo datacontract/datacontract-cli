@@ -65,7 +65,7 @@ def test_edit_downloads_a_local_copy_of_a_url(tmp_path, monkeypatch):
     ):
         result = runner.invoke(app, ["edit", url, "--no-open"], input="y\n")
     assert result.exit_code == 0
-    mock_fetch.assert_called_once_with(url)
+    mock_fetch.assert_called_once_with(url, None)
     assert (tmp_path / "orders.yaml").read_text(encoding="utf-8") == YAML_CONTENT
     # saving in the editor goes to the local copy, not back to the URL
     assert "local copy" in result.output

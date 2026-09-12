@@ -4,6 +4,7 @@ import yaml
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.enum_values import get_enum_values
 
 
 class DataCatererExporter(Exporter):
@@ -46,33 +47,6 @@ def _get_custom_property_value(prop: SchemaProperty, key: str):
     for cp in prop.customProperties:
         if cp.property == key:
             return cp.value
-    return None
-
-
-def _get_enum_values(prop: SchemaProperty):
-    """Get enum values from logicalTypeOptions, customProperties, or quality rules."""
-    import json
-
-    # First check logicalTypeOptions
-    enum_values = _get_logical_type_option(prop, "enum")
-    if enum_values:
-        return enum_values
-    # Then check customProperties
-    enum_str = _get_custom_property_value(prop, "enum")
-    if enum_str:
-        try:
-            if isinstance(enum_str, list):
-                return enum_str
-            return json.loads(enum_str)
-        except (json.JSONDecodeError, TypeError):
-            pass
-    # Finally check quality rules for invalidValues with validValues
-    if prop.quality:
-        for q in prop.quality:
-            if q.metric == "invalidValues" and q.arguments:
-                valid_values = q.arguments.get("validValues")
-                if valid_values:
-                    return valid_values
     return None
 
 
@@ -171,7 +145,7 @@ def _to_field(field_name: str, prop: SchemaProperty) -> dict:
             else:
                 dc_generator_opts["arrayType"] = "string"
 
-    enum_values = _get_enum_values(prop)
+    enum_values = get_enum_values(prop)
     if enum_values is not None and len(enum_values) > 0:
         dc_generator_opts["oneOf"] = enum_values
     if prop.unique is not None and prop.unique:

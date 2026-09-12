@@ -62,16 +62,27 @@ def write_test_result(
             if details_str:
                 console.print(f"Server: {run.server} ({details_str})")
 
+    if run.filters:
+        for schema_name, predicate in run.filters.items():
+            console.print(f"Row filter: {schema_name} WHERE {escape(predicate)}")
+
     print_test_results_table(run, console)
     if run.result == "passed":
+        skipped = sum(1 for check in run.checks if check.result == "skipped")
+        skipped_info = f" ({skipped} skipped)" if skipped else ""
         console.print(
-            f"🟢 data contract is valid. Run {len(run.checks)} checks. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
+            f"🟢 data contract is valid. Run {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
+        )
+    elif run.result == "skipped":
+        console.print(
+            f"⚪ no checks were executed. Planned {len(run.checks)} checks. "
+            f"Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
     elif run.result == "warning":
         console.print("🟠 data contract has warnings. Found the following warnings:")
         i = 1
         for check in run.checks:
-            if check.result != "passed":
+            if check.result not in ("passed", "skipped"):
                 field = to_field(run, check)
                 if field:
                     field = field + " "
@@ -83,7 +94,7 @@ def write_test_result(
         console.print("🔴 data contract is invalid, found the following errors:")
         i = 1
         for check in run.checks:
-            if check.result != "passed":
+            if check.result not in ("passed", "skipped"):
                 field = to_field(run, check)
                 if field:
                     field = field + " "
@@ -129,4 +140,6 @@ def with_markup(result):
         return "[red]failed[/red]"
     if result == "error":
         return "[red]error[/red]"
+    if result == "skipped":
+        return "[dim blue]skipped[/dim blue]"
     return result

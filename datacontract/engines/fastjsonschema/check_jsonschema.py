@@ -9,6 +9,8 @@ import fastjsonschema
 from fastjsonschema import JsonSchemaValueException
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.config import Config
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.fastjsonschema.s3.s3_read_files import yield_s3_files
 from datacontract.export.jsonschema_exporter import to_jsonschema
 from datacontract.model.exceptions import DataContractException
@@ -49,15 +51,16 @@ def get_primary_key_value(schema: dict, model_name: str, json_object: dict) -> O
     return json_object.get(primary_key_field)
 
 
-def process_exceptions(run, exceptions: List[DataContractException]):
+def process_exceptions(run, exceptions: List[DataContractException], config: Config | None = None):
     if not exceptions:
         return
 
-    # Define the maximum number of errors to process (can be adjusted by defining an ENV variable).
+    # Define the maximum number of errors to process (can be adjusted via configuration).
     try:
-        error_limit = int(os.getenv("DATACONTRACT_MAX_ERRORS", 500))
-    except ValueError:
-        # Fallback to default if environment variable is invalid.
+        configured_limit = Config.resolve(config).get_max_errors()
+        error_limit = 500 if configured_limit is None else configured_limit
+    except DataContractException:
+        # Fallback to default if the configured value is invalid.
         error_limit = 500
 
     # Calculate the effective limit to avoid index out of range
@@ -69,6 +72,7 @@ def process_exceptions(run, exceptions: List[DataContractException]):
         [
             Check(
                 type=exception.type,
+                dimension=default_dimension(exception.type),
                 name=exception.name,
                 result=exception.result,
                 reason=exception.reason,
@@ -143,7 +147,7 @@ def read_json_file_content(file_content: str):
     yield json.loads(file_content)
 
 
-def process_json_file(run, schema, model_name, validate, file, delimiter):
+def process_json_file(run, schema, model_name, validate, file, delimiter, config: Config | None = None):
     if delimiter == "new_line":
         json_stream = read_json_lines(file)
     elif delimiter == "array":
@@ -155,18 +159,19 @@ def process_json_file(run, schema, model_name, validate, file, delimiter):
     exceptions = validate_json_stream(schema, model_name, validate, json_stream)
 
     # Handle all errors from schema validation.
-    process_exceptions(run, exceptions)
+    process_exceptions(run, exceptions, config)
 
 
-def process_local_file(run, server, schema, model_name, validate):
+def process_local_file(run, server, schema, model_name, validate, config: Config | None = None):
     path = server.path
     if not path:
         raise DataContractException(
             type="schema",
+            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason="For server with type 'local', a 'path' must be defined.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
     if "{model}" in path:
         path = path.format(model=model_name)
@@ -188,26 +193,27 @@ def process_local_file(run, server, schema, model_name, validate):
     if not all_files:
         raise DataContractException(
             type="schema",
+            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"No files found in '{path}'.",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     for file in all_files:
         logging.info(f"Processing file: {file}")
-        with open(file, "r") as f:
-            process_json_file(run, schema, model_name, validate, f, server.delimiter)
+        with open(file, "r", encoding=getattr(server, "encoding", None) or "utf-8") as f:
+            process_json_file(run, schema, model_name, validate, f, server.delimiter, config)
 
 
-def process_s3_file(run, server, schema, model_name, validate):
+def process_s3_file(run, server, schema, model_name, validate, config: Config | None = None):
     s3_endpoint_url = server.endpointUrl
     s3_location = server.location
     if "{model}" in s3_location:
         s3_location = s3_location.format(model=model_name)
     json_stream = None
 
-    for file_content in yield_s3_files(s3_endpoint_url, s3_location):
+    for file_content in yield_s3_files(s3_endpoint_url, s3_location, config):
         if server.delimiter == "new_line":
             json_stream = read_json_lines_content(file_content)
         elif server.delimiter == "array":
@@ -218,20 +224,28 @@ def process_s3_file(run, server, schema, model_name, validate):
     if json_stream is None:
         raise DataContractException(
             type="schema",
+            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"Cannot find any file in {s3_location}",
-            engine="datacontract",
+            engine="datacontract-cli",
         )
 
     # Validate the JSON stream and collect exceptions.
     exceptions = validate_json_stream(schema, model_name, validate, json_stream)
 
     # Handle all errors from schema validation.
-    process_exceptions(run, exceptions)
+    process_exceptions(run, exceptions, config)
 
 
-def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: Server, schema_name: str = "all"):
+def check_jsonschema(
+    run: Run,
+    data_contract: OpenDataContractStandard,
+    server: Server,
+    schema_name: str = "all",
+    config: Config | None = None,
+    dry_run: bool = False,
+):
     run.log_info("Running engine jsonschema")
 
     # Early exit conditions
@@ -239,6 +253,7 @@ def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: 
         run.checks.append(
             Check(
                 type="schema",
+                dimension=default_dimension("schema"),
                 name="Check that JSON has valid schema",
                 result=ResultEnum.warning,
                 reason="Server format is not 'json'. Skip validating jsonschema.",
@@ -266,18 +281,34 @@ def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: 
             formats={"uuid": r"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$"},
         )
 
-        # Process files based on server type
-        if server.type == "local":
-            process_local_file(run, server, schema, model_name, validate)
-        elif server.type == "s3":
-            process_s3_file(run, server, schema, model_name, validate)
-        elif server.type == "gcs":
+        if dry_run:
+            # The schema was still built and compiled above, so a contract that
+            # could never validate fails here; only the file read is skipped.
             run.checks.append(
                 Check(
                     type="schema",
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.info,
+                    result=ResultEnum.skipped,
+                    reason="Dry run: check not executed",
+                    engine="jsonschema",
+                )
+            )
+            continue
+
+        # Process files based on server type
+        if server.type == "local":
+            process_local_file(run, server, schema, model_name, validate, config)
+        elif server.type == "s3":
+            process_s3_file(run, server, schema, model_name, validate, config)
+        elif server.type == "gcs":
+            run.checks.append(
+                Check(
+                    type="schema",
+                    dimension=default_dimension("schema"),
+                    name="Check that JSON has valid schema",
+                    model=model_name,
+                    result=ResultEnum.skipped,
                     reason="JSON Schema check skipped for GCS, as GCS is currently not supported",
                     engine="jsonschema",
                 )
@@ -286,9 +317,10 @@ def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: 
             run.checks.append(
                 Check(
                     type="schema",
+                    dimension=default_dimension("schema"),
                     name="Check that JSON has valid schema",
                     model=model_name,
-                    result=ResultEnum.info,
+                    result=ResultEnum.skipped,
                     reason="JSON Schema check skipped for azure, as azure is currently not supported",
                     engine="jsonschema",
                 )
@@ -297,6 +329,7 @@ def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: 
             run.checks.append(
                 Check(
                     type="schema",
+                    dimension=default_dimension("schema"),
                     name="Check that JSON has valid schema",
                     model=model_name,
                     result=ResultEnum.warning,
@@ -309,6 +342,7 @@ def check_jsonschema(run: Run, data_contract: OpenDataContractStandard, server: 
         run.checks.append(
             Check(
                 type="schema",
+                dimension=default_dimension("schema"),
                 name="Check that JSON has valid schema",
                 model=model_name,
                 result=ResultEnum.passed,

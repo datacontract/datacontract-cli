@@ -18,6 +18,16 @@ def test_cli():
     assert result.exit_code == 0
 
 
+def test_odcs_3_2_0_roundtrip_is_lossless():
+    """Every ODCS v3.2.0 field survives resolve -> export odcs unchanged."""
+    source = yaml.safe_load(read_file("fixtures/lint/valid-3.2.0.odcs.yaml"))
+    data_contract = resolve_data_contract(data_contract_location="fixtures/lint/valid-3.2.0.odcs.yaml")
+
+    exported = yaml.safe_load(to_odcs_v3_yaml(data_contract))
+
+    assert exported == source
+
+
 def test_to_odcs():
     data_contract = resolve_data_contract(data_contract_str=read_file("fixtures/export/datacontract.odcs.yaml"))
 

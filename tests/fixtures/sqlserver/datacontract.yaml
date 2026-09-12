@@ -28,3 +28,10 @@ models:
         type: timestamp
         config:
           sqlserverType: DATETIME2
+      # Regression for #1354: a UUID column has logicalType string but
+      # physicalType uniqueidentifier; the physical type must be verified
+      # against the real native type rather than failing the string check.
+      field_uuid:
+        type: string
+        config:
+          sqlserverType: uniqueidentifier

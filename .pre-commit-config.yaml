@@ -1,7 +1,10 @@
+# Only what CI also enforces. Generated docs are not committed, so nothing here
+# has to keep them in sync.
 repos:
+# Keep the rev on the version pinned as `ruff==` in pyproject.toml: a hook that
+# reformats what CI accepts is worse than no hook. Dependabot updates both.
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  # Ruff version.
-  rev: v0.14.3
+  rev: v0.16.6
   hooks:
     # Run the linter.
     - id: ruff

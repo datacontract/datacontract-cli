@@ -1,0 +1,92 @@
+import ibis.expr.datatypes as dt
+from open_data_contract_standard.model import SchemaProperty
+
+from datacontract.engines.checks.type_normalize import (
+    UNKNOWN_LOGICAL_TYPE,
+    schema_property_matches,
+    schema_property_mismatch_reason,
+)
+from datacontract.engines.ibis.dtype_category import (
+    ibis_dtype_category,
+    ibis_dtype_to_schema_property,
+)
+
+
+def test_uuid_maps_to_string_category():
+    # SQL Server `uniqueidentifier` columns surface as ibis UUID; they must be
+    # treated as strings, not "other" (regression for #1354).
+    assert ibis_dtype_category(dt.UUID()) == "string"
+
+
+def test_uuid_dtype_to_schema_property_is_string():
+    prop = ibis_dtype_to_schema_property(dt.UUID())
+    assert prop is not None
+    assert prop.logicalType == "string"
+
+
+def test_uuid_column_matches_string_contract_property():
+    # A property declared as logicalType string (physicalType uniqueidentifier)
+    # must match a column ibis reports as UUID.
+    expected = SchemaProperty(logicalType="string", physicalType="uniqueidentifier")
+    actual = ibis_dtype_to_schema_property(dt.UUID())
+    assert schema_property_matches(expected, actual)
+
+
+def test_json_maps_to_unknown_marker():
+    # Snowflake VARIANT / Postgres JSONB / BigQuery JSON reflect as ibis json.
+    prop = ibis_dtype_to_schema_property(dt.JSON())
+    assert prop.logicalType == UNKNOWN_LOGICAL_TYPE
+    assert prop.physicalType == "json"
+
+
+def test_unsupported_types_are_unknown_and_name_themselves():
+    # binary/null have no ODCS category; the type is kept for the failure message
+    for dtype, name in ((dt.binary, "binary"), (dt.null, "null")):
+        prop = ibis_dtype_to_schema_property(dtype)
+        assert prop.logicalType == UNKNOWN_LOGICAL_TYPE
+        assert prop.physicalType == name
+
+
+def test_map_carries_its_key_and_value():
+    prop = ibis_dtype_to_schema_property(dt.Map(dt.string, dt.Array(dt.int64)))
+    assert prop.logicalType == "map"
+    assert prop.map.key.logicalType == "string"
+    assert prop.map.value.logicalType == "array"
+    assert prop.map.value.items.logicalType == "integer"
+
+
+def test_map_with_unverifiable_values_keeps_the_value_type():
+    # Snowflake OBJECT reflects as ibis map<string, json>; the comparator treats a
+    # map against a declared object as an untyped object.
+    prop = ibis_dtype_to_schema_property(dt.Map(dt.string, dt.JSON()))
+    assert prop.logicalType == "map"
+    assert prop.map.value.logicalType == UNKNOWN_LOGICAL_TYPE
+
+
+def test_struct_keeps_unsupported_field_as_unknown():
+    # a binary field is present but unverifiable: keep it, so it is not reported missing
+    actual = ibis_dtype_to_schema_property(dt.Struct({"blob": dt.binary}))
+    assert [(p.name, p.logicalType, p.physicalType) for p in actual.properties] == [
+        ("blob", UNKNOWN_LOGICAL_TYPE, "binary")
+    ]
+
+    expected = SchemaProperty(logicalType="object", properties=[SchemaProperty(name="blob", logicalType="string")])
+    assert not schema_property_matches(expected, actual)
+    reason = schema_property_mismatch_reason(expected, actual)
+    assert "missing" not in reason
+    assert "field 'blob': has type 'binary'" in reason
+
+
+def test_struct_still_reports_a_genuinely_absent_field_as_missing():
+    actual = ibis_dtype_to_schema_property(dt.Struct({"blob": dt.binary}))
+    expected = SchemaProperty(logicalType="object", properties=[SchemaProperty(name="city", logicalType="string")])
+    assert not schema_property_matches(expected, actual)
+    assert schema_property_mismatch_reason(expected, actual) == "field 'city' is missing"
+
+
+def test_array_of_json_items_are_unknown():
+    # Snowflake ARRAY reflects as ibis array<json>: array base with an
+    # unknown-typed element.
+    prop = ibis_dtype_to_schema_property(dt.Array(dt.JSON()))
+    assert prop.logicalType == "array"
+    assert prop.items.logicalType == UNKNOWN_LOGICAL_TYPE

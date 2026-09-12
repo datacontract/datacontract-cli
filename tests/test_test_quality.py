@@ -78,7 +78,7 @@ def _init_sql(file_path):
             result="failed",
             name="postgres extra missing",
             reason="Install the extra datacontract-cli[postgres] to use postgres",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

@@ -1,4 +1,4 @@
-apiVersion: v3.0.0
+apiVersion: v3.1.0
 kind: DataContract
 id: postgres
 name: postgres
@@ -26,7 +26,7 @@ schema:
     logicalTypeOptions:
       minimum: 10
   - name: Field_three
-    logicalType: date
+    logicalType: timestamp
     physicalType: timestamp
     isNullable: true
     isUnique: false

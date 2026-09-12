@@ -1,0 +1,79 @@
+{% import 'macros/support.html' as support_macros %}
+
+{% set support_channels = datacontract.support if datacontract.support is defined and datacontract.support is not callable else [] %}
+{% if support_channels is not sequence or support_channels is string %}
+  {% set support_channels = [] %}
+{% endif %}
+
+{% if support_channels and support_channels|length > 0 %}
+<section id="support">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900" id="support">Support</h1>
+    <p class="text-sm text-gray-500">Support channels and resources</p>
+  </div>
+
+  <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100">
+        <tbody class="divide-y divide-gray-100">
+          {% for channel in support_channels %}
+          <tr>
+            <td class="px-4 py-3 sm:px-6 align-top w-16">
+              <div class="h-12 w-12 rounded-lg bg-white p-1.5 ring-1 ring-gray-900/10 flex items-center justify-center">
+                {{ support_macros.support_icon(channel.tool if channel.tool is defined else "") }}
+              </div>
+            </td>
+            {% if channel.tool is defined and channel.tool %}
+            <td class="px-4 py-3 align-top min-w-[10rem]">
+              <div class="text-sm font-medium text-gray-500">Tool</div>
+              <div class="mt-1 text-sm text-gray-900">
+                {{ channel.tool }}
+              </div>
+            </td>
+            {% endif %}
+            {% if channel.channel is defined and channel.channel %}
+            <td class="px-4 py-3 align-top min-w-[12rem]">
+              <div class="text-sm font-medium text-gray-500">Channel</div>
+              <div class="mt-1 text-sm text-gray-900 break-all">
+                {% if channel.url is defined and channel.url %}
+                  <a href="{{ channel.url }}" target="_blank" rel="noopener noreferrer"
+                     class="text-indigo-600 hover:text-indigo-500">{{ channel.channel }}</a>
+                {% else %}
+                  <span>{{ channel.channel }}</span>
+                {% endif %}
+              </div>
+            </td>
+            {% endif %}
+            {% if channel.scope is defined and channel.scope %}
+            <td class="px-4 py-3 align-top min-w-[9rem]">
+              <div class="text-sm font-medium text-gray-500">Scope</div>
+              <div class="mt-1 text-sm text-gray-900">
+                {{ channel.scope }}
+              </div>
+            </td>
+            {% endif %}
+            {% if channel.description is defined and channel.description %}
+            <td class="px-4 py-3 align-top min-w-[14rem]">
+              <div class="text-sm font-medium text-gray-500">Description</div>
+              <div class="mt-1 text-sm text-gray-900 break-words">
+                {{ channel.description }}
+              </div>
+            </td>
+            {% endif %}
+            {% if channel.invitationUrl is defined and channel.invitationUrl %}
+            <td class="px-4 py-3 sm:pr-6 align-top min-w-[10rem]">
+              <div class="text-sm font-medium text-gray-500">Invitation</div>
+              <div class="mt-1 text-sm text-gray-900 break-all">
+                <a href="{{ channel.invitationUrl }}" target="_blank" rel="noopener noreferrer"
+                   class="text-indigo-600 hover:text-indigo-500">Invitation link</a>
+              </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}

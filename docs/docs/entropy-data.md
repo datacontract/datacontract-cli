@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 25
 title: "Integrate with Entropy Data"
 description: "Publish data contract test results to Entropy Data, a commercial platform for managing data contracts."
 ---
@@ -22,7 +22,15 @@ datacontract test https://demo.entropy-data.com/demo279750347121/datacontracts/4
   --publish https://api.entropy-data.com/api/test-results
 ```
 
-The same `--publish` option is available on [`ci`](./commands/ci.md) and [`dbt sync`](./commands/dbt.md), so you can report results from CI/CD and scheduled runs — see [Test your contract → Scheduling and CI/CD](./testing.md#scheduling-and-cicd).
+The same `--publish` option is available on [`ci`](./commands/ci.md) and [`dbt sync`](./commands/dbt/sync.md), so you can report results from CI/CD and scheduled runs — see [Scheduling](./scheduling/index.md).
+
+## Self-hosted deployments
+
+The API key is only ever sent to Entropy Data: to `entropy-data.com` and its subdomains, or to the host set in `ENTROPY_DATA_HOST`. A contract URL or `--publish` URL on any other host is contacted without the key, so that a third party serving a data contract never receives it. If you run Entropy Data on your own domain, set the host so that contract URLs and `--publish` are authenticated:
+
+```bash
+export ENTROPY_DATA_HOST=https://entropy.internal.example
+```
 
 ## Publish the contract
 
@@ -31,3 +39,21 @@ Use the [`publish`](./commands/publish.md) command to push a data contract itsel
 ```bash
 datacontract publish datacontract.yaml
 ```
+
+## TLS behind a corporate proxy or internal CA
+
+By default the CLI verifies TLS certificates against the bundled CA certificates (`certifi`). In a corporate network with a TLS-inspecting proxy or an internal certificate authority, this can fail with `CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`, because the root CA is installed in the operating system's trust store but not in the bundled list.
+
+Use the global `--system-truststore` option to verify against the operating system's trust store (macOS Keychain, Windows certificate store, or the system CA certificates on Linux) instead:
+
+```bash
+datacontract --system-truststore publish datacontract.yaml
+```
+
+You can also enable it for every invocation with an environment variable:
+
+```bash
+export DATACONTRACT_SYSTEM_TRUSTSTORE=1
+```
+
+This keeps certificate verification on while trusting the corporate root CA. It works for all commands that make HTTPS requests, not only the Entropy Data integration.

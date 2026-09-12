@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from open_data_contract_standard.model import SchemaProperty
+
+from datacontract.engines.checks.type_normalize import UNKNOWN_LOGICAL_TYPE
+from datacontract.model.map_type import map_definition
+
+if TYPE_CHECKING:
+    from ibis.expr.datatypes import DataType
+
 
 def ibis_dtype_category(dtype) -> str:
     """Return the normalized category for an ibis ``DataType``.
@@ -18,7 +28,7 @@ def ibis_dtype_category(dtype) -> str:
             return "decimal"
         if dtype.is_floating():
             return "float"
-        if dtype.is_string():
+        if dtype.is_string() or dtype.is_uuid():
             return "string"
         if dtype.is_timestamp():
             return "timestamp"
@@ -39,3 +49,55 @@ def ibis_dtype_category(dtype) -> str:
     except AttributeError:
         return "other"
     return "other"
+
+
+def ibis_dtype_to_schema_property(dtype: DataType) -> SchemaProperty:
+    """Map an ibis DataType to a SchemaProperty for structural type comparison.
+
+    Returns a ``SchemaProperty`` with ``logicalType`` set to one of the ODCS
+    categories, recursively populating ``properties`` for structs, ``items``
+    for arrays and ``map`` for maps. A type that carries no verifiable logical type (json, binary,
+    null, …) becomes ``UNKNOWN_LOGICAL_TYPE`` with the actual type kept in
+    ``physicalType``, so the failure message can name it.
+    """
+    try:
+        if dtype.is_boolean():
+            return SchemaProperty(logicalType="boolean")
+        if dtype.is_integer():
+            return SchemaProperty(logicalType="integer")
+        if dtype.is_decimal() or dtype.is_floating():
+            return SchemaProperty(logicalType="number")
+        if dtype.is_string() or dtype.is_uuid():
+            return SchemaProperty(logicalType="string")
+        if dtype.is_timestamp():
+            return SchemaProperty(logicalType="timestamp")
+        if dtype.is_date():
+            return SchemaProperty(logicalType="date")
+        if dtype.is_time():
+            return SchemaProperty(logicalType="time")
+        if dtype.is_struct():
+            properties = []
+            for field_name, ftype in dtype.fields.items():
+                # an unverifiable field type is still a field: keep it, so it is not reported missing
+                child = ibis_dtype_to_schema_property(ftype)
+                properties.append(child.model_copy(update={"name": field_name}))
+            return SchemaProperty(logicalType="object", properties=properties)
+        if dtype.is_array():
+            element = ibis_dtype_to_schema_property(dtype.value_type)
+            options = None
+            if dtype.value_type.is_floating() or dtype.value_type.is_integer():
+                # Keep numeric width/sign for vector checks without changing the
+                # physical-type comparison or diagnostics of ordinary arrays.
+                options = {"elementType": str(dtype.value_type)}
+            return SchemaProperty(logicalType="array", items=element, logicalTypeOptions=options)
+        if dtype.is_map():
+            return SchemaProperty(
+                logicalType="map",
+                map=map_definition(
+                    ibis_dtype_to_schema_property(dtype.key_type), ibis_dtype_to_schema_property(dtype.value_type)
+                ),
+            )
+    except AttributeError:
+        return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE)
+    # json holds a different type per row; binary and null have no ODCS category
+    return SchemaProperty(logicalType=UNKNOWN_LOGICAL_TYPE, physicalType=str(dtype))

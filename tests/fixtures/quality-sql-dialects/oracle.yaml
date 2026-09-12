@@ -1,0 +1,49 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-oracle
+name: Orders quality rules (oracle)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a oracle server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: oracle
+    host: localhost
+    port: 1521
+    serviceName: ORCLPDB1
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "No negative order totals"
+        query: |
+          SELECT count(*) FROM ${model} WHERE order_total < 0
+        mustBe: 0
+      - type: sql
+        description: "Orders arrived in the last day"
+        query: |
+          SELECT count(*) FROM ${model} WHERE order_timestamp > SYSDATE - 1
+        mustBeGreaterThan: 0
+      - type: sql
+        description: "The connection works"
+        query: |
+          SELECT count(*) FROM dual
+        mustBe: 1

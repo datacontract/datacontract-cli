@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 18
 title: "API"
 description: "Run the Data Contract CLI as a web server exposing a REST API for testing, linting, and exporting."
 ---
@@ -41,6 +41,13 @@ datacontract api --port 1234 --root_path /datacontract
 Once running, open the interactive OpenAPI documentation (Swagger UI) at
 [http://localhost:4242](http://localhost:4242). You can execute the commands directly from the UI.
 
+The OpenAPI 3.1 document itself is served at `http://localhost:4242/openapi.json` and can be fed to
+a client generator:
+
+```bash
+curl -s http://localhost:4242/openapi.json > openapi.json
+```
+
 ## Test a data contract
 
 POST a data contract as the request body to `/test` and receive the test results as JSON:
@@ -59,9 +66,11 @@ curl -X POST "http://localhost:4242/export?format=sql" \
   --data-binary @datacontract.yaml
 ```
 
-## Changelog between two contracts
+## Comparing two contracts
 
-POST a JSON body with `v1` (before) and `v2` (after) as YAML strings. The response is a JSON object with `summary` and `entries`:
+Both comparison endpoints take the same JSON body: `v1` (before) and `v2` (after) as YAML strings.
+
+`POST /changelog` lists what changed. The response is a JSON object with `summary` (one entry per changed field) and `entries` (one per atomic change):
 
 ```bash
 curl -X POST "http://localhost:4242/changelog" \
@@ -72,9 +81,40 @@ curl -X POST "http://localhost:4242/changelog" \
   }'
 ```
 
+`POST /breaking` grades those same changes for compatibility impact. It adds a `level` (`info`, `warning` or `error`) and a `rule_id` to every entry, plus a top-level `is_breaking` flag that is `true` when any entry is an `error`:
+
+```bash
+curl -X POST "http://localhost:4242/breaking" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "v1": "'"$(cat v1.odcs.yaml)"'",
+    "v2": "'"$(cat v2.odcs.yaml)"'"
+  }'
+```
+
+```json
+{
+  "summary": [...],
+  "entries": [
+    {
+      "path": "schema.orders.properties.order_id.logicalTypeOptions.pattern",
+      "change_type": "updated",
+      "level": "warning",
+      "message": "Changed validation constraint at schema.orders.properties.order_id.logicalTypeOptions.pattern from '^ORD-[0-9]+$' to '^ORD-[0-9]{4}$'",
+      "rule_id": "validation-constraint-changed",
+      "old_value": "^ORD-[0-9]+$",
+      "new_value": "^ORD-[0-9]{4}$"
+    }
+  ],
+  "is_breaking": false
+}
+```
+
+See [Compare contract versions](./compare-contract-versions.md) for the severity levels and the rules behind them.
+
 ## Configure server credentials
 
-To connect to a data source, set the required credentials as environment variables **before starting the API** (see [Testing](./testing.md)). For example, for Snowflake:
+To connect to a data source, set the required credentials as environment variables **before starting the API** (see [Configuration](./configuration.md)). For example, for Snowflake:
 
 ```bash
 export DATACONTRACT_SNOWFLAKE_USERNAME=123
@@ -83,9 +123,11 @@ export DATACONTRACT_SNOWFLAKE_WAREHOUSE=
 export DATACONTRACT_SNOWFLAKE_ROLE=
 ```
 
+Alternatively, `POST /test` accepts credentials per request via `datacontract-*` headers (e.g. `datacontract-snowflake-password`), matched case-insensitively and applied to that request only. This allows one server to test contracts for different tenants without sharing credentials through the process environment. Serve the API over HTTPS when sending credential headers.
+
 ## Secure the API
 
-Set `DATACONTRACT_CLI_API_KEY` to a secret value (such as a random UUID) to require authentication. Requests must then include the header `x-api-key` with the correct key.
+Set `DATACONTRACT_CLI_API_KEY` to a secret value (such as a random UUID) to require authentication. Every endpoint then requires the header `x-api-key` with the correct key, and answers `401` when it is missing and `403` when it is wrong.
 
 ```bash
 export DATACONTRACT_CLI_API_KEY=<your-secret-key-such-as-a-random-uuid>
@@ -94,6 +136,24 @@ export DATACONTRACT_CLI_API_KEY=<your-secret-key-such-as-a-random-uuid>
 :::warning
 Securing the API is highly recommended. Data contract tests may otherwise be subject to SQL injection or leak sensitive information.
 :::
+
+## Posted contracts are untrusted
+
+A data contract carries SQL and names the hosts to connect to, so a contract that arrives over HTTP is treated as untrusted input, whether or not the API key is set:
+
+- a `quality.type: sql` rule must be a **read-only query** — DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed;
+- a credential held in the server's environment is **never sent to a host the contract names** (see [Configuration](./configuration.md));
+- a `publish_url` may only point at the **Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this, and other hosts are refused;
+- `servers[].type: local` is **refused**, so a caller cannot read the files of the machine running the API;
+- for a file-based server type (`s3`, `gcs`, `azure`), the DuckDB connection is **confined to the data locations the contract declares**.
+
+If the deployment serves its own files on purpose — the data mounted next to the API in the same container, say — allow it explicitly:
+
+```bash
+export DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true
+```
+
+The contract is then still confined to the paths it declares, but a caller chooses those paths, so only turn this on where callers are trusted.
 
 ## Run as a Docker container
 

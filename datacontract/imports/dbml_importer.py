@@ -36,7 +36,7 @@ def import_dbml_from_source(
             type="schema",
             name="Parse DBML schema",
             reason=f"Failed to parse DBML schema from {source}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 

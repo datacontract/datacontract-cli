@@ -17,6 +17,10 @@ TRINO_ENV_VARS = [
     "DATACONTRACT_TRINO_USERNAME",
     "DATACONTRACT_TRINO_PASSWORD",
     "DATACONTRACT_TRINO_JWT_TOKEN",
+    "DATACONTRACT_TRINO_HOST",
+    "DATACONTRACT_TRINO_PORT",
+    "DATACONTRACT_TRINO_CATALOG",
+    "DATACONTRACT_TRINO_SCHEMA",
 ]
 
 
@@ -121,3 +125,18 @@ def test_basic_auth_requires_username(env, captured_connect):
         _connect()
 
     assert "DATACONTRACT_TRINO_USERNAME" in exc.value.reason
+
+
+def test_env_variables_override_the_contract_server_details(env, captured_connect):
+    env.setenv("DATACONTRACT_TRINO_USERNAME", "my_user")
+    env.setenv("DATACONTRACT_TRINO_HOST", "env-host")
+    env.setenv("DATACONTRACT_TRINO_PORT", "8443")
+    env.setenv("DATACONTRACT_TRINO_CATALOG", "env_catalog")
+    env.setenv("DATACONTRACT_TRINO_SCHEMA", "env_schema")
+
+    _connect()
+
+    assert captured_connect["host"] == "env-host"
+    assert captured_connect["port"] == 8443
+    assert captured_connect["database"] == "env_catalog"
+    assert captured_connect["schema"] == "env_schema"

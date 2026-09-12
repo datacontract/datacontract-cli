@@ -6,7 +6,7 @@ version: 0.0.1
 domain: my-domain-team
 status: active
 schema:
-- name: my_table
+- name: my_logical_table
   physicalName: my_table
   logicalType: object
   physicalType: table
@@ -41,4 +41,4 @@ slaProperties:
 - property: freshness
   value: 1
   unit: h
-  element: my_table.field_three
+  element: my_logical_table.field_three

@@ -1,0 +1,32 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: inventory-events
+name: Inventory Events
+version: 0.0.1
+status: active
+servers:
+  - server: production
+    type: kafka
+    host: __KAFKA_HOST__
+    format: avro
+schema:
+  - name: inventory
+    physicalName: inventory-events-avro
+    physicalType: topic
+    logicalType: object
+    properties:
+      - name: updated_at
+        logicalType: string
+        required: true
+      - name: available
+        logicalType: integer
+        required: true
+      - name: location
+        logicalType: string
+      - name: sku
+        logicalType: string
+        required: true
+    quality:
+      - type: library
+        metric: rowCount
+        mustBeGreaterOrEqualTo: 10

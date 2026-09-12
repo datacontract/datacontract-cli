@@ -1,0 +1,45 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-sqlserver
+name: Orders quality rules (sqlserver)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a sqlserver server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: sqlserver
+    host: localhost
+    port: 1433
+    database: orders
+    schema: dbo
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "The table is not empty (DIALECT-ONLY: TOP)"
+        query: |
+          SELECT TOP 1 count(*) FROM ${model}
+        mustBeGreaterThan: 0
+      - type: sql
+        description: "Orders arrived in the last day"
+        query: |
+          SELECT count(*) FROM ${model} WHERE order_timestamp > DATEADD(day, -1, GETDATE())
+        mustBeGreaterThan: 0

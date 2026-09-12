@@ -123,10 +123,6 @@ def dict_to_property(name: str, field_def: Dict[str, Any]) -> SchemaProperty:
 
     examples = field_def.get("examples")
 
-    custom_props = {}
-    if field_def.get("format"):
-        custom_props["format"] = field_def.get("format")
-
     return create_property(
         name=name,
         logical_type=logical_type,
@@ -134,7 +130,7 @@ def dict_to_property(name: str, field_def: Dict[str, Any]) -> SchemaProperty:
         examples=examples,
         properties=nested_properties,
         items=items_prop,
-        custom_properties=custom_props if custom_props else None,
+        format=field_def.get("format") or None,
     )
 
 

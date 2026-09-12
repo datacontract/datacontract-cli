@@ -1,0 +1,212 @@
+# A deliberately broad contract for exporter tests: every ODCS logical type
+# (string, date, number, integer, boolean, object, array), nested object
+# properties, arrays of both a scalar and an object, and two schemas.
+#
+# datacontract.odcs.yaml in this directory stays small on purpose. Exporters
+# branch on logical type and recurse into properties/items, so those paths are
+# unreachable with a contract that only has flat string and integer columns.
+kind: DataContract
+apiVersion: v3.1.0
+id: orders-large-unit-test
+name: Orders Large Unit Test
+version: 1.0.0
+status: active
+servers:
+- server: production
+  type: snowflake
+  environment: production
+  account: my-account
+  database: my-database
+  schema: my-schema
+description:
+  purpose: A contract covering every logical type, nested objects, and arrays
+schema:
+- name: orders
+  physicalType: table
+  description: The orders model
+  properties:
+  - name: order_id
+    physicalType: varchar
+    businessName: Order ID
+    description: The unique order identifier
+    logicalType: string
+    logicalTypeOptions:
+      minLength: 8
+      maxLength: 10
+      pattern: ^B[0-9]+$
+    primaryKey: true
+    primaryKeyPosition: 1
+    required: true
+    unique: true
+    classification: sensitive
+    examples:
+    - B12345678
+    tags:
+    - order_id
+    customProperties:
+    - property: pii
+      value: true
+
+  - name: order_placed_at
+    physicalType: timestamp
+    description: When the order was placed
+    logicalType: date
+    logicalTypeOptions:
+      format: date-time
+    required: true
+
+  - name: order_date
+    physicalType: date
+    description: The calendar day of the order
+    logicalType: date
+    logicalTypeOptions:
+      format: date
+
+  - name: order_total
+    physicalType: decimal
+    description: The total order value
+    logicalType: number
+    logicalTypeOptions:
+      minimum: 0
+      maximum: 1000000
+      multipleOf: 0.01
+    required: true
+    quality:
+    - description: 95% of all order total values are expected to be between 10 and 499 EUR.
+      type: sql
+      mustBeBetween:
+      - 1000
+      - 49900
+      query: |
+        SELECT quantile_cont(order_total, 0.95) AS percentile_95
+        FROM orders
+
+  - name: quantity
+    physicalType: int
+    description: The number of items ordered
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 1
+      maximum: 999
+
+  - name: is_paid
+    physicalType: boolean
+    description: Whether the order has been paid
+    logicalType: boolean
+    required: true
+
+  # Nested object, itself containing a nested object, so exporters that recurse
+  # into properties are exercised more than one level deep.
+  - name: shipping_address
+    physicalType: struct
+    description: Where the order is shipped to
+    logicalType: object
+    logicalTypeOptions:
+      required:
+      - street
+      - city
+    properties:
+    - name: street
+      physicalType: varchar
+      logicalType: string
+      required: true
+    - name: city
+      physicalType: varchar
+      logicalType: string
+      required: true
+    - name: postal_code
+      physicalType: varchar
+      logicalType: string
+      logicalTypeOptions:
+        pattern: ^[0-9]{5}$
+    - name: coordinates
+      physicalType: struct
+      description: The geocoded delivery location
+      logicalType: object
+      properties:
+      - name: latitude
+        physicalType: double
+        logicalType: number
+      - name: longitude
+        physicalType: double
+        logicalType: number
+
+  # Array of a scalar.
+  - name: labels
+    physicalType: array
+    description: Free-form labels attached to the order
+    logicalType: array
+    logicalTypeOptions:
+      minItems: 0
+      maxItems: 10
+      uniqueItems: true
+    items:
+      name: label
+      physicalType: varchar
+      logicalType: string
+
+  # Array of an object, which is where array and nested handling meet.
+  - name: discounts
+    physicalType: array
+    description: The discounts applied to the order
+    logicalType: array
+    items:
+      name: discount
+      physicalType: struct
+      logicalType: object
+      properties:
+      - name: code
+        physicalType: varchar
+        logicalType: string
+      - name: amount
+        physicalType: decimal
+        logicalType: number
+
+  quality:
+  - description: Row Count
+    type: sql
+    mustBeGreaterThan: 1000
+    query: |
+      SELECT COUNT(*) AS row_count
+      FROM orders
+
+- name: line_items
+  physicalType: table
+  description: The line items of an order
+  properties:
+  - name: line_item_id
+    physicalType: varchar
+    description: The unique line item identifier
+    logicalType: string
+    primaryKey: true
+    primaryKeyPosition: 1
+    required: true
+    unique: true
+
+  - name: order_id
+    physicalType: varchar
+    description: The order this line item belongs to
+    logicalType: string
+    required: true
+
+  - name: sku
+    physicalType: varchar
+    description: The stock keeping unit
+    logicalType: string
+
+  - name: unit_price
+    physicalType: decimal
+    description: The price of a single item
+    logicalType: number
+    logicalTypeOptions:
+      minimum: 0
+
+  - name: quantity
+    physicalType: int
+    description: The number of items
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 1
+
+team:
+  name: checkout

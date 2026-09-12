@@ -10,7 +10,7 @@ import os
 import re
 from typing import Dict, List
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import EnumValue, OpenDataContractStandard, SchemaProperty
 from proto_schema_parser import ast as proto_ast
 from proto_schema_parser.parser import Parser
 
@@ -75,7 +75,7 @@ def parse_imports_raw(proto_file: str) -> list:
             type="file",
             name="Parse proto imports",
             reason=f"Failed to read proto file: {proto_file}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
     return re.findall(r'import\s+"(.+?)";', content)
@@ -90,7 +90,7 @@ def _parse_proto(proto_file: str) -> proto_ast.File:
             type="schema",
             name="Parse proto file",
             reason=f"Failed to parse proto file: {proto_file}",
-            engine="datacontract",
+            engine="datacontract-cli",
             original_exception=e,
         )
 
@@ -185,6 +185,7 @@ def _convert_field(field, messages: Dict[str, proto_ast.Message], enums: Dict[st
             description=f"Enum field {field.name}",
             required=required,
             custom_properties={"enumValues": enum_values} if enum_values else None,
+            enum=[EnumValue(value=name, id=str(number)) for name, number in enum_values.items()] or None,
         )
 
     # Scalar field. Emit the protobuf type number as physicalType, matching the

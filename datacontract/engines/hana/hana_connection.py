@@ -4,8 +4,19 @@ from typing import Any
 
 from open_data_contract_standard.model import Server
 
-from datacontract.model.exceptions import DataContractException, require_env
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+
+
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise DataContractException(
+            type="hana-connection",
+            name=f"missing_env_{name}",
+            reason=f"Required environment variable {name} is not set. Set it to connect to hana.",
+        )
+    return value
 
 
 def _env_bool(name: str, default: str = "true") -> bool:
@@ -30,8 +41,8 @@ def import_hdbcli():
 
 def get_connection(server: Server) -> Any:
     dbapi = import_hdbcli()
-    username = require_env("DATACONTRACT_HANA_USERNAME", server_type="hana")
-    password = require_env("DATACONTRACT_HANA_PASSWORD", server_type="hana")
+    username = _require_env("DATACONTRACT_HANA_USERNAME")
+    password = _require_env("DATACONTRACT_HANA_PASSWORD")
     encrypt = _env_bool("DATACONTRACT_HANA_ENCRYPT")
     ssl_validate = _env_bool("DATACONTRACT_HANA_SSL_VALIDATE_CERTIFICATE")
     ssl_hostname = os.getenv("DATACONTRACT_HANA_SSL_HOSTNAME_IN_CERTIFICATE", "*")

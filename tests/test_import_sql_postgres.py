@@ -23,7 +23,7 @@ def test_import_sql_postgres():
     result = DataContract.import_from_source("sql", sql_file_path, dialect="postgres")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -65,7 +65,7 @@ def test_import_sql_constraints():
     result = DataContract.import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -77,7 +77,7 @@ servers:
     host: my_host
     port: 5432
     database: my_database
-    schema: public
+    schema: my_schema
 schema:
   - name: customer_location
     physicalType: table
@@ -147,3 +147,26 @@ schema:
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+
+
+def test_import_sql_ignores_create_schema(tmp_path):
+    ddl = tmp_path / "ddl.sql"
+    ddl.write_text("CREATE SCHEMA sales;\nCREATE TABLE sales.orders (order_id VARCHAR(36));")
+
+    result = DataContract.import_from_source("sql", str(ddl), dialect="postgres")
+
+    assert [schema_object.name for schema_object in result.schema_] == ["orders"]
+
+
+def test_import_sql_keeps_same_named_tables_in_different_schemas_apart(tmp_path):
+    ddl = tmp_path / "ddl.sql"
+    ddl.write_text(
+        "CREATE SCHEMA sales;\nCREATE TABLE orders (order_id VARCHAR(36));\nCREATE TABLE sales.orders (amount INT);"
+    )
+
+    result = DataContract.import_from_source("sql", str(ddl), dialect="postgres")
+
+    assert [[prop.name for prop in schema_object.properties] for schema_object in result.schema_] == [
+        ["order_id"],
+        ["amount"],
+    ]

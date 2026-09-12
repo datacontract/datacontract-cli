@@ -1,6 +1,6 @@
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -25,7 +25,7 @@ schema:
     logicalType: integer
   - name: field_three
     physicalType: timestamp
-    logicalType: date
+    logicalType: timestamp
   - name: field_four
     physicalType: decimal
     customProperties:
@@ -66,8 +66,17 @@ schema:
         physicalType: int
         logicalType: integer
   - name: field_eight
-    physicalType: map
-    logicalType: object
+    physicalType: map<string,int>
+    logicalType: map
+    map:
+      key:
+        name: key
+        physicalType: string
+        logicalType: string
+      value:
+        name: value
+        physicalType: int
+        logicalType: integer
   - name: field_nine
     physicalType: decimal
     logicalType: number
@@ -82,7 +91,7 @@ schema:
     logicalType: number
   - name: field_thirteen
     physicalType: timestamp
-    logicalType: date
+    logicalType: timestamp
   - name: field_fourteen
     physicalType: date
     logicalType: date

@@ -190,3 +190,36 @@ def test_severity_warning_on_absolute_count_check():
     check = _quality_check(run, "field_invalid_values")
     assert check.result == ResultEnum.warning
     assert run.result == ResultEnum.warning
+
+
+def test_invalid_values_pattern_argument_runs_regex():
+    # 1 of 5 emails ("no-at-sign") lacks an @ => 20% invalid, threshold < 10% => fail.
+    contract = _odcs(
+        email_quality="""        quality:
+          - type: library
+            metric: invalidValues
+            unit: percent
+            mustBeLessThan: 10
+            arguments:
+              pattern: '@'
+"""
+    )
+    run = DataContract(data_contract_str=contract).test()
+    check = _quality_check(run, "field_invalid_values")
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["percent"] == 20.0
+    assert "20.0% (1 of 5 rows)" in check.reason
+
+
+def test_invalid_values_without_arguments_is_skipped(caplog):
+    # An invalidValues check with neither validValues nor pattern can never fail, therefore it should be dropped
+    contract = _odcs(
+        email_quality="""        quality:
+          - type: library
+            metric: invalidValues
+            mustBe: 0
+"""
+    )
+    checks = _checks(contract)
+    assert not any(c.type == "field_invalid_values" for c in checks)
+    assert "no validValues or pattern argument" in caplog.text

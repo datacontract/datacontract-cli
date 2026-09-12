@@ -44,6 +44,13 @@ Current hardcoded natural keys:
 schema[]                                SchemaObject   -> .name     (required: [name])
 schema[].properties[]                   SchemaProperty -> .name     (required: [name], recursive)
 slaProperties[]                          SLAProperty    -> .property
+slaProperties[].customProperties[]       CustomProperty -> .property
+slaProperties[].authoritativeDefinitions[] AuthoritativeDefinition -> .url
+schema[].properties[].enum[]             EnumValue      -> .value (or .id)
+schema[]/properties[].synonyms[]         Synonym        -> .synonym (or .id)
+schema[]/properties[].relationships[]    Relationship   -> .id, else from:to
+context.verifiedStatements[]             VerifiedStatement -> .question (or .id)
+context.constraints[]                    Constraint     -> .constraint (or .id)
 servers[]                                Server         -> .server
 servers[].roles[]                        Role           -> .role
 servers[].customProperties[]             CustomProperty -> .property
@@ -82,15 +89,41 @@ def _normalize_auth_defs(items: list[dict]) -> dict:
     return result
 
 
+def _normalize_keyed(items: list[dict], *keys: str) -> dict:
+    """Key a list of dicts by the first of ``keys`` an item carries, keeping the key in the value.
+
+    Falls back to the list index if none of the key fields is present.
+    """
+    result = {}
+    for i, item in enumerate(items):
+        key = next((str(item[k]) for k in keys if item.get(k) is not None), None) or f"__pos_{i}__"
+        result[key] = item
+    return result
+
+
+def _normalize_context(context) -> object:
+    """Key the lists of a context block; a plain-string context is returned unchanged."""
+    if not isinstance(context, dict):
+        return context
+    entry = dict(context)
+    if isinstance(entry.get("verifiedStatements"), list):
+        entry["verifiedStatements"] = _normalize_keyed(entry["verifiedStatements"], "id", "question")
+    if isinstance(entry.get("constraints"), list):
+        entry["constraints"] = _normalize_keyed(entry["constraints"], "id", "constraint")
+    return entry
+
+
 def _normalize_relationships(items: list[dict], schema_level: bool = True) -> dict:
-    """Key relationships by a stable composite key.
+    """Key relationships by their id (ODCS v3.2.0), else by a stable composite key.
 
     Schema-level: from:to composite. Property-level: to only.
     Falls back to positional index if key fields are absent.
     """
     result = {}
     for i, item in enumerate(items):
-        if schema_level:
+        if item.get("id"):
+            key = str(item["id"])
+        elif schema_level:
             from_val = str(item.get("from", ""))
             to_val = str(item.get("to", ""))
             key = f"{from_val}:{to_val}" if (from_val or to_val) else f"__pos_{i}__"
@@ -125,6 +158,12 @@ def _normalize_schema_fields(entry: dict, *, schema_level: bool) -> dict:
         entry["authoritativeDefinitions"] = _normalize_auth_defs(entry["authoritativeDefinitions"])
     if "relationships" in entry and isinstance(entry["relationships"], list):
         entry["relationships"] = _normalize_relationships(entry["relationships"], schema_level=schema_level)
+    if "synonyms" in entry and isinstance(entry["synonyms"], list):
+        entry["synonyms"] = _normalize_keyed(entry["synonyms"], "id", "synonym")
+    if "enum" in entry and isinstance(entry["enum"], list):
+        entry["enum"] = _normalize_keyed(entry["enum"], "id", "value")
+    if "context" in entry:
+        entry["context"] = _normalize_context(entry["context"])
     return entry
 
 
@@ -134,11 +173,28 @@ def _normalize_properties(properties: list[dict]) -> dict:
     for prop in properties:
         key = prop.get("name", prop.get("id", str(prop)))
         entry = {k: v for k, v in prop.items() if k != "name"}
-        if "properties" in entry and isinstance(entry["properties"], list):
-            entry["properties"] = _normalize_properties(entry["properties"])
+        entry = _normalize_property_children(entry)
         entry = _normalize_schema_fields(entry, schema_level=False)
         result[key] = entry
     return result
+
+
+def _normalize_property_children(entry: dict) -> dict:
+    """Recurse into the nested property definitions of a property: properties, items, map key and value."""
+    if "properties" in entry and isinstance(entry["properties"], list):
+        entry["properties"] = _normalize_properties(entry["properties"])
+    if isinstance(entry.get("items"), dict):
+        entry["items"] = _normalize_schema_fields(
+            _normalize_property_children(dict(entry["items"])), schema_level=False
+        )
+    if isinstance(entry.get("map"), dict):
+        entry["map"] = {
+            side: _normalize_schema_fields(_normalize_property_children(dict(definition)), schema_level=False)
+            if isinstance(definition, dict)
+            else definition
+            for side, definition in entry["map"].items()
+        }
+    return entry
 
 
 def normalize(contract: dict) -> dict:
@@ -161,7 +217,16 @@ def normalize(contract: dict) -> dict:
         out["schema"] = normalized_schema
 
     if "slaProperties" in out and isinstance(out["slaProperties"], list):
-        out["slaProperties"] = _normalize_by(out["slaProperties"], "property")
+        sla_properties = _normalize_by(out["slaProperties"], "property")
+        for entry in sla_properties.values():
+            if isinstance(entry.get("customProperties"), list):
+                entry["customProperties"] = _normalize_by(entry["customProperties"], "property")
+            if isinstance(entry.get("authoritativeDefinitions"), list):
+                entry["authoritativeDefinitions"] = _normalize_auth_defs(entry["authoritativeDefinitions"])
+        out["slaProperties"] = sla_properties
+
+    if "context" in out:
+        out["context"] = _normalize_context(out["context"])
 
     if "servers" in out and isinstance(out["servers"], list):
         normalized_servers = {}

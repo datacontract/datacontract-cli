@@ -1,0 +1,39 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: orders-quality-dataframe
+name: Orders quality rules (dataframe)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a dataframe server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: custom
+    customProperties:
+      - property: customType
+        value: dataframe
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: integer
+        physicalType: integer
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: date
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "95th percentile of the order total, using the Spark function"
+        query: |
+          SELECT percentile_approx(order_total, 0.95) FROM ${model}
+        mustBeLessThan: 100000
