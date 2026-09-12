@@ -33,6 +33,8 @@ schema:
         physicalType: INTEGER
         primaryKey: true
         primaryKeyPosition: 1
+        required: true
+        unique: true
         description: Primary key
       - name: field_not_null
         logicalType: integer
