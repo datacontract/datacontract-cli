@@ -1,0 +1,17 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: hana-fail-schema
+name: HANA failing schema contract
+version: 1.0.0
+status: draft
+schema:
+- name: ORDERS
+  properties:
+  - name: ORDER_ID
+    logicalType: integer
+servers:
+- server: production
+  type: hana
+  host: ${DATACONTRACT_HANA_HOST}
+  port: 443
+  schema: ${DATACONTRACT_HANA_SCHEMA}

@@ -1,0 +1,35 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: hana-quality
+name: HANA quality contract
+version: 1.0.0
+status: draft
+schema:
+- name: ORDERS
+  quality:
+  - type: sql
+    description: ORDERS has rows
+    query: SELECT COUNT(*) FROM {model}
+    mustBeGreaterThan: 0
+  properties:
+  - name: ORDER_ID
+    logicalType: string
+    quality:
+    - metric: duplicateValues
+      mustBe: 0
+  - name: STATUS
+    logicalType: string
+    quality:
+    - metric: invalidValues
+      arguments:
+        validValues:
+        - OPEN
+        - PAID
+        - CANCELLED
+      mustBe: 0
+servers:
+- server: production
+  type: hana
+  host: ${DATACONTRACT_HANA_HOST}
+  port: 443
+  schema: ${DATACONTRACT_HANA_SCHEMA}

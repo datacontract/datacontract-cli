@@ -177,7 +177,7 @@
           "description": "Type of the server.",
           "enum": [
             "api", "athena", "azure", "bigquery", "clickhouse", "databricks", "denodo", "dremio",
-            "duckdb", "glue", "cloudsql", "db2", "hive", "impala", "informix", "kafka", "kinesis", "local",
+            "duckdb", "glue", "cloudsql", "db2", "hana", "hive", "impala", "informix", "kafka", "kinesis", "local",
             "mysql", "oracle", "postgresql", "postgres", "presto", "pubsub",
             "redshift", "s3", "sftp", "snowflake", "sqlserver", "synapse", "trino", "vertica", "zen", "custom"
           ]
@@ -487,6 +487,19 @@
           },
           "then": {
             "$ref": "#/$defs/ServerSource/OracleServer"
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "hana"
+              }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "$ref": "#/$defs/ServerSource/HanaServer"
           }
         },
         {
@@ -1253,6 +1266,30 @@
           "host",
           "port",
           "serviceName"
+        ]
+      },
+      "HanaServer": {
+        "type": "object",
+        "title": "HanaServer",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "The host to the SAP HANA Cloud server."
+          },
+          "port": {
+            "type": "integer",
+            "description": "The port to the SAP HANA Cloud server. Default 443 for HANA Cloud.",
+            "default": 443
+          },
+          "schema": {
+            "type": "string",
+            "description": "The name of the schema. For SAP Datasphere, use the Open SQL schema name."
+          }
+        },
+        "required": [
+          "host",
+          "port",
+          "schema"
         ]
       },
       "PostgresServer": {
