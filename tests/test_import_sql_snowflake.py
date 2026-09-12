@@ -42,6 +42,17 @@ schema:
     primaryKey: true
     primaryKeyPosition: 1
     unique: true
+  - name: field_parent_primary_key
+    physicalType: DECIMAL(38, 0)
+    description: Parent primary key
+    customProperties:
+    - property: precision
+      value: 38
+    - property: scale
+      value: 0
+    logicalType: number
+    relationships:
+    - to: schema/my_table/properties/field_primary_key
   - name: field_not_null
     physicalType: INT
     description: Not null
