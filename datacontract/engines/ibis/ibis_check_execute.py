@@ -245,6 +245,16 @@ def _run_model(
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
 
+    # Kept before the filter narrows `t`: a uniqueness check answers "does this
+    # key repeat anywhere in the table", and a row filter meant to scope *when*
+    # a row arrived silently narrows that to "anywhere in today's rows", which
+    # is a different and weaker question -- a duplicate whose other half loaded
+    # on an earlier day passes every day, unfiltered or not, and did on real
+    # data: `field_unique` reported 0/70 filtered where the same table read
+    # whole reported 16/3376. So DUPLICATE_COUNT always reads `unfiltered_t`,
+    # never the row-filtered `t` -- see the dispatch loop below.
+    unfiltered_t = t
+
     # Applied after the catalog reads above: those need the real table name, and
     # the schema/type checks compare declared types, which no row filter changes.
     if row_filter:
@@ -254,14 +264,15 @@ def _run_model(
             logger.warning("Could not apply row filter to model '%s': %s", model, e)
             # A predicate that does not compile is a configuration problem, not a
             # data violation, so the checks error rather than fail. Only the checks
-            # that read rows are affected.
+            # that read rows are affected -- and DUPLICATE_COUNT reads
+            # `unfiltered_t` regardless, so a broken filter does not touch it.
             _fail_all(
                 run,
-                [s for s in specs if s.requires_data_read],
+                [s for s in specs if s.requires_data_read and s.metric != MetricType.DUPLICATE_COUNT],
                 ResultEnum.error,
                 f"Could not apply row filter '{row_filter}': {e}",
             )
-            specs = [s for s in specs if not s.requires_data_read]
+            specs = [s for s in specs if not s.requires_data_read or s.metric == MetricType.DUPLICATE_COUNT]
             if not specs:
                 return
 
@@ -270,6 +281,15 @@ def _run_model(
     @cache
     def model_row_count() -> int:
         rc = t.count().execute()
+        return 0 if rc is None else int(rc)
+
+    @cache
+    def unfiltered_row_count() -> int:
+        # Same query as model_row_count() when there is no filter -- cheap to
+        # short-circuit rather than ask ibis to run it twice.
+        if unfiltered_t is t:
+            return model_row_count()
+        rc = unfiltered_t.count().execute()
         return 0 if rc is None else int(rc)
 
     agg_exprs = []  # list[(spec, named_expr)]
@@ -302,7 +322,7 @@ def _run_model(
                 else:
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
-                _run_duplicate(run, t, columns, spec, model_row_count())
+                _run_duplicate(run, unfiltered_t, columns, spec, unfiltered_row_count())
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
@@ -331,7 +351,7 @@ def _run_model(
         _run_aggregation(run, t, agg_exprs)
 
     if include_failed_samples:
-        _collect_failed_samples(run, t, columns, schema, model, specs, data_contract, server)
+        _collect_failed_samples(run, t, unfiltered_t, columns, schema, model, specs, data_contract, server)
 
 
 def _run_aggregation(run: Run, t, agg_exprs):
@@ -377,7 +397,7 @@ _SENSITIVE_CLASSIFICATIONS = {
 _SAMPLEABLE_METRICS = (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT, MetricType.DUPLICATE_COUNT)
 
 
-def _collect_failed_samples(run, t, columns, schema, model, specs, data_contract, server):
+def _collect_failed_samples(run, t, unfiltered_t, columns, schema, model, specs, data_contract, server):
     """Second pass: for failed/warned bad-row checks, fetch a few offending rows.
 
     Reuses the same predicates the counts were built from. Columns are limited to
@@ -392,7 +412,10 @@ def _collect_failed_samples(run, t, columns, schema, model, specs, data_contract
         if check is None or check.result not in (ResultEnum.failed, ResultEnum.warning):
             continue
         try:
-            samples = _samples_for(t, columns, schema, spec, identifiers, sensitive)
+            # DUPLICATE_COUNT samples come from the same unfiltered table the
+            # count itself was measured against, or the two would disagree.
+            table = unfiltered_t if spec.metric == MetricType.DUPLICATE_COUNT else t
+            samples = _samples_for(table, columns, schema, spec, identifiers, sensitive)
         except Exception as e:  # pragma: no cover - sampling is best-effort
             logger.debug("Could not collect failed samples for '%s': %s", spec.key, e)
             continue

@@ -1,0 +1,22 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: row-filter-duplicate-test
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/row-filter-duplicate/data.csv
+    format: csv
+schema:
+  - name: data
+    quality:
+      - type: library
+        metric: rowCount
+        mustBe: 2
+    properties:
+      - name: id
+        logicalType: integer
+        unique: true
+      - name: batch
+        logicalType: integer
