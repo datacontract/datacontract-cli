@@ -7,6 +7,9 @@ from open_data_contract_standard.model import SchemaObject, SchemaProperty
 from datacontract.engines.hana.hana_type_mapping import types_match
 from datacontract.model.run import Check, ResultEnum
 
+DRY_RUN_REASON = "Dry run: check not executed"
+METADATA_ONLY_REASON = "Row-value check disabled by --metadata-only"
+
 
 @dataclass
 class ColumnMetadata:
@@ -27,10 +30,19 @@ def qualified_table_name(schema: str, table: str) -> str:
     return f"{quote_identifier(schema)}.{quote_identifier(table)}"
 
 
-def run_schema_checks(connection, schema_name: str, schema_object: SchemaObject) -> list[Check]:
+def run_schema_checks(
+    connection,
+    schema_name: str,
+    schema_object: SchemaObject,
+    *,
+    dry_run: bool = False,
+    metadata_only: bool = False,
+) -> list[Check]:
+    """Build the native check list, optionally planning it or reading only the catalog."""
     table_name = _schema_name(schema_object)
     checks: list[Check] = []
-    column_metadata = _get_column_metadata(connection, schema_name, table_name)
+    column_metadata = [] if dry_run else _get_column_metadata(connection, schema_name, table_name)
+    skip_reason = METADATA_ONLY_REASON if metadata_only else DRY_RUN_REASON if dry_run else None
 
     model_exists_check = _result_check(
         check_type="model_exists",
@@ -41,13 +53,14 @@ def run_schema_checks(connection, schema_name: str, schema_object: SchemaObject)
         implementation="Catalog lookup in SYS.TABLE_COLUMNS and SYS.VIEW_COLUMNS",
         result=ResultEnum.passed if column_metadata else ResultEnum.failed,
         reason=None if column_metadata else f"Model {schema_name}.{table_name} does not exist.",
+        dry_run=dry_run,
     )
     checks.append(model_exists_check)
-    if not column_metadata:
+    if not column_metadata and not dry_run:
         return checks
 
     columns_by_name = {column.name: column for column in column_metadata}
-    source = column_metadata[0].source
+    source = column_metadata[0].source if column_metadata else None
 
     for prop in schema_object.properties or []:
         field_name = _property_name(prop)
@@ -61,9 +74,10 @@ def run_schema_checks(connection, schema_name: str, schema_object: SchemaObject)
             implementation="Catalog lookup in SYS.TABLE_COLUMNS and SYS.VIEW_COLUMNS",
             result=ResultEnum.passed if column else ResultEnum.failed,
             reason=None if column else f"Field {field_name} is missing in {schema_name}.{table_name}.",
+            dry_run=dry_run,
         )
         checks.append(field_present_check)
-        if column is None:
+        if column is None and not dry_run:
             continue
 
         expected_type = prop.physicalType or prop.logicalType
@@ -88,13 +102,14 @@ def run_schema_checks(connection, schema_name: str, schema_object: SchemaObject)
                     params=None,
                     name=f"Check that unique field {field_name} has no duplicate values",
                     failure_reason="Found {value} duplicate values.",
+                    skip_reason=skip_reason,
                 )
             )
 
         if prop.primaryKey:
-            checks.append(_primary_key_check(connection, schema_name, table_name, field_name, source))
+            checks.append(_primary_key_check(connection, schema_name, table_name, field_name, source, dry_run=dry_run))
 
-        checks.extend(_logical_type_option_checks(connection, schema_name, table_name, field_name, prop))
+        checks.extend(_logical_type_option_checks(connection, schema_name, table_name, field_name, prop, skip_reason))
 
     return checks
 
@@ -108,7 +123,12 @@ def _property_name(prop: SchemaProperty) -> str:
 
 
 def _logical_type_option_checks(
-    connection, schema_name: str, table_name: str, field_name: str, prop: SchemaProperty
+    connection,
+    schema_name: str,
+    table_name: str,
+    field_name: str,
+    prop: SchemaProperty,
+    skip_reason: str | None = None,
 ) -> list[Check]:
     checks: list[Check] = []
     options = prop.logicalTypeOptions or {}
@@ -129,6 +149,7 @@ def _logical_type_option_checks(
                 params=[min_length],
                 name=f"Check that field {field_name} has a min length of {min_length}",
                 failure_reason=f"Found {{value}} values shorter than {min_length}.",
+                skip_reason=skip_reason,
             )
         )
 
@@ -148,26 +169,27 @@ def _logical_type_option_checks(
                 params=[max_length],
                 name=f"Check that field {field_name} has a max length of {max_length}",
                 failure_reason=f"Found {{value}} values longer than {max_length}.",
+                skip_reason=skip_reason,
             )
         )
 
     minimum = options.get("minimum")
     if minimum is not None:
-        checks.append(_minimum_check(connection, schema_name, table_name, field_name, minimum))
+        checks.append(_minimum_check(connection, schema_name, table_name, field_name, minimum, skip_reason))
 
     maximum = options.get("maximum")
     if maximum is not None:
-        checks.append(_maximum_check(connection, schema_name, table_name, field_name, maximum))
+        checks.append(_maximum_check(connection, schema_name, table_name, field_name, maximum, skip_reason))
 
     exclusive_minimum = options.get("exclusiveMinimum")
     if exclusive_minimum is not None:
-        checks.append(_minimum_check(connection, schema_name, table_name, field_name, exclusive_minimum))
-        checks.append(_not_equal_check(connection, schema_name, table_name, field_name, exclusive_minimum))
+        checks.append(_minimum_check(connection, schema_name, table_name, field_name, exclusive_minimum, skip_reason))
+        checks.append(_not_equal_check(connection, schema_name, table_name, field_name, exclusive_minimum, skip_reason))
 
     exclusive_maximum = options.get("exclusiveMaximum")
     if exclusive_maximum is not None:
-        checks.append(_maximum_check(connection, schema_name, table_name, field_name, exclusive_maximum))
-        checks.append(_not_equal_check(connection, schema_name, table_name, field_name, exclusive_maximum))
+        checks.append(_maximum_check(connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason))
+        checks.append(_not_equal_check(connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason))
 
     enum_values = options.get("enum")
     if enum_values is not None and len(enum_values) > 0:
@@ -186,6 +208,7 @@ def _logical_type_option_checks(
                 params=enum_values,
                 name=f"Check that field {field_name} only contains enum values {enum_values}",
                 failure_reason="Found {value} values outside the enum.",
+                skip_reason=skip_reason,
             )
         )
 
@@ -205,13 +228,16 @@ def _logical_type_option_checks(
                 params=[pattern],
                 name=f"Check that field {field_name} matches regex {pattern}",
                 failure_reason="Found {value} values that do not match the regex.",
+                skip_reason=skip_reason,
             )
         )
 
     return checks
 
 
-def _minimum_check(connection, schema_name: str, table_name: str, field_name: str, minimum: Any) -> Check:
+def _minimum_check(
+    connection, schema_name: str, table_name: str, field_name: str, minimum: Any, skip_reason: str | None = None
+) -> Check:
     return _zero_violations_check(
         connection,
         check_type="field_minimum",
@@ -225,10 +251,13 @@ def _minimum_check(connection, schema_name: str, table_name: str, field_name: st
         params=[minimum],
         name=f"Check that field {field_name} has a minimum of {minimum}",
         failure_reason=f"Found {{value}} values below {minimum}.",
+        skip_reason=skip_reason,
     )
 
 
-def _maximum_check(connection, schema_name: str, table_name: str, field_name: str, maximum: Any) -> Check:
+def _maximum_check(
+    connection, schema_name: str, table_name: str, field_name: str, maximum: Any, skip_reason: str | None = None
+) -> Check:
     return _zero_violations_check(
         connection,
         check_type="field_maximum",
@@ -242,10 +271,13 @@ def _maximum_check(connection, schema_name: str, table_name: str, field_name: st
         params=[maximum],
         name=f"Check that field {field_name} has a maximum of {maximum}",
         failure_reason=f"Found {{value}} values above {maximum}.",
+        skip_reason=skip_reason,
     )
 
 
-def _not_equal_check(connection, schema_name: str, table_name: str, field_name: str, value: Any) -> Check:
+def _not_equal_check(
+    connection, schema_name: str, table_name: str, field_name: str, value: Any, skip_reason: str | None = None
+) -> Check:
     return _zero_violations_check(
         connection,
         check_type="field_not_equal",
@@ -259,12 +291,18 @@ def _not_equal_check(connection, schema_name: str, table_name: str, field_name: 
         params=[value],
         name=f"Check that field {field_name} is not equal to {value}",
         failure_reason=f"Found {{value}} values equal to {value}.",
+        skip_reason=skip_reason,
     )
 
 
-def _field_type_check(table_name: str, field_name: str, expected_type: str, column: ColumnMetadata) -> Check:
-    actual_type = column.data_type_name
-    result = ResultEnum.passed if types_match(actual_type, expected_type) else ResultEnum.failed
+def _field_type_check(table_name: str, field_name: str, expected_type: str, column: ColumnMetadata | None) -> Check:
+    # A dry run has no catalog metadata. Missing columns in real runs are handled above.
+    actual_type = column.data_type_name if column else None
+    result = (
+        ResultEnum.passed
+        if column is not None and types_match(column.data_type_name, expected_type)
+        else ResultEnum.failed
+    )
     return _result_check(
         check_type="field_type",
         key=f"{table_name}__{field_name}__field_type",
@@ -274,12 +312,13 @@ def _field_type_check(table_name: str, field_name: str, expected_type: str, colu
         implementation="Catalog DATA_TYPE_NAME comparison",
         result=result,
         reason=None if result == ResultEnum.passed else f"Expected {expected_type}, got {actual_type}.",
-        diagnostics={"expected": expected_type, "actual": actual_type},
+        diagnostics={"expected": expected_type, "actual": actual_type} if column else None,
+        dry_run=column is None,
     )
 
 
-def _field_required_check(table_name: str, field_name: str, column: ColumnMetadata) -> Check:
-    nullable = str(column.is_nullable).upper()
+def _field_required_check(table_name: str, field_name: str, column: ColumnMetadata | None) -> Check:
+    nullable = str(column.is_nullable).upper() if column else None
     result = ResultEnum.passed if nullable == "FALSE" else ResultEnum.failed
     return _result_check(
         check_type="field_required",
@@ -290,17 +329,20 @@ def _field_required_check(table_name: str, field_name: str, column: ColumnMetada
         implementation="Catalog IS_NULLABLE comparison",
         result=result,
         reason=None if result == ResultEnum.passed else f"Field {field_name} is nullable in the catalog.",
-        diagnostics={"isNullable": column.is_nullable},
+        diagnostics={"isNullable": column.is_nullable} if column else None,
+        dry_run=column is None,
     )
 
 
-def _primary_key_check(connection, schema_name: str, table_name: str, field_name: str, source: str) -> Check:
+def _primary_key_check(
+    connection, schema_name: str, table_name: str, field_name: str, source: str | None, *, dry_run: bool = False
+) -> Check:
     sql = """
 SELECT COLUMN_NAME
 FROM SYS.CONSTRAINTS
 WHERE SCHEMA_NAME = ? AND TABLE_NAME = ? AND IS_PRIMARY_KEY = 'TRUE'
 """
-    if source == "view":
+    if dry_run or source == "view":
         return _result_check(
             check_type="field_primary_key",
             key=f"{table_name}__{field_name}__field_primary_key",
@@ -308,8 +350,8 @@ WHERE SCHEMA_NAME = ? AND TABLE_NAME = ? AND IS_PRIMARY_KEY = 'TRUE'
             model=table_name,
             field=field_name,
             implementation=sql.strip(),
-            result=ResultEnum.warning,
-            reason="Primary key metadata not available for views.",
+            result=ResultEnum.skipped if dry_run else ResultEnum.warning,
+            reason=DRY_RUN_REASON if dry_run else "Primary key metadata not available for views.",
         )
 
     rows = _fetch_all(connection, sql, [schema_name, table_name])
@@ -339,7 +381,19 @@ def _zero_violations_check(
     params: list[Any] | None,
     name: str,
     failure_reason: str,
+    skip_reason: str | None = None,
 ) -> Check:
+    if skip_reason:
+        return _result_check(
+            check_type=check_type,
+            key=f"{table_name}__{field_name}__{check_type}",
+            name=name,
+            model=table_name,
+            field=field_name,
+            implementation=sql,
+            result=ResultEnum.skipped,
+            reason=skip_reason,
+        )
     try:
         value = _fetch_scalar(connection, sql, params)
     except Exception as e:
@@ -446,6 +500,7 @@ def _result_check(
     result: ResultEnum,
     reason: str | None,
     diagnostics: dict | None = None,
+    dry_run: bool = False,
 ) -> Check:
     return Check(
         id=str(uuid.uuid4()),
@@ -458,7 +513,7 @@ def _result_check(
         engine="hana",
         language="sql",
         implementation=implementation,
-        result=result,
-        reason=reason,
-        diagnostics=diagnostics,
+        result=ResultEnum.skipped if dry_run else result,
+        reason=DRY_RUN_REASON if dry_run else reason,
+        diagnostics=None if dry_run else diagnostics,
     )

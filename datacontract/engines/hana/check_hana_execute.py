@@ -2,7 +2,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.engines.hana.hana_connection import get_connection
 from datacontract.engines.hana.hana_quality_check import run_quality_checks, run_sla_checks
-from datacontract.engines.hana.hana_schema_check import run_schema_checks
+from datacontract.engines.hana.hana_schema_check import DRY_RUN_REASON, METADATA_ONLY_REASON, run_schema_checks
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum, Run
 
@@ -13,6 +13,8 @@ def check_hana_execute(
     server: Server,
     schema_name: str = "all",
     check_categories: set[str] | None = None,
+    dry_run: bool = False,
+    metadata_only: bool = False,
 ):
     connection = None
     try:
@@ -26,19 +28,38 @@ def check_hana_execute(
                 reason="Server schema is required for SAP HANA Cloud.",
                 engine="hana",
             )
-        connection = get_connection(server)
+        run.dryRun = dry_run
+        if not dry_run:
+            connection = get_connection(server)
+        skip_reason = METADATA_ONLY_REASON if metadata_only else DRY_RUN_REASON if dry_run else None
         checks_before = len(run.checks)
 
         for schema_object in data_contract.schema_ or []:
             if schema_name != "all" and schema_object.name != schema_name:
                 continue
             if check_categories is None or "schema" in check_categories:
-                run.checks.extend(run_schema_checks(connection, server_schema, schema_object))
+                run.checks.extend(
+                    run_schema_checks(
+                        connection,
+                        server_schema,
+                        schema_object,
+                        dry_run=dry_run,
+                        metadata_only=metadata_only,
+                    )
+                )
             if check_categories is None or "quality" in check_categories:
-                run.checks.extend(run_quality_checks(connection, server_schema, schema_object))
+                run.checks.extend(run_quality_checks(connection, server_schema, schema_object, skip_reason=skip_reason))
 
         if check_categories is None or "servicelevel" in check_categories:
-            run.checks.extend(run_sla_checks(connection, server_schema, data_contract, schema_filter=schema_name))
+            run.checks.extend(
+                run_sla_checks(
+                    connection,
+                    server_schema,
+                    data_contract,
+                    schema_filter=schema_name,
+                    skip_reason=skip_reason,
+                )
+            )
 
         if check_categories is not None and len(run.checks) == checks_before:
             run.log_warn(f"No checks found for categories: {', '.join(sorted(check_categories))}")

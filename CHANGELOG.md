@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
 
 ### Fixed
+- HANA tests honor `--dry-run`, `--metadata-only`, and percentage thresholds for null, missing, and invalid values (#1332)
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
 
 ## [1.2.0] - 2026-09-08

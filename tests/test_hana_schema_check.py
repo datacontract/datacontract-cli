@@ -210,6 +210,16 @@ def test_field_enum_pass_and_fail():
     assert check_by_type(checks, "field_enum").result == ResultEnum.failed
 
 
+def test_metadata_only_skips_enum_data_query():
+    connection = FakeConnection(catalog_response([column("STATUS", "NVARCHAR")]))
+    prop = SchemaProperty(name="STATUS", logicalType="string", logicalTypeOptions={"enum": ["PAID", "OPEN"]})
+
+    checks = run_schema_checks(connection, "SALES", SchemaObject(name="ORDERS", properties=[prop]), metadata_only=True)
+
+    assert check_by_type(checks, "field_enum").result == ResultEnum.skipped
+    assert all("SYS.TABLE_COLUMNS" in sql for sql, _ in connection.executed)
+
+
 def test_field_regex_uses_like_regexpr():
     connection = FakeConnection(catalog_response([column("EMAIL", "NVARCHAR")]) + [(has_sql("LIKE_REGEXPR"), [(0,)])])
     prop = SchemaProperty(name="EMAIL", logicalType="string", logicalTypeOptions={"pattern": ".*@example.com"})

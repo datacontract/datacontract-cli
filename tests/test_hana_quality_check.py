@@ -1,3 +1,5 @@
+import sqlite3
+
 import pytest
 from open_data_contract_standard.model import (
     DataQuality,
@@ -142,6 +144,119 @@ def test_null_values():
 
     assert check_by_type(checks, "field_null_values").result == ResultEnum.passed
     assert '"ID" IS NULL' in connection.executed[0][0]
+
+
+@pytest.fixture
+def percent_connection():
+    connection = sqlite3.connect(":memory:")
+    connection.execute("ATTACH DATABASE ':memory:' AS SALES")
+    connection.execute("CREATE TABLE SALES.ORDERS (STATUS TEXT)")
+    try:
+        yield connection
+    finally:
+        connection.close()
+
+
+@pytest.mark.parametrize(
+    "metric,arguments,values,threshold,expected_percent,expected_result",
+    [
+        ("nullValues", {}, [None, "OK"], 5, 50.0, ResultEnum.failed),
+        ("nullValues", {}, [None] * 10 + ["OK"] * 990, 5, 1.0, ResultEnum.passed),
+        ("missingValues", {"missingValues": ["N/A"]}, [None, "N/A", "OK", "OK"], 25, 50.0, ResultEnum.failed),
+        ("invalidValues", {"validValues": ["OK"]}, ["BAD", "OK"], 5, 50.0, ResultEnum.failed),
+        ("nullValues", {}, [], 0, 0.0, ResultEnum.passed),
+        ("nullValues", {}, [None, "OK", "OK"], 33.333333, 33.333333, ResultEnum.passed),
+    ],
+)
+def test_percent_thresholds_compare_the_fraction_of_rows(
+    percent_connection,
+    metric,
+    arguments,
+    values,
+    threshold,
+    expected_percent,
+    expected_result,
+):
+    percent_connection.executemany("INSERT INTO SALES.ORDERS VALUES (?)", [(value,) for value in values])
+    schema = SchemaObject(
+        name="orders",
+        physicalName="ORDERS",
+        properties=[
+            SchemaProperty(
+                name="status",
+                physicalName="STATUS",
+                quality=[
+                    DataQuality(metric=metric, arguments=arguments, unit="percent", mustBeLessOrEqualTo=threshold),
+                ],
+            ),
+        ],
+    )
+
+    checks = run_quality_checks(percent_connection, "SALES", schema)
+
+    assert len(checks) == 1
+    check = checks[0]
+    assert check.result == expected_result
+    assert check.diagnostics["unit"] == "percent"
+    assert check.diagnostics["percent"] == expected_percent
+    assert check.diagnostics["row_count"] == len(values)
+    assert check.diagnostics["value"] == sum(value != "OK" for value in values)
+    if expected_result == ResultEnum.failed:
+        assert f"{expected_percent}%" in check.reason
+        assert f"of {len(values)} rows" in check.reason
+
+
+@pytest.mark.parametrize("unit", ["%", "percentage", " Percent "])
+def test_percent_unit_aliases(percent_connection, unit):
+    percent_connection.executemany("INSERT INTO SALES.ORDERS VALUES (?)", [(None,), ("OK",)])
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[
+            SchemaProperty(
+                name="STATUS",
+                quality=[
+                    DataQuality(metric="nullValues", unit=unit, mustBeLessThan=5),
+                ],
+            )
+        ],
+    )
+
+    check = run_quality_checks(percent_connection, "SALES", schema)[0]
+
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["percent"] == 50.0
+
+
+def test_percent_unit_on_row_count_keeps_absolute_count_and_warns(caplog):
+    connection = FakeConnection((10,))
+    schema = SchemaObject(name="ORDERS", quality=[DataQuality(metric="rowCount", unit="percent", mustBe=10)])
+
+    check = run_quality_checks(connection, "SALES", schema)[0]
+
+    assert check.result == ResultEnum.passed
+    assert "percent" not in check.diagnostics
+    assert "does not support unit: percent" in caplog.text
+    assert len(connection.executed) == 1
+
+
+def test_sql_percent_result_is_not_normalized_again():
+    connection = FakeConnection((50,))
+    schema = SchemaObject(
+        name="ORDERS",
+        quality=[
+            DataQuality(
+                type="sql",
+                query="SELECT 50 FROM {model}",
+                unit="percent",
+                mustBe=50,
+            )
+        ],
+    )
+
+    check = run_quality_checks(connection, "SALES", schema)[0]
+
+    assert check.result == ResultEnum.passed
+    assert len(connection.executed) == 1
 
 
 def test_invalid_values():
