@@ -5,8 +5,9 @@ from typing import Any
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
 from datacontract.engines.checks.create_checks import _retention_value_to_seconds
-from datacontract.export.sodacl_check_builder import to_sodacl_threshold
+from datacontract.engines.checks.sql_guard import is_read_only_query
 from datacontract.engines.hana.hana_schema_check import qualified_table_name, quote_identifier
+from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.model.run import Check, ResultEnum
 
 
@@ -223,12 +224,25 @@ def _sql_quality_check(
     if query is None:
         return None
     check_type = "field_quality_sql" if field_name is not None else "model_quality_sql"
+    key = _quality_key(table_name, field_name, f"quality_sql_{index}")
+    name = quality.description or "Quality Check"
+    if not is_read_only_query(query):
+        return _check(
+            check_type=check_type,
+            key=key,
+            name=name,
+            model=table_name,
+            field=field_name,
+            implementation=query,
+            result=ResultEnum.failed,
+            reason="A quality rule query must be a single read-only query, so it was not executed.",
+        )
     return _metric_quality_check(
         connection,
         quality,
         check_type=check_type,
-        key=_quality_key(table_name, field_name, f"quality_sql_{index}"),
-        name=quality.description or "Quality Check",
+        key=key,
+        name=name,
         model=table_name,
         field=field_name,
         sql=query,

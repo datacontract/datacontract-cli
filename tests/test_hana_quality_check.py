@@ -1,3 +1,4 @@
+import pytest
 from open_data_contract_standard.model import (
     DataQuality,
     OpenDataContractStandard,
@@ -64,6 +65,19 @@ def test_sql_quality_fail():
     checks = run_quality_checks(connection, "SALES", schema)
 
     assert check_by_type(checks, "model_quality_sql").result == ResultEnum.failed
+
+
+@pytest.mark.parametrize("query", ["DELETE FROM {model}", "SELECT 1 FROM {model}; DROP TABLE ORDERS"])
+def test_sql_quality_refuses_writes_and_multiple_statements(query):
+    connection = FakeConnection((0,))
+    schema = SchemaObject(name="ORDERS", quality=[DataQuality(type="sql", query=query, mustBe=0)])
+
+    checks = run_quality_checks(connection, "SALES", schema)
+
+    check = check_by_type(checks, "model_quality_sql")
+    assert check.result == ResultEnum.failed
+    assert "read-only query" in check.reason
+    assert connection.executed == []
 
 
 def test_sql_quality_threshold_operators():
