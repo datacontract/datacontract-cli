@@ -1,4 +1,7 @@
-from open_data_contract_standard.model import SchemaObject, SchemaProperty
+import sqlite3
+
+import pytest
+from open_data_contract_standard.model import DataQuality, SchemaObject, SchemaProperty
 
 from datacontract.engines.hana.hana_schema_check import (
     qualified_table_name,
@@ -67,6 +70,49 @@ def check_by_type(checks, check_type):
     return next(check for check in checks if check.type == check_type)
 
 
+class DataConnection(FakeConnection):
+    """Execute data checks on real rows; substitute only HANA's catalog responses."""
+
+    def __init__(self, source):
+        super().__init__(
+            catalog_response(
+                [
+                    column("ID", "INTEGER", "TRUE"),
+                    column("LINE_NO", "INTEGER", "TRUE"),
+                    column("STATUS", "NVARCHAR", "TRUE"),
+                ],
+                source=source,
+            )
+        )
+        self.db = sqlite3.connect(":memory:")
+        self.db.execute("ATTACH DATABASE ':memory:' AS SALES")
+        self.table = "ORDERS_DATA" if source == "view" else "ORDERS"
+        self.db.execute(f"CREATE TABLE SALES.{self.table} (ID INTEGER, LINE_NO INTEGER, STATUS TEXT)")
+        if source == "view":
+            self.db.execute("CREATE VIEW SALES.ORDERS AS SELECT * FROM ORDERS_DATA")
+
+    def insert(self, rows):
+        self.db.executemany(f"INSERT INTO SALES.{self.table} VALUES (?, ?, ?)", rows)
+
+    def response_for(self, sql, params):
+        if "SYS." in sql:
+            return super().response_for(sql, params)
+        self.executed.append((sql, params))
+        return self.db.execute(sql, params).fetchall()
+
+    def close(self):
+        self.db.close()
+
+
+@pytest.fixture(params=["table", "view"])
+def hana_data(request):
+    connection = DataConnection(request.param)
+    try:
+        yield connection
+    finally:
+        connection.close()
+
+
 def test_model_exists_pass():
     connection = FakeConnection(catalog_response([column()]))
     schema = SchemaObject(name="ORDERS", properties=[])
@@ -124,40 +170,26 @@ def test_field_type_mismatch():
     assert check.diagnostics == {"expected": "integer", "actual": "NVARCHAR"}
 
 
-def test_field_required_nullable_false():
-    connection = FakeConnection(catalog_response([column(nullable="FALSE")]))
+@pytest.mark.parametrize("values,missing", [([1, 2], 0), ([1, None], 1), ([], 0)])
+def test_required_checks_values_in_nullable_columns(hana_data, values, missing):
+    hana_data.insert([(value, None, None) for value in values])
     schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="ID", required=True)])
 
-    checks = run_schema_checks(connection, "SALES", schema)
+    check = check_by_type(run_schema_checks(hana_data, "SALES", schema), "field_required")
 
-    assert check_by_type(checks, "field_required").result == ResultEnum.passed
-
-
-def test_field_required_nullable_true():
-    connection = FakeConnection(catalog_response([column(nullable="TRUE")]))
-    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="ID", required=True)])
-
-    checks = run_schema_checks(connection, "SALES", schema)
-
-    assert check_by_type(checks, "field_required").result == ResultEnum.failed
+    assert check.result == (ResultEnum.failed if missing else ResultEnum.passed)
+    assert check.diagnostics["value"] == missing
 
 
-def test_field_unique_pass():
-    connection = FakeConnection(catalog_response([column()]) + [(has_sql("COUNT(*) - COUNT(DISTINCT"), [(0,)])])
+@pytest.mark.parametrize("values,duplicates", [([1, None], 0), ([1, 1, 1, 2, 2], 2), ([None, None], 1), ([], 0)])
+def test_unique_counts_duplicated_keys(hana_data, values, duplicates):
+    hana_data.insert([(value, None, None) for value in values])
     schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="ID", unique=True)])
 
-    checks = run_schema_checks(connection, "SALES", schema)
+    check = check_by_type(run_schema_checks(hana_data, "SALES", schema), "field_unique")
 
-    assert check_by_type(checks, "field_unique").result == ResultEnum.passed
-
-
-def test_field_unique_fail():
-    connection = FakeConnection(catalog_response([column()]) + [(has_sql("COUNT(*) - COUNT(DISTINCT"), [(2,)])])
-    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="ID", unique=True)])
-
-    checks = run_schema_checks(connection, "SALES", schema)
-
-    assert check_by_type(checks, "field_unique").result == ResultEnum.failed
+    assert check.result == (ResultEnum.failed if duplicates else ResultEnum.passed)
+    assert check.diagnostics["value"] == duplicates
 
 
 def test_field_min_length_and_max_length():
@@ -220,6 +252,90 @@ def test_metadata_only_skips_enum_data_query():
     assert all("SYS.TABLE_COLUMNS" in sql for sql, _ in connection.executed)
 
 
+@pytest.mark.parametrize("values,invalid", [(["OPEN", "O'Reilly"], 0), (["BAD"], 1), ([None], 0)])
+def test_odcs_enum_entries_take_precedence_and_check_actual_values(hana_data, values, invalid):
+    hana_data.insert([(None, None, value) for value in values])
+    prop = SchemaProperty(
+        name="status",
+        physicalName="STATUS",
+        logicalType="string",
+        enum=[{"value": "OPEN", "label": "Open"}, {"value": "O'Reilly"}],
+        logicalTypeOptions={"enum": ["BAD"]},
+        customProperties=[{"property": "enum", "value": ["OTHER"]}],
+    )
+
+    checks = run_schema_checks(hana_data, "SALES", SchemaObject(name="ORDERS", properties=[prop]))
+
+    check = check_by_type(checks, "field_enum")
+    assert check.result == (ResultEnum.failed if invalid else ResultEnum.passed)
+    assert check.diagnostics["value"] == invalid
+    assert len([c for c in checks if c.type == "field_enum"]) == 1
+
+
+@pytest.mark.parametrize("allowed", [[None], [None, "OPEN"]])
+def test_enum_with_null_does_not_accept_arbitrary_non_null_values(hana_data, allowed):
+    hana_data.insert([(None, None, "BAD"), (None, None, None)])
+    prop = SchemaProperty(name="STATUS", enum=[{"value": value} for value in allowed])
+
+    check = check_by_type(
+        run_schema_checks(hana_data, "SALES", SchemaObject(name="ORDERS", properties=[prop])), "field_enum"
+    )
+
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["value"] == 1
+
+
+def test_numeric_enum_entries_preserve_their_values(hana_data):
+    hana_data.insert([(1, None, None), (3, None, None)])
+    prop = SchemaProperty(name="ID", logicalType="integer", enum=[{"value": 1}, {"value": 2}])
+
+    check = check_by_type(
+        run_schema_checks(hana_data, "SALES", SchemaObject(name="ORDERS", properties=[prop])), "field_enum"
+    )
+
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["value"] == 1
+
+
+def test_quality_valid_values_do_not_also_generate_a_schema_enum(hana_data):
+    prop = SchemaProperty(
+        name="STATUS",
+        quality=[
+            DataQuality(metric="invalidValues", arguments={"validValues": ["OPEN"]}, mustBe=0),
+        ],
+    )
+
+    checks = run_schema_checks(hana_data, "SALES", SchemaObject(name="ORDERS", properties=[prop]))
+
+    assert not any(c.type == "field_enum" for c in checks)
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_primary_key_and_enum_checks_are_skipped_in_metadata_only(hana_data, dry_run):
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[
+            SchemaProperty(name="ID", primaryKey=True),
+            SchemaProperty(name="LINE_NO", primaryKey=True),
+            SchemaProperty(name="STATUS", required=True, enum=[{"value": "OPEN"}]),
+        ],
+    )
+
+    checks = run_schema_checks(None if dry_run else hana_data, "SALES", schema, metadata_only=True, dry_run=dry_run)
+
+    data_checks = [
+        c
+        for c in checks
+        if c.type in {"field_primary_key_required", "primary_key_unique", "field_enum", "field_required"}
+    ]
+    assert len(data_checks) == 5
+    assert all(
+        c.result == ResultEnum.skipped and c.reason == "Row-value check disabled by --metadata-only"
+        for c in data_checks
+    )
+    assert all("SYS." in sql for sql, _ in hana_data.executed)
+
+
 def test_field_regex_uses_like_regexpr():
     connection = FakeConnection(catalog_response([column("EMAIL", "NVARCHAR")]) + [(has_sql("LIKE_REGEXPR"), [(0,)])])
     prop = SchemaProperty(name="EMAIL", logicalType="string", logicalTypeOptions={"pattern": ".*@example.com"})
@@ -231,23 +347,64 @@ def test_field_regex_uses_like_regexpr():
     assert "LIKE_REGEXPR" in connection.executed[-1][0]
 
 
-def test_primary_key_table():
-    responses = catalog_response([column()]) + [(has_sql("FROM SYS.CONSTRAINTS"), [("ID",)])]
-    connection = FakeConnection(responses)
+@pytest.mark.parametrize("values,missing,duplicates", [([1, 2], 0, 0), ([1, 1], 0, 1), ([None, 1], 1, 0), ([], 0, 0)])
+def test_primary_key_is_not_null_and_unique_in_the_data(hana_data, values, missing, duplicates):
+    hana_data.insert([(value, None, None) for value in values])
     schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="ID", primaryKey=True)])
 
-    checks = run_schema_checks(connection, "SALES", schema)
+    checks = run_schema_checks(hana_data, "SALES", schema)
 
-    assert check_by_type(checks, "field_primary_key").result == ResultEnum.passed
+    required = check_by_type(checks, "field_primary_key_required")
+    unique = check_by_type(checks, "field_primary_key_unique")
+    assert required.result == (ResultEnum.failed if missing else ResultEnum.passed)
+    assert unique.result == (ResultEnum.failed if duplicates else ResultEnum.passed)
+    assert required.diagnostics["value"] == missing
+    assert unique.diagnostics["value"] == duplicates
+    assert not any("SYS.CONSTRAINTS" in sql for sql, _ in hana_data.executed)
 
 
-def test_primary_key_view_warning():
-    connection = FakeConnection(catalog_response([column()], source="view"))
-    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="ID", primaryKey=True)])
+@pytest.mark.parametrize(
+    "rows,missing,duplicates",
+    [
+        ([(1, 1, None), (1, 2, None), (2, 1, None)], 0, 0),
+        ([(1, 1, None), (1, 1, None), (1, 1, None)], 0, 1),
+        ([(None, 1, None)], 1, 0),
+    ],
+)
+def test_composite_primary_key_checks_tuples_using_physical_names(hana_data, rows, missing, duplicates):
+    hana_data.insert(rows)
+    schema = SchemaObject(
+        name="orders",
+        physicalName="ORDERS",
+        properties=[
+            SchemaProperty(name="line", physicalName="LINE_NO", primaryKey=True, primaryKeyPosition=2),
+            SchemaProperty(name="id", physicalName="ID", primaryKey=True, primaryKeyPosition=1),
+        ],
+    )
 
-    checks = run_schema_checks(connection, "SALES", schema)
+    checks = run_schema_checks(hana_data, "SALES", schema)
 
-    assert check_by_type(checks, "field_primary_key").result == ResultEnum.warning
+    required = [c for c in checks if c.type == "field_primary_key_required"]
+    assert len(required) == 2
+    assert sum(c.diagnostics["value"] for c in required) == missing
+    unique = check_by_type(checks, "primary_key_unique")
+    assert unique.result == (ResultEnum.failed if duplicates else ResultEnum.passed)
+    assert unique.diagnostics["value"] == duplicates
+    assert unique.key == "ORDERS__primary_key_unique"
+    assert unique.field is None
+    assert not any(c.type == "field_primary_key_unique" for c in checks)
+
+
+def test_primary_key_reuses_explicit_required_and_unique_checks(hana_data):
+    hana_data.insert([(1, None, None)])
+    schema = SchemaObject(
+        name="ORDERS", properties=[SchemaProperty(name="ID", required=True, unique=True, primaryKey=True)]
+    )
+
+    checks = run_schema_checks(hana_data, "SALES", schema)
+
+    assert [c.type for c in checks] == ["model_exists", "field_is_present", "field_required", "field_unique"]
+    assert all(c.result == ResultEnum.passed for c in checks)
 
 
 def test_view_fallback():

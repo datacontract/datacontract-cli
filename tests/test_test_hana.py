@@ -16,7 +16,7 @@ from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.model.run import Check, ResultEnum, Run
-from tests.test_hana_schema_check import FakeConnection, catalog_response, column, has_sql
+from tests.test_hana_schema_check import DataConnection, FakeConnection, catalog_response, column
 
 
 def test_hana_test_flow_bypasses_soda(monkeypatch):
@@ -84,6 +84,7 @@ def _mode_contract():
                             "maxLength": 10,
                             "pattern": "[A-Z]+",
                         },
+                        enum=[{"value": "OPEN"}, {"value": "PAID"}],
                         quality=[
                             DataQuality(metric="nullValues", unit="percent", mustBeLessThan=5),
                             DataQuality(metric="missingValues", mustBe=0),
@@ -116,7 +117,7 @@ def _catalog_connection():
                 column("UPDATED_AT", "TIMESTAMP"),
             ]
         )
-        + [(has_sql("FROM SYS.CONSTRAINTS"), [("ID",)]), (lambda sql, params: True, [(0,)])]
+        + [(lambda sql, params: True, [(0,)])]
     )
     connection.close = Mock()
     return connection
@@ -149,6 +150,8 @@ def test_hana_dry_run_lists_native_checks_without_connecting(monkeypatch, metada
 
 
 _ROW_CHECK_TYPES = {
+    "field_required",
+    "field_enum",
     "field_unique",
     "field_min_length",
     "field_max_length",
@@ -173,7 +176,7 @@ def test_hana_metadata_only_reads_catalog_and_reports_skipped_checks(monkeypatch
     original_response = connection.response_for
 
     def catalog_only(sql, params):
-        assert any(catalog in sql for catalog in ("SYS.TABLE_COLUMNS", "SYS.VIEW_COLUMNS", "SYS.CONSTRAINTS"))
+        assert any(catalog in sql for catalog in ("SYS.TABLE_COLUMNS", "SYS.VIEW_COLUMNS"))
         return original_response(sql, params)
 
     connection.response_for = catalog_only
@@ -189,11 +192,42 @@ def test_hana_metadata_only_reads_catalog_and_reports_skipped_checks(monkeypatch
         "model_exists",
         "field_is_present",
         "field_type",
-        "field_required",
-        "field_primary_key",
     }
     assert connection.executed
     connection.close.assert_called_once()
+
+
+@pytest.mark.parametrize("severity, expected", [("warning", ResultEnum.warning), ("critical", ResultEnum.failed)])
+def test_hana_contract_applies_data_checks_and_quality_severity(monkeypatch, severity, expected):
+    connection = DataConnection("view")
+    connection.insert([(1, 1, "OPEN"), (2, 1, "PAID")])
+    monkeypatch.setattr("datacontract.engines.hana.check_hana_execute.get_connection", lambda server: connection)
+    contract = OpenDataContractStandard.model_validate_json(_mode_contract())
+    contract.schema_[0].properties = [
+        SchemaProperty(name="id", physicalName="ID", logicalType="number", primaryKey=True),
+        SchemaProperty(
+            name="status",
+            physicalName="STATUS",
+            logicalType="string",
+            required=True,
+            enum=[{"value": "OPEN"}, {"value": "PAID"}],
+        ),
+    ]
+    contract.schema_[0].quality = [DataQuality(metric="rowCount", mustBe=0, severity=severity)]
+    contract.slaProperties = None
+
+    run = DataContract(data_contract_str=contract.model_dump_json(by_alias=True, exclude_none=True)).test()
+
+    assert run.result == expected
+    assert {check.type for check in run.checks if check.result == expected} == {"row_count"}
+    assert {check.type for check in run.checks if check.result == ResultEnum.passed} >= {
+        "field_type",
+        "field_primary_key_required",
+        "field_primary_key_unique",
+        "field_required",
+        "field_enum",
+    }
+    assert all(check.result in (ResultEnum.passed, expected) for check in run.checks)
 
 
 def test_hana_dry_run_cli_needs_no_driver_or_credentials(monkeypatch, tmp_path):

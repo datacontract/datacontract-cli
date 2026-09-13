@@ -113,26 +113,99 @@ def test_row_count():
     assert connection.executed[0][0] == 'SELECT COUNT(*) FROM "SALES"."ORDERS"'
 
 
-def test_duplicate_values_field():
-    connection = FakeConnection((0,))
-    prop = SchemaProperty(name="ID", quality=[DataQuality(metric="duplicateValues", mustBe=0)])
+@pytest.mark.parametrize(
+    "values,duplicates", [(["A", None], 0), (["A", "A", "A", "B", "B"], 2), ([None, None], 1), ([], 0)]
+)
+def test_duplicate_values_field_counts_keys(percent_connection, values, duplicates):
+    percent_connection.executemany("INSERT INTO SALES.ORDERS VALUES (?)", [(value,) for value in values])
+    prop = SchemaProperty(name="STATUS", quality=[DataQuality(metric="duplicateValues", mustBe=duplicates)])
     schema = SchemaObject(name="ORDERS", properties=[prop])
 
-    checks = run_quality_checks(connection, "SALES", schema)
+    checks = run_quality_checks(percent_connection, "SALES", schema)
 
     assert check_by_type(checks, "field_duplicate_values").result == ResultEnum.passed
-    assert 'COUNT(DISTINCT "ID")' in connection.executed[0][0]
+    assert check_by_type(checks, "field_duplicate_values").diagnostics["value"] == duplicates
 
 
-def test_duplicate_values_model():
-    connection = FakeConnection((1,))
-    quality = DataQuality(metric="duplicateValues", arguments={"properties": ["ID", "STATUS"]}, mustBe=0)
+def test_duplicate_values_model_counts_tuples_with_physical_names(percent_connection):
+    percent_connection.execute("ALTER TABLE SALES.ORDERS ADD COLUMN LINE_NO INTEGER")
+    percent_connection.executemany(
+        "INSERT INTO SALES.ORDERS VALUES (?, ?)",
+        [
+            ("A", 1),
+            ("A", 1),
+            ("A", 1),
+            ("A", 2),
+            ("B", 1),
+            (None, None),
+            (None, None),
+        ],
+    )
+    quality = DataQuality(metric="duplicateValues", arguments={"properties": ["status", "line"]}, mustBe=2)
+    schema = SchemaObject(
+        name="orders",
+        physicalName="ORDERS",
+        quality=[quality],
+        properties=[
+            SchemaProperty(name="status", physicalName="STATUS"),
+            SchemaProperty(name="line", physicalName="LINE_NO"),
+        ],
+    )
+
+    checks = run_quality_checks(percent_connection, "SALES", schema)
+
+    check = check_by_type(checks, "model_duplicate_values")
+    assert check.result == ResultEnum.passed
+    assert check.diagnostics["value"] == 2
+
+
+@pytest.mark.parametrize(
+    "severity,expected",
+    [
+        ("warning", ResultEnum.warning),
+        ("WARN", ResultEnum.warning),
+        (" info ", ResultEnum.warning),
+        ("low", ResultEnum.warning),
+        ("minor", ResultEnum.warning),
+        ("trivial", ResultEnum.warning),
+        (None, ResultEnum.failed),
+        ("critical", ResultEnum.failed),
+        ("error", ResultEnum.failed),
+    ],
+)
+@pytest.mark.parametrize("kind", ["sql", "count", "percent"])
+def test_quality_failures_honor_severity(percent_connection, kind, severity, expected):
+    percent_connection.executemany("INSERT INTO SALES.ORDERS VALUES (?)", [(None,), ("OK",)])
+    quality = (
+        DataQuality(type="sql", query="SELECT COUNT(*) FROM {model} WHERE {field} IS NULL", mustBe=0, severity=severity)
+        if kind == "sql"
+        else DataQuality(
+            metric="nullValues", unit="percent" if kind == "percent" else "rows", mustBe=0, severity=severity
+        )
+    )
+    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="STATUS", quality=[quality])])
+
+    check = run_quality_checks(percent_connection, "SALES", schema)[0]
+
+    assert check.result == expected
+    assert check.diagnostics.get("severity") == severity
+
+
+def test_warning_severity_does_not_hide_query_errors(percent_connection):
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM SALES.MISSING", mustBe=0, severity="warning")
     schema = SchemaObject(name="ORDERS", quality=[quality])
 
-    checks = run_quality_checks(connection, "SALES", schema)
+    check = run_quality_checks(percent_connection, "SALES", schema)[0]
 
-    assert check_by_type(checks, "model_duplicate_values").result == ResultEnum.failed
-    assert 'COUNT(DISTINCT "ID", "STATUS")' in connection.executed[0][0]
+    assert check.result == ResultEnum.error
+
+
+def test_warning_severity_keeps_a_passing_check_passed(percent_connection):
+    quality = DataQuality(metric="rowCount", mustBe=0, severity="warning")
+
+    check = run_quality_checks(percent_connection, "SALES", SchemaObject(name="ORDERS", quality=[quality]))[0]
+
+    assert check.result == ResultEnum.passed
 
 
 def test_null_values():

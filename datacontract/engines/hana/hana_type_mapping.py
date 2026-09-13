@@ -14,7 +14,7 @@ _HANA_LOGICAL_TYPE_MAPPING = {
     "double": {"DOUBLE", "FLOAT", "REAL"},
     "decimal": {"DECIMAL", "NUMERIC"},
     "numeric": {"DECIMAL", "NUMERIC"},
-    "number": {"DECIMAL", "NUMERIC"},
+    "number": {"INTEGER", "INT", "BIGINT", "SMALLINT", "TINYINT", "REAL", "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC"},
     "boolean": {"BOOLEAN"},
     "date": {"DATE"},
     "time": {"TIME"},

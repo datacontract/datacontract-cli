@@ -1,3 +1,4 @@
+import pytest
 from open_data_contract_standard.model import SchemaProperty
 
 from datacontract.engines.hana.hana_type_mapping import convert_type_to_hana, types_match
@@ -73,3 +74,21 @@ def test_types_match_logical_mapping():
     assert types_match("INTEGER", "int")
     assert types_match("SECONDDATE", "timestamp_ntz")
     assert not types_match("DATE", "timestamp")
+
+
+@pytest.mark.parametrize(
+    "native_type",
+    ["TINYINT", "SMALLINT", "INTEGER", "INT", "BIGINT", "REAL", "FLOAT", "DOUBLE", "DECIMAL(15,2)", "NUMERIC"],
+)
+def test_logical_number_accepts_numeric_storage(native_type):
+    assert types_match(native_type, "number")
+
+
+@pytest.mark.parametrize("native_type", ["DATE", "NVARCHAR", "BOOLEAN", "TIMESTAMP"])
+def test_logical_number_rejects_non_numeric_storage(native_type):
+    assert not types_match(native_type, "number")
+
+
+def test_physical_numeric_type_remains_specific():
+    assert not types_match("BIGINT", "INTEGER")
+    assert not types_match("DOUBLE", "DECIMAL")

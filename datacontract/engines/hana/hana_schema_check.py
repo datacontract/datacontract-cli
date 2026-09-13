@@ -5,6 +5,7 @@ from typing import Any
 from open_data_contract_standard.model import SchemaObject, SchemaProperty
 
 from datacontract.engines.hana.hana_type_mapping import types_match
+from datacontract.model.enum_values import get_enum_values
 from datacontract.model.run import Check, ResultEnum
 
 DRY_RUN_REASON = "Dry run: check not executed"
@@ -28,6 +29,15 @@ def quote_identifier(name: str) -> str:
 
 def qualified_table_name(schema: str, table: str) -> str:
     return f"{quote_identifier(schema)}.{quote_identifier(table)}"
+
+
+def duplicate_count_query(schema: str, table: str, fields: list[str]) -> str:
+    """Count duplicated keys, including a NULL key only if it occurs more than once."""
+    columns = ", ".join(quote_identifier(field) for field in fields)
+    return (
+        f"SELECT COUNT(*) FROM (SELECT {columns} FROM {qualified_table_name(schema, table)} "
+        f"GROUP BY {columns} HAVING COUNT(*) > 1) AS duplicate_groups"
+    )
 
 
 def run_schema_checks(
@@ -60,7 +70,11 @@ def run_schema_checks(
         return checks
 
     columns_by_name = {column.name: column for column in column_metadata}
-    source = column_metadata[0].source if column_metadata else None
+    primary_key_props = sorted(
+        (prop for prop in schema_object.properties or [] if prop.primaryKey),
+        key=lambda prop: prop.primaryKeyPosition if prop.primaryKeyPosition is not None else 0,
+    )
+    primary_key_fields = [_property_name(prop) for prop in primary_key_props]
 
     for prop in schema_object.properties or []:
         field_name = _property_name(prop)
@@ -84,21 +98,34 @@ def run_schema_checks(
         if expected_type:
             checks.append(_field_type_check(table_name, field_name, expected_type, column))
 
-        if prop.required:
-            checks.append(_field_required_check(table_name, field_name, column))
-
-        if prop.unique:
+        if prop.required or prop.primaryKey:
             checks.append(
                 _zero_violations_check(
                     connection,
-                    check_type="field_unique",
+                    check_type="field_required" if prop.required else "field_primary_key_required",
                     table_schema=schema_name,
                     table_name=table_name,
                     field_name=field_name,
                     sql=(
-                        f"SELECT COUNT(*) - COUNT(DISTINCT {quote_identifier(field_name)}) "
-                        f"FROM {qualified_table_name(schema_name, table_name)}"
+                        f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+                        f"WHERE {quote_identifier(field_name)} IS NULL"
                     ),
+                    params=None,
+                    name=f"Check that field {field_name} has no missing values",
+                    failure_reason="Found {value} missing values.",
+                    skip_reason=skip_reason,
+                )
+            )
+
+        if prop.unique or (prop.primaryKey and len(primary_key_fields) == 1):
+            checks.append(
+                _zero_violations_check(
+                    connection,
+                    check_type="field_unique" if prop.unique else "field_primary_key_unique",
+                    table_schema=schema_name,
+                    table_name=table_name,
+                    field_name=field_name,
+                    sql=duplicate_count_query(schema_name, table_name, [field_name]),
                     params=None,
                     name=f"Check that unique field {field_name} has no duplicate values",
                     failure_reason="Found {value} duplicate values.",
@@ -106,10 +133,23 @@ def run_schema_checks(
                 )
             )
 
-        if prop.primaryKey:
-            checks.append(_primary_key_check(connection, schema_name, table_name, field_name, source, dry_run=dry_run))
-
         checks.extend(_logical_type_option_checks(connection, schema_name, table_name, field_name, prop, skip_reason))
+
+    if len(primary_key_fields) > 1 and (dry_run or all(field in columns_by_name for field in primary_key_fields)):
+        checks.append(
+            _zero_violations_check(
+                connection,
+                check_type="primary_key_unique",
+                table_schema=schema_name,
+                table_name=table_name,
+                field_name=None,
+                sql=duplicate_count_query(schema_name, table_name, primary_key_fields),
+                params=None,
+                name=f"Check that primary key ({', '.join(primary_key_fields)}) has no duplicate values",
+                failure_reason="Found {value} duplicate primary keys.",
+                skip_reason=skip_reason,
+            )
+        )
 
     return checks
 
@@ -191,9 +231,17 @@ def _logical_type_option_checks(
         checks.append(_maximum_check(connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason))
         checks.append(_not_equal_check(connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason))
 
-    enum_values = options.get("enum")
+    enum_values = get_enum_values(prop, include_quality_rule=False)
     if enum_values is not None and len(enum_values) > 0:
-        placeholders = ", ".join("?" for _ in enum_values)
+        # NULL inside NOT IN would make even non-enum values evaluate to UNKNOWN.
+        # Required checks handle missing values independently of the allowed set.
+        non_null_values = [value for value in enum_values if value is not None]
+        placeholders = ", ".join("?" for _ in non_null_values)
+        predicate = (
+            f"{quote_identifier(field_name)} NOT IN ({placeholders})"
+            if non_null_values
+            else f"{quote_identifier(field_name)} IS NOT NULL"
+        )
         checks.append(
             _zero_violations_check(
                 connection,
@@ -201,11 +249,8 @@ def _logical_type_option_checks(
                 table_schema=schema_name,
                 table_name=table_name,
                 field_name=field_name,
-                sql=(
-                    f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
-                    f"WHERE {quote_identifier(field_name)} NOT IN ({placeholders})"
-                ),
-                params=enum_values,
+                sql=(f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} WHERE {predicate}"),
+                params=non_null_values,
                 name=f"Check that field {field_name} only contains enum values {enum_values}",
                 failure_reason="Found {value} values outside the enum.",
                 skip_reason=skip_reason,
@@ -317,76 +362,24 @@ def _field_type_check(table_name: str, field_name: str, expected_type: str, colu
     )
 
 
-def _field_required_check(table_name: str, field_name: str, column: ColumnMetadata | None) -> Check:
-    nullable = str(column.is_nullable).upper() if column else None
-    result = ResultEnum.passed if nullable == "FALSE" else ResultEnum.failed
-    return _result_check(
-        check_type="field_required",
-        key=f"{table_name}__{field_name}__field_required",
-        name=f"Check that field {field_name} is not nullable",
-        model=table_name,
-        field=field_name,
-        implementation="Catalog IS_NULLABLE comparison",
-        result=result,
-        reason=None if result == ResultEnum.passed else f"Field {field_name} is nullable in the catalog.",
-        diagnostics={"isNullable": column.is_nullable} if column else None,
-        dry_run=column is None,
-    )
-
-
-def _primary_key_check(
-    connection, schema_name: str, table_name: str, field_name: str, source: str | None, *, dry_run: bool = False
-) -> Check:
-    sql = """
-SELECT COLUMN_NAME
-FROM SYS.CONSTRAINTS
-WHERE SCHEMA_NAME = ? AND TABLE_NAME = ? AND IS_PRIMARY_KEY = 'TRUE'
-"""
-    if dry_run or source == "view":
-        return _result_check(
-            check_type="field_primary_key",
-            key=f"{table_name}__{field_name}__field_primary_key",
-            name=f"Check that field {field_name} is a primary key",
-            model=table_name,
-            field=field_name,
-            implementation=sql.strip(),
-            result=ResultEnum.skipped if dry_run else ResultEnum.warning,
-            reason=DRY_RUN_REASON if dry_run else "Primary key metadata not available for views.",
-        )
-
-    rows = _fetch_all(connection, sql, [schema_name, table_name])
-    primary_key_columns = {_row_value(row, 0, "COLUMN_NAME") for row in rows}
-    result = ResultEnum.passed if field_name in primary_key_columns else ResultEnum.failed
-    return _result_check(
-        check_type="field_primary_key",
-        key=f"{table_name}__{field_name}__field_primary_key",
-        name=f"Check that field {field_name} is a primary key",
-        model=table_name,
-        field=field_name,
-        implementation=sql.strip(),
-        result=result,
-        reason=None if result == ResultEnum.passed else f"Field {field_name} is not part of the primary key.",
-        diagnostics={"primaryKeyColumns": sorted(primary_key_columns)},
-    )
-
-
 def _zero_violations_check(
     connection,
     *,
     check_type: str,
     table_schema: str,
     table_name: str,
-    field_name: str,
+    field_name: str | None,
     sql: str,
     params: list[Any] | None,
     name: str,
     failure_reason: str,
     skip_reason: str | None = None,
 ) -> Check:
+    key = f"{table_name}__{field_name}__{check_type}" if field_name is not None else f"{table_name}__{check_type}"
     if skip_reason:
         return _result_check(
             check_type=check_type,
-            key=f"{table_name}__{field_name}__{check_type}",
+            key=key,
             name=name,
             model=table_name,
             field=field_name,
@@ -399,7 +392,7 @@ def _zero_violations_check(
     except Exception as e:
         return _result_check(
             check_type=check_type,
-            key=f"{table_name}__{field_name}__{check_type}",
+            key=key,
             name=name,
             model=table_name,
             field=field_name,
@@ -411,7 +404,7 @@ def _zero_violations_check(
     result = ResultEnum.passed if value == 0 else ResultEnum.failed
     return _result_check(
         check_type=check_type,
-        key=f"{table_name}__{field_name}__{check_type}",
+        key=key,
         name=name,
         model=table_name,
         field=field_name,

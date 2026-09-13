@@ -6,8 +6,9 @@ from typing import Any
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
 from datacontract.engines.checks.create_checks import _retention_value_to_seconds, is_percent_unit
+from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.sql_guard import is_read_only_query
-from datacontract.engines.hana.hana_schema_check import qualified_table_name, quote_identifier
+from datacontract.engines.hana.hana_schema_check import duplicate_count_query, qualified_table_name, quote_identifier
 from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.model.run import Check, ResultEnum
 
@@ -30,7 +31,16 @@ def run_quality_checks(
                 checks.append(check)
 
     for index, quality in enumerate(schema_object.quality or []):
-        check = _quality_check(connection, schema_name, table_name, None, quality, index, skip_reason)
+        check = _quality_check(
+            connection,
+            schema_name,
+            table_name,
+            None,
+            quality,
+            index,
+            skip_reason,
+            property_names={prop.name: prop.physicalName or prop.name for prop in schema_object.properties or []},
+        )
         if check is not None:
             checks.append(check)
 
@@ -93,6 +103,7 @@ def _quality_check(
     quality: DataQuality,
     index: int,
     skip_reason: str | None = None,
+    property_names: dict[str, str] | None = None,
 ) -> Check | None:
     if quality.type == "custom" and quality.engine == "soda":
         return _check(
@@ -126,10 +137,7 @@ def _quality_check(
 
     if quality.metric == "duplicateValues":
         if field_name is not None:
-            sql = (
-                f"SELECT COUNT(*) - COUNT(DISTINCT {quote_identifier(field_name)}) "
-                f"FROM {qualified_table_name(schema_name, table_name)}"
-            )
+            sql = duplicate_count_query(schema_name, table_name, [field_name])
             return _metric_quality_check(
                 connection,
                 quality,
@@ -153,11 +161,8 @@ def _quality_check(
                 field=None,
                 reason="duplicateValues requires arguments.properties at model level.",
             )
-        quoted_properties = ", ".join(quote_identifier(prop) for prop in properties)
-        sql = (
-            f"SELECT COUNT(*) - COUNT(DISTINCT {quoted_properties}) "
-            f"FROM {qualified_table_name(schema_name, table_name)}"
-        )
+        fields = [(property_names or {}).get(prop, prop) for prop in properties]
+        sql = duplicate_count_query(schema_name, table_name, fields)
         return _metric_quality_check(
             connection,
             quality,
@@ -341,6 +346,8 @@ def _metric_quality_check(
 
     passed = _evaluate_threshold(percent if is_percent else value, quality)
     diagnostics = {"value": value, "threshold": threshold}
+    if quality.severity is not None:
+        diagnostics["severity"] = quality.severity
     failure_reason = f"Actual value {value} does not satisfy threshold {threshold}."
     if is_percent:
         diagnostics.update(unit="percent", percent=percent, row_count=row_count)
@@ -354,7 +361,7 @@ def _metric_quality_check(
         model=model,
         field=field,
         implementation=sql,
-        result=ResultEnum.passed if passed else ResultEnum.failed,
+        result=ResultEnum.passed if passed else failure_result(quality.severity),
         reason=None if passed else failure_reason,
         diagnostics=diagnostics,
     )
