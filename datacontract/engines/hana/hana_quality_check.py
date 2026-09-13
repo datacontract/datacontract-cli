@@ -5,10 +5,21 @@ from typing import Any
 
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
-from datacontract.engines.checks.create_checks import _retention_value_to_seconds, is_percent_unit
+from datacontract.engines.checks.create_checks import (
+    _retention_value_to_seconds,
+    is_percent_unit,
+    quality_definition_yaml,
+)
+from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.sql_guard import is_read_only_query
-from datacontract.engines.hana.hana_schema_check import duplicate_count_query, qualified_table_name, quote_identifier
+from datacontract.engines.hana.hana_check_selection import SELECT_ALL, CheckSelection
+from datacontract.engines.hana.hana_schema_check import (
+    duplicate_count_query,
+    qualified_table_name,
+    quote_identifier,
+    table_reference,
+)
 from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.model.run import Check, ResultEnum
 
@@ -19,6 +30,8 @@ def run_quality_checks(
     schema_object: SchemaObject,
     *,
     skip_reason: str | None = None,
+    row_filter: str | None = None,
+    selection: CheckSelection = SELECT_ALL,
 ) -> list[Check]:
     table_name = schema_object.physicalName or schema_object.name
     checks: list[Check] = []
@@ -26,7 +39,17 @@ def run_quality_checks(
     for prop in schema_object.properties or []:
         field_name = prop.physicalName or prop.name
         for index, quality in enumerate(prop.quality or []):
-            check = _quality_check(connection, schema_name, table_name, field_name, quality, index, skip_reason)
+            check = _quality_check(
+                connection,
+                schema_name,
+                table_name,
+                field_name,
+                quality,
+                index,
+                skip_reason,
+                row_filter=row_filter,
+                selection=selection,
+            )
             if check is not None:
                 checks.append(check)
 
@@ -40,6 +63,8 @@ def run_quality_checks(
             index,
             skip_reason,
             property_names={prop.name: prop.physicalName or prop.name for prop in schema_object.properties or []},
+            row_filter=row_filter,
+            selection=selection,
         )
         if check is not None:
             checks.append(check)
@@ -54,6 +79,8 @@ def run_sla_checks(
     schema_filter: str = "all",
     *,
     skip_reason: str | None = None,
+    model_filters: dict[str, str] | None = None,
+    selection: CheckSelection = SELECT_ALL,
 ) -> list[Check]:
     checks: list[Check] = []
     for sla in data_contract.slaProperties or []:
@@ -66,10 +93,16 @@ def run_sla_checks(
         if schema_filter != "all" and schema_object.name != schema_filter:
             continue
         table_name = schema_object.physicalName or schema_object.name
+        check_type = f"servicelevel_{sla.property}"
+        # A service level property declares no dimension of its own, but it does
+        # carry an id, so --quality-id selects it like a quality rule does.
+        if not selection.selects(dimension=default_dimension(check_type), quality_id=sla.id):
+            continue
+        row_filter = (model_filters or {}).get(table_name)
         if sla.property == "freshness":
-            check = _freshness_check(connection, schema_name, table_name, field_name, sla, skip_reason)
+            check = _freshness_check(connection, schema_name, table_name, field_name, sla, skip_reason, row_filter)
         else:
-            check = _retention_check(connection, schema_name, table_name, field_name, sla, skip_reason)
+            check = _retention_check(connection, schema_name, table_name, field_name, sla, skip_reason, row_filter)
         if check is not None:
             checks.append(check)
     return checks
@@ -95,6 +128,15 @@ def prepare_hana_query(query: str, schema_name: str, model_name: str, field_name
     return query
 
 
+def selects(selection: CheckSelection, quality: DataQuality, check_type: str) -> bool:
+    """Whether the run asked for the check this quality rule produces."""
+    return selection.selects(
+        dimension=quality.dimension or default_dimension(check_type),
+        quality_id=quality.id,
+        tags=quality.tags,
+    )
+
+
 def _quality_check(
     connection,
     schema_name: str,
@@ -104,8 +146,13 @@ def _quality_check(
     index: int,
     skip_reason: str | None = None,
     property_names: dict[str, str] | None = None,
+    *,
+    row_filter: str | None = None,
+    selection: CheckSelection = SELECT_ALL,
 ) -> Check | None:
     if quality.type == "custom" and quality.engine == "soda":
+        if not selects(selection, quality, "quality_custom_soda"):
+            return None
         return _check(
             check_type="quality_custom_soda",
             key=_quality_key(table_name, field_name, f"quality_custom_soda_{index}"),
@@ -115,13 +162,16 @@ def _quality_check(
             implementation=quality.implementation,
             result=ResultEnum.warning,
             reason="SodaCL quality checks are not supported for HANA. Use type: sql instead.",
+            quality=quality,
         )
 
     if quality.type == "sql":
-        return _sql_quality_check(connection, schema_name, table_name, field_name, quality, index, skip_reason)
+        return _sql_quality_check(
+            connection, schema_name, table_name, field_name, quality, index, skip_reason, selection=selection
+        )
 
     if quality.metric == "rowCount":
-        sql = f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)}"
+        sql = f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)}"
         return _metric_quality_check(
             connection,
             quality,
@@ -133,11 +183,13 @@ def _quality_check(
             model=table_name,
             field=None,
             sql=sql,
+            row_filter=row_filter,
+            selection=selection,
         )
 
     if quality.metric == "duplicateValues":
         if field_name is not None:
-            sql = duplicate_count_query(schema_name, table_name, [field_name])
+            sql = duplicate_count_query(schema_name, table_name, [field_name], row_filter)
             return _metric_quality_check(
                 connection,
                 quality,
@@ -149,10 +201,14 @@ def _quality_check(
                 model=table_name,
                 field=field_name,
                 sql=sql,
+                row_filter=row_filter,
+                selection=selection,
             )
 
         properties = _arguments(quality).get("properties")
         if not properties:
+            if not selects(selection, quality, "model_duplicate_values"):
+                return None
             return _warning_check(
                 check_type="model_duplicate_values",
                 key=f"{table_name}__model_duplicate_values",
@@ -160,9 +216,10 @@ def _quality_check(
                 model=table_name,
                 field=None,
                 reason="duplicateValues requires arguments.properties at model level.",
+                quality=quality,
             )
         fields = [(property_names or {}).get(prop, prop) for prop in properties]
-        sql = duplicate_count_query(schema_name, table_name, fields)
+        sql = duplicate_count_query(schema_name, table_name, fields, row_filter)
         return _metric_quality_check(
             connection,
             quality,
@@ -174,11 +231,13 @@ def _quality_check(
             sql=sql,
             schema_name=schema_name,
             skip_reason=skip_reason,
+            row_filter=row_filter,
+            selection=selection,
         )
 
     if quality.metric == "nullValues" and field_name is not None:
         sql = (
-            f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} IS NULL"
         )
         return _metric_quality_check(
@@ -192,11 +251,15 @@ def _quality_check(
             model=table_name,
             field=field_name,
             sql=sql,
+            row_filter=row_filter,
+            selection=selection,
         )
 
     if quality.metric == "invalidValues" and field_name is not None:
         valid_values = _arguments(quality).get("validValues")
         if not valid_values:
+            if not selects(selection, quality, "field_invalid_values"):
+                return None
             return _warning_check(
                 check_type="field_invalid_values",
                 key=f"{table_name}__{field_name}__field_invalid_values",
@@ -204,10 +267,11 @@ def _quality_check(
                 model=table_name,
                 field=field_name,
                 reason="invalidValues requires arguments.validValues at field level.",
+                quality=quality,
             )
         placeholders = ", ".join("?" for _ in valid_values)
         sql = (
-            f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} NOT IN ({placeholders})"
         )
         return _metric_quality_check(
@@ -222,6 +286,8 @@ def _quality_check(
             field=field_name,
             sql=sql,
             params=valid_values,
+            row_filter=row_filter,
+            selection=selection,
         )
 
     if quality.metric == "missingValues" and field_name is not None:
@@ -232,7 +298,7 @@ def _quality_check(
         else:
             missing_predicate = ""
         sql = (
-            f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} IS NULL{missing_predicate}"
         )
         return _metric_quality_check(
@@ -247,6 +313,8 @@ def _quality_check(
             field=field_name,
             sql=sql,
             params=missing_values,
+            row_filter=row_filter,
+            selection=selection,
         )
 
     return None
@@ -260,11 +328,15 @@ def _sql_quality_check(
     quality: DataQuality,
     index: int,
     skip_reason: str | None = None,
+    *,
+    selection: CheckSelection = SELECT_ALL,
 ) -> Check | None:
     query = prepare_hana_query(quality.query, schema_name, table_name, field_name)
     if query is None:
         return None
     check_type = "field_quality_sql" if field_name is not None else "model_quality_sql"
+    if not selects(selection, quality, check_type):
+        return None
     key = _quality_key(table_name, field_name, f"quality_sql_{index}")
     name = quality.description or "Quality Check"
     if not is_read_only_query(query):
@@ -277,7 +349,10 @@ def _sql_quality_check(
             implementation=query,
             result=ResultEnum.failed,
             reason="A quality rule query must be a single read-only query, so it was not executed.",
+            quality=quality,
         )
+    # A rule brings its own query, which --filter cannot restrict without
+    # rewriting it, so it reads the model as the rule wrote it (as on Ibis).
     return _metric_quality_check(
         connection,
         quality,
@@ -289,6 +364,7 @@ def _sql_quality_check(
         sql=query,
         schema_name=schema_name,
         skip_reason=skip_reason,
+        selection=selection,
     )
 
 
@@ -305,7 +381,12 @@ def _metric_quality_check(
     schema_name: str,
     params: list[Any] | None = None,
     skip_reason: str | None = None,
+    row_filter: str | None = None,
+    selection: CheckSelection = SELECT_ALL,
 ) -> Check | None:
+    if not selects(selection, quality, check_type):
+        return None
+
     threshold = to_sodacl_threshold(quality)
     if threshold is None:
         return None
@@ -320,6 +401,7 @@ def _metric_quality_check(
             implementation=sql,
             result=ResultEnum.skipped,
             reason=skip_reason,
+            quality=quality,
         )
 
     is_percent = quality.type != "sql" and is_percent_unit(quality)
@@ -330,7 +412,9 @@ def _metric_quality_check(
     try:
         value = _fetch_scalar(connection, sql, params or [])
         if is_percent:
-            row_count = _fetch_scalar(connection, f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, model)}")
+            row_count = _fetch_scalar(
+                connection, f"SELECT COUNT(*) FROM {table_reference(schema_name, model, row_filter)}"
+            )
             percent = round(value / row_count * 100, 6) if row_count else 0.0
     except Exception as e:
         return _check(
@@ -342,6 +426,7 @@ def _metric_quality_check(
             implementation=sql,
             result=ResultEnum.error,
             reason=str(e),
+            quality=quality,
         )
 
     passed = _evaluate_threshold(percent if is_percent else value, quality)
@@ -364,52 +449,67 @@ def _metric_quality_check(
         result=ResultEnum.passed if passed else failure_result(quality.severity),
         reason=None if passed else failure_reason,
         diagnostics=diagnostics,
+        quality=quality,
     )
 
 
 def _freshness_check(
-    connection, schema_name: str, table_name: str, field_name: str, sla, skip_reason: str | None = None
+    connection,
+    schema_name: str,
+    table_name: str,
+    field_name: str,
+    sla,
+    skip_reason: str | None = None,
+    row_filter: str | None = None,
 ) -> Check | None:
     threshold = _freshness_value_to_seconds(sla.value, sla.unit)
     if threshold is None:
         return None
     sql = (
         f"SELECT SECONDS_BETWEEN(MAX({quote_identifier(field_name)}), CURRENT_TIMESTAMP) "
-        f"FROM {qualified_table_name(schema_name, table_name)}"
+        f"FROM {table_reference(schema_name, table_name, row_filter)}"
     )
     return _servicelevel_check(
         connection,
         check_type="servicelevel_freshness",
-        key="servicelevel_freshness",
+        key=f"{table_name}__{field_name}__servicelevel_freshness",
         name=f"Freshness of {table_name}.{field_name} < {threshold}s",
         model=table_name,
         field=field_name,
         sql=sql,
         threshold=threshold,
         skip_reason=skip_reason,
+        quality_id=sla.id,
     )
 
 
 def _retention_check(
-    connection, schema_name: str, table_name: str, field_name: str, sla, skip_reason: str | None = None
+    connection,
+    schema_name: str,
+    table_name: str,
+    field_name: str,
+    sla,
+    skip_reason: str | None = None,
+    row_filter: str | None = None,
 ) -> Check | None:
     threshold = _retention_value_to_seconds(sla.value, sla.unit)
     if threshold is None:
         return None
     sql = (
         f"SELECT SECONDS_BETWEEN(MIN({quote_identifier(field_name)}), CURRENT_TIMESTAMP) "
-        f"FROM {qualified_table_name(schema_name, table_name)}"
+        f"FROM {table_reference(schema_name, table_name, row_filter)}"
     )
     return _servicelevel_check(
         connection,
         check_type="servicelevel_retention",
-        key="servicelevel_retention",
+        key=f"{table_name}__{field_name}__servicelevel_retention",
         name=f"Retention of {table_name}.{field_name} < {threshold}s",
         model=table_name,
         field=field_name,
         sql=sql,
         threshold=threshold,
         skip_reason=skip_reason,
+        quality_id=sla.id,
     )
 
 
@@ -424,6 +524,7 @@ def _servicelevel_check(
     sql: str,
     threshold: int,
     skip_reason: str | None = None,
+    quality_id: str | None = None,
 ) -> Check:
     if skip_reason:
         return _check(
@@ -436,6 +537,7 @@ def _servicelevel_check(
             result=ResultEnum.skipped,
             reason=skip_reason,
             category="servicelevel",
+            quality_id=quality_id,
         )
     try:
         value = _fetch_scalar(connection, sql, [])
@@ -450,6 +552,7 @@ def _servicelevel_check(
             result=ResultEnum.error,
             reason=str(e),
             category="servicelevel",
+            quality_id=quality_id,
         )
     passed = value is not None and value < threshold
     return _check(
@@ -463,6 +566,7 @@ def _servicelevel_check(
         reason=None if passed else f"Actual value {value} seconds is not less than {threshold} seconds.",
         diagnostics={"value": value, "threshold": threshold},
         category="servicelevel",
+        quality_id=quality_id,
     )
 
 
@@ -525,7 +629,16 @@ def _arguments(quality: DataQuality) -> dict:
     return quality.arguments or {}
 
 
-def _warning_check(*, check_type: str, key: str, name: str, model: str, field: str | None, reason: str) -> Check:
+def _warning_check(
+    *,
+    check_type: str,
+    key: str,
+    name: str,
+    model: str,
+    field: str | None,
+    reason: str,
+    quality: DataQuality | None = None,
+) -> Check:
     return _check(
         check_type=check_type,
         key=key,
@@ -535,6 +648,7 @@ def _warning_check(*, check_type: str, key: str, name: str, model: str, field: s
         implementation=None,
         result=ResultEnum.warning,
         reason=reason,
+        quality=quality,
     )
 
 
@@ -550,6 +664,8 @@ def _check(
     reason: str | None,
     diagnostics: dict | None = None,
     category: str = "quality",
+    quality: DataQuality | None = None,
+    quality_id: str | None = None,
 ) -> Check:
     return Check(
         id=str(uuid.uuid4()),
@@ -559,6 +675,12 @@ def _check(
         name=name,
         model=model,
         field=field,
+        # The rule this check comes from, so `test --quality-id` / `--tag` can
+        # select it and the report can trace it back to the contract.
+        qualityId=quality.id if quality is not None else quality_id,
+        tags=list(quality.tags) if quality is not None and quality.tags else None,
+        dimension=(quality.dimension if quality is not None else None) or default_dimension(check_type),
+        qualityDefinition=quality_definition_yaml(quality) if quality is not None else None,
         engine="hana",
         language="sql",
         implementation=implementation,

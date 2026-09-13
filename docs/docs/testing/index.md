@@ -96,6 +96,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/spark.svg" alt="" />
     <span><span className="doc-card-title">Spark DataFrame</span><span className="doc-card-desc">In-memory Spark DataFrames (programmatic)</span></span>
   </a>
+  <a className="doc-card" href="/testing/hana">
+    <img src="/img/icons/database.svg" alt="" />
+    <span><span className="doc-card-title">SAP HANA</span><span className="doc-card-desc">SAP HANA Cloud and SAP Datasphere Open SQL schemas</span></span>
+  </a>
   <a className="doc-card" href="/testing/trino">
     <img src="/img/icons/trino.svg" alt="" />
     <span><span className="doc-card-title">Trino</span><span className="doc-card-desc">Trino (basic, JWT, OAuth2)</span></span>
@@ -108,7 +112,7 @@ Missing a source? [Open an issue on GitHub](https://github.com/datacontract/data
 
 Each connection requires the matching [optional dependency (extra)](../installation.md#optional-dependencies-extras), or install everything with `datacontract-cli[all]`.
 
-Every other server `type` in ODCS, including the ones added in v3.2.0 (`hana`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant`, `poet`), lints and exports, but `test` reports a warning that it cannot connect. `fastobjects` and `btrieve` are the ODCS synonyms of `poet` and `zen`, and `postgresql` of `postgres`.
+Every other server `type` in ODCS, including the ones added in v3.2.0 (`exasol`, `teradata`, `ingres`, `vectorwise`, `versant`, `poet`), lints and exports, but `test` reports a warning that it cannot connect. `fastobjects` and `btrieve` are the ODCS synonyms of `poet` and `zen`, and `postgresql` of `postgres`.
 
 ## How it works
 

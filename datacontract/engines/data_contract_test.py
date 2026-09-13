@@ -127,6 +127,11 @@ def execute_data_contract_test(
             check_categories=check_categories,
             dry_run=dry_run,
             metadata_only=metadata_only,
+            model_filters=model_filters,
+            dimensions=dimensions,
+            quality_ids=quality_ids,
+            tags=tags,
+            config=config,
         )
         return
 

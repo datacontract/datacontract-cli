@@ -31,6 +31,7 @@ SERVER_TYPES = sorted(
         "bigquery",
         "databricks",
         "dataframe",
+        "hana",
         "impala",
         "kafka",
         "mysql",

@@ -16,21 +16,19 @@ from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.model.run import Check, ResultEnum, Run
-from tests.test_hana_schema_check import DataConnection, FakeConnection, catalog_response, column
+from tests.test_hana_schema_check import (
+    DataConnection,
+    FakeConnection,
+    catalog_response,
+    check_by_type,
+    column,
+)
 
 
 def test_hana_test_flow_bypasses_soda(monkeypatch):
     from datacontract.engines.hana import check_hana_execute as hana_module
 
-    def fake_check_hana_execute(
-        run,
-        data_contract,
-        server,
-        schema_name="all",
-        check_categories=None,
-        dry_run=False,
-        metadata_only=False,
-    ):
+    def fake_check_hana_execute(run, data_contract, server, **kwargs):
         run.checks.append(Check(type="model_exists", result=ResultEnum.passed, engine="hana"))
 
     monkeypatch.setattr(hana_module, "check_hana_execute", fake_check_hana_execute)
@@ -127,7 +125,9 @@ def _catalog_connection():
 def test_hana_dry_run_lists_native_checks_without_connecting(monkeypatch, metadata_only):
     contract = _mode_contract()
     connection = _catalog_connection()
-    monkeypatch.setattr("datacontract.engines.hana.check_hana_execute.get_connection", lambda server: connection)
+    monkeypatch.setattr(
+        "datacontract.engines.hana.check_hana_execute.get_connection", lambda server, config=None: connection
+    )
     executed = DataContract(data_contract_str=contract, metadata_only=metadata_only).test()
 
     connect = Mock(side_effect=AssertionError("A dry run must not connect"))
@@ -180,7 +180,9 @@ def test_hana_metadata_only_reads_catalog_and_reports_skipped_checks(monkeypatch
         return original_response(sql, params)
 
     connection.response_for = catalog_only
-    monkeypatch.setattr("datacontract.engines.hana.check_hana_execute.get_connection", lambda server: connection)
+    monkeypatch.setattr(
+        "datacontract.engines.hana.check_hana_execute.get_connection", lambda server, config=None: connection
+    )
     run = DataContract(data_contract_str=_mode_contract(), metadata_only=True).test()
 
     assert run.result == ResultEnum.passed
@@ -201,7 +203,9 @@ def test_hana_metadata_only_reads_catalog_and_reports_skipped_checks(monkeypatch
 def test_hana_contract_applies_data_checks_and_quality_severity(monkeypatch, severity, expected):
     connection = DataConnection("view")
     connection.insert([(1, 1, "OPEN"), (2, 1, "PAID")])
-    monkeypatch.setattr("datacontract.engines.hana.check_hana_execute.get_connection", lambda server: connection)
+    monkeypatch.setattr(
+        "datacontract.engines.hana.check_hana_execute.get_connection", lambda server, config=None: connection
+    )
     contract = OpenDataContractStandard.model_validate_json(_mode_contract())
     contract.schema_[0].properties = [
         SchemaProperty(name="id", physicalName="ID", logicalType="number", primaryKey=True),
@@ -248,7 +252,9 @@ def test_hana_dry_run_cli_needs_no_driver_or_credentials(monkeypatch, tmp_path):
 def test_hana_metadata_only_still_detects_catalog_mismatches(monkeypatch):
     connection = FakeConnection(catalog_response([column("ID", "NVARCHAR")]))
     connection.close = Mock()
-    monkeypatch.setattr("datacontract.engines.hana.check_hana_execute.get_connection", lambda server: connection)
+    monkeypatch.setattr(
+        "datacontract.engines.hana.check_hana_execute.get_connection", lambda server, config=None: connection
+    )
 
     run = DataContract(data_contract_str=_mode_contract(), metadata_only=True).test()
 
@@ -293,3 +299,117 @@ def test_hana_quality_check_live():
     run = DataContract(data_contract_file="fixtures/hana/datacontract_hana_quality.yaml").test()
 
     assert all(check.engine == "hana" for check in run.checks)
+
+
+def _filter_contract() -> str:
+    """A contract whose rules carry ids, tags and dimensions, on the ORDERS fixture."""
+    return OpenDataContractStandard(
+        apiVersion="v3.2.0",
+        kind="DataContract",
+        id="hana-filters",
+        name="HANA filters",
+        version="1.0.0",
+        status="draft",
+        servers=[Server(server="production", type="hana", host="hana.example.com", port=443, schema="SALES")],
+        schema=[
+            SchemaObject(
+                name="orders",
+                physicalName="ORDERS",
+                properties=[
+                    SchemaProperty(name="id", physicalName="ID", logicalType="integer", primaryKey=True),
+                    SchemaProperty(
+                        name="status",
+                        physicalName="STATUS",
+                        logicalType="string",
+                        quality=[
+                            DataQuality(
+                                metric="nullValues",
+                                mustBe=0,
+                                id="status-not-null",
+                                tags=["critical"],
+                                dimension="completeness",
+                            )
+                        ],
+                    ),
+                ],
+                quality=[DataQuality(metric="rowCount", mustBeGreaterThan=2, id="orders-not-empty", tags=["smoke"])],
+            )
+        ],
+    ).model_dump_json(by_alias=True, exclude_none=True)
+
+
+@pytest.fixture
+def orders_connection(monkeypatch):
+    connection = DataConnection("table")
+    connection.insert([(1, 1, "OPEN"), (2, 1, None), (3, 1, "PAID")])
+    # Kept open across runs, so one test can compare a filtered run to an unfiltered one.
+    close = connection.close
+    connection.close = Mock()
+    monkeypatch.setattr(
+        "datacontract.engines.hana.check_hana_execute.get_connection", lambda server, config=None: connection
+    )
+    try:
+        yield connection
+    finally:
+        close()
+
+
+def test_hana_row_filter_restricts_every_data_query(orders_connection):
+    unfiltered = DataContract(data_contract_str=_filter_contract()).test()
+
+    assert check_by_type(unfiltered.checks, "field_null_values").result == ResultEnum.failed
+    assert check_by_type(unfiltered.checks, "row_count").diagnostics["value"] == 3
+
+    run = DataContract(data_contract_str=_filter_contract(), filter="STATUS IS NOT NULL").test()
+
+    assert run.filters == {"orders": "STATUS IS NOT NULL"}
+    # The filter reaches the rules and the built-in checks alike: two rows remain,
+    # none of them with a NULL status.
+    assert check_by_type(run.checks, "field_null_values").result == ResultEnum.passed
+    assert check_by_type(run.checks, "row_count").diagnostics["value"] == 2
+    assert check_by_type(run.checks, "row_count").result == ResultEnum.failed
+    data_queries = [sql for sql, _ in orders_connection.executed if "SYS." not in sql]
+    assert data_queries and all("WHERE STATUS IS NOT NULL" in sql for sql in data_queries[-4:])
+    # The catalog describes the table itself, so it is read unfiltered.
+    assert all("STATUS IS NOT NULL" not in sql for sql, _ in orders_connection.executed if "SYS." in sql)
+
+
+def test_hana_quality_id_selects_only_that_rule(orders_connection):
+    run = DataContract(data_contract_str=_filter_contract(), quality_ids={"status-not-null"}).test()
+
+    assert [(c.type, c.qualityId) for c in run.checks] == [("field_null_values", "status-not-null")]
+
+
+def test_hana_tag_selects_only_tagged_rules(orders_connection):
+    run = DataContract(data_contract_str=_filter_contract(), tags={"smoke"}).test()
+
+    assert [(c.type, c.tags) for c in run.checks] == [("row_count", ["smoke"])]
+
+
+def test_hana_dimension_selects_built_in_checks_and_matching_rules(orders_connection):
+    run = DataContract(data_contract_str=_filter_contract(), dimensions={"completeness"}).test()
+
+    assert {c.type for c in run.checks} == {"field_primary_key_required", "field_null_values"}
+    assert all(c.dimension == "completeness" for c in run.checks)
+
+
+def test_hana_filter_that_selects_nothing_warns(orders_connection):
+    run = DataContract(data_contract_str=_filter_contract(), tags={"nightly"}).test()
+
+    assert run.checks == []
+    assert any(log.level == "WARN" and "No checks found for tags: nightly" in log.message for log in run.logs)
+
+
+def test_hana_service_level_checks_are_keyed_per_field(monkeypatch):
+    connection = _catalog_connection()
+    monkeypatch.setattr(
+        "datacontract.engines.hana.check_hana_execute.get_connection", lambda server, config=None: connection
+    )
+
+    run = DataContract(data_contract_str=_mode_contract()).test()
+
+    servicelevel = {c.type: c.key for c in run.checks if c.category == "servicelevel"}
+    assert servicelevel == {
+        "servicelevel_freshness": "ORDERS__UPDATED_AT__servicelevel_freshness",
+        "servicelevel_retention": "ORDERS__UPDATED_AT__servicelevel_retention",
+    }

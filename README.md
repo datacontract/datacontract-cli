@@ -1,4 +1,4 @@
-﻿# Data Contract CLI
+# Data Contract CLI
 
 <p>
   <a href="https://github.com/datacontract/datacontract-cli/actions/workflows/ci.yaml?query=branch%3Amain">

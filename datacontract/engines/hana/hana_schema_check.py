@@ -4,6 +4,8 @@ from typing import Any
 
 from open_data_contract_standard.model import SchemaObject, SchemaProperty
 
+from datacontract.engines.checks.dimensions import default_dimension
+from datacontract.engines.hana.hana_check_selection import SELECT_ALL, CheckSelection
 from datacontract.engines.hana.hana_type_mapping import types_match
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.run import Check, ResultEnum
@@ -31,13 +33,37 @@ def qualified_table_name(schema: str, table: str) -> str:
     return f"{quote_identifier(schema)}.{quote_identifier(table)}"
 
 
-def duplicate_count_query(schema: str, table: str, fields: list[str]) -> str:
+def table_reference(schema: str, table: str, row_filter: str | None = None) -> str:
+    """The FROM clause of a data query, restricted to the rows ``--filter`` selects.
+
+    The predicate is written in HANA's dialect and references columns unqualified,
+    so wrapping the table in a derived table keeps every check that reads rows
+    (counts, duplicates, freshness) on the same subset, and the SQL recorded on
+    the check shows the WHERE clause. Catalog reads never go through here: they
+    describe the table itself, which no row filter changes.
+    """
+    qualified = qualified_table_name(schema, table)
+    if not row_filter:
+        return qualified
+    return f"(SELECT * FROM {qualified} WHERE {row_filter})"
+
+
+def duplicate_count_query(schema: str, table: str, fields: list[str], row_filter: str | None = None) -> str:
     """Count duplicated keys, including a NULL key only if it occurs more than once."""
     columns = ", ".join(quote_identifier(field) for field in fields)
     return (
-        f"SELECT COUNT(*) FROM (SELECT {columns} FROM {qualified_table_name(schema, table)} "
+        f"SELECT COUNT(*) FROM (SELECT {columns} FROM {table_reference(schema, table, row_filter)} "
         f"GROUP BY {columns} HAVING COUNT(*) > 1) AS duplicate_groups"
     )
+
+
+def selects(selection: CheckSelection, check_type: str) -> bool:
+    """Whether the run asked for a built-in check of this type.
+
+    Built-in checks carry no ODCS quality rule, so only ``--dimension`` can
+    select them: ``--quality-id`` and ``--tag`` exclude them entirely.
+    """
+    return selection.selects_builtin(default_dimension(check_type))
 
 
 def run_schema_checks(
@@ -47,6 +73,8 @@ def run_schema_checks(
     *,
     dry_run: bool = False,
     metadata_only: bool = False,
+    row_filter: str | None = None,
+    selection: CheckSelection = SELECT_ALL,
 ) -> list[Check]:
     """Build the native check list, optionally planning it or reading only the catalog."""
     table_name = _schema_name(schema_object)
@@ -54,18 +82,22 @@ def run_schema_checks(
     column_metadata = [] if dry_run else _get_column_metadata(connection, schema_name, table_name)
     skip_reason = METADATA_ONLY_REASON if metadata_only else DRY_RUN_REASON if dry_run else None
 
-    model_exists_check = _result_check(
-        check_type="model_exists",
-        key=f"{table_name}__model_exists",
-        name=f"Check that model {table_name} exists",
-        model=table_name,
-        field=None,
-        implementation="Catalog lookup in SYS.TABLE_COLUMNS and SYS.VIEW_COLUMNS",
-        result=ResultEnum.passed if column_metadata else ResultEnum.failed,
-        reason=None if column_metadata else f"Model {schema_name}.{table_name} does not exist.",
-        dry_run=dry_run,
-    )
-    checks.append(model_exists_check)
+    if selects(selection, "model_exists"):
+        checks.append(
+            _result_check(
+                check_type="model_exists",
+                key=f"{table_name}__model_exists",
+                name=f"Check that model {table_name} exists",
+                model=table_name,
+                field=None,
+                implementation="Catalog lookup in SYS.TABLE_COLUMNS and SYS.VIEW_COLUMNS",
+                result=ResultEnum.passed if column_metadata else ResultEnum.failed,
+                reason=None if column_metadata else f"Model {schema_name}.{table_name} does not exist.",
+                dry_run=dry_run,
+            )
+        )
+    # A model that is not there has nothing to check, whether or not the filters
+    # above kept the check that says so.
     if not column_metadata and not dry_run:
         return checks
 
@@ -79,63 +111,84 @@ def run_schema_checks(
     for prop in schema_object.properties or []:
         field_name = _property_name(prop)
         column = columns_by_name.get(field_name)
-        field_present_check = _result_check(
-            check_type="field_is_present",
-            key=f"{table_name}__{field_name}__field_is_present",
-            name=f"Check that field {field_name} is present",
-            model=table_name,
-            field=field_name,
-            implementation="Catalog lookup in SYS.TABLE_COLUMNS and SYS.VIEW_COLUMNS",
-            result=ResultEnum.passed if column else ResultEnum.failed,
-            reason=None if column else f"Field {field_name} is missing in {schema_name}.{table_name}.",
-            dry_run=dry_run,
-        )
-        checks.append(field_present_check)
+        if selects(selection, "field_is_present"):
+            checks.append(
+                _result_check(
+                    check_type="field_is_present",
+                    key=f"{table_name}__{field_name}__field_is_present",
+                    name=f"Check that field {field_name} is present",
+                    model=table_name,
+                    field=field_name,
+                    implementation="Catalog lookup in SYS.TABLE_COLUMNS and SYS.VIEW_COLUMNS",
+                    result=ResultEnum.passed if column else ResultEnum.failed,
+                    reason=None if column else f"Field {field_name} is missing in {schema_name}.{table_name}.",
+                    dry_run=dry_run,
+                )
+            )
         if column is None and not dry_run:
             continue
 
         expected_type = prop.physicalType or prop.logicalType
-        if expected_type:
+        if expected_type and selects(selection, "field_type"):
             checks.append(_field_type_check(table_name, field_name, expected_type, column))
 
         if prop.required or prop.primaryKey:
-            checks.append(
-                _zero_violations_check(
-                    connection,
-                    check_type="field_required" if prop.required else "field_primary_key_required",
-                    table_schema=schema_name,
-                    table_name=table_name,
-                    field_name=field_name,
-                    sql=(
-                        f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
-                        f"WHERE {quote_identifier(field_name)} IS NULL"
-                    ),
-                    params=None,
-                    name=f"Check that field {field_name} has no missing values",
-                    failure_reason="Found {value} missing values.",
-                    skip_reason=skip_reason,
+            check_type = "field_required" if prop.required else "field_primary_key_required"
+            if selects(selection, check_type):
+                checks.append(
+                    _zero_violations_check(
+                        connection,
+                        check_type=check_type,
+                        table_schema=schema_name,
+                        table_name=table_name,
+                        field_name=field_name,
+                        sql=(
+                            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
+                            f"WHERE {quote_identifier(field_name)} IS NULL"
+                        ),
+                        params=None,
+                        name=f"Check that field {field_name} has no missing values",
+                        failure_reason="Found {value} missing values.",
+                        skip_reason=skip_reason,
+                    )
                 )
-            )
 
         if prop.unique or (prop.primaryKey and len(primary_key_fields) == 1):
-            checks.append(
-                _zero_violations_check(
-                    connection,
-                    check_type="field_unique" if prop.unique else "field_primary_key_unique",
-                    table_schema=schema_name,
-                    table_name=table_name,
-                    field_name=field_name,
-                    sql=duplicate_count_query(schema_name, table_name, [field_name]),
-                    params=None,
-                    name=f"Check that unique field {field_name} has no duplicate values",
-                    failure_reason="Found {value} duplicate values.",
-                    skip_reason=skip_reason,
+            check_type = "field_unique" if prop.unique else "field_primary_key_unique"
+            if selects(selection, check_type):
+                checks.append(
+                    _zero_violations_check(
+                        connection,
+                        check_type=check_type,
+                        table_schema=schema_name,
+                        table_name=table_name,
+                        field_name=field_name,
+                        sql=duplicate_count_query(schema_name, table_name, [field_name], row_filter),
+                        params=None,
+                        name=f"Check that unique field {field_name} has no duplicate values",
+                        failure_reason="Found {value} duplicate values.",
+                        skip_reason=skip_reason,
+                    )
                 )
+
+        checks.extend(
+            _logical_type_option_checks(
+                connection,
+                schema_name,
+                table_name,
+                field_name,
+                prop,
+                skip_reason,
+                row_filter=row_filter,
+                selection=selection,
             )
+        )
 
-        checks.extend(_logical_type_option_checks(connection, schema_name, table_name, field_name, prop, skip_reason))
-
-    if len(primary_key_fields) > 1 and (dry_run or all(field in columns_by_name for field in primary_key_fields)):
+    if (
+        len(primary_key_fields) > 1
+        and (dry_run or all(field in columns_by_name for field in primary_key_fields))
+        and selects(selection, "primary_key_unique")
+    ):
         checks.append(
             _zero_violations_check(
                 connection,
@@ -143,7 +196,7 @@ def run_schema_checks(
                 table_schema=schema_name,
                 table_name=table_name,
                 field_name=None,
-                sql=duplicate_count_query(schema_name, table_name, primary_key_fields),
+                sql=duplicate_count_query(schema_name, table_name, primary_key_fields, row_filter),
                 params=None,
                 name=f"Check that primary key ({', '.join(primary_key_fields)}) has no duplicate values",
                 failure_reason="Found {value} duplicate primary keys.",
@@ -169,12 +222,15 @@ def _logical_type_option_checks(
     field_name: str,
     prop: SchemaProperty,
     skip_reason: str | None = None,
+    *,
+    row_filter: str | None = None,
+    selection: CheckSelection = SELECT_ALL,
 ) -> list[Check]:
     checks: list[Check] = []
     options = prop.logicalTypeOptions or {}
 
     min_length = options.get("minLength")
-    if min_length is not None:
+    if min_length is not None and selects(selection, "field_min_length"):
         checks.append(
             _zero_violations_check(
                 connection,
@@ -183,7 +239,7 @@ def _logical_type_option_checks(
                 table_name=table_name,
                 field_name=field_name,
                 sql=(
-                    f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+                    f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
                     f"WHERE LENGTH({quote_identifier(field_name)}) < ?"
                 ),
                 params=[min_length],
@@ -194,7 +250,7 @@ def _logical_type_option_checks(
         )
 
     max_length = options.get("maxLength")
-    if max_length is not None:
+    if max_length is not None and selects(selection, "field_max_length"):
         checks.append(
             _zero_violations_check(
                 connection,
@@ -203,7 +259,7 @@ def _logical_type_option_checks(
                 table_name=table_name,
                 field_name=field_name,
                 sql=(
-                    f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+                    f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
                     f"WHERE LENGTH({quote_identifier(field_name)}) > ?"
                 ),
                 params=[max_length],
@@ -214,25 +270,45 @@ def _logical_type_option_checks(
         )
 
     minimum = options.get("minimum")
-    if minimum is not None:
-        checks.append(_minimum_check(connection, schema_name, table_name, field_name, minimum, skip_reason))
+    if minimum is not None and selects(selection, "field_minimum"):
+        checks.append(_minimum_check(connection, schema_name, table_name, field_name, minimum, skip_reason, row_filter))
 
     maximum = options.get("maximum")
-    if maximum is not None:
-        checks.append(_maximum_check(connection, schema_name, table_name, field_name, maximum, skip_reason))
+    if maximum is not None and selects(selection, "field_maximum"):
+        checks.append(_maximum_check(connection, schema_name, table_name, field_name, maximum, skip_reason, row_filter))
 
     exclusive_minimum = options.get("exclusiveMinimum")
     if exclusive_minimum is not None:
-        checks.append(_minimum_check(connection, schema_name, table_name, field_name, exclusive_minimum, skip_reason))
-        checks.append(_not_equal_check(connection, schema_name, table_name, field_name, exclusive_minimum, skip_reason))
+        if selects(selection, "field_minimum"):
+            checks.append(
+                _minimum_check(
+                    connection, schema_name, table_name, field_name, exclusive_minimum, skip_reason, row_filter
+                )
+            )
+        if selects(selection, "field_not_equal"):
+            checks.append(
+                _not_equal_check(
+                    connection, schema_name, table_name, field_name, exclusive_minimum, skip_reason, row_filter
+                )
+            )
 
     exclusive_maximum = options.get("exclusiveMaximum")
     if exclusive_maximum is not None:
-        checks.append(_maximum_check(connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason))
-        checks.append(_not_equal_check(connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason))
+        if selects(selection, "field_maximum"):
+            checks.append(
+                _maximum_check(
+                    connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason, row_filter
+                )
+            )
+        if selects(selection, "field_not_equal"):
+            checks.append(
+                _not_equal_check(
+                    connection, schema_name, table_name, field_name, exclusive_maximum, skip_reason, row_filter
+                )
+            )
 
     enum_values = get_enum_values(prop, include_quality_rule=False)
-    if enum_values is not None and len(enum_values) > 0:
+    if enum_values is not None and len(enum_values) > 0 and selects(selection, "field_enum"):
         # NULL inside NOT IN would make even non-enum values evaluate to UNKNOWN.
         # Required checks handle missing values independently of the allowed set.
         non_null_values = [value for value in enum_values if value is not None]
@@ -249,7 +325,7 @@ def _logical_type_option_checks(
                 table_schema=schema_name,
                 table_name=table_name,
                 field_name=field_name,
-                sql=(f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} WHERE {predicate}"),
+                sql=(f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} WHERE {predicate}"),
                 params=non_null_values,
                 name=f"Check that field {field_name} only contains enum values {enum_values}",
                 failure_reason="Found {value} values outside the enum.",
@@ -258,7 +334,7 @@ def _logical_type_option_checks(
         )
 
     pattern = options.get("pattern")
-    if pattern is not None:
+    if pattern is not None and selects(selection, "field_regex"):
         checks.append(
             _zero_violations_check(
                 connection,
@@ -267,7 +343,7 @@ def _logical_type_option_checks(
                 table_name=table_name,
                 field_name=field_name,
                 sql=(
-                    f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+                    f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
                     f"WHERE {quote_identifier(field_name)} NOT LIKE_REGEXPR ?"
                 ),
                 params=[pattern],
@@ -281,7 +357,13 @@ def _logical_type_option_checks(
 
 
 def _minimum_check(
-    connection, schema_name: str, table_name: str, field_name: str, minimum: Any, skip_reason: str | None = None
+    connection,
+    schema_name: str,
+    table_name: str,
+    field_name: str,
+    minimum: Any,
+    skip_reason: str | None = None,
+    row_filter: str | None = None,
 ) -> Check:
     return _zero_violations_check(
         connection,
@@ -290,7 +372,7 @@ def _minimum_check(
         table_name=table_name,
         field_name=field_name,
         sql=(
-            f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} < ?"
         ),
         params=[minimum],
@@ -301,7 +383,13 @@ def _minimum_check(
 
 
 def _maximum_check(
-    connection, schema_name: str, table_name: str, field_name: str, maximum: Any, skip_reason: str | None = None
+    connection,
+    schema_name: str,
+    table_name: str,
+    field_name: str,
+    maximum: Any,
+    skip_reason: str | None = None,
+    row_filter: str | None = None,
 ) -> Check:
     return _zero_violations_check(
         connection,
@@ -310,7 +398,7 @@ def _maximum_check(
         table_name=table_name,
         field_name=field_name,
         sql=(
-            f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} > ?"
         ),
         params=[maximum],
@@ -321,7 +409,13 @@ def _maximum_check(
 
 
 def _not_equal_check(
-    connection, schema_name: str, table_name: str, field_name: str, value: Any, skip_reason: str | None = None
+    connection,
+    schema_name: str,
+    table_name: str,
+    field_name: str,
+    value: Any,
+    skip_reason: str | None = None,
+    row_filter: str | None = None,
 ) -> Check:
     return _zero_violations_check(
         connection,
@@ -330,7 +424,7 @@ def _not_equal_check(
         table_name=table_name,
         field_name=field_name,
         sql=(
-            f"SELECT COUNT(*) FROM {qualified_table_name(schema_name, table_name)} "
+            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} = ?"
         ),
         params=[value],
@@ -503,6 +597,7 @@ def _result_check(
         name=name,
         model=model,
         field=field,
+        dimension=default_dimension(check_type),
         engine="hana",
         language="sql",
         implementation=implementation,

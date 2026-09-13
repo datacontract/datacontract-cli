@@ -1,26 +1,11 @@
-import os
 from contextlib import contextmanager
 from typing import Any
 
 from open_data_contract_standard.model import Server
 
+from datacontract.config import Config
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
-
-
-def _require_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        raise DataContractException(
-            type="hana-connection",
-            name=f"missing_env_{name}",
-            reason=f"Required environment variable {name} is not set. Set it to connect to hana.",
-        )
-    return value
-
-
-def _env_bool(name: str, default: str = "true") -> bool:
-    return os.getenv(name, default).lower() in ("true", "1", "yes")
 
 
 def import_hdbcli():
@@ -39,13 +24,14 @@ def import_hdbcli():
         )
 
 
-def get_connection(server: Server) -> Any:
+def get_connection(server: Server, config: Config | None = None) -> Any:
     dbapi = import_hdbcli()
-    username = _require_env("DATACONTRACT_HANA_USERNAME")
-    password = _require_env("DATACONTRACT_HANA_PASSWORD")
-    encrypt = _env_bool("DATACONTRACT_HANA_ENCRYPT")
-    ssl_validate = _env_bool("DATACONTRACT_HANA_SSL_VALIDATE_CERTIFICATE")
-    ssl_hostname = os.getenv("DATACONTRACT_HANA_SSL_HOSTNAME_IN_CERTIFICATE", "*")
+    config = Config.resolve(config)
+    username = config.get_hana_username(required=True)
+    password = config.get_hana_password(required=True)
+    encrypt = config.get_hana_encrypt()
+    ssl_validate = config.get_hana_ssl_validate_certificate()
+    ssl_hostname = config.get_hana_ssl_hostname_in_certificate() or "*"
 
     try:
         return dbapi.connect(
@@ -69,8 +55,8 @@ def get_connection(server: Server) -> Any:
 
 
 @contextmanager
-def hana_connection(server: Server):
-    connection = get_connection(server)
+def hana_connection(server: Server, config: Config | None = None):
+    connection = get_connection(server, config)
     try:
         yield connection
     finally:
