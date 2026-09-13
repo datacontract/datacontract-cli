@@ -26,6 +26,8 @@ DEFAULT_DIMENSIONS: dict[str, str] = {
     "primary_key_unique": "uniqueness",
     "field_unique_items": "uniqueness",
     # conformity — the data deviates from the declared shape, type, or value domain
+    # (the SAP HANA engine reports the missing table as a check of its own)
+    "model_exists": "conformity",
     "field_is_present": "conformity",
     "field_type": "conformity",
     "field_physical_type": "conformity",
