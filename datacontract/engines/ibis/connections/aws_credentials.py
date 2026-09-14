@@ -19,6 +19,21 @@ from datacontract.config import Config
 
 logger = logging.getLogger(__name__)
 
+_BOTO3_HINT = (
+    "boto3 is required for AWS servers, `s3://` locations and the Glue import. "
+    "Install an AWS extra, e.g. pip install 'datacontract-cli[s3]' "
+    "(or [redshift] / [glue])."
+)
+
+
+def _import_boto3():
+    """boto3 is an optional dependency (extras `s3`, `redshift`, `glue`); fail with a hint, not a bare ImportError."""
+    try:
+        import boto3
+    except ImportError as e:
+        raise ImportError(_BOTO3_HINT) from e
+    return boto3
+
 
 def configured_region(default: Optional[str] = None, config: Optional[Config] = None) -> Optional[str]:
     return Config.resolve(config).get_s3_region() or default
@@ -47,7 +62,7 @@ def client(service: str, region: Optional[str] = None, config: Optional[Config] 
     Every AWS service the CLI talks to reads the same variables, so they are
     resolved in one place rather than per service.
     """
-    import boto3
+    boto3 = _import_boto3()
 
     return boto3.client(service, **client_kwargs(region, config))
 
@@ -67,13 +82,19 @@ def resolve_aws_credentials() -> Optional[AwsCredentials]:
     no credentials at all, and signing that request could only make it fail.
     """
     try:
-        import boto3
+        boto3 = _import_boto3()
 
         session = boto3.Session()
         credentials = session.get_credentials()
         if credentials is None:
             return None
         frozen = credentials.get_frozen_credentials()
+    except ImportError as e:
+        # Without boto3 there is no credential chain to consult: behave as an
+        # anonymous request, but say why, so a missing extra is not mistaken
+        # for missing credentials.
+        logger.warning("%s", e)
+        return None
     except Exception as e:
         # An expired SSO session raises here while trying to refresh.
         logger.debug("could not resolve AWS credentials: %s", e)

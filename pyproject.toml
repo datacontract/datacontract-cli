@@ -63,7 +63,6 @@ dependencies = [
   # below 30.18 until an issue in ibis is fixed - see https://github.com/datacontract/datacontract-cli/issues/1592
   "sqlglot>=26.6.0,<30.18",
   "python-dotenv>=1.0.0,<2.0.0",
-  "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
@@ -167,6 +166,8 @@ postgres = [
 redshift = [
   # Redshift speaks the postgres wire protocol; ibis has no dedicated backend.
   "ibis-framework[postgres]>=10.0.0,<13.0.0",
+  # IAM authentication (redshift:GetClusterCredentials / GetCredentials).
+  "boto3>=1.34.41,<2.0.0",
   # psycopg's binary wheels bundle libpq, so the extra works without
   # PostgreSQL client libraries installed on the system.
   "psycopg[binary]>=3.1,<4.0",
@@ -179,6 +180,9 @@ redshift = [
 # platform markers are needed.
 s3 = [
   "datacontract-cli[duckdb]",
+  # AWS credential chain (SSO, profiles, instance roles) for S3-style servers,
+  # `s3://` contract locations and the S3 lint.
+  "boto3>=1.34.41,<2.0.0",
   "s3fs>=2025.2.0,<2027.0.0",
   "duckdb-extension-httpfs>=1.5.0,<1.6.0",
   "duckdb-extension-aws>=1.5.0,<1.6.0",
@@ -187,6 +191,11 @@ s3 = [
 # GCS is an S3-compatible server, tested through the same connection setup.
 gcs = [
   "datacontract-cli[s3]",
+]
+
+# `datacontract import --format glue` reads table definitions from the Glue Data Catalog.
+glue = [
+  "boto3>=1.34.41,<2.0.0",
 ]
 
 azure = [
@@ -271,7 +280,7 @@ protobuf = [
 # the `all` meta-extra would pull a proprietary package into a default-ish
 # install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
-  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,glue,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version

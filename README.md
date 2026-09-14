@@ -278,6 +278,7 @@ A list of available extras:
 | DuckDB (local/S3/GCS/Azure file testing) | `pip install datacontract-cli[duckdb]`     |
 | Excel                                    | `pip install datacontract-cli[excel]`      |
 | GCS Integration                          | `pip install datacontract-cli[gcs]`        |
+| AWS Glue import                          | `pip install datacontract-cli[glue]`       |
 | Iceberg                                  | `pip install datacontract-cli[iceberg]`    |
 | Impala                                   | `pip install datacontract-cli[impala]`     |
 | Kafka Integration                        | `pip install datacontract-cli[kafka]`      |

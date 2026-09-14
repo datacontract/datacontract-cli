@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
 - `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
 
+### Changed
+- `boto3` is no longer a core dependency: it moved to the `s3` (and `gcs`), `redshift` and new `glue` extras, the only code paths that use it. Installs without AWS server types (e.g. `datacontract-cli[bigquery,duckdb]`) no longer pull boto3/botocore (#1631)
+
 ### Fixed
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
 
