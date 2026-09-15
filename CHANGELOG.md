@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
+- `datacontract dbt sync` marks the columns it generates with `config.meta.datacontract_cli` instead of a top-level `meta`, which dbt Fusion (dbt v2) rejects with `Property meta is not allowed`; existing model YAML written by an earlier version is migrated on the next sync
 
 ## [1.2.0] - 2026-09-08
 
