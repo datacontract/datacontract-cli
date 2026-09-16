@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
@@ -265,49 +266,86 @@ def _print_publish_failure(run, out=None):
             out.print(f"[{color}]{escape(log.message)}[/{color}]", highlight=False)
 
 
-# ---------------------------------------------------------------------------
-# Register commands (must be after app and shared helpers are defined so the
-# command_* modules can import from this module without circular-import issues)
-# ---------------------------------------------------------------------------
-# Display order for `--help` is controlled by COMMAND_ORDER above, not by import order.
-from datacontract import (  # noqa: E402, F401
-    command_api,
-    command_breaking,
-    command_catalog,
-    command_changelog,
-    command_ci,
-    command_dbt,
-    command_edit,
-    command_export,
-    command_import,
-    command_init,
-    command_lint,
-    command_publish,
-    command_test,
-)
+def _parse_enum_csv(
+    value: str | None,
+    enum_cls: type[Enum],
+    option: str,
+    label: str,
+    aliases: dict[str, Enum] | None = None,
+    available: str | None = None,
+) -> set[str] | None:
+    """Parse a comma-separated option into a set of enum values, or None if unset.
 
-app.add_typer(
-    command_import.import_app,
-    name="import",
-    help="Create a data contract from a source format.",
-    epilog="Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml",
-)
-app.add_typer(
-    command_export.export_app,
-    name="export",
-    help="Convert a data contract to a target format.",
-    epilog=(
-        "Example: datacontract export html datacontract.yaml --output datacontract.html\n\n"
-        "For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle, clickhouse), "
-        "use `datacontract export sql --dialect <dialect>`."
-    ),
-)
-app.add_typer(
-    command_dbt.dbt_app,
-    name="dbt",
-    help="Work with data contracts in your dbt project.",
-    epilog="Example: datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse",
-)
+    Matching is case-insensitive; `aliases` maps additional lowercase spellings
+    to their enum value. `available` overrides the choices shown in errors.
+    """
+    if value is None:
+        return None
+    allowed = [e.value for e in enum_cls]
+    raw = [v.strip() for v in value.split(",") if v.strip()]
+    if not raw:
+        console.print(f"[red]Empty {option} specified.[/red]")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    aliases = aliases or {}
+    values = set()
+    invalid = set()
+    for v in raw:
+        key = v.lower()
+        if key in aliases:
+            values.add(aliases[key].value)
+        elif key in allowed:
+            values.add(key)
+        else:
+            invalid.add(v)
+    if invalid:
+        console.print(f"[red]Invalid {option} specified: {', '.join(sorted(invalid))}[/red]")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    return values
+
+
+# ---------------------------------------------------------------------------
+# Register commands.  Kept in a function so command modules can be imported
+# directly without creating a cli -> command -> cli initialization cycle.
+# ---------------------------------------------------------------------------
+def register_commands():
+    global _commands_registered
+    if _commands_registered:
+        return
+
+    from datacontract import (
+        command_api,
+        command_breaking,
+        command_catalog,
+        command_changelog,
+        command_ci,
+        command_dbt,
+        command_edit,
+        command_export,
+        command_import,
+        command_init,
+        command_lint,
+        command_publish,
+        command_test,
+    )
+
+    # A direct import of a command module reaches here while that module is
+    # still being initialized.  Let it finish, then it will call us again.
+    if not all(hasattr(module, name) for module, name in (
+        (command_export, "export_app"),
+        (command_test, "CheckCategory"),
+    )):
+        return
+
+    app.add_typer(command_import.import_app, name="import", help="Create a data contract from a source format.", epilog="Example: datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml")
+    app.add_typer(command_export.export_app, name="export", help="Convert a data contract to a target format.", epilog=("Example: datacontract export html datacontract.yaml --output datacontract.html\n\n" "For SQL dialects (postgres, mysql, snowflake, databricks, sqlserver, trino, oracle, clickhouse), use `datacontract export sql --dialect <dialect>`."))
+    app.add_typer(command_dbt.dbt_app, name="dbt", help="Work with data contracts in your dbt project.", epilog="Example: datacontract dbt sync orders.odcs.yaml --project-dir ./warehouse")
+    _commands_registered = True
+
+
+_commands_registered = False
+register_commands()
 
 
 def main():
