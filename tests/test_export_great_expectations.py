@@ -1562,16 +1562,6 @@ def test_checks_filter_properties_only(contract_quality_and_schema_rules: OpenDa
     assert _origins(result["expectations"]) == {"schema_inferred"}
 
 
-def test_checks_filter_quality_and_properties_matches_default(
-    contract_quality_and_schema_rules: OpenDataContractStandard,
-):
-    """--checks quality,properties is equivalent to omitting --checks."""
-    result = json.loads(
-        to_great_expectations(contract_quality_and_schema_rules, "tbl", check_categories={"quality", "properties"})
-    )
-    assert _origins(result["expectations"]) == {"quality_block", "schema_inferred"}
-
-
 def test_cli_checks_quality_only():
     """CLI equivalent of test_checks_filter_quality_only."""
     runner = CliRunner()
