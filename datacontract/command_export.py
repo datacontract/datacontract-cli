@@ -620,8 +620,7 @@ def export_great_expectations(
         Optional[str],
         typer.Option(
             help="Comma-separated list of check categories to export "
-            f"(available: {', '.join(sorted(_GE_VALID_CHECKS))}). Omit to export everything, matching the "
-            "current behavior."
+            f"(available: {', '.join(sorted(_GE_VALID_CHECKS))}). Omit to export everything."
         ),
     ] = None,
 ):
