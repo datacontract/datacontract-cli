@@ -912,28 +912,72 @@ def _freshness_check(
         return None
     model, field = resolved
 
-    unit = (sla.unit or "d").lower()
-    if unit in ("d", "day", "days"):
-        seconds = int(sla.value) * 86400
-    elif unit in ("h", "hr", "hour", "hours"):
-        seconds = int(sla.value) * 3600
-    elif unit in ("m", "min", "minute", "minutes"):
-        seconds = int(sla.value) * 60
-    else:
-        logger.info(f"Unsupported freshness unit {unit}")
-        return None
+    unit = (sla.unit or "d").lower() or "d"
+    seconds = _freshness_value_to_seconds(sla.value, unit)
+    if seconds is None:
+        # A freshness the CLI cannot interpret is a contract error, reported as a failed
+        # check. It must not raise: checks are created for the whole contract before any
+        # of them runs, so an exception here is caught as a run-level error and takes
+        # every other check of the contract down with it.
+        return CheckSpec(
+            key=f"{model}__{field}__servicelevel_freshness",
+            category="servicelevel",
+            type="servicelevel_freshness",
+            name=f"Freshness of {model}.{field}",
+            model=model,
+            field=field,
+            metric=MetricType.UNSUPPORTED,
+            quality_id=sla.id,
+            preset_result="failed",
+            preset_reason=(
+                f"Cannot evaluate the freshness service level: value {sla.value!r} with unit "
+                f"{sla.unit!r} is neither a number with a supported unit (d, h, m) nor an "
+                f"ISO-8601 duration."
+            ),
+        )
 
+    threshold = f"{sla.value}{unit[0]}" if isinstance(sla.value, (int, float)) else f"{seconds}s"
     return CheckSpec(
         key=f"{model}__{field}__servicelevel_freshness",
         category="servicelevel",
         type="servicelevel_freshness",
-        name=f"Freshness of {model}.{field} < {sla.value}{unit[0]}",
+        name=f"Freshness of {model}.{field} < {threshold}",
         model=model,
         field=field,
         metric=MetricType.FRESHNESS,
         quality_id=sla.id,
         seconds=seconds,
     )
+
+
+_FRESHNESS_UNITS = (
+    (("d", "day", "days"), 86400),
+    (("h", "hr", "hour", "hours"), 3600),
+    (("m", "min", "minute", "minutes"), 60),
+)
+
+
+def _freshness_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
+    """The freshness threshold in seconds, or ``None`` when it cannot be interpreted.
+
+    Accepts the same value forms as retention: a number qualified by ``unit``, or an
+    ISO-8601 duration string (``P1DT12H``), which carries its own units.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped.lstrip("-").isdigit():
+            return _parse_iso8601_to_seconds(stripped)
+        value = int(stripped)
+    if not isinstance(value, (int, float)):
+        return None
+    u = (unit or "d").lower()
+    for names, factor in _FRESHNESS_UNITS:
+        if u in names:
+            return int(value) * factor
+    logger.info(f"Unsupported freshness unit {u}")
+    return None
 
 
 def _retention_check(

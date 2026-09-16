@@ -110,3 +110,63 @@ def test_servicelevel_checks_keep_kafka_logical_name():
 
     (check,) = _of_type(checks, "servicelevel_freshness")
     assert check.model == "events"
+
+
+def _events_schema():
+    return SchemaObject(
+        name="events",
+        properties=[SchemaProperty(name="ts", logicalType="timestamp")],
+    )
+
+
+def test_unparseable_freshness_value_fails_only_its_own_check():
+    """A freshness value the CLI cannot read must not abort the whole contract.
+
+    Checks are created for the whole contract before any of them runs, so raising here
+    used to surface as a single run-level error with none of the contract's other checks
+    created (`value: 25h`, the unit baked into the value, did exactly that).
+    """
+    schema = _events_schema()
+    contract = _contract(
+        schema,
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value="25h"),
+        ServiceLevelAgreementProperty(property="retention", element="events.ts", value=1, unit="y"),
+    )
+
+    checks = create_checks(contract, None)
+
+    freshness = _of_type(checks, "servicelevel_freshness")
+    assert len(freshness) == 1
+    assert freshness[0].preset_result == "failed"
+    assert "25h" in freshness[0].preset_reason
+    # The rest of the contract still produced its checks.
+    assert len(_of_type(checks, "servicelevel_retention")) == 1
+    assert _of_type(checks, "field_is_present")
+
+
+def test_freshness_accepts_iso8601_duration_like_retention():
+    """Freshness reads ISO-8601 durations, the other value form retention already took."""
+    contract = _contract(
+        _events_schema(),
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value="P1DT12H"),
+    )
+
+    freshness = _of_type(create_checks(contract, None), "servicelevel_freshness")
+
+    assert len(freshness) == 1
+    assert freshness[0].seconds == 36 * 3600
+    assert freshness[0].preset_result is None
+
+
+def test_unsupported_freshness_unit_fails_its_check():
+    """An unreadable unit is reported, not silently dropped."""
+    contract = _contract(
+        _events_schema(),
+        ServiceLevelAgreementProperty(property="freshness", element="events.ts", value=3, unit="fortnights"),
+    )
+
+    freshness = _of_type(create_checks(contract, None), "servicelevel_freshness")
+
+    assert len(freshness) == 1
+    assert freshness[0].preset_result == "failed"
+    assert "fortnights" in freshness[0].preset_reason
