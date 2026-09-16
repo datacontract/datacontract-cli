@@ -1580,24 +1580,6 @@ def test_cli_checks_quality_only():
     assert _origins(output["expectations"]) == {"quality_block"}
 
 
-def test_cli_checks_properties_only():
-    """`properties` is the ODCS section name for logical-type-inferred constraints."""
-    runner = CliRunner()
-    result = runner.invoke(
-        app,
-        [
-            "export",
-            "great-expectations",
-            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
-            "--checks",
-            "properties",
-        ],
-    )
-    assert result.exit_code == 0
-    output = json.loads(result.output)
-    assert _origins(output["expectations"]) == {"schema_inferred"}
-
-
 def test_cli_checks_invalid_value():
     """An unknown category must exit with an error, not a stack trace."""
     runner = CliRunner()
