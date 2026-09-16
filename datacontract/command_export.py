@@ -574,7 +574,6 @@ def export_sodacl(
     _export(ExportFormat.sodacl, location, output, server, schema_name, schema, inline_references=inline_references)
 
 
-# `properties` is the ODCS section holding logical-type-inferred constraints.
 _GE_VALID_CHECKS = {c.value for c in GreatExpectationsCheckCategory}
 
 
