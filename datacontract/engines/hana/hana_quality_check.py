@@ -23,7 +23,6 @@ from datacontract.engines.hana.hana_schema_check import (
 from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.model.run import Check, ResultEnum
 
-
 logger = logging.getLogger(__name__)
 
 
