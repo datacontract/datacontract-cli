@@ -26,6 +26,7 @@ from datacontract.model.run import Check, ResultEnum
 
 logger = logging.getLogger(__name__)
 
+
 def run_quality_checks(
     connection,
     schema_name: str,
