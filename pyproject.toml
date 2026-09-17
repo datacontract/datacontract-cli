@@ -117,8 +117,8 @@ dataframe = [
 # `ibis.pyspark.connect(session=spark)` still works against that session.
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
-  "databricks-sql-connector>=3.7.0,<4.5.0",
-  "databricks-sdk<0.136.0",
+  "databricks-sql-connector>=3.7.0,<4.6.0",
+  "databricks-sdk<0.139.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -219,6 +219,10 @@ athena = [
   "packaging>=21.3,<27.0",
 ]
 
+hana = [
+  "hdbcli>=2.20.0,<3.0.0",
+]
+
 trino = [
   "ibis-framework[trino]>=10.0.0,<13.0.0",
   # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
@@ -261,6 +265,11 @@ protobuf = [
   "proto-schema-parser>=1.0,<3.0",
 ]
 
+# NOTE: `hana` is intentionally NOT part of `all`. It depends on `hdbcli`, the
+# SAP HANA Client, which is distributed under SAP's proprietary license (SAP
+# Developer License), not an OSI-approved open-source license. Bundling it into
+# the `all` meta-extra would pull a proprietary package into a default-ish
+# install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
   "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
@@ -278,13 +287,13 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-xdist",
-  "pymssql==2.4.0",
+  "pymssql==2.4.1",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
   # test fixtures to load seed SQL (the engine connects via ibis-postgres'
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.16.6",
+  "ruff==0.16.7",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.339.0",
 ]

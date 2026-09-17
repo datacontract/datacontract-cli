@@ -197,6 +197,16 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_GCS_KEY_ID` | `gcs_key_id` | string |  |
 | `DATACONTRACT_GCS_SECRET` | `gcs_secret` | string (secret) |  |
 
+### SAP HANA
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_HANA_USERNAME` | `hana_username` | string |  |
+| `DATACONTRACT_HANA_PASSWORD` | `hana_password` | string (secret) |  |
+| `DATACONTRACT_HANA_ENCRYPT` | `hana_encrypt` | boolean |  |
+| `DATACONTRACT_HANA_SSL_VALIDATE_CERTIFICATE` | `hana_ssl_validate_certificate` | boolean |  |
+| `DATACONTRACT_HANA_SSL_HOSTNAME_IN_CERTIFICATE` | `hana_ssl_hostname_in_certificate` | string |  |
+
 ### Iceberg
 
 | Environment variable | `Config` field | Type | Notes |

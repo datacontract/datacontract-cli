@@ -146,6 +146,13 @@ class Config(BaseSettings):
     gcs_key_id: str | None = None
     gcs_secret: SecretStr | None = None
 
+    # hana
+    hana_username: str | None = None
+    hana_password: SecretStr | None = None
+    hana_encrypt: bool | None = None
+    hana_ssl_validate_certificate: bool | None = None
+    hana_ssl_hostname_in_certificate: str | None = None
+
     # iceberg (REST catalog by default; data files use the s3_* options)
     iceberg_catalog_type: str | None = None
     iceberg_credential: SecretStr | None = None
@@ -557,6 +564,22 @@ class Config(BaseSettings):
 
     def get_gcs_secret(self, required: bool = False) -> str | None:
         return self._str_option("gcs_secret", required)
+
+    # --- hana ---
+    def get_hana_username(self, required: bool = False) -> str | None:
+        return self._str_option("hana_username", required)
+
+    def get_hana_password(self, required: bool = False) -> str | None:
+        return self._str_option("hana_password", required)
+
+    def get_hana_encrypt(self, default: bool = True) -> bool:
+        return self._bool_option("hana_encrypt", default)
+
+    def get_hana_ssl_validate_certificate(self, default: bool = True) -> bool:
+        return self._bool_option("hana_ssl_validate_certificate", default)
+
+    def get_hana_ssl_hostname_in_certificate(self, required: bool = False) -> str | None:
+        return self._str_option("hana_ssl_hostname_in_certificate", required)
 
     # --- iceberg ---
     def get_iceberg_catalog_type(self, required: bool = False) -> str | None:

@@ -20,6 +20,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
+from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.type_normalize import (
     format_mismatch_reason,
     normalize_type_name,
@@ -1073,21 +1074,13 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
     set_result(run, spec.key, ResultEnum.passed if ok else _fail_result(spec), reason)
 
 
-# Severities (ODCS quality.severity) that downgrade a failing check to a warning
-# instead of a hard failure. Anything else (including None) fails the run.
-_WARNING_SEVERITIES = {"info", "warning", "warn", "low", "minor", "trivial"}
-
-
 def _fail_result(spec: CheckSpec) -> ResultEnum:
     """The result to set when a check does not meet its threshold.
 
     Honors ODCS ``quality.severity``: a non-blocking severity makes the check a
     warning (which does not fail the run); the default is a hard failure.
     """
-    severity = (spec.severity or "").strip().lower()
-    if severity in _WARNING_SEVERITIES:
-        return ResultEnum.warning
-    return ResultEnum.failed
+    return failure_result(spec.severity)
 
 
 def set_result(run: Run, key: str, result: ResultEnum, reason: Optional[str]) -> None:
