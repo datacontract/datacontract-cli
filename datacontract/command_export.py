@@ -753,8 +753,3 @@ def export_custom(
         template=template,
         inline_references=inline_references,
     )
-
-
-# Complete deferred CLI registration after this module is fully initialized.
-from datacontract.cli import register_commands
-register_commands()
