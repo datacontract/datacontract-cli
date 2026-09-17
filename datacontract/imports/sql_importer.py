@@ -167,20 +167,23 @@ def get_primary_key(column, table) -> bool | None:
 
 def get_relationship(column, table) -> List[Relationship] | None:
     reference = column.find(sqlglot.exp.Reference)
+    index = 0
     if reference is None:
         for foreign_key in table.find_all(sqlglot.exp.ForeignKey):
-            if column.name in [c.name for c in foreign_key.expressions]:
+            names = [c.name for c in foreign_key.expressions]
+            if column.name in names:
                 reference = foreign_key.args.get("reference")
+                index = names.index(column.name)
                 break
     if reference is None:
         return None
 
     referenced_table = reference.this.find(sqlglot.exp.Table)
     referenced_columns = reference.this.expressions
-    if referenced_table is None or not referenced_columns:
+    if referenced_table is None or len(referenced_columns) <= index:
         return None
 
-    to = f"{referenced_table.this.name}.{referenced_columns[0].name}"
+    to = f"{referenced_table.this.name}.{referenced_columns[index].name}"
     return [Relationship(to=to)]
 
 
