@@ -180,7 +180,7 @@ def get_relationship(column, table) -> List[Relationship] | None:
     if referenced_table is None or not referenced_columns:
         return None
 
-    to = f"schema/{referenced_table.this.name}/properties/{referenced_columns[0].name}"
+    to = f"{referenced_table.this.name}.{referenced_columns[0].name}"
     return [Relationship(to=to)]
 
 

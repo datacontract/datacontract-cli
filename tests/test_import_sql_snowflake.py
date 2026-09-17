@@ -52,7 +52,7 @@ schema:
       value: 0
     logicalType: number
     relationships:
-    - to: schema/my_table/properties/field_primary_key
+    - to: my_table.field_primary_key
   - name: field_not_null
     physicalType: INT
     description: Not null
