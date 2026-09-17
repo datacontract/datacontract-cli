@@ -440,7 +440,7 @@ def _local_resolution_error(
     url: str, detail: str, original_exception: Exception | None = None
 ) -> DefinitionResolutionError:
     reason = f"Could not resolve business definition '{url}': {detail}"
-    logging.warning(reason)
+    logger.warning(reason)
     return DefinitionResolutionError(url=url, reason=reason, original_exception=original_exception)
 
 
@@ -577,7 +577,7 @@ def _definition_resolution_error(
     reason = f"Could not resolve business definition '{url}' from {target_url}: {detail}"
     if hint:
         reason = f"{reason} — {hint}"
-    logging.warning(reason)
+    logger.warning(reason)
     return DefinitionResolutionError(url=url, reason=reason, original_exception=original_exception)
 
 

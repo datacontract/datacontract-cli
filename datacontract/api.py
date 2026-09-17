@@ -952,7 +952,7 @@ async def changelog_endpoint(
     except DefinitionResolutionError as e:
         # The reason names the host that was contacted and what it answered.
         # Omit for security reasons.
-        logging.warning("Definition resolution failed: %s", e)
+        logger.warning("Definition resolution failed: %s", e)
         raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
     except DataContractException as e:
         raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
@@ -1123,7 +1123,7 @@ def export(
     except DefinitionResolutionError as e:
         # The reason names the host that was contacted and what it answered.
         # Omit for security reasons.
-        logging.warning("Definition resolution failed: %s", e)
+        logger.warning("Definition resolution failed: %s", e)
         raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
     except DataContractException as e:
         raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
