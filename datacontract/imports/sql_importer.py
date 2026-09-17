@@ -158,8 +158,8 @@ def get_primary_key(column, table) -> bool | None:
         return True
     if column.find(sqlglot.exp.PrimaryKey) is not None:
         return True
-    if table.find(sqlglot.exp.PrimaryKey) is not None and column.name in [
-        c.name for c in table.find(sqlglot.exp.PrimaryKey).expressions
+    if table.find(sqlglot.exp.PrimaryKey) is not None and column.name.lower() in [
+        c.name.lower() for c in table.find(sqlglot.exp.PrimaryKey).expressions
     ]:
         return True
     return None
@@ -170,10 +170,10 @@ def get_relationship(column, table) -> List[Relationship] | None:
     index = 0
     if reference is None:
         for foreign_key in table.find_all(sqlglot.exp.ForeignKey):
-            names = [c.name for c in foreign_key.expressions]
-            if column.name in names:
+            names = [c.name.lower() for c in foreign_key.expressions]
+            if column.name.lower() in names:
                 reference = foreign_key.args.get("reference")
-                index = names.index(column.name)
+                index = names.index(column.name.lower())
                 break
     if reference is None:
         return None
