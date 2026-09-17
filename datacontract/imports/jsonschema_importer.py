@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, List
 
 import fastjsonschema
-from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -125,18 +125,7 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
         # Draft-06+: number value
         exclusive_maximum = raw_exclusive_max
 
-    # Handle enum as quality rule (invalidValues with validValues, mustBe: 0)
     quality_rules = []
-    enum_values = prop_schema.get("enum")
-    if enum_values:
-        quality_rules.append(
-            DataQuality(
-                type="library",
-                metric="invalidValues",
-                arguments={"validValues": enum_values},
-                mustBe=0,
-            )
-        )
 
     # Build custom properties for attributes not directly mapped
     custom_props = {}
@@ -186,6 +175,7 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
         properties=nested_properties,
         items=items_prop,
         custom_properties=custom_props if custom_props else None,
+        enum=prop_schema.get("enum"),
     )
 
     # Set title as businessName if present

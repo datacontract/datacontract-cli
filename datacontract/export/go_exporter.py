@@ -4,6 +4,8 @@ from typing import List, Optional
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
+from datacontract.model.map_type import get_map_key, get_map_value
+from datacontract.model.vector_type import is_double
 
 
 class GoExporter(Exporter):
@@ -92,6 +94,19 @@ def get_subtype(prop: SchemaProperty, nested_types: dict, type_name: str, camel_
                 go_type = nested_type_name
             else:
                 go_type = "interface{}"
+        case "vector":
+            go_type = "[]float64" if is_double(prop) else "[]float32"
+        case "map":
+            key, value = get_map_key(prop), get_map_value(prop)
+            key_type = (
+                get_subtype(key, nested_types, type_name, camel_case_name + "Key") if key is not None else "string"
+            )
+            value_type = (
+                get_subtype(value, nested_types, type_name, camel_case_name + "Value")
+                if value is not None
+                else "interface{}"
+            )
+            go_type = f"map[{key_type}]{value_type}"
         case _:
             if physical_type and physical_type.lower() in ["record", "struct"]:
                 if prop.properties:

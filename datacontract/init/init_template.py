@@ -3,7 +3,7 @@ import logging
 
 import requests
 
-DEFAULT_DATA_CONTRACT_INIT_TEMPLATE = "odcs-3.1.0.init.yaml"
+DEFAULT_DATA_CONTRACT_INIT_TEMPLATE = "odcs-3.2.0.init.yaml"
 
 logger = logging.getLogger(__name__)
 

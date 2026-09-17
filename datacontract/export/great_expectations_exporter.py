@@ -15,6 +15,7 @@ from datacontract.export.exporter import (
     Exporter,
     _check_schema_name_for_export,
 )
+from datacontract.model.enum_values import get_enum_values
 
 # Pre-built regex patterns for common string formats (RFC-compliant simplified patterns)
 _FORMAT_REGEX_MAP: Dict[str, str] = {
@@ -83,25 +84,6 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     if prop.logicalTypeOptions is None:
         return None
     return prop.logicalTypeOptions.get(key)
-
-
-def _get_enum_from_custom_properties(prop: SchemaProperty) -> Optional[List[str]]:
-    """Get enum values from custom properties used by DCS imports.
-
-    Args:
-        prop: Schema property whose custom properties are inspected.
-
-    Returns:
-        list[str] | None: Declared enum values, or ``None`` when no enum is present.
-    """
-    if prop.customProperties is None:
-        return None
-    for cp in prop.customProperties:
-        if cp.property == "enum" and cp.value:
-            if isinstance(cp.value, list):
-                return cp.value
-            return json.loads(cp.value)
-    return None
 
 
 def _to_snake_case(text: str) -> str:
@@ -318,20 +300,22 @@ def add_field_expectations(
 
             field_type = convert_to_sql_type(prop, sql_server_type)
         else:
-            field_type = prop_type
-        expectations.append(
-            to_column_types_exp(
-                field_name,
-                field_type,
-                _build_constraint_meta(
-                    contract_id,
+            # an embedding column has no engine-neutral type name
+            field_type = None if prop_type == "vector" else prop_type
+        if field_type:
+            expectations.append(
+                to_column_types_exp(
                     field_name,
-                    f"{field_name} must be of type {field_type}",
-                    f"{field_name} must be of type {field_type}",
-                    "conformity",
-                ),
+                    field_type,
+                    _build_constraint_meta(
+                        contract_id,
+                        field_name,
+                        f"{field_name} must be of type {field_type}",
+                        f"{field_name} must be of type {field_type}",
+                        "conformity",
+                    ),
+                )
             )
-        )
 
     # primaryKey: true → NOT_NULL + UNIQUE; required/unique standalone rules are skipped
     if prop.primaryKey:
@@ -501,8 +485,8 @@ def add_field_expectations(
             )
 
     # logicalTypeOptions: enum (from logicalTypeOptions or customProperties)
-    enum_values = _get_logical_type_option(prop, "enum") or _get_enum_from_custom_properties(prop)
-    if enum_values is not None and len(enum_values) != 0:
+    enum_values = get_enum_values(prop)
+    if enum_values:
         expectations.append(
             to_column_enum_exp(
                 field_name,

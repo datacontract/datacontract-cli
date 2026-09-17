@@ -1,10 +1,12 @@
 """Helper functions for creating ODCS (OpenDataContractStandard) objects."""
 
+import re
 from typing import Any, Dict, List
 
 from open_data_contract_standard.model import (
     CustomProperty,
     DataQuality,
+    EnumValue,
     OpenDataContractStandard,
     Role,
     SchemaObject,
@@ -12,6 +14,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.model.map_type import map_definition
 from datacontract.model.server import to_odcs_server_type
 
 
@@ -23,7 +26,7 @@ def create_odcs(
 ) -> OpenDataContractStandard:
     """Create a new OpenDataContractStandard instance with default values."""
     return OpenDataContractStandard(
-        apiVersion="v3.1.0",
+        apiVersion="v3.2.0",
         kind="DataContract",
         id=id or "my-data-contract",
         name=name or "My Data Contract",
@@ -88,8 +91,18 @@ def create_property(
     custom_properties: Dict[str, Any] = None,
     id: str = None,
     quality: List[DataQuality] = None,
+    enum: List[Any] = None,
+    map_key: "SchemaProperty" = None,
+    map_value: "SchemaProperty" = None,
+    dimensions: int = None,
+    element_type: str = None,
 ) -> SchemaProperty:
-    """Create a SchemaProperty (equivalent to DCS Field)."""
+    """Create a SchemaProperty (equivalent to DCS Field).
+
+    ``enum`` lists the allowed values, as plain values or ``EnumValue`` entries (ODCS v3.2.0).
+    ``map_key`` and ``map_value`` describe a ``logicalType: map`` property; a missing side is a string.
+    ``dimensions`` and ``element_type`` describe a ``logicalType: vector`` property.
+    """
     prop = SchemaProperty(name=name, id=id)
     prop.logicalType = logical_type
 
@@ -133,6 +146,10 @@ def create_property(
         logical_type_options["exclusiveMaximum"] = exclusive_maximum
     if format:
         logical_type_options["format"] = format
+    if dimensions is not None:
+        logical_type_options["dimensions"] = dimensions
+    if element_type:
+        logical_type_options["elementType"] = element_type
     if logical_type_options:
         prop.logicalTypeOptions = logical_type_options
 
@@ -149,6 +166,12 @@ def create_property(
     # Data quality
     if quality:
         prop.quality = quality
+
+    if enum:
+        prop.enum = [entry if isinstance(entry, EnumValue) else EnumValue(value=entry) for entry in enum]
+
+    if logical_type == "map" or map_key is not None or map_value is not None:
+        prop.map = map_definition(map_key, map_value)
 
     return prop
 
@@ -282,11 +305,67 @@ SQL_TO_LOGICAL_TYPE = {
     "object": "object",
     "struct": "object",
     "record": "object",
-    "map": "object",
+    "map": "map",
+    "vector": "vector",
+    "halfvec": "vector",
     "json": "object",
     "jsonb": "object",
     "variant": "object",
 }
+
+
+def split_type_arguments(arguments: str) -> List[str]:
+    """Split the arguments of a parameterized type on the commas of the top level only."""
+    parts, depth, start = [], 0, 0
+    for index, char in enumerate(arguments):
+        if char in "<(":
+            depth += 1
+        elif char in ">)":
+            depth -= 1
+        elif char == "," and depth == 0:
+            parts.append(arguments[start:index])
+            start = index + 1
+    parts.append(arguments[start:])
+    return [part.strip() for part in parts if part.strip()]
+
+
+def property_from_type_string(name: str, type_string: str) -> SchemaProperty:
+    """A property for a native type string such as ``map<string,array<int>>`` or ``STRUCT<a: INT>``.
+
+    ``map``, ``array``/``list`` and ``struct``/``row`` are expanded recursively (the
+    ``map<k,v>``, ``map(k,v)``, ``array<t>`` and ``struct<name:type,...>`` spellings of
+    Spark, Databricks, Hive, Glue, Trino and Snowflake); anything else is a scalar.
+    """
+    text = type_string.strip()
+    lowered = text.lower()
+    match = re.match(r"^(map|array|list|struct|row)\s*([<(])(.*)([>)])$", lowered, re.S)
+    if match:
+        kind, inner = match.group(1), text[match.start(3) : match.end(3)]
+        arguments = split_type_arguments(inner)
+        if kind == "map" and len(arguments) == 2:
+            return create_property(
+                name=name,
+                logical_type="map",
+                physical_type=text,
+                map_key=property_from_type_string("key", arguments[0]),
+                map_value=property_from_type_string("value", arguments[1]),
+            )
+        if kind in ("array", "list") and len(arguments) == 1:
+            return create_property(
+                name=name,
+                logical_type="array",
+                physical_type=text,
+                items=property_from_type_string("items", arguments[0]),
+            )
+        if kind in ("struct", "row"):
+            properties = []
+            for argument in arguments:
+                field_name, _, field_type = argument.partition(":")
+                if not field_type:
+                    field_name, _, field_type = argument.partition(" ")
+                properties.append(property_from_type_string(field_name.strip().strip('`"'), field_type.strip()))
+            return create_property(name=name, logical_type="object", physical_type=text, properties=properties)
+    return create_property(name=name, logical_type=map_sql_type_to_logical(text), physical_type=text)
 
 
 def map_sql_type_to_logical(sql_type: str) -> str:
@@ -314,7 +393,7 @@ AVRO_TO_LOGICAL_TYPE = {
     "boolean": "boolean",
     "record": "object",
     "array": "array",
-    "map": "object",
+    "map": "map",
     "enum": "string",
     "fixed": "array",
 }

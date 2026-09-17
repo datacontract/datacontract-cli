@@ -120,9 +120,13 @@ def _type_to_property(name: str, spark_type: types.DataType, required: bool = Tr
 
     nested_properties = None
     items_prop = None
+    map_key = map_value = None
 
     if logical_type == "array":
         items_prop = _type_to_property("items", spark_type.elementType, not spark_type.containsNull)
+    elif logical_type == "map":
+        map_key = _type_to_property("key", spark_type.keyType, True)
+        map_value = _type_to_property("value", spark_type.valueType, not spark_type.valueContainsNull)
     elif logical_type == "object" and isinstance(spark_type, types.StructType):
         nested_properties = [_property_from_struct_type(sf) for sf in spark_type.fields]
 
@@ -133,6 +137,8 @@ def _type_to_property(name: str, spark_type: types.DataType, required: bool = Tr
         required=required if required else None,
         properties=nested_properties,
         items=items_prop,
+        map_key=map_key,
+        map_value=map_value,
     )
 
 
@@ -153,7 +159,7 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
     elif isinstance(spark_type, types.ArrayType):
         return "array"
     elif isinstance(spark_type, types.MapType):
-        return "object"
+        return "map"
     elif isinstance(spark_type, types.TimestampType):
         return "date"
     elif isinstance(spark_type, types.TimestampNTZType):

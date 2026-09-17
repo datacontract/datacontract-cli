@@ -42,6 +42,25 @@ def is_literal(property_name):
         "patterns",
         "logicalType",
         "physicalType",
+        "semanticType",
+        "deprecated",
+        "vendor",
+        "value",
+        "property",
+        "key",
+        "map",
+        "items",
+        "synonyms",
+        "context",
+        "customProperties",
+        "synonym",
+        "locale",
+        "source",
+        "label",
+        "instructions",
+        "question",
+        "answer",
+        "constraint",
     ]
 
 
@@ -148,16 +167,32 @@ def add_triple(sub, pred, obj, graph, dc, dcx):
         add_predicate(sub=sub, pred=pred, obj=obj, graph=graph, dc=dc, dcx=dcx)
 
 
+def add_node(sub, pred, node, graph, dc, dcx):
+    """Add a nested model (an enum entry, a synonym, a map key, ...) as a blank node with its own fields."""
+    a_node = BNode()
+    graph.add((sub, dc[pred] if is_literal(pred) else dcx[pred], a_node))
+    for field_property in node.model_fields:
+        add_triple(sub=a_node, pred=field_property, obj=node, graph=graph, dc=dc, dcx=dcx)
+
+
 def add_predicate(sub, pred, obj, graph, dc, dcx):
-    if isinstance(obj, BaseModel):
-        if getattr(obj, pred, None) is not None:
-            if is_literal(pred):
-                graph.add((sub, dc[pred], Literal(getattr(obj, pred))))
-            elif is_uriref(pred):
-                graph.add((sub, dc[pred], URIRef(getattr(obj, pred))))
-            else:
-                # treat it as an extension
-                graph.add((sub, dcx[pred], Literal(getattr(obj, pred))))
+    if isinstance(obj, BaseModel) and pred not in obj.model_fields:
+        # an item of a list field (enum, synonyms, relationships, ...): a node of its own
+        add_node(sub, pred, obj, graph, dc, dcx)
+    elif isinstance(obj, BaseModel):
+        value = getattr(obj, pred, None)
+        if value is None:
+            return
+        if isinstance(value, BaseModel):
+            # a nested definition (items, map, context): a node, not the model's repr
+            add_node(sub, pred, value, graph, dc, dcx)
+        elif is_literal(pred):
+            graph.add((sub, dc[pred], Literal(value)))
+        elif is_uriref(pred):
+            graph.add((sub, dc[pred], URIRef(value)))
+        else:
+            # treat it as an extension
+            graph.add((sub, dcx[pred], Literal(value)))
     else:
         # assume primitive
         if is_literal(pred):

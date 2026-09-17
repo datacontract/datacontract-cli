@@ -20,6 +20,31 @@ NON_ODCS_SERVER_TYPES = {"dataframe"}
 # internally and reports back.
 SERVER_TYPE_SYNONYMS = {
     "postgresql": "postgres",
+    "fastobjects": "poet",
+    "btrieve": "zen",
+}
+
+# ODCS server types the CLI validates and exports but cannot connect to with
+# `datacontract test`: no driver is bundled for them yet.
+LINT_ONLY_SERVER_TYPES = {
+    "cloudsql",
+    "db2",
+    "denodo",
+    "dremio",
+    "exasol",
+    "hana",
+    "hive",
+    "informix",
+    "ingres",
+    "poet",
+    "presto",
+    "pubsub",
+    "synapse",
+    "teradata",
+    "vectorwise",
+    "versant",
+    "vertica",
+    "zen",
 }
 
 

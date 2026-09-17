@@ -114,7 +114,7 @@ Run with `--debug` to see the reasons. If the check *does* run but the column is
 
 - **[`test`](./commands/test.md)** — `freshness` and `retention` run as `servicelevel` checks.
 - **[SodaCL export](./exports/sodacl.md)** — both become Soda freshness and retention checks.
-- **[Markdown](./exports/markdown.md)**, **[HTML](./exports/html.md)**, and **[Excel](./exports/excel.md)** exports render the full `slaProperties` block, including the properties that are documentation only.
+- **[Markdown](./exports/markdown.md)**, **[HTML](./exports/html.md)**, and **[Excel](./exports/excel.md)** exports render the full `slaProperties` block, including the properties that are documentation only, and the `customProperties` and `authoritativeDefinitions` an entry may carry since ODCS v3.2.0.
 - **[`changelog`](./commands/changelog.md)** reports added, removed, and changed service levels between two versions.
 
 ## Learn more

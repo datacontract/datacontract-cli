@@ -1,6 +1,6 @@
 version: 0.0.1
 kind: DataContract
-apiVersion: v3.0.0
+apiVersion: v3.1.0
 id: postgres-physical-name
 name: postgres-physical-name
 status: draft

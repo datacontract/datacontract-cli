@@ -34,7 +34,9 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.config import Config
 from datacontract.export.avro_exporter import to_avro_schema_json
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.map_type import get_map_key, get_map_value
 from datacontract.model.run import ResultEnum, Run
+from datacontract.model.vector_type import is_double, vector_dimensions
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +109,7 @@ def read_kafka_topic(
     if server.format == "avro":
         table = _decode_avro(values, model_name, schema_obj, config)
     else:
-        table = _decode_json(values, schema_obj)
+        table = _decode_json(values, schema_obj, encoding=getattr(server, "encoding", None) or "utf-8")
 
     duckdb = _import("duckdb")
     con = duckdb_connection if duckdb_connection is not None else duckdb.connect(database=":memory:")
@@ -406,7 +408,7 @@ def fetch_writer_schema(registry: dict, schema_id: int) -> str:
 # ---------------------------------------------------------------------------
 # json
 # ---------------------------------------------------------------------------
-def _decode_json(values: List[bytes], schema_obj: SchemaObject):
+def _decode_json(values: List[bytes], schema_obj: SchemaObject, encoding: str = "utf-8"):
     """Decode JSON messages into the column types the data contract declares.
 
     A message that is not a JSON object becomes a row of nulls rather than an
@@ -418,7 +420,7 @@ def _decode_json(values: List[bytes], schema_obj: SchemaObject):
     records = []
     for value in values:
         try:
-            record = json.loads(value.decode("utf-8"))
+            record = json.loads(value.decode(encoding))
         except (UnicodeDecodeError, json.JSONDecodeError):
             record = None
         records.append(record if isinstance(record, dict) else {})
@@ -511,6 +513,16 @@ def to_arrow_type(pa, prop: SchemaProperty):
             return pa.time64("us")
         case "object" | "record" | "struct":
             return pa.struct(to_arrow_schema(pa, prop.properties or []))
+        case "vector":
+            element = pa.float64() if is_double(prop) else pa.float32()
+            dimensions = vector_dimensions(prop)
+            return pa.list_(element, dimensions) if dimensions else pa.list_(element)
+        case "map":
+            key, value = get_map_key(prop), get_map_value(prop)
+            return pa.map_(
+                to_arrow_type(pa, key) if key is not None else pa.string(),
+                to_arrow_type(pa, value) if value is not None else pa.string(),
+            )
         case "binary":
             return pa.binary()
         case "array":

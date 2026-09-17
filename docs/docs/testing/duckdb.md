@@ -1,10 +1,10 @@
 ---
-sidebar_position: 7
+sidebar_position: 9
 title: "DuckDB"
 description: "Test the tables inside a DuckDB database file."
 ---
 
-# <img className="page-icon" src="/img/icons/database.svg" alt="" /> DuckDB
+# <img className="page-icon" src="/img/icons/duckdb.svg" alt="" /> DuckDB
 
 Test the tables inside a DuckDB database file.
 

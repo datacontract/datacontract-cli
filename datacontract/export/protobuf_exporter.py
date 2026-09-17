@@ -5,6 +5,8 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.export.exporter import Exporter
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.map_type import get_map_key, get_map_value
+from datacontract.model.vector_type import is_double
 
 OBJECT_TYPES: set = {"object", "record", "struct"}
 
@@ -116,10 +118,10 @@ def _is_array_of_objects(prop: SchemaProperty) -> bool:
 
 def _is_enum_field(prop: SchemaProperty) -> bool:
     """
-    Returns True if the field has a non-empty "enumValues" property (via customProperties).
+    Returns True if the field declares allowed values: an ODCS ``enum`` or a non-empty
+    "enumValues" custom property (name -> number).
     """
-    values = _get_config_value(prop, "enumValues")
-    return bool(values)
+    return bool(prop.enum) or bool(_get_config_value(prop, "enumValues"))
 
 
 def _get_enum_name(prop: SchemaProperty) -> str:
@@ -135,11 +137,20 @@ def _get_enum_name(prop: SchemaProperty) -> str:
 
 def _get_enum_values(prop: SchemaProperty) -> dict:
     """
-    Returns the enum values from the field.
+    Returns the enum constants of the field as name -> number.
+
+    The "enumValues" custom property carries the numbers a protobuf import found. An ODCS
+    ``enum`` uses each entry's ``id`` when it is a number, and the position otherwise.
     """
     values = _get_config_value(prop, "enumValues")
     if values and isinstance(values, dict):
         return values
+    if prop.enum:
+        result = {}
+        for position, entry in enumerate(prop.enum):
+            number = int(entry.id) if entry.id is not None and str(entry.id).lstrip("-").isdigit() else position
+            result[str(entry.value)] = number
+        return result
     return {}
 
 
@@ -295,6 +306,20 @@ def _get_field_type(prop: SchemaProperty) -> str:
                 return f"repeated {primitive_type}"
         else:
             return "repeated string"  # Default array type
+
+    # A vector is a repeated float
+    if lower_type == "vector":
+        return "repeated double" if is_double(prop) else "repeated float"
+
+    # Handle maps: protobuf keys are scalar; an object value becomes a nested message
+    if lower_type == "map":
+        key, value = get_map_key(prop), get_map_value(prop)
+        key_type = _get_primitive_type(key) if key is not None else "string"
+        if value is not None and value.logicalType and value.logicalType.lower() in OBJECT_TYPES:
+            value_type = _get_type_name(prop)
+        else:
+            value_type = _get_primitive_type(value) if value is not None else "string"
+        return f"map<{key_type}, {value_type}>"
 
     # Handle regular objects
     if lower_type in OBJECT_TYPES:

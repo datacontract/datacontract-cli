@@ -21,6 +21,7 @@
       <div>
         <div class="space-y-6 mt-6">
           {{ render_partial('partials_odcs/fundamentals.html', datacontract=datacontract) }}
+          {{ render_partial('partials_odcs/context.html', datacontract=datacontract) }}
           {{ render_partial('partials_odcs/term_of_use.html', datacontract=datacontract) }}
           {{ render_partial('partials_odcs/diagram.html', mermaid_diagram=mermaid_diagram) }}
           {{ render_partial('partials_odcs/schema.html', datacontract=datacontract) }}

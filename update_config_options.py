@@ -30,6 +30,8 @@ GROUPS = {
     "databricks": "Databricks",
     "duckdb": "DuckDB",
     "gcs": "GCS",
+    "hana": "SAP HANA",
+    "iceberg": "Iceberg",
     "impala": "Impala",
     "kafka": "Kafka",
     "mysql": "MySQL",

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 title: "Kafka Reference"
 sidebar_label: "Kafka"
 description: "All Kafka authentication options and data type mappings."

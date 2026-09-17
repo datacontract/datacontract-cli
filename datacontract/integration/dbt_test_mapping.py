@@ -4,10 +4,11 @@ Shared between `datacontract export dbt` and (eventually) `datacontract dbt sync
 so the two paths cannot drift while both emit dbt tests.
 """
 
-import json
 from typing import Any, List, Optional
 
 from open_data_contract_standard.model import SchemaProperty
+
+from datacontract.model.enum_values import get_enum_values
 
 
 def _get_custom_property_value(prop: SchemaProperty, key: str) -> Optional[str]:
@@ -23,32 +24,6 @@ def get_logical_type_option(prop: SchemaProperty, key: str) -> Any:
     if prop.logicalTypeOptions is None:
         return None
     return prop.logicalTypeOptions.get(key)
-
-
-def _get_enum_values(prop: SchemaProperty) -> Optional[list]:
-    """Resolve enum values from logicalTypeOptions, customProperties, or quality.invalidValues."""
-
-    # First check logicalTypeOptions
-    enum_values = get_logical_type_option(prop, "enum")
-    if enum_values:
-        return enum_values
-    # Then check customProperties
-    enum_str = _get_custom_property_value(prop, "enum")
-    if enum_str:
-        try:
-            if isinstance(enum_str, list):
-                return enum_str
-            return json.loads(enum_str)
-        except (json.JSONDecodeError, TypeError):
-            pass
-    # Finally check quality rules for invalidValues with validValues
-    if prop.quality:
-        for q in prop.quality:
-            if q.metric == "invalidValues" and q.arguments:
-                valid_values = q.arguments.get("validValues")
-                if valid_values:
-                    return valid_values
-    return None
 
 
 def get_table_name_and_column_name(references: str) -> tuple:
@@ -81,7 +56,7 @@ def field_to_data_tests(
         if prop.unique or (is_primary_key and is_single_pk):
             tests.append("unique")
 
-    enum_values = _get_enum_values(prop)
+    enum_values = get_enum_values(prop)
     if enum_values and len(enum_values) > 0:
         tests.append({"accepted_values": {"values": enum_values}})
 
