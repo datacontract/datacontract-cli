@@ -642,6 +642,10 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
         logger.warning("Could not read MySQL table '%s': %s", model, last_error)
 
 
+# pyodbc pre-connect attribute for an Entra ID access token (SQL_COPT_SS_ACCESS_TOKEN).
+SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+
 def _connect_sqlserver(ibis, server: Server, config: Config):
     kwargs = _sqlserver_connection_kwargs(server, config)
     if "attrs_before" not in kwargs:
@@ -651,6 +655,8 @@ def _connect_sqlserver(ibis, server: Server, config: Config):
     import pyodbc
 
     del kwargs["user"], kwargs["password"]
+    if kwargs["database"] is None:
+        del kwargs["database"]  # pyodbc would send a literal DATABASE=None
     host, port = kwargs.pop("host"), kwargs.pop("port")
     con = pyodbc.connect(server=f"{host},{port}", **kwargs)
     return ibis.mssql.from_connection(con)
@@ -673,7 +679,8 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     unset — an explicitly chosen mode always wins. Extra keys (``Authentication``,
     ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) are forwarded
     verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
-    so they use the ODBC spellings.
+    so they use the ODBC spellings. ``cli`` sets ``attrs_before`` instead, which makes
+    ``_connect_sqlserver`` call ``pyodbc.connect`` directly.
     """
     driver = _get_custom_property(server, "driver") or config.get_sqlserver_driver()
 
@@ -716,9 +723,8 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
         kwargs["Trusted_Connection"] = "yes"
     elif authentication == "cli":
         # The ODBC driver has no Azure-CLI mode: pass an `az login` token as a
-        # pre-connect attribute. Suppress ibis's no-credentials Trusted_Connection default.
+        # pre-connect attribute (must not be combined with UID/PWD/Trusted_Connection).
         kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _azure_cli_access_token()}
-        kwargs["Trusted_Connection"] = "no"
     elif authentication == "activedirectoryserviceprincipal":
         kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
         kwargs["user"] = config.get_sqlserver_client_id(required=True)
@@ -751,22 +757,28 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     return kwargs
 
 
-# pyodbc pre-connect attribute for an Entra ID access token (SQL_COPT_SS_ACCESS_TOKEN).
-SQL_COPT_SS_ACCESS_TOKEN = 1256
-
-
 def _azure_cli_access_token() -> bytes:
     try:
+        from azure.core.exceptions import ClientAuthenticationError
         from azure.identity import AzureCliCredential
     except ImportError as exc:
         raise DataContractException(
             type="sqlserver-connection",
-            name="azure-identity extra missing",
-            reason="Install the extra datacontract-cli[azure] to use DATACONTRACT_SQLSERVER_AUTHENTICATION=cli",
+            name="azure_identity_extra_missing",
+            reason="Install the extra datacontract-cli[sqlserver,azure] to use DATACONTRACT_SQLSERVER_AUTHENTICATION=cli",
             engine="datacontract-cli",
             original_exception=exc,
         )
-    token = AzureCliCredential().get_token("https://database.windows.net/.default").token
+    try:
+        token = AzureCliCredential().get_token("https://database.windows.net/.default").token
+    except ClientAuthenticationError as exc:
+        raise DataContractException(
+            type="sqlserver-connection",
+            name="azure_cli_login_required",
+            reason=f"DATACONTRACT_SQLSERVER_AUTHENTICATION=cli needs an az login session: {exc.message}",
+            engine="datacontract-cli",
+            original_exception=exc,
+        )
     # The driver expects UTF-16LE bytes prefixed with their 4-byte little-endian length.
     raw = token.encode("utf-16-le")
     return struct.pack("<i", len(raw)) + raw
