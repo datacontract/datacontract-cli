@@ -51,6 +51,8 @@ schema:
         physicalType: INT
         primaryKey: true
         primaryKeyPosition: 1
+        required: true
+        unique: true
         description: Primary key
       - name: field_not_null
         logicalType: integer
@@ -177,7 +179,10 @@ schema:
       - name: id
         logicalType: number
         physicalType: DECIMAL
+        primaryKey: true
+        primaryKeyPosition: 1
         required: true
+        unique: true
       - name: created_by
         logicalType: string
         logicalTypeOptions:

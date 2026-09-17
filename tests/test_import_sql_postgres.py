@@ -49,6 +49,8 @@ schema:
         physicalType: VARCHAR(10)
         primaryKey: true
         primaryKeyPosition: 1
+        required: true
+        unique: true
       - name: field_two
         logicalType: integer
         physicalType: INT
@@ -87,7 +89,10 @@ schema:
       - name: id
         logicalType: number
         physicalType: DECIMAL
+        primaryKey: true
+        primaryKeyPosition: 1
         required: true
+        unique: true
       - name: created_by
         logicalType: string
         logicalTypeOptions:
