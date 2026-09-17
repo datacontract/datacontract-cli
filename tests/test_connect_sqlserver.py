@@ -251,7 +251,7 @@ def test_env_variables_override_the_contract_server_details(env):
 def test_cli_auth_opens_pyodbc_without_credentials_or_empty_database(env, monkeypatch):
     env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "cli")
     azure_identity = pytest.importorskip("azure.identity")
-    pyodbc = pytest.importorskip("pyodbc")
+    pyodbc = pytest.importorskip("pyodbc", exc_type=ImportError)
     monkeypatch.setattr(
         azure_identity.AzureCliCredential, "get_token", lambda self, scope: SimpleNamespace(token="tok")
     )
