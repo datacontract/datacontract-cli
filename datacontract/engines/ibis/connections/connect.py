@@ -12,6 +12,8 @@ wrapped with the ibis duckdb backend. Only the Spark-session server types
 from __future__ import annotations
 
 import logging
+import struct
+import sys
 import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
@@ -641,7 +643,17 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
 
 
 def _connect_sqlserver(ibis, server: Server, config: Config):
-    return ibis.mssql.connect(**_sqlserver_connection_kwargs(server, config))
+    kwargs = _sqlserver_connection_kwargs(server, config)
+    if "attrs_before" not in kwargs:
+        return ibis.mssql.connect(**kwargs)
+    # ibis.mssql.connect always sends UID/PWD (even as None), which the driver
+    # refuses next to an access token, so open the pyodbc connection ourselves.
+    import pyodbc
+
+    del kwargs["user"], kwargs["password"]
+    host, port = kwargs.pop("host"), kwargs.pop("port")
+    con = pyodbc.connect(server=f"{host},{port}", **kwargs)
+    return ibis.mssql.from_connection(con)
 
 
 def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
@@ -653,8 +665,8 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     - ``windows`` — Windows integrated auth (Kerberos/NTLM), no credentials
     - ``ActiveDirectoryPassword`` — Entra ID with ``USERNAME`` / ``PASSWORD``
     - ``ActiveDirectoryServicePrincipal`` — Entra ID with ``CLIENT_ID`` / ``CLIENT_SECRET``
-    - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint)
-    - ``cli`` — reuse an ``az login`` session via the Azure default credential chain
+    - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint), Windows only
+    - ``cli`` — reuse an ``az login`` session (token passed as a pre-connect attribute)
 
     The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
     ``windows``, and applies only when ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` is
@@ -703,9 +715,9 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     if authentication == "windows":
         kwargs["Trusted_Connection"] = "yes"
     elif authentication == "cli":
-        # DefaultAzureCredential includes the Azure CLI session (requires ODBC
-        # Driver 18.1+). Suppress ibis's no-credentials Trusted_Connection default.
-        kwargs["Authentication"] = "ActiveDirectoryDefault"
+        # The ODBC driver has no Azure-CLI mode: pass an `az login` token as a
+        # pre-connect attribute. Suppress ibis's no-credentials Trusted_Connection default.
+        kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _azure_cli_access_token()}
         kwargs["Trusted_Connection"] = "no"
     elif authentication == "activedirectoryserviceprincipal":
         kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
@@ -716,6 +728,17 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
         kwargs["user"] = config.get_sqlserver_username(required=True)
         kwargs["password"] = config.get_sqlserver_password(required=True)
     elif authentication == "activedirectoryinteractive":
+        if sys.platform != "win32":
+            raise DataContractException(
+                type="sqlserver-connection",
+                name="unsupported_authentication",
+                reason=(
+                    "DATACONTRACT_SQLSERVER_AUTHENTICATION=ActiveDirectoryInteractive is only supported by the "
+                    "Microsoft ODBC driver on Windows. On macOS/Linux use cli (az login) or "
+                    "ActiveDirectoryServicePrincipal."
+                ),
+                engine="datacontract-cli",
+            )
         kwargs["Authentication"] = "ActiveDirectoryInteractive"
         kwargs["Trusted_Connection"] = "no"
         username = config.get_sqlserver_username()
@@ -726,6 +749,27 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
         kwargs["password"] = config.get_sqlserver_password(required=True)
 
     return kwargs
+
+
+# pyodbc pre-connect attribute for an Entra ID access token (SQL_COPT_SS_ACCESS_TOKEN).
+SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+
+def _azure_cli_access_token() -> bytes:
+    try:
+        from azure.identity import AzureCliCredential
+    except ImportError as exc:
+        raise DataContractException(
+            type="sqlserver-connection",
+            name="azure-identity extra missing",
+            reason="Install the extra datacontract-cli[azure] to use DATACONTRACT_SQLSERVER_AUTHENTICATION=cli",
+            engine="datacontract-cli",
+            original_exception=exc,
+        )
+    token = AzureCliCredential().get_token("https://database.windows.net/.default").token
+    # The driver expects UTF-16LE bytes prefixed with their 4-byte little-endian length.
+    raw = token.encode("utf-16-le")
+    return struct.pack("<i", len(raw)) + raw
 
 
 def _connect_athena(ibis, server: Server, config: Config):
