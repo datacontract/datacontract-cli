@@ -5,10 +5,14 @@ itself runs against a MinIO container, the same seam the s3 test suites use.
 """
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+from open_data_contract_standard.model import OpenDataContractStandard
 from testcontainers.minio import MinioContainer
+from typer.testing import CliRunner
 
+from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.imports.object_storage_importer import detect_format, schema_name
 from datacontract.model.exceptions import DataContractException
@@ -63,6 +67,17 @@ def test_a_missing_location_is_rejected():
         DataContract.import_from_source("s3", None)
 
     assert "location is required" in exc_info.value.reason
+
+
+@pytest.mark.parametrize("import_format", ["s3", "gcs", "adls"])
+def test_cli_format_option_is_not_rejected_as_the_removed_importer_selector(import_format):
+    """`--format` is the file format here, not the v0.12.0 `import --format sql` selector."""
+    with patch("datacontract.imports.object_storage_importer.import_object_storage") as mock_import:
+        mock_import.return_value = OpenDataContractStandard(id="test", kind="DataContract", apiVersion="v3.1.0")
+        result = CliRunner().invoke(app, ["import", import_format, "--source", "bucket/orders/", "--format", "delta"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_import.call_args.kwargs["format"] == "delta"
 
 
 @pytest.fixture(scope="module")

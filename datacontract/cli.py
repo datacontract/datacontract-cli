@@ -54,6 +54,9 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
     # Import formats where `--schema` still means the database schema, so it must
     # not be rewritten to the v0.12.0 `--json-schema`.
     DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver", "oracle", "trino"}
+    # Import formats where `--format` is the file format (json, csv, parquet, delta),
+    # not the removed v0.12.0 importer selector.
+    FILE_FORMAT_IMPORTS = {"s3", "gcs", "adls"}
 
     RENAMED_FLAGS = {
         "--format": None,
@@ -78,6 +81,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
         else:
             import_format = subcommand
         takes_database_schema = import_format in self.DATABASE_SCHEMA_IMPORTS
+        takes_file_format = import_format in self.FILE_FORMAT_IMPORTS
 
         rewritten_args = []
         for arg in args:
@@ -85,11 +89,14 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
                 flag, _, value = arg.partition("=")
                 if flag == "--schema" and not takes_database_schema:
                     typer.secho(
-                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
+                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed soon.",
                         err=True,
                         fg=typer.colors.YELLOW,
                     )
                     rewritten_args.append(f"--json-schema={value}" if value else "--json-schema")
+                    continue
+                if flag == "--format" and takes_file_format:
+                    rewritten_args.append(arg)
                     continue
                 if flag in self.RENAMED_FLAGS:
                     new_flag = self.RENAMED_FLAGS[flag]
