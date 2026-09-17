@@ -8,6 +8,7 @@ from open_data_contract_standard.model import (
     DataQuality,
     EnumValue,
     OpenDataContractStandard,
+    Relationship,
     Role,
     SchemaObject,
     SchemaProperty,
@@ -96,6 +97,7 @@ def create_property(
     map_value: "SchemaProperty" = None,
     dimensions: int = None,
     element_type: str = None,
+    relationships: List[Relationship] = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field).
 
@@ -152,6 +154,8 @@ def create_property(
         logical_type_options["elementType"] = element_type
     if logical_type_options:
         prop.logicalTypeOptions = logical_type_options
+    if relationships:
+        prop.relationships = relationships
 
     # precision/scale are forbidden in logicalTypeOptions for number types per ODCS v3.1.0,
     # so carry them in customProperties instead.
