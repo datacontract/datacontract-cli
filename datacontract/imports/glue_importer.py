@@ -10,6 +10,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    report_unmapped_types,
 )
 
 
@@ -115,6 +116,7 @@ def import_glue(
     odcs.servers = [server]
 
     odcs.schema_ = create_schema_objects(source, table_names, config=config)
+    report_unmapped_types(odcs, fallback="string")
 
     return odcs
 
@@ -238,15 +240,19 @@ def split_struct(s: str) -> List[str]:
     return list(split_fields(s=s))
 
 
-def map_glue_type_to_odcs(sql_type: str) -> str:
-    """Map a Glue/SQL type to ODCS logical type."""
+def map_glue_type_to_odcs(sql_type: str) -> str | None:
+    """Map a Glue/SQL type to ODCS logical type, or None if the type has no mapping."""
     if sql_type is None:
-        return "string"
+        return None
 
     sql_type = sql_type.lower()
 
     type_mapping = {
         "string": "string",
+        "char": "string",
+        "binary": "string",
+        "tinyint": "integer",
+        "smallint": "integer",
         "int": "integer",
         "bigint": "integer",
         "float": "number",
@@ -260,4 +266,4 @@ def map_glue_type_to_odcs(sql_type: str) -> str:
         if sql_type.startswith(prefix):
             return mapped_type
 
-    return "string"
+    return None

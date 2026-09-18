@@ -9,6 +9,7 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
+    report_unmapped_types,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
@@ -83,6 +84,7 @@ def convert_dbml(
 
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs)
     return odcs
 
 

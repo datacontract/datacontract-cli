@@ -149,6 +149,7 @@ schema:
         logicalType: timestamp
         physicalType: timestamp without time zone
       - name: payload
+        logicalType: object
         physicalType: super
     """
 

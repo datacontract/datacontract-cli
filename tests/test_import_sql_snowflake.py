@@ -185,9 +185,11 @@ schema:
       format: binary
   - name: field_variant
     physicalType: VARIANT
+    logicalType: object
     description: VARIANT data
   - name: field_json
     physicalType: OBJECT
+    logicalType: object
     description: JSON (Stored as text)"""
 
     print("Result", result.to_yaml())
