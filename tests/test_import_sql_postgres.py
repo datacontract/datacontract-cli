@@ -175,3 +175,17 @@ def test_import_sql_keeps_same_named_tables_in_different_schemas_apart(tmp_path)
         ["order_id"],
         ["amount"],
     ]
+
+
+def test_import_sql_maps_temporal_types_inside_map_and_struct(tmp_path):
+    ddl = tmp_path / "t.sql"
+    ddl.write_text("CREATE TABLE ev (m MAP<STRING, TIMESTAMP>, s MAP<TIMESTAMP, STRUCT<x DATETIME, raw BINARY>>);")
+
+    result = DataContract.import_from_source("sql", str(ddl), dialect="databricks")
+
+    properties = {p.name: p for p in result.schema_[0].properties}
+    assert properties["m"].map.value.logicalType == "timestamp"
+    assert properties["s"].map.key.logicalType == "timestamp"
+    nested = {p.name: p for p in properties["s"].map.value.properties}
+    assert nested["x"].logicalType == "timestamp"
+    assert nested["raw"].logicalType == "string"

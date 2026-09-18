@@ -15,6 +15,7 @@ from datacontract.imports.odcs_helper import (
     create_schema_object,
     create_server,
     property_from_type_string,
+    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
@@ -155,6 +156,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         )
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs)
     return odcs
 
 
@@ -463,8 +465,12 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("timestamp", None)
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return ("string", "uuid")
-    elif sql_type_normed == "json":
+    elif sql_type_normed in ("json", "jsonb", "variant", "object", "super"):  # postgres, snowflake, redshift
         return ("object", None)
+    elif sql_type_normed == "int64":  # bigquery
+        return ("integer", None)
+    elif sql_type_normed == "float64":  # bigquery
+        return ("number", None)
     elif sql_type_normed == "xml":  # tsql
         return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":

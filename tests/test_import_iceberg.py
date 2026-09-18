@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 import yaml
 from pyiceberg import types
@@ -190,3 +192,13 @@ def test_temporal_and_binary_types(iceberg_type, logical_type):
     assert scalar.physicalType == str(iceberg_type)
     assert array.items.logicalType == logical_type
     assert array.items.physicalType == str(iceberg_type)
+
+
+def test_binary_fields_stay_untyped_with_a_warning(caplog):
+    schema = Schema(NestedField(1, "raw", types.BinaryType()), NestedField(2, "name", types.StringType()))
+
+    with caplog.at_level(logging.WARNING):
+        result = import_iceberg(schema, "t")
+
+    assert result.schema_[0].properties[0].logicalType is None
+    assert "will be imported without a logicalType:\nraw (binary)\n" in caplog.text

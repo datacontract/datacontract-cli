@@ -30,13 +30,13 @@ schema:
     - ORD-1002
   - name: order_timestamp
     physicalType: VARCHAR
-    logicalType: string
+    logicalType: timestamp
     required: true
     unique: true
     examples:
     - '2024-01-02T11:30:00Z'
-    - '2024-01-01T10:00:00Z'
     - '2024-01-03T09:15:00Z'
+    - '2024-01-01T10:00:00Z'
   - name: customer_id
     physicalType: VARCHAR
     logicalType: string
@@ -55,8 +55,8 @@ schema:
     required: true
     unique: true
     examples:
-    - 2500
     - 1299
+    - 2500
     - 4999
   - name: status
     physicalType: VARCHAR
@@ -64,6 +64,6 @@ schema:
     required: true
     unique: true
     examples:
-    - delivered
     - shipped
     - pending
+    - delivered
