@@ -12,6 +12,8 @@ from datacontract.model.run import ResultEnum
 
 DEFAULT_DATA_CONTRACT_SCHEMA = "datacontract-1.2.1.schema.json"
 
+logger = logging.getLogger(__name__)
+
 
 def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
     """
@@ -33,7 +35,7 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
 
     """
     if location is None:
-        logging.info("Use default bundled schema " + DEFAULT_DATA_CONTRACT_SCHEMA)
+        logger.info("Use default bundled schema " + DEFAULT_DATA_CONTRACT_SCHEMA)
         schemas = resources.files("datacontract")
         schema_file = schemas.joinpath("schemas", DEFAULT_DATA_CONTRACT_SCHEMA)
         with schema_file.open("r") as file:
@@ -43,7 +45,7 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
         location_str = str(location)
 
         if location_str.startswith("http://") or location_str.startswith("https://"):
-            logging.debug(f"Downloading schema from {location_str}")
+            logger.debug(f"Downloading schema from {location_str}")
             response = requests.get(location_str)
             schema = response.json()
         else:
@@ -56,7 +58,7 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
                     result=ResultEnum.error,
                 )
 
-            logging.debug(f"Loading JSON schema locally at {location}")
+            logger.debug(f"Loading JSON schema locally at {location}")
             with open(location, "r") as file:
                 schema = json.load(file)
 
