@@ -149,9 +149,7 @@ models:
               generated: true
 ```
 
-The generated `config.meta.datacontract_cli` block is how `dbt sync`/`dbt test` recognize and scope managed tests; the per-column `config.meta.datacontract_cli.generated` marks a column the CLI added.
-
-Everything the CLI writes is nested under `config`. A top-level `meta:` (or `tags:`) on a model or column is deprecated in dbt-core (v1) and rejected outright by dbt Fusion (v2) with `Property meta is not allowed`, whereas `config.meta` validates under both. Model YAML written by an older version of the CLI used the top-level form on columns; the next `dbt sync` relocates those blocks automatically.
+The generated `config.meta.datacontract_cli` block is how `dbt sync`/`dbt test` recognize and scope managed tests; the per-column `config.meta.datacontract_cli.generated` marks a column the CLI added (and is allowed to remove).
 
 The `maxLength` bound becomes a self-contained singular SQL test (no `dbt_utils` needed). Its `config()` header carries the same `datacontract_cli` metadata:
 
