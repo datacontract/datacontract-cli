@@ -7,6 +7,7 @@ drift in this table is a drift from Spark.
 
 import pytest
 
+from datacontract.imports import spark_importer
 from datacontract.imports.spark_type_json import (
     logical_type,
     property_from_field_json,
@@ -120,6 +121,64 @@ def test_a_non_nullable_field_is_required():
     field = {"name": "id", "type": "long", "nullable": False, "metadata": {}}
 
     assert property_from_field_json(field).required is True
+
+
+def test_describe_native_type_parser_keeps_nested_varchar_lengths():
+    struct_type = "struct<varchar_field:varchar(100)>"
+    assert spark_importer._describe_type_to_json(struct_type) == {
+        "type": "struct",
+        "fields": [{"name": "varchar_field", "type": "varchar(100)", "nullable": True, "metadata": {}}],
+    }
+    assert spark_importer._describe_type_to_json("array<varchar(50)>") == {
+        "type": "array",
+        "elementType": "varchar(50)",
+        "containsNull": True,
+    }
+    assert spark_importer._describe_type_to_json("map<string,varchar(30)>") == {
+        "type": "map",
+        "keyType": "string",
+        "valueType": "varchar(30)",
+        "valueContainsNull": True,
+    }
+
+
+def test_import_from_spark_df_prefers_exact_metadata_for_nested_varchar():
+    df = type("FakeDF", (), {"schema": []})()
+    metadata_prop = property_from_field_json(
+        {
+            "name": "payload",
+            "type": {"type": "struct", "fields": [{"name": "varchar_field", "type": "varchar(100)", "nullable": True, "metadata": {}}]},
+            "nullable": True,
+            "metadata": {},
+        }
+    )
+
+    def fake_metadata(spark, source):
+        return [metadata_prop]
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(spark_importer, "_table_metadata_properties", fake_metadata)
+    try:
+        result = spark_importer.import_from_spark_df(None, "orders", df, None)
+    finally:
+        monkeypatch.undo()
+
+    assert result.properties[0].physicalType == "struct<varchar_field:varchar(100)>"
+    assert result.properties[0].properties[0].physicalType == "varchar(100)"
+
+
+def test_table_metadata_ignores_non_column_describe_rows(monkeypatch):
+    schema = [spark_importer.types.StructField("id", spark_importer.types.LongType(), nullable=False)]
+    monkeypatch.setattr(
+        spark_importer,
+        "_describe_table_types",
+        lambda spark, source: {"id": "bigint", "# Partition Information": "id"},
+    )
+
+    properties = spark_importer._table_metadata_properties(None, "orders", schema)
+
+    assert [property_.name for property_ in properties] == ["id"]
+    assert properties[0].physicalType == "bigint"
 
 
 def test_a_nullable_field_leaves_required_unset():
