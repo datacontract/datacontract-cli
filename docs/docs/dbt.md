@@ -125,9 +125,10 @@ models:
                       - 1.0.0
                     generated: true
               description: Check that field order_id has no duplicate values
-        meta:
-          datacontract_cli:
-            generated: true
+        config:
+          meta:
+            datacontract_cli:
+              generated: true
       - name: customer_email
         data_type: text
         description: Billing email address
@@ -142,12 +143,13 @@ models:
                       - 1.0.0
                     generated: true
               description: Check that field customer_email has no missing values
-        meta:
-          datacontract_cli:
-            generated: true
+        config:
+          meta:
+            datacontract_cli:
+              generated: true
 ```
 
-The generated `config.meta.datacontract_cli` block is how `dbt sync`/`dbt test` recognize and scope managed tests; the per-column `meta.datacontract_cli.generated` marks a column the CLI added.
+The generated `config.meta.datacontract_cli` block is how `dbt sync`/`dbt test` recognize and scope managed tests; the per-column `config.meta.datacontract_cli.generated` marks a column the CLI added (and is allowed to remove).
 
 The `maxLength` bound becomes a self-contained singular SQL test (no `dbt_utils` needed). Its `config()` header carries the same `datacontract_cli` metadata:
 

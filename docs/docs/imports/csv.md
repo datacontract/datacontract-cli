@@ -60,7 +60,7 @@ schema:
     - ORD-1002
   - name: order_timestamp
     physicalType: VARCHAR
-    logicalType: string
+    logicalType: timestamp
     required: true
 # …
 ```

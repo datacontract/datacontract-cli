@@ -10,6 +10,7 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
+    report_unmapped_types,
 )
 
 # Minimum supported dbt manifest schema version. v9 corresponds to dbt 1.5
@@ -265,19 +266,20 @@ def import_dbt_manifest(
 
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs, fallback="string")
     return odcs
 
 
-def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
+def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str | None:
     if adapter_type == "bigquery":
         return map_type_from_bigquery(data_type)
     return map_dbt_type_to_odcs(data_type)
 
 
-def map_dbt_type_to_odcs(data_type: str) -> str:
-    """Map dbt data type to ODCS logical type."""
+def map_dbt_type_to_odcs(data_type: str) -> str | None:
+    """Map dbt data type to ODCS logical type, or None if the type has no mapping."""
     if not data_type:
-        return "string"
+        return None
 
     data_type_lower = data_type.lower()
 
@@ -296,10 +298,10 @@ def map_dbt_type_to_odcs(data_type: str) -> str:
         "numeric": "number",
         "boolean": "boolean",
         "bool": "boolean",
+        "datetime": "timestamp",
         "date": "date",
-        "datetime": "date",
-        "timestamp": "date",
-        "time": "string",
+        "timestamp": "timestamp",
+        "time": "time",
         "array": "array",
         "object": "object",
         "struct": "object",
@@ -310,7 +312,7 @@ def map_dbt_type_to_odcs(data_type: str) -> str:
         if data_type_lower.startswith(key):
             return value
 
-    return "string"
+    return None
 
 
 def create_fields(
