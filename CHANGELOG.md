@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
+- `datacontract test --filter` reports a duplicate key whose other occurrence lies outside the filtered rows (#1593)
+- `datacontract test` no longer counts `NULL` values as duplicates of each other in uniqueness checks
 
 ## [1.2.0] - 2026-09-08
 

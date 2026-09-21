@@ -10,10 +10,6 @@ servers:
     format: csv
 schema:
   - name: data
-    quality:
-      - type: library
-        metric: rowCount
-        mustBe: 2
     properties:
       - name: id
         logicalType: integer

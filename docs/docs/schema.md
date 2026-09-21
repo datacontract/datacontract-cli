@@ -122,7 +122,7 @@ properties:
 ```
 
 - **`required: true`** → no missing values.
-- **`unique: true`** → no duplicate values.
+- **`unique: true`** → no duplicate values (`NULL` values are not duplicates of each other).
 - **`primaryKey: true`** → both of the above. Declaring `required` or `unique` alongside it does not duplicate the check.
 
 A **composite primary key** — several properties with `primaryKey: true` — is treated as a key over the tuple, not column by column. Each member gets its own not-null check, and the combination gets a single uniqueness check. Use `primaryKeyPosition` to order the members:

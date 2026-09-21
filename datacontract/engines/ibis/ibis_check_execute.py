@@ -245,18 +245,14 @@ def _run_model(
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
 
-    # Kept before the filter narrows `t`. Reading only the filtered rows turns
-    # "does this key repeat" into "does it repeat among today's rows", which
-    # misses a duplicate whose other half arrived earlier -- on real data,
-    # `field_unique` reported 0/70 filtered where the whole table held 16/3376.
-    # DUPLICATE_COUNT therefore reads the rows of `unfiltered_t` whose key
-    # occurs in `t`; see _duplicate_scope.
-    unfiltered_t = t
-
     # Applied after the catalog reads above: those need the real table name, and
     # the schema/type checks compare declared types, which no row filter changes.
+    # DUPLICATE_COUNT reads the rows of `unfiltered_t` whose key occurs in `t`,
+    # see _duplicate_scope.
+    unfiltered_t = None
     if row_filter:
         try:
+            unfiltered_t = t
             t = _apply_row_filter(t, model, row_filter)
         except Exception as e:
             logger.warning("Could not apply row filter to model '%s': %s", model, e)
@@ -310,8 +306,8 @@ def _run_model(
                 else:
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
-                scope = _duplicate_scope(t, unfiltered_t, _duplicate_columns(columns, spec))
-                _run_duplicate(run, scope, columns, spec, model_row_count())
+                cols = _duplicate_columns(columns, spec)
+                _run_duplicate(run, _duplicate_scope(t, unfiltered_t, cols), cols, spec, model_row_count())
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
@@ -715,27 +711,26 @@ def _duplicate_columns(columns, spec: CheckSpec) -> list:
 def _duplicate_scope(t, unfiltered_t, cols):
     """The rows a DUPLICATE_COUNT check reads.
 
-    Without --filter, the whole table. With one, every row -- selected or not --
-    whose key occurs among the selected rows: that finds a key repeated within
-    the window and one repeated across its edge, and skips keys the window does
-    not contain, whose duplicates belong to another window.
+    Without --filter (`unfiltered_t` is None), the whole table. With one, every
+    row -- selected or not -- whose key occurs among the selected rows: that finds
+    a key repeated within the window and one repeated across its edge, and skips
+    keys the window does not contain, whose duplicates belong to another window.
 
-    The join is IS NOT DISTINCT FROM rather than equality so a NULL key is
-    grouped the same way filtered as unfiltered; GROUP BY puts NULLs in one
-    group, and a plain `key IN (...)` would never match them.
+    Rows with a NULL key are left out: as with SQL UNIQUE, NULLs are never
+    duplicates of each other.
     """
-    if unfiltered_t is t:
-        return t
+    if unfiltered_t is None:
+        return t.filter([t[c].notnull() for c in cols])
+    rows = unfiltered_t.filter([unfiltered_t[c].notnull() for c in cols])
     window = t.select(cols).distinct()
-    return unfiltered_t.semi_join(window, [unfiltered_t[c].identical_to(window[c]) for c in cols])
+    return rows.semi_join(window, [rows[c] == window[c] for c in cols])
 
 
-def _run_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
+def _run_duplicate(run: Run, t, cols, spec: CheckSpec, row_count: int):
     """The threshold is compared against the duplicated key count; the rows those
     keys span are what is reported as failed."""
     import pandas as pd
 
-    cols = _duplicate_columns(columns, spec)
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
