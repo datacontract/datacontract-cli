@@ -19,7 +19,13 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.config import Config
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+    report_unmapped_types,
+)
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
 
@@ -96,6 +102,7 @@ def import_mysql(
     odcs.schema_ = [
         _create_schema(table, column_rows) for table in sorted(selected, key=lambda row: row["table_name"].lower())
     ]
+    report_unmapped_types(odcs)
     return odcs
 
 

@@ -13,10 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
 - `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
+- `datacontract import` warns once per import about column types that have no mapping to a `logicalType` (#1629)
+- `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
 
 ### Fixed
+- `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)
+- `datacontract import s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628)
+- `datacontract import sql` detects table-level PRIMARY KEY and FOREIGN KEY constraints, derives `unique: true` for single-column keys, and emits property-level `relationships` in the ODCS shorthand format (#1618 @dmaresma)
+- `datacontract test` SQL Server / Microsoft Fabric `cli` auth works again on macOS/Linux, and `ActiveDirectoryInteractive` fails fast off Windows instead of timing out (#1603)
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
 - `datacontract dbt sync` marks the columns it generates with `config.meta.datacontract_cli` instead of a top-level `meta`, which dbt Fusion (dbt v2) rejects with `Property meta is not allowed`; existing model YAML written by an earlier version is migrated on the next sync
+- `datacontract test` reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
+
+### Changed
+- Internal logging uses named module loggers instead of the root logger
 
 ## [1.2.0] - 2026-09-08
 

@@ -89,6 +89,7 @@ schema:
         logicalType: timestamp
         physicalType: timestamp with time zone
       - name: payload
+        logicalType: object
         physicalType: jsonb
     """
 

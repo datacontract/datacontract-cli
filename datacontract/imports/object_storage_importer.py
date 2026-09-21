@@ -16,7 +16,13 @@ from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.imports.csv_importer import map_type_from_duckdb
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+    report_unmapped_types,
+)
 from datacontract.model.exceptions import DataContractException
 
 # The formats the s3 server type can be tested against.
@@ -123,11 +129,12 @@ def import_object_storage(
         create_schema_object(
             name=schema_name(location),
             properties=[
-                create_property(name=name, logical_type=map_type_from_duckdb(duckdb_type))
+                create_property(name=name, logical_type=map_type_from_duckdb(duckdb_type), physical_type=duckdb_type)
                 for name, duckdb_type in columns
             ],
         )
     ]
+    report_unmapped_types(odcs, fallback="string")
     return odcs
 
 

@@ -8,11 +8,13 @@ driver, which is not loadable on every dev machine.
 """
 
 import logging
+from types import SimpleNamespace
 
 import pytest
 from open_data_contract_standard.model import Server
 
 from datacontract.config import Config
+from datacontract.engines.ibis.connections.connect import _connect_sqlserver
 from datacontract.engines.ibis.connections.connect import _sqlserver_connection_kwargs as _kwargs_with_config
 from datacontract.model.exceptions import DataContractException
 
@@ -103,9 +105,13 @@ def test_explicit_authentication_wins_over_legacy_trusted_connection(env):
     assert "Trusted_Connection" not in kwargs
 
 
-def test_ignored_trusted_connection_is_reported(env, caplog):
+def test_ignored_trusted_connection_is_reported(env, caplog, monkeypatch):
     env.setenv("DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION", "true")
     env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "cli")
+    azure_identity = pytest.importorskip("azure.identity")
+    monkeypatch.setattr(
+        azure_identity.AzureCliCredential, "get_token", lambda self, scope: SimpleNamespace(token="tok")
+    )
 
     with caplog.at_level(logging.WARNING):
         _sqlserver_connection_kwargs(_server())
@@ -153,9 +159,10 @@ def test_service_principal_requires_client_id(env):
     assert "DATACONTRACT_SQLSERVER_CLIENT_ID" in exc.value.reason
 
 
-def test_active_directory_interactive_with_username_hint(env):
+def test_active_directory_interactive_with_username_hint(env, monkeypatch):
     env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "ActiveDirectoryInteractive")
     env.setenv("DATACONTRACT_SQLSERVER_USERNAME", "user@domain.com")
+    monkeypatch.setattr("datacontract.engines.ibis.connections.connect.sys.platform", "win32")
 
     kwargs = _sqlserver_connection_kwargs(_server())
 
@@ -166,8 +173,9 @@ def test_active_directory_interactive_with_username_hint(env):
     assert kwargs["Trusted_Connection"] == "no"
 
 
-def test_active_directory_interactive_without_username(env):
+def test_active_directory_interactive_without_username(env, monkeypatch):
     env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "ActiveDirectoryInteractive")
+    monkeypatch.setattr("datacontract.engines.ibis.connections.connect.sys.platform", "win32")
 
     kwargs = _sqlserver_connection_kwargs(_server())
 
@@ -176,15 +184,29 @@ def test_active_directory_interactive_without_username(env):
     assert kwargs["Trusted_Connection"] == "no"
 
 
-def test_cli_auth_uses_default_credential_chain(env):
+def test_active_directory_interactive_rejected_off_windows(env, monkeypatch):
+    env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "ActiveDirectoryInteractive")
+    monkeypatch.setattr("datacontract.engines.ibis.connections.connect.sys.platform", "darwin")
+
+    with pytest.raises(DataContractException, match="only supported .* on Windows"):
+        _sqlserver_connection_kwargs(_server())
+
+
+def test_cli_auth_passes_az_login_token_as_pre_connect_attribute(env, monkeypatch):
     env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "cli")
+    azure_identity = pytest.importorskip("azure.identity")
+    monkeypatch.setattr(
+        azure_identity.AzureCliCredential, "get_token", lambda self, scope: SimpleNamespace(token="tok")
+    )
 
     kwargs = _sqlserver_connection_kwargs(_server())
 
-    assert kwargs["Authentication"] == "ActiveDirectoryDefault"
+    # SQL_COPT_SS_ACCESS_TOKEN: 4-byte LE length + UTF-16LE token; no Authentication keyword.
+    assert kwargs["attrs_before"] == {1256: b"\x06\x00\x00\x00t\x00o\x00k\x00"}
+    assert "Authentication" not in kwargs
     assert kwargs["user"] is None
     assert kwargs["password"] is None
-    assert kwargs["Trusted_Connection"] == "no"
+    assert "Trusted_Connection" not in kwargs
 
 
 def test_ssl_options(env):
@@ -224,3 +246,35 @@ def test_env_variables_override_the_contract_server_details(env):
     assert kwargs["host"] == "env-host"
     assert kwargs["port"] == 1444
     assert kwargs["database"] == "env_db"
+
+
+def test_cli_auth_opens_pyodbc_without_credentials_or_empty_database(env, monkeypatch):
+    env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "cli")
+    azure_identity = pytest.importorskip("azure.identity")
+    pyodbc = pytest.importorskip("pyodbc", exc_type=ImportError)
+    monkeypatch.setattr(
+        azure_identity.AzureCliCredential, "get_token", lambda self, scope: SimpleNamespace(token="tok")
+    )
+    seen = {}
+    monkeypatch.setattr(pyodbc, "connect", lambda **kwargs: seen.update(kwargs) or "con")
+    ibis = SimpleNamespace(mssql=SimpleNamespace(from_connection=lambda con: con))
+
+    assert _connect_sqlserver(ibis, _server(database=None), Config.resolve(None)) == "con"
+
+    assert seen["server"] == "localhost,1433"
+    assert 1256 in seen["attrs_before"]
+    assert not {"user", "password", "database"} & seen.keys()
+
+
+def test_cli_auth_reports_missing_az_login(env, monkeypatch):
+    env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "cli")
+    azure_identity = pytest.importorskip("azure.identity")
+
+    def not_logged_in(self, scope):
+        raise azure_identity.CredentialUnavailableError(message="Please run 'az login' to set up an account")
+
+    monkeypatch.setattr(azure_identity.AzureCliCredential, "get_token", not_logged_in)
+
+    with pytest.raises(DataContractException, match="az login") as exc:
+        _sqlserver_connection_kwargs(_server())
+    assert exc.value.name == "azure_cli_login_required"
