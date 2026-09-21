@@ -1333,22 +1333,54 @@ def _reconcile_data_tests(
 # ---------------------------------------------------------------------------
 
 
-def _is_managed_column(col: dict) -> bool:
+def _legacy_column_meta_block(col: dict) -> Optional[dict]:
+    """Our block under a column's top-level `meta` — the layout older CLI versions wrote."""
     meta = col.get("meta")
     block = meta.get(META_NAMESPACE) if isinstance(meta, dict) else None
+    return block if isinstance(block, dict) else None
+
+
+def _is_managed_column(col: dict) -> bool:
+    meta = (col.get("config") or {}).get("meta")
+    block = meta.get(META_NAMESPACE) if isinstance(meta, dict) else None
+    if not isinstance(block, dict):
+        block = _legacy_column_meta_block(col)
     return isinstance(block, dict) and block.get("generated") is True
 
 
 def _mark_managed_column(col: dict) -> None:
-    meta = col.get("meta")
+    """Stamp `config.meta.datacontract_cli.generated` on a column we created."""
+    config = _ensure_config(col)
+    meta = config.get("meta")
     if not isinstance(meta, dict):
         meta = CommentedMap()
-        col["meta"] = meta
+        config["meta"] = meta
     block = meta.get(META_NAMESPACE)
     if not isinstance(block, dict):
         block = CommentedMap()
         meta[META_NAMESPACE] = block
     block["generated"] = True
+
+
+def _migrate_legacy_column_meta(col: dict) -> None:
+    """Move a legacy top-level `meta.datacontract_cli` block to `config.meta`; user keys stay put."""
+    legacy = _legacy_column_meta_block(col)
+    if legacy is None:
+        return
+    config = _ensure_config(col)
+    meta = config.get("meta")
+    if not isinstance(meta, dict):
+        meta = CommentedMap()
+        config["meta"] = meta
+    block = meta.get(META_NAMESPACE)
+    if isinstance(block, dict):
+        for key, value in legacy.items():
+            block.setdefault(key, value)
+    else:
+        meta[META_NAMESPACE] = legacy
+    col["meta"].pop(META_NAMESPACE)
+    if not col["meta"]:
+        col.pop("meta")
 
 
 def _find_column(entry: dict, name: str) -> Optional[dict]:
@@ -2320,6 +2352,7 @@ def _clean_model_entry(
     _clean_tests_in_container(entry, None, required_keys, model_required=model_required, model_name=model_name)
     for col in entry.get("columns") or []:
         if isinstance(col, dict):
+            _migrate_legacy_column_meta(col)
             _clean_tests_in_container(
                 col,
                 str(col.get("name", "")).lower(),

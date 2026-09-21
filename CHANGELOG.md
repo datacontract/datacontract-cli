@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import sql` detects table-level PRIMARY KEY and FOREIGN KEY constraints, derives `unique: true` for single-column keys, and emits property-level `relationships` in the ODCS shorthand format (#1618 @dmaresma)
 - `datacontract test` SQL Server / Microsoft Fabric `cli` auth works again on macOS/Linux, and `ActiveDirectoryInteractive` fails fast off Windows instead of timing out (#1603)
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
+- `datacontract dbt sync` writes the generated-column marker under `config.meta` instead of a top-level `meta` so the model YAML parses under dbt Fusion; files written by an earlier version are migrated on the next sync (#1633 @FredrikBakken)
 - `datacontract test` reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
 
 ### Changed
