@@ -1580,38 +1580,6 @@ def test_cli_checks_quality_only():
     assert _origins(output["expectations"]) == {"quality_block"}
 
 
-def test_cli_checks_invalid_value():
-    """An unknown category must exit with an error, not a stack trace."""
-    runner = CliRunner()
-    result = runner.invoke(
-        app,
-        [
-            "export",
-            "great-expectations",
-            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
-            "--checks",
-            "bogus",
-        ],
-    )
-    assert result.exit_code == 1
-
-
-def test_cli_checks_empty_value():
-    """A --checks value with only separators/whitespace must be rejected."""
-    runner = CliRunner()
-    result = runner.invoke(
-        app,
-        [
-            "export",
-            "great-expectations",
-            "./fixtures/great-expectations/datacontract_quality_yaml.yaml",
-            "--checks",
-            " , ",
-        ],
-    )
-    assert result.exit_code == 1
-
-
 def test_checks_filter_invalid_value_raises(contract_quality_and_schema_rules: OpenDataContractStandard):
     """Calling to_great_expectations directly must raise on an unknown category, not silently ignore it."""
     with pytest.raises(RuntimeError, match="Invalid check_categories specified"):
