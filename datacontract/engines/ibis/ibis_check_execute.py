@@ -248,8 +248,12 @@ def _run_model(
 
     # Applied after the catalog reads above: those need the real table name, and
     # the schema/type checks compare declared types, which no row filter changes.
+    # DUPLICATE_COUNT reads the rows of `unfiltered_t` whose key occurs in `t`,
+    # see _duplicate_scope.
+    unfiltered_t = None
     if row_filter:
         try:
+            unfiltered_t = t
             t = _apply_row_filter(t, model, row_filter)
         except Exception as e:
             logger.warning("Could not apply row filter to model '%s': %s", model, e)
@@ -314,7 +318,7 @@ def _run_model(
                 else:
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
-                _run_duplicate(run, t, columns, spec, model_row_count())
+                _run_duplicate(run, t, unfiltered_t, columns, spec, model_row_count())
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, schema, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
@@ -343,7 +347,7 @@ def _run_model(
         _run_aggregation(run, t, agg_exprs)
 
     if include_failed_samples:
-        _collect_failed_samples(run, t, columns, schema, model, specs, data_contract, server)
+        _collect_failed_samples(run, t, unfiltered_t, columns, schema, model, specs, data_contract, server)
 
 
 def _run_aggregation(run: Run, t, agg_exprs):
@@ -389,7 +393,7 @@ _SENSITIVE_CLASSIFICATIONS = {
 _SAMPLEABLE_METRICS = (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT, MetricType.DUPLICATE_COUNT)
 
 
-def _collect_failed_samples(run, t, columns, schema, model, specs, data_contract, server):
+def _collect_failed_samples(run, t, unfiltered_t, columns, schema, model, specs, data_contract, server):
     """Second pass: for failed/warned bad-row checks, fetch a few offending rows.
 
     Reuses the same predicates the counts were built from. Columns are limited to
@@ -404,7 +408,13 @@ def _collect_failed_samples(run, t, columns, schema, model, specs, data_contract
         if check is None or check.result not in (ResultEnum.failed, ResultEnum.warning):
             continue
         try:
-            samples = _samples_for(t, columns, schema, spec, identifiers, sensitive)
+            # DUPLICATE_COUNT samples come from the same rows the count was
+            # measured against, or the two would disagree.
+            if spec.metric == MetricType.DUPLICATE_COUNT:
+                table = _duplicate_scope(t, unfiltered_t, columns, spec)
+            else:
+                table = t
+            samples = _samples_for(table, columns, schema, spec, identifiers, sensitive)
         except Exception as e:  # pragma: no cover - sampling is best-effort
             logger.debug("Could not collect failed samples for '%s': %s", spec.key, e)
             continue
@@ -719,7 +729,29 @@ def _constraint_info(spec: CheckSpec) -> dict:
 # ---------------------------------------------------------------------------
 # dedicated check runners
 # ---------------------------------------------------------------------------
-def _run_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
+def _duplicate_scope(t, unfiltered_t, columns, spec: CheckSpec):
+    """The rows a DUPLICATE_COUNT check reads.
+
+    Without --filter (`unfiltered_t` is None), the whole table. With one, every
+    row -- selected or not -- whose key occurs among the selected rows: that finds
+    a key repeated within the window and one repeated across its edge, and skips
+    keys the window does not contain, whose duplicates belong to another window.
+
+    Rows with a NULL key are left out: as with SQL UNIQUE, NULLs are never
+    duplicates of each other. An item-uniqueness check (`a[].b`) looks inside
+    each row's own array, so it reads the filtered rows as they are.
+    """
+    if _is_item_duplicate(spec):
+        return t
+    fields = spec.columns or [spec.field]
+    if unfiltered_t is None:
+        return t.filter([_resolve_expr(t, columns, f).notnull() for f in fields])
+    rows = unfiltered_t.filter([_resolve_expr(unfiltered_t, columns, f).notnull() for f in fields])
+    window = t.select([_resolve_expr(t, columns, f).name(f"_key{i}") for i, f in enumerate(fields)]).distinct()
+    return rows.semi_join(window, [_resolve_expr(rows, columns, f) == window[f"_key{i}"] for i, f in enumerate(fields)])
+
+
+def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_count: int):
     """The threshold is compared against the duplicated key count; the rows those
     keys span are what is reported as failed."""
     import pandas as pd
@@ -728,6 +760,7 @@ def _run_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
         _run_item_duplicate(run, t, columns, spec, row_count)
         return
 
+    t = _duplicate_scope(t, unfiltered_t, columns, spec)
     cols = [_resolve_expr(t, columns, c) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
