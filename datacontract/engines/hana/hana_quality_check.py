@@ -23,6 +23,8 @@ from datacontract.engines.hana.hana_schema_check import (
 from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.model.run import Check, ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 def run_quality_checks(
     connection,
@@ -406,7 +408,7 @@ def _metric_quality_check(
 
     is_percent = quality.type != "sql" and is_percent_unit(quality)
     if is_percent and quality.metric not in ("nullValues", "missingValues", "invalidValues"):
-        logging.warning(f"Quality metric {quality.metric} does not support unit: percent; comparing absolute count")
+        logger.warning(f"Quality metric {quality.metric} does not support unit: percent; comparing absolute count")
         is_percent = False
 
     try:

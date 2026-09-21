@@ -25,6 +25,8 @@ from datacontract.imports.odcs_helper import (
 )
 from datacontract.model.exceptions import DataContractException
 
+logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------------------
 # Power BI data type → (ODCS logical type, optional format)
 # ---------------------------------------------------------------------------
@@ -223,7 +225,7 @@ def _build_odcs(bim: dict[str, Any], model_name: str) -> OpenDataContractStandar
     _apply_bim_relationships(bim_relationships, table_name_to_obj)
 
     if not schema_objects:
-        logging.warning("Power BI import produced an empty contract: No tables were found in the semantic model.")
+        logger.warning("Power BI import produced an empty contract: No tables were found in the semantic model.")
 
     schema_objects.sort(key=lambda s: s.name.lower())
     odcs.schema_ = schema_objects
