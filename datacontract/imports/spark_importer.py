@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import atexit
 import json
 import logging
@@ -5,7 +7,17 @@ import tempfile
 
 from databricks.sdk import WorkspaceClient
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
-from pyspark.sql import DataFrame, SparkSession, types
+
+try:
+    # pyspark is deliberately not a package dependency (see pyproject.toml) since a
+    # Spark import only ever runs against a session the caller already built, so
+    # pyspark is necessarily importable in that process. This module is still
+    # importable without it (e.g. for unit-testing the pure-Python helpers below);
+    # `DataFrame`/`SparkSession`/`types` are only dereferenced once real Spark
+    # objects are involved.
+    from pyspark.sql import DataFrame, SparkSession, types
+except ImportError:
+    DataFrame = SparkSession = types = None
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -221,13 +233,26 @@ def _column_type_json_to_native(column_name: str, type_data):
     return str(type_data)
 
 
+# DESCRIBE (and `simpleString()`) spell the integer family differently from
+# Spark's JSON type names, which `spark_type_json._PRIMITIVES` is keyed on.
+_DESCRIBE_PRIMITIVE_ALIASES = {
+    "tinyint": "byte",
+    "smallint": "short",
+    "int": "integer",
+    "bigint": "long",
+}
+
+
 def _describe_type_to_json(type_name: str):
     """Convert native Spark DESCRIBE strings into the JSON shape expected by `property_from_type_json`."""
     type_name = type_name.strip()
     if not type_name:
         return type_name
     if "<" not in type_name and "(" not in type_name:
-        return type_name
+        # DESCRIBE spells the integer family with their `simpleString()` names
+        # (bigint, int, smallint, tinyint); `property_from_type_json` expects
+        # Spark's JSON type names (long, integer, short, byte).
+        return _DESCRIBE_PRIMITIVE_ALIASES.get(type_name, type_name)
 
     if type_name.startswith("struct<") and type_name.endswith(">"):
         fields = _describe_struct_fields(type_name[7:-1])
@@ -393,7 +418,10 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
     try:
         current_schema = spark.catalog.currentDatabase()
     except Exception:
-        current_schema = spark.sql("SELECT current_database()").collect()[0][0]
+        try:
+            current_schema = spark.sql("SELECT current_database()").collect()[0][0]
+        except Exception:
+            current_schema = "default"
 
     table_comment = ""
     source = f"{current_catalog}.{current_schema}.{source}"

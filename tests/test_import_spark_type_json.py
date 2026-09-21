@@ -153,7 +153,7 @@ def test_import_from_spark_df_prefers_exact_metadata_for_nested_varchar():
         }
     )
 
-    def fake_metadata(spark, source):
+    def fake_metadata(spark, source, schema=None):
         return [metadata_prop]
 
     monkeypatch = pytest.MonkeyPatch()
@@ -168,7 +168,8 @@ def test_import_from_spark_df_prefers_exact_metadata_for_nested_varchar():
 
 
 def test_table_metadata_ignores_non_column_describe_rows(monkeypatch):
-    schema = [spark_importer.types.StructField("id", spark_importer.types.LongType(), nullable=False)]
+    field = type("FakeField", (), {"name": "id", "nullable": False, "metadata": {}})()
+    schema = [field]
     monkeypatch.setattr(
         spark_importer,
         "_describe_table_types",
