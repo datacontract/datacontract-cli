@@ -5,11 +5,11 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
+from datacontract.cli import OrderedCommandsWithMigrationHints, _parse_enum_csv, debug_option, enable_debug_logging
 from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat, SqlServerType
-from datacontract.export.great_expectations_exporter import GreatExpectationsEngine
+from datacontract.export.great_expectations_exporter import GreatExpectationsCheckCategory, GreatExpectationsEngine
 
 console = Console()
 
@@ -67,6 +67,7 @@ def _export(
     clickhouse_engine: Optional[str] = None,
     clickhouse_order_by: Optional[str] = None,
     suite_name: Optional[str] = None,
+    check_categories: Optional[set[str]] = None,
 ):
     result = DataContract(
         config=cli_config(),
@@ -85,6 +86,7 @@ def _export(
         clickhouse_engine=clickhouse_engine,
         clickhouse_order_by=clickhouse_order_by,
         suite_name=suite_name,
+        check_categories=check_categories,
     )
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
@@ -593,9 +595,22 @@ def export_great_expectations(
         Optional[str],
         typer.Option(help="The suite name for the Great Expectations run."),
     ] = None,
+    checks: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Comma-separated list of check categories to export "
+            f"(available: {', '.join(c.value for c in GreatExpectationsCheckCategory)}). Omit to export everything."
+        ),
+    ] = None,
 ):
     """Export a data contract to Great Expectations suite."""
     enable_debug_logging(debug)
+    check_categories = _parse_enum_csv(
+        checks,
+        GreatExpectationsCheckCategory,
+        "--checks",
+        "categories",
+    )
     _export(
         ExportFormat.great_expectations,
         location,
@@ -607,6 +622,7 @@ def export_great_expectations(
         sql_server_type=dialect.value,
         inline_references=inline_references,
         suite_name=suite_name,
+        check_categories=check_categories,
     )
 
 
