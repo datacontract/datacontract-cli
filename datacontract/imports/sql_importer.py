@@ -2,9 +2,10 @@ import logging
 import os
 import re
 from enum import Enum
+from typing import List
 
 import sqlglot
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, Relationship, SchemaProperty
 from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
@@ -14,10 +15,13 @@ from datacontract.imports.odcs_helper import (
     create_schema_object,
     create_server,
     property_from_type_string,
+    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 from datacontract.model.vector_type import parse_vector_type
+
+logger = logging.getLogger(__name__)
 
 
 class SqlDialect(str, Enum):
@@ -47,7 +51,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         # not parse_one: sqlglot below 29 gives it only the first statement of a script
         statements = [s for s in sqlglot.parse(sql=sql, read=dialect) if s is not None]
     except Exception as e:
-        logging.error(f"Error sqlglot SQL: {str(e)}")
+        logger.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
@@ -66,7 +70,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         server_defaults.update(location)
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
         placeholders = ", ".join(field for field in server_defaults if field not in location)
-        logging.warning(
+        logger.warning(
             f"SQL import generated a server block with placeholder connection values. "
             f"Update the following values before use: {placeholders}"
         )
@@ -80,16 +84,30 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         table_name = table.this.name
         properties = []
 
-        primary_key_position = 1
-        for column in create.find_all(sqlglot.exp.ColumnDef):
+        columns = list(create.find_all(sqlglot.exp.ColumnDef))
+        # A table-level PRIMARY KEY (b, a) defines the key order; inline PKs follow column order.
+        table_primary_key = create.find(sqlglot.exp.PrimaryKey)
+        if table_primary_key is not None:
+            primary_key_names = [c.name.lower() for c in table_primary_key.expressions]
+        else:
+            primary_key_names = [
+                column.this.name.lower()
+                for column in columns
+                if column.find(sqlglot.exp.PrimaryKeyColumnConstraint, sqlglot.exp.PrimaryKey) is not None
+            ]
+        has_single_primary_key = len(primary_key_names) == 1
+
+        for column in columns:
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
             logical_type, format = map_type_from_sql(col_type)
             col_description = get_description(column)
             max_length = get_max_length(column)
             precision, scale = get_precision_scale(column)
-            is_primary_key = get_primary_key(column)
-            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+            is_primary_key = col_name.lower() in primary_key_names or None
+            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or is_primary_key or None
+            is_unique = True if is_primary_key and has_single_primary_key else None
+            col_relationship = get_relationship(column, create)
             tags = get_tags(column)
 
             map_key, map_value = map_key_value_from_type(col_type) if logical_type == "map" else (None, None)
@@ -105,17 +123,16 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 scale=scale,
                 format=format,
                 primary_key=is_primary_key,
-                primary_key_position=primary_key_position if is_primary_key else None,
+                primary_key_position=primary_key_names.index(col_name.lower()) + 1 if is_primary_key else None,
                 required=is_required if is_required else None,
+                unique=is_unique,
                 tags=tags,
                 map_key=map_key,
                 map_value=map_value,
                 dimensions=dimensions,
                 element_type=element_type,
+                relationships=col_relationship,
             )
-
-            if is_primary_key:
-                primary_key_position += 1
 
             properties.append(prop)
 
@@ -141,15 +158,30 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         )
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs)
     return odcs
 
 
-def get_primary_key(column) -> bool | None:
-    if column.find(sqlglot.exp.PrimaryKeyColumnConstraint) is not None:
-        return True
-    if column.find(sqlglot.exp.PrimaryKey) is not None:
-        return True
-    return None
+def get_relationship(column, table) -> List[Relationship] | None:
+    reference = column.find(sqlglot.exp.Reference)
+    index = 0
+    if reference is None:
+        for foreign_key in table.find_all(sqlglot.exp.ForeignKey):
+            names = [c.name.lower() for c in foreign_key.expressions]
+            if column.name.lower() in names:
+                reference = foreign_key.args.get("reference")
+                index = names.index(column.name.lower())
+                break
+    if reference is None:
+        return None
+
+    referenced_table = reference.this.find(sqlglot.exp.Table)
+    referenced_columns = reference.this.expressions
+    if referenced_table is None or len(referenced_columns) <= index:
+        return None
+
+    to = f"{referenced_table.this.name}.{referenced_columns[index].name}"
+    return [Relationship(to=to)]
 
 
 def to_dialect(import_args: dict) -> Dialects | None:
@@ -435,8 +467,12 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("timestamp", None)
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return ("string", "uuid")
-    elif sql_type_normed == "json":
+    elif sql_type_normed in ("json", "jsonb", "variant", "object", "super"):  # postgres, snowflake, redshift
         return ("object", None)
+    elif sql_type_normed == "int64":  # bigquery
+        return ("integer", None)
+    elif sql_type_normed == "float64":  # bigquery
+        return ("number", None)
     elif sql_type_normed == "xml":  # tsql
         return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":

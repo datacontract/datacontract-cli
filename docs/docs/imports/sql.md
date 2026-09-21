@@ -55,6 +55,8 @@ schema:
     primaryKey: true
     primaryKeyPosition: 1
     logicalType: string
+    required: true
+    unique: true
   - name: order_timestamp
     physicalType: TIMESTAMPTZ
     logicalType: timestamp
@@ -63,8 +65,6 @@ schema:
     physicalType: TEXT
     logicalType: string
     required: true
-  - name: order_total
-    physicalType: DECIMAL
 # …
 ```
 

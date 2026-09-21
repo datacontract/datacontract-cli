@@ -1,5 +1,6 @@
 """Helper functions for creating ODCS (OpenDataContractStandard) objects."""
 
+import logging
 import re
 from typing import Any, Dict, List
 
@@ -8,6 +9,7 @@ from open_data_contract_standard.model import (
     DataQuality,
     EnumValue,
     OpenDataContractStandard,
+    Relationship,
     Role,
     SchemaObject,
     SchemaProperty,
@@ -16,6 +18,8 @@ from open_data_contract_standard.model import (
 
 from datacontract.model.map_type import map_definition
 from datacontract.model.server import to_odcs_server_type
+
+logger = logging.getLogger(__name__)
 
 
 def create_odcs(
@@ -66,7 +70,7 @@ def create_schema_object(
 
 def create_property(
     name: str,
-    logical_type: str,
+    logical_type: str | None,
     physical_type: str = None,
     description: str = None,
     required: bool = None,
@@ -96,6 +100,7 @@ def create_property(
     map_value: "SchemaProperty" = None,
     dimensions: int = None,
     element_type: str = None,
+    relationships: List[Relationship] = None,
 ) -> SchemaProperty:
     """Create a SchemaProperty (equivalent to DCS Field).
 
@@ -152,6 +157,8 @@ def create_property(
         logical_type_options["elementType"] = element_type
     if logical_type_options:
         prop.logicalTypeOptions = logical_type_options
+    if relationships:
+        prop.relationships = relationships
 
     # precision/scale are forbidden in logicalTypeOptions for number types per ODCS v3.1.0,
     # so carry them in customProperties instead.
@@ -287,19 +294,24 @@ SQL_TO_LOGICAL_TYPE = {
     "bit": "boolean",
     # Date/time types
     "date": "date",
-    "timestamp": "date",
-    "datetime": "date",
-    "datetime2": "date",
-    "timestamptz": "date",
-    "timestamp_tz": "date",
-    "timestamp_ntz": "date",
-    "time": "string",
+    "timestamp": "timestamp",
+    "timestamp with time zone": "timestamp",
+    "timestamp without time zone": "timestamp",
+    "datetime": "timestamp",
+    "datetime2": "timestamp",
+    "timestamptz": "timestamp",
+    "timestamp_tz": "timestamp",
+    "timestamp_ntz": "timestamp",
+    "timestamp_ltz": "timestamp",
+    "time": "time",
+    "time with time zone": "time",
+    "timetz": "time",
     # Binary types
-    "binary": "array",
-    "varbinary": "array",
-    "blob": "array",
-    "bytes": "array",
-    "bytea": "array",
+    "binary": "string",
+    "varbinary": "string",
+    "blob": "string",
+    "bytes": "string",
+    "bytea": "string",
     # Complex types
     "array": "array",
     "object": "object",
@@ -311,6 +323,9 @@ SQL_TO_LOGICAL_TYPE = {
     "json": "object",
     "jsonb": "object",
     "variant": "object",
+    "super": "object",
+    "int64": "integer",
+    "float64": "number",
 }
 
 
@@ -368,17 +383,51 @@ def property_from_type_string(name: str, type_string: str) -> SchemaProperty:
     return create_property(name=name, logical_type=map_sql_type_to_logical(text), physical_type=text)
 
 
-def map_sql_type_to_logical(sql_type: str) -> str:
-    """Map a SQL type string to an ODCS logical type."""
+def map_sql_type_to_logical(sql_type: str) -> str | None:
+    """Map a SQL type string to an ODCS logical type, or None if the type has no mapping."""
     if sql_type is None:
-        return "string"
+        return None
 
     sql_type_lower = sql_type.lower().strip()
 
     # Handle parameterized types (e.g., VARCHAR(255), DECIMAL(10,2))
     base_type = sql_type_lower.split("(")[0].strip()
 
-    return SQL_TO_LOGICAL_TYPE.get(base_type, "string")
+    return SQL_TO_LOGICAL_TYPE.get(base_type)
+
+
+def report_unmapped_types(odcs: OpenDataContractStandard, fallback: str | None = None) -> None:
+    """Warn once about every property imported with ``logical_type=None``; ``fallback`` fills it in
+    where a later ``datacontract test`` needs every property typed."""
+    unmapped = []
+    qualify = len(odcs.schema_ or []) > 1
+
+    def walk(props: List[SchemaProperty] | None, prefix: str):
+        for prop in props or []:
+            path = f"{prefix}{prop.name}"
+            if prop.logicalType is None:
+                unmapped.append((path, prop.physicalType))
+                prop.logicalType = fallback
+            walk(prop.properties, f"{path}.")
+            if prop.items:
+                walk([prop.items], f"{path}.")
+            if prop.map:
+                walk([side for side in (prop.map.key, prop.map.value) if side], f"{path}.")
+
+    for schema_obj in odcs.schema_ or []:
+        walk(schema_obj.properties, f"{schema_obj.name}." if qualify else "")
+
+    if not unmapped:
+        return
+    imported_as = f"as {fallback}" if fallback else "without a logicalType"
+    listed = ", ".join(f"{name} ({physical_type})" if physical_type else name for name, physical_type in unmapped[:5])
+    if len(unmapped) > 5:
+        listed += f" and {len(unmapped) - 5} others."
+    count = f"{len(unmapped)} columns have" if len(unmapped) > 1 else "1 column has"
+    logger.warning(
+        f"{count} no defined mapping to logicalType and will be imported {imported_as}:\n{listed}\n"
+        "You may propose an updated mapping on GitHub: https://github.com/datacontract/datacontract-cli/issues"
+    )
 
 
 # Type mapping from Avro to ODCS logical types

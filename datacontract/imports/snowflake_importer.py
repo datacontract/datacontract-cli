@@ -16,7 +16,13 @@ from pydantic import TypeAdapter
 
 from datacontract.config import Config
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+    report_unmapped_types,
+)
 from datacontract.imports.sql_importer import map_type_from_sql, vector_from_type
 from datacontract.model.exceptions import DataContractException
 
@@ -452,6 +458,7 @@ def import_snowflake_from_connector(
     enhanced_schemas.sort(key=lambda s: f"{s.physicalType.lower()}/{s.name.lower()}")
     odcs.schema_ = enhanced_schemas
 
+    report_unmapped_types(odcs)
     return odcs
 
 
