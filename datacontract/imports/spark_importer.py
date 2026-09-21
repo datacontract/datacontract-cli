@@ -138,7 +138,11 @@ def _table_metadata_properties(spark: SparkSession | None, source: str, schema=N
     return None
 
 
-def _property_from_type_name(field: types.StructField | None, native_type: str | None, fallback_field: types.StructField | None):
+def _property_from_type_name(
+    field: types.StructField | None,
+    native_type: str | None,
+    fallback_field: types.StructField | None,
+):
     """Convert a column name + native type string into an ODCS property."""
     if native_type is None:
         return _property_from_struct_type(fallback_field or field)
@@ -262,7 +266,12 @@ def _describe_type_to_json(type_name: str):
         return {"type": "array", "elementType": _describe_type_to_json(inner), "containsNull": True}
     if type_name.startswith("map<") and type_name.endswith(">"):
         key, value = _split_top_level(type_name[4:-1], 2)
-        return {"type": "map", "keyType": _describe_type_to_json(key), "valueType": _describe_type_to_json(value), "valueContainsNull": True}
+        return {
+            "type": "map",
+            "keyType": _describe_type_to_json(key),
+            "valueType": _describe_type_to_json(value),
+            "valueContainsNull": True,
+        }
     return type_name
 
 
@@ -272,7 +281,9 @@ def _describe_struct_fields(inner: str):
         if not raw:
             continue
         name, value = raw.split(":", 1)
-        fields.append({"name": name.strip(), "type": _describe_type_to_json(value.strip()), "nullable": True, "metadata": {}})
+        fields.append(
+            {"name": name.strip(), "type": _describe_type_to_json(value.strip()), "nullable": True, "metadata": {}}
+        )
     return fields
 
 

@@ -147,7 +147,10 @@ def test_import_from_spark_df_prefers_exact_metadata_for_nested_varchar():
     metadata_prop = property_from_field_json(
         {
             "name": "payload",
-            "type": {"type": "struct", "fields": [{"name": "varchar_field", "type": "varchar(100)", "nullable": True, "metadata": {}}]},
+            "type": {
+                "type": "struct",
+                "fields": [{"name": "varchar_field", "type": "varchar(100)", "nullable": True, "metadata": {}}],
+            },
             "nullable": True,
             "metadata": {},
         }
