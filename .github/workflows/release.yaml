@@ -237,7 +237,7 @@ jobs:
       # Federated rather than a long-lived access key. The role is scoped to
       # this repository's tags and to the datacontract-cli repository alone.
       - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ vars.AWS_ECR_RELEASE_ROLE_ARN }}
           aws-region: us-east-1

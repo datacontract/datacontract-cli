@@ -62,6 +62,13 @@ def test_from_yaml_interpolates_environment_references(tmp_path, monkeypatch):
     assert Config.from_yaml(path).get_snowflake_password() == "pw-from-env"
 
 
+def test_from_yaml_uses_the_inline_default_when_the_variable_is_unset(tmp_path, monkeypatch):
+    monkeypatch.delenv("SNOWFLAKE_WAREHOUSE", raising=False)
+    path = _write_config(tmp_path, "snowflake:\n  warehouse: ${SNOWFLAKE_WAREHOUSE:-COMPUTE_WH}\n")
+
+    assert Config.from_yaml(path).get_snowflake_warehouse() == "COMPUTE_WH"
+
+
 def test_from_yaml_rejects_references_to_unset_environment_variables(tmp_path, monkeypatch):
     monkeypatch.delenv("SNOWFLAKE_PASSWORD", raising=False)
     path = _write_config(tmp_path, "snowflake:\n  password: ${SNOWFLAKE_PASSWORD}\n")

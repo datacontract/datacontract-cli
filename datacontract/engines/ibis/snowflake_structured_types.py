@@ -8,6 +8,7 @@ from open_data_contract_standard.model import SchemaProperty, Server
 
 from datacontract.engines.checks.type_normalize import UNKNOWN_LOGICAL_TYPE
 from datacontract.engines.ibis.native_type import _quote, _rows
+from datacontract.model.map_type import map_definition
 
 # SHOW COLUMNS leaf ``type`` tokens -> ODCS logical type. FIXED and REAL both map
 # to "number" (the comparator treats integer/number as compatible). Tokens not
@@ -61,8 +62,12 @@ def _to_property(node: dict) -> SchemaProperty:
             logicalType="array", physicalType=native, items=_to_property(element) if element else None
         )
     if node_type == "MAP":
-        # dynamic keys can't be matched to named contract properties
-        return SchemaProperty(logicalType="object", physicalType=native, properties=None)
+        key, value = node.get("keyType"), node.get("valueType")
+        return SchemaProperty(
+            logicalType="map",
+            physicalType=native,
+            map=map_definition(_to_property(key) if key else None, _to_property(value) if value else None),
+        )
     logical = _LEAF_TYPES.get(node_type)
     if logical:
         return SchemaProperty(logicalType=logical, physicalType=native)
@@ -71,8 +76,8 @@ def _to_property(node: dict) -> SchemaProperty:
 
 
 def has_nesting(prop: SchemaProperty) -> bool:
-    """True only when the property is a structured OBJECT/ARRAY worth substituting."""
-    return bool(prop.properties) or prop.items is not None
+    """True only when the property is a structured OBJECT/ARRAY/MAP worth substituting."""
+    return bool(prop.properties) or prop.items is not None or prop.map is not None
 
 
 def _render_native(node: dict) -> str:

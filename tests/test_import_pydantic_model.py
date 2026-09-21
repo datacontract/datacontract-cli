@@ -1,4 +1,5 @@
 import ast
+import logging
 
 import pytest
 import yaml
@@ -145,3 +146,14 @@ def test_a_file_that_does_not_parse_is_reported(tmp_path):
         DataContract.import_from_source("pydantic-model", str(source))
 
     assert "Failed to parse" in exception.value.reason
+
+
+def test_an_unknown_annotation_is_imported_as_string_with_a_warning(tmp_path, caplog):
+    source = tmp_path / "models.py"
+    source.write_text("from pydantic import BaseModel\n\nclass Event(BaseModel):\n    payload: SomeCustomType\n")
+
+    with caplog.at_level(logging.WARNING):
+        result = DataContract.import_from_source("pydantic-model", str(source))
+
+    assert result.schema_[0].properties[0].logicalType == "string"
+    assert "will be imported as string:\npayload (SomeCustomType)\n" in caplog.text

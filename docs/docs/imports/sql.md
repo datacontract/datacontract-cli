@@ -33,7 +33,7 @@ to produce the data contract:
 ```yaml
 version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -55,6 +55,8 @@ schema:
     primaryKey: true
     primaryKeyPosition: 1
     logicalType: string
+    required: true
+    unique: true
   - name: order_timestamp
     physicalType: TIMESTAMPTZ
     logicalType: timestamp
@@ -63,8 +65,6 @@ schema:
     physicalType: TEXT
     logicalType: string
     required: true
-  - name: order_total
-    physicalType: DECIMAL
 # …
 ```
 

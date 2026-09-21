@@ -27,7 +27,7 @@ def test_import_sql_oracle():
     result = DataContract.import_from_source("sql", data_definition_file, dialect="oracle")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -51,6 +51,8 @@ schema:
         physicalType: INT
         primaryKey: true
         primaryKeyPosition: 1
+        required: true
+        unique: true
         description: Primary key
       - name: field_not_null
         logicalType: integer
@@ -155,7 +157,7 @@ def test_import_sql_constraints():
     result = DataContract.import_from_source("sql", "fixtures/postgres/data/data_constraints.sql", dialect="postgres")
 
     expected = """
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -177,7 +179,10 @@ schema:
       - name: id
         logicalType: number
         physicalType: DECIMAL
+        primaryKey: true
+        primaryKeyPosition: 1
         required: true
+        unique: true
       - name: created_by
         logicalType: string
         logicalTypeOptions:

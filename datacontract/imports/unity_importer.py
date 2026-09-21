@@ -13,6 +13,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    report_unmapped_types,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
@@ -52,8 +53,9 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
             original_exception=e,
         )
 
-    odcs = create_odcs()
-    return convert_unity_schema(odcs, unity_schema)
+    odcs = convert_unity_schema(create_odcs(), unity_schema)
+    report_unmapped_types(odcs)
+    return odcs
 
 
 def import_unity_from_api(
@@ -111,6 +113,7 @@ def import_unity_from_api(
             )
         odcs = convert_unity_schema(odcs, unity_schema)
 
+    report_unmapped_types(odcs)
     return odcs
 
 
@@ -164,7 +167,7 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
     sql_type = str(column.type_text) if column.type_text else "string"
     logical_type, format = map_type_from_sql(sql_type)
     required = column.nullable is None or not column.nullable
-    nested_properties, items = _to_nested_types(column)
+    nested_properties, items, map_key, map_value = _to_nested_types(column)
 
     return create_property(
         name=column.name,
@@ -175,19 +178,24 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
         required=required if required else None,
         properties=nested_properties,
         items=items,
+        map_key=map_key,
+        map_value=map_value,
     )
 
 
-def _to_nested_types(column: ColumnInfo) -> Tuple[Optional[List[SchemaProperty]], Optional[SchemaProperty]]:
+def _to_nested_types(
+    column: ColumnInfo,
+) -> Tuple[
+    Optional[List[SchemaProperty]], Optional[SchemaProperty], Optional[SchemaProperty], Optional[SchemaProperty]
+]:
     """Resolve nested struct/array types from Unity's type_json.
 
     Unity's type_json carries the full column type as Spark StructField JSON.
-    Returns (properties, items) for struct and array columns, (None, None)
-    otherwise. Maps stay flat in physicalType until ODCS v3.2 adds
-    logicalType: map (RFC 0030).
+    Returns (properties, items, map_key, map_value) for struct, array and map
+    columns, all ``None`` otherwise.
     """
     if not column.type_json:
-        return None, None
+        return None, None, None, None
     try:
         from datacontract.imports.spark_type_json import property_from_field_json, property_from_type_json
 
@@ -197,9 +205,12 @@ def _to_nested_types(column: ColumnInfo) -> Tuple[Optional[List[SchemaProperty]]
                 items = property_from_type_json(
                     "items", data_type["elementType"], not data_type.get("containsNull", True)
                 )
-                return None, items
+                return None, items, None, None
             if data_type.get("type") == "struct":
-                return [property_from_field_json(f) for f in data_type["fields"]], None
+                return [property_from_field_json(f) for f in data_type["fields"]], None, None, None
+            if data_type.get("type") == "map":
+                prop = property_from_type_json("map", data_type)
+                return None, None, prop.map.key, prop.map.value
     except Exception as e:
         logger.warning("Could not resolve nested type for column %s from type_json: %s", column.name, e)
-    return None, None
+    return None, None, None, None

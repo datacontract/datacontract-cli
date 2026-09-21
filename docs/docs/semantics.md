@@ -31,6 +31,8 @@ The `url` of a `type: semantics` link may be either of the two shapes ODCS allow
 
 An IRI names a concept but is usually not fetchable at its own address, so the CLI never dereferences it directly. It URL-encodes the IRI and asks the configured host to resolve it.
 
+Only `type: semantics` (and the older `semantic` and `definition`) links are resolved. The `glossary`, `ontology` and `taxonomy` types that ODCS v3.2.0 recommends are kept as links: the HTML export shows them, and nothing is merged from them.
+
 ## Reusable definitions
 
 `type: definition` links to a reusable ODCS property definition instead of a semantic concept:

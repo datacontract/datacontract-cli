@@ -105,7 +105,7 @@ def test_import_redshift():
     result = _import(database="dev", schema="analytics", redshift_table=["orders"])
 
     expected = f"""
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 kind: DataContract
 id: my-data-contract
 name: My Data Contract
@@ -149,6 +149,7 @@ schema:
         logicalType: timestamp
         physicalType: timestamp without time zone
       - name: payload
+        logicalType: object
         physicalType: super
     """
 

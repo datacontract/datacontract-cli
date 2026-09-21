@@ -12,6 +12,8 @@ wrapped with the ibis duckdb backend. Only the Spark-session server types
 from __future__ import annotations
 
 import logging
+import struct
+import sys
 import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
@@ -21,7 +23,7 @@ from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.model.server import get_server_type
+from datacontract.model.server import LINT_ONLY_SERVER_TYPES, get_server_type
 
 if typing.TYPE_CHECKING:
     import ibis
@@ -82,6 +84,13 @@ def connect_ibis(
 
     if server_type == "duckdb":
         return _connect_duckdb_database(ibis, server, run, config)
+
+    if server_type == "iceberg":
+        from datacontract.engines.ibis.connections.iceberg import read_iceberg_tables
+
+        run.log_info(f"Connecting to iceberg catalog {server.catalogUrl} via duckdb")
+        con = read_iceberg_tables(data_contract, server, run, duckdb_connection, schema_name=schema_name, config=config)
+        return ibis.duckdb.from_connection(con)
 
     if server_type == "kafka":
         from datacontract.engines.ibis.connections.kafka import read_kafka_topic
@@ -187,7 +196,14 @@ def connect_ibis(
     if server_type == "impala":
         return _connect_impala(ibis, server, config)
 
-    _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
+    if server_type in LINT_ONLY_SERVER_TYPES:
+        _unsupported(
+            run,
+            f"Server type '{server_type}' is valid in ODCS, but datacontract test cannot connect to it yet. "
+            "The contract still lints and exports; open an issue if you need to test against it.",
+        )
+    else:
+        _unsupported(run, f"Server type {server_type} not yet supported by datacontract CLI")
     return None
 
 
@@ -626,8 +642,24 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
         logger.warning("Could not read MySQL table '%s': %s", model, last_error)
 
 
+# pyodbc pre-connect attribute for an Entra ID access token (SQL_COPT_SS_ACCESS_TOKEN).
+SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+
 def _connect_sqlserver(ibis, server: Server, config: Config):
-    return ibis.mssql.connect(**_sqlserver_connection_kwargs(server, config))
+    kwargs = _sqlserver_connection_kwargs(server, config)
+    if "attrs_before" not in kwargs:
+        return ibis.mssql.connect(**kwargs)
+    # ibis.mssql.connect always sends UID/PWD (even as None), which the driver
+    # refuses next to an access token, so open the pyodbc connection ourselves.
+    import pyodbc
+
+    del kwargs["user"], kwargs["password"]
+    if kwargs["database"] is None:
+        del kwargs["database"]  # pyodbc would send a literal DATABASE=None
+    host, port = kwargs.pop("host"), kwargs.pop("port")
+    con = pyodbc.connect(server=f"{host},{port}", **kwargs)
+    return ibis.mssql.from_connection(con)
 
 
 def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
@@ -639,15 +671,16 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     - ``windows`` — Windows integrated auth (Kerberos/NTLM), no credentials
     - ``ActiveDirectoryPassword`` — Entra ID with ``USERNAME`` / ``PASSWORD``
     - ``ActiveDirectoryServicePrincipal`` — Entra ID with ``CLIENT_ID`` / ``CLIENT_SECRET``
-    - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint)
-    - ``cli`` — reuse an ``az login`` session via the Azure default credential chain
+    - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint), Windows only
+    - ``cli`` — reuse an ``az login`` session (token passed as a pre-connect attribute)
 
     The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
     ``windows``, and applies only when ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` is
     unset — an explicitly chosen mode always wins. Extra keys (``Authentication``,
     ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) are forwarded
     verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
-    so they use the ODBC spellings.
+    so they use the ODBC spellings. ``cli`` sets ``attrs_before`` instead, which makes
+    ``_connect_sqlserver`` call ``pyodbc.connect`` directly.
     """
     driver = _get_custom_property(server, "driver") or config.get_sqlserver_driver()
 
@@ -689,10 +722,9 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     if authentication == "windows":
         kwargs["Trusted_Connection"] = "yes"
     elif authentication == "cli":
-        # DefaultAzureCredential includes the Azure CLI session (requires ODBC
-        # Driver 18.1+). Suppress ibis's no-credentials Trusted_Connection default.
-        kwargs["Authentication"] = "ActiveDirectoryDefault"
-        kwargs["Trusted_Connection"] = "no"
+        # The ODBC driver has no Azure-CLI mode: pass an `az login` token as a
+        # pre-connect attribute (must not be combined with UID/PWD/Trusted_Connection).
+        kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _azure_cli_access_token()}
     elif authentication == "activedirectoryserviceprincipal":
         kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
         kwargs["user"] = config.get_sqlserver_client_id(required=True)
@@ -702,6 +734,17 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
         kwargs["user"] = config.get_sqlserver_username(required=True)
         kwargs["password"] = config.get_sqlserver_password(required=True)
     elif authentication == "activedirectoryinteractive":
+        if sys.platform != "win32":
+            raise DataContractException(
+                type="sqlserver-connection",
+                name="unsupported_authentication",
+                reason=(
+                    "DATACONTRACT_SQLSERVER_AUTHENTICATION=ActiveDirectoryInteractive is only supported by the "
+                    "Microsoft ODBC driver on Windows. On macOS/Linux use cli (az login) or "
+                    "ActiveDirectoryServicePrincipal."
+                ),
+                engine="datacontract-cli",
+            )
         kwargs["Authentication"] = "ActiveDirectoryInteractive"
         kwargs["Trusted_Connection"] = "no"
         username = config.get_sqlserver_username()
@@ -714,12 +757,40 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     return kwargs
 
 
+def _azure_cli_access_token() -> bytes:
+    try:
+        from azure.core.exceptions import ClientAuthenticationError
+        from azure.identity import AzureCliCredential
+    except ImportError as exc:
+        raise DataContractException(
+            type="sqlserver-connection",
+            name="azure_identity_extra_missing",
+            reason="Install the extra datacontract-cli[sqlserver,azure] to use DATACONTRACT_SQLSERVER_AUTHENTICATION=cli",
+            engine="datacontract-cli",
+            original_exception=exc,
+        )
+    try:
+        token = AzureCliCredential().get_token("https://database.windows.net/.default").token
+    except ClientAuthenticationError as exc:
+        raise DataContractException(
+            type="sqlserver-connection",
+            name="azure_cli_login_required",
+            reason=f"DATACONTRACT_SQLSERVER_AUTHENTICATION=cli needs an az login session: {exc.message}",
+            engine="datacontract-cli",
+            original_exception=exc,
+        )
+    # The driver expects UTF-16LE bytes prefixed with their 4-byte little-endian length.
+    raw = token.encode("utf-16-le")
+    return struct.pack("<i", len(raw)) + raw
+
+
 def _connect_athena(ibis, server: Server, config: Config):
     # regionName is a contract value, so the variable still wins over it
     credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName, config), config)
     schema = config.get_athena_schema() or server.schema_
     staging_dir = config.get_athena_staging_dir() or getattr(server, "stagingDir", None)
     catalog = config.get_athena_catalog() or server.catalog
+    workgroup = config.get_athena_workgroup() or getattr(server, "workgroup", None)
     if not schema:
         raise DataContractException(
             type="athena-connection",
@@ -727,21 +798,26 @@ def _connect_athena(ibis, server: Server, config: Config):
             reason="Schema is required for Athena connection.",
             engine="datacontract-cli",
         )
-    if not staging_dir:
+    # A workgroup can enforce the query result location, so the staging
+    # directory is only required when no workgroup is named (ODCS v3.2.0).
+    if not staging_dir and not workgroup:
         raise DataContractException(
             type="athena-connection",
             name="missing_s3_staging_dir",
-            reason="S3 staging directory is required for Athena connection.",
+            reason="S3 staging directory is required for Athena connection unless a workgroup is set.",
             engine="datacontract-cli",
         )
     kwargs = dict(
-        s3_staging_dir=staging_dir,
         aws_access_key_id=credentials["aws_access_key_id"],
         aws_secret_access_key=credentials["aws_secret_access_key"],
         aws_session_token=credentials["aws_session_token"],
         region_name=credentials["region_name"],
         schema_name=schema,
     )
+    if staging_dir:
+        kwargs["s3_staging_dir"] = staging_dir
+    if workgroup:
+        kwargs["work_group"] = workgroup
     # Optional data source / catalog; pyathena defaults it to `awsdatacatalog`.
     if catalog:
         kwargs["catalog_name"] = catalog

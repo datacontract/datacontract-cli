@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS  ${database_name}.PUBLIC.my_table (
   -- https://docs.snowflake.com/en/sql-reference/intro-summary-data-types
   field_primary_key      NUMBER(38,0) NOT NULL autoincrement start 1 increment 1 COMMENT 'Primary key',
+  field_parent_primary_key   NUMBER(38,0) COMMENT 'Parent primary key',
   field_not_null         INT NOT NULL     COMMENT 'Not null',
   field_char             CHAR(10)         COMMENT 'Fixed-length string',
   field_character        CHARACTER(10)    COMMENT 'Fixed-length string',
@@ -38,5 +39,6 @@ CREATE TABLE IF NOT EXISTS  ${database_name}.PUBLIC.my_table (
   field_variant          VARIANT          COMMENT 'VARIANT data',
   field_json             OBJECT           COMMENT 'JSON (Stored as text)',
   UNIQUE(field_not_null),
-  PRIMARY KEY (field_primary_key)
+  PRIMARY KEY (field_primary_key),
+  FOREIGN KEY (field_parent_primary_key) REFERENCES ${database_name}.PUBLIC.my_table(field_primary_key)
 ) COMMENT = 'My Comment'

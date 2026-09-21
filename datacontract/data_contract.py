@@ -92,7 +92,7 @@ class DataContract:
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
-            data_contract = resolve.resolve_data_contract(
+            data_contract, schema_version = resolve.resolve_data_contract_with_schema_version(
                 self._data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
@@ -100,12 +100,15 @@ class DataContract:
                 inline_references=self._inline_references,
                 all_errors=self._all_errors,
                 config=self._config,
+                use_declared_api_version=True,
             )
             run.checks.append(
                 Check(
                     type="lint",
                     result=ResultEnum.passed,
-                    name="Data contract is syntactically valid",
+                    name="Data contract is syntactically valid"
+                    if schema_version is None
+                    else f"Data contract is valid against ODCS v{schema_version}",
                     engine="datacontract-cli",
                 )
             )

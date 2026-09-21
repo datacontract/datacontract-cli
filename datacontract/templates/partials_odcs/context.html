@@ -1,0 +1,16 @@
+{% import 'macros/context.html' as context_macros %}
+{% set context = datacontract.context if datacontract.context is defined and datacontract.context is not callable else none %}
+{% if context %}
+<section id="context">
+  <div class="px-4 sm:px-0">
+    <h1 class="text-base font-semibold leading-6 text-gray-900">Context</h1>
+    <p class="text-sm text-gray-500">Guidance for AI agents, BI tools and semantic layers on how to use this data</p>
+  </div>
+
+  <div class="mt-2 overflow-hidden bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-lg">
+    <div class="px-4 py-4 sm:px-6">
+      {{ context_macros.render_context(context) }}
+    </div>
+  </div>
+</section>
+{% endif %}

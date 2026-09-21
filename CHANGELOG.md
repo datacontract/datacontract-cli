@@ -7,8 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Highlights
+- Support for SAP HANA
+
 ### Added
+- `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
+- `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
+- `datacontract import` warns once per import about column types that have no mapping to a `logicalType` (#1629)
 - `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
+
+### Fixed
+- `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)
+- `datacontract import s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628)
+- `datacontract import sql` detects table-level PRIMARY KEY and FOREIGN KEY constraints, derives `unique: true` for single-column keys, and emits property-level `relationships` in the ODCS shorthand format (#1618 @dmaresma)
+- `datacontract test` SQL Server / Microsoft Fabric `cli` auth works again on macOS/Linux, and `ActiveDirectoryInteractive` fails fast off Windows instead of timing out (#1603)
+- `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
+- `datacontract test` reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
+
+## [1.2.0] - 2026-09-08
+
+This release adds support for the [Open Data Contract Standard v3.2.0](https://github.com/bitol-io/open-data-contract-standard/blob/main/CHANGELOG.md) (#1557).
+
+### Fixed
+- Iceberg testing uses AWS SSO credentials for S3 Tables data files and supports logical table aliases.
+- Iceberg catalog imports supply a catalog name, preserve qualified table identifiers, and correctly map temporal and binary fields.
+- `datacontract test` checks vector element types when the data source reports them (#1585)
+
+### Added
+- `datacontract test` resolves variables in property names, enum values, nested type options, library quality arguments, and service levels (#1583)
+- Lint requires vector dimensions and rejects duplicate enum values regardless of their labels (#1586)
+- Contracts declaring `apiVersion: v3.2.0` lint and round-trip, including `enum`, `map`, `vector`, `semanticType`, `synonyms`, `deprecated`, `context`, variables in string values, and the new server types (#1558)
+- `datacontract export avro-idl` writes `map<...>` and `array<float>` for `map` and `vector` properties; `datacontract export sqlalchemy` writes `JSON` and `ARRAY(Float)` (#1558)
+- `datacontract test` resolves `${VAR}` and `${VAR:-default}` references in server fields and SQL quality queries from the environment; an unset variable without a default fails the run with its name, and `export` keeps the references (#1559)
+- Server `port` may be a string such as `${DB_PORT}`, including in Excel imports; config files accept `${VAR:-default}` (#1559)
+- `enum` on properties is read by `datacontract test`, the jsonschema, avro, avro-idl, protobuf, pydantic-model, dcs, great-expectations, sodacl and data-caterer exporters, and dbt test mapping, ahead of `logicalTypeOptions.enum`, the `enum` custom property and the `invalidValues` rule; HTML export lists the values with labels and descriptions (#1560)
+- `datacontract import` from JSON Schema, Avro, Protobuf and DCS writes allowed values as `enum` entries instead of an `invalidValues` quality rule or custom properties (#1560)
+- `datacontract export pydantic-model` types an enumerated string or integer property as `typing.Literal` (#1560)
+- `logicalType: map` with a `map` block (`key` and `value` as full property definitions) is a first-class type: `datacontract test` checks the key and value types, including nested objects and maps, on DuckDB, Databricks, Snowflake, Trino, Kafka and the file sources (#1562)
+- `datacontract export` writes native map types for snowflake, databricks, dataframe, duckdb (local, s3), clickhouse, trino, spark, iceberg, avro, avro-idl, protobuf, pydantic-model, go and dcs, JSON for postgres, mysql, sqlserver, oracle and bigquery, and `additionalProperties` for jsonschema; HTML shows the key and value types (#1562)
+- `datacontract import` from sql, databricks/unity, spark, glue, iceberg, avro, parquet and dcs writes `logicalType: map` with the key and value instead of `physicalType: map` with custom properties; the `mapKeyType`, `mapValueType`, `mapKeys` and `mapValues` custom properties are still read but deprecated (#1562)
+- `logicalType: vector` with `logicalTypeOptions.dimensions` is a first-class type: `datacontract test` accepts a native vector or an array of numbers and compares the dimensions when the column states them; `export` writes `vector(n)` for postgres, `VECTOR(FLOAT, n)` for snowflake, `FLOAT[n]` for duckdb, `vector(n)` for mysql, arrays of floats for databricks, dataframe, trino, clickhouse, bigquery, spark, iceberg, avro, avro-idl, protobuf, pydantic-model, go and dcs, and a fixed-length array of numbers for jsonschema (#1563)
+- `datacontract import` from sql, postgres and snowflake reads `vector(n)`, `halfvec(n)` and `VECTOR(FLOAT, n)` columns as `logicalType: vector` with their dimensions, and parquet reads a fixed-size list of floats the same way (#1563)
+- `datacontract export html` renders `semanticType`, `synonyms`, `deprecated` and `context` on schema objects and properties, the contract-level `context`, `vendor` on custom properties, and `customProperties` and `authoritativeDefinitions` on SLA entries; `export rdf` writes `enum` entries, `synonyms`, `map` definitions, `customProperties` and other nested definitions as nodes of their own instead of dropping them or printing a model repr (#1561)
+- `datacontract changelog` matches `synonyms`, `enum` entries, `context` statements and constraints, and the nested lists of SLA entries by their natural key, and relationships by `id` when present, instead of by position (#1561)
+- `datacontract test` reads CSV files from local, s3, gcs and azure servers and Kafka JSON messages in the server's declared `encoding`, and uses the Athena `workgroup` (also `DATACONTRACT_ATHENA_WORKGROUP`), which makes `stagingDir` optional (#1564)
+- The ODCS v3.2.0 server types `hana`, `iceberg`, `exasol`, `teradata`, `ingres`, `vectorwise`, `versant` and `poet` lint and export; `test` explains that it cannot connect to them yet, and the synonyms `fastobjects` and `btrieve` resolve to `poet` and `zen` (#1564)
+- `datacontract export sql --sql-server-type auto` warns before falling back to the snowflake dialect for a server type without one (#1564)
+- `datacontract test` supports the `iceberg` server type: tables are read from the REST catalog named by `catalogUrl`, `namespace` and `warehouse` with pyiceberg (credentials via `DATACONTRACT_ICEBERG_CREDENTIAL` or `DATACONTRACT_ICEBERG_TOKEN`, data files via the S3 options; `DATACONTRACT_ICEBERG_CATALOG_TYPE` selects a `sql`, `glue` or `hive` catalog instead of `rest`, `DATACONTRACT_ICEBERG_S3_ENDPOINT` points at an S3-compatible store, Amazon S3 Tables and the Glue REST endpoint are signed with SigV4 from the AWS credentials, `DATACONTRACT_ICEBERG_PROPERTIES` passes further catalog properties through), and `datacontract import iceberg --catalog-url` creates a contract from a catalog table with a ready-to-test server (#1565)
+
+### Changed
+- `datacontract breaking` detects enum restrictions and vector shape changes (#1584)
+- `datacontract init` and all importers write `apiVersion: v3.2.0` (#1558)
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.13 (#1566)
+- `open-data-contract-standard` dependency bumped to 3.2.x (#1558)
+- Lint accepts stable ids with any character except whitespace and `.#/\@!%&^`, as in the released ODCS v3.2.0 schema
 
 ## [1.1.3] - 2026-09-03
 
@@ -28,9 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` sums every component of an ISO 8601 retention period, instead of reading only the first one (#1538)
 - `datacontract test` reports each freshness and retention check result on its own check, instead of writing every result to the first one (#1515 @erikgrip2)
 - `datacontract test --publish` with an empty value runs without publishing, instead of failing (#1491)
-
-### Changed
-- The `open-data-contract-standard` dependency is pinned to 3.1.x; ODCS v3.2.0 support will come with a dedicated release
 
 ## [1.1.2] - 2026-08-26
 

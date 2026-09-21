@@ -2,9 +2,10 @@ import logging
 import os
 import re
 from enum import Enum
+from typing import List
 
 import sqlglot
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import OpenDataContractStandard, Relationship, SchemaProperty
 from sqlglot.dialects.dialect import Dialects
 
 from datacontract.imports.importer import Importer
@@ -13,9 +14,12 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    property_from_type_string,
+    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+from datacontract.model.vector_type import parse_vector_type
 
 
 class SqlDialect(str, Enum):
@@ -78,17 +82,34 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         table_name = table.this.name
         properties = []
 
-        primary_key_position = 1
-        for column in create.find_all(sqlglot.exp.ColumnDef):
+        columns = list(create.find_all(sqlglot.exp.ColumnDef))
+        # A table-level PRIMARY KEY (b, a) defines the key order; inline PKs follow column order.
+        table_primary_key = create.find(sqlglot.exp.PrimaryKey)
+        if table_primary_key is not None:
+            primary_key_names = [c.name.lower() for c in table_primary_key.expressions]
+        else:
+            primary_key_names = [
+                column.this.name.lower()
+                for column in columns
+                if column.find(sqlglot.exp.PrimaryKeyColumnConstraint, sqlglot.exp.PrimaryKey) is not None
+            ]
+        has_single_primary_key = len(primary_key_names) == 1
+
+        for column in columns:
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
             logical_type, format = map_type_from_sql(col_type)
             col_description = get_description(column)
             max_length = get_max_length(column)
             precision, scale = get_precision_scale(column)
-            is_primary_key = get_primary_key(column)
-            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or None
+            is_primary_key = col_name.lower() in primary_key_names or None
+            is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or is_primary_key or None
+            is_unique = True if is_primary_key and has_single_primary_key else None
+            col_relationship = get_relationship(column, create)
             tags = get_tags(column)
+
+            map_key, map_value = map_key_value_from_type(col_type) if logical_type == "map" else (None, None)
+            dimensions, element_type = vector_from_type(col_type) if logical_type == "vector" else (None, None)
 
             prop = create_property(
                 name=col_name,
@@ -100,13 +121,16 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
                 scale=scale,
                 format=format,
                 primary_key=is_primary_key,
-                primary_key_position=primary_key_position if is_primary_key else None,
+                primary_key_position=primary_key_names.index(col_name.lower()) + 1 if is_primary_key else None,
                 required=is_required if is_required else None,
+                unique=is_unique,
                 tags=tags,
+                map_key=map_key,
+                map_value=map_value,
+                dimensions=dimensions,
+                element_type=element_type,
+                relationships=col_relationship,
             )
-
-            if is_primary_key:
-                primary_key_position += 1
 
             properties.append(prop)
 
@@ -132,15 +156,30 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         )
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs)
     return odcs
 
 
-def get_primary_key(column) -> bool | None:
-    if column.find(sqlglot.exp.PrimaryKeyColumnConstraint) is not None:
-        return True
-    if column.find(sqlglot.exp.PrimaryKey) is not None:
-        return True
-    return None
+def get_relationship(column, table) -> List[Relationship] | None:
+    reference = column.find(sqlglot.exp.Reference)
+    index = 0
+    if reference is None:
+        for foreign_key in table.find_all(sqlglot.exp.ForeignKey):
+            names = [c.name.lower() for c in foreign_key.expressions]
+            if column.name.lower() in names:
+                reference = foreign_key.args.get("reference")
+                index = names.index(column.name.lower())
+                break
+    if reference is None:
+        return None
+
+    referenced_table = reference.this.find(sqlglot.exp.Table)
+    referenced_columns = reference.this.expressions
+    if referenced_table is None or len(referenced_columns) <= index:
+        return None
+
+    to = f"{referenced_table.this.name}.{referenced_columns[index].name}"
+    return [Relationship(to=to)]
 
 
 def to_dialect(import_args: dict) -> Dialects | None:
@@ -329,11 +368,29 @@ def get_precision_scale(column):
     return None, None
 
 
+def map_key_value_from_type(sql_type: str | None) -> tuple[SchemaProperty | None, SchemaProperty | None]:
+    """The key and value properties of a ``map<k,v>`` / ``MAP(k, v)`` type string, or ``(None, None)``."""
+    if not sql_type:
+        return None, None
+    prop = property_from_type_string("map", sql_type)
+    if prop.map is None:
+        return None, None
+    return prop.map.key, prop.map.value
+
+
+def vector_from_type(sql_type: str | None) -> tuple[int | None, str | None]:
+    """``(dimensions, elementType)`` of a native vector type string, or ``(None, None)``."""
+    parsed = parse_vector_type(sql_type)
+    if parsed is None:
+        return None, None
+    return parsed[0], parsed[1]
+
+
 def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     """Map SQL type to ODCS logical type and optional format.
 
     Returns (logicalType, format). logicalType is None for unknown or unmappable
-    types (e.g. maps), leaving the field's logicalType unset.
+    types, leaving the field's logicalType unset.
     The format corresponds to ODCS logicalTypeOptions.format (e.g. "binary", "uuid").
     """
     if sql_type is None:
@@ -341,6 +398,8 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
 
     sql_type_normed = sql_type.lower().strip()
 
+    if parse_vector_type(sql_type_normed) is not None:
+        return ("vector", None)
     if sql_type_normed.startswith("varchar"):
         return ("string", None)
     elif sql_type_normed.startswith("char"):
@@ -406,8 +465,12 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("timestamp", None)
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return ("string", "uuid")
-    elif sql_type_normed == "json":
+    elif sql_type_normed in ("json", "jsonb", "variant", "object", "super"):  # postgres, snowflake, redshift
         return ("object", None)
+    elif sql_type_normed == "int64":  # bigquery
+        return ("integer", None)
+    elif sql_type_normed == "float64":  # bigquery
+        return ("number", None)
     elif sql_type_normed == "xml":  # tsql
         return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
@@ -417,9 +480,7 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
     elif sql_type_normed.startswith("struct"):
         return ("object", None)
     elif sql_type_normed.startswith("map"):
-        # ODCS v3.1 has no map logical type; RFC 0030 adds logicalType: map in v3.2.
-        # "object" only validates against structs, so leave logicalType unset for maps.
-        return (None, None)
+        return ("map", None)
     else:
         return (None, None)
 

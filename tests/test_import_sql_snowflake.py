@@ -11,7 +11,7 @@ def test_import_sql_snowflake():
 
     expected = """version: 1.0.0
 kind: DataContract
-apiVersion: v3.1.0
+apiVersion: v3.2.0
 id: my-data-contract
 name: My Data Contract
 status: draft
@@ -39,6 +39,20 @@ schema:
       value: 0
     logicalType: number
     required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    unique: true
+  - name: field_parent_primary_key
+    physicalType: DECIMAL(38, 0)
+    description: Parent primary key
+    customProperties:
+    - property: precision
+      value: 38
+    - property: scale
+      value: 0
+    logicalType: number
+    relationships:
+    - to: my_table.field_primary_key
   - name: field_not_null
     physicalType: INT
     description: Not null
@@ -171,9 +185,11 @@ schema:
       format: binary
   - name: field_variant
     physicalType: VARIANT
+    logicalType: object
     description: VARIANT data
   - name: field_json
     physicalType: OBJECT
+    logicalType: object
     description: JSON (Stored as text)"""
 
     print("Result", result.to_yaml())

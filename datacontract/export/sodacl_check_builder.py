@@ -23,6 +23,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.export.sql_type_converter import convert_to_sql_type
+from datacontract.model.enum_values import get_enum_values
 from datacontract.model.run import Check
 
 logger = logging.getLogger(__name__)
@@ -69,7 +70,18 @@ def _quote_model_name(model_name: str, quoting_config: QuotingConfig) -> str:
 
 
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
-_ANSI_QUOTING_DIALECTS = {"postgres", "redshift", "sqlserver", "mssql", "snowflake", "azure", "s3", "gcs", "local"}
+_ANSI_QUOTING_DIALECTS = {
+    "postgres",
+    "redshift",
+    "sqlserver",
+    "mssql",
+    "snowflake",
+    "azure",
+    "s3",
+    "gcs",
+    "local",
+    "hana",
+}
 
 _BARE_IDENTIFIER_STRICT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _BARE_IDENTIFIER_PERMISSIVE = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
@@ -93,7 +105,7 @@ def _has_unsupported_databricks_type(prop) -> bool:
     return False
 
 
-_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver", "mssql"}
+_PERMISSIVE_BARE_DIALECTS = {"postgres", "redshift", "snowflake", "oracle", "sqlserver", "mssql", "hana"}
 
 
 def _quote_identifier_if_needed(identifier: str, server: Optional[Server]) -> str:
@@ -226,8 +238,8 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
         if pattern is not None:
             checks.append(check_property_regex(schema_name, property_name, pattern, quoting_config))
 
-        enum_values = _get_logical_type_option(prop, "enum")
-        if enum_values is not None and len(enum_values) > 0:
+        enum_values = get_enum_values(prop, include_quality_rule=False)
+        if enum_values:
             checks.append(check_property_enum(schema_name, property_name, enum_values, quoting_config))
 
         if prop.quality is not None and len(prop.quality) > 0:

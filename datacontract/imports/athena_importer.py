@@ -21,7 +21,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 
 from datacontract.imports.glue_importer import create_schema_objects, get_glue_tables
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_server
+from datacontract.imports.odcs_helper import create_odcs, create_server, report_unmapped_types
 from datacontract.model.exceptions import DataContractException
 
 DEFAULT_CATALOG = "awsdatacatalog"
@@ -96,6 +96,7 @@ def import_athena(
     for schema_object in odcs.schema_:
         for prop in schema_object.properties or []:
             _to_athena_types(prop)
+    report_unmapped_types(odcs, fallback="string")
     return odcs
 
 

@@ -4,11 +4,16 @@ The format detection and schema naming are pure and tested directly; the read
 itself runs against a MinIO container, the same seam the s3 test suites use.
 """
 
+import logging
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+from open_data_contract_standard.model import OpenDataContractStandard
 from testcontainers.minio import MinioContainer
+from typer.testing import CliRunner
 
+from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.imports.object_storage_importer import detect_format, schema_name
 from datacontract.model.exceptions import DataContractException
@@ -20,6 +25,7 @@ SECRET_KEY = "test-secret"
 # resolved from this file: the container fixture is module-scoped and therefore
 # runs before conftest chdirs into the test directory
 CSV_FIXTURE = Path(__file__).parent / "fixtures" / "s3-csv" / "data" / "sample_data.csv"
+DELTA_FIXTURE = Path(__file__).parent / "fixtures" / "s3-delta" / "data" / "events.delta"
 
 
 @pytest.mark.parametrize(
@@ -65,6 +71,17 @@ def test_a_missing_location_is_rejected():
     assert "location is required" in exc_info.value.reason
 
 
+@pytest.mark.parametrize("import_format", ["s3", "gcs", "adls"])
+def test_cli_format_option_is_not_rejected_as_the_removed_importer_selector(import_format):
+    """`--format` is the file format here, not the v0.12.0 `import --format sql` selector."""
+    with patch("datacontract.imports.object_storage_importer.import_object_storage") as mock_import:
+        mock_import.return_value = OpenDataContractStandard(id="test", kind="DataContract", apiVersion="v3.1.0")
+        result = CliRunner().invoke(app, ["import", import_format, "--source", "bucket/orders/", "--format", "delta"])
+
+    assert result.exit_code == 0, result.output
+    assert mock_import.call_args.kwargs["format"] == "delta"
+
+
 @pytest.fixture(scope="module")
 def minio(request):
     with MinioContainer(image="quay.io/minio/minio", access_key=ACCESS_KEY, secret_key=SECRET_KEY) as container:
@@ -72,6 +89,10 @@ def minio(request):
         client.make_bucket(BUCKET)
         with open(CSV_FIXTURE, "rb") as file:
             client.put_object(BUCKET, "orders/orders.csv", file, CSV_FIXTURE.stat().st_size)
+        for path in DELTA_FIXTURE.rglob("*"):
+            if path.is_file():
+                with open(path, "rb") as file:
+                    client.put_object(BUCKET, f"events/{path.relative_to(DELTA_FIXTURE)}", file, path.stat().st_size)
         yield container
 
 
@@ -95,9 +116,35 @@ def test_import_s3_csv(minio, credentials):
     assert [prop.name for prop in result.schema_[0].properties]
 
 
+def test_import_s3_delta_maps_timezone_aware_timestamps_and_warns_about_unmapped_types(minio, credentials, caplog):
+    with caplog.at_level(logging.WARNING):
+        result = DataContract.import_from_source(
+            "s3", f"s3://{BUCKET}/events/", file_format="delta", endpoint_url=_endpoint(minio)
+        )
+
+    properties = {prop.name: prop for prop in result.schema_[0].properties}
+    assert properties["event_time"].logicalType == "timestamp"
+    assert properties["amount"].logicalType == "number"
+    assert properties["tags"].logicalType == "string"
+    assert "will be imported as string:\ntags (VARCHAR[])\n" in caplog.text
+
+
 def test_imported_contract_passes_test_without_editing(minio, credentials):
     """The point of the importer: import, then test, no hand-editing."""
     result = DataContract.import_from_source("s3", f"s3://{BUCKET}/orders/orders.csv", endpoint_url=_endpoint(minio))
+
+    run = DataContract(data_contract_str=result.to_yaml()).test()
+
+    print(run.pretty())
+    assert run.result == ResultEnum.passed
+
+
+def test_imported_delta_contract_passes_test_once_the_unmapped_type_is_corrected(minio, credentials):
+    result = DataContract.import_from_source(
+        "s3", f"s3://{BUCKET}/events/", file_format="delta", endpoint_url=_endpoint(minio)
+    )
+    # the one edit the import warning asks for; the timestamp and decimal columns need none
+    next(prop for prop in result.schema_[0].properties if prop.name == "tags").logicalType = "array"
 
     run = DataContract(data_contract_str=result.to_yaml()).test()
 
