@@ -196,6 +196,9 @@ def connect_ibis(
     if server_type == "impala":
         return _connect_impala(ibis, server, config)
 
+    if server_type == "exasol":
+        return _connect_exasol(ibis, server, config)
+
     if server_type in LINT_ONLY_SERVER_TYPES:
         _unsupported(
             run,
@@ -868,6 +871,44 @@ def _connect_trino(ibis, server: Server, config: Config):
             ),
             engine="datacontract-cli",
         )
+
+
+def _connect_exasol(ibis, server: Server, config: Config):
+    import ssl
+
+    from datacontract.engines.ibis.connections.exasol_patch import apply_exasol_compatibility_patch
+
+    host = config.get_exasol_host() or server.host
+    # pyexasol takes the certificate policy as a host suffix: `host/<sha256>` pins the
+    # certificate, `host/nocertcheck` skips verification.
+    if fingerprint := config.get_exasol_fingerprint():
+        host = f"{host}/{fingerprint}"
+    elif not config.get_exasol_validate_certificate():
+        host = f"{host}/nocertcheck"
+    # ibis defaults to CERT_NONE; restore pyexasol's own default of verifying the
+    # certificate unless a suffix replaces that check.
+    cert_reqs = ssl.CERT_NONE if host and "/" in host else ssl.CERT_REQUIRED
+    kwargs = dict(
+        host=host,
+        port=config.get_exasol_port() or (int(server.port) if server.port else 8563),
+        user=config.get_exasol_username(required=True),
+        password=config.get_exasol_password(required=True),
+        websocket_sslopt={"cert_reqs": cert_reqs},
+    )
+    schema = config.get_exasol_schema() or server.schema_
+    if schema:
+        kwargs["schema"] = schema
+
+    try:
+        con = ibis.exasol.connect(**kwargs)
+    except Exception as e:
+        # pyexasol renders its errors as a multi-line block; the run reports only the first line.
+        message = getattr(e, "message", None)
+        if isinstance(message, str):
+            raise ConnectionError(message) from e
+        raise
+    apply_exasol_compatibility_patch(con)
+    return con
 
 
 def _get_custom_property(server: Server, name: str):

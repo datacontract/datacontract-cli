@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
+- `datacontract test` supports Exasol through the `exasol` extra (#1335)
 - `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
 - `datacontract export great-expectations --checks` restricts the suite to `quality` and/or `properties` expectations (#1617)
 - `datacontract import` warns once per import about column types that have no mapping to a `logicalType` (#1629)

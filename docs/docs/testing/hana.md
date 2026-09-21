@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 20
 title: "SAP HANA"
 description: "Test the actual data in SAP HANA Cloud and SAP Datasphere against your data contract."
 ---

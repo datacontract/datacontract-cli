@@ -29,6 +29,7 @@ GROUPS = {
     "bigquery": "BigQuery",
     "databricks": "Databricks",
     "duckdb": "DuckDB",
+    "exasol": "Exasol",
     "gcs": "GCS",
     "hana": "SAP HANA",
     "iceberg": "Iceberg",

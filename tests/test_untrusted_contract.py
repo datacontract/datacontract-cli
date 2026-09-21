@@ -160,6 +160,23 @@ def test_the_documented_dialect_mapping_matches_the_code():
     assert documented == {k: v for k, v in _DIALECT_BY_SERVER_TYPE.items() if k != "mssql"}
 
 
+def test_exasol_syntax_is_read_as_exasol_even_after_ibis_registered_its_own_dialect():
+    """ibis registers a Postgres-based dialect under the name `exasol` on import,
+    which refuses Exasol's REGEXP_LIKE predicate. Older sqlglot versions do not
+    read the predicate in their own Exasol dialect either."""
+    import sqlglot
+    from sqlglot.dialects.exasol import Exasol
+
+    pytest.importorskip("ibis.backends.sql.dialects")
+    query = "SELECT count(*) FROM orders WHERE status NOT REGEXP_LIKE '^open$'"
+    try:
+        sqlglot.parse(query, dialect=Exasol)
+    except sqlglot.errors.ParseError:
+        pytest.skip("this sqlglot version does not read the REGEXP_LIKE predicate")
+
+    assert is_read_only_query(query, "exasol")
+
+
 def test_an_unmapped_server_type_has_no_dialect():
     assert dialect_for_server_type("no-such-server-type") is None
     assert dialect_for_server_type(None) is None
