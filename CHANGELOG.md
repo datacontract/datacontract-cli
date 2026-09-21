@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
 - `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
 - `datacontract import` warns once per import about column types that have no mapping to a `logicalType` (#1629)
+- `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
 
 ### Fixed
 - `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)

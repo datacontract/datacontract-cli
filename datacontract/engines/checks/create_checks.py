@@ -34,6 +34,7 @@ from datacontract.model.server import get_server_type
 logger = logging.getLogger(__name__)
 
 _FILE_SERVER_TYPES = {"local", "s3", "gcs", "azure"}
+_NESTED_CHECK_SERVER_TYPES = {"dataframe", "databricks"}
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +113,31 @@ def quality_definition_yaml(quality: DataQuality) -> str:
     """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
     know are dropped, and comments with them."""
     return yaml.safe_dump(quality.model_dump(exclude_none=True), sort_keys=False)
+
+
+def _property_type(prop: SchemaProperty) -> str:
+    return normalize_type_name(prop.physicalType or prop.logicalType)
+
+
+def _iter_property_paths(
+    properties: list[SchemaProperty] | None,
+    server_type: str | None,
+    prefix: str | None = None,
+):
+    for prop in properties or []:
+        field = prop.physicalName or prop.name
+        field_path = f"{prefix}.{field}" if prefix else field
+        yield field_path, prop
+
+        prop_type = _property_type(prop)
+        if server_type in _NESTED_CHECK_SERVER_TYPES and prop_type == "object" and prop.properties:
+            yield from _iter_property_paths(prop.properties, server_type, field_path)
+        elif (
+            server_type in _NESTED_CHECK_SERVER_TYPES and prop_type == "array" and prop.items and prop.items.properties
+        ):
+            # `[]` marks the array hop; the executor turns it into a predicate
+            # over the elements instead of a column lookup.
+            yield from _iter_property_paths(prop.items.properties, server_type, f"{field_path}[]")
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -217,12 +243,12 @@ def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server])
 
 def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
-    server_type = server.type if server and server.type else None
+    server_type = get_server_type(server) if server is not None else None
     model = to_schema_name(schema_object, server_type)
     properties = schema_object.properties or []
     check_types = is_check_types(server)
     uses_raw_view = (
-        server is not None and server.type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
     )
 
     # A primary key is both not-null and unique. A composite key is unique as a
@@ -234,9 +260,8 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
-    for prop in properties:
+    for field, prop in _iter_property_paths(properties, server_type):
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
-        field = prop.physicalName or prop.name
 
         checks.append(
             CheckSpec(
@@ -644,7 +669,11 @@ def _quality_checks(
 
 
 def _quality_rule_checks(
-    model: str, field: Optional[str], quality: DataQuality, count: int, server: Optional[Server]
+    model: str,
+    field: Optional[str],
+    quality: DataQuality,
+    count: int,
+    server: Optional[Server],
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -672,6 +701,28 @@ def _quality_rule_checks(
         else:
             check_key = f"{model}__{field}__quality_sql_{count}"
             check_type = "field_quality_sql"
+        if field is not None and "[]" in field:
+            # An array item is not a column, so substituting it into the query
+            # would produce SQL no backend can parse.
+            return [
+                CheckSpec(
+                    key=check_key,
+                    category="quality",
+                    type=check_type,
+                    name=quality.description or "Quality Check",
+                    model=model,
+                    field=field,
+                    metric=MetricType.UNSUPPORTED,
+                    dimension=quality.dimension,
+                    severity=quality.severity,
+                    preset_result="warning",
+                    preset_reason=(
+                        f"'{field}' is an array item, not a column, so it cannot be substituted into a query. "
+                        f"Declare the rule on '{field.split('[]')[0]}' instead and match the elements with array "
+                        f"functions, for example size(filter(...)) > 0."
+                    ),
+                )
+            ]
         threshold = to_threshold(quality)
         query = prepare_query(quality, model, field, server)
         if query is None:
