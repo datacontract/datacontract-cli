@@ -1,0 +1,49 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-quality-exasol
+name: Orders quality rules (exasol)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of an exasol server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: exasol
+    host: localhost
+    port: 8563
+    schema: SALES
+schema:
+  - name: orders
+    physicalName: ORDERS
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: VARCHAR(20)
+      - name: order_total
+        logicalType: number
+        physicalType: DECIMAL(10,2)
+      - name: order_status
+        logicalType: string
+        physicalType: VARCHAR(10)
+      - name: order_timestamp
+        logicalType: date
+        physicalType: TIMESTAMP
+    quality:
+      - type: sql
+        description: "Every order has a known status"
+        query: |
+          SELECT COUNT(*) FROM ${model} WHERE REGEXP_INSTR(order_status, '^(open|shipped)$') = 0
+        mustBe: 0
+      - type: sql
+        description: "Median order total"
+        query: |
+          SELECT MEDIAN(order_total) FROM ${model}
+        mustBeLessThan: 100000
+      - type: sql
+        description: "No order is older than a year"
+        query: |
+          SELECT COUNT(*) FROM ${model} WHERE order_timestamp < ADD_DAYS(CURRENT_DATE, -365)
+        mustBe: 0

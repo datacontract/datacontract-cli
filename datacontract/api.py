@@ -483,6 +483,7 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "oracle": ("host", "oracle_host", ("oracle_password",)),
     "impala": ("host", "impala_host", ("impala_password",)),
     "trino": ("host", "trino_host", ("trino_password",)),
+    "exasol": ("host", "exasol_host", ("exasol_password",)),
     "redshift": ("host", "redshift_host", ("redshift_password",)),
     "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
     "snowflake": (

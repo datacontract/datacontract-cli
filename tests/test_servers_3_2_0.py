@@ -45,15 +45,15 @@ def test_the_actian_synonyms_resolve_to_one_spelling(declared, resolved):
 
 
 def test_a_lint_only_server_type_explains_itself_instead_of_failing():
-    contract = CONTRACT.format(server="    type: exasol\n    host: n11..14.acme.com\n    schema: SALES")
+    contract = CONTRACT.format(server="    type: teradata\n    host: td.acme.com\n    database: SALES")
 
     run = DataContract(data_contract_str=contract).test()
 
     print(run.pretty())
     assert run.result == ResultEnum.warning
     reason = next(c.reason for c in run.checks if c.name == "Check that server type is supported")
-    assert "exasol" in reason and "valid in ODCS" in reason
-    assert "exasol" in LINT_ONLY_SERVER_TYPES
+    assert "teradata" in reason and "valid in ODCS" in reason
+    assert "teradata" in LINT_ONLY_SERVER_TYPES
 
 
 def test_an_unknown_dialect_warns_before_falling_back_to_snowflake(caplog):

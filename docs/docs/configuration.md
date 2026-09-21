@@ -358,6 +358,18 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_SQLSERVER_PORT` | `sqlserver_port` | integer | Overrides `port` from the contract's `servers` block |
 | `DATACONTRACT_SQLSERVER_DATABASE` | `sqlserver_database` | string | Overrides `database` from the contract's `servers` block |
 
+### Exasol
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_EXASOL_USERNAME` | `exasol_username` | string |  |
+| `DATACONTRACT_EXASOL_PASSWORD` | `exasol_password` | string (secret) |  |
+| `DATACONTRACT_EXASOL_FINGERPRINT` | `exasol_fingerprint` | string |  |
+| `DATACONTRACT_EXASOL_VALIDATE_CERTIFICATE` | `exasol_validate_certificate` | boolean |  |
+| `DATACONTRACT_EXASOL_HOST` | `exasol_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_EXASOL_PORT` | `exasol_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_EXASOL_SCHEMA` | `exasol_schema` | string | Overrides `schema` from the contract's `servers` block |
+
 ### Trino
 
 | Environment variable | `Config` field | Type | Notes |

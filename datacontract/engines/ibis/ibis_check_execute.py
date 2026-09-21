@@ -627,15 +627,29 @@ def _mssql_pattern_search(column, pattern: str):
     return patindex(like, column) > 0
 
 
+def _exasol_regex_search(column, pattern: str):
+    """``REGEXP_INSTR(column, pattern) > 0``: Exasol's regex match is the
+    ``REGEXP_LIKE`` predicate, which ibis cannot compile ``re_search`` to."""
+    import ibis
+
+    @ibis.udf.scalar.builtin
+    def regexp_instr(expression: str, pattern: str) -> int: ...
+
+    return regexp_instr(column, pattern) > 0
+
+
 def _regex_search_expr(t, column, pattern: str):
     """Unanchored regex/pattern match, portable across backends.
 
     Most ibis backends compile ``re_search`` to a native regex operator. SQL
     Server has none, so fall back to a PATINDEX-based LIKE match for the mssql
-    backend.
+    backend; Exasol has one, but only as a predicate ibis does not know.
     """
-    if _backend_name(t) == "mssql":
+    backend = _backend_name(t)
+    if backend == "mssql":
         return _mssql_pattern_search(column, pattern)
+    if backend == "exasol":
+        return _exasol_regex_search(column, pattern)
     return column.re_search(pattern)
 
 
@@ -1395,6 +1409,9 @@ def _apply_row_filter(t, model: str, predicate: str):
     WHERE clause included and the recorded per-check SQL shows it.
     """
     alias = f"{model}_filtered" if _SIMPLE_IDENTIFIER.match(model) else "filtered_rows"
+    # ibis quotes the alias it defines, Exasol upper-cases the unquoted reference to it.
+    if _backend_name(t) == "exasol":
+        alias = alias.upper()
     return t.alias(alias).sql(f"SELECT * FROM {alias} WHERE {predicate}")
 
 

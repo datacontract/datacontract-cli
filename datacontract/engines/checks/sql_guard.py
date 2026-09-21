@@ -43,6 +43,7 @@ _DIALECT_BY_SERVER_TYPE = {
     "athena": "athena",
     "bigquery": "bigquery",
     "databricks": "databricks",
+    "exasol": "exasol",
     "mysql": "mysql",
     "oracle": "oracle",
     "postgres": "postgres",
@@ -70,6 +71,10 @@ def is_read_only_query(query: str, dialect: Optional[str] = None) -> bool:
     through, and so is one that holds a second statement -- a trailing
     `; DROP TABLE orders` must never reach the data source.
     """
+    if dialect == "exasol":
+        # ibis registers its own Postgres-based `exasol` dialect over sqlglot's, so by
+        # name the parser would depend on whether ibis has been imported yet.
+        from sqlglot.dialects.exasol import Exasol as dialect
     try:
         statements = sqlglot.parse(query, dialect=dialect)
     except sqlglot.errors.ParseError:

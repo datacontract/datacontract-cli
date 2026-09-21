@@ -31,7 +31,6 @@ LINT_ONLY_SERVER_TYPES = {
     "db2",
     "denodo",
     "dremio",
-    "exasol",
     "hana",
     "hive",
     "informix",
