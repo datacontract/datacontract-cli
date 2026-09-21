@@ -574,9 +574,6 @@ def export_sodacl(
     _export(ExportFormat.sodacl, location, output, server, schema_name, schema, inline_references=inline_references)
 
 
-
-
-
 @export_app.command(
     name="great-expectations",
     epilog="Example: datacontract export great-expectations datacontract.yaml --engine sql --dialect postgres --output expectations.json",

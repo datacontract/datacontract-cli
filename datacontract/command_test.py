@@ -52,7 +52,6 @@ class QualityDimension(str, Enum):
     uniqueness = "uniqueness"
 
 
-
 def _parse_filters(value: str | None) -> dict[str, str] | None:
     """Parse the `--filters` JSON object mapping schema name to predicate, or None if unset."""
     if value is None:
@@ -270,8 +269,3 @@ def test(
             _print_publish_failure(run)
     if run.publish_succeeded is False:
         raise typer.Exit(code=1)
-
-
-# Complete deferred CLI registration after this module is fully initialized.
-from datacontract.cli import register_commands
-register_commands()
