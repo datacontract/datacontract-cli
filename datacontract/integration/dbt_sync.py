@@ -1334,11 +1334,7 @@ def _reconcile_data_tests(
 
 
 def _legacy_column_meta_block(col: dict) -> Optional[dict]:
-    """Our block under a column's top-level `meta` — the pre-`config.meta` layout.
-
-    dbt Fusion (dbt v2) rejects top-level `meta` on a column, so we no longer write it, but
-    projects synced by an older CLI still carry it and must keep being recognized as managed.
-    """
+    """Our block under a column's top-level `meta` — the layout older CLI versions wrote."""
     meta = col.get("meta")
     block = meta.get(META_NAMESPACE) if isinstance(meta, dict) else None
     return block if isinstance(block, dict) else None
@@ -1352,22 +1348,8 @@ def _is_managed_column(col: dict) -> bool:
     return isinstance(block, dict) and block.get("generated") is True
 
 
-def _drop_legacy_column_meta(col: dict) -> None:
-    """Remove our block from a column's top-level `meta`, collapsing an emptied `meta`."""
-    meta = col.get("meta")
-    if not isinstance(meta, dict) or META_NAMESPACE not in meta:
-        return
-    meta.pop(META_NAMESPACE, None)
-    if not meta:
-        col.pop("meta", None)
-
-
 def _mark_managed_column(col: dict) -> None:
-    """Stamp `config.meta.datacontract_cli.generated` on a column we created.
-
-    Written under `config` because top-level `meta` is deprecated in dbt-core (v1) and rejected
-    outright by dbt Fusion (v2); `config.meta` validates under both.
-    """
+    """Stamp `config.meta.datacontract_cli.generated` on a column we created."""
     config = _ensure_config(col)
     meta = config.get("meta")
     if not isinstance(meta, dict):
@@ -1378,15 +1360,10 @@ def _mark_managed_column(col: dict) -> None:
         block = CommentedMap()
         meta[META_NAMESPACE] = block
     block["generated"] = True
-    _drop_legacy_column_meta(col)
 
 
 def _migrate_legacy_column_meta(col: dict) -> None:
-    """Relocate a legacy top-level `meta.datacontract_cli` block to `config.meta`, in place.
-
-    Heals files written by an older CLI so they parse under dbt Fusion. Keys the user added
-    alongside ours under `meta` are left where they are — they are not ours to move.
-    """
+    """Move a legacy top-level `meta.datacontract_cli` block to `config.meta`; user keys stay put."""
     legacy = _legacy_column_meta_block(col)
     if legacy is None:
         return
@@ -1401,7 +1378,9 @@ def _migrate_legacy_column_meta(col: dict) -> None:
             block.setdefault(key, value)
     else:
         meta[META_NAMESPACE] = legacy
-    _drop_legacy_column_meta(col)
+    col["meta"].pop(META_NAMESPACE)
+    if not col["meta"]:
+        col.pop("meta")
 
 
 def _find_column(entry: dict, name: str) -> Optional[dict]:
@@ -2079,8 +2058,6 @@ def _merge_versioned_model_entry(
             top_cols.append(target)
             newly_created.append(col_name)
             _mark_managed_column(target)
-        else:
-            _migrate_legacy_column_meta(target)
         if prop is not None and prop.description:
             target["description"] = prop.description.strip().replace("\n", " ")
         elif prune:
@@ -2254,8 +2231,6 @@ def _merge_model_entry(
                 cols = CommentedSeq()
                 entry["columns"] = cols
             cols.append(target)
-        else:
-            _migrate_legacy_column_meta(target)
 
         if _apply_column_data_type(target, prop, dialect, prune=prune) == "unresolvable":
             unresolved_types.append(col_name)
@@ -2377,6 +2352,7 @@ def _clean_model_entry(
     _clean_tests_in_container(entry, None, required_keys, model_required=model_required, model_name=model_name)
     for col in entry.get("columns") or []:
         if isinstance(col, dict):
+            _migrate_legacy_column_meta(col)
             _clean_tests_in_container(
                 col,
                 str(col.get("name", "")).lower(),

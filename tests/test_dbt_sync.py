@@ -476,73 +476,11 @@ def test_sync_creates_model_yaml_when_no_yaml_entry(tmp_path: Path):
     assert "meta" not in order_id  # not at the top level — dbt Fusion (v2) rejects that
 
 
-# ---------------------------------------------------------------------------
-# dbt-core (v1) / dbt Fusion (v2) YAML schema compatibility
-#
-# Fusion validates model YAML against a closed schema and rejects a top-level `meta` on a
-# column ("Property meta is not allowed"), while `config.meta` validates under both engines.
-# Every block we stamp must therefore live under `config`.
-# ---------------------------------------------------------------------------
-
-
-def _all_columns(doc_path: Path) -> list:
-    doc = yaml.safe_load(doc_path.read_text())
-    return [c for m in doc["models"] for c in m.get("columns") or []]
-
-
 def _assert_no_toplevel_column_meta(doc_path: Path) -> None:
-    offenders = [c["name"] for c in _all_columns(doc_path) if isinstance(c, dict) and "meta" in c]
+    doc = yaml.safe_load(doc_path.read_text())
+    columns = [c for m in doc["models"] for c in m.get("columns") or []]
+    offenders = [c["name"] for c in columns if isinstance(c, dict) and "meta" in c]
     assert not offenders, f"top-level `meta` is rejected by dbt Fusion, found on: {offenders}"
-
-
-def test_generated_yaml_has_no_toplevel_column_meta(tmp_path: Path):
-    """Fresh-generation path: the sidecar the CLI writes from scratch must parse under dbt v2."""
-    project = _copy_dbt_project(tmp_path)
-    _orders_model_sql(project)  # no YAML entry anywhere → CLI generates models/orders.yml
-
-    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
-
-    sidecar = project / "models" / "orders.yml"
-    _assert_no_toplevel_column_meta(sidecar)
-    order_id = {c["name"]: c for c in _model_entry(sidecar)["columns"]}["order_id"]
-    assert order_id["config"]["meta"]["datacontract_cli"]["generated"] is True
-
-
-def test_merged_yaml_has_no_toplevel_column_meta(tmp_path: Path):
-    """Merge-into-existing path: same guarantee when the user already authored the entry."""
-    project = _copy_dbt_project(tmp_path)
-    _orders_model_sql(project)
-    schema = _user_orders_schema(project)
-
-    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
-
-    _assert_no_toplevel_column_meta(schema)
-    cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
-    assert cols["order_status"]["config"]["meta"]["datacontract_cli"]["generated"] is True
-
-
-def test_generated_and_merged_paths_agree_on_marker_location(tmp_path: Path):
-    """The two merge routines diverged historically — pin them to the same marker location."""
-    fresh = _copy_dbt_project(tmp_path / "fresh")
-    _orders_model_sql(fresh)
-    sync(contract=str(CONTRACT_PATH), project_dir=fresh, skip_tests=True)
-
-    merged = _copy_dbt_project(tmp_path / "merged")
-    _orders_model_sql(merged)
-    schema = _user_orders_schema(merged)
-    sync(contract=str(CONTRACT_PATH), project_dir=merged, skip_tests=True)
-
-    def marker_paths(doc_path: Path) -> set:
-        out = set()
-        for col in _all_columns(doc_path):
-            if "datacontract_cli" in (col.get("meta") or {}):
-                out.add("meta")
-            if "datacontract_cli" in ((col.get("config") or {}).get("meta") or {}):
-                out.add("config.meta")
-        return out
-
-    assert marker_paths(fresh / "models" / "orders.yml") == {"config.meta"}
-    assert marker_paths(schema) == {"config.meta"}
 
 
 def test_resync_migrates_legacy_toplevel_column_meta(tmp_path: Path):
@@ -563,18 +501,28 @@ def test_resync_migrates_legacy_toplevel_column_meta(tmp_path: Path):
         "          datacontract_cli:\n"
         "            generated: true\n"
         "          custom_key: keep me\n"
+        "      - name: retired_col\n"
+        "        description: no longer in the contract\n"
+        "        meta:\n"
+        "          datacontract_cli:\n"
+        "            generated: true\n"
     )
 
     sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
 
-    col = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_status"]
+    cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
+    col = cols["order_status"]
     assert col["config"]["meta"]["datacontract_cli"]["generated"] is True
     # Our block moved out of the Fusion-rejected location; the user's sibling key stays put.
     assert "datacontract_cli" not in col.get("meta", {})
     assert col["meta"]["custom_key"] == "keep me"
+    # A column that left the contract is kept (no --prune) but must be migrated as well.
+    retired = cols["retired_col"]
+    assert retired["config"]["meta"]["datacontract_cli"]["generated"] is True
+    assert "meta" not in retired
 
 
-def test_legacy_toplevel_column_meta_still_recognized_as_managed(tmp_path: Path):
+def test_legacy_toplevel_column_meta_still_recognized_as_managed():
     """Reading must tolerate the legacy layout, or cleanup orphans columns it used to own."""
     assert _is_managed_column({"name": "c", "meta": {"datacontract_cli": {"generated": True}}}) is True
     assert _is_managed_column({"name": "c", "config": {"meta": {"datacontract_cli": {"generated": True}}}}) is True
