@@ -1,5 +1,5 @@
 ---
-sidebar_position: 24
+sidebar_position: 25
 title: "Import: Pydantic Model"
 description: "Create a data contract from Pydantic models."
 ---

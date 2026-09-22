@@ -1,0 +1,162 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: my-data-contract
+name: REF_COUNTRY
+status: draft
+servers:
+- server: source
+  type: api
+  customProperties:
+  - property: apiType
+    value: odata
+  - property: odataVersion
+    value: '4.0'
+  - property: odataMetadataUrl
+    value: https://xmart-api-public-uat.who.int/refmart/$metadata
+  - property: format
+    value: json
+  location: https://xmart-api-public-uat.who.int/refmart/
+schema:
+- name: REF_COUNTRY
+  physicalType: object
+  customProperties:
+  - property: odataEntitySet
+    value: REF_COUNTRY
+  - property: odataEntitySetUrl
+    value: https://xmart-api-public-uat.who.int/refmart/REF_COUNTRY
+  logicalType: object
+  physicalName: REF_COUNTRY
+  properties:
+  - name: GEO_M49_CODE
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: CODE_ISO_2
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: CODE_ISO_3
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: CODE_WHO
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: CODE_ISO_NUMERIC
+    physicalType: Edm.Int32
+    logicalType: integer
+    required: false
+  - name: NAME_SHORT_EN
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_FORMAL_EN
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: CAPITAL_CITY
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: ADJECTIVE_PEOPLE
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: GEO_SMALL_POP_FLAG
+    physicalType: Edm.Boolean
+    logicalType: boolean
+    required: false
+  - name: GEO_SOVEREIGN
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: SOVEREIGN_ISO_3
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: GRP_WB_INCOME
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: GRP_WHO_REGION
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: WHO_LEGAL_STATUS
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: WHO_LEGAL_STATUS_TITLE
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: DATE_START
+    physicalType: Edm.Date
+    logicalType: date
+    required: false
+  - name: NAME_CHANGE
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: ISO_CHANGE
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: CAPITAL_CHANGE
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: STATISTICAL_CHANGE
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: GEO_PRECEDED_BY
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: GEO_SUCCEEDED_BY
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_SHORT_AR
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_FORMAL_AR
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_SHORT_ES
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_FORMAL_ES
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_SHORT_FR
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_FORMAL_FR
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_SHORT_RU
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_FORMAL_RU
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_SHORT_ZH
+    physicalType: Edm.String
+    logicalType: string
+    required: false
+  - name: NAME_FORMAL_ZH
+    physicalType: Edm.String
+    logicalType: string
+    required: false

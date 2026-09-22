@@ -1,5 +1,5 @@
 ---
-sidebar_position: 29
+sidebar_position: 30
 title: "Import: Trino"
 description: "Create a data contract from a Trino catalog."
 ---

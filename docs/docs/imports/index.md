@@ -88,6 +88,10 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/mysql.svg" alt="" />
     <span><span className="doc-card-title">mysql</span><span className="doc-card-desc">A MySQL database.</span></span>
   </a>
+  <a className="doc-card" href="/imports/odata">
+    <img src="/img/icons/api.svg" alt="" />
+    <span><span className="doc-card-title">odata</span><span className="doc-card-desc">A public OData 4 service.</span></span>
+  </a>
   <a className="doc-card" href="/imports/odcs">
     <img src="/img/icons/odcs.svg" alt="" />
     <span><span className="doc-card-title">odcs</span><span className="doc-card-desc">An ODCS data contract file.</span></span>

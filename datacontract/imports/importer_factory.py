@@ -187,3 +187,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.json_importer",
     class_name="JsonImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.odata,
+    module_path="datacontract.imports.odata_importer",
+    class_name="ODataImporter",
+)

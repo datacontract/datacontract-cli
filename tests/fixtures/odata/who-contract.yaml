@@ -1,0 +1,162 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: my-data-contract
+name: REF_COUNTRY
+version: 1.0.0
+status: draft
+servers:
+- server: source
+  type: api
+  location: https://xmart-api-public-uat.who.int/refmart/
+  customProperties:
+  - property: apiType
+    value: odata
+  - property: odataVersion
+    value: '4.0'
+  - property: odataMetadataUrl
+    value: https://xmart-api-public-uat.who.int/refmart/$metadata
+  - property: format
+    value: json
+schema:
+- name: REF_COUNTRY
+  physicalName: REF_COUNTRY
+  logicalType: object
+  physicalType: object
+  customProperties:
+  - property: odataEntitySet
+    value: REF_COUNTRY
+  - property: odataEntitySetUrl
+    value: https://xmart-api-public-uat.who.int/refmart/REF_COUNTRY
+  properties:
+  - name: GEO_M49_CODE
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: CODE_ISO_2
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: CODE_ISO_3
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: CODE_WHO
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: CODE_ISO_NUMERIC
+    logicalType: integer
+    physicalType: Edm.Int32
+    required: false
+  - name: NAME_SHORT_EN
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_FORMAL_EN
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: CAPITAL_CITY
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: ADJECTIVE_PEOPLE
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: GEO_SMALL_POP_FLAG
+    logicalType: boolean
+    physicalType: Edm.Boolean
+    required: false
+  - name: GEO_SOVEREIGN
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: SOVEREIGN_ISO_3
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: GRP_WB_INCOME
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: GRP_WHO_REGION
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: WHO_LEGAL_STATUS
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: WHO_LEGAL_STATUS_TITLE
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: DATE_START
+    logicalType: date
+    physicalType: Edm.Date
+    required: false
+  - name: NAME_CHANGE
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: ISO_CHANGE
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: CAPITAL_CHANGE
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: STATISTICAL_CHANGE
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: GEO_PRECEDED_BY
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: GEO_SUCCEEDED_BY
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_SHORT_AR
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_FORMAL_AR
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_SHORT_ES
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_FORMAL_ES
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_SHORT_FR
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_FORMAL_FR
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_SHORT_RU
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_FORMAL_RU
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_SHORT_ZH
+    logicalType: string
+    physicalType: Edm.String
+    required: false
+  - name: NAME_FORMAL_ZH
+    logicalType: string
+    physicalType: Edm.String
+    required: false

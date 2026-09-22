@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 21
 title: "Import: Parquet"
 description: "Create a data contract from a Parquet file."
 ---
