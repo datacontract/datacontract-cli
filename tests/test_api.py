@@ -6,7 +6,17 @@ import responses
 from fastapi.testclient import TestClient
 
 from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
+from datacontract.lint.resolve import clear_definition_cache
 from datacontract.model.exceptions import DataContractException
+
+
+@pytest.fixture(autouse=True)
+def _isolated_cache():
+    # the resolver caches definitions by URL across the process
+    clear_definition_cache()
+    yield
+    clear_definition_cache()
+
 
 client = TestClient(app)
 
