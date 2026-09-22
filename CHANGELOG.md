@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract changelog` and `datacontract breaking`:
   - report changes in list items that have no name, url or id, such as unnamed `quality` rules
   - report a renamed schema as a removal and an addition instead of dumping both schemas into one row
-  - `breaking` grades changes to `quality` rules: removed `validValues`, added `invalidValues` and tightened `mustBe*` thresholds are errors
+  - `breaking` recognizes changes to `quality` rules
 - A YAML parse error names the file that failed to parse
 - `datacontract api` answers a non-ASCII `x-api-key` with `403` instead of `500`
 - `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)

@@ -189,8 +189,10 @@ class QualityConstraintRule(BreakingChangeRule):
                 level = BreakingChangeLevel.ERROR
             else:
                 level = BreakingChangeLevel.INFO
-        elif "." not in rule_path or rule_path.endswith((".description", ".dimension", ".businessImpact", ".severity")):
-            # A whole rule added or removed, or its documentation.
+        elif "." not in rule_path:
+            # A new rule is a constraint existing data may not satisfy; a removed one is a relaxation.
+            level = BreakingChangeLevel.ERROR if entry.type == ChangelogType.added else BreakingChangeLevel.INFO
+        elif rule_path.endswith((".description", ".dimension", ".businessImpact", ".severity")):
             level = BreakingChangeLevel.INFO
         elif ".customProperties." in rule_path or ".authoritativeDefinitions." in rule_path or ".tags" in rule_path:
             level = BreakingChangeLevel.INFO

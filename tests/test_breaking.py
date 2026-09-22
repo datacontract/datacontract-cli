@@ -252,6 +252,11 @@ def test_changing_a_quality_query_is_warning():
     assert result.level == BreakingChangeLevel.WARNING
 
 
+def test_adding_a_quality_rule_is_breaking():
+    result = QualityConstraintRule().evaluate(_entry(QUALITY, ChangelogType.added))
+    assert result.level == BreakingChangeLevel.ERROR
+
+
 def test_removing_a_quality_rule_is_info():
     result = QualityConstraintRule().evaluate(_entry(QUALITY, ChangelogType.removed))
     assert result.level == BreakingChangeLevel.INFO
@@ -262,7 +267,7 @@ def test_quality_rule_description_is_info():
     assert result.level == BreakingChangeLevel.INFO
 
 
-def test_threshold_inside_an_added_quality_rule_is_not_breaking():
+def test_only_the_added_quality_rule_itself_is_graded():
     changelog = ChangelogResult(
         v1="v1",
         v2="v2",
@@ -273,6 +278,34 @@ def test_threshold_inside_an_added_quality_rule_is_not_breaking():
         ],
     )
     result = BreakingChangeDetector().detect(changelog)
+    assert [entry.level for entry in result.entries] == [BreakingChangeLevel.ERROR, BreakingChangeLevel.INFO]
+
+
+def test_removing_a_whole_quality_rule_is_not_breaking():
+    with_rule = """
+apiVersion: v3.0.2
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: status
+        logicalType: string
+        quality:
+          - name: {name}
+            type: library
+            metric: invalidValues
+            arguments:
+              validValues: [1, 2, 3]
+            mustBeLessThan: 10
+"""
+    without = with_rule[: with_rule.index("        quality:")]
+    result = DataContract(data_contract_str=with_rule.format(name="allowed")).breaking(
+        DataContract(data_contract_str=without)
+    )
+    assert not result.is_breaking
     assert {entry.level for entry in result.entries} == {BreakingChangeLevel.INFO}
 
 

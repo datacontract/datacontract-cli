@@ -78,7 +78,7 @@ Details
 │ INFO     │ Added   │ schema.customers.properties.full_name.required           │                                │ True                          │ Added requiredness at          │
 │          │         │                                                          │                                │                               │ schema.customers.properties.f… │
 │ ERROR    │ Removed │ schema.orders.properties.customer_id                     │                                │                               │ Removed property customer_id   │
-│ WARNING  │ Removed │ schema.orders.properties.customer_id.logicalType         │ string                         │                               │ Removed type at                │
+│ INFO     │ Removed │ schema.orders.properties.customer_id.logicalType         │ string                         │                               │ Removed type at                │
 │          │         │                                                          │                                │                               │ schema.orders.properties.cust… │
 │ INFO     │ Removed │ schema.orders.properties.customer_id.required            │ True                           │                               │ Removed requiredness at        │
 │          │         │                                                          │                                │                               │ schema.orders.properties.cust… │

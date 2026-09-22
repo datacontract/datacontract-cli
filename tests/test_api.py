@@ -253,6 +253,29 @@ def test_export_does_not_contact_a_host_the_contract_names():
     assert len(responses.calls) == 0
 
 
+@responses.activate
+def test_lint_does_not_echo_what_the_configured_host_answered(monkeypatch):
+    monkeypatch.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(responses.GET, "https://entropy.example.com/definitions/c", status=401, body="proxy 10.0.0.5 said no")
+
+    response = client.post(url="/lint", json=_contract_referencing("/definitions/c"))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Could not resolve authoritative definition '/definitions/c'."
+
+
+@responses.activate
+def test_test_does_not_echo_the_configured_host():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=200, body="<html>internal admin page</html>")
+
+    response = client.post(url="/test", json=_contract_referencing(internal_url))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
+
+
 # ---------------------------------------------------------------------------
 # The schema parameter is documented as a URL. Without that being enforced,
 # fetch_schema falls through to the filesystem, so an unauthenticated caller

@@ -21,7 +21,11 @@ from datacontract.integration.entropy_data import publish_test_results_to_entrop
 from datacontract.lint import resolve
 from datacontract.model.breaking import BreakingChangeResult
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
-from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
+from datacontract.model.exceptions import (
+    DataContractException,
+    DataContractValidationErrors,
+    DefinitionResolutionError,
+)
 from datacontract.model.run import Check, ResultEnum, Run
 
 logger = logging.getLogger(__name__)
@@ -130,6 +134,8 @@ class DataContract:
                 )
                 run.log_error(str(error))
         except DataContractException as e:
+            if self._untrusted_contract and isinstance(e, DefinitionResolutionError):
+                raise  # the reason names the host and what it answered; the API answers with the URL only
             run.checks.append(Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine))
             run.log_error(str(e))
         except Exception as e:
@@ -193,6 +199,8 @@ class DataContract:
             )
 
         except DataContractException as e:
+            if self._untrusted_contract and isinstance(e, DefinitionResolutionError):
+                raise  # the reason names the host and what it answered; the API answers with the URL only
             run.checks.append(
                 Check(
                     type=e.type,
