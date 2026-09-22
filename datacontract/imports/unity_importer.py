@@ -13,6 +13,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    report_unmapped_types,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
@@ -52,8 +53,9 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
             original_exception=e,
         )
 
-    odcs = create_odcs()
-    return convert_unity_schema(odcs, unity_schema)
+    odcs = convert_unity_schema(create_odcs(), unity_schema)
+    report_unmapped_types(odcs)
+    return odcs
 
 
 def import_unity_from_api(
@@ -111,6 +113,7 @@ def import_unity_from_api(
             )
         odcs = convert_unity_schema(odcs, unity_schema)
 
+    report_unmapped_types(odcs)
     return odcs
 
 

@@ -64,7 +64,7 @@ def api(
     from uvicorn.config import LOGGING_CONFIG
 
     log_config = LOGGING_CONFIG
-    log_config["root"] = {"level": "INFO"}
+    log_config["root"] = {"level": "INFO", "handlers": ["default"]}
 
     uvicorn_args = _get_uvicorn_arguments(port, host, reload, ctx)
     # Add the log config

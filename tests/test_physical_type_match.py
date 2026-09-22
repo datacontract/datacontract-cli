@@ -3,6 +3,7 @@ from datacontract.engines.ibis.native_type import (
     _rows,
     oracle_char_length,
     reconstruct_native_type,
+    strip_exasol_charset,
     supports_native_type_introspection,
 )
 
@@ -158,6 +159,43 @@ def test_athena_hive_spellings_match_trino_reports():
     assert physical_type_matches("array<string>", "array(varchar)", "athena")[0] is True
     # the alias belongs to the Trino family of dialects alone
     assert physical_type_matches("string", "varchar", "postgres")[0] is False
+
+
+def test_exasol_integer_aliases_are_their_decimal_types():
+    # Exasol stores INT as DECIMAL(18,0) and BIGINT as DECIMAL(36,0), which is
+    # what its catalog reports; the aliases carry the precision with them.
+    assert physical_type_matches("INTEGER", "DECIMAL(18,0)", "exasol")[0] is True
+    assert physical_type_matches("INTEGER", "DECIMAL(10,0)", "exasol")[0] is False
+    assert physical_type_matches("BIGINT", "DECIMAL(18,0)", "exasol")[0] is False
+    assert physical_type_matches("FLOAT", "DOUBLE", "exasol")[0] is True
+    # NUMBER(p,s) is DECIMAL; only a bare NUMBER is DOUBLE
+    assert physical_type_matches("NUMBER(5,2)", "DECIMAL(5,2)", "exasol")[0] is True
+    assert physical_type_matches("NUMBER", "DOUBLE", "exasol")[0] is True
+    # the aliases belong to Exasol alone
+    assert physical_type_matches("INTEGER", "DECIMAL(18,0)", "postgres")[0] is False
+
+
+def test_exasol_string_interval_and_hash_aliases_carry_their_defaults():
+    assert physical_type_matches("NVARCHAR(10)", "VARCHAR(10)", "exasol")[0] is True
+    assert physical_type_matches("NVARCHAR(10)", "VARCHAR(20)", "exasol")[0] is False
+    assert physical_type_matches("CLOB", "VARCHAR(2000000)", "exasol")[0] is True
+    assert physical_type_matches("NCHAR(2)", "CHAR(2)", "exasol")[0] is True
+    assert physical_type_matches("HASHTYPE(128 BIT)", "HASHTYPE(16 BYTE)", "exasol")[0] is True
+    assert physical_type_matches("HASHTYPE(256 BIT)", "HASHTYPE(16 BYTE)", "exasol")[0] is False
+    assert physical_type_matches("INTERVAL YEAR TO MONTH", "INTERVAL YEAR(2) TO MONTH", "exasol")[0] is True
+    assert physical_type_matches("INTERVAL DAY TO SECOND", "INTERVAL DAY(2) TO SECOND(3)", "exasol")[0] is True
+    assert physical_type_matches("INTERVAL DAY(4) TO SECOND", "INTERVAL DAY(4) TO SECOND(3)", "exasol")[0] is True
+    assert physical_type_matches("INTERVAL DAY TO SECOND", "INTERVAL DAY(2) TO SECOND(6)", "exasol")[0] is False
+
+
+def test_exasol_charset_suffix_is_not_part_of_the_type():
+    # the catalog reports `VARCHAR(100) UTF8`; the reader strips it, and so does
+    # a contract that copied that spelling
+    assert strip_exasol_charset("VARCHAR(100) UTF8") == "VARCHAR(100)"
+    assert strip_exasol_charset("CHAR(2) ASCII") == "CHAR(2)"
+    assert strip_exasol_charset("DECIMAL(18,0)") == "DECIMAL(18,0)"
+    assert physical_type_matches("VARCHAR(100) UTF8", "VARCHAR(100)", "exasol")[0] is True
+    assert physical_type_matches("VARCHAR(50) UTF8", "VARCHAR(100)", "exasol")[0] is False
 
 
 def test_snowflake_declared_scale_zero_matches_reconstructed_column():

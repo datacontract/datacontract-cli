@@ -3,7 +3,14 @@ from pathlib import Path
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import app, console, debug_option, enable_debug_logging, resolve_output_format
+from datacontract.cli import (
+    app,
+    console,
+    debug_option,
+    enable_debug_logging,
+    inline_references_option,
+    resolve_output_format,
+)
 from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.output_format import OutputFormat
@@ -40,13 +47,7 @@ def lint(
             help="Report all JSON Schema validation errors instead of stopping after the first one.",
         ),
     ] = False,
-    inline_references: Annotated[
-        bool,
-        typer.Option(
-            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
-            "contract and inline the fetched content from the configured entropy-data host."
-        ),
-    ] = True,
+    inline_references: inline_references_option = True,
     debug: debug_option = None,
 ):
     """

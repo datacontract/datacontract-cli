@@ -180,3 +180,13 @@ def test_import_dbt_manifest_id_falls_back_without_project_name():
     odcs = import_dbt_manifest({"metadata": {}, "nodes": {}}, [], ["model"])
 
     assert odcs.id == "my-data-contract"
+
+
+def test_map_dbt_type_to_odcs_temporal_types():
+    from datacontract.imports.dbt_importer import map_dbt_type_to_odcs
+
+    assert map_dbt_type_to_odcs("timestamp") == "timestamp"
+    assert map_dbt_type_to_odcs("TIMESTAMP_NTZ(9)") == "timestamp"
+    assert map_dbt_type_to_odcs("datetime") == "timestamp"
+    assert map_dbt_type_to_odcs("date") == "date"
+    assert map_dbt_type_to_odcs("time") == "time"

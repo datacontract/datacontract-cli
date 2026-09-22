@@ -25,6 +25,8 @@ from typing import Optional, Tuple
 import sqlglot
 from sqlglot import exp
 
+from datacontract.engines.ibis.native_type import strip_exasol_charset
+
 # Tokens that mean "sqlglot parsed something, but not a type it understands".
 _UNRESOLVED = {exp.DataType.Type.UNKNOWN, exp.DataType.Type.USERDEFINED, exp.DataType.Type.NULL}
 
@@ -78,6 +80,43 @@ def _is_snowflake(dialect) -> bool:
 # athena` carries the Hive spelling (array<string>) into the contract.
 _TRINO_DIALECTS = {"athena", "trino", "presto"}
 _TRINO_TEXT_FAMILY = {exp.DataType.Type.VARCHAR, exp.DataType.Type.TEXT}
+
+# Exasol's catalog reports these aliases as the type on the right
+# (https://docs.exasol.com/db/latest/sql_references/data_types/datatypealiases.htm);
+# sqlglot's Exasol generator does not know them yet, drop this once it does.
+_EXASOL_ALIASES = {
+    "int": "decimal(18,0)",
+    "integer": "decimal(18,0)",
+    "bigint": "decimal(36,0)",
+    "smallint": "decimal(9,0)",
+    "shortint": "decimal(9,0)",
+    "tinyint": "decimal(3,0)",
+    "float": "double",
+    "real": "double",
+    "number": "double",
+    "nchar": "char(1)",
+    "clob": "varchar(2000000)",
+    "long varchar": "varchar(2000000)",
+    "character large object": "varchar(2000000)",
+}
+_EXASOL_ALIAS_PATTERNS = [
+    (r"^nchar(\(.+\))$", r"char\1"),
+    (r"^(?:nvarchar2?|clob|character large object)(\(.+\))$", r"varchar\1"),
+    (r"^hashtype\((\d+) bit\)$", lambda m: f"hashtype({int(m.group(1)) // 8} byte)"),
+    # the catalog spells INTERVAL with its default precisions
+    (r"^interval year to month$", "interval year(2) to month"),
+    (r"^interval day to second$", "interval day(2) to second(3)"),
+    (r"^interval day to second(\(\d+\))$", r"interval day(2) to second\1"),
+    (r"^interval day(\(\d+\)) to second$", r"interval day\1 to second(3)"),
+]
+
+
+def _normalize_exasol_declared(expected: str) -> str:
+    expected = _normalize_raw(strip_exasol_charset(expected))
+    expected = _EXASOL_ALIASES.get(expected, expected)
+    for pattern, replacement in _EXASOL_ALIAS_PATTERNS:
+        expected = re.sub(pattern, replacement, expected)
+    return expected
 
 
 def _parse(type_str: str, dialect) -> Optional[exp.DataType]:
@@ -226,8 +265,9 @@ def physical_type_matches(
     """
     if not expected or not expected.strip() or not actual or not actual.strip():
         return None, "no physical type to compare; skipping the physical type check"
-
-    exp_dt = _parse(expected, dialect)
+    # The declared type as parsed; `expected` itself stays the author's spelling for messages.
+    declared = _normalize_exasol_declared(expected) if _dialect_name(dialect) == "exasol" else expected
+    exp_dt = _parse(declared, dialect)
     act_dt = _parse(actual, dialect)
 
     # When both sides are types sqlglot cannot model (e.g. Oracle ROWID / RAW /
@@ -236,7 +276,7 @@ def physical_type_matches(
     # is an ordinary type, the physicalType is foreign to this server's dialect
     # (e.g. a SQL Server 'uniqueidentifier' declared against Snowflake): skip.
     if exp_dt is None and act_dt is None:
-        if _raw_match(expected, actual):
+        if _raw_match(declared, actual):
             return True, ""
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
     if exp_dt is None or act_dt is None:
@@ -258,7 +298,7 @@ def physical_type_matches(
 
     # sqlglot fills in a dialect's default precision (a bare NUMBER parses as
     # DECIMAL(38,0)), so what the contract declares is read off the raw string.
-    if _split_base(_normalize_raw(expected))[1] and not _scalar_params_equal(exp_dt, act_dt):
+    if _split_base(_normalize_raw(declared))[1] and not _scalar_params_equal(exp_dt, act_dt):
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 
     return True, ""

@@ -24,6 +24,7 @@ type check with a warning rather than failing the run.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Optional
 
 from open_data_contract_standard.model import Server
@@ -48,6 +49,7 @@ _CATALOG_STRATEGY = {
     "athena": "full_type",
     "trino": "full_type",
     "bigquery": "bigquery",
+    "exasol": "exasol",
 }
 
 
@@ -335,12 +337,31 @@ def _read_bigquery(con, server: Server, model: str) -> Optional[dict[str, str]]:
     return _map_full_type(con, query)
 
 
+def _read_exasol(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Exasol reports a complete type string in ``SYS.EXA_ALL_COLUMNS.column_type``,
+    with the character set appended to string types (``VARCHAR(100) UTF8``)."""
+    schema_filter = _schema_filter(server, column="column_schema")
+    query = (
+        "SELECT column_name, column_type FROM SYS.EXA_ALL_COLUMNS "
+        f"WHERE upper(column_table) = upper('{_quote(model)}'){schema_filter}"
+    )
+    native_types = _map_full_type(con, query)
+    if not native_types:
+        return None
+    return {column: strip_exasol_charset(native) for column, native in native_types.items()}
+
+
+def strip_exasol_charset(native_type: str) -> str:
+    return re.sub(r"\s+(UTF8|ASCII)$", "", native_type, flags=re.IGNORECASE)
+
+
 _READERS = {
     "information_schema": _read_information_schema,
     "oracle": _read_oracle,
     "databricks": _read_databricks,
     "full_type": _read_full_type_information_schema,
     "bigquery": _read_bigquery,
+    "exasol": _read_exasol,
 }
 
 

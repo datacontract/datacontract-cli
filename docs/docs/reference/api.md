@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 title: "HTTP API Reference"
 sidebar_label: "HTTP API"
 description: "All HTTP API authentication options and data type handling."

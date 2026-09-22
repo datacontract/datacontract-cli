@@ -22,14 +22,16 @@ class BreakingChangeDetector:
 
     def detect(self, changelog: ChangelogResult) -> BreakingChangeResult:
         entries = [self._classify(entry) for entry in changelog.entries]
-        # Nothing inside a newly added element can break a consumer: it did not exist before.
-        added = {
+        # Nothing inside an added element can break a consumer: it did not exist before.
+        # Inside a removed one, the element's own entry carries the grade; its former
+        # constraints are gone, which is a relaxation.
+        added_or_removed = {
             entry.path
             for entry in entries
-            if entry.change_type == ChangelogType.added
+            if entry.change_type in (ChangelogType.added, ChangelogType.removed)
             and (
                 entry.path.startswith("schema.")
-                and (len(entry.path.split(".")) == 2 or entry.path.split(".")[-2] == "properties")
+                and (len(entry.path.split(".")) == 2 or entry.path.split(".")[-2] in ("properties", "quality"))
             )
         }
         removed_enums = {
@@ -46,7 +48,7 @@ class BreakingChangeDetector:
                     added_values[entry.path.rsplit(".enum.", 1)[0]].add(entry.new_value)
         for entry in entries:
             segments = entry.path.split(".")
-            if any(".".join(segments[:i]) in added for i in range(1, len(segments))):
+            if any(".".join(segments[:i]) in added_or_removed for i in range(1, len(segments))):
                 entry.level = BreakingChangeLevel.INFO
             if entry.rule_id == "enum-constraint-changed":
                 if any(entry.path.startswith(path + ".") for path in removed_enums):

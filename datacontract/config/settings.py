@@ -40,6 +40,9 @@ SERVER_OVERRIDE_OPTIONS = {
     "databricks_schema": "schema",
     "duckdb_database": "database",
     "duckdb_schema": "schema",
+    "exasol_host": "host",
+    "exasol_port": "port",
+    "exasol_schema": "schema",
     "iceberg_catalog_url": "catalogUrl",
     "iceberg_catalog": "catalog",
     "iceberg_namespace": "namespace",
@@ -282,6 +285,16 @@ class Config(BaseSettings):
     sqlserver_host: str | None = None
     sqlserver_port: int | None = None
     sqlserver_database: str | None = None
+
+    # exasol
+    exasol_username: str | None = None
+    exasol_password: SecretStr | None = None
+    exasol_fingerprint: str | None = None
+    exasol_validate_certificate: bool | None = None
+    # overrides for the contract's servers block
+    exasol_host: str | None = None
+    exasol_port: int | None = None
+    exasol_schema: str | None = None
 
     # trino
     trino_authentication: str | None = None
@@ -899,6 +912,28 @@ class Config(BaseSettings):
 
     def get_sqlserver_database(self, required: bool = False) -> str | None:
         return self._str_option("sqlserver_database", required)
+
+    # --- exasol ---
+    def get_exasol_username(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_username", required)
+
+    def get_exasol_password(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_password", required)
+
+    def get_exasol_fingerprint(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_fingerprint", required)
+
+    def get_exasol_validate_certificate(self, default: bool = True) -> bool:
+        return self._bool_option("exasol_validate_certificate", default)
+
+    def get_exasol_host(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_host", required)
+
+    def get_exasol_port(self) -> int | None:
+        return self._int_option("exasol_port")
+
+    def get_exasol_schema(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_schema", required)
 
     # --- trino ---
     def get_trino_authentication(self, required: bool = False) -> str | None:

@@ -109,6 +109,7 @@ There is no `dialect` field on a quality rule. The dialect is **derived from the
 | `databricks` | `databricks` |
 | `athena` | `athena` |
 | `trino` | `trino` |
+| `exasol` | `exasol` |
 | `impala` | `hive` |
 | `dataframe` | `spark` |
 

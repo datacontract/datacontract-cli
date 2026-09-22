@@ -21,8 +21,14 @@ from datacontract.integration.entropy_data import publish_test_results_to_entrop
 from datacontract.lint import resolve
 from datacontract.model.breaking import BreakingChangeResult
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
-from datacontract.model.exceptions import DataContractException, DataContractValidationErrors
+from datacontract.model.exceptions import (
+    DataContractException,
+    DataContractValidationErrors,
+    DefinitionResolutionError,
+)
 from datacontract.model.run import Check, ResultEnum, Run
+
+logger = logging.getLogger(__name__)
 
 
 class DataContract:
@@ -78,7 +84,8 @@ class DataContract:
         self._metadata_only = metadata_only
         self._dry_run = dry_run
         # The contract came from somewhere the caller does not control (the API
-        # server), so the SQL it carries must not reach the host running it.
+        # server): the SQL it carries must not reach the host running it, and its
+        # authoritativeDefinitions are resolved against the configured host only.
         self._untrusted_contract = untrusted_contract
         self._config = Config.resolve(config)
 
@@ -101,6 +108,7 @@ class DataContract:
                 all_errors=self._all_errors,
                 config=self._config,
                 use_declared_api_version=True,
+                configured_host_only=self._untrusted_contract,
             )
             run.checks.append(
                 Check(
@@ -127,6 +135,8 @@ class DataContract:
                 )
                 run.log_error(str(error))
         except DataContractException as e:
+            if self._untrusted_contract and isinstance(e, DefinitionResolutionError):
+                raise  # the reason names the host and what it answered; the API answers with the URL only
             run.checks.append(Check(type=e.type, result=e.result, name=e.name, reason=e.reason, engine=e.engine))
             run.log_error(str(e))
         except Exception as e:
@@ -166,6 +176,7 @@ class DataContract:
                 self._schema_location,
                 inline_references=self._inline_references,
                 config=self._config,
+                configured_host_only=self._untrusted_contract,
             )
 
             execute_data_contract_test(
@@ -189,6 +200,8 @@ class DataContract:
             )
 
         except DataContractException as e:
+            if self._untrusted_contract and isinstance(e, DefinitionResolutionError):
+                raise  # the reason names the host and what it answered; the API answers with the URL only
             run.checks.append(
                 Check(
                     type=e.type,
@@ -211,7 +224,7 @@ class DataContract:
                     engine="datacontract-cli",
                 )
             )
-            logging.exception("Exception occurred")
+            logger.exception("Exception occurred")
             run.log_error(str(e))
 
         run.finish()
@@ -234,6 +247,7 @@ class DataContract:
             schema_location=self._schema_location,
             inline_references=self._inline_references,
             config=self._config,
+            configured_host_only=self._untrusted_contract,
         )
 
     def get_data_contract_file(self) -> str | None:
@@ -249,6 +263,7 @@ class DataContract:
             schema_location=self._schema_location,
             inline_references=self._inline_references,
             config=self._config,
+            configured_host_only=self._untrusted_contract,
         )
 
         return exporter_factory.create(export_format).export(

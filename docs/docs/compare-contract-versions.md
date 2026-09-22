@@ -30,17 +30,11 @@ See the generated [breaking command reference](./commands/breaking.md) for all o
 
 ### Severity levels
 
-- **ERROR** - a backward-incompatible change. The command exits with status `1`.
+- **ERROR** - a backward-incompatible change, i.e. testing the contract against existing data can fail. The command exits with status `1`.
 - **WARNING** - a potentially incompatible change that requires review. The command exits with status `0`.
-- **INFO** - informational or currently unclassified metadata. The command exits with status `0`.
+- **INFO** - a metadata change, a relaxed constraint, or an unclassified change. The command exits with status `0`.
 
 The result is breaking only when at least one detailed entry has severity `ERROR`.
-
-### Initial compatibility rules
-
-The first ODCS implementation treats schema and property removals, requiredness tightening, type changes, and uniqueness tightening as errors. Primary-key changes and changes to validation constraints whose direction cannot be proven are warnings. Additions, relaxed constraints, descriptions, tags, business names, custom properties, and unrecognized changes are informational unless a more specific rule applies.
-
-Every detailed changelog entry receives exactly one classification. Unknown fields use the informational fallback so that introducing a new ODCS field does not make detection fail.
 
 ### API
 

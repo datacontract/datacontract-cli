@@ -1333,22 +1333,54 @@ def _reconcile_data_tests(
 # ---------------------------------------------------------------------------
 
 
-def _is_managed_column(col: dict) -> bool:
+def _legacy_column_meta_block(col: dict) -> Optional[dict]:
+    """Our block under a column's top-level `meta` — the layout older CLI versions wrote."""
     meta = col.get("meta")
     block = meta.get(META_NAMESPACE) if isinstance(meta, dict) else None
+    return block if isinstance(block, dict) else None
+
+
+def _is_managed_column(col: dict) -> bool:
+    meta = (col.get("config") or {}).get("meta")
+    block = meta.get(META_NAMESPACE) if isinstance(meta, dict) else None
+    if not isinstance(block, dict):
+        block = _legacy_column_meta_block(col)
     return isinstance(block, dict) and block.get("generated") is True
 
 
 def _mark_managed_column(col: dict) -> None:
-    meta = col.get("meta")
+    """Stamp `config.meta.datacontract_cli.generated` on a column we created."""
+    config = _ensure_config(col)
+    meta = config.get("meta")
     if not isinstance(meta, dict):
         meta = CommentedMap()
-        col["meta"] = meta
+        config["meta"] = meta
     block = meta.get(META_NAMESPACE)
     if not isinstance(block, dict):
         block = CommentedMap()
         meta[META_NAMESPACE] = block
     block["generated"] = True
+
+
+def _migrate_legacy_column_meta(col: dict) -> None:
+    """Move a legacy top-level `meta.datacontract_cli` block to `config.meta`; user keys stay put."""
+    legacy = _legacy_column_meta_block(col)
+    if legacy is None:
+        return
+    config = _ensure_config(col)
+    meta = config.get("meta")
+    if not isinstance(meta, dict):
+        meta = CommentedMap()
+        config["meta"] = meta
+    block = meta.get(META_NAMESPACE)
+    if isinstance(block, dict):
+        for key, value in legacy.items():
+            block.setdefault(key, value)
+    else:
+        meta[META_NAMESPACE] = legacy
+    col["meta"].pop(META_NAMESPACE)
+    if not col["meta"]:
+        col.pop("meta")
 
 
 def _find_column(entry: dict, name: str) -> Optional[dict]:
@@ -1510,6 +1542,7 @@ class RequiredState:
 
     scope_models: dict[str, str] = field(default_factory=dict)  # lower(model) -> model name
     required_tests: dict[str, set[tuple[Optional[str], str]]] = field(default_factory=dict)
+    required_columns: dict[str, set[str]] = field(default_factory=dict)  # lower(model) -> lower(column) set
 
 
 def _required_test_keys(model_dict: dict) -> set[tuple[Optional[str], str]]:
@@ -2314,12 +2347,14 @@ def _clean_model_entry(
     entry: dict,
     *,
     required_keys: set[tuple[Optional[str], str]],
+    required_columns: set[str],
     model_required: bool,
 ) -> None:
     model_name = str(entry.get("name", ""))
     _clean_tests_in_container(entry, None, required_keys, model_required=model_required, model_name=model_name)
     for col in entry.get("columns") or []:
         if isinstance(col, dict):
+            _migrate_legacy_column_meta(col)
             _clean_tests_in_container(
                 col,
                 str(col.get("name", "")).lower(),
@@ -2333,14 +2368,16 @@ def _clean_model_entry(
         # Edit in place — rebuilding the list would discard its comment table (owners' comments).
         for i in reversed(range(len(cols))):
             col = cols[i]
-            if (
-                isinstance(col, dict)
-                and _is_managed_column(col)
-                and not col.get("data_tests")
-                and not col.get("description")
-                and not (col.get("data_type") and model_required)
-            ):
-                del cols[i]  # drop a managed column that has become empty
+            if not isinstance(col, dict) or not _is_managed_column(col):
+                continue
+            if model_required and str(col.get("name", "")).lower() in required_columns:
+                continue  # still required → merge will refresh it
+            config = col.get("config")
+            if isinstance(config, dict):
+                config.pop("tags", None)
+            _remove_our_meta(col)
+            if set(col.keys()) <= {"name", "description", "data_type"}:
+                del cols[i]  # nothing user-authored left; a column the user built on keeps its type/description
         if not cols:
             entry.pop("columns", None)
 
@@ -2360,8 +2397,8 @@ def _run_yaml_cleanup(
 ) -> None:
     """Walk every loaded file and remove CLI footprint that is no longer required.
 
-    An orphaned entry we generated (the contract no longer declares its model) is stripped and, once
-    nothing but its name remains, removed. A file we emptied this way — no models left and no other
+    A managed column or entry the contract no longer declares is stripped of our footprint and, once
+    nothing user-authored remains, removed. A file we emptied this way — no models left and no other
     content (sources, exposures, ...) — is deleted, whether or not the CLI first created it.
     """
     for path in sorted(session.files):
@@ -2382,6 +2419,7 @@ def _run_yaml_cleanup(
             _clean_model_entry(
                 entry,
                 required_keys=required.required_tests.get(model_lower, set()),
+                required_columns=required.required_columns.get(model_lower, set()),
                 model_required=model_required,
             )
             # An entry stripped down to just its `name` has nothing left to keep.
@@ -2781,6 +2819,9 @@ def generate_dbt_tests(
         required = RequiredState(
             scope_models={p.name.lower(): p.name for p in plans},
             required_tests={p.name.lower(): _required_test_keys(p.model_dict) for p in plans},
+            required_columns={
+                p.name.lower(): {c["name"].lower() for c in p.model_dict.get("columns") or []} for p in plans
+            },
         )
         _run_yaml_cleanup(session, required, scope_contract_id=odcs.id)
 

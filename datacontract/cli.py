@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
@@ -20,6 +21,15 @@ from datacontract.output.output_format import OutputFormat
 console = Console()
 
 debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
+inline_references_option = Annotated[
+    bool,
+    typer.Option(
+        help="Resolve authoritativeDefinitions of type definition, semantics or businessDefinition and inline them "
+        "into the contract. Relative URLs and semantics IRIs are looked up on the ENTROPY_DATA_HOST "
+        "(default https://api.entropy-data.com), other URLs are fetched directly, file "
+        "references are read from disk. See https://docs.datacontract.com/semantics"
+    ),
+]
 
 
 # Order in which top-level commands appear in `datacontract --help` (cf. README.md)
@@ -270,6 +280,45 @@ def _print_publish_failure(run, out=None):
             color = "red" if log.level == "ERROR" else "yellow"
             # highlight=False: render as prose, not rich's code-like repr highlighting.
             out.print(f"[{color}]{escape(log.message)}[/{color}]", highlight=False)
+
+
+def _parse_enum_csv(
+    value: str | None,
+    enum_cls: type[Enum],
+    option: str,
+    label: str,
+    aliases: dict[str, Enum] | None = None,
+    available: str | None = None,
+) -> set[str] | None:
+    """Parse a comma-separated option into a set of enum values, or None if unset.
+
+    Matching is case-insensitive; `aliases` maps additional lowercase spellings
+    to their enum value. `available` overrides the choices shown in errors.
+    """
+    if value is None:
+        return None
+    allowed = [e.value for e in enum_cls]
+    raw = [v.strip() for v in value.split(",") if v.strip()]
+    if not raw:
+        console.print(f"[red]Empty {option} specified.[/red]")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    aliases = aliases or {}
+    values = set()
+    invalid = set()
+    for v in raw:
+        key = v.lower()
+        if key in aliases:
+            values.add(aliases[key].value)
+        elif key in allowed:
+            values.add(key)
+        else:
+            invalid.add(v)
+    if invalid:
+        console.print(f"[red]Invalid {option} specified: {', '.join(sorted(invalid))}[/red]")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    return values
 
 
 # ---------------------------------------------------------------------------

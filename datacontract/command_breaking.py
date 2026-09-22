@@ -1,7 +1,7 @@
 import typer
 from typing_extensions import Annotated
 
-from datacontract.cli import app, console, debug_option, enable_debug_logging
+from datacontract.cli import app, console, debug_option, enable_debug_logging, inline_references_option
 from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.text_breaking_results import write_text_breaking_results
@@ -20,13 +20,7 @@ def breaking(
         str,
         typer.Argument(help="The location (url, s3 url, or local path) of the target (after) data contract YAML."),
     ],
-    inline_references: Annotated[
-        bool,
-        typer.Option(
-            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) "
-            "in the contract and inline the fetched content from the configured entropy-data host."
-        ),
-    ] = True,
+    inline_references: inline_references_option = True,
     debug: debug_option = None,
 ):
     """Show compatibility impact between two data contracts."""

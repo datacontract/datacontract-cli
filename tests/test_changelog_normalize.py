@@ -62,8 +62,8 @@ class TestNormalizeBy:
     def test_positional_fallback_when_key_absent(self):
         items = [{"type": "sql", "rule": "count > 0"}, {"type": "sql"}]
         result = _normalize_by(items, "name")
-        assert "__pos_0__" in result
-        assert "__pos_1__" in result
+        assert "[0]" in result
+        assert "[1]" in result
 
     def test_mixed_present_and_absent_key(self):
         items = [
@@ -72,7 +72,7 @@ class TestNormalizeBy:
         ]
         result = _normalize_by(items, "name")
         assert "row_count" in result
-        assert "__pos_1__" in result
+        assert "[1]" in result
 
     def test_empty_list(self):
         assert _normalize_by([], "role") == {}
@@ -231,7 +231,7 @@ class TestNormalize:
         result = normalize(contract)
         quality = result["schema"]["orders"]["quality"]
         assert "row_count" in quality
-        assert "__pos_1__" in quality
+        assert "[1]" in quality
 
     def test_non_list_fields_unchanged(self):
         contract = _contract(description="a contract")
@@ -384,8 +384,8 @@ class TestNormalizeAuthDefs:
     def test_positional_fallback_when_url_and_id_absent(self):
         items = [{"type": "definition"}, {"type": "support"}]
         result = _normalize_auth_defs(items)
-        assert "__pos_0__" in result
-        assert "__pos_1__" in result
+        assert "[0]" in result
+        assert "[1]" in result
 
     def test_empty_list_returns_empty_dict(self):
         assert _normalize_auth_defs([]) == {}
@@ -514,7 +514,7 @@ class TestNormalizeRelationships:
     def test_positional_fallback_when_fields_absent(self):
         items = [{"type": "foreignKey"}]
         result = _normalize_relationships(items, schema_level=True)
-        assert "__pos_0__" in result
+        assert "[0]" in result
 
     def test_empty_list_returns_empty_dict(self):
         assert _normalize_relationships([], schema_level=True) == {}

@@ -2,14 +2,12 @@ import json
 import logging
 import os
 import secrets
-import tempfile
 from importlib import metadata
 from typing import Annotated, Optional
 
 import pydantic
-import yaml
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, status
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field, ValidationError
 
@@ -19,6 +17,8 @@ from datacontract.model.breaking import BreakingChangeEntry
 from datacontract.model.changelog import ChangelogEntry
 from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 from datacontract.model.run import Check, ResultEnum, Run
+
+logger = logging.getLogger(__name__)
 
 DATA_CONTRACT_EXAMPLE_PAYLOAD = """apiVersion: v3.2.0
 kind: DataContract
@@ -335,6 +335,25 @@ app = FastAPI(
     ],
 )
 
+
+@app.exception_handler(pydantic.ValidationError)
+def _validation_error(request: Request, e: pydantic.ValidationError):
+    return JSONResponse(status_code=422, content={"detail": f"Invalid data contract: {e}"})
+
+
+@app.exception_handler(DataContractException)
+def _data_contract_exception(request: Request, e: DataContractException):
+    return JSONResponse(status_code=422, content={"detail": f"Data Contract Validation Failure: {e}"})
+
+
+@app.exception_handler(DefinitionResolutionError)
+def _definition_resolution_error(request: Request, e: DefinitionResolutionError):
+    # The reason names the host that was contacted and what it answered.
+    # Omit for security reasons.
+    logger.warning("Definition resolution failed: %s", e)
+    return JSONResponse(status_code=422, content={"detail": f"Could not resolve authoritative definition '{e.url}'."})
+
+
 _fastapi_openapi = app.openapi
 
 
@@ -481,6 +500,7 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "oracle": ("host", "oracle_host", ("oracle_password",)),
     "impala": ("host", "impala_host", ("impala_password",)),
     "trino": ("host", "trino_host", ("trino_password",)),
+    "exasol": ("host", "exasol_host", ("exasol_password",)),
     "redshift": ("host", "redshift_host", ("redshift_password",)),
     "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
     "snowflake": (
@@ -665,21 +685,21 @@ def _reject_request_platform_host_with_environment_key(config) -> None:
 def check_api_key(api_key_header: str | None):
     correct_api_key = os.getenv("DATACONTRACT_CLI_API_KEY")
     if correct_api_key is None or correct_api_key == "":
-        logging.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
+        logger.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
         return
     if api_key_header is None or api_key_header == "":
-        logging.info("The API key is missing.")
+        logger.warning("The API key is missing.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
-    if not secrets.compare_digest(api_key_header, correct_api_key):
-        logging.info("The provided API key is not correct.")
+    if not secrets.compare_digest(api_key_header.encode(), correct_api_key.encode()):
+        logger.warning("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The provided API key is not correct.",
         )
-    logging.info("Request authenticated with API key.")
+    logger.info("Request authenticated with API key.")
     pass
 
 
@@ -777,8 +797,7 @@ async def test(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Use either the filter or the filters parameter, not both.",
         )
-    logging.info("Testing data contract...")
-    logging.info(body)
+    logger.info("Testing data contract...")
     config = config_from_headers(request.headers)
     untrusted_contract = getattr(request.app.state, "untrusted_contracts", False)
     if untrusted_contract:
@@ -857,7 +876,10 @@ async def lint(
 ) -> LintResponse:
     check_api_key(api_key)
     data_contract = DataContract(
-        data_contract_str=body, schema_location=_require_schema_url(schema), all_errors=all_errors
+        data_contract_str=body,
+        schema_location=_require_schema_url(schema),
+        all_errors=all_errors,
+        untrusted_contract=True,
     )
     lint_result = data_contract.lint()
     return LintResponse(result=lint_result.result, checks=lint_result.checks)
@@ -933,30 +955,10 @@ async def changelog_endpoint(
 ) -> ChangelogResponse:
     check_api_key(api_key)
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f1:
-        f1.write(body.v1)
-        v1_path = f1.name
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f2:
-        f2.write(body.v2)
-        v2_path = f2.name
-
-    try:
-        result = DataContract(data_contract_file=v1_path).changelog(DataContract(data_contract_file=v2_path))
-        return ChangelogResponse(summary=result.summary, entries=result.entries)
-    except yaml.YAMLError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
-    except pydantic.ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
-    except DefinitionResolutionError as e:
-        # The reason names the host that was contacted and what it answered.
-        # Omit for security reasons.
-        logging.warning("Definition resolution failed: %s", e)
-        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
-    except DataContractException as e:
-        raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
-    finally:
-        os.unlink(v1_path)
-        os.unlink(v2_path)
+    result = DataContract(data_contract_str=body.v1, untrusted_contract=True).changelog(
+        DataContract(data_contract_str=body.v2, untrusted_contract=True)
+    )
+    return ChangelogResponse(summary=result.summary, entries=result.entries)
 
 
 @app.post(
@@ -986,25 +988,10 @@ def breaking_endpoint(
 ) -> BreakingChangesResponse:
     check_api_key(api_key)
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f1:
-        f1.write(body.v1)
-        v1_path = f1.name
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f2:
-        f2.write(body.v2)
-        v2_path = f2.name
-
-    try:
-        result = DataContract(data_contract_file=v1_path).breaking(DataContract(data_contract_file=v2_path))
-        return BreakingChangesResponse(summary=result.summary, entries=result.entries, is_breaking=result.is_breaking)
-    except yaml.YAMLError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
-    except pydantic.ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
-    except DataContractException as e:
-        raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
-    finally:
-        os.unlink(v1_path)
-        os.unlink(v2_path)
+    result = DataContract(data_contract_str=body.v1, untrusted_contract=True).breaking(
+        DataContract(data_contract_str=body.v2, untrusted_contract=True)
+    )
+    return BreakingChangesResponse(summary=result.summary, entries=result.entries, is_breaking=result.is_breaking)
 
 
 @app.post(
@@ -1107,21 +1094,9 @@ def export(
     ] = None,
 ):
     check_api_key(api_key)
-    try:
-        return DataContract(data_contract_str=body, server=server).export(
-            export_format=format,
-            model=model,
-            rdf_base=rdf_base,
-            sql_server_type=sql_server_type,
-        )
-    except yaml.YAMLError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid YAML: {e}")
-    except pydantic.ValidationError as e:
-        raise HTTPException(status_code=422, detail=f"Invalid data contract: {e}")
-    except DefinitionResolutionError as e:
-        # The reason names the host that was contacted and what it answered.
-        # Omit for security reasons.
-        logging.warning("Definition resolution failed: %s", e)
-        raise HTTPException(status_code=422, detail=f"Could not resolve authoritative definition '{e.url}'.")
-    except DataContractException as e:
-        raise HTTPException(status_code=422, detail=f"Data Contract Validation Failure: {e}")
+    return DataContract(data_contract_str=body, server=server, untrusted_contract=True).export(
+        export_format=format,
+        model=model,
+        rdf_base=rdf_base,
+        sql_server_type=sql_server_type,
+    )

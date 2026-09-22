@@ -1,10 +1,10 @@
 ---
-sidebar_position: 19
+sidebar_position: 20
 title: "SAP HANA"
 description: "Test the actual data in SAP HANA Cloud and SAP Datasphere against your data contract."
 ---
 
-# <img className="page-icon" src="/img/icons/database.svg" alt="" /> SAP HANA
+# <img className="page-icon" src="/img/icons/sap.svg" alt="" /> SAP HANA
 
 Test data in SAP HANA Cloud and in the Open SQL schemas of SAP Datasphere.
 

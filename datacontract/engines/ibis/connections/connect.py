@@ -196,6 +196,9 @@ def connect_ibis(
     if server_type == "impala":
         return _connect_impala(ibis, server, config)
 
+    if server_type == "exasol":
+        return _connect_exasol(ibis, server, config)
+
     if server_type in LINT_ONLY_SERVER_TYPES:
         _unsupported(
             run,
@@ -647,23 +650,24 @@ SQL_COPT_SS_ACCESS_TOKEN = 1256
 
 
 def _connect_sqlserver(ibis, server: Server, config: Config):
-    kwargs = _sqlserver_connection_kwargs(server, config)
-    if "attrs_before" not in kwargs:
-        return ibis.mssql.connect(**kwargs)
-    # ibis.mssql.connect always sends UID/PWD (even as None), which the driver
-    # refuses next to an access token, so open the pyodbc connection ourselves.
+    # Not ibis.mssql.connect: it sends UID/PWD even as None (refused next to an
+    # access token) and brace-escapes only the password, not host/database/driver.
     import pyodbc
 
-    del kwargs["user"], kwargs["password"]
-    if kwargs["database"] is None:
-        del kwargs["database"]  # pyodbc would send a literal DATABASE=None
+    kwargs = _sqlserver_connection_kwargs(server, config)
     host, port = kwargs.pop("host"), kwargs.pop("port")
-    con = pyodbc.connect(server=f"{host},{port}", **kwargs)
+    kwargs["server"] = f"{host},{port}"
+    for key in ("server", "database", "driver", "user", "password"):
+        if kwargs[key] is None:
+            del kwargs[key]  # pyodbc would send a literal DATABASE=None
+        else:
+            kwargs[key] = "{" + kwargs[key].replace("}", "}}") + "}"
+    con = pyodbc.connect(**kwargs)
     return ibis.mssql.from_connection(con)
 
 
 def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
-    """Build the ``ibis.mssql.connect`` kwargs, selecting the auth mode from env vars.
+    """Build the ``pyodbc.connect`` kwargs, selecting the auth mode from env vars.
 
     ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` picks the mode (default ``sql``):
 
@@ -677,10 +681,9 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
     ``windows``, and applies only when ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` is
     unset — an explicitly chosen mode always wins. Extra keys (``Authentication``,
-    ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) are forwarded
-    verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
-    so they use the ODBC spellings. ``cli`` sets ``attrs_before`` instead, which makes
-    ``_connect_sqlserver`` call ``pyodbc.connect`` directly.
+    ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) become
+    connection-string attributes, so they use the ODBC spellings. ``cli`` sets
+    ``attrs_before``, a pre-connect attribute rather than a connection-string keyword.
     """
     driver = _get_custom_property(server, "driver") or config.get_sqlserver_driver()
 
@@ -868,6 +871,44 @@ def _connect_trino(ibis, server: Server, config: Config):
             ),
             engine="datacontract-cli",
         )
+
+
+def _connect_exasol(ibis, server: Server, config: Config):
+    import ssl
+
+    from datacontract.engines.ibis.connections.exasol_patch import apply_exasol_compatibility_patch
+
+    host = config.get_exasol_host() or server.host
+    # pyexasol takes the certificate policy as a host suffix: `host/<sha256>` pins the
+    # certificate, `host/nocertcheck` skips verification.
+    if fingerprint := config.get_exasol_fingerprint():
+        host = f"{host}/{fingerprint}"
+    elif not config.get_exasol_validate_certificate():
+        host = f"{host}/nocertcheck"
+    # ibis defaults to CERT_NONE; restore pyexasol's own default of verifying the
+    # certificate unless a suffix replaces that check.
+    cert_reqs = ssl.CERT_NONE if host and "/" in host else ssl.CERT_REQUIRED
+    kwargs = dict(
+        host=host,
+        port=config.get_exasol_port() or (int(server.port) if server.port else 8563),
+        user=config.get_exasol_username(required=True),
+        password=config.get_exasol_password(required=True),
+        websocket_sslopt={"cert_reqs": cert_reqs},
+    )
+    schema = config.get_exasol_schema() or server.schema_
+    if schema:
+        kwargs["schema"] = schema
+
+    try:
+        con = ibis.exasol.connect(**kwargs)
+    except Exception as e:
+        # pyexasol renders its errors as a multi-line block; the run reports only the first line.
+        message = getattr(e, "message", None)
+        if isinstance(message, str):
+            raise ConnectionError(message) from e
+        raise
+    apply_exasol_compatibility_patch(con)
+    return con
 
 
 def _get_custom_property(server: Server, name: str):

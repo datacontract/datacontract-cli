@@ -10,6 +10,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
 
@@ -105,6 +106,7 @@ def import_iceberg(schema: Schema, table_name: str) -> OpenDataContractStandard:
     )
 
     odcs.schema_ = [schema_obj]
+    report_unmapped_types(odcs)
     return odcs
 
 

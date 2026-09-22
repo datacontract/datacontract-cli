@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 from unittest import mock
@@ -29,6 +29,7 @@ from datacontract.integration.dbt_sync import (
     _get_test_metadata,
     _guess_indent,
     _hoist_own_line_comments,
+    _is_managed_column,
     _make_yaml,
     _normalize_severity,
     _resolve_contract_paths,
@@ -75,6 +76,7 @@ class _SyncResult:
     written_yaml: List[Path]
     written_sql: List[Path]
     run: Optional[Run]
+    prunable: List[str] = field(default_factory=list)
 
 
 def sync(
@@ -113,6 +115,7 @@ def sync(
         written_yaml=gen.written_yaml,
         written_sql=gen.written_sql,
         run=run,
+        prunable=gen.prunable,
     )
 
 
@@ -437,14 +440,16 @@ def test_resync_preserves_user_opt_out_via_include_in_tests(tmp_path: Path):
 
 
 def test_merge_columns_the_cli_creates_are_marked(tmp_path: Path):
-    """Columns the CLI adds to host tests carry meta.datacontract_cli so cleanup can drop them."""
+    """Columns the CLI adds to host tests carry config.meta.datacontract_cli so cleanup can drop them."""
     project = _copy_dbt_project(tmp_path)
     _orders_model_sql(project)
     schema = _user_orders_schema(project)
     sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
 
     cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
-    assert cols["order_status"]["meta"]["datacontract_cli"]["generated"] is True
+    assert cols["order_status"]["config"]["meta"]["datacontract_cli"]["generated"] is True
+    # Top-level `meta` is rejected by dbt Fusion (v2) — the marker never lands there.
+    assert "meta" not in cols["order_status"]
     assert "meta" not in cols["extra_user_col"]  # user column untouched
     assert "meta" not in cols["order_id"]  # pre-existing user column not marked
 
@@ -469,7 +474,109 @@ def test_sync_creates_model_yaml_when_no_yaml_entry(tmp_path: Path):
     assert not_null_meta["contract_versions"] == ["1.0.0"]
     assert not_null_meta["generated"] is True
     # Columns we create carry the managed marker so a later sync can retire them cleanly.
-    assert order_id["meta"]["datacontract_cli"]["generated"] is True
+    assert order_id["config"]["meta"]["datacontract_cli"]["generated"] is True
+    assert "meta" not in order_id  # not at the top level — dbt Fusion (v2) rejects that
+
+
+def _assert_no_toplevel_column_meta(doc_path: Path) -> None:
+    doc = yaml.safe_load(doc_path.read_text())
+    columns = [c for m in doc["models"] for c in m.get("columns") or []]
+    offenders = [c["name"] for c in columns if isinstance(c, dict) and "meta" in c]
+    assert not offenders, f"top-level `meta` is rejected by dbt Fusion, found on: {offenders}"
+
+
+def test_resync_migrates_legacy_toplevel_column_meta(tmp_path: Path):
+    """A project synced by an older CLI carries the v1-only layout; re-syncing relocates it."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    columns:\n"
+        "      - name: order_status\n"
+        "        description: authored by the user\n"
+        "        meta:\n"
+        "          datacontract_cli:\n"
+        "            generated: true\n"
+        "          custom_key: keep me\n"
+        "      - name: retired_col\n"
+        "        description: no longer in the contract\n"
+        "        meta:\n"
+        "          datacontract_cli:\n"
+        "            generated: true\n"
+    )
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
+    col = cols["order_status"]
+    assert col["config"]["meta"]["datacontract_cli"]["generated"] is True
+    # Our block moved out of the Fusion-rejected location; the user's sibling key stays put.
+    assert "datacontract_cli" not in col.get("meta", {})
+    assert col["meta"]["custom_key"] == "keep me"
+    # A column that left the contract is recognized through its legacy marker and retired.
+    assert "retired_col" not in cols
+
+
+def test_legacy_toplevel_column_meta_still_recognized_as_managed():
+    """Reading must tolerate the legacy layout, or cleanup orphans columns it used to own."""
+    assert _is_managed_column({"name": "c", "meta": {"datacontract_cli": {"generated": True}}}) is True
+    assert _is_managed_column({"name": "c", "config": {"meta": {"datacontract_cli": {"generated": True}}}}) is True
+    assert _is_managed_column({"name": "c"}) is False
+    assert _is_managed_column({"name": "c", "config": {"meta": {"datacontract_cli": {"generated": False}}}}) is False
+
+
+def test_column_dropped_from_contract_is_still_retired(tmp_path: Path):
+    """A generated column whose property left the contract is retired without --prune."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    col = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_status"]
+    assert _is_managed_column(col) is True  # reader sees the relocated marker
+    assert col["data_type"]  # sync wrote it; it is ours to take back
+
+    trimmed = yaml.safe_load(CONTRACT_PATH.read_text())
+    for obj in trimmed["schema"]:
+        obj["properties"] = [p for p in obj["properties"] if p["name"] != "order_status"]
+    slim = tmp_path / "orders-slim.odcs.yaml"
+    slim.write_text(yaml.safe_dump(trimmed))
+
+    result = sync(contract=str(slim), project_dir=project, skip_tests=True)
+
+    cols = {c["name"] for c in _model_entry(schema)["columns"]}
+    assert "order_status" not in cols  # generated column retired without --prune
+    assert "extra_user_col" in cols  # the user's own column survives
+    assert result.prunable == ["orders: column `extra_user_col`"]  # retired column no longer reported as drift
+
+
+def test_retired_managed_column_with_user_residue_is_handed_over(tmp_path: Path):
+    """A user's test on the column keeps it, unmarked and still typed/described for them."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    doc = yaml.safe_load(schema.read_text())
+    entry = next(m for m in doc["models"] if m["name"] == "orders")
+    col = next(c for c in entry["columns"] if c["name"] == "order_status")
+    col["data_tests"].append("unique")
+    col["quote"] = True
+    schema.write_text(yaml.safe_dump(doc))
+
+    trimmed = yaml.safe_load(CONTRACT_PATH.read_text())
+    for obj in trimmed["schema"]:
+        obj["properties"] = [p for p in obj["properties"] if p["name"] != "order_status"]
+    slim = tmp_path / "orders-slim.odcs.yaml"
+    slim.write_text(yaml.safe_dump(trimmed))
+
+    sync(contract=str(slim), project_dir=project, skip_tests=True)
+
+    col = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_status"]
+    assert col == {"name": "order_status", "data_type": "text", "data_tests": ["unique"], "quote": True}
 
 
 def test_sync_skips_model_with_no_sql_or_entry(tmp_path: Path):
@@ -2620,6 +2727,11 @@ def test_versioned_sync_builds_versions_block(tmp_path: Path):
     assert id_tests["not_null"] == ["1.0.0", "2.0.0"]
     assert id_tests["unique"] == ["1.0.0", "2.0.0"]
     assert _cv(_col(entry, "region")["data_tests"][0]) == ["2.0.0"]
+
+    # dbt Fusion (v2) rejects a top-level `meta` on a column; the versioned merge path must
+    # stamp the managed marker under `config` just like the unversioned one.
+    _assert_no_toplevel_column_meta(project / "models" / "customers.yml")
+    assert _col(entry, "id")["config"]["meta"]["datacontract_cli"]["generated"] is True
 
 
 def test_nonversioned_sync_onto_versioned_model_errors(tmp_path: Path):

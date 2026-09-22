@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.2.0"
+version = "1.2.1"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -81,8 +81,9 @@ bigquery = [
   "ibis-framework[bigquery]>=10.0.0,<13.0.0",
 ]
 
+# CSV import reads through DuckDB; kept as an alias so existing installs keep working.
 csv = [
-  "pandas >= 2.0.0",
+  "datacontract-cli[duckdb]",
 ]
 
 excel = [
@@ -118,7 +119,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.6.0",
-  "databricks-sdk<0.139.0",
+  "databricks-sdk<0.140.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -223,6 +224,16 @@ hana = [
   "hdbcli>=2.20.0,<3.0.0",
 ]
 
+exasol = [
+  "ibis-framework[exasol]>=10.0.0,<13.0.0",
+  # `host/nocertcheck` in the connection string needs the DSN grammar from 1.1.0.
+  "pyexasol>=1.1.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
+  # the read-only SQL guard parses with sqlglot's own Exasol dialect, added in 26.31.0
+  "sqlglot>=26.31.0",
+]
+
 trino = [
   "ibis-framework[trino]>=10.0.0,<13.0.0",
   # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
@@ -257,7 +268,7 @@ rdf = [
 
 api = [
   "fastapi>=0.115.0,<0.142.0",
-  "uvicorn>=0.44.0,<0.53.0",
+  "uvicorn>=0.44.0,<0.54.0",
 ]
 
 protobuf = [
@@ -271,7 +282,7 @@ protobuf = [
 # the `all` meta-extra would pull a proprietary package into a default-ish
 # install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
-  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
 ]
 
 # for development, we pin all libraries to an exact version
@@ -293,7 +304,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.16.7",
+  "ruff==0.16.8",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.339.0",
 ]

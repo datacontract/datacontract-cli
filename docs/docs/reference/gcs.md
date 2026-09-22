@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 10
 title: "Google Cloud Storage Reference"
 sidebar_label: "Google Cloud Storage"
 description: "All GCS authentication options and data type handling."

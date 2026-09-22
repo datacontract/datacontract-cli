@@ -15,12 +15,12 @@ from datacontract.model.exceptions import DataContractException
 LOGICAL_TYPE_MAPPING = {
     "decimal": "number",
     "date": "date",
-    "time-millis": "string",
-    "time-micros": "string",
-    "timestamp-millis": "date",
-    "timestamp-micros": "date",
-    "local-timestamp-millis": "date",
-    "local-timestamp-micros": "date",
+    "time-millis": "time",
+    "time-micros": "time",
+    "timestamp-millis": "timestamp",
+    "timestamp-micros": "timestamp",
+    "local-timestamp-millis": "timestamp",
+    "local-timestamp-micros": "timestamp",
     "duration": "string",
     "uuid": "string",
 }

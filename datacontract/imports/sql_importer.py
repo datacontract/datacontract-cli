@@ -15,10 +15,13 @@ from datacontract.imports.odcs_helper import (
     create_schema_object,
     create_server,
     property_from_type_string,
+    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 from datacontract.model.vector_type import parse_vector_type
+
+logger = logging.getLogger(__name__)
 
 
 class SqlDialect(str, Enum):
@@ -48,7 +51,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         # not parse_one: sqlglot below 29 gives it only the first statement of a script
         statements = [s for s in sqlglot.parse(sql=sql, read=dialect) if s is not None]
     except Exception as e:
-        logging.error(f"Error sqlglot SQL: {str(e)}")
+        logger.error(f"Error sqlglot SQL: {str(e)}")
         raise DataContractException(
             type="import",
             name=f"Reading source from {source}",
@@ -56,6 +59,13 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             engine="datacontract-cli",
             result=ResultEnum.error,
         )
+
+    for statement in statements:
+        if isinstance(statement, sqlglot.exp.Command):
+            logger.warning(
+                f"Skipping statement that could not be parsed as {dialect.value} SQL "
+                f"(unquoted special characters in identifiers?): {statement.sql().splitlines()[0]}"
+            )
 
     odcs = create_odcs()
     odcs.schema_ = []
@@ -67,7 +77,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         server_defaults.update(location)
         odcs.servers = [create_server(name=server_type, server_type=server_type, **server_defaults)]
         placeholders = ", ".join(field for field in server_defaults if field not in location)
-        logging.warning(
+        logger.warning(
             f"SQL import generated a server block with placeholder connection values. "
             f"Update the following values before use: {placeholders}"
         )
@@ -155,6 +165,7 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         )
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs)
     return odcs
 
 
@@ -463,8 +474,12 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("timestamp", None)
     elif sql_type_normed == "uniqueidentifier":  # tsql
         return ("string", "uuid")
-    elif sql_type_normed == "json":
+    elif sql_type_normed in ("json", "jsonb", "variant", "object", "super"):  # postgres, snowflake, redshift
         return ("object", None)
+    elif sql_type_normed == "int64":  # bigquery
+        return ("integer", None)
+    elif sql_type_normed == "float64":  # bigquery
+        return ("number", None)
     elif sql_type_normed == "xml":  # tsql
         return ("string", None)
     elif sql_type_normed == "clob" or sql_type_normed == "nclob":
