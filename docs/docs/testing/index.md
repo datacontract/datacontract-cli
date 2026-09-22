@@ -97,7 +97,7 @@ datacontract test --server production datacontract.yaml
     <span><span className="doc-card-title">Oracle</span><span className="doc-card-desc">Oracle Database</span></span>
   </a>
   <a className="doc-card" href="/testing/hana">
-    <img src="/img/icons/database.svg" alt="" />
+    <img src="/img/icons/sap.svg" alt="" />
     <span><span className="doc-card-title">SAP HANA</span><span className="doc-card-desc">SAP HANA Cloud and SAP Datasphere Open SQL schemas</span></span>
   </a>
   <a className="doc-card" href="/testing/dataframe">
