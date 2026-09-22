@@ -1,8 +1,8 @@
 """Unit tests for SQL Server auth-method selection.
 
 These do not open a connection: they assert the kwargs that
-``_sqlserver_connection_kwargs`` hands to ``ibis.mssql.connect`` (forwarded to
-``pyodbc.connect`` as connection-string attributes) for each authentication mode.
+``_sqlserver_connection_kwargs`` hands to ``pyodbc.connect`` (connection-string
+attributes) for each authentication mode.
 Building the kwargs as a pure function keeps the test independent of the ODBC
 driver, which is not loadable on every dev machine.
 """
@@ -11,7 +11,7 @@ import logging
 from types import SimpleNamespace
 
 import pytest
-from open_data_contract_standard.model import Server
+from open_data_contract_standard.model import CustomProperty, Server
 
 from datacontract.config import Config
 from datacontract.engines.ibis.connections.connect import _connect_sqlserver
@@ -261,9 +261,31 @@ def test_cli_auth_opens_pyodbc_without_credentials_or_empty_database(env, monkey
 
     assert _connect_sqlserver(ibis, _server(database=None), Config.resolve(None)) == "con"
 
-    assert seen["server"] == "localhost,1433"
+    assert seen["server"] == "{localhost,1433}"
     assert 1256 in seen["attrs_before"]
     assert not {"user", "password", "database"} & seen.keys()
+
+
+def test_connection_string_values_are_brace_escaped(env, monkeypatch):
+    """A contract host or driver must not be able to inject connection-string keywords."""
+    env.setenv("DATACONTRACT_SQLSERVER_USERNAME", "sa")
+    env.setenv("DATACONTRACT_SQLSERVER_PASSWORD", "p;w}d")
+    pyodbc = pytest.importorskip("pyodbc", exc_type=ImportError)
+    seen = {}
+    monkeypatch.setattr(pyodbc, "connect", lambda **kwargs: seen.update(kwargs) or "con")
+    ibis = SimpleNamespace(mssql=SimpleNamespace(from_connection=lambda con: con))
+    server = _server(host="evil;Encrypt=no;TrustServerCertificate=yes")
+    server.customProperties = [CustomProperty(property="driver", value="x};Encrypt=no")]
+
+    _connect_sqlserver(ibis, server, Config.resolve(None))
+
+    assert seen["server"] == "{evil;Encrypt=no;TrustServerCertificate=yes,1433}"
+    assert seen["driver"] == "{x}};Encrypt=no}"
+    assert seen["database"] == "{testdb}"
+    assert seen["user"] == "{sa}"
+    assert seen["password"] == "{p;w}}d}"
+    assert seen["Encrypt"] == "yes"
+    assert "TrustServerCertificate" not in seen
 
 
 def test_cli_auth_reports_missing_az_login(env, monkeypatch):

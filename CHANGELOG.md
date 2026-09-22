@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A YAML parse error names the file that failed to parse
 - `datacontract api` answers a non-ASCII `x-api-key` with `403` instead of `500`
 - `datacontract api` logs INFO from all modules again and warns on failed API key checks; `/test` no longer logs the submitted contract
+- `datacontract test` and `datacontract import sqlserver` escape the host, database and driver in the SQL Server connection string, so a `;` in the contract's `servers` block can no longer inject connection keywords
 - `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)
 - `datacontract import avro` and `import spark` map timestamp and time types to `logicalType: timestamp` / `time` instead of `date` / `string`
 - `datacontract import s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628)

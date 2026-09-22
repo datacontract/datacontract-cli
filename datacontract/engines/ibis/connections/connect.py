@@ -650,23 +650,24 @@ SQL_COPT_SS_ACCESS_TOKEN = 1256
 
 
 def _connect_sqlserver(ibis, server: Server, config: Config):
-    kwargs = _sqlserver_connection_kwargs(server, config)
-    if "attrs_before" not in kwargs:
-        return ibis.mssql.connect(**kwargs)
-    # ibis.mssql.connect always sends UID/PWD (even as None), which the driver
-    # refuses next to an access token, so open the pyodbc connection ourselves.
+    # Not ibis.mssql.connect: it sends UID/PWD even as None (refused next to an
+    # access token) and brace-escapes only the password, not host/database/driver.
     import pyodbc
 
-    del kwargs["user"], kwargs["password"]
-    if kwargs["database"] is None:
-        del kwargs["database"]  # pyodbc would send a literal DATABASE=None
+    kwargs = _sqlserver_connection_kwargs(server, config)
     host, port = kwargs.pop("host"), kwargs.pop("port")
-    con = pyodbc.connect(server=f"{host},{port}", **kwargs)
+    kwargs["server"] = f"{host},{port}"
+    for key in ("server", "database", "driver", "user", "password"):
+        if kwargs[key] is None:
+            del kwargs[key]  # pyodbc would send a literal DATABASE=None
+        else:
+            kwargs[key] = "{" + kwargs[key].replace("}", "}}") + "}"
+    con = pyodbc.connect(**kwargs)
     return ibis.mssql.from_connection(con)
 
 
 def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
-    """Build the ``ibis.mssql.connect`` kwargs, selecting the auth mode from env vars.
+    """Build the ``pyodbc.connect`` kwargs, selecting the auth mode from env vars.
 
     ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` picks the mode (default ``sql``):
 
@@ -680,10 +681,9 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
     ``windows``, and applies only when ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` is
     unset — an explicitly chosen mode always wins. Extra keys (``Authentication``,
-    ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) are forwarded
-    verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
-    so they use the ODBC spellings. ``cli`` sets ``attrs_before`` instead, which makes
-    ``_connect_sqlserver`` call ``pyodbc.connect`` directly.
+    ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) become
+    connection-string attributes, so they use the ODBC spellings. ``cli`` sets
+    ``attrs_before``, a pre-connect attribute rather than a connection-string keyword.
     """
     driver = _get_custom_property(server, "driver") or config.get_sqlserver_driver()
 
