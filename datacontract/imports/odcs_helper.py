@@ -451,23 +451,3 @@ AVRO_TO_LOGICAL_TYPE = {
 def map_avro_type_to_logical(avro_type: str) -> str:
     """Map an Avro type string to an ODCS logical type."""
     return AVRO_TO_LOGICAL_TYPE.get(avro_type, "string")
-
-
-# Avro logical type mapping
-AVRO_LOGICAL_TYPE_MAPPING = {
-    "decimal": "number",
-    "date": "date",
-    "time-millis": "string",
-    "time-micros": "string",
-    "timestamp-millis": "date",
-    "timestamp-micros": "date",
-    "local-timestamp-millis": "date",
-    "local-timestamp-micros": "date",
-    "duration": "string",
-    "uuid": "string",
-}
-
-
-def map_avro_logical_type(avro_logical_type: str) -> str:
-    """Map an Avro logical type to an ODCS logical type."""
-    return AVRO_LOGICAL_TYPE_MAPPING.get(avro_logical_type, "string")

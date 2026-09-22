@@ -161,9 +161,9 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
     elif isinstance(spark_type, types.MapType):
         return "map"
     elif isinstance(spark_type, types.TimestampType):
-        return "date"
+        return "timestamp"
     elif isinstance(spark_type, types.TimestampNTZType):
-        return "date"
+        return "timestamp"
     elif isinstance(spark_type, types.DateType):
         return "date"
     elif isinstance(spark_type, types.BooleanType):
