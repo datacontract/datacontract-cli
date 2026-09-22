@@ -144,7 +144,7 @@ A data contract carries SQL and names the hosts to connect to, so a contract tha
 - a `quality.type: sql` rule must be a **read-only query** — DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed;
 - a credential held in the server's environment is **never sent to a host the contract names** (see [Configuration](./configuration.md));
 - a `publish_url` may only point at the **Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this, and other hosts are refused;
-- `authoritativeDefinitions` are **only resolved against the Entropy Data platform or the host set via `ENTROPY_DATA_HOST`**; a URL on any other host, or a reference to a local file, is refused, and a failed lookup reports only the URL, never what the host answered;
+- `authoritativeDefinitions` are **only resolved against the Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this; a URL on any other host, or a reference to a local file, is refused, and a failed lookup reports only the URL, never what the host answered;
 - `servers[].type: local` is **refused**, so a caller cannot read the files of the machine running the API;
 - for a file-based server type (`s3`, `gcs`, `azure`), the DuckDB connection is **confined to the data locations the contract declares**.
 

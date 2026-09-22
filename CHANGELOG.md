@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` no longer counts `NULL` values as duplicates of each other in uniqueness checks
 - `datacontract dbt sync` writes the generated-column marker under `config.meta` instead of a top-level `meta` so the model YAML parses under dbt Fusion; files written by an earlier version are migrated on the next sync (#1633 @FredrikBakken)
 - `datacontract test` reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
-- `datacontract api` no longer echoes what an `authoritativeDefinitions` lookup answered on `/breaking`, and answers a failed contract load on `/lint` and `/test` with `422` instead of `500`
+- `datacontract api` resolves `authoritativeDefinitions` only against the Entropy Data host configured on the server and answers a failed lookup on every endpoint with `422` and the URL, never with what the host answered
 
 ### Changed
 - Internal logging uses named module loggers instead of the root logger

@@ -265,6 +265,22 @@ def test_lint_does_not_echo_what_the_configured_host_answered(monkeypatch):
 
 
 @responses.activate
+def test_test_resolves_definitions_against_the_environment_host_not_the_header_host(clean_platform_env):
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=200, body="<html>internal admin page</html>")
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing(internal_url),
+        headers={"entropy-data-host": "http://internal.example.com:8080"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
+
+
+@responses.activate
 def test_test_does_not_echo_the_configured_host():
     internal_url = "http://internal.example.com:8080/admin/definitions/c"
     responses.add(responses.GET, internal_url, status=200, body="<html>internal admin page</html>")

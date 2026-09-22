@@ -84,7 +84,8 @@ class DataContract:
         self._metadata_only = metadata_only
         self._dry_run = dry_run
         # The contract came from somewhere the caller does not control (the API
-        # server), so the SQL it carries must not reach the host running it.
+        # server): the SQL it carries must not reach the host running it, and its
+        # authoritativeDefinitions are resolved against the configured host only.
         self._untrusted_contract = untrusted_contract
         self._config = Config.resolve(config)
 

@@ -567,14 +567,17 @@ def _build_request(
     """
     from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
 
-    configured_host = _get_host(config)
+    # An untrusted caller may set the host per request (API header); definitions are
+    # then still resolved against the environment's host, or the guard would be the caller's.
+    platform_config = None if configured_host_only else config
+    configured_host = _get_host(platform_config)
     # urljoin keeps absolute URLs as-is and joins leading-slash paths onto
     # the host -- covers both shapes ODCS allows for `url`.
     direct_url = urljoin(configured_host, url)
     headers = {"Accept": "application/vnd.entropydata.odcs+json"}
 
     if _hosts_match(direct_url, configured_host):
-        api_key = _get_api_key_or_none(config)
+        api_key = _get_api_key_or_none(platform_config)
         if api_key is not None:
             headers["x-api-key"] = api_key
         return direct_url, headers, None
@@ -589,7 +592,7 @@ def _build_request(
 
     # Off-host semantics reference: IRI lookup against the configured host.
     host_hint = _host_mismatch_hint(url, configured_host)
-    api_key = _get_api_key_or_none(config)
+    api_key = _get_api_key_or_none(platform_config)
     if api_key is None:
         raise _definition_resolution_error(
             url,
