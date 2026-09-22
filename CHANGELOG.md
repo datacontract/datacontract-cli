@@ -7,43 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-22
+
 ### Highlights
-- Support for SAP HANA
+- Support for SAP HANA and Exasol
 
 ### Added
-- `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
-- `datacontract test` supports Exasol through the `exasol` extra (#1335)
-- `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
-- `datacontract export great-expectations --checks` restricts the suite to `quality` and/or `properties` expectations (#1617)
-- `datacontract import` warns once per import about column types that have no mapping to a `logicalType` (#1629)
-- `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
-
-### Fixed
-- `datacontract import sql` warns about statements it cannot parse and therefore skips, such as a `CREATE TABLE` with unquoted hyphens in its name (#686)
-- `datacontract changelog` and `datacontract breaking`:
-  - report changes in list items that have no name, url or id, such as unnamed `quality` rules
-  - report a renamed schema as a removal and an addition instead of dumping both schemas into one row
-  - `breaking` recognizes changes to `quality` rules
-- A YAML parse error names the file that failed to parse
-- `datacontract api` answers a non-ASCII `x-api-key` with `403` instead of `500`
-- `datacontract api` logs INFO from all modules again and warns on failed API key checks; `/test` no longer logs the submitted contract
-- `datacontract test` and `datacontract import sqlserver` escape the host, database and driver in the SQL Server connection string, so a `;` in the contract's `servers` block can no longer inject connection keywords
-- `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)
-- `datacontract import avro` and `import spark` map timestamp and time types to `logicalType: timestamp` / `time` instead of `date` / `string`
-- `datacontract import s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628)
+- `datacontract test`:
+  - supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332 @ToniLippmann)
+  - supports Exasol through the `exasol` extra (#1335)
+  - on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
+- `datacontract export excel` and `datacontract import excel` support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
 - `datacontract import sql` detects table-level PRIMARY KEY and FOREIGN KEY constraints, derives `unique: true` for single-column keys, and emits property-level `relationships` in the ODCS shorthand format (#1618 @dmaresma)
-- `datacontract test` SQL Server / Microsoft Fabric `cli` auth works again on macOS/Linux, and `ActiveDirectoryInteractive` fails fast off Windows instead of timing out (#1603)
-- `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
-- `datacontract test --filter` reports a duplicate key whose other occurrence lies outside the filtered rows (#1593)
-- `datacontract test` no longer counts `NULL` values as duplicates of each other in uniqueness checks
-- `datacontract dbt sync` writes the generated-column marker under `config.meta` instead of a top-level `meta` so the model YAML parses under dbt Fusion; files written by an earlier version are migrated on the next sync (#1633 @FredrikBakken)
-- `datacontract dbt sync` removes a column it generated once the property leaves the contract, without `--prune`; a column the user added their own tests or settings to is kept
-- `datacontract-cli[csv]` installs DuckDB, which `datacontract import csv` needs, instead of pandas
-- `datacontract test` reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
-- `datacontract api` resolves `authoritativeDefinitions` only against the Entropy Data host configured on the server and answers a failed lookup on every endpoint with `422` and the URL, never with what the host answered
+- `datacontract export great-expectations --checks` restricts the suite to `quality` and/or `properties` expectations (#1617 @julienguilhempartner-spec)
+- `datacontract import` warns once per import about column types that have no mapping to a `logicalType` (#1629 @regdat)
 
 ### Changed
-- Internal logging uses named module loggers instead of the root logger
+- `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
+- `datacontract-cli[csv]` installs DuckDB, which `datacontract import csv` needs, instead of pandas
+- Internal logging uses named module loggers instead of the root logger (#1605 @sondrfos)
+
+### Security
+- `datacontract test` and `datacontract import sqlserver` escape the host, database and driver in the SQL Server connection string, so a `;` in the contract's `servers` block can no longer inject connection keywords
+- `datacontract api`:
+  - resolves `authoritativeDefinitions` only against the Entropy Data host configured on the server, without following redirects, and answers a failed lookup on every endpoint with `422` and the URL, never with what the host answered
+  - answers a non-ASCII `x-api-key` with `403` instead of `500` and warns on failed API key checks
+  - `/test` no longer logs the submitted contract
+- `datacontract changelog` and `datacontract breaking` no longer interpret contract values as terminal markup
+
+### Fixed
+- `datacontract test`:
+  - `--filter` reports a duplicate key whose other occurrence lies outside the filtered rows (#1593,#1619 @gkhnelbstn)
+  - no longer counts `NULL` values as duplicates of each other in uniqueness checks
+  - SQL Server / Microsoft Fabric `cli` auth works again on macOS/Linux, and `ActiveDirectoryInteractive` fails fast off Windows instead of timing out (#1603 @johannzv)
+  - reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
+- `datacontract import`:
+  - maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType`, including in `avro` and `spark` imports (#1629 @regdat)
+  - `s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628 @regdat)
+  - `sql` warns about statements it cannot parse and therefore skips, such as a `CREATE TABLE` with unquoted hyphens in its name (#686 @dwelden)
+- `datacontract dbt sync` writes the generated-column marker under `config.meta` instead of a top-level `meta` so the model YAML parses under dbt Fusion; files written by an earlier version are migrated on the next sync (#1633 @FredrikBakken)
+- `datacontract dbt sync` removes a column it generated once the property leaves the contract, without `--prune`; a column the user added their own tests or settings to is kept
+- `datacontract changelog` and `datacontract breaking`:
+  - report changes in list items that have no name, url or id, such as unnamed `quality` rules
+  - report a renamed schema correctly
+  - `breaking` recognizes changes to `quality` rules
 
 ## [1.2.0] - 2026-09-08
 
