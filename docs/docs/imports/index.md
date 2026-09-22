@@ -90,7 +90,7 @@ Each import page shows a runnable example: a small source file under [`examples/
   </a>
   <a className="doc-card" href="/imports/odata">
     <img src="/img/icons/api.svg" alt="" />
-    <span><span className="doc-card-title">odata</span><span className="doc-card-desc">A public OData 4 service.</span></span>
+    <span><span className="doc-card-title">odata</span><span className="doc-card-desc">An OData 4.x service.</span></span>
   </a>
   <a className="doc-card" href="/imports/odcs">
     <img src="/img/icons/odcs.svg" alt="" />

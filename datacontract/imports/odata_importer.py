@@ -149,7 +149,7 @@ def _validate_http_url(url: str, label: str, *, root: bool = False) -> None:
         valid = False
     if not valid:
         raise _schema_error(
-            f"Invalid {label}: expected a public HTTP(S) URL without credentials. "
+            f"Invalid {label}: expected an HTTP(S) URL without embedded credentials. "
             "The service root must not contain a query or fragment."
         )
 
