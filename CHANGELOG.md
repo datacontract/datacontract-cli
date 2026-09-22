@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
+
+### Fixed
+- Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
+- `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
+
 ## [1.2.1] - 2026-09-22
 
 ### Highlights

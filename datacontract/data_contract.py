@@ -11,6 +11,7 @@ if typing.TYPE_CHECKING:
 
 from datacontract.breaking.detector import BreakingChangeDetector
 from datacontract.config import Config
+from datacontract.engines.checks.create_checks import unrunnable_reason
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
@@ -29,6 +30,50 @@ from datacontract.model.exceptions import (
 from datacontract.model.run import Check, ResultEnum, Run
 
 logger = logging.getLogger(__name__)
+
+
+def _unrunnable_rule_checks(data_contract: OpenDataContractStandard) -> list[Check]:
+    """Warnings for quality rules `datacontract test` would not be able to run."""
+    checks = []
+
+    def visit(properties, schema_name, prefix=None):
+        for prop in properties or []:
+            field = f"{prefix}.{prop.name}" if prefix else prop.name
+            for quality in prop.quality or []:
+                reason = unrunnable_reason(quality, field)
+                if reason is not None:
+                    checks.append(
+                        Check(
+                            type="lint",
+                            result=ResultEnum.warning,
+                            name=f"Quality rule on {schema_name}.{field} cannot be tested",
+                            reason=reason,
+                            model=schema_name,
+                            field=field,
+                            engine="datacontract-cli",
+                        )
+                    )
+            visit(prop.properties, schema_name, field)
+            # `[]` marks the array hop, as the check keys do.
+            if prop.items is not None:
+                visit(prop.items.properties, schema_name, f"{field}[]")
+
+    for schema_obj in data_contract.schema_ or []:
+        for quality in schema_obj.quality or []:
+            reason = unrunnable_reason(quality, None)
+            if reason is not None:
+                checks.append(
+                    Check(
+                        type="lint",
+                        result=ResultEnum.warning,
+                        name=f"Quality rule on {schema_obj.name} cannot be tested",
+                        reason=reason,
+                        model=schema_obj.name,
+                        engine="datacontract-cli",
+                    )
+                )
+        visit(schema_obj.properties, schema_obj.name)
+    return checks
 
 
 class DataContract:
@@ -120,6 +165,7 @@ class DataContract:
                     engine="datacontract-cli",
                 )
             )
+            run.checks.extend(_unrunnable_rule_checks(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.version
         except DataContractValidationErrors as e:

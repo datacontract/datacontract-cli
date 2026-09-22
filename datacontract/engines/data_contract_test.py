@@ -6,6 +6,7 @@ import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.config import Config
+from datacontract.engines.checks.check_spec import MetricType
 from datacontract.engines.checks.create_checks import create_checks, to_schema_name
 from datacontract.engines.checks.dimensions import default_dimension
 
@@ -397,7 +398,12 @@ def _report_dry_run(
     """
     run.dryRun = True
     for spec in specs:
-        set_result(run, spec.key, ResultEnum.skipped, "Dry run: check not executed")
+        # Whether the contract can be evaluated at all is what a dry run answers,
+        # so a check that could not be planned keeps its own result.
+        if spec.metric == MetricType.UNSUPPORTED:
+            set_result(run, spec.key, ResultEnum(spec.preset_result or "warning"), spec.preset_reason)
+        else:
+            set_result(run, spec.key, ResultEnum.skipped, "Dry run: check not executed")
 
     if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
         check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, dry_run=True)

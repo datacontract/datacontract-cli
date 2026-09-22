@@ -93,8 +93,8 @@ def test_create_checks_defaults_to_count_and_no_severity():
     assert spec.severity is None
 
 
-def test_create_checks_percent_ignored_for_rowcount(caplog):
-    # rowCount has no row-fraction meaning; percent must not silently apply.
+def test_percent_on_rowcount_warns_instead_of_comparing_an_absolute_count():
+    # Falling back to an absolute comparison would answer a different question, and pass.
     contract = _odcs(
         model_quality="""    quality:
       - type: library
@@ -103,9 +103,11 @@ def test_create_checks_percent_ignored_for_rowcount(caplog):
         mustBeGreaterThan: 10
 """
     )
-    spec = _find(_checks(contract), "row_count")
-    assert spec.threshold_is_percent is False
-    assert "does not support unit: percent" in caplog.text
+    checks = _checks(contract)
+    assert not any(c.type == "row_count" for c in checks)
+    spec = _find(checks, "model_quality_library")
+    assert spec.preset_result == "warning"
+    assert "unit: percent" in spec.preset_reason
 
 
 # ---------------------------------------------------------------------------
@@ -211,8 +213,8 @@ def test_invalid_values_pattern_argument_runs_regex():
     assert "20.0% (1 of 5 rows)" in check.reason
 
 
-def test_invalid_values_without_arguments_is_skipped(caplog):
-    # An invalidValues check with neither validValues nor pattern can never fail, therefore it should be dropped
+def test_invalid_values_without_arguments_warns():
+    # Such a rule can never fail, and JSON Schema cannot catch it.
     contract = _odcs(
         email_quality="""        quality:
           - type: library
@@ -222,4 +224,6 @@ def test_invalid_values_without_arguments_is_skipped(caplog):
     )
     checks = _checks(contract)
     assert not any(c.type == "field_invalid_values" for c in checks)
-    assert "no validValues or pattern argument" in caplog.text
+    spec = _find(checks, "field_quality_library")
+    assert spec.preset_result == "warning"
+    assert "validValues or a pattern" in spec.preset_reason

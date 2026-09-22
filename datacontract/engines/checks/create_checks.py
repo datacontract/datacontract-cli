@@ -668,6 +668,72 @@ def _quality_checks(
     return checks
 
 
+# The levels each library metric means something at, named as a contract author writes them.
+_METRIC_LEVELS = {
+    "rowCount": ("schema",),
+    "duplicateValues": ("schema", "property"),
+    "nullValues": ("property",),
+    "missingValues": ("property",),
+    "invalidValues": ("property",),
+}
+
+# A percent threshold needs a row-count denominator, which only these metrics have.
+_PERCENT_METRICS = ("nullValues", "missingValues", "invalidValues")
+
+
+def unrunnable_reason(quality: DataQuality, field: Optional[str]) -> Optional[str]:
+    """Why a library quality rule cannot be evaluated as written, or None.
+
+    Decided from the rule alone, so `lint` reports the same cases `test` does.
+    """
+    metric = quality.metric
+    if metric is None:
+        return None
+    if metric not in _METRIC_LEVELS:
+        return f"Metric {metric} is not supported. Supported metrics are {', '.join(_METRIC_LEVELS)}."
+    level = "property" if field is not None else "schema"
+    allowed = _METRIC_LEVELS[metric]
+    if level not in allowed:
+        return (
+            f"Metric {metric} is only supported at {' or '.join(allowed)} level, "
+            f"but this rule is declared at {level} level."
+        )
+    if is_percent_unit(quality) and metric not in _PERCENT_METRICS:
+        return f"Metric {metric} does not count rows, so unit: percent has nothing to be a fraction of."
+    if metric == "invalidValues":
+        args = quality.arguments or {}
+        if args.get("validValues") is None and args.get("pattern") is None:
+            return "Metric invalidValues needs a validValues or a pattern argument."
+    return None
+
+
+def _unexecuted_check(
+    check_key: str,
+    check_type: str,
+    model: str,
+    field: Optional[str],
+    quality: DataQuality,
+    reason: str,
+    result: str = "warning",
+) -> List[CheckSpec]:
+    """A rule the engine cannot run, reported rather than dropped."""
+    return [
+        CheckSpec(
+            key=check_key,
+            category="quality",
+            type=check_type,
+            name=quality.description or "Quality Check",
+            model=model,
+            field=field,
+            metric=MetricType.UNSUPPORTED,
+            dimension=quality.dimension,
+            severity=quality.severity,
+            preset_result=result,
+            preset_reason=reason,
+        )
+    ]
+
+
 def _quality_rule_checks(
     model: str,
     field: Optional[str],
@@ -726,28 +792,12 @@ def _quality_rule_checks(
         threshold = to_threshold(quality)
         query = prepare_query(quality, model, field, server)
         if query is None:
-            logger.warning(f"Quality check {check_key} has no query")
-            return []
+            return _unexecuted_check(check_key, check_type, model, field, quality, "The rule has no query.")
         if threshold is None:
-            logger.warning(f"Quality check {check_key} has no valid threshold")
-            return []
+            return _unexecuted_check(check_key, check_type, model, field, quality, "The rule has no valid comparator.")
 
         def not_executed(reason: str) -> List[CheckSpec]:
-            return [
-                CheckSpec(
-                    key=check_key,
-                    category="quality",
-                    type=check_type,
-                    name=quality.description or "Quality Check",
-                    model=model,
-                    field=field,
-                    metric=MetricType.UNSUPPORTED,
-                    dimension=quality.dimension,
-                    severity=quality.severity,
-                    preset_result="failed",
-                    preset_reason=reason,
-                )
-            ]
+            return _unexecuted_check(check_key, check_type, model, field, quality, reason, result="failed")
 
         # ``${VAR}`` references (ODCS v3.2.0) resolve from the environment now that
         # the query is about to be used; the CLI's own ``${model}``-style placeholders
@@ -782,10 +832,18 @@ def _quality_rule_checks(
             )
         ]
     if quality.metric is not None:
+        if field is None:
+            check_key = f"{model}__quality_library_{count}"
+            check_type = "model_quality_library"
+        else:
+            check_key = f"{model}__{field}__quality_library_{count}"
+            check_type = "field_quality_library"
+        reason = unrunnable_reason(quality, field)
+        if reason is not None:
+            return _unexecuted_check(check_key, check_type, model, field, quality, reason)
         threshold = to_threshold(quality)
         if threshold is None:
-            logger.warning(f"Quality metric {quality.metric} has no valid threshold")
-            return []
+            return _unexecuted_check(check_key, check_type, model, field, quality, "The rule has no valid comparator.")
         return _quality_metric_check(model, field, quality, threshold)
     return []
 
@@ -795,13 +853,6 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
     severity = quality.severity
     dimension = quality.dimension
     is_percent = is_percent_unit(quality)
-
-    # Percent thresholds only make sense for the count-of-bad-rows metrics, where
-    # the engine can divide by the model row count. Warn (and fall back to an
-    # absolute comparison) rather than silently comparing a count to a percent.
-    if is_percent and metric not in ("nullValues", "missingValues", "invalidValues"):
-        logger.warning(f"Quality metric {metric} does not support unit: percent; comparing absolute count")
-        is_percent = False
 
     if metric == "rowCount":
         return [_row_count_check(model, threshold, severity=severity, dimension=dimension)]
@@ -836,9 +887,6 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
             )
         ]
     if metric == "nullValues":
-        if field is None:
-            logger.warning("Quality check nullValues is only supported at field level")
-            return []
         return [
             _missing_count_check(
                 model,
@@ -852,17 +900,9 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
             )
         ]
     if metric == "invalidValues":
-        if field is None:
-            logger.warning("Quality check invalidValues is only supported at field level")
-            return []
         args = quality.arguments or {}
         valid_values = args.get("validValues")
         pattern = args.get("pattern")
-        if valid_values is None and pattern is None:
-            logger.warning(
-                f"Quality check invalidValues on field {field} has no validValues or pattern argument; skipping"
-            )
-            return []
         return [
             _invalid_count_check(
                 model,
@@ -879,9 +919,6 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
             )
         ]
     if metric == "missingValues":
-        if field is None:
-            logger.warning("Quality check missingValues is only supported at field level")
-            return []
         missing_values = quality.arguments.get("missingValues") if quality.arguments else None
         if missing_values is not None:
             missing_values = [v for v in missing_values if v is not None]
@@ -898,8 +935,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 dimension=dimension,
             )
         ]
-    logger.warning(f"Quality check {metric} is not yet supported")
-    return []
+    return []  # unreachable: unrunnable_reason rejects every other metric
 
 
 # ---------------------------------------------------------------------------

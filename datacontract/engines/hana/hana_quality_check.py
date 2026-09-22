@@ -9,6 +9,7 @@ from datacontract.engines.checks.create_checks import (
     _retention_value_to_seconds,
     is_percent_unit,
     quality_definition_yaml,
+    unrunnable_reason,
 )
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.severity import failure_result
@@ -172,6 +173,21 @@ def _quality_check(
             connection, schema_name, table_name, field_name, quality, index, skip_reason, selection=selection
         )
 
+    reason = unrunnable_reason(quality, field_name)
+    if reason is not None:
+        check_type = "field_quality_library" if field_name is not None else "model_quality_library"
+        if not selects(selection, quality, check_type):
+            return None
+        return _warning_check(
+            check_type=check_type,
+            key=_quality_key(table_name, field_name, f"quality_library_{index}"),
+            name=quality.description or "Quality Check",
+            model=table_name,
+            field=field_name,
+            reason=reason,
+            quality=quality,
+        )
+
     if quality.metric == "rowCount":
         sql = f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)}"
         return _metric_quality_check(
@@ -237,7 +253,7 @@ def _quality_check(
             selection=selection,
         )
 
-    if quality.metric == "nullValues" and field_name is not None:
+    if quality.metric == "nullValues":
         sql = (
             f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} IS NULL"
@@ -257,9 +273,10 @@ def _quality_check(
             selection=selection,
         )
 
-    if quality.metric == "invalidValues" and field_name is not None:
+    if quality.metric == "invalidValues":
         valid_values = _arguments(quality).get("validValues")
         if not valid_values:
+            # HANA builds an IN list, so it cannot run a pattern-only rule.
             if not selects(selection, quality, "field_invalid_values"):
                 return None
             return _warning_check(
@@ -268,7 +285,7 @@ def _quality_check(
                 name=f"Check invalid values for field {field_name}",
                 model=table_name,
                 field=field_name,
-                reason="invalidValues requires arguments.validValues at field level.",
+                reason="invalidValues on HANA needs arguments.validValues; pattern is not supported.",
                 quality=quality,
             )
         placeholders = ", ".join("?" for _ in valid_values)
@@ -292,7 +309,7 @@ def _quality_check(
             selection=selection,
         )
 
-    if quality.metric == "missingValues" and field_name is not None:
+    if quality.metric == "missingValues":
         missing_values = [value for value in (_arguments(quality).get("missingValues") or []) if value is not None]
         if missing_values:
             placeholders = ", ".join("?" for _ in missing_values)
@@ -407,9 +424,6 @@ def _metric_quality_check(
         )
 
     is_percent = quality.type != "sql" and is_percent_unit(quality)
-    if is_percent and quality.metric not in ("nullValues", "missingValues", "invalidValues"):
-        logger.warning(f"Quality metric {quality.metric} does not support unit: percent; comparing absolute count")
-        is_percent = False
 
     try:
         value = _fetch_scalar(connection, sql, params or [])
