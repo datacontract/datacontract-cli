@@ -81,8 +81,9 @@ bigquery = [
   "ibis-framework[bigquery]>=10.0.0,<13.0.0",
 ]
 
+# CSV import reads through DuckDB; kept as an alias so existing installs keep working.
 csv = [
-  "pandas >= 2.0.0",
+  "datacontract-cli[duckdb]",
 ]
 
 excel = [
