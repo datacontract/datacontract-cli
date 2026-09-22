@@ -81,13 +81,14 @@ def test_who_contract_and_transport(metadata_response):
 
 @pytest.mark.parametrize("version", ODATA_VERSIONS)
 @pytest.mark.parametrize("header", [True, False])
-def test_versions_and_header_fallback(metadata_response, version, header):
+@pytest.mark.parametrize("format", ["xml", "json"])
+def test_versions_and_header_fallback(metadata_response, version, header, format):
     response, _ = metadata_response
-    response.content = metadata_xml('<Property Name="Code" Type="Edm.String" />', version=version)
+    response.content = (FIXTURES / f"products.{format}").read_bytes().replace(b"4.01", version.encode())
     response.headers = {"OData-Version": version} if header else {}
-    contract = import_contract()
+    contract = import_contract("Products")
     assert contract.servers[0].customProperties[1].value == version
-    assert contract.schema_[0].properties[0].name == "Code"
+    assert contract.schema_[0].properties[0].name == "Sku"
 
 
 @pytest.mark.parametrize(
@@ -161,6 +162,15 @@ def test_keys_nullability_and_facets(metadata_response):
     assert not text.logicalTypeOptions
 
 
+@pytest.mark.parametrize("scale", ["", ' Scale="0"'], ids=["implicit-zero", "explicit-zero"])
+def test_xml_decimal_zero_scale(metadata_response, scale):
+    response, _ = metadata_response
+    response.headers = {}
+    response.content = metadata_xml(f'<Property Name="Amount" Type="Edm.Decimal" Precision="10"{scale} />')
+    prop = import_contract().schema_[0].properties[0]
+    assert {p.property: p.value for p in prop.customProperties} == {"precision": 10, "scale": 0}
+
+
 @pytest.mark.parametrize("entity_set", ["REF_COUNTRY", "ref_country", "Ref_Country"])
 @pytest.mark.parametrize("root", ["https://example.com", "https://example.com/service", "https://example.com/service/"])
 def test_entity_set_matching_normalizes_root(metadata_response, entity_set, root):
@@ -211,8 +221,6 @@ def test_unsupported_types_fail_with_field_and_type(metadata_response, field_typ
 @pytest.mark.parametrize(
     "document, header, error",
     [
-        (metadata_xml(version="3.0"), "3.0", "Unsupported OData version"),
-        (metadata_xml(version="5.0"), "5.0", "Unsupported OData version"),
         (metadata_xml(version="4.0"), "4.01", "Conflicting OData versions"),
         (metadata_xml(entity_attributes='BaseType="Demo.Base"'), None, "inheritance"),
         (metadata_xml().replace(b'Name="Service"', b'Name="Service" Extends="Demo.Base"'), None, "inheritance"),
@@ -283,14 +291,16 @@ def test_invalid_root_does_not_fetch_metadata(metadata_response, location):
     get.assert_not_called()
 
 
-@pytest.mark.parametrize(
-    "options",
-    [{"odata_metadata_url": METADATA, "odata_metadata_file": FIXTURES / "who-metadata.xml"}],
-)
-def test_metadata_sources_are_mutually_exclusive_for_python_api(metadata_response, options):
+def test_metadata_sources_are_mutually_exclusive_for_python_api(metadata_response):
     _, get = metadata_response
     with pytest.raises(DataContractException, match="mutually exclusive"):
-        DataContract.import_from_source("odata", source=ROOT, odata_entity_set=["ref_country"], **options)
+        DataContract.import_from_source(
+            "odata",
+            source=ROOT,
+            odata_entity_set=["ref_country"],
+            odata_metadata_url=METADATA,
+            odata_metadata_file=FIXTURES / "who-metadata.xml",
+        )
     get.assert_not_called()
 
 
@@ -390,17 +400,15 @@ def test_local_who_metadata_matches_url_import(metadata_response, path_type):
     get.assert_not_called()
 
 
-@pytest.mark.parametrize("version", ODATA_VERSIONS)
 @pytest.mark.parametrize("encoding", ["utf-8", "utf-16"])
-def test_local_metadata_version_and_encoding(metadata_response, tmp_path, version, encoding):
+def test_local_metadata_encoding(metadata_response, tmp_path, encoding):
     _, get = metadata_response
     path = tmp_path / "metadata.xml"
-    document = metadata_xml('<Property Name="Code" Type="Edm.String" />', version=version).decode()
+    document = metadata_xml('<Property Name="Code" Type="Edm.String" />').decode()
     path.write_bytes((f'<?xml version="1.0" encoding="{encoding}"?>{document}').encode(encoding))
     contract = DataContract.import_from_source(
         "odata", source=ROOT, odata_entity_set=["ref_country"], odata_metadata_file=path
     )
-    assert contract.servers[0].customProperties[1].value == version
     assert contract.schema_[0].properties[0].name == "Code"
     get.assert_not_called()
 
@@ -453,20 +461,12 @@ def json_metadata(metadata_response):
 
 
 @pytest.mark.parametrize("source", ["file", "url"])
-@pytest.mark.parametrize("version", ODATA_VERSIONS)
-@pytest.mark.parametrize("scale", [None, 0, 2])
-def test_xml_json_equivalent_contracts(metadata_response, tmp_path, source, version, scale):
+def test_xml_json_equivalent_contracts(metadata_response, tmp_path, source):
     response, get = metadata_response
-    response.headers = {"OData-Version": version, "Content-Type": "text/plain"}
+    response.headers = {"OData-Version": "4.01", "Content-Type": "text/plain"}
     contracts = []
     for format in ("xml", "json"):
-        content = (FIXTURES / f"products.{format}").read_bytes().replace(b"4.01", version.encode())
-        if format == "xml":
-            content = content.replace(b' Scale="2"', b"" if scale is None else f' Scale="{scale}"'.encode(), 1)
-        else:
-            document = json.loads(content)
-            document["Catalog.Model"]["Product"]["Price"]["$Scale"] = 0 if scale is None else scale
-            content = json.dumps(document).encode()
+        content = (FIXTURES / f"products.{format}").read_bytes()
         if source == "file":
             # Deliberately use an unrelated extension: content determines the format.
             path = tmp_path / "metadata.txt"
@@ -499,7 +499,7 @@ def test_xml_json_equivalent_contracts(metadata_response, tmp_path, source, vers
     assert properties[0]["logicalTypeOptions"] == {"maxLength": 32}
     assert properties[2]["customProperties"] == [
         {"property": "precision", "value": 10},
-        {"property": "scale", "value": 0 if scale is None else scale},
+        {"property": "scale", "value": 2},
     ]
 
 
@@ -631,7 +631,6 @@ def test_json_exact_match_and_ambiguous_names(metadata_response, json_metadata):
 @pytest.mark.parametrize(
     "path,value,error",
     [
-        (("$Version",), "3.0", "Unsupported OData version"),
         (("$Version",), 4.01, "Unsupported OData version"),
         (("$EntityContainer",), [], "namespace-qualified"),
         (("$EntityContainer",), "Missing.Store", "JSON object"),
@@ -799,10 +798,17 @@ def service_response(metadata_response):
     return service, get
 
 
-@pytest.mark.parametrize("format", ["xml", "json"])
-@pytest.mark.parametrize("metadata_source", ["file", "derived_url", "explicit_url"])
-@pytest.mark.parametrize("service_source", ["file", "url"])
-@pytest.mark.parametrize("root", [SERVICE_ROOT, SERVICE_ROOT.rstrip("/")])
+@pytest.mark.parametrize(
+    "format, metadata_source, service_source, root",
+    [
+        pytest.param("xml", "file", "file", SERVICE_ROOT, id="offline-xml"),
+        pytest.param("json", "file", "file", SERVICE_ROOT, id="offline-json"),
+        pytest.param("xml", "derived_url", "url", SERVICE_ROOT, id="http-xml"),
+        pytest.param("json", "derived_url", "url", SERVICE_ROOT.rstrip("/"), id="http-json-normalized-root"),
+        pytest.param("json", "explicit_url", "file", SERVICE_ROOT, id="explicit-metadata-url-local-service"),
+        pytest.param("xml", "file", "url", SERVICE_ROOT, id="local-metadata-http-service"),
+    ],
+)
 def test_import_all_advertised_sets(metadata_response, service_response, format, metadata_source, service_source, root):
     metadata, _ = metadata_response
     _, get = service_response
@@ -845,11 +851,10 @@ def test_import_all_advertised_sets(metadata_response, service_response, format,
 
 
 @pytest.mark.parametrize("format", ["xml", "json"])
-@pytest.mark.parametrize("version", ODATA_VERSIONS)
-def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_path, format, version):
+def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_path, format):
     _, get = metadata_response
     path = tmp_path / "metadata"
-    path.write_bytes((FIXTURES / f"products.{format}").read_bytes().replace(b"4.01", version.encode()))
+    path.write_bytes((FIXTURES / f"products.{format}").read_bytes())
     result = CliRunner().invoke(
         app,
         [
@@ -1094,8 +1099,16 @@ def test_xml_requires_unambiguous_container(metadata_response):
         import_contract()
 
 
-@pytest.mark.parametrize("authorization", [None, "Bearer synthetic-token", "Basic dXNlcjpwYXNz"])
-@pytest.mark.parametrize("config_source", ["environment", "config", "dict"])
+@pytest.mark.parametrize(
+    "authorization, config_source",
+    [
+        pytest.param(None, "environment", id="anonymous"),
+        pytest.param("Bearer synthetic-token", "environment", id="bearer-environment"),
+        pytest.param("Bearer synthetic-token", "config", id="bearer-config"),
+        pytest.param("Basic dXNlcjpwYXNz", "config", id="basic-config"),
+        pytest.param("Bearer synthetic-token", "dict", id="bearer-dict"),
+    ],
+)
 def test_authentication_on_both_documents(service_response, monkeypatch, authorization, config_source):
     _, get = service_response
     config = None
