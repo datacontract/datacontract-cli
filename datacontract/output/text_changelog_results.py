@@ -4,6 +4,7 @@ from collections import Counter
 from rich import box
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 
@@ -19,6 +20,9 @@ _BADGE_ORDER = [ChangelogType.added, ChangelogType.updated, ChangelogType.remove
 
 
 def write_text_changelog_results(result: ChangelogResult, console: Console):
+    if not result.entries:
+        console.print("No changes.")
+        return
     _print_summary(result, console)
     _print_table(result, console)
 
@@ -43,7 +47,7 @@ def _print_summary(result: ChangelogResult, console: Console):
     table.add_column("Change", no_wrap=True)
     table.add_column("Field", no_wrap=True)
     for entry in result.summary:
-        table.add_row(_with_markup(entry.type), entry.path)
+        table.add_row(_with_markup(entry.type), Text(entry.path))
     buf = io.StringIO()
     wide = Console(file=buf, width=300, highlight=False, force_terminal=console.is_terminal, no_color=console.no_color)
     wide.print(table)
@@ -61,9 +65,9 @@ def _print_table(result: ChangelogResult, console: Console):
     for entry in result.entries:
         table.add_row(
             _with_markup(entry.type),
-            entry.path,
-            _wrap(entry.old_value or "", _VAL_W),
-            _wrap(entry.new_value or "", _VAL_W),
+            Text(entry.path),
+            Text(_wrap(entry.old_value or "", _VAL_W)),
+            Text(_wrap(entry.new_value or "", _VAL_W)),
         )
     buf = io.StringIO()
     wide = Console(file=buf, width=300, highlight=False, force_terminal=console.is_terminal, no_color=console.no_color)

@@ -11,6 +11,7 @@ from datacontract.breaking.rules import (
     FieldRemovedRule,
     KeyConstraintRule,
     MetadataFallbackRule,
+    QualityConstraintRule,
     RequiredChangedRule,
     RuleEvaluation,
     SchemaRemovedRule,
@@ -214,6 +215,127 @@ def test_invalid_date_validation_constraint_is_warning():
     assert result.level == BreakingChangeLevel.WARNING
 
 
+QUALITY = "schema.orders.properties.status.quality.allowed"
+
+
+def test_removing_a_valid_value_is_breaking():
+    result = QualityConstraintRule().evaluate(_entry(f"{QUALITY}.arguments.validValues", ChangelogType.removed, "3"))
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_adding_a_valid_value_is_info():
+    result = QualityConstraintRule().evaluate(
+        _entry(f"{QUALITY}.arguments.validValues", ChangelogType.added, None, "4")
+    )
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_adding_an_invalid_value_is_breaking():
+    result = QualityConstraintRule().evaluate(
+        _entry(f"{QUALITY}.arguments.invalidValues", ChangelogType.added, None, "x")
+    )
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_tightening_a_quality_threshold_is_breaking():
+    result = QualityConstraintRule().evaluate(_entry(f"{QUALITY}.mustBeLessThan", ChangelogType.updated, "10", "5"))
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_relaxing_a_quality_threshold_is_info():
+    result = QualityConstraintRule().evaluate(_entry(f"{QUALITY}.mustBeGreaterThan", ChangelogType.updated, "10", "5"))
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_changing_a_quality_query_is_warning():
+    result = QualityConstraintRule().evaluate(_entry(f"{QUALITY}.query", ChangelogType.updated, "SELECT 1", "SELECT 2"))
+    assert result.level == BreakingChangeLevel.WARNING
+
+
+def test_adding_a_quality_rule_is_breaking():
+    result = QualityConstraintRule().evaluate(_entry(QUALITY, ChangelogType.added))
+    assert result.level == BreakingChangeLevel.ERROR
+
+
+def test_removing_a_quality_rule_is_info():
+    result = QualityConstraintRule().evaluate(_entry(QUALITY, ChangelogType.removed))
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_quality_rule_description_is_info():
+    result = QualityConstraintRule().evaluate(_entry(f"{QUALITY}.description", ChangelogType.updated, "a", "b"))
+    assert result.level == BreakingChangeLevel.INFO
+
+
+def test_only_the_added_quality_rule_itself_is_graded():
+    changelog = ChangelogResult(
+        v1="v1",
+        v2="v2",
+        summary=[],
+        entries=[
+            _entry(QUALITY, ChangelogType.added),
+            _entry(f"{QUALITY}.mustBeLessThan", ChangelogType.added, None, "5"),
+        ],
+    )
+    result = BreakingChangeDetector().detect(changelog)
+    assert [entry.level for entry in result.entries] == [BreakingChangeLevel.ERROR, BreakingChangeLevel.INFO]
+
+
+def test_removing_a_whole_quality_rule_is_not_breaking():
+    with_rule = """
+apiVersion: v3.0.2
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: status
+        logicalType: string
+        quality:
+          - name: {name}
+            type: library
+            metric: invalidValues
+            arguments:
+              validValues: [1, 2, 3]
+            mustBeLessThan: 10
+"""
+    without = with_rule[: with_rule.index("        quality:")]
+    result = DataContract(data_contract_str=with_rule.format(name="allowed")).breaking(
+        DataContract(data_contract_str=without)
+    )
+    assert not result.is_breaking
+    assert {entry.level for entry in result.entries} == {BreakingChangeLevel.INFO}
+
+
+def test_narrowing_valid_values_is_breaking_end_to_end():
+    contract = """
+apiVersion: v3.0.2
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: status
+        logicalType: string
+        quality:
+          - name: allowed
+            type: library
+            metric: invalidValues
+            arguments:
+              validValues: {values}
+            mustBe: 0
+"""
+    v1 = DataContract(data_contract_str=contract.format(values="[1, 2, 3]"))
+    v2 = DataContract(data_contract_str=contract.format(values="[1, 2]"))
+    result = v1.breaking(v2)
+    assert result.is_breaking
+    assert [e.rule_id for e in result.entries] == ["quality-constraint-changed"]
+
+
 def test_unknown_change_is_info():
     result = MetadataFallbackRule().evaluate(_entry("description.purpose", ChangelogType.updated, "old", "new"))
     assert result.level == BreakingChangeLevel.INFO
@@ -335,3 +457,34 @@ def test_detector_uses_first_matching_rule():
 
     assert result.entries[0].rule_id == "first"
     assert result.entries[0].level == BreakingChangeLevel.INFO
+
+
+def test_contract_strings_are_not_parsed_as_markup(capsys):
+    contract = """
+apiVersion: v3.0.2
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: "x[/]y"
+        logicalType: string
+        description: {description}
+"""
+    v1 = DataContract(data_contract_str=contract.format(description='"[link=http://e.io]c[/link]"'))
+    v2 = DataContract(data_contract_str=contract.format(description='"plain"'))
+    write_text_breaking_results(v1.breaking(v2), Console(file=io.StringIO(), force_terminal=True, width=300))
+    out = capsys.readouterr().out
+    assert "x[/]y" in out
+    assert "[link=http://e.io]c[/link]" in out
+    assert "\x1b]8;" not in out
+
+
+def test_cli_yaml_error_names_the_file(tmp_path):
+    broken = tmp_path / "v2.yaml"
+    broken.write_text("kind: [broken\n")
+    result = runner.invoke(app, ["breaking", V1, str(broken)])
+    assert result.exit_code != 0
+    assert f"Cannot parse YAML in '{broken}'" in str(result.exception)

@@ -13,6 +13,7 @@ from datacontract.cli import (
     console,
     debug_option,
     enable_debug_logging,
+    inline_references_option,
     resolve_output_format,
     validate_publish_url,
 )
@@ -199,13 +200,7 @@ def test(
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
-    inline_references: Annotated[
-        bool,
-        typer.Option(
-            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
-            "contract and inline the fetched content from the configured entropy-data host."
-        ),
-    ] = True,
+    inline_references: inline_references_option = True,
     debug: debug_option = None,
 ):
     """

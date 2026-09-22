@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
 
 ### Fixed
+- `datacontract changelog` and `datacontract breaking`:
+  - report changes in list items that have no name, url or id, such as unnamed `quality` rules
+  - report a renamed schema as a removal and an addition instead of dumping both schemas into one row
+  - `breaking` recognizes changes to `quality` rules
+- A YAML parse error names the file that failed to parse
+- `datacontract api` answers a non-ASCII `x-api-key` with `403` instead of `500`
 - `datacontract api` logs INFO from all modules again and warns on failed API key checks; `/test` no longer logs the submitted contract
 - `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)
 - `datacontract import s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628)
@@ -29,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` no longer counts `NULL` values as duplicates of each other in uniqueness checks
 - `datacontract dbt sync` writes the generated-column marker under `config.meta` instead of a top-level `meta` so the model YAML parses under dbt Fusion; files written by an earlier version are migrated on the next sync (#1633 @FredrikBakken)
 - `datacontract test` reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
+- `datacontract api` resolves `authoritativeDefinitions` only against the Entropy Data host configured on the server and answers a failed lookup on every endpoint with `422` and the URL, never with what the host answered
 
 ### Changed
 - Internal logging uses named module loggers instead of the root logger

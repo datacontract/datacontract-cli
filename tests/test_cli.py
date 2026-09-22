@@ -139,7 +139,16 @@ def test_breaking_without_changes_exits_zero():
     fixture = "fixtures/changelog/integration/changelog_integration_v1.yaml"
     result = runner.invoke(app, ["breaking", fixture, fixture])
     assert result.exit_code == 0
-    assert "Details" in result.output
+    assert "No changes." in result.output
+    assert "Details" not in result.output
+
+
+def test_changelog_without_changes_says_so():
+    fixture = "fixtures/changelog/integration/changelog_integration_v1.yaml"
+    result = runner.invoke(app, ["changelog", fixture, fixture])
+    assert result.exit_code == 0
+    assert "No changes." in result.output
+    assert "Details" not in result.output
 
 
 def test_error_message_keeps_bracketed_text(monkeypatch, capsys):
