@@ -523,10 +523,17 @@ def _resolve_definition(
     target_url, headers, host_hint = _build_request(url, type_, config, configured_host_only)
 
     try:
-        response = requests.get(target_url, headers=headers, timeout=10)
+        # Not following redirects keeps the API key from travelling to another host.
+        response = requests.get(target_url, headers=headers, timeout=10, allow_redirects=False)
     except requests.RequestException as e:
         raise _definition_resolution_error(url, target_url, str(e), original_exception=e, hint=host_hint)
 
+    if response.is_redirect:
+        raise _definition_resolution_error(
+            url,
+            target_url,
+            f"HTTP {response.status_code} redirect to '{response.headers.get('Location')}' is not followed",
+        )
     if response.status_code != 200:
         # 401/403 here almost always means the configured host is the wrong
         # deployment for this IRI, so surface the ENTROPY_DATA_HOST hint.

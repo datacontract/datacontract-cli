@@ -22,7 +22,7 @@ from datacontract.lint.resolve import (
     clear_definition_cache,
     inline_definitions_into_data_contract,
 )
-from datacontract.model.exceptions import DataContractException
+from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 
 _HOST = "https://api.entropy-data.com"
 _API_KEY = "test-key"
@@ -113,6 +113,23 @@ def test_absolute_url_matching_host_sends_api_key(env):
     inline_definitions_into_data_contract(_contract(prop))
 
     assert responses.calls[0].request.headers.get("x-api-key") == _API_KEY
+
+
+@responses.activate
+def test_redirect_from_configured_host_is_not_followed(env):
+    """A redirect would carry the API key to whatever host the response names."""
+    responses.add(
+        responses.GET,
+        f"{_HOST}/demo/definitions/foo",
+        status=302,
+        headers={"Location": "https://evil.example.com/steal"},
+    )
+
+    with pytest.raises(DefinitionResolutionError) as exc:
+        inline_definitions_into_data_contract(_contract(_prop_referencing("/demo/definitions/foo")))
+
+    assert "HTTP 302 redirect to 'https://evil.example.com/steal' is not followed" in exc.value.reason
+    assert len(responses.calls) == 1
 
 
 @responses.activate
