@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 from unittest import mock
@@ -76,6 +76,7 @@ class _SyncResult:
     written_yaml: List[Path]
     written_sql: List[Path]
     run: Optional[Run]
+    prunable: List[str] = field(default_factory=list)
 
 
 def sync(
@@ -114,6 +115,7 @@ def sync(
         written_yaml=gen.written_yaml,
         written_sql=gen.written_sql,
         run=run,
+        prunable=gen.prunable,
     )
 
 
@@ -488,8 +490,6 @@ def test_resync_migrates_legacy_toplevel_column_meta(tmp_path: Path):
     project = _copy_dbt_project(tmp_path)
     _orders_model_sql(project)
     schema = project / "models" / "schema.yml"
-    # Keep a user description on the column so cleanup doesn't retire it as an empty managed
-    # column before the merge runs — we want to observe the migration, not retire/recreate.
     schema.write_text(
         "version: 2\n"
         "models:\n"
@@ -516,10 +516,8 @@ def test_resync_migrates_legacy_toplevel_column_meta(tmp_path: Path):
     # Our block moved out of the Fusion-rejected location; the user's sibling key stays put.
     assert "datacontract_cli" not in col.get("meta", {})
     assert col["meta"]["custom_key"] == "keep me"
-    # A column that left the contract is kept (no --prune) but must be migrated as well.
-    retired = cols["retired_col"]
-    assert retired["config"]["meta"]["datacontract_cli"]["generated"] is True
-    assert "meta" not in retired
+    # A column that left the contract is recognized through its legacy marker and retired.
+    assert "retired_col" not in cols
 
 
 def test_legacy_toplevel_column_meta_still_recognized_as_managed():
@@ -531,7 +529,7 @@ def test_legacy_toplevel_column_meta_still_recognized_as_managed():
 
 
 def test_column_dropped_from_contract_is_still_retired(tmp_path: Path):
-    """Cleanup keys off the managed marker — moving it must not strand generated columns."""
+    """A generated column whose property left the contract is retired without --prune."""
     project = _copy_dbt_project(tmp_path)
     _orders_model_sql(project)
     schema = _user_orders_schema(project)
@@ -539,14 +537,34 @@ def test_column_dropped_from_contract_is_still_retired(tmp_path: Path):
 
     col = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_status"]
     assert _is_managed_column(col) is True  # reader sees the relocated marker
+    assert col["data_type"]  # sync wrote it; it is ours to take back
 
-    # Strip everything that keeps the column alive; cleanup must then retire it, which it can only
-    # do by recognizing the marker in its new `config.meta` home.
+    trimmed = yaml.safe_load(CONTRACT_PATH.read_text())
+    for obj in trimmed["schema"]:
+        obj["properties"] = [p for p in obj["properties"] if p["name"] != "order_status"]
+    slim = tmp_path / "orders-slim.odcs.yaml"
+    slim.write_text(yaml.safe_dump(trimmed))
+
+    result = sync(contract=str(slim), project_dir=project, skip_tests=True)
+
+    cols = {c["name"] for c in _model_entry(schema)["columns"]}
+    assert "order_status" not in cols  # generated column retired without --prune
+    assert "extra_user_col" in cols  # the user's own column survives
+    assert result.prunable == ["orders: column `extra_user_col`"]  # retired column no longer reported as drift
+
+
+def test_retired_managed_column_with_user_residue_is_handed_over(tmp_path: Path):
+    """A user's test on the column keeps it, unmarked and still typed/described for them."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
     doc = yaml.safe_load(schema.read_text())
     entry = next(m for m in doc["models"] if m["name"] == "orders")
-    entry["columns"] = [
-        {"name": c["name"], "config": c["config"]} if c["name"] == "order_status" else c for c in entry["columns"]
-    ]
+    col = next(c for c in entry["columns"] if c["name"] == "order_status")
+    col["data_tests"].append("unique")
+    col["quote"] = True
     schema.write_text(yaml.safe_dump(doc))
 
     trimmed = yaml.safe_load(CONTRACT_PATH.read_text())
@@ -557,9 +575,8 @@ def test_column_dropped_from_contract_is_still_retired(tmp_path: Path):
 
     sync(contract=str(slim), project_dir=project, skip_tests=True)
 
-    cols = {c["name"] for c in _model_entry(schema)["columns"]}
-    assert "order_status" not in cols  # generated column retired
-    assert "extra_user_col" in cols  # the user's own column survives
+    col = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_status"]
+    assert col == {"name": "order_status", "data_type": "text", "data_tests": ["unique"], "quote": True}
 
 
 def test_sync_skips_model_with_no_sql_or_entry(tmp_path: Path):
