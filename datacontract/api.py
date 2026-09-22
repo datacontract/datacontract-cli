@@ -6,7 +6,6 @@ from importlib import metadata
 from typing import Annotated, Optional
 
 import pydantic
-import yaml
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.security.api_key import APIKeyHeader
@@ -335,11 +334,6 @@ app = FastAPI(
         },
     ],
 )
-
-
-@app.exception_handler(yaml.YAMLError)
-def _yaml_error(request: Request, e: yaml.YAMLError):
-    return JSONResponse(status_code=422, content={"detail": f"Invalid YAML: {e}"})
 
 
 @app.exception_handler(pydantic.ValidationError)

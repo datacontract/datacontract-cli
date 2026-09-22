@@ -107,18 +107,6 @@ def _valid_contract_yaml():
         return f.read()
 
 
-def test_changelog_yaml_error_returns_422():
-    import yaml
-
-    with patch("datacontract.api.DataContract") as mock_dc:
-        mock_dc.side_effect = yaml.YAMLError("bad yaml")
-        response = client.post(url="/changelog", json={"v1": _valid_contract_yaml(), "v2": _valid_contract_yaml()})
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert detail.startswith("Invalid YAML:")
-    assert "bad yaml" in detail
-
-
 def test_changelog_pydantic_validation_error_returns_422():
     import pydantic
 
