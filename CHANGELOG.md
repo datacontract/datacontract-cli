@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
 
 ### Fixed
+- `datacontract import sql` warns about statements it cannot parse and therefore skips, such as a `CREATE TABLE` with unquoted hyphens in its name (#686)
 - `datacontract changelog` and `datacontract breaking`:
   - report changes in list items that have no name, url or id, such as unnamed `quality` rules
   - report a renamed schema as a removal and an addition instead of dumping both schemas into one row

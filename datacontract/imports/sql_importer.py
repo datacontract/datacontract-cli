@@ -60,6 +60,13 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             result=ResultEnum.error,
         )
 
+    for statement in statements:
+        if isinstance(statement, sqlglot.exp.Command):
+            logger.warning(
+                f"Skipping statement that could not be parsed as {dialect.value} SQL "
+                f"(unquoted special characters in identifiers?): {statement.sql().splitlines()[0]}"
+            )
+
     odcs = create_odcs()
     odcs.schema_ = []
 

@@ -163,6 +163,17 @@ def test_import_sql_ignores_create_schema(tmp_path):
     assert [schema_object.name for schema_object in result.schema_] == ["orders"]
 
 
+def test_import_sql_warns_about_skipped_unparsable_statement(tmp_path, caplog):
+    ddl = tmp_path / "ddl.sql"
+    ddl.write_text("CREATE TABLE my-database.my-schema.employees (employee_id INT);")
+
+    result = DataContract.import_from_source("sql", str(ddl), dialect="postgres")
+
+    assert result.schema_ == []
+    assert "Skipping statement that could not be parsed as postgres SQL" in caplog.text
+    assert "CREATE TABLE my-database.my-schema.employees" in caplog.text
+
+
 def test_import_sql_keeps_same_named_tables_in_different_schemas_apart(tmp_path):
     ddl = tmp_path / "ddl.sql"
     ddl.write_text(
