@@ -68,5 +68,5 @@ def get_version() -> str:
     try:
         return version("datacontract_cli")
     except Exception as e:
-        logger.debug("Ignoring exception", e)
+        logger.debug("Ignoring exception: %s", e)
         return ""

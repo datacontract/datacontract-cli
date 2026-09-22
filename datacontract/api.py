@@ -671,13 +671,13 @@ def check_api_key(api_key_header: str | None):
         logger.info("Environment variable DATACONTRACT_CLI_API_KEY is not set. Skip API key check.")
         return
     if api_key_header is None or api_key_header == "":
-        logger.info("The API key is missing.")
+        logger.warning("The API key is missing.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing API key. Use Header 'x-api-key' to provide the API key.",
         )
     if not secrets.compare_digest(api_key_header, correct_api_key):
-        logger.info("The provided API key is not correct.")
+        logger.warning("The provided API key is not correct.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The provided API key is not correct.",
@@ -781,7 +781,6 @@ async def test(
             detail="Use either the filter or the filters parameter, not both.",
         )
     logger.info("Testing data contract...")
-    logger.info(body)
     config = config_from_headers(request.headers)
     untrusted_contract = getattr(request.app.state, "untrusted_contracts", False)
     if untrusted_contract:

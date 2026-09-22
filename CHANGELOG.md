@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
 
 ### Fixed
+- `datacontract api` logs INFO from all modules again and warns on failed API key checks; `/test` no longer logs the submitted contract
 - `datacontract import` maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType` (#1629)
 - `datacontract import s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628)
 - `datacontract import sql` detects table-level PRIMARY KEY and FOREIGN KEY constraints, derives `unique: true` for single-column keys, and emits property-level `relationships` in the ODCS shorthand format (#1618 @dmaresma)
