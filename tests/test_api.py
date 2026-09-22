@@ -150,9 +150,11 @@ def test_changelog_data_contract_exception_returns_422():
 
 
 # ---------------------------------------------------------------------------
-# A posted contract may reference an authoritativeDefinition by URL, and the
-# server fetches it. What that fetch answered is an observation of the server's
-# network, so it must not be echoed back to whoever posted the contract.
+# A posted contract may reference an authoritativeDefinition by URL. The server
+# only resolves it against the configured Entropy Data host: any other host is
+# refused without contacting it, and what a lookup answered is an observation of
+# the server's network, so it must not be echoed back to whoever posted the
+# contract.
 # ---------------------------------------------------------------------------
 
 
@@ -174,7 +176,7 @@ schema:
 
 
 @responses.activate
-def test_changelog_definition_resolution_failure_does_not_echo_the_response():
+def test_changelog_does_not_contact_a_host_the_contract_names():
     internal_url = "http://internal.example.com:8080/admin/definitions/c"
     responses.add(responses.GET, internal_url, status=401)
 
@@ -183,10 +185,64 @@ def test_changelog_definition_resolution_failure_does_not_echo_the_response():
 
     assert response.status_code == 422
     assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
 
 
 @responses.activate
-def test_export_definition_resolution_failure_does_not_echo_the_transport_error():
+def test_breaking_does_not_contact_a_host_the_contract_names():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=418, body="I am a teapot on the internal net")
+
+    contract = _contract_referencing(internal_url)
+    response = client.post(url="/breaking", json={"v1": contract, "v2": contract})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_lint_resolves_a_definition_on_the_configured_host(monkeypatch):
+    monkeypatch.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(
+        responses.GET,
+        "https://entropy.example.com/definitions/c",
+        json={"name": "c", "logicalType": "string"},
+        status=200,
+    )
+
+    response = client.post(url="/lint", json=_contract_referencing("/definitions/c"))
+
+    assert response.status_code == 200
+    assert response.json()["result"] == "passed"
+    assert len(responses.calls) == 1
+
+
+def test_export_refuses_a_local_file_reference():
+    response = client.post(url="/export?format=odcs", json=_contract_referencing("../etc/definitions.yaml"))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Could not resolve authoritative definition '../etc/definitions.yaml'."
+
+
+def test_lint_data_contract_exception_returns_422():
+    with patch("datacontract.api.DataContract") as mock_dc:
+        mock_dc.side_effect = DataContractException(type="test", name="test", reason="something went wrong")
+        response = client.post(url="/lint", json=_valid_contract_yaml())
+    assert response.status_code == 422
+    assert response.json()["detail"].startswith("Data Contract Validation Failure:")
+
+
+def test_test_data_contract_exception_returns_422():
+    with patch("datacontract.api.DataContract") as mock_dc:
+        mock_dc.side_effect = DataContractException(type="test", name="test", reason="something went wrong")
+        response = client.post(url="/test", json=_valid_contract_yaml())
+    assert response.status_code == 422
+    assert response.json()["detail"].startswith("Data Contract Validation Failure:")
+
+
+@responses.activate
+def test_export_does_not_contact_a_host_the_contract_names():
     internal_url = "http://internal.example.com:8080/admin/definitions/c"
     responses.add(responses.GET, internal_url, body=requests.exceptions.ConnectionError("connection refused"))
 
@@ -194,6 +250,7 @@ def test_export_definition_resolution_failure_does_not_echo_the_transport_error(
 
     assert response.status_code == 422
     assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -395,6 +452,7 @@ def test_every_endpoint_rejects_a_wrong_api_key(monkeypatch):
 
     assert _post("/lint", api_key="not-the-secret").status_code == 403
     assert _post("/export?format=odcs", api_key="not-the-secret").status_code == 403
+    assert _post("/lint", api_key=b"secr\xc3\xa9t").status_code == 403
 
 
 def test_every_endpoint_accepts_the_correct_api_key(monkeypatch):

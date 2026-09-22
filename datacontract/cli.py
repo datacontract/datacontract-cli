@@ -21,6 +21,14 @@ from datacontract.output.output_format import OutputFormat
 console = Console()
 
 debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
+inline_references_option = Annotated[
+    bool,
+    typer.Option(
+        help="Resolve authoritativeDefinitions of type definition, semantics or businessDefinition and inline them "
+        "into the contract. URLs are fetched from the Entropy Data host (ENTROPY_DATA_HOST, default "
+        "https://api.entropy-data.com), file references are read from disk. See the Semantics docs."
+    ),
+]
 
 
 # Order in which top-level commands appear in `datacontract --help` (cf. README.md)

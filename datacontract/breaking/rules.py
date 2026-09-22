@@ -160,6 +160,46 @@ class EnumConstraintRule(BreakingChangeRule):
         return RuleEvaluation(self.rule_id, level, _change_message("allowed values", entry))
 
 
+class QualityConstraintRule(BreakingChangeRule):
+    rule_id = "quality-constraint-changed"
+    _thresholds = (
+        ".mustBeLessThan",
+        ".mustBeLessOrEqualTo",
+        ".mustBeGreaterThan",
+        ".mustBeGreaterOrEqualTo",
+    )
+
+    def evaluate(self, entry: ChangelogEntry) -> RuleEvaluation | None:
+        if not entry.path.startswith("schema.") or ".quality." not in entry.path:
+            return None
+        rule_path = entry.path.rsplit(".quality.", 1)[1]
+        if rule_path.endswith(".arguments.validValues"):
+            # The diff emits one entry per list element.
+            level = BreakingChangeLevel.INFO if entry.type == ChangelogType.added else BreakingChangeLevel.ERROR
+        elif rule_path.endswith(".arguments.invalidValues"):
+            level = BreakingChangeLevel.INFO if entry.type == ChangelogType.removed else BreakingChangeLevel.ERROR
+        elif rule_path.endswith(self._thresholds):
+            old = _parse_number(entry.old_value)
+            new = _parse_number(entry.new_value)
+            if entry.type == ChangelogType.removed:
+                level = BreakingChangeLevel.INFO
+            elif old is None or new is None:
+                level = BreakingChangeLevel.WARNING
+            elif _is_tightening(entry.path, old, new):
+                level = BreakingChangeLevel.ERROR
+            else:
+                level = BreakingChangeLevel.INFO
+        elif "." not in rule_path or rule_path.endswith((".description", ".dimension", ".businessImpact", ".severity")):
+            # A whole rule added or removed, or its documentation.
+            level = BreakingChangeLevel.INFO
+        elif ".customProperties." in rule_path or ".authoritativeDefinitions." in rule_path or ".tags" in rule_path:
+            level = BreakingChangeLevel.INFO
+        else:
+            # What the rule checks changed (type, metric, query, other arguments, thresholds we cannot order).
+            level = BreakingChangeLevel.WARNING
+        return RuleEvaluation(self.rule_id, level, _change_message("quality rule", entry))
+
+
 class VectorShapeRule(BreakingChangeRule):
     rule_id = "vector-shape-changed"
 
@@ -206,9 +246,9 @@ def _parse_number(value: str | None) -> float | None:
 
 
 def _is_tightening(path: str, old: float, new: float) -> bool:
-    if path.endswith((".minLength", ".minimum", ".exclusiveMinimum")):
+    if path.endswith((".minLength", ".minimum", ".exclusiveMinimum", ".mustBeGreaterThan", ".mustBeGreaterOrEqualTo")):
         return new > old
-    if path.endswith((".maxLength", ".maximum", ".exclusiveMaximum")):
+    if path.endswith((".maxLength", ".maximum", ".exclusiveMaximum", ".mustBeLessThan", ".mustBeLessOrEqualTo")):
         return new < old
     return True
 
@@ -222,6 +262,7 @@ def _change_message(subject: str, entry: ChangelogEntry) -> str:
 
 
 DEFAULT_RULES: tuple[BreakingChangeRule, ...] = (
+    QualityConstraintRule(),
     RequiredChangedRule(),
     SchemaRemovedRule(),
     FieldRemovedRule(),

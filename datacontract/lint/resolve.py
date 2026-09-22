@@ -99,7 +99,7 @@ def resolve_data_contract_dict(
 ) -> dict:
     """Resolve a data contract and return it as a dictionary."""
     if data_contract_location is not None:
-        return _to_yaml(read_resource(data_contract_location, config))
+        return _to_yaml(read_resource(data_contract_location, config), data_contract_location)
     elif data_contract_str is not None:
         return _to_yaml(data_contract_str)
     elif data_contract is not None:
@@ -122,10 +122,18 @@ def resolve_data_contract(
     inline_references: bool = False,
     all_errors: bool = False,
     config: "Config | None" = None,
+    configured_host_only: bool = False,
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
     return resolve_data_contract_with_schema_version(
-        data_contract_location, data_contract_str, data_contract, schema_location, inline_references, all_errors, config
+        data_contract_location,
+        data_contract_str,
+        data_contract,
+        schema_location,
+        inline_references,
+        all_errors,
+        config,
+        configured_host_only=configured_host_only,
     )[0]
 
 
@@ -138,12 +146,16 @@ def resolve_data_contract_with_schema_version(
     all_errors: bool = False,
     config: "Config | None" = None,
     use_declared_api_version: bool = False,
+    configured_host_only: bool = False,
 ) -> tuple[OpenDataContractStandard, str | None]:
     """Resolve a data contract and report the ODCS version it was validated against.
 
     With use_declared_api_version, the schema is the one for the contract's own
     apiVersion. The reported version is None when no bundled ODCS schema was used: a
     custom schema, a DCS contract, or an already-parsed contract.
+
+    With configured_host_only, authoritativeDefinitions are only fetched from the
+    configured Entropy Data host; any other host is refused.
     """
     if data_contract_location is not None:
         return _resolve_data_contract_from_str(
@@ -154,6 +166,7 @@ def resolve_data_contract_with_schema_version(
             config,
             base_location=data_contract_location,
             use_declared_api_version=use_declared_api_version,
+            configured_host_only=configured_host_only,
         )
     elif data_contract_str is not None:
         return _resolve_data_contract_from_str(
@@ -163,6 +176,7 @@ def resolve_data_contract_with_schema_version(
             all_errors,
             config,
             use_declared_api_version=use_declared_api_version,
+            configured_host_only=configured_host_only,
         )
     elif data_contract is not None:
         return data_contract, None
@@ -225,6 +239,7 @@ def inline_definitions_into_data_contract(
     config: "Config | None" = None,
     base_location: str | None = None,
     visited: frozenset[str] = frozenset(),
+    configured_host_only: bool = False,
 ):
     """Resolve `authoritativeDefinitions[type in {semantics, definition,
     businessDefinition}]` on every property.
@@ -243,7 +258,7 @@ def inline_definitions_into_data_contract(
     for schema_obj in data_contract.schema_:
         if schema_obj.properties:
             for prop in schema_obj.properties:
-                inline_definition_into_property(prop, config, base_location, visited)
+                inline_definition_into_property(prop, config, base_location, visited, configured_host_only)
 
 
 def inline_definition_into_property(
@@ -251,13 +266,14 @@ def inline_definition_into_property(
     config: "Config | None" = None,
     base_location: str | None = None,
     visited: frozenset[str] = frozenset(),
+    configured_host_only: bool = False,
 ):
     """Resolve and inline; recurse into nested properties and array items."""
     if prop.items is not None:
-        inline_definition_into_property(prop.items, config, base_location, visited)
+        inline_definition_into_property(prop.items, config, base_location, visited, configured_host_only)
     if prop.properties is not None:
         for nested_prop in prop.properties:
-            inline_definition_into_property(nested_prop, config, base_location, visited)
+            inline_definition_into_property(nested_prop, config, base_location, visited, configured_host_only)
 
     resolved = _resolvable_reference(prop)
     if resolved is None:
@@ -267,7 +283,7 @@ def inline_definition_into_property(
     if _is_local_reference(url):
         definition = _resolve_local_definition(url, base_location, visited, config)
     else:
-        definition = _resolve_definition(url, type_, config)
+        definition = _resolve_definition(url, type_, config, configured_host_only)
     _apply_definition_to_property(prop, definition)
 
 
@@ -487,7 +503,9 @@ def _local_resolution_error(
     return DefinitionResolutionError(url=url, reason=reason, original_exception=original_exception)
 
 
-def _resolve_definition(url: str, type_: str, config: "Config | None" = None) -> SchemaProperty:
+def _resolve_definition(
+    url: str, type_: str, config: "Config | None" = None, configured_host_only: bool = False
+) -> SchemaProperty:
     """Fetch and parse the definition or semantic concept at `url`.
 
     `type_` controls how an absolute URL on a different host is handled:
@@ -502,7 +520,7 @@ def _resolve_definition(url: str, type_: str, config: "Config | None" = None) ->
     if url in _definition_cache:
         return _definition_cache[url]
 
-    target_url, headers, host_hint = _build_request(url, type_, config)
+    target_url, headers, host_hint = _build_request(url, type_, config, configured_host_only)
 
     try:
         response = requests.get(target_url, headers=headers, timeout=10)
@@ -526,7 +544,9 @@ def _resolve_definition(url: str, type_: str, config: "Config | None" = None) ->
     return definition
 
 
-def _build_request(url: str, type_: str, config: "Config | None" = None) -> tuple[str, dict[str, str], str | None]:
+def _build_request(
+    url: str, type_: str, config: "Config | None" = None, configured_host_only: bool = False
+) -> tuple[str, dict[str, str], str | None]:
     """Return the URL to fetch, the headers to use, and an optional host hint.
 
     The third element is a copy-pasteable ENTROPY_DATA_HOST suggestion that
@@ -560,6 +580,10 @@ def _build_request(url: str, type_: str, config: "Config | None" = None) -> tupl
         return direct_url, headers, None
 
     if type_ not in ("semantics", "semantic"):
+        if configured_host_only:
+            raise _definition_resolution_error(
+                url, direct_url, f"only the configured Entropy Data host '{configured_host}' may be contacted"
+            )
         # Third-party REST URL: fetch anonymously, no IRI fallback.
         return direct_url, headers, None
 
@@ -632,8 +656,9 @@ def _resolve_data_contract_from_str(
     config: "Config | None" = None,
     base_location: str | None = None,
     use_declared_api_version: bool = False,
+    configured_host_only: bool = False,
 ) -> tuple[OpenDataContractStandard, str | None]:
-    yaml_dict = _to_yaml(data_contract_str)
+    yaml_dict = _to_yaml(data_contract_str, base_location)
 
     if not isinstance(yaml_dict, dict):
         raise DataContractException(
@@ -682,7 +707,11 @@ def _resolve_data_contract_from_str(
         odcs = _parse_odcs_from_dict(yaml_dict, lax=custom_schema)
         if inline_references:
             inline_definitions_into_data_contract(
-                odcs, config, base_location=base_location, visited=_initial_visited(base_location)
+                odcs,
+                config,
+                base_location=base_location,
+                visited=_initial_visited(base_location),
+                configured_host_only=configured_host_only,
             )
         return odcs, schema_version
 
@@ -694,7 +723,11 @@ def _resolve_data_contract_from_str(
     odcs = convert_dcs_to_odcs(dcs)
     if inline_references:
         inline_definitions_into_data_contract(
-            odcs, config, base_location=base_location, visited=_initial_visited(base_location)
+            odcs,
+            config,
+            base_location=base_location,
+            visited=_initial_visited(base_location),
+            configured_host_only=configured_host_only,
         )
     return odcs, None
 
@@ -722,16 +755,16 @@ def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContrac
         )
 
 
-def _to_yaml(data_contract_str) -> dict:
+def _to_yaml(data_contract_str, location: str | None = None) -> dict:
     try:
         return yaml.load(data_contract_str, Loader=_SafeLoaderNoTimestamp)
     except Exception as e:
-        logger.warning(f"Cannot parse YAML. Error: {str(e)}")
+        where = f" in '{location}'" if location else ""
         raise DataContractException(
             type="lint",
             result="failed",
             name="Check that data contract YAML is valid",
-            reason=f"Cannot parse YAML. Error: {str(e)}",
+            reason=f"Cannot parse YAML{where}. Error: {str(e)}",
             engine="datacontract-cli",
         )
 

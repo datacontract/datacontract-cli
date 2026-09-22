@@ -159,13 +159,9 @@ class TestWriteTextChangelogResults:
         assert "Removed" in output
         assert "Updated" in output
 
-    def test_no_changes_suppresses_summary(self):
+    def test_no_changes_says_so(self):
         result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V1))
-        assert "Summary" not in _render(result)
-
-    def test_no_changes_still_renders_details(self):
-        result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V1))
-        assert "Details" in _render(result)
+        assert _render(result) == "No changes.\n"
 
     def test_golden_output(self):
         result = DataContract(data_contract_file=V1).changelog(DataContract(data_contract_file=V2))
@@ -181,3 +177,26 @@ class TestWriteTextChangelogResults:
             "Changelog text output has changed. If intentional, regenerate "
             "golden_changelog_text.txt (see tests/fixtures/changelog/helper/generate_golden.py)."
         )
+
+
+def test_contract_strings_are_not_parsed_as_markup(capsys):
+    contract = """
+apiVersion: v3.0.2
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: "x[/]y"
+        logicalType: string
+        description: {description}
+"""
+    v1 = DataContract(data_contract_str=contract.format(description='"[link=http://e.io]c[/link]"'))
+    v2 = DataContract(data_contract_str=contract.format(description='"plain"'))
+    write_text_changelog_results(v1.changelog(v2), Console(file=io.StringIO(), force_terminal=True, width=300))
+    out = capsys.readouterr().out
+    assert "x[/]y" in out
+    assert "[link=http://e.io]c[/link]" in out
+    assert "\x1b]8;" not in out

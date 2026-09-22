@@ -29,7 +29,7 @@ class BreakingChangeDetector:
             if entry.change_type == ChangelogType.added
             and (
                 entry.path.startswith("schema.")
-                and (len(entry.path.split(".")) == 2 or entry.path.split(".")[-2] == "properties")
+                and (len(entry.path.split(".")) == 2 or entry.path.split(".")[-2] in ("properties", "quality"))
             )
         }
         removed_enums = {

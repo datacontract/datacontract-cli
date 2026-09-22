@@ -103,6 +103,7 @@ class DataContract:
                 all_errors=self._all_errors,
                 config=self._config,
                 use_declared_api_version=True,
+                configured_host_only=self._untrusted_contract,
             )
             run.checks.append(
                 Check(
@@ -168,6 +169,7 @@ class DataContract:
                 self._schema_location,
                 inline_references=self._inline_references,
                 config=self._config,
+                configured_host_only=self._untrusted_contract,
             )
 
             execute_data_contract_test(
@@ -236,6 +238,7 @@ class DataContract:
             schema_location=self._schema_location,
             inline_references=self._inline_references,
             config=self._config,
+            configured_host_only=self._untrusted_contract,
         )
 
     def get_data_contract_file(self) -> str | None:
@@ -251,6 +254,7 @@ class DataContract:
             schema_location=self._schema_location,
             inline_references=self._inline_references,
             config=self._config,
+            configured_host_only=self._untrusted_contract,
         )
 
         return exporter_factory.create(export_format).export(

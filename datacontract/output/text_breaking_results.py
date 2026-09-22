@@ -4,6 +4,7 @@ from collections import Counter
 from rich import box
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
 from datacontract.model.breaking import BreakingChangeEntry, BreakingChangeLevel, BreakingChangeResult
 from datacontract.output.text_changelog_results import _wrap
@@ -18,6 +19,9 @@ _LEVEL_COLOR = {
 
 
 def write_text_breaking_results(result: BreakingChangeResult, console: Console):
+    if not result.entries:
+        console.print("No changes.")
+        return
     _print_summary(result, console)
     _print_table(result, console)
 
@@ -43,7 +47,7 @@ def _print_summary(result: BreakingChangeResult, console: Console):
     table.add_column("Change", no_wrap=True)
     table.add_column("Field", no_wrap=True)
     for entry in result.summary:
-        table.add_row(_severity_markup(entry.level), entry.change_type.value.capitalize(), entry.path)
+        table.add_row(_severity_markup(entry.level), entry.change_type.value.capitalize(), Text(entry.path))
     _print_wide(table, console)
 
 
@@ -60,10 +64,10 @@ def _print_table(result: BreakingChangeResult, console: Console):
         table.add_row(
             _severity_markup(entry.level),
             entry.change_type.value.capitalize(),
-            entry.path,
-            _wrap(entry.old_value or "", _VAL_W),
-            _wrap(entry.new_value or "", _VAL_W),
-            _wrap(entry.message, _VAL_W),
+            Text(entry.path),
+            Text(_wrap(entry.old_value or "", _VAL_W)),
+            Text(_wrap(entry.new_value or "", _VAL_W)),
+            Text(_wrap(entry.message, _VAL_W)),
         )
     _print_wide(table, console)
 

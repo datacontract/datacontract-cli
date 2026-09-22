@@ -38,7 +38,7 @@ The result is breaking only when at least one detailed entry has severity `ERROR
 
 ### Initial compatibility rules
 
-The first ODCS implementation treats schema and property removals, requiredness tightening, type changes, and uniqueness tightening as errors. Primary-key changes and changes to validation constraints whose direction cannot be proven are warnings. Additions, relaxed constraints, descriptions, tags, business names, custom properties, and unrecognized changes are informational unless a more specific rule applies.
+The first ODCS implementation treats schema and property removals, requiredness tightening, type changes, uniqueness tightening, and tightened `quality` rules (a removed `validValues` entry, an added `invalidValues` entry, a stricter `mustBe*` threshold) as errors. Primary-key changes, changes to validation constraints whose direction cannot be proven, and changes to what a `quality` rule checks are warnings. Additions, relaxed constraints, descriptions, tags, business names, custom properties, and unrecognized changes are informational unless a more specific rule applies.
 
 Every detailed changelog entry receives exactly one classification. Unknown fields use the informational fallback so that introducing a new ODCS field does not make detection fail.
 

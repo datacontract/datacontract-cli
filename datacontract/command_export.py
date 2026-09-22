@@ -5,7 +5,13 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from datacontract.cli import OrderedCommandsWithMigrationHints, _parse_enum_csv, debug_option, enable_debug_logging
+from datacontract.cli import (
+    OrderedCommandsWithMigrationHints,
+    _parse_enum_csv,
+    debug_option,
+    enable_debug_logging,
+    inline_references_option,
+)
 from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.export.exporter import ExportFormat, SqlServerType
@@ -41,13 +47,6 @@ dialect_option = Annotated[
     SqlServerType,
     typer.Option(
         help="The SQL dialect. Use `auto` (default) to detect the SQL dialect via the specified servers in the data contract."
-    ),
-]
-inline_references_option = Annotated[
-    bool,
-    typer.Option(
-        help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
-        "contract and inline the fetched content from the configured entropy-data host."
     ),
 ]
 
