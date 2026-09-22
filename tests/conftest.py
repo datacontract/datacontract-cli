@@ -1,3 +1,4 @@
+import builtins
 import functools
 import re
 import shutil
@@ -13,6 +14,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+@pytest.fixture
+def non_utf8_default_encoding(monkeypatch):
+    """Makes text-mode `open()` calls without an explicit encoding behave as on a cp1252 system (e.g. Windows)."""
+    real_open = builtins.open
+
+    def open_defaulting_to_cp1252(path, mode="r", encoding=None, *args, **kwargs):
+        if "b" in mode:
+            return real_open(path, mode, *args, **kwargs)
+        return real_open(path, mode, *args, encoding=encoding or "cp1252", **kwargs)
+
+    monkeypatch.setattr(builtins, "open", open_defaulting_to_cp1252)
 
 
 # Whether a test file drives a testcontainers container. Matched on the file's

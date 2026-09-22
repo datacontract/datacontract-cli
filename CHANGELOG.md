@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
+- Non-ASCII characters (e.g. accented letters) in a data contract file were garbled on Windows
 
 ## [1.2.1] - 2026-09-22
 
