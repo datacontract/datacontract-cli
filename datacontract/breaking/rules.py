@@ -199,7 +199,9 @@ class QualityConstraintRule(BreakingChangeRule):
         else:
             # What the rule checks changed (type, metric, query, other arguments, thresholds we cannot order).
             level = BreakingChangeLevel.WARNING
-        return RuleEvaluation(self.rule_id, level, _change_message("quality rule", entry))
+        name, _, field = rule_path.partition(".")
+        subject = f"{field} of quality rule '{name}'" if field else "quality rule"
+        return RuleEvaluation(self.rule_id, level, _change_message(subject, entry))
 
 
 class VectorShapeRule(BreakingChangeRule):
