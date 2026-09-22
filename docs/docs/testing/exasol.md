@@ -26,20 +26,14 @@ DATACONTRACT_EXASOL_USERNAME=sys
 DATACONTRACT_EXASOL_PASSWORD=mysecretpassword
 ```
 
-| Environment variable                       | Default | Description                                                    |
-|--------------------------------------------|---------|----------------------------------------------------------------|
-| `DATACONTRACT_EXASOL_USERNAME`             |         | Database user (required)                                       |
-| `DATACONTRACT_EXASOL_PASSWORD`             |         | Password (required)                                            |
-| `DATACONTRACT_EXASOL_FINGERPRINT`          |         | SHA-256 fingerprint of the server certificate, see [TLS](#tls) |
-| `DATACONTRACT_EXASOL_VALIDATE_CERTIFICATE` | `true`  | Set to `false` to skip the certificate check, see [TLS](#tls)  |
-| `DATACONTRACT_EXASOL_HOST`                 |         | Overrides `host` in the `servers` block                        |
-| `DATACONTRACT_EXASOL_PORT`                 | `8563`  | Overrides `port` in the `servers` block                        |
-| `DATACONTRACT_EXASOL_SCHEMA`               |         | Overrides `schema` in the `servers` block                      |
+The server certificate is verified against the system CA store; for a self-signed certificate, pin its fingerprint — see the [Exasol Reference](../reference/exasol.md#tls).
 
 ## 3. Describe the server in the contract
 
 The `exasol` server type was added in ODCS v3.2.0, so the contract has to declare
-`apiVersion: v3.2.0`.
+`apiVersion: v3.2.0`. There is no `datacontract import exasol` yet: write the schema by hand, or
+start from a DDL script with `datacontract import sql --source orders.sql --dialect postgres` and
+replace the generated `servers` block.
 
 ```yaml
 apiVersion: v3.2.0
@@ -67,7 +61,7 @@ schema:
 
 `host` may be a cluster range (`n11..14.acme.com`).
 
-## 4. Test actual data
+## 4. Test the actual data
 
 ```bash
 datacontract test datacontract.yaml
@@ -86,9 +80,9 @@ Server: production (type=exasol, host=exasol.acme.com, port=8563, schema=sales)
 🟢 data contract is valid. Run 12 checks. Took 1.4 seconds.
 ```
 
-## 5. Add quality checks
+## 5. Let it catch a violation
 
-Add a quality rule to a schema in `datacontract.yaml`:
+The contract becomes valuable when it detects drift. Tighten an expectation — for example, add a quality rule to a schema in `datacontract.yaml`:
 
 ```yaml
 schema:
@@ -101,27 +95,13 @@ schema:
         mustBe: 0
 ```
 
-Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the
-command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you
-catch drift before your consumers do.
+Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
-## TLS
+## Reference
 
-Connections are always encrypted, and the server certificate is verified against the system CA
-store. For a cluster with a self-signed certificate, pin it by its SHA-256 fingerprint instead —
-the value Exasol clients accept after the host in a connection string:
-
-```bash
-# .env
-DATACONTRACT_EXASOL_FINGERPRINT=135A1D2DCE102DE866F58267521F4232153545A075DC85F8F7596F57E588A181
-```
-
-`DATACONTRACT_EXASOL_VALIDATE_CERTIFICATE=false` skips the verification altogether. A CA bundle of
-your own goes into the `WEBSOCKET_CLIENT_CA_BUNDLE` environment variable.
+All authentication options (including TLS) and the data type handling: **[Exasol Reference](../reference/exasol.md)**.
 
 ## Troubleshooting
 
-- **`Could not connect to Exasol: [SSL: CERTIFICATE_VERIFY_FAILED]`** — the cluster uses a
-  certificate the system CA store does not know; pin it with `DATACONTRACT_EXASOL_FINGERPRINT`, see [TLS](#tls).
-- **`Connection exception - schema ... not found`** — the `schema` in the `servers` block must exist, and a mixed-case
-  schema created with quotes must be spelled exactly (`"Sales"` is not found by `sales`).
+- **`Could not connect to Exasol: [SSL: CERTIFICATE_VERIFY_FAILED]`** — the cluster uses a certificate the system CA store does not know; pin it with `DATACONTRACT_EXASOL_FINGERPRINT`, see [TLS](../reference/exasol.md#tls).
+- **`Connection exception - schema ... not found`** — the `schema` in the `servers` block must exist, and a mixed-case schema created with quotes must be spelled exactly (`"Sales"` is not found by `sales`).
