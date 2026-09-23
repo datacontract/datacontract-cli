@@ -181,3 +181,60 @@ schema:
 
     fields = {c.field for c in run.checks if c.result == ResultEnum.warning}
     assert fields == {"tags[].label", "meta.source"}
+
+
+def test_rules_on_nested_properties_warn_where_nested_properties_are_not_checked():
+    checks = _checks(
+        _odcs(
+            property_quality="""      - name: meta
+        logicalType: object
+        properties:
+          - name: source
+            logicalType: string
+            quality:
+              - type: library
+                metric: nullValues
+                mustBe: 0
+              - type: sql
+                query: SELECT COUNT(*) FROM {model}
+                mustBe: 0
+"""
+        )
+    )
+    nested = [c for c in checks if c.field == "meta.source"]
+    assert [(c.type, c.preset_result) for c in nested] == [
+        ("field_quality_library", "warning"),
+        ("field_quality_sql", "warning"),
+    ]
+    assert "only run on dataframe and databricks" in nested[0].preset_reason
+
+
+def test_lint_and_test_name_the_rule_alike_by_its_physical_names():
+    contract = f"""
+apiVersion: v3.1.0
+kind: DataContract
+id: unrunnable_rules_physical_names_test
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: {CSV_PATH}
+    format: csv
+schema:
+  - name: orders
+    physicalName: orders_table
+    properties:
+      - name: amount
+        physicalName: amount_cents
+        logicalType: integer
+        quality:
+          - type: library
+            metric: invalidValues
+            mustBe: 0
+"""
+    lint_warning = next(c for c in DataContract(data_contract_str=contract).lint().checks if c.result == "warning")
+    test_warning = next(c for c in _checks(contract) if c.preset_result == "warning")
+
+    assert (lint_warning.name, lint_warning.field) == (test_warning.name, test_warning.field)
+    assert test_warning.name == "Quality rule on orders_table.amount_cents cannot be tested"

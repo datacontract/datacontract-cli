@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract api`: `--contract-variables` and `--allow-local-files` options, as alternatives to their environment variables
+
 ### Changed
 - `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
+- `${VAR}` references are accepted in fields with a fixed set of values (`quality.type`, `quality.metric`, `quality.dimension`, `logicalType`, `servers[].type`); `datacontract test` fails when one resolves into anything else
+
+### Security
+- `datacontract api`:
+  - a posted data contract resolves `${VAR}` only from the variables allow-listed with `--contract-variables`
+  - a `${X:-local}` server type no longer slips past the checks for local files and environment-held credentials
 
 ### Fixed
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
