@@ -1,5 +1,6 @@
 import builtins
 import functools
+import io
 import re
 import shutil
 import subprocess
@@ -21,12 +22,14 @@ def non_utf8_default_encoding(monkeypatch):
     """Makes text-mode `open()` calls without an explicit encoding behave as on a cp1252 system (e.g. Windows)."""
     real_open = builtins.open
 
-    def open_defaulting_to_cp1252(path, mode="r", encoding=None, *args, **kwargs):
-        if "b" in mode:
-            return real_open(path, mode, *args, **kwargs)
-        return real_open(path, mode, *args, encoding=encoding or "cp1252", **kwargs)
+    def open_defaulting_to_cp1252(file, mode="r", buffering=-1, encoding=None, *args, **kwargs):
+        if encoding in (None, "locale") and "b" not in mode:
+            encoding = "cp1252"
+        return real_open(file, mode, buffering, encoding, *args, **kwargs)
 
+    # io.open backs Path.open and importlib.resources' Traversable.open
     monkeypatch.setattr(builtins, "open", open_defaulting_to_cp1252)
+    monkeypatch.setattr(io, "open", open_defaulting_to_cp1252)
 
 
 # Whether a test file drives a testcontainers container. Matched on the file's
