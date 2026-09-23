@@ -24,6 +24,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    split_type_arguments,
 )
 
 logger = logging.getLogger(__name__)
@@ -96,28 +97,6 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, descri
     )
 
 
-def _split_top_level(text: str, limit: int | None = None):
-    items = []
-    current = []
-    depth = 0
-    for ch in text:
-        if ch in "<([":
-            depth += 1
-        elif ch in ">)]":
-            depth = max(0, depth - 1)
-        elif ch == "," and depth == 0:
-            if limit is not None and len(items) >= limit - 1:
-                current.append(ch)
-                continue
-            items.append("".join(current).strip())
-            current = []
-            continue
-        current.append(ch)
-    if current or text.endswith(","):
-        items.append("".join(current).strip())
-    return [item for item in items if item != ""]
-
-
 def _property_from_struct_type(spark_field: types.StructField, physical_type: str | None = None) -> SchemaProperty:
     """Converts a Spark StructField into an ODCS SchemaProperty.
 
@@ -159,7 +138,7 @@ def _struct_field_types_from_physical_type(physical_type: str) -> dict[str, str]
     if not physical_type.startswith("struct<") or not physical_type.endswith(">"):
         return {}
     field_types = {}
-    for raw in _split_top_level(physical_type[7:-1], None):
+    for raw in split_type_arguments(physical_type[7:-1]):
         if not raw:
             continue
         name, value = raw.split(":", 1)
