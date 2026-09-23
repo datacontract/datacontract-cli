@@ -103,6 +103,7 @@ class DataContract:
         metadata_only: bool = False,
         dry_run: bool = False,
         untrusted_contract: bool = False,
+        allowed_variables: list[str] | None = None,
         config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
@@ -132,6 +133,8 @@ class DataContract:
         # server): the SQL it carries must not reach the host running it, and its
         # authoritativeDefinitions are resolved against the configured host only.
         self._untrusted_contract = untrusted_contract
+        # fnmatch globs of the environment variables an untrusted contract may read.
+        self._allowed_variables = allowed_variables
         self._config = Config.resolve(config)
 
     @classmethod
@@ -243,6 +246,7 @@ class DataContract:
                 dry_run=self._dry_run,
                 config=self._config,
                 untrusted_contract=self._untrusted_contract,
+                allowed_variables=self._allowed_variables,
             )
 
         except DataContractException as e:

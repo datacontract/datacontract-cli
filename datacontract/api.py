@@ -12,6 +12,7 @@ from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field, ValidationError
 
 from datacontract.config import Config, known_env_names
+from datacontract.config.variables import CONTRACT_VARIABLES_ENV, allowed_environment, resolve_variables
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.breaking import BreakingChangeEntry
 from datacontract.model.changelog import ChangelogEntry
@@ -527,7 +528,10 @@ def _selected_server(body: str, server_name: str | None, config):
 
     try:
         data_contract = resolve.resolve_data_contract(data_contract_str=body, config=config)
-        return get_server(data_contract, server_name)
+        server = get_server(data_contract, server_name)
+        # Guard the server type the test will run against, not a ${VAR:-local} reference to it.
+        variables = allowed_environment(_allowed_contract_variables())
+        return server and server.model_copy(update={"type": resolve_variables(server.type, variables=variables)})
     except Exception:
         return None
 
@@ -538,6 +542,11 @@ _LOCAL_SERVER_TYPES = frozenset({"local", "duckdb"})
 
 ALLOW_LOCAL_FILES_ENV = "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES"
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+
+def _allowed_contract_variables() -> list[str]:
+    """The variable-name globs a posted contract may resolve; none by default."""
+    return (os.getenv(CONTRACT_VARIABLES_ENV) or "").split(",")
 
 
 def _local_files_allowed() -> bool:
@@ -814,6 +823,7 @@ async def test(
         filter=filter,
         filters=parsed_filters,
         untrusted_contract=untrusted_contract,
+        allowed_variables=_allowed_contract_variables(),
     ).test()
 
 

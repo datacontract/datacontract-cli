@@ -1,6 +1,7 @@
 import atexit
 import tempfile
 import typing
+from typing import Mapping
 
 import requests
 from open_data_contract_standard.model import OpenDataContractStandard, Server
@@ -14,7 +15,12 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
-from datacontract.config.variables import UnresolvedVariableError, resolve_runtime_variables, resolve_server_variables
+from datacontract.config.variables import (
+    VariableError,
+    allowed_environment,
+    resolve_runtime_variables,
+    resolve_server_variables,
+)
 from datacontract.engines.datacontract.check_azure_blob_file import check_azure_blob_file
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
@@ -44,8 +50,11 @@ def execute_data_contract_test(
     dry_run: bool = False,
     config: Config | None = None,
     untrusted_contract: bool = False,
+    allowed_variables: list[str] | None = None,
 ):
     config = Config.resolve(config)
+    # An untrusted contract reads only the allow-listed variables.
+    variables = allowed_environment(allowed_variables or []) if untrusted_contract else None
     if data_contract.schema_ is None or len(data_contract.schema_) == 0:
         raise DataContractException(
             type="lint",
@@ -57,19 +66,19 @@ def execute_data_contract_test(
     if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
     server = resolve_server_overrides(get_server(data_contract, server_name), config, run)
-    server = _resolve_server_variables(server)
+    server = _resolve_server_variables(server, variables)
     try:
         # Leave unselected schemas untouched: their variables need not be set.
         runtime_schemas = [
-            resolve_runtime_variables(schema, f"schema[{index}]")
+            resolve_runtime_variables(schema, f"schema[{index}]", variables)
             if schema_name == "all" or schema.name == schema_name
             else schema
             for index, schema in enumerate(data_contract.schema_)
         ]
-        data_contract = resolve_runtime_variables(data_contract.model_copy(update={"schema_": None})).model_copy(
-            update={"schema_": runtime_schemas}
-        )
-    except UnresolvedVariableError as e:
+        data_contract = resolve_runtime_variables(
+            data_contract.model_copy(update={"schema_": None}), variables=variables
+        ).model_copy(update={"schema_": runtime_schemas})
+    except VariableError as e:
         raise DataContractException(
             type="schema",
             name="Resolve contract variables",
@@ -136,7 +145,7 @@ def execute_data_contract_test(
         )
         return
 
-    specs = create_checks(data_contract, server, schema_name=schema_name)
+    specs = create_checks(data_contract, server, schema_name=schema_name, variables=variables)
     if check_categories is not None:
         specs = [s for s in specs if s.category in check_categories]
         if not specs:
@@ -309,7 +318,7 @@ def check_that_quality_ids_exist(
     )
 
 
-def _resolve_server_variables(server: Server | None) -> Server | None:
+def _resolve_server_variables(server: Server | None, variables: Mapping[str, str] | None) -> Server | None:
     """Resolve ``${VAR}`` references in the server's fields, now that it is about to be used.
 
     Overrides from the configuration were applied first, so they win over a
@@ -319,14 +328,13 @@ def _resolve_server_variables(server: Server | None) -> Server | None:
     if server is None:
         return None
     try:
-        return resolve_server_variables(server)
-    except UnresolvedVariableError as e:
+        return resolve_server_variables(server, variables)
+    except VariableError as e:
         raise DataContractException(
             type="general",
             name="Resolve variables in server configuration",
             result=ResultEnum.failed,
-            reason=f"{e} Set the variable in the environment or a .env file, or give the reference a default "
-            "with ${" + e.name + ":-default}.",
+            reason=str(e),
             engine="datacontract-cli",
         )
 

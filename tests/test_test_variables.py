@@ -157,3 +157,61 @@ def test_unset_property_variable_reports_its_path(orders_db, monkeypatch):
     assert len(failed) == 1
     assert "MISSING_PHYSICAL_TABLE" in failed[0].reason
     assert "schema[0].physicalName" in failed[0].reason
+
+
+@pytest.mark.parametrize("version", ["v3.0.2", "v3.1.0", "v3.2.0"])
+def test_enum_fields_take_references_that_resolve_into_their_values(orders_db, monkeypatch, version):
+    monkeypatch.setenv("ORDERS_DB", orders_db)
+    monkeypatch.setenv("ORDER_TOTAL_LIMIT", "500")
+    monkeypatch.setenv("SERVER_TYPE", "duckdb")
+    monkeypatch.setenv("SCHEMA_TYPE", "object")
+    monkeypatch.setenv("ID_TYPE", "string")
+    monkeypatch.setenv("QUALITY_TYPE", "library")
+    monkeypatch.setenv("METRIC", "nullValues")
+    monkeypatch.setenv("DIMENSION", "completeness")
+    document = yaml.safe_load(CONTRACT)
+    document["apiVersion"] = version
+    document["servers"][0]["type"] = "${SERVER_TYPE}"
+    schema = document["schema"][0]
+    schema["logicalType"] = "${SCHEMA_TYPE}"
+    schema["properties"][0]["logicalType"] = "${ID_TYPE}"
+    rule = {"type": "${QUALITY_TYPE}", "dimension": "${DIMENSION}", "mustBe": 0}
+    rule["rule" if version == "v3.0.2" else "metric"] = "${METRIC}"
+    schema["properties"][0]["quality"] = [rule]
+    contract = DataContract(data_contract_str=yaml.safe_dump(document))
+
+    assert contract.lint().result == ResultEnum.passed
+    run = contract.test()
+    assert run.result == ResultEnum.passed, run.pretty()
+
+
+def test_a_reference_resolving_outside_the_enum_fails_the_run(orders_db, monkeypatch):
+    monkeypatch.setenv("ORDERS_DB", orders_db)
+    monkeypatch.setenv("ORDER_TOTAL_LIMIT", "500")
+    monkeypatch.setenv("SERVER_TYPE", "not-a-server-type")
+    document = yaml.safe_load(CONTRACT)
+    document["servers"][0]["type"] = "${SERVER_TYPE}"
+
+    run = DataContract(data_contract_str=yaml.safe_dump(document)).test()
+
+    assert run.result == ResultEnum.failed
+    failed = [c for c in run.checks if c.result == ResultEnum.failed]
+    assert len(failed) == 1
+    assert "server 'production' type resolved ${SERVER_TYPE} into a value that is not one of" in failed[0].reason
+    assert "not-a-server-type" not in failed[0].reason
+
+
+@pytest.mark.parametrize("all_errors", [False, True])
+def test_lint_still_reports_other_errors_next_to_a_reference(monkeypatch, all_errors):
+    document = yaml.safe_load(CONTRACT)
+    document["servers"][0]["type"] = "${SERVER_TYPE}"
+    document["schema"][0]["properties"][1]["logicalType"] = "not-a-type"
+
+    result = DataContract(data_contract_str=yaml.safe_dump(document), all_errors=all_errors).lint()
+
+    assert result.result == ResultEnum.failed
+    reasons = [c.reason for c in result.checks if c.result == ResultEnum.failed]
+    assert len(reasons) == 1
+    assert "not-a-type" in reasons[0]
+    if not all_errors:
+        assert "schema.orders.properties.order_total.logicalType" in reasons[0]
