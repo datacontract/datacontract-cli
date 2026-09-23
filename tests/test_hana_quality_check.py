@@ -308,7 +308,7 @@ def test_percent_unit_on_row_count_warns_and_reads_nothing():
     check = run_quality_checks(connection, "SALES", schema)[0]
 
     assert check.result == ResultEnum.warning
-    assert "unit: percent" in check.reason
+    assert "'unit:percent'" in check.reason
     assert connection.executed == []
 
 
@@ -439,4 +439,26 @@ def test_invalid_values_with_only_a_pattern_warns():
 
     assert check.result == ResultEnum.warning
     assert "pattern is not supported" in check.reason
+    assert connection.executed == []
+
+
+def test_rules_on_nested_properties_warn_instead_of_running():
+    connection = FakeConnection()
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[
+            SchemaProperty(
+                name="META",
+                logicalType="object",
+                properties=[
+                    SchemaProperty(name="SOURCE", quality=[DataQuality(type="library", metric="nullValues", mustBe=0)])
+                ],
+            )
+        ],
+    )
+
+    checks = run_quality_checks(connection, "SALES", schema)
+
+    check = check_by_type(checks, "field_quality_library")
+    assert (check.field, check.result) == ("META.SOURCE", ResultEnum.warning)
     assert connection.executed == []

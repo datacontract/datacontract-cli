@@ -6,9 +6,12 @@ from typing import Any
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
 from datacontract.engines.checks.create_checks import (
+    NESTED_NOT_RUN_REASON,
+    _iter_property_paths,
     _retention_value_to_seconds,
     is_percent_unit,
     quality_definition_yaml,
+    unexecuted_check_name,
     unrunnable_reason,
 )
 from datacontract.engines.checks.dimensions import default_dimension
@@ -39,9 +42,26 @@ def run_quality_checks(
     table_name = schema_object.physicalName or schema_object.name
     checks: list[Check] = []
 
-    for prop in schema_object.properties or []:
-        field_name = prop.physicalName or prop.name
+    for field_name, prop, nested in _iter_property_paths(schema_object.properties):
         for index, quality in enumerate(prop.quality or []):
+            if nested:
+                if quality.type != "sql" and quality.metric is None:
+                    continue
+                kind = "sql" if quality.type == "sql" else "library"
+                if not selects(selection, quality, f"field_quality_{kind}"):
+                    continue
+                checks.append(
+                    _warning_check(
+                        check_type=f"field_quality_{kind}",
+                        key=_quality_key(table_name, field_name, f"quality_{kind}_{index}"),
+                        name=quality.description or unexecuted_check_name(table_name, field_name),
+                        model=table_name,
+                        field=field_name,
+                        reason=NESTED_NOT_RUN_REASON,
+                        quality=quality,
+                    )
+                )
+                continue
             check = _quality_check(
                 connection,
                 schema_name,
@@ -181,7 +201,7 @@ def _quality_check(
         return _warning_check(
             check_type=check_type,
             key=_quality_key(table_name, field_name, f"quality_library_{index}"),
-            name=quality.description or "Quality Check",
+            name=quality.description or unexecuted_check_name(table_name, field_name),
             model=table_name,
             field=field_name,
             reason=reason,

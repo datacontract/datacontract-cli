@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import List, Optional
+from typing import List, Mapping, Optional
 
 import yaml
 from open_data_contract_standard.model import (
@@ -22,7 +22,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
-from datacontract.config.variables import UnresolvedVariableError, resolve_variables
+from datacontract.config.variables import VariableError, contains_variables, resolve_variables
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
@@ -121,23 +121,24 @@ def _property_type(prop: SchemaProperty) -> str:
 
 def _iter_property_paths(
     properties: list[SchemaProperty] | None,
-    server_type: str | None,
     prefix: str | None = None,
 ):
+    """Yield ``(path, property, nested)`` for every property, descending into objects and array items."""
     for prop in properties or []:
         field = prop.physicalName or prop.name
         field_path = f"{prefix}.{field}" if prefix else field
-        yield field_path, prop
+        yield field_path, prop, prefix is not None
 
         prop_type = _property_type(prop)
-        if server_type in _NESTED_CHECK_SERVER_TYPES and prop_type == "object" and prop.properties:
-            yield from _iter_property_paths(prop.properties, server_type, field_path)
-        elif (
-            server_type in _NESTED_CHECK_SERVER_TYPES and prop_type == "array" and prop.items and prop.items.properties
-        ):
+        if prop_type == "object" and prop.properties:
+            yield from _iter_property_paths(prop.properties, field_path)
+        elif prop_type == "array" and prop.items and prop.items.properties:
             # `[]` marks the array hop; the executor turns it into a predicate
             # over the elements instead of a column lookup.
-            yield from _iter_property_paths(prop.items.properties, server_type, f"{field_path}[]")
+            yield from _iter_property_paths(prop.items.properties, f"{field_path}[]")
+
+
+NESTED_NOT_RUN_REASON = "Quality rules on nested properties are only run on dataframe and databricks servers."
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -215,7 +216,10 @@ def prepare_query(
 # entry point
 # ---------------------------------------------------------------------------
 def create_checks(
-    data_contract: OpenDataContractStandard, server: Optional[Server], schema_name: str = "all"
+    data_contract: OpenDataContractStandard,
+    server: Optional[Server],
+    schema_name: str = "all",
+    variables: Optional[Mapping[str, str]] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     if data_contract.schema_ is None:
@@ -226,7 +230,7 @@ def create_checks(
         if _is_azure_blob_schema(schema_obj, server):
             # File-metadata checks are emitted by check_azure_blob_file
             continue
-        checks.extend(_to_schema_checks(schema_obj, server))
+        checks.extend(_to_schema_checks(schema_obj, server, variables))
     checks.extend(_to_servicelevel_checks(data_contract, server))
     checks = [c for c in checks if c is not None]
     # Schema and service level checks cannot declare an ODCS dimension, so fill
@@ -241,7 +245,9 @@ def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server])
     return server is not None and server.type == "azure" and (schema_object.logicalType or "").lower() == "blob"
 
 
-def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> List[CheckSpec]:
+def _to_schema_checks(
+    schema_object: SchemaObject, server: Optional[Server], variables: Optional[Mapping[str, str]] = None
+) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     server_type = get_server_type(server) if server is not None else None
     model = to_schema_name(schema_object, server_type)
@@ -260,7 +266,11 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
-    for field, prop in _iter_property_paths(properties, server_type):
+    for field, prop, nested in _iter_property_paths(properties):
+        if nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
+            if prop.quality:
+                checks.extend(_quality_checks(model, field, prop.quality, server, not_run_reason=NESTED_NOT_RUN_REASON))
+            continue
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
         checks.append(
@@ -533,7 +543,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
             )
 
         if prop.quality:
-            checks.extend(_quality_checks(model, field, prop.quality, server))
+            checks.extend(_quality_checks(model, field, prop.quality, server, variables))
 
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]
@@ -552,7 +562,7 @@ def _to_schema_checks(schema_object: SchemaObject, server: Optional[Server]) -> 
         )
 
     if schema_object.quality:
-        checks.extend(_quality_checks(model, None, schema_object.quality, server))
+        checks.extend(_quality_checks(model, None, schema_object.quality, server, variables))
 
     return checks
 
@@ -653,11 +663,29 @@ def _row_count_check(model, threshold: Threshold, severity=None, dimension=None)
 # quality list
 # ---------------------------------------------------------------------------
 def _quality_checks(
-    model: str, field: Optional[str], quality_list: List[DataQuality], server: Optional[Server]
+    model: str,
+    field: Optional[str],
+    quality_list: List[DataQuality],
+    server: Optional[Server],
+    variables: Optional[Mapping[str, str]] = None,
+    not_run_reason: Optional[str] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
-        rule_checks = _quality_rule_checks(model, field, quality, count, server)
+        if not_run_reason is None:
+            rule_checks = _quality_rule_checks(model, field, quality, count, server, variables)
+        elif quality.type == "sql" or quality.metric is not None:
+            kind = "sql" if quality.type == "sql" else "library"
+            rule_checks = _unexecuted_check(
+                f"{model}__{field}__quality_{kind}_{count}",
+                f"field_quality_{kind}",
+                model,
+                field,
+                quality,
+                not_run_reason,
+            )
+        else:
+            rule_checks = []
         # Every check keeps a link back to the rule that declared it, so that
         # `test --quality-id` / `test --tag` can select it.
         for check in rule_checks:
@@ -682,12 +710,10 @@ _PERCENT_METRICS = ("nullValues", "missingValues", "invalidValues")
 
 
 def unrunnable_reason(quality: DataQuality, field: Optional[str]) -> Optional[str]:
-    """Why a library quality rule cannot be evaluated as written, or None.
-
-    Decided from the rule alone, so `lint` reports the same cases `test` does.
-    """
+    """Why a library quality rule cannot run as written, or None; decided from the rule alone, for `lint` and `test`."""
     metric = quality.metric
-    if metric is None:
+    # A reference is decided by `test`, once it resolves.
+    if metric is None or contains_variables(metric):
         return None
     if metric not in _METRIC_LEVELS:
         return f"Metric {metric} is not supported. Supported metrics are {', '.join(_METRIC_LEVELS)}."
@@ -699,12 +725,16 @@ def unrunnable_reason(quality: DataQuality, field: Optional[str]) -> Optional[st
             f"but this rule is declared at {level} level."
         )
     if is_percent_unit(quality) and metric not in _PERCENT_METRICS:
-        return f"Metric {metric} does not count rows, so unit: percent has nothing to be a fraction of."
+        return "'unit:percent' has to be combined with 'nullValues', 'missingValues' or 'invalidValues'."
     if metric == "invalidValues":
         args = quality.arguments or {}
         if args.get("validValues") is None and args.get("pattern") is None:
             return "Metric invalidValues needs a validValues or a pattern argument."
     return None
+
+
+def unexecuted_check_name(model: str, field: Optional[str]) -> str:
+    return f"Quality rule on {model}.{field} cannot be tested" if field else f"Quality rule on {model} cannot be tested"
 
 
 def _unexecuted_check(
@@ -722,7 +752,7 @@ def _unexecuted_check(
             key=check_key,
             category="quality",
             type=check_type,
-            name=quality.description or "Quality Check",
+            name=quality.description or unexecuted_check_name(model, field),
             model=model,
             field=field,
             metric=MetricType.UNSUPPORTED,
@@ -740,6 +770,7 @@ def _quality_rule_checks(
     quality: DataQuality,
     count: int,
     server: Optional[Server],
+    variables: Optional[Mapping[str, str]] = None,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -804,9 +835,9 @@ def _quality_rule_checks(
         # were substituted first, so they are not mistaken for variables. The
         # contract keeps the references.
         try:
-            query = resolve_variables(query, source=f"the query of quality check '{check_key}'")
-        except UnresolvedVariableError as e:
-            return not_executed(f"{e} Set it in the environment or a .env file, or use ${{{e.name}:-default}}.")
+            query = resolve_variables(query, source=f"the query of quality check '{check_key}'", variables=variables)
+        except VariableError as e:
+            return not_executed(str(e))
         # The query is read as the dialect of the server it runs against, so
         # dialect-specific syntax is not mistaken for something that is not a query.
         parse_dialect = dialect_for_server_type(get_server_type(server))

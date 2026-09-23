@@ -60,21 +60,25 @@
     </noscript>
     <div id="root"></div>
     <script type="module">
-      import { init, loadCustomizationYaml } from './datacontract-editor.es.js';
+      import { init, loadRuntimeConfig, buildEditorConfig } from './datacontract-editor.es.js';
 
-      // Optional customization.yaml served next to the app, see CUSTOMIZATION.md
-      const customizations = await loadCustomizationYaml();
+      // Runtime config: /config.json (generated from env vars by the Docker image, see
+      // CONFIGURATION.md) plus an optional customization.yaml served next to the app.
+      // This is a library build, so src/main.jsx never ships and this file is the only
+      // place the standalone/Docker bootstrap can pick the AI and tests config up.
+      const editorConfig = buildEditorConfig(await loadRuntimeConfig());
 
       init({
         container: '#root',
         mode: 'SERVER',
         persistence: 'localStorage',
         initialView: 'form',
+        ...editorConfig,
         tests: {
           enabled: true,
-          dataContractCliApiServerUrl: 'https://api.datacontract.com'
+          dataContractCliApiServerUrl: 'https://api.datacontract.com',
+          ...editorConfig.tests,
         },
-        customizations,
       });
     </script>
   </body>

@@ -21,9 +21,10 @@ Running this against the [example `orders` contract](https://github.com/datacont
   "name": "orders.1.0.0",
   "expectations": [
     {
-      "type": "expect_table_columns_to_match_ordered_list",
+      "type": "expect_table_columns_to_match_set",
+      "description": "orders must contain exactly the contracted columns",
       "kwargs": {
-        "column_list": [
+        "column_set": [
           "order_id",
           "order_timestamp",
           "customer_id",
@@ -31,57 +32,202 @@ Running this against the [example `orders` contract](https://github.com/datacont
           "status"
         ]
       },
-      "meta": {}
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.column_set",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "table"
+        },
+        "name": "orders must contain exactly the contracted columns",
+        "dimension": "conformity"
+      }
     },
     {
       "type": "expect_column_values_to_be_of_type",
+      "description": "order_id must be of type VARCHAR",
       "kwargs": {
         "column": "order_id",
         "type_": "VARCHAR"
       },
-      "meta": {}
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.order_id.order_id_must_be_of_type_varchar",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "order_id must be of type VARCHAR",
+        "dimension": "conformity"
+      }
     },
     {
-      "type": "expect_column_values_to_be_unique",
+      "type": "expect_column_values_to_not_be_null",
+      "description": "order_id is a primary key and must not contain null values",
       "kwargs": {
         "column": "order_id"
       },
-      "meta": {}
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.order_id.order_id_must_be_filled_primary_key",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "order_id must be filled (primary key)",
+        "dimension": "completeness"
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_unique",
+      "description": "order_id is a primary key and must contain unique values",
+      "kwargs": {
+        "column": "order_id"
+      },
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.order_id.order_id_must_be_unique_primary_key",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "order_id must be unique (primary key)",
+        "dimension": "uniqueness"
+      }
     },
     {
       "type": "expect_column_values_to_be_of_type",
+      "description": "order_timestamp must be of type TIMESTAMP",
       "kwargs": {
         "column": "order_timestamp",
         "type_": "TIMESTAMP"
       },
-      "meta": {}
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.order_timestamp.order_timestamp_must_be_of_type_timestamp",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "order_timestamp must be of type TIMESTAMP",
+        "dimension": "conformity"
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "description": "order_timestamp must be not null values",
+      "kwargs": {
+        "column": "order_timestamp"
+      },
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.order_timestamp.order_timestamp_must_be_filled",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "order_timestamp must be filled",
+        "dimension": "completeness"
+      }
     },
     {
       "type": "expect_column_values_to_be_of_type",
+      "description": "customer_id must be of type VARCHAR",
       "kwargs": {
         "column": "customer_id",
         "type_": "VARCHAR"
       },
-      "meta": {}
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.customer_id.customer_id_must_be_of_type_varchar",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "customer_id must be of type VARCHAR",
+        "dimension": "conformity"
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "description": "customer_id must be not null values",
+      "kwargs": {
+        "column": "customer_id"
+      },
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.customer_id.customer_id_must_be_filled",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "customer_id must be filled",
+        "dimension": "completeness"
+      }
     },
     {
       "type": "expect_column_values_to_be_of_type",
+      "description": "order_total must be of type NUMBER",
       "kwargs": {
         "column": "order_total",
         "type_": "NUMBER"
       },
-      "meta": {}
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.order_total.order_total_must_be_of_type_number",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "order_total must be of type NUMBER",
+        "dimension": "conformity"
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "description": "order_total must be not null values",
+      "kwargs": {
+        "column": "order_total"
+      },
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.order_total.order_total_must_be_filled",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "order_total must be filled",
+        "dimension": "completeness"
+      }
     },
     {
       "type": "expect_column_values_to_be_of_type",
+      "description": "status must be of type VARCHAR",
       "kwargs": {
         "column": "status",
         "type_": "VARCHAR"
       },
-      "meta": {}
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.status.status_must_be_of_type_varchar",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "status must be of type VARCHAR",
+        "dimension": "conformity"
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "description": "status must be not null values",
+      "kwargs": {
+        "column": "status"
+      },
+      "meta": {
+        "expectation_id": "urn:datacontract:checkout:orders.status.status_must_be_filled",
+        "data_contract_rule_location": {
+          "origin": "schema_inferred",
+          "scope": "column"
+        },
+        "name": "status must be filled",
+        "dimension": "completeness"
+      }
     }
   ],
-  "meta": {}
+  "meta": {
+    "contract_id": "urn:datacontract:checkout:orders",
+    "contract_version": "1.0.0"
+  }
 }
 ```
 

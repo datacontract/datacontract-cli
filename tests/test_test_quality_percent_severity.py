@@ -107,7 +107,7 @@ def test_percent_on_rowcount_warns_instead_of_comparing_an_absolute_count():
     assert not any(c.type == "row_count" for c in checks)
     spec = _find(checks, "model_quality_library")
     assert spec.preset_result == "warning"
-    assert "unit: percent" in spec.preset_reason
+    assert "'unit:percent'" in spec.preset_reason
 
 
 # ---------------------------------------------------------------------------

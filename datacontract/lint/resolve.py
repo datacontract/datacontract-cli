@@ -13,6 +13,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaPr
 from pydantic import ConfigDict
 
 from datacontract.config import Config
+from datacontract.config.variables import contains_variables
 from datacontract.lint.constraints import enum_value_errors
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
@@ -799,31 +800,50 @@ def _validate_json_schema(
 ):
     logger.debug(f"Linting data contract with schema at {schema_location}")
     schema = fetch_schema(schema_location)
-    if all_errors:
-        validator_cls = validators.validator_for(schema)
-        validator_cls.check_schema(schema)
-        validator = validator_cls(schema=schema)
-        errors = sorted(validator.iter_errors(yaml_str), key=lambda error: list(error.path))
-        if errors:
-            logger.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
-            raise DataContractValidationErrors(
-                [
-                    _validation_error_to_exception(
-                        error.message, original_exception=error, schema_version=schema_version
-                    )
-                    for error in errors
-                ]
-            )
-        logger.debug("YAML data is valid.")
-        return
-    try:
-        fastjsonschema.validate(schema, yaml_str, use_default=False)
-        logger.debug("YAML data is valid.")
-    except JsonSchemaValueException as e:
-        except_message = _resolve_jsonschema_compliance_error_message_path(yaml_str, e.message)
-
-        logger.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
-        raise _validation_error_to_exception(except_message, original_exception=e, schema_version=schema_version)
-    except Exception as e:
-        logger.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
-        raise _validation_error_to_exception(str(e), original_exception=e, schema_version=schema_version)
+    if not all_errors:
+        try:
+            fastjsonschema.validate(schema, yaml_str, use_default=False)
+            logger.debug("YAML data is valid.")
+            return
+        except JsonSchemaValueException as e:
+            # A ${VAR} reference in an enum field is left to the full pass below.
+            if not (e.rule == "enum" and contains_variables(e.value)):
+                except_message = _resolve_jsonschema_compliance_error_message_path(yaml_str, e.message)
+                logger.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
+                raise _validation_error_to_exception(
+                    except_message, original_exception=e, schema_version=schema_version
+                )
+        except Exception as e:
+            logger.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
+            raise _validation_error_to_exception(str(e), original_exception=e, schema_version=schema_version)
+    validator_cls = validators.validator_for(schema)
+    validator_cls.check_schema(schema)
+    validator = validator_cls(schema=schema)
+    errors = sorted(validator.iter_errors(yaml_str), key=lambda error: list(error.path))
+    # A ${VAR} in an enum field is checked once it resolves; so is the object whose schema branch it selects.
+    deferred = [error for error in errors if error.validator == "enum" and contains_variables(error.instance)]
+    deferred_objects = {tuple(error.path)[:-1] for error in deferred}
+    errors = [
+        error
+        for error in errors
+        if error not in deferred
+        and not (error.validator == "unevaluatedProperties" and tuple(error.path) in deferred_objects)
+    ]
+    if errors:
+        logger.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
+        raise DataContractValidationErrors(
+            [
+                _validation_error_to_exception(
+                    error.message
+                    if all_errors
+                    # Located like the fastjsonschema message it stands in for.
+                    else _resolve_jsonschema_compliance_error_message_path(
+                        yaml_str, f"data{error.json_path[1:]}: {error.message}"
+                    ),
+                    original_exception=error,
+                    schema_version=schema_version,
+                )
+                for error in errors
+            ]
+        )
+    logger.debug("YAML data is valid.")

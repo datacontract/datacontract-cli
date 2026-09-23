@@ -1,7 +1,10 @@
+import os
+
 import typer
 from typing_extensions import Annotated
 
 from datacontract.cli import app, debug_option, enable_debug_logging
+from datacontract.config.variables import CONTRACT_VARIABLES_ENV
 
 
 def _get_uvicorn_arguments(port: int, host: str, reload: bool, context: typer.Context) -> dict:
@@ -40,6 +43,20 @@ def api(
             help="Watch the source files and restart the server on changes. For development only; off by default.",
         ),
     ] = False,
+    contract_variables: Annotated[
+        str | None,
+        typer.Option(
+            help="Environment variables a posted data contract may read through ${VAR} references, "
+            "as comma-separated fnmatch globs (e.g. 'TABLE_*,CUTOFF_DATE', or '*' to allow all). Empty by default.",
+        ),
+    ] = None,
+    allow_local_files: Annotated[
+        bool | None,
+        typer.Option(
+            "--allow-local-files/--no-allow-local-files",
+            help="Let a posted data contract read the server's own disk through servers[].type: local. Off by default.",
+        ),
+    ] = None,
     debug: debug_option = None,
 ):
     """
@@ -59,6 +76,14 @@ def api(
     `datacontract api --port 1234 --root_path /datacontract`.
     """
     enable_debug_logging(debug)
+
+    # Passed through the environment, which survives uvicorn's --reload respawn.
+    from datacontract.api import ALLOW_LOCAL_FILES_ENV
+
+    if contract_variables is not None:
+        os.environ[CONTRACT_VARIABLES_ENV] = contract_variables
+    if allow_local_files is not None:
+        os.environ[ALLOW_LOCAL_FILES_ENV] = "true" if allow_local_files else "false"
 
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG

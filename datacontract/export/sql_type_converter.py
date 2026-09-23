@@ -670,6 +670,12 @@ def convert_type_to_sqlserver(field: Union[SchemaProperty, FieldLike]) -> None |
         return "bit"
     if base_type in ["object", "record", "struct", "map"]:
         return "nvarchar(max)"
+    if base_type == "vector":
+        dimensions, _ = _vector_shape(field)
+        if not dimensions:
+            return _warn_cannot_map_type(field, "sqlserver")
+        half = isinstance(field, SchemaProperty) and vector_element_type(field) == "float16"
+        return f"VECTOR({dimensions}, float16)" if half else f"VECTOR({dimensions})"
     if base_type in ["bytes"]:
         return _attach_params_if_present("varbinary", field)
     if base_type in ["array"]:
