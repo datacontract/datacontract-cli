@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
-- `datacontract import` preserves nested `varchar(...)` fields inside Spark and Databricks `struct` and `map` types instead of widening them to generic `string` (#1643)
+- `datacontract import spark` preserves `varchar(...)` and `char(...)` types nested inside `struct`, `array` and `map` columns instead of widening them to `string` (#1634)
 
 ## [1.2.1] - 2026-09-22
 
