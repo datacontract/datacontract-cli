@@ -30,7 +30,7 @@ def import_dbml_from_source(
     import_tables: List[str],
 ) -> OpenDataContractStandard:
     try:
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             dbml_schema = PyDBML(file)
     except ParseException as e:
         raise DataContractException(

@@ -48,7 +48,7 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
 def load_and_validate_json_schema(source: str) -> dict:
     """Load and validate a JSON Schema file."""
     try:
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             json_schema = json.loads(file.read())
 
         validator = fastjsonschema.compile({})
