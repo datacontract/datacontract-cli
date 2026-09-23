@@ -43,9 +43,9 @@ schema:
     required: true
     unique: true
     examples:
-    - CUST-2
-    - CUST-3
     - CUST-1
+    - CUST-3
+    - CUST-2
   - name: order_total
     physicalType: INTEGER
     logicalType: integer
@@ -64,6 +64,6 @@ schema:
     required: true
     unique: true
     examples:
-    - shipped
-    - pending
     - delivered
+    - pending
+    - shipped
