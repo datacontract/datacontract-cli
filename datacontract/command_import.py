@@ -923,13 +923,13 @@ def import_odata(
     ] = None,
     entity_set: Annotated[
         Optional[List[str]],
-        typer.Option(help="EntitySet to import (repeat for multiple sets). If omitted, use the service document."),
+        typer.Option(help="EntitySet to import (repeat for multiple sets). If omitted, will import all sets from the service document."),
     ] = None,
     metadata_url: Annotated[
         Optional[str],
         typer.Option(
             "--metadata-url",
-            help="CSDL XML or JSON URL. Defaults to SERVICE_ROOT_URL/$metadata unless --metadata-file is supplied.",
+            help="CSDL XML or JSON URL. Defaults to SERVICE_ROOT_URL/$metadata.",
         ),
     ] = None,
     metadata_file: Annotated[

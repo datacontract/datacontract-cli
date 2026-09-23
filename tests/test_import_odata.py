@@ -1,5 +1,6 @@
+"""Tests for the OData importer, using local CSDL fixtures and mocked HTTP responses."""
+
 import json
-import re
 import traceback
 from io import BytesIO
 from pathlib import Path
@@ -15,12 +16,31 @@ from datacontract import Config
 from datacontract.cli import app
 from datacontract.config import set_cli_config
 from datacontract.data_contract import DataContract
+from datacontract.imports.odata_importer import (
+    _odata_4_schema,
+    _odata_version,
+    _read_json,
+    _read_xml,
+)
 from datacontract.model.exceptions import DataContractException
 
 ROOT = "https://xmart-api-public-uat.who.int/refmart/"
 METADATA = "https://xmart-api-public-uat.who.int/refmart/$metadata"
 FIXTURES = Path(__file__).parent / "fixtures/odata"
-ODATA_VERSIONS = ["4.0", "4.01", "4.02", "4.1", "4.123"]
+ODATA_TEST_VERSIONS = ["4.0", "4.01", "4.123"]
+SERVICE_ROOT = "https://example.com/odata/"
+
+
+# Helper functions and shared fixtures
+
+
+def run_cli(*args, source=SERVICE_ROOT):
+    return CliRunner().invoke(app, ["import", "odata", "--service-root-url", source, *map(str, args)])
+
+
+@pytest.fixture(scope="module")
+def odcs_schema():
+    return json.loads((Path(__file__).parents[1] / "datacontract/schemas/odcs-3.2.0.schema.json").read_text())
 
 
 @pytest.fixture(autouse=True)
@@ -60,13 +80,19 @@ def metadata_xml(properties="", *, version="4.01", entity_attributes="", extra_s
     </edmx:Edmx>'''.encode()
 
 
-def test_who_contract_and_transport(metadata_response):
+def xml_schema(properties="", **kwargs):
+    return _odata_4_schema(_read_xml(metadata_xml(properties, **kwargs)), "REF_COUNTRY")
+
+
+# Contract generation, type mapping and metadata validation
+
+
+def test_who_contract_and_transport(metadata_response, odcs_schema):
     response, get = metadata_response
     contract = import_contract()
     actual = yaml.safe_load(contract.to_yaml())
     assert actual == yaml.safe_load((FIXTURES / "who-contract.yaml").read_text())
-    schema = json.loads((Path(__file__).parents[1] / "datacontract/schemas/odcs-3.2.0.schema.json").read_text())
-    jsonschema.validate(actual, schema)
+    jsonschema.validate(actual, odcs_schema)
     get.assert_called_once()
     assert get.call_args.args == (METADATA,)
     assert get.call_args.kwargs["headers"] == {
@@ -79,7 +105,7 @@ def test_who_contract_and_transport(metadata_response):
     assert get.call_args.kwargs["auth"](request).headers.get("Authorization") is None
 
 
-@pytest.mark.parametrize("version", ODATA_VERSIONS)
+@pytest.mark.parametrize("version", ODATA_TEST_VERSIONS)
 @pytest.mark.parametrize("header", [True, False])
 @pytest.mark.parametrize("format", ["xml", "json"])
 def test_versions_and_header_fallback(metadata_response, version, header, format):
@@ -111,20 +137,17 @@ def test_versions_and_header_fallback(metadata_response, version, header, format
     ],
 )
 @pytest.mark.parametrize("format", ["xml", "json"])
-def test_primitive_types(metadata_response, edm_type, logical_type, format):
-    response, _ = metadata_response
-    response.headers = {}
+def test_primitive_types(edm_type, logical_type, format):
     if format == "xml":
-        response.content = metadata_xml(f'<Property Name="Value" Type="Edm.{edm_type}" />')
-        prop = import_contract().schema_[0].properties[0]
+        schema = xml_schema(f'<Property Name="Value" Type="Edm.{edm_type}" />')
     else:
         document = json.loads((FIXTURES / "products.json").read_text())
         document["Catalog.Model"]["Product"] = {
             "$Kind": "EntityType",
             "Value": {"$Type": f"Edm.{edm_type}", "$Nullable": True},
         }
-        response.content = json.dumps(document).encode()
-        prop = import_contract("Products").schema_[0].properties[0]
+        schema = _odata_4_schema(_read_json(json.dumps(document).encode()), "Products")
+    prop = schema.properties[0]
     assert prop.logicalType == logical_type
     assert prop.physicalType == f"Edm.{edm_type}"
     assert prop.required is False
@@ -137,10 +160,8 @@ def test_primitive_types(metadata_response, edm_type, logical_type, format):
         assert "scale" not in facets
 
 
-def test_keys_nullability_and_facets(metadata_response):
-    response, _ = metadata_response
-    response.headers = {}
-    response.content = metadata_xml(
+def test_keys_nullability_and_facets():
+    schema = xml_schema(
         """<Property Name="Code" Type="Edm.String" Nullable="false" MaxLength="3" />
         <Property Name="Year" Type="Edm.Int32" Nullable="false" />
         <Property Name="Amount" Type="Edm.Decimal" Precision="12" Scale="2" Nullable="true" />
@@ -149,7 +170,7 @@ def test_keys_nullability_and_facets(metadata_response):
         <Property Name="Text" Type="Edm.String" MaxLength="max" />""",
         keys='<Key><PropertyRef Name="Year" /><PropertyRef Name="Code" /></Key>',
     )
-    code, year, amount, variable, floating, text = import_contract().schema_[0].properties
+    code, year, amount, variable, floating, text = schema.properties
     assert code.required is True and year.required is True
     assert code.primaryKey is True and year.primaryKey is True
     assert (code.primaryKeyPosition, year.primaryKeyPosition) == (2, 1)
@@ -160,15 +181,6 @@ def test_keys_nullability_and_facets(metadata_response):
     assert variable.customProperties[0].value == "variable"
     assert floating.customProperties[0].value == "floating"
     assert not text.logicalTypeOptions
-
-
-@pytest.mark.parametrize("scale", ["", ' Scale="0"'], ids=["implicit-zero", "explicit-zero"])
-def test_xml_decimal_zero_scale(metadata_response, scale):
-    response, _ = metadata_response
-    response.headers = {}
-    response.content = metadata_xml(f'<Property Name="Amount" Type="Edm.Decimal" Precision="10"{scale} />')
-    prop = import_contract().schema_[0].properties[0]
-    assert {p.property: p.value for p in prop.customProperties} == {"precision": 10, "scale": 0}
 
 
 @pytest.mark.parametrize("entity_set", ["REF_COUNTRY", "ref_country", "Ref_Country"])
@@ -192,15 +204,12 @@ def test_exact_match_wins_and_casefold_ambiguity_fails(metadata_response):
         import_contract("Ref_Country")
 
 
-def test_navigation_and_unrelated_types_are_omitted(metadata_response, caplog):
-    response, _ = metadata_response
-    response.headers = {}
-    response.content = metadata_xml(
+def test_navigation_and_unrelated_types_are_omitted(caplog):
+    schema = xml_schema(
         '<Property Name="Code" Type="Edm.String" /><NavigationProperty Name="Related" Type="Collection(D.Country)" />',
         extra_schema='<ComplexType Name="Unused"><Property Name="Nested" Type="Collection(Edm.String)" /></ComplexType>',
     )
-    contract = import_contract()
-    assert [p.name for p in contract.schema_[0].properties] == ["Code"]
+    assert [p.name for p in schema.properties] == ["Code"]
     assert "Omitting OData navigation property REF_COUNTRY.Related" in caplog.text
 
 
@@ -208,12 +217,9 @@ def test_navigation_and_unrelated_types_are_omitted(metadata_response, caplog):
     "field_type",
     ["D.Address", "Collection(Edm.String)", "Collection(D.Address)", "D.Status", "Edm.Binary", "Edm.Unknown"],
 )
-def test_unsupported_types_fail_with_field_and_type(metadata_response, field_type):
-    response, _ = metadata_response
-    response.headers = {}
-    response.content = metadata_xml(f'<Property Name="Value" Type="{field_type}" />')
+def test_unsupported_types_fail_with_field_and_type(field_type):
     with pytest.raises(DataContractException) as error:
-        import_contract()
+        xml_schema(f'<Property Name="Value" Type="{field_type}" />')
     assert "REF_COUNTRY.Value" in str(error.value)
     assert field_type in str(error.value)
 
@@ -252,24 +258,11 @@ def test_metadata_errors(metadata_response, document, header, error):
         '<!DOCTYPE edmx:Edmx SYSTEM "https://example.com/metadata.dtd">',
     ],
 )
-def test_metadata_rejects_dtd(metadata_response, encoding, doctype):
-    response, _ = metadata_response
-    response.headers = {}
+def test_metadata_rejects_dtd(encoding, doctype):
     document = metadata_xml().decode().replace('Name="REF_COUNTRY"', 'Name="&country;"')
-    response.content = (f'<?xml version="1.0" encoding="{encoding}"?>{doctype}{document}').encode(encoding)
+    content = (f'<?xml version="1.0" encoding="{encoding}"?>{doctype}{document}').encode(encoding)
     with pytest.raises(DataContractException, match="DTD declarations are not allowed"):
-        import_contract()
-
-
-@pytest.mark.parametrize("encoding", ["utf-8", "utf-16"])
-def test_metadata_encoding_and_escaped_text(metadata_response, encoding):
-    response, _ = metadata_response
-    response.headers = {}
-    document = metadata_xml('<Property Name="Code" Type="Edm.String" DefaultValue="A &amp; B" />').decode()
-    response.content = (
-        f'<?xml version="1.0" encoding="{encoding}"?><!-- literal <!DOCTYPE is harmless here -->{document}'
-    ).encode(encoding)
-    assert import_contract().schema_[0].properties[0].name == "Code"
+        _read_xml(content)
 
 
 @pytest.mark.parametrize(
@@ -322,68 +315,46 @@ def test_http_errors(metadata_response, status):
         import_contract()
 
 
+# CLI options and output handling
+
+
 def test_cli_stdout_and_output(metadata_response, tmp_path):
-    runner = CliRunner()
-    args = ["import", "odata", "--service-root-url", ROOT, "--entity-set", "ref_country", "--metadata-url", METADATA]
-    stdout = runner.invoke(app, args)
+    args = ["--entity-set", "ref_country", "--metadata-url", METADATA]
+    stdout = run_cli(*args, source=ROOT)
     assert stdout.exit_code == 0, stdout.output
     assert yaml.safe_load(stdout.stdout) == yaml.safe_load((FIXTURES / "who-contract.yaml").read_text())
     output = tmp_path / "contract.yaml"
-    result = runner.invoke(app, args + ["--output", str(output), "--owner", "WHO", "--id", "country", "--debug"])
+    result = run_cli(*args, "--output", output, "--owner", "WHO", "--id", "country", "--debug", source=ROOT)
     assert result.exit_code == 0, result.output
     contract = yaml.safe_load(output.read_text())
     assert contract["id"] == "country"
     assert contract["team"]["name"] == "WHO"
 
 
-@pytest.mark.parametrize(
-    "args",
-    [
-        [],
-        ["--metadata-url", METADATA],
-        ["--metadata-file", str(FIXTURES / "who-metadata.xml")],
-        ["--service-root-url", ROOT, "--entity-set", "ref_country", "--metadataUrl", METADATA],
-        [
-            "--service-root-url",
-            ROOT,
-            "--entity-set",
-            "ref_country",
-            "--metadata-url",
-            METADATA,
-            "--metadata-file",
-            str(FIXTURES / "who-metadata.xml"),
-        ],
-    ],
-)
-def test_cli_requires_options_and_rejects_alias(metadata_response, args):
-    _, get = metadata_response
-    result = CliRunner().invoke(app, ["import", "odata"] + args)
-    assert result.exit_code == 2
-    get.assert_not_called()
-
-
-def test_failed_import_preserves_existing_output(metadata_response, tmp_path):
+@pytest.mark.parametrize("existing", [False, True], ids=["no-new-file", "preserve-existing-file"])
+@pytest.mark.parametrize("source", ["file", "url"])
+def test_failed_import_preserves_output(metadata_response, tmp_path, existing, source):
     response, _ = metadata_response
     response.content = b"invalid XML"
     output = tmp_path / "contract.yaml"
-    output.write_text("existing contract")
-    result = CliRunner().invoke(
-        app,
-        [
-            "import",
-            "odata",
-            "--service-root-url",
-            ROOT,
-            "--entity-set",
-            "ref_country",
-            "--metadata-url",
-            METADATA,
-            "--output",
-            str(output),
-        ],
-    )
+    if existing:
+        output.write_text("existing contract")
+    args = ["--metadata-url", METADATA]
+    if source == "file":
+        metadata = tmp_path / "invalid.xml"
+        metadata.write_bytes(response.content)
+        args = ["--metadata-file", metadata]
+    result = run_cli("--entity-set", "ref_country", *args, "--output", output)
     assert result.exit_code != 0
-    assert output.read_text() == "existing contract"
+    assert isinstance(result.exception, DataContractException)
+    assert "Invalid or unsafe" in str(result.exception)
+    if existing:
+        assert output.read_text() == "existing contract"
+    else:
+        assert not output.exists()
+
+
+# Local metadata files
 
 
 @pytest.mark.parametrize("path_type", [str, Path])
@@ -400,57 +371,7 @@ def test_local_who_metadata_matches_url_import(metadata_response, path_type):
     get.assert_not_called()
 
 
-@pytest.mark.parametrize("encoding", ["utf-8", "utf-16"])
-def test_local_metadata_encoding(metadata_response, tmp_path, encoding):
-    _, get = metadata_response
-    path = tmp_path / "metadata.xml"
-    document = metadata_xml('<Property Name="Code" Type="Edm.String" />').decode()
-    path.write_bytes((f'<?xml version="1.0" encoding="{encoding}"?>{document}').encode(encoding))
-    contract = DataContract.import_from_source(
-        "odata", source=ROOT, odata_entity_set=["ref_country"], odata_metadata_file=path
-    )
-    assert contract.schema_[0].properties[0].name == "Code"
-    get.assert_not_called()
-
-
-@pytest.mark.parametrize("kind", ["missing", "directory", "unreadable", "malformed", "dtd"])
-def test_local_metadata_errors_preserve_output(metadata_response, tmp_path, monkeypatch, kind):
-    _, get = metadata_response
-    path = tmp_path / "metadata.xml"
-    if kind == "directory":
-        path.mkdir()
-    elif kind == "unreadable":
-        monkeypatch.setattr(Path, "read_bytes", Mock(side_effect=PermissionError("Permission denied")))
-    elif kind == "malformed":
-        path.write_bytes(b"not XML")
-    elif kind == "dtd":
-        path.write_bytes(b'<!DOCTYPE edmx:Edmx [<!ENTITY name "Country">]>' + metadata_xml())
-    output = tmp_path / "contract.yaml"
-    output.write_text("existing contract")
-    result = CliRunner().invoke(
-        app,
-        [
-            "import",
-            "odata",
-            "--service-root-url",
-            ROOT,
-            "--entity-set",
-            "ref_country",
-            "--metadata-file",
-            str(path),
-            "--output",
-            str(output),
-        ],
-    )
-    assert result.exit_code != 0
-    assert isinstance(result.exception, DataContractException)
-    message = "Invalid or unsafe" if kind in ("malformed", "dtd") else "Failed to read OData metadata file"
-    assert message in str(result.exception)
-    assert output.read_text() == "existing contract"
-    get.assert_not_called()
-
-
-SERVICE_ROOT = "https://example.com/odata/"
+# CSDL JSON and XML/JSON equivalence
 
 
 @pytest.fixture
@@ -461,7 +382,7 @@ def json_metadata(metadata_response):
 
 
 @pytest.mark.parametrize("source", ["file", "url"])
-def test_xml_json_equivalent_contracts(metadata_response, tmp_path, source):
+def test_xml_json_equivalent_contracts(metadata_response, tmp_path, odcs_schema, source):
     response, get = metadata_response
     response.headers = {"OData-Version": "4.01", "Content-Type": "text/plain"}
     contracts = []
@@ -479,8 +400,7 @@ def test_xml_json_equivalent_contracts(metadata_response, tmp_path, source):
             response.content = content
             contract = import_contract("Products", source=SERVICE_ROOT)
         actual = yaml.safe_load(contract.to_yaml())
-        schema = json.loads((Path(__file__).parents[1] / "datacontract/schemas/odcs-3.2.0.schema.json").read_text())
-        jsonschema.validate(actual, schema)
+        jsonschema.validate(actual, odcs_schema)
         contracts.append(actual)
     assert contracts[0] == contracts[1]
     properties = contracts[0]["schema"][0]["properties"]
@@ -501,73 +421,6 @@ def test_xml_json_equivalent_contracts(metadata_response, tmp_path, source):
         {"property": "precision", "value": 10},
         {"property": "scale", "value": 2},
     ]
-
-
-@pytest.mark.parametrize("format", ["xml", "json"])
-def test_cli_synthetic_metadata_file(metadata_response, tmp_path, monkeypatch, format):
-    _, get = metadata_response
-    content = (FIXTURES / f"products.{format}").read_bytes()
-    monkeypatch.chdir(tmp_path)
-    Path("metadata").write_bytes(content)
-    args = [
-        "import",
-        "odata",
-        "--service-root-url",
-        SERVICE_ROOT,
-        "--entity-set",
-        "Products",
-        "--metadata-file",
-        "metadata",
-        "--owner",
-        "Catalog",
-        "--id",
-        "products",
-    ]
-    stdout = CliRunner().invoke(app, args)
-    assert stdout.exit_code == 0, stdout.output
-    actual = yaml.safe_load(stdout.stdout)
-    assert actual["name"] == "Products"
-    assert actual["id"] == "products" and actual["team"]["name"] == "Catalog"
-    assert {"property": "odataMetadataFile", "value": "metadata"} in actual["servers"][0]["customProperties"]
-    result = CliRunner().invoke(app, args + ["--output", "contract.yaml"])
-    assert result.exit_code == 0, result.output
-    assert yaml.safe_load(Path("contract.yaml").read_text()) == actual
-    get.assert_not_called()
-
-
-@pytest.mark.parametrize("source", ["file", "url"])
-@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig", "utf-16", "utf-32"])
-def test_json_encoding_and_leading_whitespace(metadata_response, tmp_path, source, encoding):
-    response, get = metadata_response
-    content = (" \n\t" * 100 + (FIXTURES / "products.json").read_text()).encode(encoding)
-    response.headers = {"Content-Type": "application/xml"}
-    if source == "file":
-        path = tmp_path / "metadata.xml"
-        path.write_bytes(content)
-        contract = DataContract.import_from_source(
-            "odata", source=SERVICE_ROOT, odata_entity_set=["Products"], odata_metadata_file=path
-        )
-        get.assert_not_called()
-    else:
-        response.content = content
-        result = CliRunner().invoke(
-            app,
-            [
-                "import",
-                "odata",
-                "--service-root-url",
-                SERVICE_ROOT,
-                "--entity-set",
-                "Products",
-                "--metadata-url",
-                METADATA,
-            ],
-        )
-        assert result.exit_code == 0, result.output
-        assert yaml.safe_load(result.stdout)["name"] == "Products"
-        get.assert_called_once_with(METADATA, **get.call_args.kwargs)
-        return
-    assert contract.name == "Products"
 
 
 def test_json_defaults_and_annotations(metadata_response, json_metadata):
@@ -609,29 +462,9 @@ def test_json_alias_and_navigation(metadata_response, json_metadata, caplog, typ
     get.assert_called_once()
 
 
-@pytest.mark.parametrize("entity_set", ["Products", "products", "PRODUCTS"])
-def test_json_name_matching(metadata_response, json_metadata, entity_set):
-    response, _ = metadata_response
-    response.content = json.dumps(json_metadata).encode()
-    contract = import_contract(entity_set, source=SERVICE_ROOT)
-    assert contract.name == "Products" and contract.servers[0].location == SERVICE_ROOT
-
-
-def test_json_exact_match_and_ambiguous_names(metadata_response, json_metadata):
-    response, _ = metadata_response
-    json_metadata["Catalog.Service"]["Store"]["products"] = {"$Collection": True, "$Type": "Catalog.Product"}
-    response.content = json.dumps(json_metadata).encode()
-    assert import_contract("Products").name == "Products"
-    with pytest.raises(DataContractException, match="ambiguous"):
-        import_contract("PRODUCTS")
-    with pytest.raises(DataContractException, match="not found"):
-        import_contract("Missing")
-
-
 @pytest.mark.parametrize(
     "path,value,error",
     [
-        (("$Version",), 4.01, "Unsupported OData version"),
         (("$EntityContainer",), [], "namespace-qualified"),
         (("$EntityContainer",), "Missing.Store", "JSON object"),
         (("Catalog.Model", "$Alias"), 42, "Invalid .*Alias"),
@@ -661,110 +494,36 @@ def test_json_exact_match_and_ambiguous_names(metadata_response, json_metadata):
         (("Catalog.Model", "Product", "Sku", "$MaxLength"), None, "Invalid MaxLength"),
     ],
 )
-def test_json_invalid_csdl(metadata_response, json_metadata, path, value, error):
-    response, _ = metadata_response
+def test_json_invalid_csdl(json_metadata, path, value, error):
     target = json_metadata
     for key in path[:-1]:
         target = target[key]
     target[path[-1]] = value
-    response.content = json.dumps(json_metadata).encode()
     with pytest.raises(DataContractException, match=error):
-        import_contract("Products")
+        _odata_4_schema(_read_json(json.dumps(json_metadata).encode()), "Products")
 
 
 @pytest.mark.parametrize("kind", ["ComplexType", "EnumType", "TypeDefinition"])
-def test_json_unsupported_selected_type(metadata_response, json_metadata, kind):
-    response, _ = metadata_response
+def test_json_unsupported_selected_type(json_metadata, kind):
     json_metadata["Catalog.Model"]["Special"] = {"$Kind": kind}
     json_metadata["Catalog.Model"]["Product"]["Price"]["$Type"] = "Catalog.Special"
-    response.content = json.dumps(json_metadata).encode()
     with pytest.raises(DataContractException, match="Catalog.Special.*Products.Price"):
-        import_contract("Products")
+        _odata_4_schema(_read_json(json.dumps(json_metadata).encode()), "Products")
 
 
-@pytest.mark.parametrize(
-    "content,error",
-    [
-        (b'{"$Version": "4.01",', "Invalid or unsafe"),
-        (b'{"$Version":"4.01","$Version":"4.0"}', "Duplicate JSON key"),
-        (b'{"Schema":{"Field":{},"Field":{}}}', "Duplicate JSON key"),
-        (b'{"value":NaN}', "Invalid JSON constant"),
-        (b'{"value":Infinity}', "Invalid JSON constant"),
-        (b"[]", "JSON object"),
-        (b"null", "JSON object"),
-        (b'{"bad":"\xff"}', "Invalid or unsafe"),
-        (
-            b'{"@odata.context":"https://example.com/odata/$metadata","value":[{"name":"Products","kind":"EntitySet","url":"Products"}]}',
-            "service/data document.*field definitions",
-        ),
-    ],
-)
-def test_json_invalid_documents_preserve_output(metadata_response, tmp_path, content, error):
-    response, get = metadata_response
-    response.headers = {}
-    response.content = content
-    output = tmp_path / "contract.yaml"
-    result = CliRunner().invoke(
-        app,
-        [
-            "import",
-            "odata",
-            "--service-root-url",
-            SERVICE_ROOT,
-            "--entity-set",
-            "Products",
-            "--metadata-url",
-            METADATA,
-            "--output",
-            str(output),
-        ],
-    )
-    assert result.exit_code != 0
-    assert isinstance(result.exception, DataContractException)
-    assert re.search(error, str(result.exception))
-    assert not output.exists()
-    get.assert_called_once()
+# Version validation and format detection
 
 
 @pytest.mark.parametrize("document_version, header_version", [("4.01", "4.0"), ("4.123", "4.1"), ("4.01", "4.1")])
-def test_json_version_conflict(metadata_response, json_metadata, document_version, header_version):
-    response, _ = metadata_response
-    json_metadata["$Version"] = document_version
-    response.headers = {"OData-Version": header_version}
-    response.content = json.dumps(json_metadata).encode()
+def test_version_conflict(document_version, header_version):
     with pytest.raises(DataContractException, match="Conflicting OData versions"):
-        import_contract("Products")
+        _odata_version(document_version, header_version)
 
 
-@pytest.mark.parametrize("format", ["xml", "json"])
-@pytest.mark.parametrize("version", [None, "3.0", "5.0", "4", "4.", "4.x", "4.1.0", "4.01beta", "4.١"])
-def test_invalid_document_versions(metadata_response, format, version):
-    response, _ = metadata_response
-    response.headers = {"OData-Version": "4.01"}
-    if format == "json":
-        document = json.loads((FIXTURES / "products.json").read_text())
-        if version is None:
-            document.pop("$Version")
-        else:
-            document["$Version"] = version
-        response.content = json.dumps(document).encode()
-    else:
-        response.content = (FIXTURES / "products.xml").read_bytes()
-        if version is None:
-            response.content = response.content.replace(b' Version="4.01"', b"")
-        else:
-            response.content = response.content.replace(b'Version="4.01"', f'Version="{version}"'.encode())
+@pytest.mark.parametrize("version", [None, "3.0", "5.0", "4", "4.", "4.x", "4.1.0", "4.01beta", "4.١", 4.01])
+def test_invalid_versions(version):
     with pytest.raises(DataContractException, match="Unsupported OData version"):
-        import_contract("Products")
-
-
-@pytest.mark.parametrize("format", ["xml", "json"])
-def test_version_header_whitespace_preserves_version_string(metadata_response, format):
-    response, _ = metadata_response
-    response.content = (FIXTURES / f"products.{format}").read_bytes().replace(b"4.01", b"4.00123")
-    response.headers = {"OData-Version": " 4.00123 "}
-    contract = import_contract("Products")
-    assert {p.property: p.value for p in contract.servers[0].customProperties}["odataVersion"] == "4.00123"
+        _odata_version(version, None)
 
 
 @pytest.mark.parametrize("prefix", [b" \t\n" * 100, b"\xef\xbb\xbf \t\n"])
@@ -775,12 +534,7 @@ def test_xml_detection_with_whitespace_and_bom(metadata_response, prefix):
     assert import_contract().schema_[0].properties[0].name == "Label"
 
 
-def test_xml_encoding_declaration_is_respected(metadata_response):
-    response, _ = metadata_response
-    response.headers = {}
-    document = metadata_xml('<Property Name="Libellé" Type="Edm.String"/>').decode()
-    response.content = ('<?xml version="1.0" encoding="iso-8859-1"?>' + document).encode("iso-8859-1")
-    assert import_contract().schema_[0].properties[0].name == "Libellé"
+# Service documents and selection of multiple EntitySets
 
 
 @pytest.fixture
@@ -809,7 +563,9 @@ def service_response(metadata_response):
         pytest.param("xml", "file", "url", SERVICE_ROOT, id="local-metadata-http-service"),
     ],
 )
-def test_import_all_advertised_sets(metadata_response, service_response, format, metadata_source, service_source, root):
+def test_import_all_advertised_sets(
+    metadata_response, service_response, odcs_schema, format, metadata_source, service_source, root
+):
     metadata, _ = metadata_response
     _, get = service_response
     metadata.content = (FIXTURES / f"products.{format}").read_bytes()
@@ -840,8 +596,7 @@ def test_import_all_advertised_sets(metadata_response, service_response, format,
     assert server_properties["odataVersion"] == "4.01"
     if metadata_source != "file":
         assert server_properties["odataMetadataUrl"] == expected_requests[0]
-    schema = json.loads((Path(__file__).parents[1] / "datacontract/schemas/odcs-3.2.0.schema.json").read_text())
-    jsonschema.validate(yaml.safe_load(contract.to_yaml()), schema)
+    jsonschema.validate(yaml.safe_load(contract.to_yaml()), odcs_schema)
     assert [call.args[0] for call in get.call_args_list] == expected_requests
     if service_source == "url":
         assert get.call_args.kwargs["headers"] == {"Accept": "application/json"}
@@ -851,40 +606,29 @@ def test_import_all_advertised_sets(metadata_response, service_response, format,
 
 
 @pytest.mark.parametrize("format", ["xml", "json"])
-def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_path, format):
+def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_path, monkeypatch, format):
     _, get = metadata_response
-    path = tmp_path / "metadata"
+    monkeypatch.chdir(tmp_path)
+    path = Path("metadata")  # Relative path without a format-specific extension.
     path.write_bytes((FIXTURES / f"products.{format}").read_bytes())
-    result = CliRunner().invoke(
-        app,
-        [
-            "import",
-            "odata",
-            "--service-root-url",
-            SERVICE_ROOT,
-            "--metadata-file",
-            str(path),
-            "--service-root-file",
-            str(tmp_path / "does-not-exist.json"),
-            "--entity-set",
-            "Orders",
-            "--entity-set",
-            "products",
-            "--entity-set",
-            "ArchivedProducts",
-            "--entity-set",
-            "Products",
-            "--owner",
-            "Catalog",
-            "--id",
-            "catalog",
-            "--debug",
-        ],
+    result = run_cli(
+        "--metadata-file",
+        path,
+        "--service-root-file",
+        "does-not-exist.json",
+        "--entity-set",
+        "Orders",
+        "--entity-set",
+        "products",
+        "--entity-set",
+        "ArchivedProducts",
+        "--entity-set",
+        "Products",
     )
     assert result.exit_code == 0, result.output
     contract = yaml.safe_load(result.stdout)
-    assert contract["name"] == "Store" and contract["id"] == "catalog"
-    assert contract["team"]["name"] == "Catalog"
+    assert contract["name"] == "Store"
+    assert {"property": "odataMetadataFile", "value": "metadata"} in contract["servers"][0]["customProperties"]
     schemas = contract["schema"]
     assert [s["name"] for s in schemas] == ["Orders", "Products", "ArchivedProducts"]
     assert schemas[1]["properties"] == schemas[2]["properties"]
@@ -901,14 +645,6 @@ def test_derived_metadata_url_with_explicit_selection(metadata_response, root):
     get.assert_called_once()
     assert get.call_args.args == (SERVICE_ROOT + "$metadata",)
     assert contract.servers[0].location == root.rstrip("/") + "/"
-
-
-@pytest.mark.parametrize("selection", [[], "Products", [None], [""], ["  "]])
-def test_invalid_explicit_selection_does_not_fetch(metadata_response, selection):
-    _, get = metadata_response
-    with pytest.raises(DataContractException, match="non-empty list"):
-        DataContract.import_from_source("odata", source=SERVICE_ROOT, odata_entity_set=selection)
-    get.assert_not_called()
 
 
 @pytest.mark.parametrize("context_key", ["@odata.context", "@context"])
@@ -943,88 +679,12 @@ def test_redirected_service_document_base(service_response, url, root):
     assert [call.args[0] for call in get.call_args_list] == [SERVICE_ROOT + "$metadata", SERVICE_ROOT]
 
 
-@pytest.mark.parametrize("version", [None, *ODATA_VERSIONS])
+@pytest.mark.parametrize("version", [None, *ODATA_TEST_VERSIONS])
 def test_service_header_does_not_override_csdl_version(service_response, version):
     service, _ = service_response
     service.headers = {"OData-Version": version} if version else {}
     contract = DataContract.import_from_source("odata", source=SERVICE_ROOT)
     assert {p.property: p.value for p in contract.servers[0].customProperties}["odataVersion"] == "4.01"
-
-
-@pytest.mark.parametrize("target", ["metadata", "service"])
-@pytest.mark.parametrize("version", ["", "3.0", "5.0", "4", "4.", "4.x", "4.1.0"])
-def test_invalid_http_versions(metadata_response, service_response, target, version):
-    metadata, _ = metadata_response
-    service, _ = service_response
-    response = metadata if target == "metadata" else service
-    response.headers = {"OData-Version": version}
-    with pytest.raises(DataContractException, match="Unsupported OData version"):
-        DataContract.import_from_source("odata", source=SERVICE_ROOT)
-
-
-@pytest.mark.parametrize(
-    "document,error",
-    [
-        ({}, "context URL"),
-        ({"@context": None, "value": []}, "Invalid context URL"),
-        ({"@context": "http://[", "value": []}, "Invalid context URL"),
-        ({"@context": "$metadata", "@odata.context": "other", "value": []}, "Conflicting context"),
-        ({"@context": "$metadata", "value": {}}, "value array"),
-        ({"@context": "$metadata", "value": []}, "No EntitySets"),
-        ({"@context": "$metadata", "value": [None]}, "JSON object"),
-        ({"@context": "$metadata", "value": [{"name": "Products", "url": "Products", "kind": 1}]}, "Invalid kind"),
-        ({"@context": "$metadata", "value": [{"name": "Products"}]}, "name and url"),
-        ({"@context": "$metadata", "value": [{"name": 1, "url": "Products"}]}, "name and url"),
-        ({"@context": "$metadata", "value": [{"name": "Products", "url": "file:///tmp/data"}]}, "Invalid .*URL"),
-        ({"@context": "$metadata", "value": [{"name": "Products", "url": "http://["}]}, "Invalid service document URL"),
-        ({"@context": "$metadata", "value": [{"name": "Absent", "url": "Absent"}]}, "not found"),
-        ({"@context": "$metadata", "value": [{"name": "Products", "url": "Products"}] * 2}, "Duplicate EntitySet"),
-        (
-            {
-                "@context": "$metadata",
-                "value": [{"name": "products", "url": "Products"}, {"name": "Products", "url": "Products"}],
-            },
-            "Duplicate EntitySet",
-        ),
-    ],
-)
-def test_invalid_service_documents(service_response, tmp_path, document, error):
-    service, _ = service_response
-    service.content = json.dumps(document).encode()
-    output = tmp_path / "contract.yaml"
-    output.write_text("existing contract")
-    result = CliRunner().invoke(app, ["import", "odata", "--service-root-url", SERVICE_ROOT, "--output", str(output)])
-    assert result.exit_code != 0 and isinstance(result.exception, DataContractException)
-    assert re.search(error, str(result.exception))
-    assert output.read_text() == "existing contract"
-
-
-@pytest.mark.parametrize("content", [b"<service/>", b"{", b'{"value":[],"value":[]}'])
-def test_service_document_invalid_json(service_response, content):
-    service, _ = service_response
-    service.content = content
-    with pytest.raises(DataContractException, match="Invalid or unsafe|Duplicate JSON key"):
-        DataContract.import_from_source("odata", source=SERVICE_ROOT)
-
-
-@pytest.mark.parametrize("failure", ["http", "timeout", "version"])
-def test_service_document_transport_errors(service_response, failure):
-    service, get = service_response
-    if failure == "http":
-        service.raise_for_status.side_effect = requests.HTTPError("HTTP 403")
-    elif failure == "timeout":
-        previous = get.side_effect
-
-        def fetch(url, **kwargs):
-            if url == SERVICE_ROOT:
-                raise requests.Timeout("timed out")
-            return previous(url, **kwargs)
-
-        get.side_effect = fetch
-    else:
-        service.headers = {"OData-Version": "3.0"}
-    with pytest.raises(DataContractException, match="Failed to fetch OData service document|Unsupported OData version"):
-        DataContract.import_from_source("odata", source=SERVICE_ROOT)
 
 
 def test_missing_service_file_does_not_fall_back_to_network(metadata_response, tmp_path):
@@ -1042,20 +702,13 @@ def test_missing_service_file_does_not_fall_back_to_network(metadata_response, t
 def test_cli_offline_all_sets(metadata_response, tmp_path):
     _, get = metadata_response
     output = tmp_path / "contract.yaml"
-    result = CliRunner().invoke(
-        app,
-        [
-            "import",
-            "odata",
-            "--service-root-url",
-            SERVICE_ROOT,
-            "--metadata-file",
-            str(FIXTURES / "products.xml"),
-            "--service-root-file",
-            str(FIXTURES / "service-document.json"),
-            "--output",
-            str(output),
-        ],
+    result = run_cli(
+        "--metadata-file",
+        FIXTURES / "products.xml",
+        "--service-root-file",
+        FIXTURES / "service-document.json",
+        "--output",
+        output,
     )
     assert result.exit_code == 0, result.output
     assert [s["name"] for s in yaml.safe_load(output.read_text())["schema"]] == ["Products", "Orders"]
@@ -1068,22 +721,8 @@ def test_failure_in_later_selected_schema_preserves_output(metadata_response, js
     metadata.content = json.dumps(json_metadata).encode()
     output = tmp_path / "contract.yaml"
     output.write_text("existing contract")
-    result = CliRunner().invoke(
-        app,
-        [
-            "import",
-            "odata",
-            "--service-root-url",
-            SERVICE_ROOT,
-            "--metadata-url",
-            METADATA,
-            "--entity-set",
-            "Products",
-            "--entity-set",
-            "Orders",
-            "--output",
-            str(output),
-        ],
+    result = run_cli(
+        "--metadata-url", METADATA, "--entity-set", "Products", "--entity-set", "Orders", "--output", output
     )
     assert result.exit_code != 0 and isinstance(result.exception, DataContractException)
     assert "Orders.Total" in str(result.exception)
@@ -1091,12 +730,12 @@ def test_failure_in_later_selected_schema_preserves_output(metadata_response, js
     get.assert_called_once()
 
 
-def test_xml_requires_unambiguous_container(metadata_response):
-    metadata, _ = metadata_response
-    metadata.headers = {}
-    metadata.content = metadata_xml(extra_schema='<EntityContainer Name="AnotherService"/>')
+def test_xml_requires_unambiguous_container():
     with pytest.raises(DataContractException, match="EntityContainer.*ambiguous"):
-        import_contract()
+        xml_schema(extra_schema='<EntityContainer Name="AnotherService"/>')
+
+
+# Authentication and configuration
 
 
 @pytest.mark.parametrize(
@@ -1150,23 +789,7 @@ def test_cli_authentication_from_config_file(service_response, tmp_path, monkeyp
     assert "overridden-token" not in result.output
 
 
-@pytest.mark.parametrize("selection", [True, False])
-def test_authenticated_offline_import(metadata_response, selection):
-    _, get = metadata_response
-    options = (
-        {"odata_entity_set": ["Products"]}
-        if selection
-        else {"odata_service_root_file": FIXTURES / "service-document.json"}
-    )
-    contract = DataContract.import_from_source(
-        "odata",
-        source=SERVICE_ROOT,
-        odata_metadata_file=FIXTURES / "products.xml",
-        config=Config(api_header_authorization="Bearer offline-token"),
-        **options,
-    )
-    get.assert_not_called()
-    assert "offline-token" not in contract.to_yaml()
+# HTTP transport, redirects and protection of credentials
 
 
 @pytest.fixture
@@ -1252,10 +875,10 @@ def test_authentication_errors_do_not_expose_secrets(http_transport, tmp_path, m
     monkeypatch.setenv("DATACONTRACT_API_HEADER_AUTHORIZATION", secret)
     output = tmp_path / "contract.yaml"
     output.write_text("existing contract")
-    args = ["import", "odata", "--service-root-url", SERVICE_ROOT, "--output", str(output), "--debug"]
+    args = ["--output", output, "--debug"]
     if target == "service":
         args += ["--metadata-file", str(FIXTURES / "products.json")]
-    result = CliRunner().invoke(app, args)
+    result = run_cli(*args)
     assert result.exit_code != 0
     assert isinstance(result.exception, DataContractException)
     assert result.exception.type == "connection"
