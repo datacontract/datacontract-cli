@@ -113,9 +113,15 @@ def _property_from_struct_type(spark_field: types.StructField, physical_type: st
 
     nested_properties = None
     items_prop = None
+    map_key = map_value = None
 
     if isinstance(spark_field.dataType, types.ArrayType):
         items_prop = _type_to_property("items", spark_field.dataType.elementType, not spark_field.dataType.containsNull)
+    elif isinstance(spark_field.dataType, types.MapType):
+        map_key = _type_to_property("key", spark_field.dataType.keyType, True)
+        map_value = _type_to_property(
+            "value", spark_field.dataType.valueType, not spark_field.dataType.valueContainsNull
+        )
     elif logical_type == "object" and isinstance(spark_field.dataType, types.StructType):
         nested_physical_types = _struct_field_types_from_physical_type(physical_type)
         nested_properties = [
@@ -130,6 +136,8 @@ def _property_from_struct_type(spark_field: types.StructField, physical_type: st
         required=required if required else None,
         properties=nested_properties,
         items=items_prop,
+        map_key=map_key,
+        map_value=map_value,
     )
 
 
