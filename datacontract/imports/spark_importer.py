@@ -6,17 +6,7 @@ import tempfile
 
 from databricks.sdk import WorkspaceClient
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
-
-try:
-    # pyspark is deliberately not a package dependency (see pyproject.toml) since a
-    # Spark import only ever runs against a session the caller already built, so
-    # pyspark is necessarily importable in that process. This module is still
-    # importable without it (e.g. for unit-testing the pure-Python helpers below);
-    # `DataFrame`/`SparkSession`/`types` are only dereferenced once real Spark
-    # objects are involved.
-    from pyspark.sql import DataFrame, SparkSession, types
-except ImportError:
-    DataFrame = SparkSession = types = None
+from pyspark.sql import DataFrame, SparkSession, types
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
