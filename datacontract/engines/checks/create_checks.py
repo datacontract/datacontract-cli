@@ -121,23 +121,24 @@ def _property_type(prop: SchemaProperty) -> str:
 
 def _iter_property_paths(
     properties: list[SchemaProperty] | None,
-    server_type: str | None,
     prefix: str | None = None,
 ):
+    """Yield ``(path, property, nested)`` for every property, descending into objects and array items."""
     for prop in properties or []:
         field = prop.physicalName or prop.name
         field_path = f"{prefix}.{field}" if prefix else field
-        yield field_path, prop
+        yield field_path, prop, prefix is not None
 
         prop_type = _property_type(prop)
-        if server_type in _NESTED_CHECK_SERVER_TYPES and prop_type == "object" and prop.properties:
-            yield from _iter_property_paths(prop.properties, server_type, field_path)
-        elif (
-            server_type in _NESTED_CHECK_SERVER_TYPES and prop_type == "array" and prop.items and prop.items.properties
-        ):
+        if prop_type == "object" and prop.properties:
+            yield from _iter_property_paths(prop.properties, field_path)
+        elif prop_type == "array" and prop.items and prop.items.properties:
             # `[]` marks the array hop; the executor turns it into a predicate
             # over the elements instead of a column lookup.
-            yield from _iter_property_paths(prop.items.properties, server_type, f"{field_path}[]")
+            yield from _iter_property_paths(prop.items.properties, f"{field_path}[]")
+
+
+NESTED_NOT_RUN_REASON = "Quality rules on nested properties are only run on dataframe and databricks servers."
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -265,7 +266,11 @@ def _to_schema_checks(
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
-    for field, prop in _iter_property_paths(properties, server_type):
+    for field, prop, nested in _iter_property_paths(properties):
+        if nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
+            if prop.quality:
+                checks.extend(_quality_checks(model, field, prop.quality, server, not_run_reason=NESTED_NOT_RUN_REASON))
+            continue
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
         checks.append(
@@ -663,10 +668,24 @@ def _quality_checks(
     quality_list: List[DataQuality],
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
+    not_run_reason: Optional[str] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
-        rule_checks = _quality_rule_checks(model, field, quality, count, server, variables)
+        if not_run_reason is None:
+            rule_checks = _quality_rule_checks(model, field, quality, count, server, variables)
+        elif quality.type == "sql" or quality.metric is not None:
+            kind = "sql" if quality.type == "sql" else "library"
+            rule_checks = _unexecuted_check(
+                f"{model}__{field}__quality_{kind}_{count}",
+                f"field_quality_{kind}",
+                model,
+                field,
+                quality,
+                not_run_reason,
+            )
+        else:
+            rule_checks = []
         # Every check keeps a link back to the rule that declared it, so that
         # `test --quality-id` / `test --tag` can select it.
         for check in rule_checks:
@@ -691,10 +710,7 @@ _PERCENT_METRICS = ("nullValues", "missingValues", "invalidValues")
 
 
 def unrunnable_reason(quality: DataQuality, field: Optional[str]) -> Optional[str]:
-    """Why a library quality rule cannot be evaluated as written, or None.
-
-    Decided from the rule alone, so `lint` reports the same cases `test` does.
-    """
+    """Why a library quality rule cannot run as written, or None; decided from the rule alone, for `lint` and `test`."""
     metric = quality.metric
     # A reference is decided by `test`, once it resolves.
     if metric is None or contains_variables(metric):
@@ -709,12 +725,16 @@ def unrunnable_reason(quality: DataQuality, field: Optional[str]) -> Optional[st
             f"but this rule is declared at {level} level."
         )
     if is_percent_unit(quality) and metric not in _PERCENT_METRICS:
-        return f"Metric {metric} does not count rows, so unit: percent has nothing to be a fraction of."
+        return "'unit:percent' has to be combined with 'nullValues', 'missingValues' or 'invalidValues'."
     if metric == "invalidValues":
         args = quality.arguments or {}
         if args.get("validValues") is None and args.get("pattern") is None:
             return "Metric invalidValues needs a validValues or a pattern argument."
     return None
+
+
+def unexecuted_check_name(model: str, field: Optional[str]) -> str:
+    return f"Quality rule on {model}.{field} cannot be tested" if field else f"Quality rule on {model} cannot be tested"
 
 
 def _unexecuted_check(
@@ -732,7 +752,7 @@ def _unexecuted_check(
             key=check_key,
             category="quality",
             type=check_type,
-            name=quality.description or "Quality Check",
+            name=quality.description or unexecuted_check_name(model, field),
             model=model,
             field=field,
             metric=MetricType.UNSUPPORTED,

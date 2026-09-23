@@ -578,7 +578,7 @@ def _reject_local_server_type(body: str, server_name: str | None, config) -> Non
         detail=(
             f"Server type '{server.type}' reads from the file system of the server running this API, "
             f"so it is refused. Use a server type that names a data source, such as s3, gcs, azure, "
-            f"postgres, or snowflake — or set {ALLOW_LOCAL_FILES_ENV}=true if this deployment serves "
+            f"postgres, or snowflake — or start the API server with --allow-local-files if this deployment serves "
             f"its own files on purpose."
         ),
     )

@@ -11,7 +11,7 @@ A `type: custom` rule carries a check written in the **native syntax of a specif
 Custom rules are consumed by the matching engine — typically via the corresponding [exporter](../exports/index.md) — rather than being compiled to portable SQL.
 
 :::note
-`datacontract test` does not run custom quality rules. Only the export carries it to its engine. Consider `type: sql` as executed alternative.
+`datacontract test` does not run custom quality rules. Only the export carries them to its engine. Consider `type: sql` as an executed alternative.
 :::
 
 ## Databricks DQX

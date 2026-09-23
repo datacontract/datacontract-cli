@@ -34,14 +34,13 @@ class UnresolvedVariableError(VariableError):
 
     def __init__(self, name: str, source: str = "", restricted: bool = False):
         self.name = name
-        self.restricted = restricted
         where = f" in {source}" if source else ""
         # "Not listed" must read like "not set", or the message enumerates the host's environment.
         if restricted:
-            reason = "is not available. Start the API server with --contract-variables to allow it"
+            reason = "is not available. Check if the API permits the resolution (--contract-variables needs to be set)."
         else:
-            reason = "is not set. Set it in the environment or a .env file"
-        super().__init__(f"Variable {name} referenced{where} {reason}, or use ${{{name}:-default}}.")
+            reason = f"is not set. Set it in the environment or a .env file, or use ${{{name}:-default}}."
+        super().__init__(f"Variable {name} referenced{where} {reason}")
 
 
 def allowed_environment(patterns: Iterable[str]) -> dict[str, str]:
@@ -130,8 +129,9 @@ class InvalidVariableValueError(VariableError):
     """A reference resolved outside the field's enum. Never quotes the value: it may be a secret."""
 
     def __init__(self, reference: str, source: str, allowed: frozenset[str]):
-        self.source = source
-        super().__init__(f"{source} resolved {reference} into a value that is not one of {', '.join(sorted(allowed))}.")
+        super().__init__(
+            f"{source} resolved {reference} into an invalid value. Expected one of: {', '.join(sorted(allowed))}."
+        )
 
 
 def _checked(original, resolved, owner: str, field: str, source: str):

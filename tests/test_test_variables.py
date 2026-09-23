@@ -197,7 +197,9 @@ def test_a_reference_resolving_outside_the_enum_fails_the_run(orders_db, monkeyp
     assert run.result == ResultEnum.failed
     failed = [c for c in run.checks if c.result == ResultEnum.failed]
     assert len(failed) == 1
-    assert "server 'production' type resolved ${SERVER_TYPE} into a value that is not one of" in failed[0].reason
+    assert (
+        "server 'production' type resolved ${SERVER_TYPE} into an invalid value. Expected one of:" in failed[0].reason
+    )
     assert "not-a-server-type" not in failed[0].reason
 
 
