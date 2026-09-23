@@ -104,76 +104,48 @@ def _property_from_struct_type(spark_field: types.StructField, physical_type: st
     (e.g. `struct<varchar_field:varchar(100),n:int>`) under the field's
     `__CHAR_VARCHAR_TYPE_STRING` metadata key, which we prefer over `simpleString()`.
     """
-    logical_type = _data_type_from_spark(spark_field.dataType)
-    description = spark_field.metadata.get("comment") if spark_field.metadata else None
-    required = not spark_field.nullable
-
-    char_varchar_type = spark_field.metadata.get("__CHAR_VARCHAR_TYPE_STRING") if spark_field.metadata else None
-    physical_type = physical_type or char_varchar_type or spark_field.dataType.simpleString()
-
-    nested_properties = None
-    items_prop = None
-    map_key = map_value = None
-
-    if isinstance(spark_field.dataType, types.ArrayType):
-        items_prop = _type_to_property("items", spark_field.dataType.elementType, not spark_field.dataType.containsNull)
-    elif isinstance(spark_field.dataType, types.MapType):
-        map_key = _type_to_property("key", spark_field.dataType.keyType, True)
-        map_value = _type_to_property(
-            "value", spark_field.dataType.valueType, not spark_field.dataType.valueContainsNull
-        )
-    elif logical_type == "object" and isinstance(spark_field.dataType, types.StructType):
-        nested_physical_types = _struct_field_types_from_physical_type(physical_type)
-        nested_properties = [
-            _property_from_struct_type(sf, nested_physical_types.get(sf.name)) for sf in spark_field.dataType.fields
-        ]
-
-    return create_property(
-        name=spark_field.name,
-        logical_type=logical_type,
-        physical_type=physical_type,
-        description=description,
-        required=required if required else None,
-        properties=nested_properties,
-        items=items_prop,
-        map_key=map_key,
-        map_value=map_value,
+    metadata = spark_field.metadata or {}
+    prop = _type_to_property(
+        spark_field.name,
+        spark_field.dataType,
+        not spark_field.nullable,
+        physical_type or metadata.get("__CHAR_VARCHAR_TYPE_STRING"),
     )
+    if metadata.get("comment"):
+        prop.description = metadata["comment"]
+    return prop
 
 
-def _struct_field_types_from_physical_type(physical_type: str) -> dict[str, str]:
-    """Parse a `struct<name:type,...>` physical type string into a name -> type-string mapping."""
-    if not physical_type.startswith("struct<") or not physical_type.endswith(">"):
-        return {}
-    field_types = {}
-    for raw in split_type_arguments(physical_type[7:-1]):
-        if not raw:
-            continue
-        name, value = raw.split(":", 1)
-        field_types[name.strip()] = value.strip()
-    return field_types
-
-
-def _type_to_property(name: str, spark_type: types.DataType, required: bool = True) -> SchemaProperty:
+def _type_to_property(
+    name: str, spark_type: types.DataType, required: bool = True, physical_type: str | None = None
+) -> SchemaProperty:
     """Convert a Spark data type to an ODCS SchemaProperty."""
     logical_type = _data_type_from_spark(spark_type)
+    physical_type = physical_type or spark_type.simpleString()
+    # element/key/value/field type strings of `array<...>`, `map<...>` and `struct<...>`
+    arguments = (
+        split_type_arguments(physical_type[physical_type.find("<") + 1 : -1]) if physical_type.endswith(">") else []
+    )
 
     nested_properties = None
     items_prop = None
     map_key = map_value = None
 
     if isinstance(spark_type, types.ArrayType):
-        items_prop = _type_to_property("items", spark_type.elementType, not spark_type.containsNull)
-    elif logical_type == "map":
-        map_key = _type_to_property("key", spark_type.keyType, True)
-        map_value = _type_to_property("value", spark_type.valueType, not spark_type.valueContainsNull)
-    elif logical_type == "object" and isinstance(spark_type, types.StructType):
-        nested_properties = [_property_from_struct_type(sf) for sf in spark_type.fields]
+        element_type = arguments[0] if len(arguments) == 1 else None
+        items_prop = _type_to_property("items", spark_type.elementType, not spark_type.containsNull, element_type)
+    elif isinstance(spark_type, types.MapType):
+        key_type, value_type = arguments if len(arguments) == 2 else (None, None)
+        map_key = _type_to_property("key", spark_type.keyType, True, key_type)
+        map_value = _type_to_property("value", spark_type.valueType, not spark_type.valueContainsNull, value_type)
+    elif isinstance(spark_type, types.StructType):
+        field_types = dict(argument.split(":", 1) for argument in arguments if ":" in argument)
+        nested_properties = [_property_from_struct_type(sf, field_types.get(sf.name)) for sf in spark_type.fields]
 
     return create_property(
         name=name,
         logical_type=logical_type,
-        physical_type=spark_type.simpleString(),
+        physical_type=physical_type,
         required=required if required else None,
         properties=nested_properties,
         items=items_prop,
