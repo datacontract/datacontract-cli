@@ -9,6 +9,7 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
+    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
 
@@ -41,6 +42,7 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
     )
 
     odcs.schema_ = [schema_obj]
+    report_unmapped_types(odcs, fallback="string")
 
     return odcs
 
@@ -87,9 +89,17 @@ def jsonschema_to_properties(json_properties: Dict[str, Any], required_propertie
 
 def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool = None) -> SchemaProperty:
     """Convert a JSON Schema property to an ODCS SchemaProperty."""
+    branches = prop_schema.get("anyOf") or prop_schema.get("oneOf") or []
+    non_null_branches = [branch for branch in branches if branch.get("type") != "null"]
+    if len(non_null_branches) == 1:
+        # One type or null is a nullable property, not a union
+        outer = {key: value for key, value in prop_schema.items() if key not in ("anyOf", "oneOf")}
+        prop_schema = {**non_null_branches[0], **outer}
+
     # Determine the type
     property_type = determine_type(prop_schema)
-    logical_type = map_jsonschema_type_to_odcs(property_type)
+    # ODCS has no union type; report_unmapped_types() types it as a string
+    logical_type = None if "|" in property_type else map_jsonschema_type_to_odcs(property_type)
 
     # Extract common attributes
     title = prop_schema.get("title")
@@ -190,18 +200,14 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
 
 
 def determine_type(prop_schema: Dict[str, Any]) -> str:
-    """Determine the type from a JSON Schema property."""
-    property_type = prop_schema.get("type")
-
-    if isinstance(property_type, list):
-        # Handle union types like ["string", "null"]
-        non_null_types = [t for t in property_type if t != "null"]
-        if non_null_types:
-            property_type = non_null_types[0]
-        else:
-            property_type = "string"
-
-    return property_type or "string"
+    """Determine the type from a JSON Schema property; a union is rendered as ``string|integer``."""
+    branches = prop_schema.get("anyOf") or prop_schema.get("oneOf")
+    if branches:
+        types = [branch.get("type") or branch.get("$ref", "").rsplit("/", 1)[-1] or "any" for branch in branches]
+    else:
+        types = [prop_schema.get("type") or "string"]
+    flat = [t for listed in types for t in (listed if isinstance(listed, list) else [listed])]
+    return "|".join(dict.fromkeys(t for t in flat if t != "null")) or "string"
 
 
 def map_jsonschema_type_to_odcs(json_type: str) -> str:
