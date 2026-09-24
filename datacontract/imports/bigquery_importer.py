@@ -28,7 +28,7 @@ class BigQueryImporter(Importer):
 
 def import_bigquery_from_json(source: str) -> OpenDataContractStandard:
     try:
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             bigquery_schema = json.loads(file.read())
     except json.JSONDecodeError as e:
         raise DataContractException(

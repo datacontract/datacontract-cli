@@ -28,6 +28,6 @@ def init(
         console.print("File already exists, use --overwrite to overwrite")
         raise typer.Exit(code=1)
     template_str = get_init_template(template)
-    with open(location, "w") as f:
+    with open(location, "w", encoding="utf-8") as f:
         f.write(template_str)
     console.print("📄 data contract written to " + location)

@@ -356,7 +356,7 @@ class Config(BaseSettings):
 
         path = Path(path)
         try:
-            data = yaml.safe_load(path.read_text())
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError as e:
             raise ValueError(f"Config file {path} is not valid YAML: {e}")
         if data is None:

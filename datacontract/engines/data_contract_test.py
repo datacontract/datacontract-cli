@@ -450,7 +450,7 @@ def process_api_response(run, server, config: Config | None = None):
             reason=f"Failed to fetch API response from {server.location}: {e}",
             engine="datacontract-cli",
         )
-    with open(f"{tmp_dir.name}/api_response.json", "w") as f:
+    with open(f"{tmp_dir.name}/api_response.json", "w", encoding="utf-8") as f:
         f.write(response.text)
     run.log_info(f"Saved API response to {tmp_dir.name}/api_response.json")
     new_server = Server(

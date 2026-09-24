@@ -13,6 +13,6 @@ def read_file(path):
             engine="datacontract-cli",
             result=ResultEnum.error,
         )
-    with open(path, "r") as file:
+    with open(path, "r", encoding="utf-8") as file:
         file_content = file.read()
     return file_content
