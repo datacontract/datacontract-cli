@@ -21,6 +21,7 @@ from open_data_contract_standard.model import (
     SchemaProperty,
     Server,
 )
+from sqlglot import exp
 
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
 from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, MetricType, Op, Threshold
@@ -189,7 +190,9 @@ def prepare_query(
 
     Identifiers are emitted unquoted: the query runs through ibis against the
     backend, which resolves unquoted names per its own casing rules (this is
-    what soda effectively did for the common backends).
+    what soda effectively did for the common backends). A property name that
+    is not a plain identifier, such as one with a space, is only valid SQL
+    quoted, so it is quoted in the server's dialect.
     """
     if not quality.query:
         return None
@@ -207,9 +210,16 @@ def prepare_query(
         query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
 
     if field_name is not None:
-        query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)
-        query = re.sub(r'["\']?\$?\{column}["\']?', field_name, query)
-        query = re.sub(r'["\']?\$?\{property}["\']?', field_name, query)
+        dialect = dialect_for_server_type(get_server_type(server))
+        # Each segment of a nested path is quoted on its own.
+        field_sql = ".".join(
+            part if re.fullmatch(r"[^\W\d][\w$]*", part) else exp.to_identifier(part, quoted=True).sql(dialect)
+            for part in field_name.split(".")
+        )
+        for placeholder in ("field", "column", "property"):
+            # A placeholder the author already wrapped in backticks or brackets keeps the bare name.
+            query = re.sub(rf"(?<=[`\[])\$?\{{{placeholder}}}(?=[`\]])", lambda _: field_name, query)
+            query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', lambda _: field_sql, query)
 
     return query
 

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a `${X:-local}` server type no longer slips past the checks for local files and environment-held credentials
 
 ### Fixed
+- `datacontract test`: a SQL quality rule on a property whose name contains a space no longer fails as an unreadable query (#1653)
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)
