@@ -15,7 +15,7 @@ s3_secret_access_key = "test-secret"
 @pytest.fixture(scope="session")
 def minio_container():
     with MinioContainer(
-        image="quay.io/minio/minio", access_key=s3_access_key, secret_key=s3_secret_access_key
+        image="cgr.dev/chainguard/minio", access_key=s3_access_key, secret_key=s3_secret_access_key
     ) as minio_container:
         yield minio_container
 
