@@ -16,7 +16,7 @@ from datacontract.engines.checks.create_checks import (
 )
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.severity import failure_result
-from datacontract.engines.checks.sql_guard import is_read_only_query
+from datacontract.engines.checks.sql_guard import read_only_query_problem
 from datacontract.engines.hana.hana_check_selection import SELECT_ALL, CheckSelection
 from datacontract.engines.hana.hana_schema_check import (
     duplicate_count_query,
@@ -378,7 +378,8 @@ def _sql_quality_check(
         return None
     key = _quality_key(table_name, field_name, f"quality_sql_{index}")
     name = quality.description or "Quality Check"
-    if not is_read_only_query(query):
+    problem = read_only_query_problem(query)
+    if problem is not None:
         return _check(
             check_type=check_type,
             key=key,
@@ -387,7 +388,7 @@ def _sql_quality_check(
             field=field_name,
             implementation=query,
             result=ResultEnum.failed,
-            reason="A quality rule query must be a single read-only query, so it was not executed.",
+            reason=f"A quality rule query must be a single read-only query: {problem}. It was not executed.",
             quality=quality,
         )
     # A rule brings its own query, which --filter cannot restrict without

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
+- `datacontract test`: a refused `quality.type: sql` query reports the parse error and the query after placeholder substitution (#1653)
 - `${VAR}` references are accepted in fields with a fixed set of values (`quality.type`, `quality.metric`, `quality.dimension`, `logicalType`, `servers[].type`); `datacontract test` fails when one resolves into anything else
 
 ### Security

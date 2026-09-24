@@ -65,7 +65,12 @@ def dialect_for_server_type(server_type: Optional[str]) -> Optional[str]:
 
 
 def is_read_only_query(query: str, dialect: Optional[str] = None) -> bool:
-    """True when `query` is a single read-only statement.
+    """True when `query` is a single read-only statement."""
+    return read_only_query_problem(query, dialect) is None
+
+
+def read_only_query_problem(query: str, dialect: Optional[str] = None) -> Optional[str]:
+    """Why `query` is not a single read-only statement, or None when it is one.
 
     Fails closed: a query that does not parse is refused rather than passed
     through, and so is one that holds a second statement -- a trailing
@@ -77,16 +82,37 @@ def is_read_only_query(query: str, dialect: Optional[str] = None) -> bool:
         from sqlglot.dialects.exasol import Exasol as dialect
     try:
         statements = sqlglot.parse(query, dialect=dialect)
-    except sqlglot.errors.ParseError:
-        return False
+    except sqlglot.errors.ParseError as e:
+        return f"it could not be parsed: {_describe_parse_error(e)}"
     except Exception:
         # An unknown dialect name is about the parser, not the query, so try the
         # default dialect rather than refuse a query for how it was labelled.
         try:
             statements = sqlglot.parse(query)
-        except Exception:
-            return False
+        except sqlglot.errors.ParseError as e:
+            return f"it could not be parsed: {_describe_parse_error(e)}"
+        except Exception as e:
+            return f"it could not be parsed: {e}"
 
     # A trailing semicolon parses as an extra empty statement.
     statements = [statement for statement in statements if statement is not None]
-    return len(statements) == 1 and isinstance(statements[0], _READ_ONLY)
+    if not statements:
+        return "it is empty"
+    if len(statements) > 1:
+        return f"it holds {len(statements)} statements"
+    statement = statements[0]
+    if not isinstance(statement, _READ_ONLY):
+        name = statement.this if isinstance(statement, exp.Command) else statement.key
+        return f"it is not a read-only query ({str(name).upper()})"
+    return None
+
+
+def _describe_parse_error(error: sqlglot.errors.ParseError) -> str:
+    # The message of the error itself underlines the token with terminal escape codes.
+    if not error.errors:
+        return str(error).splitlines()[0]
+    details = error.errors[0]
+    return (
+        f"{details.get('description')} at line {details.get('line')}, "
+        f"column {details.get('col')} (near '{details.get('highlight')}')"
+    )
