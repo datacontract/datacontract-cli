@@ -22,7 +22,7 @@ class SodaExporter(Exporter):
             for path in _nested_paths(prop, f"{schema_obj.name}.{prop.name}")
         ]
         if nested:
-            listed = ", ".join(nested[:5]) + (f" and {len(nested) - 5} others" if len(nested) > 5 else "")
+            listed = ", ".join(nested) if len(nested) <= 6 else ", ".join(nested[:5]) + f" and {len(nested) - 5} others"
             logger.warning(f"SodaCL only checks top-level columns; nested properties not exported: {listed}")
         return to_sodacl_yaml(run)
 

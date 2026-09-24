@@ -100,8 +100,8 @@ def print_findings(run, console):
             if group[0] is not check:
                 continue
             fields = ", ".join(dict.fromkeys(f for f in (to_field(run, c) for c in group) if f))
-            fields_info = f" Fields: {escape(fields)}" if fields else ""
-            console.print(f"{i}) {len(group)} checks: {escape(str(check.reason))}{fields_info}")
+            fields_info = f" on {escape(fields)}" if fields else ""
+            console.print(f"{i}) {len(group)} checks{fields_info}: {escape(str(check.reason))}")
         else:
             field = to_field(run, check)
             field = field + " " if field else ""

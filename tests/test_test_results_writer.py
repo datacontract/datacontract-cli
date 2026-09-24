@@ -30,7 +30,7 @@ def test_checks_sharing_a_reason_are_listed_once_below_the_table():
     )
 
     summary = printed.split("found the following errors:")[1]
-    assert f"1) 3 checks: {NESTED} Fields: user.email, items[].sku" in summary
+    assert f"1) 3 checks on user.email, items[].sku: {NESTED}" in summary
     assert "2) amount Check d: was 1" in summary
     table = printed.split("found the following errors:")[0]
     assert all(f"Check {name}" in table for name in "abcd")

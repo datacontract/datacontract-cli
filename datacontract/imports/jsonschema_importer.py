@@ -44,22 +44,21 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
     )
 
     odcs.schema_ = [schema_obj]
-    unions = list(_union_paths(properties))
+    unions = [path for prop in properties for path in _union_paths(prop, prop.name)]
     if unions:
-        listed = ", ".join(unions[:5]) + (f" and {len(unions) - 5} others" if len(unions) > 5 else "")
+        listed = ", ".join(unions) if len(unions) <= 6 else ", ".join(unions[:5]) + f" and {len(unions) - 5} others"
         logger.warning(f"ODCS has no union type, so these properties are imported as string: {listed}")
 
     return odcs
 
 
-def _union_paths(properties: List[SchemaProperty] | None, prefix: str = ""):
-    for prop in properties or []:
-        path = f"{prefix}{prop.name}"
-        if "|" in (prop.physicalType or ""):
-            yield f"{path} ({prop.physicalType})"
-        yield from _union_paths(prop.properties, f"{path}.")
-        if prop.items:
-            yield from _union_paths([prop.items], f"{path}.")
+def _union_paths(prop: SchemaProperty, path: str):
+    if "|" in (prop.physicalType or ""):
+        yield f"{path} ({prop.physicalType})"
+    for child in prop.properties or []:
+        yield from _union_paths(child, f"{path}.{child.name}")
+    if prop.items:
+        yield from _union_paths(prop.items, f"{path}[]")
 
 
 def load_and_validate_json_schema(source: str) -> dict:
