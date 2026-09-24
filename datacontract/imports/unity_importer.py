@@ -41,7 +41,7 @@ class UnityImporter(Importer):
 def import_unity_from_json(source: str) -> OpenDataContractStandard:
     """Import data contract specification from a JSON file."""
     try:
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             json_contents = json.loads(file.read())
             unity_schema = TableInfo.from_dict(json_contents)
     except json.JSONDecodeError as e:

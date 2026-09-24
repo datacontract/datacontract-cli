@@ -300,16 +300,16 @@ def test_percent_unit_aliases(percent_connection, unit):
     assert check.diagnostics["percent"] == 50.0
 
 
-def test_percent_unit_on_row_count_keeps_absolute_count_and_warns(caplog):
+def test_percent_unit_on_row_count_warns_and_reads_nothing():
+    # Comparing the absolute count instead would answer a different question, and pass.
     connection = FakeConnection((10,))
     schema = SchemaObject(name="ORDERS", quality=[DataQuality(metric="rowCount", unit="percent", mustBe=10)])
 
     check = run_quality_checks(connection, "SALES", schema)[0]
 
-    assert check.result == ResultEnum.passed
-    assert "percent" not in check.diagnostics
-    assert "does not support unit: percent" in caplog.text
-    assert len(connection.executed) == 1
+    assert check.result == ResultEnum.warning
+    assert "'unit:percent'" in check.reason
+    assert connection.executed == []
 
 
 def test_sql_percent_result_is_not_normalized_again():
@@ -420,3 +420,45 @@ def test_identifier_quoting_escapes_quotes():
     query = prepare_hana_query("SELECT {field} FROM {model}", 'S"1', 'T"1', 'C"1')
 
     assert query == 'SELECT "C""1" FROM "S""1"."T""1"'
+
+
+def test_invalid_values_with_only_a_pattern_warns():
+    # HANA builds an IN list, so a pattern-only rule has nothing to run.
+    connection = FakeConnection((0,))
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[
+            SchemaProperty(
+                name="EMAIL",
+                quality=[DataQuality(metric="invalidValues", arguments={"pattern": "^.+@.+$"}, mustBe=0)],
+            )
+        ],
+    )
+
+    check = run_quality_checks(connection, "SALES", schema)[0]
+
+    assert check.result == ResultEnum.warning
+    assert "pattern is not supported" in check.reason
+    assert connection.executed == []
+
+
+def test_rules_on_nested_properties_warn_instead_of_running():
+    connection = FakeConnection()
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[
+            SchemaProperty(
+                name="META",
+                logicalType="object",
+                properties=[
+                    SchemaProperty(name="SOURCE", quality=[DataQuality(type="library", metric="nullValues", mustBe=0)])
+                ],
+            )
+        ],
+    )
+
+    checks = run_quality_checks(connection, "SALES", schema)
+
+    check = check_by_type(checks, "field_quality_library")
+    assert (check.field, check.result) == ("META.SOURCE", ResultEnum.warning)
+    assert connection.executed == []

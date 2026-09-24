@@ -36,7 +36,7 @@ class AvroImporter(Importer):
 def import_avro(source: str) -> OpenDataContractStandard:
     """Import an Avro schema from a file."""
     try:
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             avro_schema = avro.schema.parse(file.read())
     except Exception as e:
         raise DataContractException(

@@ -245,6 +245,8 @@ class Run(BaseModel):
             # check that could not be planned reports its own result.
             if any(check.result == ResultEnum.error for check in self.checks):
                 self.result = ResultEnum.error
+            elif any(check.result == ResultEnum.failed for check in self.checks):
+                self.result = ResultEnum.failed
             elif any(check.result == ResultEnum.warning for check in self.checks):
                 self.result = ResultEnum.warning
             else:

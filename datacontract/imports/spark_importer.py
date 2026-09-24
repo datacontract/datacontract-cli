@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import atexit
 import logging
 import tempfile
@@ -12,6 +14,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    split_type_arguments,
 )
 
 logger = logging.getLogger(__name__)
@@ -70,16 +73,11 @@ def import_spark(
 
 def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, description: str):
     """Converts a Spark DataFrame into an ODCS SchemaObject."""
-    schema = df.schema
-
     table_description = description
     if table_description is None:
         table_description = _table_comment_from_spark(spark, source)
 
-    properties = []
-    for field in schema:
-        prop = _property_from_struct_type(field)
-        properties.append(prop)
+    properties = [_property_from_struct_type(field) for field in df.schema]
 
     return create_schema_object(
         name=source,
@@ -89,51 +87,55 @@ def import_from_spark_df(spark: SparkSession, source: str, df: DataFrame, descri
     )
 
 
-def _property_from_struct_type(spark_field: types.StructField) -> SchemaProperty:
-    """Converts a Spark StructField into an ODCS SchemaProperty."""
-    logical_type = _data_type_from_spark(spark_field.dataType)
-    description = spark_field.metadata.get("comment") if spark_field.metadata else None
-    required = not spark_field.nullable
+def _property_from_struct_type(spark_field: types.StructField, physical_type: str | None = None) -> SchemaProperty:
+    """Converts a Spark StructField into an ODCS SchemaProperty.
 
-    nested_properties = None
-    items_prop = None
-
-    if logical_type == "array":
-        items_prop = _type_to_property("items", spark_field.dataType.elementType, not spark_field.dataType.containsNull)
-    elif logical_type == "object" and isinstance(spark_field.dataType, types.StructType):
-        nested_properties = [_property_from_struct_type(sf) for sf in spark_field.dataType.fields]
-
-    return create_property(
-        name=spark_field.name,
-        logical_type=logical_type,
-        physical_type=spark_field.dataType.simpleString(),
-        description=description,
-        required=required if required else None,
-        properties=nested_properties,
-        items=items_prop,
+    Spark widens char/varchar columns to string but keeps the original type string
+    (e.g. `struct<varchar_field:varchar(100),n:int>`) under the field's
+    `__CHAR_VARCHAR_TYPE_STRING` metadata key, which we prefer over `simpleString()`.
+    """
+    metadata = spark_field.metadata or {}
+    prop = _type_to_property(
+        spark_field.name,
+        spark_field.dataType,
+        not spark_field.nullable,
+        physical_type or metadata.get("__CHAR_VARCHAR_TYPE_STRING"),
     )
+    if metadata.get("comment"):
+        prop.description = metadata["comment"]
+    return prop
 
 
-def _type_to_property(name: str, spark_type: types.DataType, required: bool = True) -> SchemaProperty:
+def _type_to_property(
+    name: str, spark_type: types.DataType, required: bool = True, physical_type: str | None = None
+) -> SchemaProperty:
     """Convert a Spark data type to an ODCS SchemaProperty."""
     logical_type = _data_type_from_spark(spark_type)
+    physical_type = physical_type or spark_type.simpleString()
+    # element/key/value/field type strings of `array<...>`, `map<...>` and `struct<...>`
+    arguments = (
+        split_type_arguments(physical_type[physical_type.find("<") + 1 : -1]) if physical_type.endswith(">") else []
+    )
 
     nested_properties = None
     items_prop = None
     map_key = map_value = None
 
-    if logical_type == "array":
-        items_prop = _type_to_property("items", spark_type.elementType, not spark_type.containsNull)
-    elif logical_type == "map":
-        map_key = _type_to_property("key", spark_type.keyType, True)
-        map_value = _type_to_property("value", spark_type.valueType, not spark_type.valueContainsNull)
-    elif logical_type == "object" and isinstance(spark_type, types.StructType):
-        nested_properties = [_property_from_struct_type(sf) for sf in spark_type.fields]
+    if isinstance(spark_type, types.ArrayType):
+        element_type = arguments[0] if len(arguments) == 1 else None
+        items_prop = _type_to_property("items", spark_type.elementType, not spark_type.containsNull, element_type)
+    elif isinstance(spark_type, types.MapType):
+        key_type, value_type = arguments if len(arguments) == 2 else (None, None)
+        map_key = _type_to_property("key", spark_type.keyType, True, key_type)
+        map_value = _type_to_property("value", spark_type.valueType, not spark_type.valueContainsNull, value_type)
+    elif isinstance(spark_type, types.StructType):
+        field_types = dict(argument.split(":", 1) for argument in arguments if ":" in argument)
+        nested_properties = [_property_from_struct_type(sf, field_types.get(sf.name)) for sf in spark_type.fields]
 
     return create_property(
         name=name,
         logical_type=logical_type,
-        physical_type=spark_type.simpleString(),
+        physical_type=physical_type,
         required=required if required else None,
         properties=nested_properties,
         items=items_prop,
@@ -146,7 +148,7 @@ def _data_type_from_spark(spark_type: types.DataType) -> str:
     """Maps Spark data types to ODCS logical types."""
     if isinstance(spark_type, types.StringType):
         return "string"
-    elif isinstance(spark_type, (types.IntegerType, types.ShortType)):
+    elif isinstance(spark_type, (types.IntegerType, types.ShortType, types.ByteType)):
         return "integer"
     elif isinstance(spark_type, types.LongType):
         return "integer"
@@ -191,7 +193,10 @@ def _table_comment_from_spark(spark: SparkSession, source: str):
     try:
         current_schema = spark.catalog.currentDatabase()
     except Exception:
-        current_schema = spark.sql("SELECT current_database()").collect()[0][0]
+        try:
+            current_schema = spark.sql("SELECT current_database()").collect()[0][0]
+        except Exception:
+            current_schema = "default"
 
     table_comment = ""
     source = f"{current_catalog}.{current_schema}.{source}"

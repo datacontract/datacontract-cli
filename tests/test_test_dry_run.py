@@ -173,3 +173,34 @@ def test_a_dry_run_does_not_publish(monkeypatch):
     assert run.publish_succeeded is None
     assert run.result == ResultEnum.skipped
     assert any("Publishing skipped" in log.message for log in run.logs)
+
+
+def test_dry_run_summary_reports_a_check_that_could_not_be_planned():
+    # An unset variable means the plan is incomplete; reporting `skipped` would hide that.
+    run = DataContract(
+        data_contract_str="""
+apiVersion: v3.1.0
+kind: DataContract
+id: dry_run_unresolved_variable
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    quality:
+      - type: sql
+        query: SELECT count(*) FROM orders WHERE order_id = '${REGION}'
+        mustBe: 0
+    properties:
+      - name: order_id
+        logicalType: string
+""",
+        dry_run=True,
+    ).test()
+
+    assert run.result == ResultEnum.failed
+    assert any("REGION" in (c.reason or "") for c in run.checks)

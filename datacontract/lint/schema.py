@@ -38,7 +38,7 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
         logger.info("Use default bundled schema " + DEFAULT_DATA_CONTRACT_SCHEMA)
         schemas = resources.files("datacontract")
         schema_file = schemas.joinpath("schemas", DEFAULT_DATA_CONTRACT_SCHEMA)
-        with schema_file.open("r") as file:
+        with schema_file.open("r", encoding="utf-8") as file:
             schema = json.load(file)
     else:
         # Convert Path objects to strings for string operations
@@ -59,7 +59,7 @@ def fetch_schema(location: str | Path = None) -> Dict[str, Any]:
                 )
 
             logger.debug(f"Loading JSON schema locally at {location}")
-            with open(location, "r") as file:
+            with open(location, "r", encoding="utf-8") as file:
                 schema = json.load(file)
 
     return schema

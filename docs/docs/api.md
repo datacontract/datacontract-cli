@@ -146,6 +146,7 @@ A data contract carries SQL and names the hosts to connect to, so a contract tha
 - a `publish_url` may only point at the **Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this, and other hosts are refused;
 - `authoritativeDefinitions` are **only resolved against the Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this; a URL on any other host, or a reference to a local file, is refused, and a failed lookup reports only the URL, never what the host answered;
 - `servers[].type: local` is **refused**, so a caller cannot read the files of the machine running the API;
+- a `${VAR}` reference in the contract resolves **only from the variables the operator allow-listed**, so a posted contract cannot read the server's environment;
 - for a file-based server type (`s3`, `gcs`, `azure`), the DuckDB connection is **confined to the data locations the contract declares**.
 
 If the deployment serves its own files on purpose — the data mounted next to the API in the same container, say — allow it explicitly:
@@ -155,6 +156,14 @@ export DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true
 ```
 
 The contract is then still confined to the paths it declares, but a caller chooses those paths, so only turn this on where callers are trusted.
+
+Likewise, a posted contract resolves no `${VAR}` references at all until you name the variables it may read — the environment holds your credentials, not the contract author's:
+
+```bash
+export DATACONTRACT_CLI_API_CONTRACT_VARIABLES='TABLE_*,CUTOFF_DATE'
+```
+
+Both settings are also options on the command, which is the more visible place for them: `datacontract api --contract-variables 'TABLE_*' --allow-local-files`. The patterns are comma-separated fnmatch globs matched case-sensitively; a variable outside the list is indistinguishable from an unset one. `*` allows every variable, **including every credential in the server's environment**, so use it only where callers are trusted.
 
 ## Run as a Docker container
 

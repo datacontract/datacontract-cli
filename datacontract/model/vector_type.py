@@ -16,9 +16,10 @@ from open_data_contract_standard.model import SchemaProperty
 DEFAULT_ELEMENT_TYPE = "float32"
 
 # pgvector: vector(1536), halfvec(768); Snowflake: VECTOR(FLOAT, 1536), VECTOR(INT, 8);
-# DuckDB fixed-size arrays: FLOAT[1536], DOUBLE[3]; Databricks/Spark: ARRAY<FLOAT> (no dimensions)
+# SQL Server: VECTOR(1536), VECTOR(768, float16); DuckDB fixed-size arrays: FLOAT[1536], DOUBLE[3]; Databricks/Spark: ARRAY<FLOAT> (no dimensions)
 _PGVECTOR = re.compile(r"^(vector|halfvec)\s*(?:\(\s*(\d+)\s*\))?$", re.I)
 _SNOWFLAKE = re.compile(r"^vector\s*\(\s*(float|int)\s*,\s*(\d+)\s*\)$", re.I)
+_SQLSERVER = re.compile(r"^vector\s*\(\s*(\d+)\s*,\s*(float16|float32)\s*\)$", re.I)
 _FIXED_ARRAY = re.compile(r"^(float|real|double|float4|float8)\s*\[\s*(\d+)\s*\]$", re.I)
 
 
@@ -45,6 +46,9 @@ def parse_vector_type(type_string: Optional[str]) -> Optional[tuple[Optional[int
     match = _SNOWFLAKE.match(text)
     if match:
         return int(match.group(2)), ("int8" if match.group(1).lower() == "int" else DEFAULT_ELEMENT_TYPE)
+    match = _SQLSERVER.match(text)
+    if match:
+        return int(match.group(1)), match.group(2).lower()
     match = _FIXED_ARRAY.match(text)
     if match:
         element = match.group(1).lower()

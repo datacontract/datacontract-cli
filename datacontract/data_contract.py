@@ -11,6 +11,7 @@ if typing.TYPE_CHECKING:
 
 from datacontract.breaking.detector import BreakingChangeDetector
 from datacontract.config import Config
+from datacontract.engines.checks.create_checks import to_schema_name, unexecuted_check_name, unrunnable_reason
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.data_contract_test import execute_data_contract_test
 from datacontract.export.exporter import ExportFormat
@@ -29,6 +30,53 @@ from datacontract.model.exceptions import (
 from datacontract.model.run import Check, ResultEnum, Run
 
 logger = logging.getLogger(__name__)
+
+
+def _unrunnable_rule_checks(data_contract: OpenDataContractStandard) -> list[Check]:
+    """Warnings for quality rules `datacontract test` would not be able to run."""
+    checks = []
+
+    def visit(properties, schema_name, prefix=None):
+        for prop in properties or []:
+            name = prop.physicalName or prop.name
+            field = f"{prefix}.{name}" if prefix else name
+            for quality in prop.quality or []:
+                reason = unrunnable_reason(quality, field)
+                if reason is not None:
+                    checks.append(
+                        Check(
+                            type="lint",
+                            result=ResultEnum.warning,
+                            name=unexecuted_check_name(schema_name, field),
+                            reason=reason,
+                            model=schema_name,
+                            field=field,
+                            engine="datacontract-cli",
+                        )
+                    )
+            visit(prop.properties, schema_name, field)
+            # `[]` marks the array hop, as the check keys do.
+            if prop.items is not None:
+                visit(prop.items.properties, schema_name, f"{field}[]")
+
+    for schema_obj in data_contract.schema_ or []:
+        # Named like the checks `test` reports for the same rules.
+        schema_name = to_schema_name(schema_obj, None)
+        for quality in schema_obj.quality or []:
+            reason = unrunnable_reason(quality, None)
+            if reason is not None:
+                checks.append(
+                    Check(
+                        type="lint",
+                        result=ResultEnum.warning,
+                        name=unexecuted_check_name(schema_name, None),
+                        reason=reason,
+                        model=schema_name,
+                        engine="datacontract-cli",
+                    )
+                )
+        visit(schema_obj.properties, schema_name)
+    return checks
 
 
 class DataContract:
@@ -58,6 +106,7 @@ class DataContract:
         metadata_only: bool = False,
         dry_run: bool = False,
         untrusted_contract: bool = False,
+        allowed_variables: list[str] | None = None,
         config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
@@ -87,6 +136,8 @@ class DataContract:
         # server): the SQL it carries must not reach the host running it, and its
         # authoritativeDefinitions are resolved against the configured host only.
         self._untrusted_contract = untrusted_contract
+        # fnmatch globs of the environment variables an untrusted contract may read.
+        self._allowed_variables = allowed_variables
         self._config = Config.resolve(config)
 
     @classmethod
@@ -120,6 +171,7 @@ class DataContract:
                     engine="datacontract-cli",
                 )
             )
+            run.checks.extend(_unrunnable_rule_checks(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.version
         except DataContractValidationErrors as e:
@@ -197,6 +249,7 @@ class DataContract:
                 dry_run=self._dry_run,
                 config=self._config,
                 untrusted_contract=self._untrusted_contract,
+                allowed_variables=self._allowed_variables,
             )
 
         except DataContractException as e:

@@ -66,7 +66,7 @@ def import_from_catalog(import_args: dict, config: "Config", catalog_url: str) -
 
 
 def load_and_validate_iceberg_schema(source: str) -> Schema:
-    with open(source, "r") as file:
+    with open(source, "r", encoding="utf-8") as file:
         try:
             return Schema.model_validate_json(file.read())
         except ValidationError as e:

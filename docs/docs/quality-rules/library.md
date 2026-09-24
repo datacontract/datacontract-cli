@@ -28,7 +28,7 @@ Each rule combines a **metric**, optional **arguments**, and exactly one **compa
 | `invalidValues` | property | Number of values **not** in an allow-list | `validValues` (list of permitted values) |
 
 :::note
-`nullValues`, `missingValues`, and `invalidValues` are only supported at the **property** level. `rowCount` is **schema** level. `duplicateValues` works at either level. Any other metric is reported as "not yet supported".
+`nullValues`, `missingValues`, and `invalidValues` are only supported at the **property** level. `rowCount` is **schema** level. `duplicateValues` works at either level.
 :::
 
 ## Examples
