@@ -112,6 +112,14 @@ def test_import_json_schema_unions_warn_and_import_as_string(tmp_path: Path, cap
                 "id": {"type": ["string", "integer", "null"]},
                 "flag": {"anyOf": [{"type": "integer"}, {"type": "boolean"}]},
                 "ref": {"oneOf": [{"type": "string"}, {"$ref": "#/$defs/Address"}]},
+                "shipping": {
+                    "anyOf": [
+                        {"type": "object", "properties": {"street": {"type": "string"}}},
+                        {"type": "object", "properties": {"locker": {"type": "integer"}}},
+                    ]
+                },
+                "code": {"anyOf": [{"type": "integer"}, {"const": "n/a"}]},
+                "status": {"anyOf": [{"const": "open"}, {"const": "closed"}]},
             },
         )
 
@@ -119,5 +127,25 @@ def test_import_json_schema_unions_warn_and_import_as_string(tmp_path: Path, cap
         "id": ("string", "string|integer"),
         "flag": ("string", "integer|boolean"),
         "ref": ("string", "string|Address"),
+        "shipping": ("string", "object|object"),
+        "code": ("string", "integer|string"),
+        "status": ("string", "string"),
     }
-    assert "id (string|integer), flag (integer|boolean), ref (string|Address)" in caplog.text
+    assert (
+        "ODCS has no union type, so these properties are imported as string: id (string|integer), "
+        "flag (integer|boolean), ref (string|Address), shipping (object|object), code (integer|string)"
+    ) in caplog.text
+
+
+def test_import_json_schema_boolean_branches(tmp_path: Path):
+    properties = _import_properties(
+        tmp_path,
+        {
+            "anything": {"anyOf": [True, {"type": "integer"}]},
+            "total": {"anyOf": [False, {"type": "integer"}]},
+        },
+    )
+
+    # true admits every value, so the property is untyped; false admits none, so it is dropped
+    assert (properties["anything"].logicalType, properties["anything"].physicalType) == ("string", "string")
+    assert properties["total"].logicalType == "integer"

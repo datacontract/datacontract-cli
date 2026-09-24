@@ -103,6 +103,17 @@ def test_nested_quality_rules_fail_on_json(tmp_path):
     }
 
 
+def test_rules_on_a_missing_nested_field_name_the_field(tmp_path):
+    orders = """SELECT * FROM (VALUES
+        ('1', {'address': {'city': 'Berlin'}}, [{'sku': 'A'}])
+    ) AS t(order_id, customer, items)"""
+    run = DataContract(data_contract_str=CONTRACT.format(server=_write(tmp_path, "duckdb", orders))).test()
+
+    email_required = next(c for c in run.checks if c.field == "customer.email" and c.type == "field_required")
+    assert email_required.result == ResultEnum.failed
+    assert email_required.reason == "Column 'customer.email' not found"
+
+
 def test_nested_rules_fail_on_iceberg(tmp_path, monkeypatch):
     pytest.importorskip("sqlalchemy")
     from pyiceberg.catalog import load_catalog
@@ -111,7 +122,7 @@ def test_nested_rules_fail_on_iceberg(tmp_path, monkeypatch):
     warehouse = f"file://{tmp_path}/warehouse"
     catalog = load_catalog("test", type="sql", uri=uri, warehouse=warehouse)
     catalog.create_namespace("sales")
-    orders = duckdb.sql(ORDERS).fetch_arrow_table()
+    orders = duckdb.sql(ORDERS).to_arrow_table()
     catalog.create_table("sales.orders", schema=orders.schema).append(orders)
     monkeypatch.setenv("DATACONTRACT_ICEBERG_CATALOG_TYPE", "sql")
     server = (
@@ -126,14 +137,18 @@ def test_nested_rules_fail_on_iceberg(tmp_path, monkeypatch):
     assert {(c.field, c.type) for c in run.checks if c.result in (ResultEnum.failed, ResultEnum.error)} == NESTED_RULES
 
 
-def test_nested_types_warn_on_parquet(tmp_path):
+def test_types_warn_on_parquet(tmp_path):
     run = DataContract(data_contract_str=CONTRACT.format(server=_write(tmp_path, "parquet"))).test()
 
     warnings = [c for c in run.checks if c.result == ResultEnum.warning]
     assert {c.field for c in warnings} == {
+        "order_id",
+        "customer",
         "customer.email",
         "customer.address",
         "customer.address.city",
+        "items",
         "items[].sku",
     }
-    assert all(c.type == "field_type" and "parquet files" in c.reason for c in warnings)
+    assert all(c.type == "field_type" for c in warnings)
+    assert all(c.reason == "Checking types in parquet files is not supported yet." for c in warnings)

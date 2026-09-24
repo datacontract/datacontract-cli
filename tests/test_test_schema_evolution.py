@@ -99,8 +99,9 @@ def test_parquet_optional_field_present_in_new_data():
 
     run = data_contract.test()
 
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    # parquet is read as the contract's types, so its type checks warn
+    assert run.result == "warning"
+    assert all(check.result == "passed" or check.type == "field_type" for check in run.checks)
 
 
 def test_data_from_historical_and_current_schema_parquet_mixed():
@@ -112,8 +113,9 @@ def test_data_from_historical_and_current_schema_parquet_mixed():
 
     run = data_contract.test()
 
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    # parquet is read as the contract's types, so its type checks warn
+    assert run.result == "warning"
+    assert all(check.result == "passed" or check.type == "field_type" for check in run.checks)
 
 
 def test_parquet_optional_field_with_invalid_values():

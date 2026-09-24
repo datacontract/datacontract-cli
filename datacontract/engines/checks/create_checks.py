@@ -23,7 +23,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
-from datacontract.engines.checks.check_spec import _METADATA_METRICS, CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
 from datacontract.engines.checks.type_normalize import normalize_type_name
@@ -544,19 +544,18 @@ def _to_schema_checks(
         if prop.quality:
             checks.extend(_quality_checks(model, field, prop.quality, server, variables))
 
-        # A nested check the server cannot run is reported, not dropped.
+        # A check the server cannot run is reported, not dropped.
         unenforced = []
         if nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
             # The parent's nested type check already covers presence and types.
             if check_types:
-                checks[first_check:] = [c for c in checks[first_check:] if c.metric not in _METADATA_METRICS]
+                checks[first_check:] = [c for c in checks[first_check:] if c.metric not in METADATA_METRICS]
             unenforced = checks[first_check:]
             reason = nested_not_run_reason(server_type)
-        elif nested and uses_raw_view:
-            unenforced = [c for c in checks[first_check:] if c.metric in _METADATA_METRICS - {MetricType.FIELD_PRESENT}]
-            reason = (
-                f"Nested types cannot be verified on {server.format} files, which are read as the contract's types."
-            )
+        elif uses_raw_view:
+            # The file is cast into the contract's types, so a type check would compare the contract with itself.
+            unenforced = [c for c in checks[first_check:] if c.metric in METADATA_METRICS - {MetricType.FIELD_PRESENT}]
+            reason = f"Checking types in {server.format} files is not supported yet."
         for check in unenforced:
             # An unrunnable rule keeps its own, more specific reason.
             if check.preset_result != "warning":

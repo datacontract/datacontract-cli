@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Any, Dict, List
 
 import fastjsonschema
@@ -9,9 +10,10 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
-    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
+
+logger = logging.getLogger(__name__)
 
 
 class JsonSchemaImporter(Importer):
@@ -42,9 +44,22 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
     )
 
     odcs.schema_ = [schema_obj]
-    report_unmapped_types(odcs, fallback="string")
+    unions = list(_union_paths(properties))
+    if unions:
+        listed = ", ".join(unions[:5]) + (f" and {len(unions) - 5} others" if len(unions) > 5 else "")
+        logger.warning(f"ODCS has no union type, so these properties are imported as string: {listed}")
 
     return odcs
+
+
+def _union_paths(properties: List[SchemaProperty] | None, prefix: str = ""):
+    for prop in properties or []:
+        path = f"{prefix}{prop.name}"
+        if "|" in (prop.physicalType or ""):
+            yield f"{path} ({prop.physicalType})"
+        yield from _union_paths(prop.properties, f"{path}.")
+        if prop.items:
+            yield from _union_paths([prop.items], f"{path}.")
 
 
 def load_and_validate_json_schema(source: str) -> dict:
@@ -89,7 +104,11 @@ def jsonschema_to_properties(json_properties: Dict[str, Any], required_propertie
 
 def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool = None) -> SchemaProperty:
     """Convert a JSON Schema property to an ODCS SchemaProperty."""
-    branches = prop_schema.get("anyOf") or prop_schema.get("oneOf") or []
+    key = "anyOf" if "anyOf" in prop_schema else "oneOf"
+    if key in prop_schema:
+        # A true branch admits every value, a false one none
+        prop_schema = {**prop_schema, key: [{} if b is True else b for b in prop_schema[key] if b is not False]}
+    branches = prop_schema.get(key) or []
     non_null_branches = [branch for branch in branches if branch.get("type") != "null"]
     if len(non_null_branches) == 1:
         # One type or null is a nullable property, not a union
@@ -98,8 +117,8 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
 
     # Determine the type
     property_type = determine_type(prop_schema)
-    # ODCS has no union type; report_unmapped_types() types it as a string
-    logical_type = None if "|" in property_type else map_jsonschema_type_to_odcs(property_type)
+    # ODCS has no union type
+    logical_type = "string" if "|" in property_type else map_jsonschema_type_to_odcs(property_type)
 
     # Extract common attributes
     title = prop_schema.get("title")
@@ -202,12 +221,35 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
 def determine_type(prop_schema: Dict[str, Any]) -> str:
     """Determine the type from a JSON Schema property; a union is rendered as ``string|integer``."""
     branches = prop_schema.get("anyOf") or prop_schema.get("oneOf")
-    if branches:
-        types = [branch.get("type") or branch.get("$ref", "").rsplit("/", 1)[-1] or "any" for branch in branches]
-    else:
+    if not branches:
         types = [prop_schema.get("type") or "string"]
+    elif any("type" not in b and "$ref" not in b and "const" not in b and "enum" not in b for b in branches):
+        # a branch without any type constraint admits every value
+        return "string"
+    else:
+        types = [
+            b.get("type")
+            or b.get("$ref", "").rsplit("/", 1)[-1]
+            or [_JSON_VALUE_TYPES[type(v)] for v in ([b["const"]] if "const" in b else b["enum"])]
+            for b in branches
+        ]
     flat = [t for listed in types for t in (listed if isinstance(listed, list) else [listed])]
-    return "|".join(dict.fromkeys(t for t in flat if t != "null")) or "string"
+    names = [t for t in flat if t != "null"]
+    # two object or array shapes are a union even though their type names match
+    if len(dict.fromkeys(names)) == 1 and names[0] in ("object", "array") and len(names) > 1:
+        return "|".join(names)
+    return "|".join(dict.fromkeys(names)) or "string"
+
+
+_JSON_VALUE_TYPES = {
+    str: "string",
+    bool: "boolean",
+    int: "integer",
+    float: "number",
+    dict: "object",
+    list: "array",
+    type(None): "null",
+}
 
 
 def map_jsonschema_type_to_odcs(json_type: str) -> str:

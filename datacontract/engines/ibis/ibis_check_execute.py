@@ -338,7 +338,7 @@ def _run_model(
                 _record_sql(run, spec, t.aggregate([named]))
                 agg_exprs.append((spec, named))
         except _ColumnNotFound as e:
-            set_result(run, spec.key, ResultEnum.failed, str(e))
+            set_result(run, spec.key, ResultEnum.failed, str(e) or f"Column '{spec.field}' not found")
         except Exception as e:
             logger.warning("Check '%s' errored: %s", spec.key, e)
             set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
@@ -1319,7 +1319,11 @@ def _struct_field_name(value, name: str) -> str:
         return name
     if name in names:
         return name
-    return next((n for n in names if n.lower() == name.lower()), name)
+    match = next((n for n in names if n.lower() == name.lower()), None)
+    if match is None:
+        # the handler names the full path
+        raise _ColumnNotFound()
+    return match
 
 
 def _resolve_dtype(schema, field: str):
