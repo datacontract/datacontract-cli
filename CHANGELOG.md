@@ -9,11 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract api`: `--contract-variables` and `--allow-local-files` options, as alternatives to their environment variables
+- `datacontract test` checks constraints and quality rules of nested properties on servers read through DuckDB (#1278)
 
 ### Changed
 - `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
 - `${VAR}` references are accepted in fields with a fixed set of values (`quality.type`, `quality.metric`, `quality.dimension`, `logicalType`, `servers[].type`); `datacontract test` fails when one resolves into anything else
-- `datacontract test` checks nested properties on servers read through DuckDB and reports nested checks it cannot run as warnings (#1278)
+- `datacontract test` reports nested checks it cannot run and unsupported type checks on parquet files as warnings (#1278)
 
 ### Security
 - `datacontract api`:

@@ -106,7 +106,7 @@ Property-level `enum` entries must have distinct values, even if their labels, I
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
 :::note
-For file servers with `format: csv`, `json`, or `avro` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: parquet` is read the same way, so checking its types is not supported yet: each type check is reported as a warning, and a value that cannot be cast surfaces as a read error. `format: delta` is read with the table's own types, so its types, nested ones included, are checked. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
+For file servers with `format: csv`, `json`, `avro` or `parquet` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: delta` is read with the table's own types, so its types, nested ones included, are checked. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
 :::
 
 ## Required, unique, and primary keys
