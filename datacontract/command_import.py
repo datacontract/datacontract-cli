@@ -923,7 +923,9 @@ def import_odata(
     ] = None,
     entity_set: Annotated[
         Optional[List[str]],
-        typer.Option(help="EntitySet to import (repeat for multiple sets). If omitted, will import all sets from the service document."),
+        typer.Option(
+            help="EntitySet to import (repeat for multiple sets). If omitted, will import all sets from the service document."
+        ),
     ] = None,
     metadata_url: Annotated[
         Optional[str],

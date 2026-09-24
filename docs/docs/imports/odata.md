@@ -4,7 +4,7 @@ title: "Import: OData"
 description: "Create a data contract from one or more OData 4.x EntitySets using CSDL XML or JSON."
 ---
 
-# <img className="page-icon" src="/img/icons/api.svg" alt="" /> Import: OData
+# <img className="page-icon" src="/img/icons/odata.svg" alt="" /> Import: OData
 
 Creates a data contract from OData 4.x CSDL XML or JSON metadata. Select individual EntitySets, or automatically import all EntitySets advertised in the service document. Both public and authenticated services are supported.
 
