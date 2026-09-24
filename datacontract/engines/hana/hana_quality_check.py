@@ -6,10 +6,10 @@ from typing import Any
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
 from datacontract.engines.checks.create_checks import (
-    NESTED_NOT_RUN_REASON,
     _iter_property_paths,
     _retention_value_to_seconds,
     is_percent_unit,
+    nested_not_run_reason,
     quality_definition_yaml,
     unexecuted_check_name,
     unrunnable_reason,
@@ -57,7 +57,7 @@ def run_quality_checks(
                         name=quality.description or unexecuted_check_name(table_name, field_name),
                         model=table_name,
                         field=field_name,
-                        reason=NESTED_NOT_RUN_REASON,
+                        reason=nested_not_run_reason("hana"),
                         quality=quality,
                     )
                 )

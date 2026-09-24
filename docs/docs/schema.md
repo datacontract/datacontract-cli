@@ -106,7 +106,7 @@ Property-level `enum` entries must have distinct values, even if their labels, I
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
 :::note
-For file servers with `format: csv`, `json`, or `avro` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. With `format: parquet` the column's own type is checked, but never its nested structure. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
+For file servers with `format: csv`, `json`, or `avro` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. With `format: parquet` the column's own type is checked, but never its nested structure; the type of each nested property is reported as a warning. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
 :::
 
 ## Required, unique, and primary keys
@@ -196,7 +196,7 @@ These are common sources of confusion. They are valid ODCS and appear in exports
 - **`logicalTypeOptions.format`** — never enforced, on any property. On a `string` property (`email`, `uuid`, `uri`, …) use `pattern` for an enforceable equivalent. On a `date`, `timestamp` or `time` property `format` holds a date pattern such as `yyyy-MM-dd`, and `pattern` is *not* an equivalent there: by the time a check runs, the column has already been parsed as a date, so there is no string left to match. Such a column is validated as a date, in whatever format the server stores it.
 - **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties`. `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
 - **Schema-level attributes** other than `name`, `physicalName`, `properties`, and `quality`.
-- **Constraints and quality rules on nested properties** — `required`, `unique`, `pattern`, `enum`, the other `logicalTypeOptions` and `quality` rules below the top level are checked only on the `dataframe` and `databricks` servers. On every other server, nested properties are only type-checked, and each of their quality rules is reported as a warning.
+- **Constraints and quality rules on nested properties, on some servers** — `required`, `unique`, `pattern`, `enum`, the other `logicalTypeOptions` and `quality` rules below the top level are checked on the `dataframe` and `databricks` servers and on every server read through DuckDB (`local`, `s3`, `gcs`, `azure`, `duckdb`, `iceberg`, `kafka`). On every other server, nested properties are only type-checked, and each of their constraints and quality rules is reported as a warning.
 
 Anything beyond this list that you want verified belongs in a [quality rule](./quality-rules/index.md) — a `type: library` metric for the common cases, or `type: sql` for arbitrary expressions.
 

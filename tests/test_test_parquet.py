@@ -24,9 +24,10 @@ def test_valid():
     )
     run = data_contract.test()
     print(run.pretty())
-    assert run.result == "passed"
-    assert len(run.checks) == 25
-    assert all(check.result == "passed" for check in run.checks)
+    assert run.result == "warning"
+    assert len(run.checks) == 29
+    # the file is read as the contract's types, so nested types cannot be verified
+    assert {check.field for check in run.checks if check.result != "passed"} == {"struct_field.a", "struct_field.b"}
 
 
 def test_timestamp():
@@ -161,7 +162,7 @@ def test_struct():
     )
     run = data_contract.test()
     print(run.pretty())
-    assert run.result == "passed"
+    assert run.result == "warning"
 
 
 def test_nested_type_error_detail_message():

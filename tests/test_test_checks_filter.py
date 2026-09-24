@@ -45,7 +45,8 @@ def test_checks_schema_only():
     )
     run = data_contract.test()
     print(run.pretty())
-    assert run.result == "passed"
+    # the fixture's nested types cannot be verified on parquet
+    assert run.result == "warning"
     assert all(check.category == "schema" for check in run.checks)
     assert len(run.checks) > 0
 
