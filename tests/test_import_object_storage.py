@@ -84,7 +84,7 @@ def test_cli_format_option_is_not_rejected_as_the_removed_importer_selector(impo
 
 @pytest.fixture(scope="module")
 def minio(request):
-    with MinioContainer(image="quay.io/minio/minio", access_key=ACCESS_KEY, secret_key=SECRET_KEY) as container:
+    with MinioContainer(image="cgr.dev/chainguard/minio", access_key=ACCESS_KEY, secret_key=SECRET_KEY) as container:
         client = container.get_client()
         client.make_bucket(BUCKET)
         with open(CSV_FIXTURE, "rb") as file:
