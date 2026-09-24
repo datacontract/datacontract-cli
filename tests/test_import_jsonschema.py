@@ -1,3 +1,5 @@
+import json
+import logging
 import os
 from pathlib import Path
 
@@ -76,3 +78,74 @@ def test_import_json_schema_football_deeply_nested_no_required():
 
     print("Result:\n", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+
+
+def _import_properties(tmp_path: Path, properties: dict) -> dict:
+    source = tmp_path / "schema.json"
+    source.write_text(json.dumps({"title": "orders", "type": "object", "properties": properties}))
+    result = DataContract.import_from_source("jsonschema", str(source))
+    return {p.name: p for p in result.schema_[0].properties}
+
+
+def test_import_json_schema_nullable_any_of_keeps_the_type(tmp_path: Path):
+    properties = _import_properties(
+        tmp_path,
+        {
+            "total": {"anyOf": [{"type": "integer"}, {"type": "null"}], "title": "Total"},
+            "customer": {
+                "oneOf": [{"type": "null"}, {"type": "object", "properties": {"email": {"type": "string"}}}],
+            },
+        },
+    )
+
+    assert properties["total"].logicalType == "integer"
+    assert properties["total"].businessName == "Total"
+    assert properties["customer"].logicalType == "object"
+    assert [p.name for p in properties["customer"].properties] == ["email"]
+
+
+def test_import_json_schema_unions_warn_and_import_as_string(tmp_path: Path, caplog):
+    with caplog.at_level(logging.WARNING):
+        properties = _import_properties(
+            tmp_path,
+            {
+                "id": {"type": ["string", "integer", "null"]},
+                "flag": {"anyOf": [{"type": "integer"}, {"type": "boolean"}]},
+                "ref": {"oneOf": [{"type": "string"}, {"$ref": "#/$defs/Address"}]},
+                "shipping": {
+                    "anyOf": [
+                        {"type": "object", "properties": {"street": {"type": "string"}}},
+                        {"type": "object", "properties": {"locker": {"type": "integer"}}},
+                    ]
+                },
+                "code": {"anyOf": [{"type": "integer"}, {"const": "n/a"}]},
+                "status": {"anyOf": [{"const": "open"}, {"const": "closed"}]},
+            },
+        )
+
+    assert {name: (p.logicalType, p.physicalType) for name, p in properties.items()} == {
+        "id": ("string", "string|integer"),
+        "flag": ("string", "integer|boolean"),
+        "ref": ("string", "string|Address"),
+        "shipping": ("string", "object|object"),
+        "code": ("string", "integer|string"),
+        "status": ("string", "string"),
+    }
+    assert (
+        "ODCS has no union type, so these properties are imported as string: id (string|integer), "
+        "flag (integer|boolean), ref (string|Address), shipping (object|object), code (integer|string)"
+    ) in caplog.text
+
+
+def test_import_json_schema_boolean_branches(tmp_path: Path):
+    properties = _import_properties(
+        tmp_path,
+        {
+            "anything": {"anyOf": [True, {"type": "integer"}]},
+            "total": {"anyOf": [False, {"type": "integer"}]},
+        },
+    )
+
+    # true admits every value, so the property is untyped; false admits none, so it is dropped
+    assert (properties["anything"].logicalType, properties["anything"].physicalType) == ("string", "string")
+    assert properties["total"].logicalType == "integer"

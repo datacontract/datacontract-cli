@@ -1,5 +1,7 @@
 """A quality rule the CLI cannot run is reported, not dropped."""
 
+from open_data_contract_standard.model import Server
+
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.create_checks import create_checks
 from datacontract.model.run import ResultEnum
@@ -184,8 +186,8 @@ schema:
 
 
 def test_rules_on_nested_properties_warn_where_nested_properties_are_not_checked():
-    checks = _checks(
-        _odcs(
+    odcs = DataContract(
+        data_contract_str=_odcs(
             property_quality="""      - name: meta
         logicalType: object
         properties:
@@ -200,13 +202,11 @@ def test_rules_on_nested_properties_warn_where_nested_properties_are_not_checked
                 mustBe: 0
 """
         )
-    )
+    ).get_data_contract()
+    checks = create_checks(odcs, Server(type="postgres"))
     nested = [c for c in checks if c.field == "meta.source"]
-    assert [(c.type, c.preset_result) for c in nested] == [
-        ("field_quality_library", "warning"),
-        ("field_quality_sql", "warning"),
-    ]
-    assert "only run on dataframe and databricks" in nested[0].preset_reason
+    assert [c.preset_result for c in nested] == ["warning", "warning"]
+    assert nested[0].preset_reason == "Checks on nested properties are not supported on postgres servers."
 
 
 def test_lint_and_test_name_the_rule_alike_by_its_physical_names():

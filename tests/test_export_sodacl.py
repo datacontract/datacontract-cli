@@ -198,3 +198,40 @@ def test_create_checks_uses_unmapped_physical_type_verbatim(caplog):
     assert "UnknownType" in type_checks[0].implementation
     # Warning logged so users notice the dialect can't translate the type.
     assert any("UnknownType" in r.message for r in caplog.records)
+
+
+def test_export_sodacl_warns_about_dropped_nested_properties(caplog):
+    data_contract = OpenDataContractStandard(
+        apiVersion="v3.1.0",
+        kind="DataContract",
+        id="nested",
+        version="1.0.0",
+        status="active",
+        schema=[
+            SchemaObject(
+                name="orders",
+                properties=[
+                    SchemaProperty(name="id", logicalType="string"),
+                    SchemaProperty(
+                        name="customer",
+                        logicalType="object",
+                        properties=[SchemaProperty(name="email", logicalType="string", required=True)],
+                    ),
+                    SchemaProperty(
+                        name="items",
+                        logicalType="array",
+                        items=SchemaProperty(
+                            name="item",
+                            logicalType="object",
+                            properties=[SchemaProperty(name="sku", logicalType="string")],
+                        ),
+                    ),
+                ],
+            )
+        ],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        SodaExporter(export_format="sodacl").export(data_contract, "all", None, "auto", None)
+
+    assert "nested properties not exported: orders.customer.email, orders.items[].sku" in caplog.text

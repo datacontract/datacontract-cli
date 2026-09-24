@@ -1,0 +1,43 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: order-events
+name: Order Events
+version: 0.0.1
+status: active
+servers:
+  - server: production
+    type: kafka
+    host: __KAFKA_HOST__
+    format: json
+schema:
+  - name: orders
+    physicalName: order-events
+    physicalType: topic
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+      - name: customer
+        logicalType: object
+        properties:
+          - name: email
+            logicalType: string
+            required: true
+          - name: address
+            logicalType: object
+            properties:
+              - name: city
+                logicalType: string
+                quality:
+                  - type: sql
+                    query: SELECT COUNT(*) FROM orders WHERE customer.address.city IS NULL
+                    mustBe: 0
+      - name: items
+        logicalType: array
+        items:
+          logicalType: object
+          properties:
+            - name: sku
+              logicalType: string
+              required: true
