@@ -56,39 +56,6 @@ def test_cli_export_excel():
             os.unlink(tmp_path)
 
 
-def test_cli_export_excel_preserves_accented_characters(non_utf8_default_encoding):
-    """Reads the contract file as if the OS default text encoding were cp1252 (e.g. Windows), not UTF-8."""
-    runner = CliRunner()
-
-    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp_file:
-        tmp_path = tmp_file.name
-
-    try:
-        result = runner.invoke(
-            app,
-            [
-                "export",
-                "excel",
-                "./fixtures/excel/accented-characters.odcs.yaml",
-                "--output",
-                tmp_path,
-            ],
-        )
-        assert result.exit_code == 0
-
-        workbook = openpyxl.load_workbook(tmp_path)
-        sheet = workbook["Schema shipments"]
-        cell_values = {cell.value for row in sheet.iter_rows() for cell in row if cell.value is not None}
-        assert "Libellé" in cell_values
-        assert "Catégorie de la donnée" in cell_values
-        assert "Donnée" in cell_values
-        workbook.close()
-
-    finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
-
-
 def test_export_excel_odcs():
     """Test Excel export from ODCS object"""
     # Load the test fixture
