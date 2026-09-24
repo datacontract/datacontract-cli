@@ -1,9 +1,13 @@
+import logging
+
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard, Server
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
 
 from datacontract.export.exporter import Exporter
 from datacontract.export.sodacl_check_builder import create_checks
 from datacontract.model.run import Run
+
+logger = logging.getLogger(__name__)
 
 
 class SodaExporter(Exporter):
@@ -11,7 +15,26 @@ class SodaExporter(Exporter):
         run = Run.create_run()
         found_server = get_server(data_contract, server)
         run.checks.extend(create_checks(data_contract, found_server))
+        nested = [
+            path
+            for schema_obj in data_contract.schema_ or []
+            for prop in schema_obj.properties or []
+            for path in _nested_paths(prop, f"{schema_obj.name}.{prop.name}")
+        ]
+        if nested:
+            listed = ", ".join(nested[:5]) + (f" and {len(nested) - 5} others" if len(nested) > 5 else "")
+            logger.warning(f"SodaCL only checks top-level columns; nested properties not exported: {listed}")
         return to_sodacl_yaml(run)
+
+
+def _nested_paths(prop: SchemaProperty, path: str):
+    children = prop.properties or []
+    if prop.items is not None:
+        children, path = prop.items.properties or [], f"{path}[]"
+    for child in children:
+        child_path = f"{path}.{child.name}"
+        yield child_path
+        yield from _nested_paths(child, child_path)
 
 
 def to_sodacl_yaml(run: Run) -> str:
