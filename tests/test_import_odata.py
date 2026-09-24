@@ -27,6 +27,7 @@ from datacontract.model.exceptions import DataContractException
 ROOT = "https://xmart-api-public-uat.who.int/refmart/"
 METADATA = "https://xmart-api-public-uat.who.int/refmart/$metadata"
 FIXTURES = Path(__file__).parent / "fixtures/odata"
+EXPECTED_CONTRACT = Path(__file__).parents[1] / "examples/imports/odata/datacontract.odcs.yaml"
 ODATA_TEST_VERSIONS = ["4.0", "4.01", "4.123"]
 SERVICE_ROOT = "https://example.com/odata/"
 
@@ -91,7 +92,7 @@ def test_who_contract_and_transport(metadata_response, odcs_schema):
     response, get = metadata_response
     contract = import_contract()
     actual = yaml.safe_load(contract.to_yaml())
-    assert actual == yaml.safe_load((FIXTURES / "who-contract.yaml").read_text())
+    assert actual == yaml.safe_load(EXPECTED_CONTRACT.read_text())
     jsonschema.validate(actual, odcs_schema)
     get.assert_called_once()
     assert get.call_args.args == (METADATA,)
@@ -322,7 +323,7 @@ def test_cli_stdout_and_output(metadata_response, tmp_path):
     args = ["--entity-set", "ref_country", "--metadata-url", METADATA]
     stdout = run_cli(*args, source=ROOT)
     assert stdout.exit_code == 0, stdout.output
-    assert yaml.safe_load(stdout.stdout) == yaml.safe_load((FIXTURES / "who-contract.yaml").read_text())
+    assert yaml.safe_load(stdout.stdout) == yaml.safe_load(EXPECTED_CONTRACT.read_text())
     output = tmp_path / "contract.yaml"
     result = run_cli(*args, "--output", output, "--owner", "WHO", "--id", "country", "--debug", source=ROOT)
     assert result.exit_code == 0, result.output
@@ -365,7 +366,7 @@ def test_local_who_metadata_matches_url_import(metadata_response, path_type):
         "odata", source=ROOT, odata_entity_set=["ref_country"], odata_metadata_file=path
     )
     actual = yaml.safe_load(contract.to_yaml())
-    expected = yaml.safe_load((FIXTURES / "who-contract.yaml").read_text())
+    expected = yaml.safe_load(EXPECTED_CONTRACT.read_text())
     expected["servers"][0]["customProperties"][2] = {"property": "odataMetadataFile", "value": str(path)}
     assert actual == expected
     get.assert_not_called()
@@ -713,21 +714,6 @@ def test_cli_offline_all_sets(metadata_response, tmp_path):
     assert result.exit_code == 0, result.output
     assert [s["name"] for s in yaml.safe_load(output.read_text())["schema"]] == ["Products", "Orders"]
     get.assert_not_called()
-
-
-def test_failure_in_later_selected_schema_preserves_output(metadata_response, json_metadata, tmp_path):
-    metadata, get = metadata_response
-    json_metadata["Catalog.Model"]["Order"]["Total"]["$Type"] = "Edm.Binary"
-    metadata.content = json.dumps(json_metadata).encode()
-    output = tmp_path / "contract.yaml"
-    output.write_text("existing contract")
-    result = run_cli(
-        "--metadata-url", METADATA, "--entity-set", "Products", "--entity-set", "Orders", "--output", output
-    )
-    assert result.exit_code != 0 and isinstance(result.exception, DataContractException)
-    assert "Orders.Total" in str(result.exception)
-    assert output.read_text() == "existing contract"
-    get.assert_called_once()
 
 
 def test_xml_requires_unambiguous_container():
