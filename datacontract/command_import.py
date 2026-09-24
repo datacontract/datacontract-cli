@@ -917,7 +917,7 @@ def import_athena(
 )
 def import_odata(
     service_root_url: Annotated[str, typer.Option(help="HTTP(S) root URL of the OData service.")],
-    service_root_file: Annotated[
+    service_document_file: Annotated[
         Optional[Path],
         typer.Option(help="Local JSON service document. Ignored when --entity-set is supplied."),
     ] = None,
@@ -930,14 +930,12 @@ def import_odata(
     metadata_url: Annotated[
         Optional[str],
         typer.Option(
-            "--metadata-url",
             help="CSDL XML or JSON URL. Defaults to SERVICE_ROOT_URL/$metadata.",
         ),
     ] = None,
     metadata_file: Annotated[
         Optional[Path],
         typer.Option(
-            "--metadata-file",
             help="Path to a local OData CSDL XML or JSON file. Use either --metadata-file or --metadata-url.",
         ),
     ] = None,
@@ -947,14 +945,12 @@ def import_odata(
     debug: debug_option = None,
 ):
     """Import a data contract from OData 4.x CSDL XML or JSON metadata, using a URL or local file."""
-    if metadata_url is not None and metadata_file is not None:
-        raise typer.BadParameter("--metadata-url and --metadata-file are mutually exclusive.")
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
         config=cli_config(),
         format="odata",
         source=service_root_url,
-        odata_service_root_file=service_root_file,
+        odata_service_document_file=service_document_file,
         odata_entity_set=entity_set,
         odata_metadata_url=metadata_url,
         odata_metadata_file=metadata_file,

@@ -12,10 +12,10 @@ servers:
     value: odata
   - property: odataVersion
     value: '4.0'
-  - property: odataMetadataUrl
-    value: https://xmart-api-public-uat.who.int/refmart/$metadata
   - property: format
     value: json
+  - property: odataMetadataUrl
+    value: https://xmart-api-public-uat.who.int/refmart/$metadata
   location: https://xmart-api-public-uat.who.int/refmart/
 schema:
 - name: REF_COUNTRY

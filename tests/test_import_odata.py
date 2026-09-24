@@ -107,12 +107,11 @@ def test_who_contract_and_transport(metadata_response, odcs_schema):
 
 
 @pytest.mark.parametrize("version", ODATA_TEST_VERSIONS)
-@pytest.mark.parametrize("header", [True, False])
 @pytest.mark.parametrize("format", ["xml", "json"])
-def test_versions_and_header_fallback(metadata_response, version, header, format):
+def test_document_versions(metadata_response, version, format):
     response, _ = metadata_response
     response.content = (FIXTURES / f"products.{format}").read_bytes().replace(b"4.01", version.encode())
-    response.headers = {"OData-Version": version} if header else {}
+    response.headers = {}
     contract = import_contract("Products")
     assert contract.servers[0].customProperties[1].value == version
     assert contract.schema_[0].properties[0].name == "Sku"
@@ -159,6 +158,19 @@ def test_primitive_types(edm_type, logical_type, format):
         assert facets == {"scale": 0 if format == "xml" else "variable"}
     else:
         assert "scale" not in facets
+
+
+@pytest.mark.parametrize("format", ["xml", "json"])
+def test_unmapped_primitive_type_warns(metadata_response, caplog, format):
+    response, _ = metadata_response
+    response.content = (FIXTURES / f"products.{format}").read_bytes().replace(b"Edm.Guid", b"Edm.Binary")
+    contract = import_contract("Products")
+    properties = yaml.safe_load(contract.to_yaml())["schema"][0]["properties"]
+    prop = next(prop for prop in properties if prop["name"] == "TrackingId")
+    assert prop["physicalType"] == "Edm.Binary"
+    assert "logicalType" not in prop
+    assert "without a logicalType" in caplog.text
+    assert "TrackingId (Edm.Binary)" in caplog.text
 
 
 def test_keys_nullability_and_facets():
@@ -216,7 +228,7 @@ def test_navigation_and_unrelated_types_are_omitted(caplog):
 
 @pytest.mark.parametrize(
     "field_type",
-    ["D.Address", "Collection(Edm.String)", "Collection(D.Address)", "D.Status", "Edm.Binary", "Edm.Unknown"],
+    ["D.Address", "Collection(Edm.String)", "Collection(D.Address)", "D.Status"],
 )
 def test_unsupported_types_fail_with_field_and_type(field_type):
     with pytest.raises(DataContractException) as error:
@@ -226,25 +238,24 @@ def test_unsupported_types_fail_with_field_and_type(field_type):
 
 
 @pytest.mark.parametrize(
-    "document, header, error",
+    "document, error",
     [
-        (metadata_xml(version="4.0"), "4.01", "Conflicting OData versions"),
-        (metadata_xml(entity_attributes='BaseType="Demo.Base"'), None, "inheritance"),
-        (metadata_xml().replace(b'Name="Service"', b'Name="Service" Extends="Demo.Base"'), None, "inheritance"),
-        (metadata_xml().replace(b"D.Country", b"Other.Country"), None, "must resolve uniquely"),
-        (metadata_xml().replace(b"REF_COUNTRY", b"OTHER"), None, "not found"),
-        (metadata_xml().replace(b'http://docs.oasis-open.org/odata/ns/edm"', b'urn:wrong"'), None, "not found"),
-        (b"<html />", None, "Expected an OData 4 Edmx"),
-        (b"<broken", None, "Invalid or unsafe"),
-        (metadata_xml('<Property Name="P" Type="Edm.String" Nullable="maybe" />'), None, "Invalid Nullable"),
-        (metadata_xml('<Property Name="P" Type="Edm.String" MaxLength="bad" />'), None, "Invalid MaxLength"),
-        (metadata_xml(keys='<Key><PropertyRef Name="Missing" /></Key>'), None, "key references"),
+        (metadata_xml(entity_attributes='BaseType="Demo.Base"'), "inheritance"),
+        (metadata_xml().replace(b'Name="Service"', b'Name="Service" Extends="Demo.Base"'), "inheritance"),
+        (metadata_xml().replace(b"D.Country", b"Other.Country"), "must resolve uniquely"),
+        (metadata_xml().replace(b"REF_COUNTRY", b"OTHER"), "not found"),
+        (metadata_xml().replace(b'http://docs.oasis-open.org/odata/ns/edm"', b'urn:wrong"'), "not found"),
+        (b"<html />", "Expected an OData 4 Edmx"),
+        (b"<broken", "Invalid or unsafe"),
+        (metadata_xml('<Property Name="P" Type="Edm.String" Nullable="maybe" />'), "Invalid Nullable"),
+        (metadata_xml('<Property Name="P" Type="Edm.String" MaxLength="bad" />'), "Invalid MaxLength"),
+        (metadata_xml(keys='<Key><PropertyRef Name="Missing" /></Key>'), "key references"),
     ],
 )
-def test_metadata_errors(metadata_response, document, header, error):
+def test_metadata_errors(metadata_response, document, error):
     response, _ = metadata_response
     response.content = document
-    response.headers = {"OData-Version": header} if header else {}
+    response.headers = {}
     with pytest.raises(DataContractException, match=error):
         import_contract()
 
@@ -367,7 +378,9 @@ def test_local_who_metadata_matches_url_import(metadata_response, path_type):
     )
     actual = yaml.safe_load(contract.to_yaml())
     expected = yaml.safe_load(EXPECTED_CONTRACT.read_text())
-    expected["servers"][0]["customProperties"][2] = {"property": "odataMetadataFile", "value": str(path)}
+    expected["servers"][0]["customProperties"] = [
+        prop for prop in expected["servers"][0]["customProperties"] if prop["property"] != "odataMetadataUrl"
+    ]
     assert actual == expected
     get.assert_not_called()
 
@@ -515,16 +528,10 @@ def test_json_unsupported_selected_type(json_metadata, kind):
 # Version validation and format detection
 
 
-@pytest.mark.parametrize("document_version, header_version", [("4.01", "4.0"), ("4.123", "4.1"), ("4.01", "4.1")])
-def test_version_conflict(document_version, header_version):
-    with pytest.raises(DataContractException, match="Conflicting OData versions"):
-        _odata_version(document_version, header_version)
-
-
 @pytest.mark.parametrize("version", [None, "3.0", "5.0", "4", "4.", "4.x", "4.1.0", "4.01beta", "4.١", 4.01])
 def test_invalid_versions(version):
     with pytest.raises(DataContractException, match="Unsupported OData version"):
-        _odata_version(version, None)
+        _odata_version(version)
 
 
 @pytest.mark.parametrize("prefix", [b" \t\n" * 100, b"\xef\xbb\xbf \t\n"])
@@ -579,7 +586,7 @@ def test_import_all_advertised_sets(
     else:
         expected_requests.append(SERVICE_ROOT + "$metadata")
     if service_source == "file":
-        options["odata_service_root_file"] = FIXTURES / "service-document.json"
+        options["odata_service_document_file"] = FIXTURES / "service-document.json"
     else:
         expected_requests.append(SERVICE_ROOT)
     contract = DataContract.import_from_source("odata", source=root, **options)
@@ -615,7 +622,7 @@ def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_pat
     result = run_cli(
         "--metadata-file",
         path,
-        "--service-root-file",
+        "--service-document-file",
         "does-not-exist.json",
         "--entity-set",
         "Orders",
@@ -629,7 +636,6 @@ def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_pat
     assert result.exit_code == 0, result.output
     contract = yaml.safe_load(result.stdout)
     assert contract["name"] == "Store"
-    assert {"property": "odataMetadataFile", "value": "metadata"} in contract["servers"][0]["customProperties"]
     schemas = contract["schema"]
     assert [s["name"] for s in schemas] == ["Orders", "Products", "ArchivedProducts"]
     assert schemas[1]["properties"] == schemas[2]["properties"]
@@ -680,14 +686,6 @@ def test_redirected_service_document_base(service_response, url, root):
     assert [call.args[0] for call in get.call_args_list] == [SERVICE_ROOT + "$metadata", SERVICE_ROOT]
 
 
-@pytest.mark.parametrize("version", [None, *ODATA_TEST_VERSIONS])
-def test_service_header_does_not_override_csdl_version(service_response, version):
-    service, _ = service_response
-    service.headers = {"OData-Version": version} if version else {}
-    contract = DataContract.import_from_source("odata", source=SERVICE_ROOT)
-    assert {p.property: p.value for p in contract.servers[0].customProperties}["odataVersion"] == "4.01"
-
-
 def test_missing_service_file_does_not_fall_back_to_network(metadata_response, tmp_path):
     _, get = metadata_response
     with pytest.raises(DataContractException, match="Failed to read OData service document file"):
@@ -695,7 +693,7 @@ def test_missing_service_file_does_not_fall_back_to_network(metadata_response, t
             "odata",
             source=SERVICE_ROOT,
             odata_metadata_file=FIXTURES / "products.xml",
-            odata_service_root_file=tmp_path / "missing.json",
+            odata_service_document_file=tmp_path / "missing.json",
         )
     get.assert_not_called()
 
@@ -706,7 +704,7 @@ def test_cli_offline_all_sets(metadata_response, tmp_path):
     result = run_cli(
         "--metadata-file",
         FIXTURES / "products.xml",
-        "--service-root-file",
+        "--service-document-file",
         FIXTURES / "service-document.json",
         "--output",
         output,

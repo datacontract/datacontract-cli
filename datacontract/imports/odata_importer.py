@@ -13,7 +13,13 @@ from open_data_contract_standard.model import CustomProperty, OpenDataContractSt
 
 from datacontract.config import Config
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+    report_unmapped_types,
+)
 from datacontract.model.exceptions import DataContractException
 
 logger = logging.getLogger(__name__)
@@ -54,7 +60,7 @@ class ODataImporter(Importer):
         config = Config.resolve(config)
         metadata_url = import_args.get("odata_metadata_url")
         metadata_file = import_args.get("odata_metadata_file")
-        service_file = import_args.get("odata_service_root_file")
+        service_file = import_args.get("odata_service_document_file")
         selected_names = import_args.get("odata_entity_set")
         if metadata_url is not None and metadata_file is not None:
             raise _schema_error("--metadata-url and --metadata-file are mutually exclusive.")
@@ -66,7 +72,6 @@ class ODataImporter(Importer):
         ):
             raise _schema_error("--entity-set must be a non-empty list of EntitySet names.")
         root_url = source.rstrip("/") + "/"
-        header_version = None
         if metadata_file is not None:
             content = _read_file(metadata_file, "metadata")
         else:
@@ -75,12 +80,11 @@ class ODataImporter(Importer):
             _validate_http_url(metadata_url, "metadata-url")
             response = _fetch_document(metadata_url, "metadata", "application/xml, application/json;q=0.9", config)
             content = response.content
-            header_version = response.headers.get("OData-Version")
 
         # Inspect the first non-whitespace character; leave XML's encoding declaration to its parser.
         prefix = content.decode(json.detect_encoding(content), errors="ignore").lstrip("\ufeff \t\r\n")
         document = _read_xml(content) if prefix.startswith("<") else _read_json(content)
-        version = _odata_version(document["version"], header_version)
+        version = _odata_version(document["version"])
         if selected_names is not None:
             selections = [(name, None) for name in selected_names]
         else:
@@ -92,9 +96,6 @@ class ODataImporter(Importer):
                 content = response.content
                 # Redirects can change the base for relative context URLs.
                 document_base = response.url
-                service_version = response.headers.get("OData-Version")
-                if service_version is not None:
-                    _odata_version(service_version.strip(), service_version)
             selections = _read_service_document(content, document_base)
         if not selections:
             raise _schema_error("No EntitySets selected: the service document contains no EntitySets.")
@@ -120,13 +121,13 @@ class ODataImporter(Importer):
         server.customProperties = [
             CustomProperty(property="apiType", value="odata"),
             CustomProperty(property="odataVersion", value=version),
-            CustomProperty(property="odataMetadataFile", value=str(metadata_file))
-            if metadata_file is not None
-            else CustomProperty(property="odataMetadataUrl", value=metadata_url),
             # ODCS API servers do not allow a top-level format field.
             CustomProperty(property="format", value="json"),
         ]
+        if metadata_url is not None:
+            server.customProperties.append(CustomProperty(property="odataMetadataUrl", value=metadata_url))
         contract.servers = [server]
+        report_unmapped_types(contract)
         return contract
 
 
@@ -148,10 +149,8 @@ def _validate_http_url(url: str, label: str, *, root: bool = False) -> None:
     except ValueError:
         valid = False
     if not valid:
-        raise _schema_error(
-            f"Invalid {label}: expected an HTTP(S) URL without embedded credentials. "
-            "The service root must not contain a query or fragment."
-        )
+        message = f"Invalid {label}: the URL is invalid or doesn't conform to the expected format."
+        raise _schema_error(message)
 
 
 def _read_file(path: str | Path, label: str) -> bytes:
@@ -244,19 +243,13 @@ def _read_service_document(content: bytes, base: str) -> list[tuple[str, str]]:
     return selections
 
 
-def _odata_version(document_version: object, header: str | None) -> str:
+def _odata_version(document_version: object) -> str:
     """Select the supported protocol family independently of its schema mapping."""
-    version = header.strip() if header is not None else document_version
-    if any(
-        not isinstance(value, str) or re.fullmatch(r"4\.[0-9]+", value) is None for value in (document_version, version)
-    ):
+    if not isinstance(document_version, str) or re.fullmatch(r"4\.[0-9]+", document_version) is None:
         raise _schema_error(
-            f"Unsupported OData version (header={header!r}, document={document_version!r}); "
-            "expected an OData 4.x version in the form 4.[0-9]+."
+            f"Unsupported OData version {document_version!r}; expected an OData 4.x version in the form 4.[0-9]+."
         )
-    if version != document_version:
-        raise _schema_error(f"Conflicting OData versions: header={version}, document={document_version}.")
-    return version
+    return document_version
 
 
 def _read_xml(content: bytes) -> dict:
@@ -474,10 +467,10 @@ def _odata_4_schema(document: dict, requested_name: str) -> SchemaObject:
             raise _schema_error(f"Unsupported $Kind for field {name}.{field_name}: {field['kind']!r}.")
         if type(field["collection"]) is not bool:
             raise _schema_error(f"Invalid $Collection for field {name}.{field_name}: expected a boolean.")
-        if not isinstance(field_type, str) or field_type not in ODATA_4_TYPES or field["collection"]:
+        if not isinstance(field_type, str) or not field_type.startswith("Edm.") or field["collection"]:
             raise _schema_error(
                 f"Unsupported OData type {field_type!r} for field {name}.{field_name}. "
-                "Only supported primitive types can be imported; complex, collection, enum types and type definitions "
+                "Only primitive types can be imported; complex, collection, enum types and type definitions "
                 "are not supported."
             )
         nullable = field["nullable"]
@@ -499,7 +492,7 @@ def _odata_4_schema(document: dict, requested_name: str) -> SchemaObject:
         properties.append(
             create_property(
                 name=field_name,
-                logical_type=ODATA_4_TYPES[field_type],
+                logical_type=ODATA_4_TYPES.get(field_type),
                 physical_type=field_type,
                 required=not nullable,
                 primary_key=is_key,
