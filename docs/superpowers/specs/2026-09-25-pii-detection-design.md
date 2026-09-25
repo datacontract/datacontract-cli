@@ -30,18 +30,19 @@ without changing default import behavior for anyone who doesn't ask for it.
 ```
 datacontract/ai/
   __init__.py
-  pii_detector.py            # PiiDetector ABC
-  rule_based_pii_detector.py # RuleBasedPiiDetector
-  anthropic_pii_detector.py  # AnthropicPiiDetector
-  pii_detector_factory.py    # PiiDetectionMethod enum + PiiDetectorFactory
-  annotate.py                # mark_pii_columns()
+  pii_detector.py             # PiiDetector ABC
+  rule_based_pii_detector.py  # RuleBasedPiiDetector
+  anthropic_pii_detector.py   # AnthropicPiiDetector (direct Anthropic API)
+  databricks_pii_detector.py  # DatabricksPiiDetector (Databricks Model Serving)
+  pii_detector_factory.py     # PiiDetectionMethod enum + PiiDetectorFactory
+  annotate.py                 # mark_pii_columns()
 ```
 
 This mirrors the existing `datacontract/imports/importer.py` +
 `importer_factory.py` idiom: an `ABC` base class with one abstract method, a
 string enum of supported methods, and a factory singleton that lazily
-imports the concrete class so an unused optional dependency (`anthropic`) is
-never imported unless requested.
+imports each concrete class so an unused optional dependency (`anthropic`)
+is never imported unless requested.
 
 ## Core interface
 
@@ -98,13 +99,50 @@ class AnthropicPiiDetector(PiiDetector):
   any parse failure or API error raises `DataContractException` (fails the
   import loudly rather than silently skipping detection).
 
+### `DatabricksPiiDetector`
+
+For teams running Claude behind a self-hosted **Databricks Model Serving**
+endpoint (Foundation Model APIs / external model) rather than calling
+Anthropic directly:
+
+```python
+class DatabricksPiiDetector(PiiDetector):
+    def __init__(self, config: Config | None = None): ...
+    def detect(self, column_names: list[str]) -> dict[str, bool]: ...
+```
+
+- Builds a `databricks.sdk.WorkspaceClient` exactly like
+  `unity_importer.import_unity_from_api()` already does —
+  `WorkspaceClient(profile=profile)` if
+  `Config.get_databricks_profile()` is set, else
+  `WorkspaceClient(host=..., token=...)` from
+  `get_databricks_server_hostname()` / `get_databricks_token()`. No new
+  Databricks credentials are introduced; this reuses the same config anyone
+  running `import databricks` already has.
+- Calls the SDK's native
+  `workspace_client.serving_endpoints.query(name=endpoint, messages=[ChatMessage(role=ChatMessageRole.USER, content=prompt)])`
+  (`databricks.sdk.service.serving.ServingEndpointsAPI.query`) — **not** the
+  deprecated `get_open_ai_client()` wrapper, and no new dependency, since
+  `databricks-sdk` is already required by the `databricks` extra that
+  `import databricks` itself needs.
+- `endpoint` is a new required config value (see Config section) — there is
+  no sensible default, since the endpoint name is specific to each
+  workspace's deployment.
+- The Databricks `query()` API has no `response_format`/JSON-mode
+  parameter (confirmed against `databricks/sdk/service/serving.py`), so the
+  prompt asks for a JSON object in the same way `AnthropicPiiDetector` does,
+  and the response text is extracted from `QueryEndpointResponse.choices`
+  and parsed the same way. Any missing endpoint config, API error, or parse
+  failure raises `DataContractException`.
+
 ### `PiiDetectorFactory`
 
 ```python
 # datacontract/ai/pii_detector_factory.py
 class PiiDetectionMethod(str, Enum):
     rule = "rule"
-    llm = "llm"
+    anthropic = "anthropic"
+    databricks = "databricks"
 
 class PiiDetectorFactory:
     def register_lazy_detector(self, name: str, module_path: str, class_name: str) -> None: ...
@@ -112,7 +150,8 @@ class PiiDetectorFactory:
 
 pii_detector_factory = PiiDetectorFactory()
 pii_detector_factory.register_lazy_detector(PiiDetectionMethod.rule, "datacontract.ai.rule_based_pii_detector", "RuleBasedPiiDetector")
-pii_detector_factory.register_lazy_detector(PiiDetectionMethod.llm, "datacontract.ai.anthropic_pii_detector", "AnthropicPiiDetector")
+pii_detector_factory.register_lazy_detector(PiiDetectionMethod.anthropic, "datacontract.ai.anthropic_pii_detector", "AnthropicPiiDetector")
+pii_detector_factory.register_lazy_detector(PiiDetectionMethod.databricks, "datacontract.ai.databricks_pii_detector", "DatabricksPiiDetector")
 ```
 
 ## Integration: post-processing pass
@@ -155,8 +194,10 @@ Two new options on `datacontract import postgres` and
 
 - `--detect-pii` (flag, default `False`): opt-in; when unset, behavior and
   output are byte-for-byte identical to today.
-- `--pii-detector rule|llm` (default `rule`): which detector to use. `rule`
-  needs no credentials or extra dependency; `llm` requires the Anthropic key.
+- `--pii-detector rule|anthropic|databricks` (default `rule`): which detector
+  to use. `rule` needs no credentials or extra dependency; `anthropic`
+  requires the Anthropic API key; `databricks` requires the existing
+  Databricks credentials plus a serving endpoint name.
 
 Both flow through the existing `import_args` dict (already how e.g.
 `--schema`/`--table` reach `import_postgres_from_connector`), and, only when
@@ -175,22 +216,30 @@ returning.
 convention used for `postgres_password` etc.:
 
 ```python
-anthropic_api_key: SecretStr | None = None   # env: DATACONTRACT_ANTHROPIC_API_KEY
+anthropic_api_key: SecretStr | None = None      # env: DATACONTRACT_ANTHROPIC_API_KEY
+databricks_pii_endpoint: str | None = None      # env: DATACONTRACT_DATABRICKS_PII_ENDPOINT
 ```
 
-with a `get_anthropic_api_key(required: bool = False)` accessor alongside the
-other `get_*` methods.
+with `get_anthropic_api_key(required: bool = False)` and
+`get_databricks_pii_endpoint(required: bool = False)` accessors alongside the
+other `get_*` methods. `DatabricksPiiDetector` otherwise reuses the *existing*
+`databricks_profile` / `databricks_server_hostname` / `databricks_token`
+fields and accessors already used by `import databricks` — no duplicate
+credential config for the same workspace.
 
 ## Dependencies
 
-`pyproject.toml` gains an `ai` extra:
+`pyproject.toml` gains an `ai` extra for the direct-Anthropic-API detector:
 
 ```toml
 ai = ["anthropic>=0.40"]
 ```
 
-Installed via `pip install -e '.[ai]'`. `--pii-detector rule` (the default)
-needs none of this.
+Installed via `pip install -e '.[ai]'`, only needed for
+`--pii-detector anthropic`. `--pii-detector rule` (the default) needs none of
+this. `--pii-detector databricks` needs no *new* dependency either — it reuses
+`databricks-sdk`, which the `databricks` extra already installs for
+`import databricks` itself.
 
 ## Testing
 
@@ -204,12 +253,18 @@ needs none of this.
     columns are untouched, and a column with a pre-existing `classification`
     is never overwritten even if the stub would flag it.
   - `PiiDetectorFactory` — `create("rule")` returns a working detector
-    without importing `anthropic`; `create("llm")` raises a clear
+    without importing `anthropic`; `create("anthropic")` raises a clear
     `DataContractException` if `anthropic` isn't installed.
   - `AnthropicPiiDetector` — with `anthropic.Anthropic` mocked via
     `unittest.mock.patch`, assert the request contains the expected column
     names and the response JSON is parsed into the right `dict[str, bool]`.
     No real network calls anywhere in the suite.
+  - `DatabricksPiiDetector` — with `WorkspaceClient.serving_endpoints.query`
+    mocked, assert it's called with the configured endpoint name and the
+    expected messages, and that a `QueryEndpointResponse`-shaped mock is
+    parsed into the right `dict[str, bool]`; assert a clear
+    `DataContractException` when `DATACONTRACT_DATABRICKS_PII_ENDPOINT` is
+    unset. No real network/API calls anywhere in the suite.
 - `tests/test_import_postgres.py`: add a `customer_email` column to the
   `orders` fixture table; existing tests updated to expect it present but
   unclassified (flag defaults off); new test
