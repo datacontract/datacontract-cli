@@ -21,11 +21,12 @@ from open_data_contract_standard.model import (
     SchemaProperty,
     Server,
 )
+from sqlglot import Dialect, exp
 
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
-from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
+from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 from datacontract.model.enum_values import get_enum_values
@@ -185,31 +186,37 @@ def prepare_query(
 ) -> Optional[str]:
     """Substitute placeholders in a user SQL query.
 
-    Identifiers are emitted unquoted: the query runs through ibis against the
-    backend, which resolves unquoted names per its own casing rules (this is
-    what soda effectively did for the common backends).
+    Each dot-separated part of a name is quoted only where the server's dialect
+    cannot read it bare, so a plain name keeps the backend's case-insensitive
+    resolution. Quotes the author wrote around a placeholder are dropped, except
+    that backticks force the name to be quoted (e.g. a reserved word on Spark).
     """
     if not quality.query:
         return None
 
-    query = quality.query
-    query = re.sub(r'["\']?\$?\{model}["\']?', model_name, query)
-    query = re.sub(r'["\']?\$?\{table}["\']?', model_name, query)
-    query = re.sub(r'["\']?\$?\{object}["\']?', model_name, query)
+    server_type = get_server_type(server)
+    # mysql is attached through duckdb, which runs the query
+    dialect = sqlglot_dialect("duckdb" if server_type == "mysql" else dialect_for_server_type(server_type))
+    # the dialect's extra name characters, e.g. `$` in Snowflake's `amount$usd`
+    name_chars = re.escape("".join(Dialect.get_or_raise(dialect).tokenizer_class.VAR_SINGLE_TOKENS))
+    bare = re.compile(rf"[_a-zA-Z][\w{name_chars}]*")
 
-    schema_replacement = server.schema_ if server and server.schema_ else model_name
-    query = re.sub(r'["\']?\$?\{schema}["\']?', schema_replacement, query)
-
+    names = dict.fromkeys(("model", "table", "object"), model_name)
+    names["schema"] = server.schema_ if server and server.schema_ else model_name
     for placeholder in ("dataset", "project", "catalog", "database"):
-        replacement = getattr(server, placeholder, None) if server else None
-        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
-
+        names[placeholder] = (getattr(server, placeholder, None) if server else None) or model_name
     if field_name is not None:
-        query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)
-        query = re.sub(r'["\']?\$?\{column}["\']?', field_name, query)
-        query = re.sub(r'["\']?\$?\{property}["\']?', field_name, query)
+        names |= dict.fromkeys(("field", "column", "property"), field_name)
 
-    return query
+    def identifier(match: re.Match) -> str:
+        forced = "`" in match.group(0)
+        return ".".join(
+            exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
+            for part in names[match.group(1)].split(".")
+        )
+
+    # one pass, so a substituted name is not searched for placeholders again
+    return re.sub(rf"[\"'`]?\$?\{{({'|'.join(names)})}}[\"'`]?", identifier, quality.query)
 
 
 # ---------------------------------------------------------------------------
@@ -840,13 +847,9 @@ def _quality_rule_checks(
             return not_executed(str(e))
         # The query is read as the dialect of the server it runs against, so
         # dialect-specific syntax is not mistaken for something that is not a query.
-        parse_dialect = dialect_for_server_type(get_server_type(server))
-        if not is_read_only_query(query, parse_dialect):
-            return not_executed(
-                f"A quality rule query must be a single read-only query, and this one could "
-                f"not be read as one{f' ({parse_dialect} SQL)' if parse_dialect else ''}, "
-                f"so it was not executed."
-            )
+        refusal = refusal_reason(query, dialect_for_server_type(get_server_type(server)))
+        if refusal is not None:
+            return not_executed(refusal)
         return [
             CheckSpec(
                 key=check_key,

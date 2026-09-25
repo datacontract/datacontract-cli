@@ -117,8 +117,6 @@ The ODCS synonyms resolve to the spelling above before the dialect is looked up,
 
 Files, Kafka topics and API responses are read through DuckDB, so a rule on those server types is written in DuckDB SQL — including its functions, such as `read_parquet` or `list_contains`.
 
-If a rule fails with *"could not be read as one"*, the query is not valid for the server type the contract declares; the message names the dialect it was read as.
-
 ## Notes
 
 - **Referencing the data** — reference the schema/table by its name in the `FROM` clause (e.g. `FROM orders`).
