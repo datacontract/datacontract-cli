@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)
+- `datacontract test`: SQL quality rule placeholders are quoted when the name needs it (e.g. a column with a space), and a query that does not parse reports the parse error (#1653)
 - `datacontract import spark` preserves `varchar(...)` and `char(...)` types nested inside `struct`, `array` and `map` columns instead of widening them to `string` (#1634)
 - `datacontract import jsonschema` keeps the type of nullable `anyOf`/`oneOf` properties and warns about union types (#1278)
 - `datacontract export sodacl` warns about the nested properties it leaves out (#1278)

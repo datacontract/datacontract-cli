@@ -19,7 +19,7 @@ import pytest
 
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.create_checks import create_checks
-from datacontract.engines.checks.sql_guard import _DIALECT_BY_SERVER_TYPE, dialect_for_server_type, is_read_only_query
+from datacontract.engines.checks.sql_guard import _DIALECT_BY_SERVER_TYPE, dialect_for_server_type, refusal_reason
 from datacontract.engines.data_contract_test import get_server
 from datacontract.lint import resolve
 from datacontract.model.run import ResultEnum
@@ -81,7 +81,7 @@ def test_the_queries_are_read_in_the_dialect_of_their_server(contract_path):
 
     assert dialect is not None, "a server type with SQL rules needs a dialect"
     for check in checks:
-        assert is_read_only_query(check.query, dialect), check.query
+        assert refusal_reason(check.query, dialect) is None, check.query
 
 
 def test_some_rules_only_parse_in_their_own_dialect():
@@ -93,7 +93,7 @@ def test_some_rules_only_parse_in_their_own_dialect():
         server, checks = _sql_checks(contract_path)
         dialect = dialect_for_server_type(get_server_type(server))
         for check in checks:
-            if is_read_only_query(check.query, dialect) and not is_read_only_query(check.query):
+            if refusal_reason(check.query, dialect) is None and refusal_reason(check.query) is not None:
                 dialect_only.append((contract_path.stem, check.query))
 
     technologies = {stem for stem, _ in dialect_only}
