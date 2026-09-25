@@ -199,7 +199,7 @@ def test_a_query_that_does_not_parse_is_refused_with_the_parse_error():
     reason = refusal_reason("SELECT count(*) FROM orders WHERE A B IS NULL", "duckdb")
 
     assert reason.startswith("The query could not be read as duckdb SQL: ")
-    assert 'line 1, column 37, near "B"' in reason
+    assert 'line 1, near "B"' in reason
     assert "\x1b" not in reason
 
 
@@ -207,7 +207,7 @@ def test_an_incomplete_query_is_refused_without_parser_internals():
     reason = refusal_reason("SELECT count(*) FROM orders WHERE", "duckdb")
 
     assert reason == (
-        'The query could not be read as duckdb SQL: Incomplete expression at line 1, column 33, near "WHERE", '
+        'The query could not be read as duckdb SQL: Incomplete expression at line 1, near "WHERE", '
         "so it was not executed."
     )
 

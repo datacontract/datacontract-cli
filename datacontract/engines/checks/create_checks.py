@@ -26,7 +26,7 @@ from sqlglot import Dialect, exp
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
-from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect
+from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect_by_name
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 from datacontract.model.enum_values import get_enum_values
@@ -196,7 +196,7 @@ def prepare_query(
 
     server_type = get_server_type(server)
     # mysql is attached through duckdb, which runs the query
-    dialect = sqlglot_dialect("duckdb" if server_type == "mysql" else dialect_for_server_type(server_type))
+    dialect = sqlglot_dialect_by_name("duckdb" if server_type == "mysql" else dialect_for_server_type(server_type))
     # the dialect's extra name characters, e.g. `$` in Snowflake's `amount$usd`
     name_chars = re.escape("".join(Dialect.get_or_raise(dialect).tokenizer_class.VAR_SINGLE_TOKENS))
     bare = re.compile(rf"[_a-zA-Z][\w{name_chars}]*")

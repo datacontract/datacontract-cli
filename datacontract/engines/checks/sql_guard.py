@@ -64,7 +64,7 @@ def dialect_for_server_type(server_type: Optional[str]) -> Optional[str]:
     return _DIALECT_BY_SERVER_TYPE.get(server_type.lower())
 
 
-def sqlglot_dialect(dialect: Optional[str]):
+def sqlglot_dialect_by_name(dialect: Optional[str]):
     """The sqlglot dialect to read and write `dialect` SQL with."""
     if dialect == "exasol":
         # ibis registers its own Postgres-based `exasol` dialect over sqlglot's, so by
@@ -82,19 +82,17 @@ def refusal_reason(query: str, dialect: Optional[str] = None) -> Optional[str]:
     through, and so is one that holds a second statement -- a trailing
     `; DROP TABLE orders` must never reach the data source.
     """
-    read_as = dialect
     try:
-        statements = sqlglot.parse(query, dialect=sqlglot_dialect(dialect))
+        statements = sqlglot.parse(query, dialect=sqlglot_dialect_by_name(dialect))
     except sqlglot.errors.SqlglotError as e:
-        return _unreadable(e, read_as)
+        return _unreadable(e, dialect)
     except Exception:
         # An unknown dialect name is about the parser, not the query, so try the
         # default dialect rather than refuse a query for how it was labelled.
-        read_as = None
         try:
             statements = sqlglot.parse(query)
         except sqlglot.errors.SqlglotError as e:
-            return _unreadable(e, read_as)
+            return _unreadable(e, None)
         except Exception:
             statements = []
 
@@ -102,10 +100,7 @@ def refusal_reason(query: str, dialect: Optional[str] = None) -> Optional[str]:
     statements = [statement for statement in statements if statement is not None]
     if len(statements) == 1 and isinstance(statements[0], _READ_ONLY):
         return None
-    return (
-        f"A quality rule query must be a single read-only query, and this one could "
-        f"not be read as one{f' ({read_as} SQL)' if read_as else ''}, so it was not executed."
-    )
+    return "A quality rule query must be a single read-only query, so it was not executed."
 
 
 def _unreadable(error: sqlglot.errors.SqlglotError, dialect: Optional[str]) -> str:
@@ -116,7 +111,7 @@ def _unreadable(error: sqlglot.errors.SqlglotError, dialect: Optional[str]) -> s
         # e.g. "Required keyword: 'this' missing for <class 'sqlglot.expressions.Where'>"
         if description.startswith("Required keyword"):
             description = "Incomplete expression"
-        detail = f'{description} at line {first["line"]}, column {first["col"]}, near "{first["highlight"]}"'
+        detail = f'{description} at line {first["line"]}, near "{first["highlight"]}"'
     else:
         detail = str(error)
     return f"The query could not be read{f' as {dialect} SQL' if dialect else ''}: {detail}, so it was not executed."
