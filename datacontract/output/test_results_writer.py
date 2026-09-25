@@ -80,29 +80,33 @@ def write_test_result(
         )
     elif run.result == "warning":
         console.print("🟠 data contract has warnings. Found the following warnings:")
-        i = 1
-        for check in run.checks:
-            if check.result not in ("passed", "skipped"):
-                field = to_field(run, check)
-                if field:
-                    field = field + " "
-                else:
-                    field = ""
-                console.print(f"{i}) {field}{check.name}: {escape(str(check.reason))}")
-                i += 1
+        print_findings(run, console)
     else:
         console.print("🔴 data contract is invalid, found the following errors:")
-        i = 1
-        for check in run.checks:
-            if check.result not in ("passed", "skipped"):
-                field = to_field(run, check)
-                if field:
-                    field = field + " "
-                else:
-                    field = ""
-                console.print(f"{i}) {field}{check.name}: {escape(str(check.reason))}")
-                i += 1
+        print_findings(run, console)
         raise typer.Exit(code=1)
+
+
+def print_findings(run, console):
+    """List every check that did not pass, folding checks that share a reason into one line."""
+    findings = [check for check in run.checks if check.result not in ("passed", "skipped")]
+    by_reason = {}
+    for check in findings:
+        by_reason.setdefault(check.reason, []).append(check)
+    i = 1
+    for check in findings:
+        group = by_reason[check.reason] if check.reason else [check]
+        if len(group) > 1:
+            if group[0] is not check:
+                continue
+            fields = ", ".join(dict.fromkeys(f for f in (to_field(run, c) for c in group) if f))
+            fields_info = f" on {escape(fields)}" if fields else ""
+            console.print(f"{i}) {len(group)} checks{fields_info}: {escape(str(check.reason))}")
+        else:
+            field = to_field(run, check)
+            field = field + " " if field else ""
+            console.print(f"{i}) {escape(field)}{escape(str(check.name))}: {escape(str(check.reason))}")
+        i += 1
 
 
 def print_test_results_table(run, console):

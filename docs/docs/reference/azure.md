@@ -46,7 +46,7 @@ Files on Azure storage are read with DuckDB. Type handling depends on the `forma
 |---|---|
 | `csv` | The file is read **as the contract's types** — no type checks are generated; a value that can't be coerced surfaces as a read error. |
 | `json` | Same as CSV, plus every record is validated against a JSON Schema derived from the contract's `logicalType`s. |
-| `parquet` | Column types come from the Parquet file; the contract's `logicalType` is checked by category. |
+| `parquet` | The file is read **as the contract's types**, like CSV, so checking its types is not supported yet, a value that can't be cast surfaces as a read error. |
 | `delta` | Column types come from the Delta table; the contract's `logicalType` is checked by category. |
 
 `physicalType` is never checked against file sources. Schema objects with `logicalType: blob` / `physicalType: file` switch to [metadata checks](../testing/azure.md#metadata-checks) against blob properties instead of reading file contents.

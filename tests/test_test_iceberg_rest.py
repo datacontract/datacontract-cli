@@ -87,7 +87,7 @@ def rest_catalog():
     """(catalog_url, s3_endpoint) of a running iceberg-rest server backed by MinIO, with sales.orders in it."""
     with Network() as network:
         minio = (
-            MinioContainer(image="quay.io/minio/minio", access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+            MinioContainer(image="cgr.dev/chainguard/minio", access_key=ACCESS_KEY, secret_key=SECRET_KEY)
             .with_network(network)
             .with_network_aliases("minio")
         )

@@ -1,3 +1,4 @@
+import pytest
 from open_data_contract_standard.model import Server
 
 from datacontract.data_contract import DataContract
@@ -79,11 +80,27 @@ def test_create_checks_recurses_for_dataframe_nested_structs_and_arrays():
     assert "user.status" in (nested_sql.query or "")
 
 
-def test_create_checks_skips_nested_checks_for_unverified_backends():
+@pytest.mark.parametrize("server_type", ["duckdb", "iceberg", "kafka", "local", "s3"])
+def test_create_checks_recurses_for_duckdb_backed_servers(server_type):
+    checks = _checks(server_type)
+
+    email_required = next(c for c in checks if c.field == "user.email" and c.type == "field_required")
+    assert email_required.metric == MetricType.MISSING_COUNT
+    assert email_required.preset_result is None
+
+
+def test_create_checks_reports_nested_checks_as_warnings_on_unverified_backends():
     checks = _checks("postgres")
 
-    assert not any(c.field == "user.email" for c in checks)
-    assert not any(c.field == "line_items[].sku" for c in checks)
+    nested = [c for c in checks if c.field in ("user.email", "user.status", "line_items[].sku")]
+    assert {(c.field, c.type) for c in nested} == {
+        ("user.email", "field_required"),
+        ("user.email", "field_regex"),
+        ("user.status", "field_quality_sql"),
+        ("line_items[].sku", "field_required"),
+    }
+    assert all(c.metric == MetricType.UNSUPPORTED and c.preset_result == "warning" for c in nested)
+    assert all(c.preset_reason == "Checks on nested properties are not supported on postgres servers." for c in nested)
 
 
 def test_create_checks_marks_array_hops_in_the_field_path():

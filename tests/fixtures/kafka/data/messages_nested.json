@@ -1,0 +1,2 @@
+{"order_id": "1", "customer": {"email": "a@example.com", "address": {"city": "Berlin"}}, "items": [{"sku": "A"}]}
+{"order_id": "2", "customer": {"email": null, "address": {"city": null}}, "items": [{"sku": "B"}, {"sku": null}]}

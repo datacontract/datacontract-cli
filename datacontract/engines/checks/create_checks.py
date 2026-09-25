@@ -23,7 +23,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
-from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
 from datacontract.engines.checks.type_normalize import normalize_type_name
@@ -34,7 +34,8 @@ from datacontract.model.server import get_server_type
 logger = logging.getLogger(__name__)
 
 _FILE_SERVER_TYPES = {"local", "s3", "gcs", "azure"}
-_NESTED_CHECK_SERVER_TYPES = {"dataframe", "databricks"}
+# Spark and every server read through DuckDB
+_NESTED_CHECK_SERVER_TYPES = {"dataframe", "databricks", "duckdb", "iceberg", "kafka"} | _FILE_SERVER_TYPES
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +139,8 @@ def _iter_property_paths(
             yield from _iter_property_paths(prop.items.properties, f"{field_path}[]")
 
 
-NESTED_NOT_RUN_REASON = "Quality rules on nested properties are only run on dataframe and databricks servers."
+def nested_not_run_reason(server_type: Optional[str]) -> str:
+    return f"Checks on nested properties are not supported on {server_type} servers."
 
 
 _PERCENT_UNITS = {"percent", "percentage", "%"}
@@ -267,10 +269,7 @@ def _to_schema_checks(
     primary_key_is_composite = len(primary_key_props) > 1
 
     for field, prop, nested in _iter_property_paths(properties):
-        if nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
-            if prop.quality:
-                checks.extend(_quality_checks(model, field, prop.quality, server, not_run_reason=NESTED_NOT_RUN_REASON))
-            continue
+        first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
         checks.append(
@@ -545,6 +544,25 @@ def _to_schema_checks(
         if prop.quality:
             checks.extend(_quality_checks(model, field, prop.quality, server, variables))
 
+        # A check the server cannot run is reported, not dropped.
+        unenforced = []
+        if nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
+            # The parent's nested type check already covers presence and types.
+            if check_types:
+                checks[first_check:] = [c for c in checks[first_check:] if c.metric not in METADATA_METRICS]
+            unenforced = checks[first_check:]
+            reason = nested_not_run_reason(server_type)
+        elif uses_raw_view:
+            # The file is cast into the contract's types, so a type check would compare the contract with itself.
+            unenforced = [c for c in checks[first_check:] if c.metric in METADATA_METRICS - {MetricType.FIELD_PRESENT}]
+            reason = f"Checking types in {server.format} files is not supported yet."
+        for check in unenforced:
+            # An unrunnable rule keeps its own, more specific reason.
+            if check.preset_result != "warning":
+                check.metric = MetricType.UNSUPPORTED
+                check.preset_result = "warning"
+                check.preset_reason = reason
+
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]
         checks.append(
@@ -668,24 +686,10 @@ def _quality_checks(
     quality_list: List[DataQuality],
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    not_run_reason: Optional[str] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
-        if not_run_reason is None:
-            rule_checks = _quality_rule_checks(model, field, quality, count, server, variables)
-        elif quality.type == "sql" or quality.metric is not None:
-            kind = "sql" if quality.type == "sql" else "library"
-            rule_checks = _unexecuted_check(
-                f"{model}__{field}__quality_{kind}_{count}",
-                f"field_quality_{kind}",
-                model,
-                field,
-                quality,
-                not_run_reason,
-            )
-        else:
-            rule_checks = []
+        rule_checks = _quality_rule_checks(model, field, quality, count, server, variables)
         # Every check keeps a link back to the rule that declared it, so that
         # `test --quality-id` / `test --tag` can select it.
         for check in rule_checks:

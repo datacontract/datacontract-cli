@@ -40,7 +40,7 @@ class MetricType(str, Enum):
 
 # Metrics answered from schema introspection alone, without reading row values.
 # A positive allowlist: any future metric defaults conservatively to data-reading.
-_METADATA_METRICS = {
+METADATA_METRICS = {
     MetricType.FIELD_PRESENT,
     MetricType.FIELD_TYPE,
     MetricType.FIELD_PHYSICAL_TYPE,
@@ -175,7 +175,7 @@ class CheckSpec:
     def requires_data_read(self) -> bool:
         if self.metric == MetricType.UNSUPPORTED:
             return False
-        return self.metric not in _METADATA_METRICS
+        return self.metric not in METADATA_METRICS
 
     def has_validity_constraints(self) -> bool:
         return any(
