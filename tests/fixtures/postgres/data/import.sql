@@ -15,3 +15,9 @@ INSERT INTO public.orders (order_id, order_total, line_count, ordered_at, payloa
 
 CREATE VIEW public.open_orders AS
     SELECT order_id FROM public.orders WHERE line_count > 1;
+
+CREATE TABLE public.order_items (
+    order_item_id VARCHAR(36) PRIMARY KEY,
+    order_id VARCHAR(36) REFERENCES public.orders(order_id),
+    quantity INT NOT NULL
+);

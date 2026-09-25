@@ -6,7 +6,7 @@ description: "Create a data contract from a Postgres schema."
 
 # <img className="page-icon" src="/img/icons/postgres.svg" alt="" /> Import: Postgres
 
-Creates a data contract from a Postgres schema by reading table metadata from `information_schema` — including column types with length and precision, nullability, primary keys, and the comments stored in `pg_description`. Works with Postgres and Postgres-compatible databases (e.g. RisingWave).
+Creates a data contract from a Postgres schema by reading table metadata from `information_schema` — including column types with length and precision, nullability, primary keys, foreign keys, and the comments stored in `pg_description`. Works with Postgres and Postgres-compatible databases (e.g. RisingWave).
 
 ```bash
 datacontract import postgres \

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, Relationship, SchemaObject, SchemaProperty
 
 from datacontract.config import Config
 from datacontract.engines.ibis.native_type import reconstruct_native_type
@@ -77,6 +77,21 @@ _PRIMARY_KEYS_QUERY = """
     ORDER BY kcu.table_name, kcu.ordinal_position
 """
 
+_FOREIGN_KEYS_QUERY = """
+    SELECT kcu.table_name, kcu.column_name,
+           ccu.table_name AS referenced_table_name, ccu.column_name AS referenced_column_name
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+     AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage ccu
+      ON tc.constraint_name = ccu.constraint_name
+     AND tc.table_schema = ccu.table_schema
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND tc.table_schema = %s
+    ORDER BY kcu.table_name, kcu.ordinal_position
+"""
+
 
 class PostgresImporter(Importer):
     def import_source(self, source: str, import_args: dict, config: "Config | None" = None) -> OpenDataContractStandard:
@@ -122,6 +137,7 @@ def import_postgres_from_connector(
         # A user without access to information_schema constraints still gets a
         # usable contract, just without primary keys.
         primary_key_rows = _fetch(connection, _PRIMARY_KEYS_QUERY, (schema,), optional=True)
+        foreign_key_rows = _fetch(connection, _FOREIGN_KEYS_QUERY, (schema,), optional=True)
     finally:
         connection.close()
 
@@ -147,7 +163,7 @@ def import_postgres_from_connector(
         )
     ]
     odcs.schema_ = [
-        _create_schema(table, column_rows, primary_key_rows)
+        _create_schema(table, column_rows, primary_key_rows, foreign_key_rows)
         for table in sorted(selected, key=lambda row: row["table_name"].lower())
     ]
     report_unmapped_types(odcs)
@@ -211,13 +227,21 @@ def _create_schema(
     table: Dict[str, Any],
     column_rows: List[Dict[str, Any]],
     primary_key_rows: List[Dict[str, Any]],
+    foreign_key_rows: List[Dict[str, Any]],
 ) -> SchemaObject:
     table_name = table["table_name"]
     primary_keys = {
         row["column_name"]: index + 1
         for index, row in enumerate(row for row in primary_key_rows if row["table_name"] == table_name)
     }
-    properties = [_create_property(row, primary_keys) for row in column_rows if row["table_name"] == table_name]
+    foreign_keys = {
+        row["column_name"]: f"{row['referenced_table_name']}.{row['referenced_column_name']}"
+        for row in foreign_key_rows
+        if row["table_name"] == table_name
+    }
+    properties = [
+        _create_property(row, primary_keys, foreign_keys) for row in column_rows if row["table_name"] == table_name
+    ]
     return create_schema_object(
         name=table_name,
         physical_type=table.get("table_type") or "table",
@@ -226,7 +250,7 @@ def _create_schema(
     )
 
 
-def _create_property(row: Dict[str, Any], primary_keys: Dict[str, int]) -> SchemaProperty:
+def _create_property(row: Dict[str, Any], primary_keys: Dict[str, int], foreign_keys: Dict[str, str]) -> SchemaProperty:
     name = row["column_name"]
     max_length = row.get("character_maximum_length")
     precision = row.get("numeric_precision")
@@ -237,6 +261,7 @@ def _create_property(row: Dict[str, Any], primary_keys: Dict[str, int]) -> Schem
     # Precision/scale describe the declared type of decimals only; for integers
     # Postgres still reports a numeric_precision, which is not part of the type.
     is_decimal = physical_type is not None and physical_type.lower().startswith(("decimal", "numeric"))
+    references = foreign_keys.get(name)
 
     return create_property(
         name=name,
@@ -252,6 +277,7 @@ def _create_property(row: Dict[str, Any], primary_keys: Dict[str, int]) -> Schem
         format=format,
         dimensions=dimensions,
         element_type=element_type,
+        relationships=[Relationship(to=references)] if references else None,
     )
 
 

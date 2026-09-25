@@ -118,8 +118,17 @@ def test_imported_contract_passes_test_without_editing():
 def test_import_postgres_imports_all_tables_by_default():
     result = _import()
 
-    assert [schema.name for schema in result.schema_] == ["open_orders", "orders"]
+    assert [schema.name for schema in result.schema_] == ["open_orders", "order_items", "orders"]
     assert result.schema_[0].physicalType == "view"
+
+
+def test_import_postgres_captures_foreign_keys():
+    result = _import(schema="public", postgres_table=["orders", "order_items"])
+
+    order_items = next(schema for schema in result.schema_ if schema.name == "order_items")
+    order_id = next(prop for prop in order_items.properties if prop.name == "order_id")
+
+    assert [relationship.to for relationship in order_id.relationships] == ["orders.order_id"]
 
 
 def test_import_postgres_defaults_to_the_public_schema():
