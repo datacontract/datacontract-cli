@@ -108,8 +108,8 @@ def test_a_name_the_dialect_reads_bare_stays_bare():
         == "SELECT COUNT(*) FROM orders WHERE amount$usd IS NULL"
     )
     assert (
-        prepare_query(quality, "orders", "amount$usd", Server(type="local"))
-        == 'SELECT COUNT(*) FROM orders WHERE "amount$usd" IS NULL'
+        prepare_query(quality, "orders", "amount$usd", Server(type="databricks"))
+        == "SELECT COUNT(*) FROM orders WHERE `amount$usd` IS NULL"
     )
 
 
