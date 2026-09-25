@@ -156,7 +156,7 @@ def connect_ibis(
         return con
 
     if server_type == "mysql":
-        return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name, config)
+        return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name, config, untrusted_contract)
 
     if server_type == "snowflake":
         return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run, config))
@@ -583,7 +583,9 @@ def _connect_duckdb_database(ibis, server: Server, run: Run, config: Config):
     return con
 
 
-def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str, config: Config):
+def _connect_mysql_via_duckdb(
+    ibis, data_contract, server: Server, run: Run, schema_name: str, config: Config, untrusted_contract: bool
+):
     """Connect to MySQL through DuckDB's ``mysql`` extension.
 
     ibis's native MySQL backend requires ``mysqlclient`` (a C extension with no
@@ -594,7 +596,7 @@ def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, sch
     """
     import duckdb
 
-    from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
+    from datacontract.engines.ibis.connections.duckdb_connection import _load_extension, restrict_to_paths
 
     user = config.get_mysql_username(required=True)
     password = config.get_mysql_password(required=True)
@@ -619,6 +621,11 @@ def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, sch
             model = schema_obj.physicalName or schema_obj.name
             _materialize_attached_table(con, "mysqldb", database, model)
 
+    # the checks read the local copies; contract SQL must not reach MySQL with these credentials
+    con.execute("DETACH mysqldb")
+    if untrusted_contract:
+        restrict_to_paths(con, [])
+
     return ibis.duckdb.from_connection(con)
 
 
@@ -630,14 +637,17 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
     the DuckDB MySQL scanner can trigger DuckDB binder errors (e.g. on the
     grouped duplicate-count query), so we read the rows once and check locally.
     """
+    # both come from the contract
+    safe_model = model.replace('"', '""')
+    safe_database = database.replace('"', '""') if database else None
     candidates = []
-    if database:
-        candidates.append(f'{catalog}."{database}"."{model}"')
-    candidates.append(f'{catalog}."{model}"')
+    if safe_database:
+        candidates.append(f'{catalog}."{safe_database}"."{safe_model}"')
+    candidates.append(f'{catalog}."{safe_model}"')
     last_error = None
     for src in candidates:
         try:
-            con.execute(f'CREATE OR REPLACE TABLE "{model}" AS SELECT * FROM {src}')
+            con.execute(f'CREATE OR REPLACE TABLE "{safe_model}" AS SELECT * FROM {src}')
             return
         except Exception as e:  # noqa: BLE001 - try the next naming candidate
             last_error = e

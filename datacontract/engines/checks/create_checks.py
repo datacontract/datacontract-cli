@@ -196,9 +196,7 @@ def prepare_query(
     if not quality.query:
         return None
 
-    server_type = get_server_type(server)
-    # mysql is attached through duckdb, which runs the query
-    dialect = sqlglot_dialect_by_name("duckdb" if server_type == "mysql" else dialect_for_server_type(server_type))
+    dialect = sqlglot_dialect_by_name(dialect_for_server_type(get_server_type(server)))
     # the dialect's extra name characters, e.g. `$` in Snowflake's `amount$usd`
     name_chars = re.escape("".join(Dialect.get_or_raise(dialect).tokenizer_class.VAR_SINGLE_TOKENS))
     bare = re.compile(rf"[_a-zA-Z][\w{name_chars}]*")

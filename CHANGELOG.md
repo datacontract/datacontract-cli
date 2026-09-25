@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract api`:
   - a posted data contract resolves `${VAR}` only from the variables allow-listed with `--contract-variables`
   - a `${X:-local}` server type no longer slips past the checks for local files and environment-held credentials
+- `datacontract test`: a SQL quality rule on a `mysql` server can no longer reach the MySQL server or its credentials; rules on `mysql` and `iceberg` servers are read as DuckDB SQL
 
 ### Fixed
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration

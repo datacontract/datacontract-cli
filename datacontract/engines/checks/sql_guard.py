@@ -20,19 +20,20 @@ _READ_ONLY = (exp.Select, exp.SetOperation, exp.Subquery)
 # dialect-specific query is parsed as generic SQL and refused for syntax its own
 # data source accepts -- BigQuery's backticks, Snowflake's SAMPLE, SQL Server's TOP.
 #
-# The value is the dialect the *rule author* writes in, which follows from the
-# server type they declared. It is not always the engine that ends up running the
-# query: the file, kafka and api server types are read through duckdb, and mysql is
-# attached through duckdb, but a rule on a mysql server is still written as MySQL.
+# It is the dialect the query is run in, which is not always the server's own:
+# the guard must read the query exactly as the engine running it will.
 _DIALECT_BY_SERVER_TYPE = {
-    # read through duckdb, and written as duckdb
+    # read through duckdb
     "local": "duckdb",
     "s3": "duckdb",
     "gcs": "duckdb",
     "azure": "duckdb",
     "kafka": "duckdb",
     "api": "duckdb",
+    "iceberg": "duckdb",
     "duckdb": "duckdb",
+    # copied into duckdb
+    "mysql": "duckdb",
     # spark session backends
     "dataframe": "spark",
     # named by a different spelling in sqlglot
@@ -44,7 +45,6 @@ _DIALECT_BY_SERVER_TYPE = {
     "bigquery": "bigquery",
     "databricks": "databricks",
     "exasol": "exasol",
-    "mysql": "mysql",
     "oracle": "oracle",
     "postgres": "postgres",
     "redshift": "redshift",
