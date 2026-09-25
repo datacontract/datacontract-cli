@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract api`: `--contract-variables` and `--allow-local-files` options, as alternatives to their environment variables
+- `datacontract import odata` creates a datacontract from OData 4 metadata at an URL or from a local file.
 - `datacontract test` checks constraints and quality rules of nested properties on servers read through DuckDB (#1278)
 
 ### Changed

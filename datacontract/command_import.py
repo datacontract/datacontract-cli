@@ -909,3 +909,52 @@ def import_athena(
         id=id,
     )
     _write_result(result, output)
+
+
+@import_app.command(
+    name="odata",
+    epilog="Example: datacontract import odata --service-root-url https://example.com/odata/ --entity-set Products --output datacontract.yaml",
+)
+def import_odata(
+    service_root_url: Annotated[str, typer.Option(help="HTTP(S) root URL of the OData service.")],
+    service_document_file: Annotated[
+        Optional[Path],
+        typer.Option(help="Local JSON service document. Ignored when --entity-set is supplied."),
+    ] = None,
+    entity_set: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="EntitySet to import (repeat for multiple sets). If omitted, will import all sets from the service document."
+        ),
+    ] = None,
+    metadata_url: Annotated[
+        Optional[str],
+        typer.Option(
+            help="CSDL XML or JSON URL. Defaults to SERVICE_ROOT_URL/$metadata.",
+        ),
+    ] = None,
+    metadata_file: Annotated[
+        Optional[Path],
+        typer.Option(
+            help="Path to a local OData CSDL XML or JSON file. Use either --metadata-file or --metadata-url.",
+        ),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from OData 4.x CSDL XML or JSON metadata, using a URL or local file."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        config=cli_config(),
+        format="odata",
+        source=service_root_url,
+        odata_service_document_file=service_document_file,
+        odata_entity_set=entity_set,
+        odata_metadata_url=metadata_url,
+        odata_metadata_file=metadata_file,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)

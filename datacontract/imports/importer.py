@@ -40,6 +40,7 @@ class ImportFormat(str, Enum):
     json = "json"
     bigquery = "bigquery"
     odcs = "odcs"
+    odata = "odata"
     unity = "unity"
     databricks = "databricks"
     spark = "spark"
