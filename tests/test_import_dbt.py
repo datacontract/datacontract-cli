@@ -100,6 +100,56 @@ def test_import_dbt_manifest_with_filter():
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
 
 
+def test_import_dbt_manifest_preserves_meta_classification():
+    manifest = {
+        "metadata": {
+            "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+            "dbt_version": "1.8.0",
+            "project_name": "test_project",
+            "adapter_type": "databricks",
+        },
+        "nodes": {
+            "model.test_project.fact_workers": {
+                "resource_type": "model",
+                "unique_id": "model.test_project.fact_workers",
+                "name": "fact_workers",
+                "description": "Test model",
+                "config": {"materialized": "table"},
+                "tags": [],
+                "columns": {
+                    "employee_id": {
+                        "name": "employee_id",
+                        "data_type": "string",
+                        "description": "Employee identifier",
+                        "constraints": [{"type": "not_null"}, {"type": "unique"}],
+                        "meta": {"classification": "C2"},
+                        "tags": [],
+                    },
+                    "nationality": {
+                        "name": "nationality",
+                        "data_type": "string",
+                        "description": "Nationality of the worker",
+                        "constraints": [],
+                        "meta": {"classification": "C2"},
+                        "tags": ["classification:C2"],
+                    },
+                },
+            }
+        },
+        "child_map": {"model.test_project.fact_workers": []},
+    }
+
+    contract = import_dbt_manifest(manifest, [], ["model"])
+    employee_id = contract.schema_[0].properties[0]
+    nationality = contract.schema_[0].properties[1]
+
+    assert employee_id.classification == "C2"
+
+    assert nationality.classification == "C2"
+    assert nationality.customProperties is not None
+    assert any(cp.property == "tags" and cp.value == "classification:C2" for cp in nationality.customProperties)
+
+
 # --- Versioned model filter tests ---
 
 
