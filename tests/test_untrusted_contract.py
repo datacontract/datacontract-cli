@@ -6,12 +6,16 @@ Two independent controls, tested here:
   2. duckdb is confined to the contract's own data locations
 """
 
+import duckdb
 import pytest
 from fastapi.testclient import TestClient
+from open_data_contract_standard.model import DataQuality, Server
 
 from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
 from datacontract.data_contract import DataContract
+from datacontract.engines.checks.create_checks import prepare_query
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason
+from datacontract.engines.ibis.connections.connect import _materialize_attached_table
 from datacontract.engines.ibis.connections.duckdb_connection import restrict_to_paths
 from datacontract.model.run import ResultEnum
 
@@ -131,10 +135,41 @@ def test_the_server_dialect_still_refuses_what_is_not_a_query():
         assert refusal_reason("DROP TABLE orders", dialect_for_server_type(server_type)) is not None
 
 
-def test_file_server_types_are_read_as_duckdb():
-    """local/s3/gcs/azure are read through duckdb, so a rule on them is duckdb SQL."""
-    for server_type in ("local", "s3", "gcs", "azure"):
+def test_server_types_run_in_duckdb_are_read_as_duckdb():
+    """local/s3/gcs/azure/iceberg are read through duckdb and mysql tables are copied
+    into it, so a rule on them is duckdb SQL."""
+    for server_type in ("local", "s3", "gcs", "azure", "iceberg", "mysql"):
         assert dialect_for_server_type(server_type) == "duckdb"
+
+
+def test_a_backslash_escape_cannot_hide_a_second_statement_on_mysql():
+    """Read as MySQL, `\\'` is an escaped quote and this is one SELECT; duckdb, which
+    runs it, ends the string there and runs the DROP."""
+    query = "SELECT 1 AS x, 'a\\'; DROP TABLE orders; SELECT 1 AS y -- ' AS z"
+
+    assert refusal_reason(query, dialect_for_server_type("mysql")) is not None
+
+
+def test_a_backslash_in_a_name_cannot_hide_a_second_statement_on_mysql():
+    quality = DataQuality(
+        type="sql", query='SELECT COUNT(*) AS {field} FROM {model}; CREATE TABLE pwn AS SELECT 1; --"'
+    )
+    query = prepare_query(quality, "orders", "a\\", Server(server="production", type="mysql"))
+
+    assert refusal_reason(query, dialect_for_server_type("mysql")) is not None
+
+
+def test_a_quote_in_a_table_name_cannot_start_a_second_statement_on_mysql():
+    """The table name comes from the contract and runs while MySQL is still attached."""
+    model = 'orders" AS SELECT 1; CREATE TABLE pwned AS SELECT 1; --'
+    con = duckdb.connect()
+    con.execute("ATTACH ':memory:' AS mysqldb")
+    con.execute('CREATE TABLE mysqldb."orders"" AS SELECT 1; CREATE TABLE pwned AS SELECT 1; --" AS SELECT 1 AS id')
+
+    _materialize_attached_table(con, "mysqldb", None, model)
+
+    tables = con.execute("SELECT table_name FROM duckdb_tables() WHERE database_name = 'memory'").fetchall()
+    assert tables == [(model,)]
 
 
 def test_the_documented_dialect_mapping_matches_the_code():

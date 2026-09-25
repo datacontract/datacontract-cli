@@ -1,21 +1,22 @@
-apiVersion: v3.0.2
+apiVersion: v3.2.0
 kind: DataContract
-id: orders-quality-mysql
-name: Orders quality rules (mysql)
+id: orders-quality-iceberg
+name: Orders quality rules (iceberg)
 version: 1.0.0
 status: active
 description:
   purpose: >-
-    Custom SQL quality rules on a mysql server, written in duckdb SQL because
-    the tables are copied into duckdb to run them. Used by
+    Custom SQL quality rules on an iceberg server, written in duckdb SQL because
+    duckdb reads the tables to run them. Used by
     tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
     refusing SQL that a real data source accepts.
 servers:
   - server: production
-    type: mysql
-    host: localhost
-    port: 3306
-    database: orders
+    type: iceberg
+    catalog: main
+    catalogUrl: https://polaris.acme.internal/api/catalog
+    namespace: sales
+    warehouse: s3://warehouse
 schema:
   - name: orders
     physicalName: orders
@@ -34,12 +35,7 @@ schema:
         physicalType: timestamp
     quality:
       - type: sql
-        description: "Orders were copied from MySQL"
+        description: "Rows were read from the table"
         query: |
           SELECT count(*) FROM ${model}
-        mustBeGreaterThan: 0
-      - type: sql
-        description: "Orders arrived in the last day"
-        query: |
-          SELECT count(*) FROM ${model} WHERE order_timestamp > now() - INTERVAL 1 DAY
         mustBeGreaterThan: 0

@@ -94,14 +94,13 @@ This applies to every data source, and to every way the CLI is run. A data contr
 
 ## SQL dialect
 
-There is no `dialect` field on a quality rule. The dialect is **derived from the type of the server the rule runs against**, so a query is read the same way the data source will read it — BigQuery's backtick-quoted table names, Snowflake's `SAMPLE`, SQL Server's `TOP` and Postgres' `->>` are all understood without any declaration:
+There is no `dialect` field on a quality rule. The dialect is **derived from the type of the server the rule runs against**, so a query is read the same way the engine that runs it will read it — BigQuery's backtick-quoted table names, Snowflake's `SAMPLE`, SQL Server's `TOP` and Postgres' `->>` are all understood without any declaration:
 
 | Server type | SQL dialect |
 |---|---|
-| `local`, `s3`, `gcs`, `azure`, `kafka`, `api`, `duckdb` | `duckdb` |
+| `local`, `s3`, `gcs`, `azure`, `kafka`, `api`, `iceberg`, `duckdb`, `mysql` | `duckdb` |
 | `postgres` | `postgres` |
 | `redshift` | `redshift` |
-| `mysql` | `mysql` |
 | `oracle` | `oracle` |
 | `sqlserver` | `tsql` |
 | `snowflake` | `snowflake` |
@@ -115,7 +114,7 @@ There is no `dialect` field on a quality rule. The dialect is **derived from the
 
 The ODCS synonyms resolve to the spelling above before the dialect is looked up, so `postgresql` is read as `postgres`. A server declared as `type: custom` with `customType: mssql` is read as `tsql`, like `sqlserver`.
 
-Files, Kafka topics and API responses are read through DuckDB, so a rule on those server types is written in DuckDB SQL — including its functions, such as `read_parquet` or `list_contains`.
+Files, Kafka topics, API responses and Iceberg tables are read through DuckDB, and MySQL tables are copied into DuckDB before the checks run, so a rule on those server types is written in DuckDB SQL — including its functions, such as `read_parquet` or `list_contains`. MySQL-only syntax, such as backtick-quoted names or `DATE_SUB`, does not work there.
 
 ## Notes
 
