@@ -21,12 +21,16 @@ schema:
     physicalType: int
     logicalType: integer
     required: true
+    primaryKey: true
+    primaryKeyPosition: 1
   - name: name
     physicalType: varchar(255)
     logicalType: string
   - name: age
     physicalType: smallint
     logicalType: integer
+    relationships:
+      - to: employees.employee_age
   - name: salary
     physicalType: decimal(10,2)
     logicalType: number

@@ -3,8 +3,8 @@ import logging
 from typing import List, Optional, Tuple
 
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.catalog import ColumnInfo, TableInfo
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from databricks.sdk.service.catalog import ColumnInfo, TableConstraint, TableInfo
+from open_data_contract_standard.model import OpenDataContractStandard, Relationship, SchemaProperty
 
 from datacontract.config import Config
 from datacontract.imports.importer import Importer
@@ -138,7 +138,8 @@ def convert_unity_schema(odcs: OpenDataContractStandard, unity_schema: TableInfo
         )
         odcs.servers = [server]
 
-    properties = import_table_fields(unity_schema.columns)
+    primary_keys, foreign_keys = _parse_table_constraints(unity_schema.table_constraints)
+    properties = import_table_fields(unity_schema.columns, primary_keys, foreign_keys)
 
     table_id = unity_schema.name or unity_schema.table_id
 
@@ -157,17 +158,24 @@ def convert_unity_schema(odcs: OpenDataContractStandard, unity_schema: TableInfo
     return odcs
 
 
-def import_table_fields(columns: List[ColumnInfo]) -> List[SchemaProperty]:
+def import_table_fields(
+    columns: List[ColumnInfo],
+    primary_keys: Optional[dict] = None,
+    foreign_keys: Optional[dict] = None,
+) -> List[SchemaProperty]:
     """Import table fields from Unity schema columns."""
-    return [_to_property(column) for column in columns]
+    primary_keys = primary_keys or {}
+    foreign_keys = foreign_keys or {}
+    return [_to_property(column, primary_keys, foreign_keys) for column in columns]
 
 
-def _to_property(column: ColumnInfo) -> SchemaProperty:
+def _to_property(column: ColumnInfo, primary_keys: dict, foreign_keys: dict) -> SchemaProperty:
     """Convert a Unity ColumnInfo to an ODCS SchemaProperty."""
     sql_type = str(column.type_text) if column.type_text else "string"
     logical_type, format = map_type_from_sql(sql_type)
     required = column.nullable is None or not column.nullable
     nested_properties, items, map_key, map_value = _to_nested_types(column)
+    references = foreign_keys.get(column.name)
 
     return create_property(
         name=column.name,
@@ -176,11 +184,39 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
         description=column.comment,
         format=format,
         required=required if required else None,
+        primary_key=column.name in primary_keys or None,
+        primary_key_position=primary_keys.get(column.name),
         properties=nested_properties,
         items=items,
         map_key=map_key,
         map_value=map_value,
+        relationships=[Relationship(to=references)] if references else None,
     )
+
+
+def _parse_table_constraints(
+    table_constraints: Optional[List["TableConstraint"]],
+) -> Tuple[dict, dict]:
+    """Extract primary/foreign key column info from Unity Catalog table constraints.
+
+    Unity Catalog foreign keys are informational only (not enforced), but still
+    describe real relationships worth carrying into the contract.
+    """
+    primary_keys: dict = {}
+    foreign_keys: dict = {}
+    for constraint in table_constraints or []:
+        primary_key = constraint.primary_key_constraint
+        if primary_key and primary_key.child_columns:
+            for position, column_name in enumerate(primary_key.child_columns, start=1):
+                primary_keys[column_name] = position
+
+        foreign_key = constraint.foreign_key_constraint
+        if foreign_key and foreign_key.child_columns and foreign_key.parent_table and foreign_key.parent_columns:
+            parent_table = foreign_key.parent_table.split(".")[-1]
+            for child_column, parent_column in zip(foreign_key.child_columns, foreign_key.parent_columns):
+                foreign_keys[child_column] = f"{parent_table}.{parent_column}"
+
+    return primary_keys, foreign_keys
 
 
 def _to_nested_types(

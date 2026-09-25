@@ -6,7 +6,7 @@ description: "Create a data contract from Databricks Unity Catalog."
 
 # <img className="page-icon" src="/img/icons/databricks.svg" alt="" /> Import: Databricks
 
-Creates a data contract from Databricks Unity Catalog, from an exported JSON file or via the HTTP endpoint.
+Creates a data contract from Databricks Unity Catalog, from an exported JSON file or via the HTTP endpoint, including primary keys and foreign keys declared as Unity Catalog table constraints. Unity Catalog foreign keys are informational only (not enforced), but are still imported as `relationships` since they document real relationships.
 
 ```bash
 # From the HTTP endpoint (repeat --table for multiple tables)

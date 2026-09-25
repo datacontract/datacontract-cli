@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract import postgres` now captures foreign keys as `relationships` on the referencing column
+- `datacontract import databricks` now captures primary keys and foreign keys declared as Unity Catalog table constraints
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)

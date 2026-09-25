@@ -101,23 +101,22 @@
   "table_constraints": [
     {
       "primary_key_constraint": {
-        "name": "string",
+        "name": "test_table_pk",
         "child_columns": [
-          "string"
+          "id"
         ]
-      },
+      }
+    },
+    {
       "foreign_key_constraint": {
-        "name": "string",
+        "name": "test_table_age_fk",
         "child_columns": [
-          "string"
+          "age"
         ],
-        "parent_table": "string",
+        "parent_table": "mycatalog.myschema.employees",
         "parent_columns": [
-          "string"
+          "employee_age"
         ]
-      },
-      "named_table_constraint": {
-        "name": "string"
       }
     }
   ],
