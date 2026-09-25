@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-09-25
+
 ### Added
 - `datacontract api`: `--contract-variables` and `--allow-local-files` options, as alternatives to their environment variables
-- `datacontract import odata` creates a datacontract from OData 4 metadata at an URL or from a local file.
+- `datacontract import odata` creates a datacontract from OData 4 metadata at a URL or from a local file (#1649 @jahlen)
+- `datacontract export` writes SQL Server `VECTOR(n)` and `VECTOR(n, float16)` vector types
 - `datacontract test` checks constraints and quality rules of nested properties on servers read through DuckDB (#1278)
 
 ### Changed
 - `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.14
 - `${VAR}` references are accepted in fields with a fixed set of values (`quality.type`, `quality.metric`, `quality.dimension`, `logicalType`, `servers[].type`); `datacontract test` fails when one resolves into anything else
 - `datacontract test` reports nested checks it cannot run and unsupported type checks on parquet files as warnings (#1278)
 
@@ -28,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)
 - `datacontract test`: SQL quality rule placeholders are quoted when the name needs it (e.g. a column with a space), and a query that does not parse reports the parse error (#1653)
-- `datacontract import spark` preserves `varchar(...)` and `char(...)` types nested inside `struct`, `array` and `map` columns instead of widening them to `string` (#1634)
+- `datacontract import spark` preserves `varchar(...)` and `char(...)` types nested inside `struct`, `array` and `map` columns instead of widening them to `string` (#1634 @IchEssBlumen)
 - `datacontract import jsonschema` keeps the type of nullable `anyOf`/`oneOf` properties and warns about union types (#1278)
 - `datacontract export sodacl` warns about the nested properties it leaves out (#1278)
 
