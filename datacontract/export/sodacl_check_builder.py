@@ -217,22 +217,36 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
             checks.append(check_property_max_length(schema_name, property_name, max_length, quoting_config))
 
         minimum = _get_logical_type_option(prop, "minimum")
-        if minimum is not None:
-            checks.append(check_property_minimum(schema_name, property_name, minimum, quoting_config))
-
         maximum = _get_logical_type_option(prop, "maximum")
-        if maximum is not None:
-            checks.append(check_property_maximum(schema_name, property_name, maximum, quoting_config))
-
         exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
-        if exclusive_minimum is not None:
-            checks.append(check_property_minimum(schema_name, property_name, exclusive_minimum, quoting_config))
-            checks.append(check_property_not_equal(schema_name, property_name, exclusive_minimum, quoting_config))
-
         exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
-        if exclusive_maximum is not None:
-            checks.append(check_property_maximum(schema_name, property_name, exclusive_maximum, quoting_config))
-            checks.append(check_property_not_equal(schema_name, property_name, exclusive_maximum, quoting_config))
+
+        if prop.logicalType is not None and prop.logicalType.lower() in ("date", "timestamp", "time"):
+            # (option value, check type, operator matching the *failing* rows)
+            temporal_bounds = [
+                (minimum, "field_minimum", "<"),
+                (maximum, "field_maximum", ">"),
+                (exclusive_minimum, "field_exclusive_minimum", "<="),
+                (exclusive_maximum, "field_exclusive_maximum", ">="),
+            ]
+            for value, check_type, fail_operator in temporal_bounds:
+                if value is not None:
+                    checks.append(
+                        check_property_temporal_bound(
+                            schema_name, property_name, check_type, fail_operator, value, quoting_config
+                        )
+                    )
+        else:
+            if minimum is not None:
+                checks.append(check_property_minimum(schema_name, property_name, minimum, quoting_config))
+            if maximum is not None:
+                checks.append(check_property_maximum(schema_name, property_name, maximum, quoting_config))
+            if exclusive_minimum is not None:
+                checks.append(check_property_minimum(schema_name, property_name, exclusive_minimum, quoting_config))
+                checks.append(check_property_not_equal(schema_name, property_name, exclusive_minimum, quoting_config))
+            if exclusive_maximum is not None:
+                checks.append(check_property_maximum(schema_name, property_name, exclusive_maximum, quoting_config))
+                checks.append(check_property_not_equal(schema_name, property_name, exclusive_maximum, quoting_config))
 
         pattern = _get_logical_type_option(prop, "pattern")
         if pattern is not None:
@@ -528,6 +542,48 @@ def check_property_maximum(
         category="schema",
         type=check_type,
         name=f"Check that field {field_name} has a maximum of {maximum}",
+        model=model_name,
+        field=field_name,
+        engine="soda",
+        language="sodacl",
+        implementation=yaml.dump(sodacl_check_dict),
+    )
+
+
+def check_property_temporal_bound(
+    model_name: str,
+    field_name: str,
+    check_type: str,
+    fail_operator: str,
+    value,
+    quoting_config: QuotingConfig = QuotingConfig(),
+):
+    """Bound check for date/time columns.
+
+    SodaCL's ``valid min`` / ``valid max`` only accept numbers (soda-core casts them
+    with ``float()``), so temporal bounds are expressed as a failed-rows check that
+    compares the column to a SQL literal instead.
+    """
+    field_name_for_soda = _quote_field_name(field_name, quoting_config)
+    literal = str(value).replace("'", "''")
+
+    check_key = f"{model_name}__{field_name}__{check_type}"
+    sodacl_check_dict = {
+        checks_for(model_name, quoting_config, check_type): [
+            {
+                "failed rows": {
+                    "name": check_key,
+                    "fail condition": f"{field_name_for_soda} {fail_operator} '{literal}'",
+                },
+            }
+        ],
+    }
+    return Check(
+        id=str(uuid.uuid4()),
+        key=check_key,
+        category="schema",
+        type=check_type,
+        name=f"Check that no value of field {field_name} is {fail_operator} {value}",
         model=model_name,
         field=field_name,
         engine="soda",
