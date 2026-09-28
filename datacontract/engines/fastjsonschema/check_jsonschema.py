@@ -53,20 +53,22 @@ def get_primary_key_value(schema: dict, model_name: str, json_object: dict) -> O
     return json_object.get(primary_key_field)
 
 
+def resolve_error_limit(config: Config | None = None) -> int:
+    # Define the maximum number of errors to process (can be adjusted via configuration).
+    try:
+        configured_limit = Config.resolve(config).get_max_errors()
+        return 500 if configured_limit is None else configured_limit
+    except DataContractException:
+        # Fallback to default if the configured value is invalid.
+        return 500
+
+
 def process_exceptions(run, exceptions: List[DataContractException], config: Config | None = None):
     if not exceptions:
         return
 
-    # Define the maximum number of errors to process (can be adjusted via configuration).
-    try:
-        configured_limit = Config.resolve(config).get_max_errors()
-        error_limit = 500 if configured_limit is None else configured_limit
-    except DataContractException:
-        # Fallback to default if the configured value is invalid.
-        error_limit = 500
-
     # Calculate the effective limit to avoid index out of range
-    limit = min(len(exceptions), error_limit)
+    limit = min(len(exceptions), resolve_error_limit(config))
 
     # Add all exceptions up to the limit - 1 to `run.checks`.
     DEFAULT_ERROR_MESSAGE = "An error occurred during validation phase. See the logs for more details."
@@ -213,9 +215,12 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
     s3_location = server.location
     if "{model}" in s3_location:
         s3_location = s3_location.format(model=model_name)
-    json_stream = None
+    error_limit = resolve_error_limit(config)
+    found_file = False
+    exceptions: List[DataContractException] = []
 
     for file_content in yield_s3_files(s3_endpoint_url, s3_location, config):
+        found_file = True
         if server.delimiter == "new_line":
             json_stream = read_json_lines_content(file_content)
         elif server.delimiter == "array":
@@ -223,7 +228,14 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
         else:
             json_stream = read_json_file_content(file_content)
 
-    if json_stream is None:
+        # Validate each file, as a later file must not replace the stream of an earlier one.
+        exceptions.extend(validate_json_stream(schema, model_name, validate, json_stream))
+
+        # Stop downloading further files once the error limit is reached.
+        if len(exceptions) >= error_limit:
+            break
+
+    if not found_file:
         raise DataContractException(
             type="schema",
             dimension=default_dimension("schema"),
@@ -232,9 +244,6 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
             reason=f"Cannot find any file in {s3_location}",
             engine="datacontract-cli",
         )
-
-    # Validate the JSON stream and collect exceptions.
-    exceptions = validate_json_stream(schema, model_name, validate, json_stream)
 
     # Handle all errors from schema validation.
     process_exceptions(run, exceptions, config)
