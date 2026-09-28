@@ -235,3 +235,43 @@ def test_export_sodacl_warns_about_dropped_nested_properties(caplog):
         SodaExporter(export_format="sodacl").export(data_contract, "all", None, "auto", None)
 
     assert "nested properties not exported: orders.customer.email, orders.items[].sku" in caplog.text
+
+
+def test_create_checks_temporal_bounds_use_failed_rows():
+    """Date/time bounds must not use `valid min`/`valid max`, which soda-core casts to float (#1662)."""
+    contract = OpenDataContractStandard(
+        version="1.0.0",
+        kind="DataContract",
+        apiVersion="v3.1.0",
+        id="t",
+        name="t",
+    )
+    schema = SchemaObject(name="m")
+    schema.properties = [
+        SchemaProperty(
+            name="created_at",
+            logicalType="timestamp",
+            logicalTypeOptions={"minimum": "2023-01-01T00:00:00Z", "exclusiveMaximum": "2030-01-01T00:00:00Z"},
+        ),
+        SchemaProperty(name="amount", logicalType="number", logicalTypeOptions={"minimum": 0}),
+        SchemaProperty(
+            name="shipped_on", logicalType="date", logicalTypeOptions={"maximum": "2030-01-01\\' OR 1=1 --"}
+        ),
+    ]
+    contract.schema_ = [schema]
+    checks = create_checks(contract, Server(server="s", type="snowflake"))
+
+    def fail_condition(check_type):
+        check = next(c for c in checks if c.field == "created_at" and c.type == check_type)
+        (sodacl_checks,) = yaml.safe_load(check.implementation).values()
+        return sodacl_checks[0]["failed rows"]["fail condition"]
+
+    assert fail_condition("field_minimum") == "\"created_at\" < '2023-01-01T00:00:00Z'"
+    assert fail_condition("field_exclusive_maximum") == "\"created_at\" >= '2030-01-01T00:00:00Z'"
+
+    # Numeric bounds keep the existing `valid min` behavior
+    amount_check = next(c for c in checks if c.field == "amount" and c.type == "field_minimum")
+    assert "valid min" in amount_check.implementation
+
+    # A bound that isn't ISO 8601 must not reach the SQL literal
+    assert not any(c.field == "shipped_on" and c.type == "field_maximum" for c in checks)

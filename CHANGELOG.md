@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662)
+
 ## [1.2.2] - 2026-09-25
 
 ### Added
