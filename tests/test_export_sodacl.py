@@ -254,6 +254,9 @@ def test_create_checks_temporal_bounds_use_failed_rows():
             logicalTypeOptions={"minimum": "2023-01-01T00:00:00Z", "exclusiveMaximum": "2030-01-01T00:00:00Z"},
         ),
         SchemaProperty(name="amount", logicalType="number", logicalTypeOptions={"minimum": 0}),
+        SchemaProperty(
+            name="shipped_on", logicalType="date", logicalTypeOptions={"maximum": "2030-01-01\\' OR 1=1 --"}
+        ),
     ]
     contract.schema_ = [schema]
     checks = create_checks(contract, Server(server="s", type="snowflake"))
@@ -269,3 +272,6 @@ def test_create_checks_temporal_bounds_use_failed_rows():
     # Numeric bounds keep the existing `valid min` behavior
     amount_check = next(c for c in checks if c.field == "amount" and c.type == "field_minimum")
     assert "valid min" in amount_check.implementation
+
+    # A bound that isn't ISO 8601 must not reach the SQL literal
+    assert not any(c.field == "shipped_on" and c.type == "field_maximum" for c in checks)

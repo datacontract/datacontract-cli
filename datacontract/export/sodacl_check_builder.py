@@ -11,6 +11,7 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, time
 from typing import List, Optional
 
 import yaml
@@ -229,13 +230,25 @@ def to_schema_checks(schema_object: SchemaObject, server: Server) -> List[Check]
                 (exclusive_minimum, "field_exclusive_minimum", "<="),
                 (exclusive_maximum, "field_exclusive_maximum", ">="),
             ]
+            parse_iso = time.fromisoformat if prop.logicalType.lower() == "time" else datetime.fromisoformat
             for value, check_type, fail_operator in temporal_bounds:
-                if value is not None:
-                    checks.append(
-                        check_property_temporal_bound(
-                            schema_name, property_name, check_type, fail_operator, value, quoting_config
-                        )
+                if value is None:
+                    continue
+                # The bound ends up in a SQL literal, so only accept ISO 8601 ("Z" isn't parsed before Python 3.11)
+                text = str(value)
+                try:
+                    parse_iso(text[:-1] + "+00:00" if text.endswith("Z") else text)
+                except ValueError:
+                    logger.warning(
+                        f"Skipping {check_type} check for {schema_name}.{property_name}: "
+                        f"{value!r} is not an ISO 8601 {prop.logicalType.lower()}"
                     )
+                    continue
+                checks.append(
+                    check_property_temporal_bound(
+                        schema_name, property_name, check_type, fail_operator, value, quoting_config
+                    )
+                )
         else:
             if minimum is not None:
                 checks.append(check_property_minimum(schema_name, property_name, minimum, quoting_config))
@@ -558,14 +571,8 @@ def check_property_temporal_bound(
     value,
     quoting_config: QuotingConfig = QuotingConfig(),
 ):
-    """Bound check for date/time columns.
-
-    SodaCL's ``valid min`` / ``valid max`` only accept numbers (soda-core casts them
-    with ``float()``), so temporal bounds are expressed as a failed-rows check that
-    compares the column to a SQL literal instead.
-    """
+    """Failed-rows bound check, since soda-core casts ``valid min``/``valid max`` to float."""
     field_name_for_soda = _quote_field_name(field_name, quoting_config)
-    literal = str(value).replace("'", "''")
 
     check_key = f"{model_name}__{field_name}__{check_type}"
     sodacl_check_dict = {
@@ -573,7 +580,7 @@ def check_property_temporal_bound(
             {
                 "failed rows": {
                     "name": check_key,
-                    "fail condition": f"{field_name_for_soda} {fail_operator} '{literal}'",
+                    "fail condition": f"{field_name_for_soda} {fail_operator} '{value}'",
                 },
             }
         ],
