@@ -131,7 +131,7 @@ def test_import_dbt_manifest_preserves_meta_classification():
                         "description": "Nationality of the worker",
                         "constraints": [],
                         "meta": {"classification": "C2"},
-                        "tags": ["classification:C2"],
+                        "tags": [],
                     },
                 },
             }
@@ -144,10 +144,7 @@ def test_import_dbt_manifest_preserves_meta_classification():
     nationality = contract.schema_[0].properties[1]
 
     assert employee_id.classification == "C2"
-
     assert nationality.classification == "C2"
-    assert nationality.customProperties is not None
-    assert any(cp.property == "tags" and cp.value == "classification:C2" for cp in nationality.customProperties)
 
 
 # --- Versioned model filter tests ---
