@@ -153,3 +153,35 @@ schema:
     # Arrow syntax reaches the browser literally, not HTML-escaped.
     assert "||--o{" in diagram_block
     assert "&gt;" not in diagram_block
+
+def test_html_export_renders_array_items_recursively(tmp_path: Path):
+    contract = """\
+apiVersion: v3.1.0
+kind: DataContract
+id: nested
+name: Products
+version: 1.0.0
+status: active
+schema:
+  - name: products
+    logicalType: object
+    properties:
+      - name: pharmaceuticalContent
+        logicalType: array
+        items:
+          logicalType: object
+          properties:
+            - name: extendedDescriptionEnglish
+              logicalType: string
+            - name: barcodeSymbologyMulti
+              logicalType: array
+              items:
+                logicalType: object
+                properties:
+                  - name: symbologyCode
+                    logicalType: string
+"""
+    html = _export_html(tmp_path, contract)
+    assert ">extendedDescriptionEnglish<" in html
+    assert ">barcodeSymbologyMulti<" in html
+    assert ">symbologyCode<" in html

@@ -257,10 +257,10 @@
       {{ render_nested_properties([map_value], schema_name, indent + 1) }}
     {% endif %}
     {% if property.items is defined and property.items %}
-      {% if property.items is mapping %}
-        {{ render_nested_properties([property.items], schema_name, indent + 1) }}
-      {% elif property.items is sequence and property.items is not string %}
+      {% if property.items is sequence and property.items is not string and property.items is not mapping %}
         {{ render_nested_properties(property.items, schema_name, indent + 1) }}
+      {% else %}
+        {{ render_nested_properties([property.items], schema_name, indent + 1) }}
       {% endif %}
     {% endif %}
   {% endfor %}
