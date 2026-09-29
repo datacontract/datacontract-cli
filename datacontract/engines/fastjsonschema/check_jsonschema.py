@@ -57,10 +57,19 @@ def resolve_error_limit(config: Config | None = None) -> int:
     # Define the maximum number of errors to process (can be adjusted via configuration).
     try:
         configured_limit = Config.resolve(config).get_max_errors()
-        return 500 if configured_limit is None else configured_limit
     except DataContractException:
         # Fallback to default if the configured value is invalid.
         return 500
+    if configured_limit is None:
+        return 500
+    if configured_limit < 1:
+        raise DataContractException(
+            type="configuration",
+            name="invalid_DATACONTRACT_MAX_ERRORS",
+            reason=f"DATACONTRACT_MAX_ERRORS must be at least 1, got {configured_limit}.",
+            engine="datacontract-cli",
+        )
+    return configured_limit
 
 
 def process_exceptions(run, exceptions: List[DataContractException], config: Config | None = None):

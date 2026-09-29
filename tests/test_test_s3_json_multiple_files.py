@@ -61,6 +61,12 @@ def test_test_s3_json_stops_reading_files_at_error_limit(monkeypatch):
     assert read_files == ["orders-1.json"]
 
 
+@pytest.mark.parametrize("max_errors", [0, -1])
+def test_resolve_error_limit_rejects_non_positive_values(max_errors):
+    with pytest.raises(DataContractException, match="DATACONTRACT_MAX_ERRORS must be at least 1"):
+        check_jsonschema.resolve_error_limit(Config(max_errors=max_errors))
+
+
 def _prepare_s3_files(minio_container):
     s3_endpoint_url = f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}"
     minio_client = minio_container.get_client()
