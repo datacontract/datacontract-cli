@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662)
+- `datacontract test`: JSON schema validation on S3 checks every file matched by the location, not only the last one (#1511)
 - `datacontract test` reports "no checks were executed" instead of failing when nothing was tested (#1504)
 
 ## [1.2.2] - 2026-09-25
