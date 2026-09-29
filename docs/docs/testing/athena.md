@@ -68,7 +68,7 @@ Server: athena (type=athena, catalog=awsdatacatalog, schema=my_database, regionN
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 7.8 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 7.8 seconds.
 ```
 
 ## 5. Let it catch a violation

@@ -55,7 +55,7 @@ Server: production (type=azure, format=parquet, location=abfss://my-container/or
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 4.5 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 4.5 seconds.
 ```
 
 ## 5. Let it catch a violation

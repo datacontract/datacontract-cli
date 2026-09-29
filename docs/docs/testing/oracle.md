@@ -59,7 +59,7 @@ Server: oracle (type=oracle, host=localhost, port=1521, schema=ADMIN)
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 3.4 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 3.4 seconds.
 ```
 
 ## 5. Let it catch a violation

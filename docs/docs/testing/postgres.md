@@ -61,7 +61,7 @@ Server: postgres (type=postgres, host=localhost, port=5432, database=postgres, s
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 2.3 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 2.3 seconds.
 ```
 
 :::tip[No database at hand?]

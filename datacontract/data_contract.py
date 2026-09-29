@@ -285,6 +285,8 @@ class DataContract:
         if self._publish_url is not None or self._publish_test_results:
             if self._dry_run:
                 run.log_warn("Publishing skipped (--dry-run is set).")
+            elif run.result in (ResultEnum.skipped, ResultEnum.unknown):
+                run.log_warn("Publishing skipped (no checks were executed).")
             else:
                 run.publish_succeeded = publish_test_results_to_entropy_data(
                     run, self._publish_url, self._ssl_verification, config=self._config

@@ -50,7 +50,7 @@ Server: production (type=local, format=csv, path=orders.csv)
 │ passed │ Check that field order_total has a minimum of 1299.0 │ order_total  │         │
 │  ...   │                                                      │              │         │
 ╰────────┴──────────────────────────────────────────────────────┴──────────────┴─────────╯
-🟢 data contract is valid. Run 17 checks. Took 1.2 seconds.
+🟢 Data contract is valid. Run 17 checks. Took 1.2 seconds.
 ```
 
 ## 4. Let it catch a violation
@@ -63,7 +63,7 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🔴 data contract is invalid, found the following errors:
+🔴 Data contract is invalid, found the following errors:
 1) customer_id Check that unique field customer_id has no duplicate values:
 Actual duplicate_count(customer_id) was 1, expected = 0
 2) order_total Check that field order_total has a minimum of 1299.0: Actual

@@ -181,7 +181,7 @@ def publish_data_contract_to_entropy_data(
             print(f"Error publishing data contract to {display_host}: {response.text}")
             exit(1)
 
-        print("✅ Published data contract successfully")
+        print("✅ Published data contract successfully.")
 
         location_html = response.headers.get(RESPONSE_HEADER_LOCATION_HTML)
         if location_html is not None and len(location_html) > 0:

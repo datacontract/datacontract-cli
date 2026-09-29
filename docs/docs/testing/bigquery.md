@@ -56,7 +56,7 @@ Server: bigquery (type=bigquery, project=my-project, dataset=my_dataset)
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 6.1 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 6.1 seconds.
 ```
 
 ## 5. Let it catch a violation

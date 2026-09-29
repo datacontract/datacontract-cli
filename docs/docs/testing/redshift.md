@@ -67,7 +67,7 @@ Server: redshift (type=redshift, host=my-workgroup..., database=dev, schema=anal
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 4.9 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 4.9 seconds.
 ```
 
 ## 5. Let it catch a violation

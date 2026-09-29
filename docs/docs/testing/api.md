@@ -64,7 +64,7 @@ Server: production (type=api, format=json, location=https://api.example.com/orde
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 1.2 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 1.2 seconds.
 ```
 
 ## 5. Let it catch a violation

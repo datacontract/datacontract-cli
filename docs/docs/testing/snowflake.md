@@ -60,7 +60,7 @@ Server: workspace (type=snowflake, account=..., database=ORDER_DB, schema=PUBLIC
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 5.2 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 5.2 seconds.
 ```
 
 ## 5. Let it catch a violation

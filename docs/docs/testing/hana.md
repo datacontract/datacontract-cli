@@ -94,7 +94,7 @@ Server: production (type=hana, host=..., port=443, schema=SALES)
 │ passed │ Check that field ORDER_ID has no missing values │ ORDERS.ORDER_ID │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 12 checks. Took 1.4 seconds.
+🟢 Data contract is valid. Run 12 checks. Took 1.4 seconds.
 ```
 
 The engine reads the declared types from `SYS.TABLE_COLUMNS` and `SYS.VIEW_COLUMNS`, and runs every
