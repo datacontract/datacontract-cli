@@ -1,0 +1,23 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: s3-json-multiple-files
+name: Orders split across multiple S3 files
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: s3
+    endpointUrl: __S3_ENDPOINT_URL__
+    location: s3://multiple-files-bucket/fixtures/s3-json-multiple-files/data/*.json
+    format: json
+    delimiter: new_line
+schema:
+  - name: orders
+    physicalType: table
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+      - name: order_total
+        logicalType: integer
+        required: true
