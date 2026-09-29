@@ -154,6 +154,7 @@ schema:
     assert "||--o{" in diagram_block
     assert "&gt;" not in diagram_block
 
+
 def test_html_export_renders_array_items_recursively(tmp_path: Path):
     contract = """\
 apiVersion: v3.1.0
