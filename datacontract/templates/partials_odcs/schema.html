@@ -29,7 +29,7 @@
     {% set schema_synonyms = schema.synonyms if schema.synonyms is defined and schema.synonyms else none %}
     {% set schema_context = schema.context if schema.context is defined and schema.context else none %}
 
-    <div class="mt-2 print:block">
+    <div class="mt-2 print:block" id="schema-{{ schema_name }}">
       <div class="overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
         <table class="min-w-full divide-y divide-gray-300 print:relative print:break-inside-auto">
           <thead class="bg-gray-50 print:table-header-group">
@@ -39,9 +39,9 @@
                   <span>{{ schema_business_name }}</span>
                 {% endif %}
 
-                <span class="font-mono font-medium {% if schema_business_name and schema_business_name != schema_name %}ml-1{% endif %}">
+                <a href="#schema-{{ schema_name }}" class="font-mono font-medium {% if schema_business_name and schema_business_name != schema_name %}ml-1{% endif %}">
                   {{ schema_name }}
-                </span>
+                </a>
 
                 {% if schema_physical_name %}
                   <span class="ml-1 text-gray-400 cursor-help" title="{{ schema_physical_name }}">ⓘ</span>

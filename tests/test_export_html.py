@@ -186,3 +186,24 @@ schema:
     assert ">extendedDescriptionEnglish<" in html
     assert ">barcodeSymbologyMulti<" in html
     assert ">symbologyCode<" in html
+
+
+def test_html_export_renders_schema_anchors(tmp_path: Path):
+    contract = """\
+apiVersion: v3.1.0
+kind: DataContract
+id: anchors
+name: Orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    logicalType: object
+  - name: customers
+    logicalType: object
+"""
+    html = _export_html(tmp_path, contract)
+    assert 'id="schema-orders"' in html
+    assert 'href="#schema-orders"' in html
+    assert 'id="schema-customers"' in html
+    assert 'href="#schema-customers"' in html
