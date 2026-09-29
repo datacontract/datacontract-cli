@@ -250,7 +250,7 @@ class Run(BaseModel):
             elif any(check.result == ResultEnum.warning for check in self.checks):
                 self.result = ResultEnum.warning
             else:
-                self.result = ResultEnum.skipped
+                self.result = ResultEnum.skipped if self.checks else ResultEnum.unknown
             return
         if any(check.result == ResultEnum.error for check in self.checks):
             self.result = ResultEnum.error
@@ -260,6 +260,8 @@ class Run(BaseModel):
             self.result = ResultEnum.warning
         elif any(check.result == ResultEnum.passed for check in self.checks):
             self.result = ResultEnum.passed
+        elif any(check.result == ResultEnum.skipped for check in self.checks):
+            self.result = ResultEnum.skipped
         else:
             self.result = ResultEnum.unknown
 

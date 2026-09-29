@@ -62,7 +62,7 @@ Server: production (type=sqlserver, host=localhost, port=1433, database=mydb, sc
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 3.7 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 3.7 seconds.
 ```
 
 ## 5. Let it catch a violation

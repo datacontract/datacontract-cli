@@ -55,14 +55,9 @@ def execute_data_contract_test(
     config = Config.resolve(config)
     # An untrusted contract reads only the allow-listed variables.
     variables = allowed_environment(allowed_variables or []) if untrusted_contract else None
-    if data_contract.schema_ is None or len(data_contract.schema_) == 0:
-        raise DataContractException(
-            type="lint",
-            name="Check that data contract contains models",
-            result=ResultEnum.warning,
-            reason="Schema block is missing. Skip executing tests.",
-            engine="datacontract-cli",
-        )
+    if not data_contract.schema_:
+        run.log_warn("The data contract declares no schema.")
+        return
     if server_name is None and data_contract.servers is not None and len(data_contract.servers) > 0:
         server_name = data_contract.servers[0].server
     server = resolve_server_overrides(get_server(data_contract, server_name), config, run)

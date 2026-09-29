@@ -182,14 +182,14 @@ def test_metadata_only_skips_servicelevel_and_custom_sql():
     assert all(reason == SKIP_REASON for reason in skipped.values())
 
 
-def test_metadata_only_all_skipped_remains_unknown():
+def test_metadata_only_all_skipped_is_skipped():
     run = DataContract(
         data_contract_str=SLA_AND_SQL_CONTRACT,
         check_categories={"quality"},
         metadata_only=True,
     ).test()
     print(run.pretty())
-    assert run.result == "unknown"
+    assert run.result == "skipped"
     assert {check.type for check in run.checks} == {"row_count", "model_quality_sql"}
     assert all(check.result == "skipped" and check.reason == SKIP_REASON for check in run.checks)
 

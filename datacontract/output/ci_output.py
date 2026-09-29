@@ -57,10 +57,12 @@ def _write_azure_annotations(run: Run, data_contract_file: str, out=sys.stdout):
 
 
 RESULT_EMOJI = {
-    "passed": "🟢 passed",
-    "warning": "🟠 warning",
-    "failed": "🔴 failed",
-    "error": "🔴 error",
+    "passed": "🟢 Passed",
+    "warning": "🟠 Warning",
+    "failed": "🔴 Failed",
+    "error": "🔴 Error",
+    "skipped": "⚪ Skipped",
+    "unknown": "⚪ Unknown",
 }
 
 
@@ -74,11 +76,13 @@ def _write_github_step_summary(results: List[Tuple[str, Run]], summary_path: str
         has_failures = any(r in ("failed", "error") for r in result_values)
         has_warnings = any(r == "warning" for r in result_values)
         if has_failures:
-            overall = "🔴 failed"
+            overall = "🔴 Failed"
         elif has_warnings:
-            overall = "🟠 warning"
+            overall = "🟠 Warning"
+        elif any(r == "passed" for r in result_values):
+            overall = "🟢 Passed"
         else:
-            overall = "🟢 passed"
+            overall = "⚪ No checks were executed"
         lines.append("## Data Contract CI")
         lines.append("")
         n_passed = sum(1 for r in result_values if r == "passed")

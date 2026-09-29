@@ -63,7 +63,7 @@ Server: production (type=impala, host=my-impala-host, port=443, database=my_data
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 2.8 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 2.8 seconds.
 ```
 
 ## 5. Let it catch a violation

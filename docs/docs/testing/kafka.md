@@ -71,7 +71,7 @@ Server: production (type=kafka, format=json, host=abc-12345.eu-central-1.aws.con
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 8.4 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 8.4 seconds.
 ```
 
 ## 5. Let it catch a violation

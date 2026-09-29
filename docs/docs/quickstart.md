@@ -50,7 +50,7 @@ Server: production (type=postgres, host=..., database=postgres, schema=dp_orders
 │ passed │ Check that unique field order_id has no duplicate values   │ orders.order_id         │         │
 │  ...   │                                                            │                         │         │
 ╰────────┴──────────────────────────────────────────────────────────┴─────────────────────────┴─────────╯
-🟢 data contract is valid. Run 25 checks. Took 3.938887 seconds.
+🟢 Data contract is valid. Run 25 checks. Took 3.938887 seconds.
 ```
 
 The CLI verified that the YAML itself is valid, that all records comply with the schema, and that all quality attributes are met.

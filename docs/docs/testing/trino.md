@@ -61,7 +61,7 @@ Server: trino (type=trino, host=localhost, port=8080, catalog=my_catalog, schema
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 1.9 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 1.9 seconds.
 ```
 
 ## 5. Let it catch a violation

@@ -71,18 +71,24 @@ def write_test_result(
         skipped = sum(1 for check in run.checks if check.result == "skipped")
         skipped_info = f" ({skipped} skipped)" if skipped else ""
         console.print(
-            f"🟢 data contract is valid. Run {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
+            f"🟢 Data contract is valid. Run {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
-    elif run.result == "skipped":
+    elif run.result in ("skipped", "unknown"):
+        if run.result == "skipped" and run.dryRun:
+            reason = f"Planned {len(run.checks)} checks. "
+        elif run.result == "skipped":
+            reason = "All checks were skipped. "
+        else:
+            reason = ""
         console.print(
-            f"⚪ no checks were executed. Planned {len(run.checks)} checks. "
+            f"⚪ No checks were executed. {reason}"
             f"Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
     elif run.result == "warning":
-        console.print("🟠 data contract has warnings. Found the following warnings:")
+        console.print("🟠 Data contract has warnings. Found the following warnings:")
         print_findings(run, console)
     else:
-        console.print("🔴 data contract is invalid, found the following errors:")
+        console.print("🔴 Data contract is invalid, found the following errors:")
         print_findings(run, console)
         raise typer.Exit(code=1)
 

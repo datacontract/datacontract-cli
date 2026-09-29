@@ -77,7 +77,7 @@ Server: production (type=exasol, host=exasol.acme.com, port=8563, schema=sales)
 │ passed │ Check that field order_id has no missing values │ orders.order_id │         │
 │  ...   │                                                 │                 │         │
 ╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 12 checks. Took 1.4 seconds.
+🟢 Data contract is valid. Run 12 checks. Took 1.4 seconds.
 ```
 
 ## 5. Let it catch a violation
