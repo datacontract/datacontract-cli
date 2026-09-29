@@ -203,7 +203,7 @@ schema:
     logicalType: object
 """
     html = _export_html(tmp_path, contract)
-    assert 'id="schema-orders"' in html
-    assert 'href="#schema-orders"' in html
-    assert 'id="schema-customers"' in html
-    assert 'href="#schema-customers"' in html
+    assert 'id="orders"' in html
+    assert 'href="#orders"' in html
+    assert 'id="customers"' in html
+    assert 'href="#customers"' in html
