@@ -42,20 +42,20 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=local, format=csv, path=orders.csv)
-╭────────┬──────────────────────────────────────────────────────┬──────────────┬─────────╮
-│ Result │ Check                                                │ Field        │ Details │
-├────────┼──────────────────────────────────────────────────────┼──────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present               │ order_id     │         │
-│ passed │ Check that field order_id has no missing values      │ order_id     │         │
-│ passed │ Check that field order_total has a minimum of 1299.0 │ order_total  │         │
-│  ...   │                                                      │              │         │
-╰────────┴──────────────────────────────────────────────────────┴──────────────┴─────────╯
+╭────────┬──────────────────────────────────────────────────────┬─────────────┬─────────╮
+│ Result │ Check                                                │ Field       │ Details │
+├────────┼──────────────────────────────────────────────────────┼─────────────┼─────────┤
+│  ...   │                                                      │             │         │
+│ passed │ Check that field order_total has a minimum of 1299.0 │ order_total │         │
+│ passed │ Check that field order_total has a maximum of 4999.0 │ order_total │         │
+│  ...   │                                                      │             │         │
+╰────────┴──────────────────────────────────────────────────────┴─────────────┴─────────╯
 🟢 Data contract is valid. Run 17 checks. Took 1.2 seconds.
 ```
 
 ## 4. Let it catch a violation
 
-Now break the data — append a row with a negative total and a duplicate customer:
+Now break the data — append a row with a negative total, a duplicate customer and a repeated status:
 
 ```bash
 echo 'ORD-1004,2024-01-04T12:00:00Z,CUST-1,-100,delivered' >> orders.csv
@@ -68,6 +68,8 @@ datacontract test datacontract.yaml
 Actual duplicate_count(customer_id) was 1, expected = 0
 2) order_total Check that field order_total has a minimum of 1299.0: Actual
 invalid_count(order_total) was 1, expected = 0
+3) status Check that unique field status has no duplicate values: Actual
+duplicate_count(status) was 1, expected = 0
 ```
 
 The command exits with code `1`, so the same call works as a gate in [CI/CD pipelines](../scheduling/index.md).

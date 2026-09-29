@@ -32,7 +32,7 @@ Import the schema straight from the bucket. This also generates a ready-to-test 
 
 ```bash
 datacontract import gcs \
-  --source s3://my-bucket/orders/*.json \
+  --source 's3://my-bucket/orders/*.json' \
   --output datacontract.yaml
 ```
 
@@ -47,14 +47,14 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=s3, format=json, location=s3://my-bucket/orders/*.json)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 3.1 seconds.
+╭────────┬───────────────────────────────────────────┬─────────────┬─────────────────────────────╮
+│ Result │ Check                                     │ Field       │ Details                     │
+├────────┼───────────────────────────────────────────┼─────────────┼─────────────────────────────┤
+│ passed │ Check that JSON has valid schema          │             │ All JSON entries are valid. │
+│ passed │ Check that field 'customer_id' is present │ customer_id │                             │
+│  ...   │                                           │             │                             │
+╰────────┴───────────────────────────────────────────┴─────────────┴─────────────────────────────╯
+🟢 Data contract is valid. Run 6 checks. Took 3.1 seconds.
 ```
 
 ## 5. Let it catch a violation

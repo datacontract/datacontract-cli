@@ -55,14 +55,15 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: production (type=impala, host=my-impala-host, port=443, database=my_database)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+Server: impala (type=impala, host=my-impala-host, port=21050, database=my_database)
+╭────────┬───────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                     │ Field    │ Details │
+├────────┼───────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                           │          │         │
+│ passed │ Check that field 'order_id' is present    │ order_id │         │
+│ passed │ Check that field order_id has type string │ order_id │         │
+│  ...   │                                           │          │         │
+╰────────┴───────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Run 24 checks. Took 2.8 seconds.
 ```
 

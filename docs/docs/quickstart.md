@@ -41,16 +41,16 @@ datacontract test https://datacontract.com/orders-v1.odcs.yaml
 
 ```
 Testing https://datacontract.com/orders-v1.odcs.yaml
-Server: production (type=postgres, host=..., database=postgres, schema=dp_orders_v1)
-╭────────┬──────────────────────────────────────────────────────────┬─────────────────────────┬─────────╮
-│ Result │ Check                                                      │ Field                   │ Details │
-├────────┼──────────────────────────────────────────────────────────┼─────────────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present                     │ orders.order_id         │         │
-│ passed │ Check that field order_id has type UUID                    │ orders.order_id         │         │
-│ passed │ Check that unique field order_id has no duplicate values   │ orders.order_id         │         │
-│  ...   │                                                            │                         │         │
-╰────────┴──────────────────────────────────────────────────────────┴─────────────────────────┴─────────╯
-🟢 Data contract is valid. Run 25 checks. Took 3.938887 seconds.
+Server: production (type=postgres, host=..., port=6543, database=postgres, schema=dp_orders_v1)
+╭────────┬──────────────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                            │ Field           │ Details │
+├────────┼──────────────────────────────────────────────────┼─────────────────┼─────────┤
+│  ...   │                                                  │                 │         │
+│ passed │ Check that field 'order_id' is present           │ orders.order_id │         │
+│ passed │ Check that field order_id has physical type UUID │ orders.order_id │         │
+│  ...   │                                                  │                 │         │
+╰────────┴──────────────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 Data contract is valid. Run 30 checks. Took 2.436205 seconds.
 ```
 
 The CLI verified that the YAML itself is valid, that all records comply with the schema, and that all quality attributes are met.
@@ -94,6 +94,12 @@ CREATE TABLE orders (
   order_total integer not null,
   order_timestamp TIMESTAMPTZ,
   order_status text
+);
+CREATE TABLE line_items (
+  line_item_id UUID not null primary key,
+  sku text not null,
+  price integer not null,
+  order_id UUID
 );
 ```
 

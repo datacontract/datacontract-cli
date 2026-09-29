@@ -24,7 +24,7 @@ The easiest way is Application Default Credentials (ADC) — both `import` and `
 gcloud auth application-default login
 ```
 
-Your account (or service account) needs the **BigQuery Job User** and **BigQuery Data Viewer** roles. For service-account key files and CI/CD, see the [BigQuery Reference](../reference/bigquery.md).
+Your account (or service account) needs the **BigQuery Job User**, **BigQuery Data Viewer** and **BigQuery Read Session User** roles. For service-account key files and CI/CD, see the [BigQuery Reference](../reference/bigquery.md).
 
 ## 3. Create a contract from your tables
 
@@ -48,14 +48,15 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: bigquery (type=bigquery, project=my-project, dataset=my_dataset)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+Server: bigquery (type=bigquery, dataset=my_dataset, project=my-project)
+╭────────┬─────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                               │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                     │          │         │
+│ passed │ Check that field 'order_id' is present              │ order_id │         │
+│ passed │ Check that field order_id has physical type INTEGER │ order_id │         │
+│  ...   │                                                     │          │         │
+╰────────┴─────────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Run 24 checks. Took 6.1 seconds.
 ```
 
@@ -83,5 +84,5 @@ All authentication options (service-account keys, WIF, billing project) and the 
 ## Troubleshooting
 
 - **`Your default credentials were not found`** — run `gcloud auth application-default login`, or set `GOOGLE_APPLICATION_CREDENTIALS` / `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` to a service-account key file.
-- **`403 Access Denied`** — the account is missing **BigQuery Job User** (to run query jobs) or **BigQuery Data Viewer** (to read the tables).
+- **`403 Access Denied`** — the account is missing **BigQuery Job User** (to run query jobs), **BigQuery Data Viewer** (to read the tables) or **BigQuery Read Session User** (to fetch query results through the Storage Read API).
 - **Queries billed to the wrong project** — set `DATACONTRACT_BIGQUERY_BILLING_PROJECT`.

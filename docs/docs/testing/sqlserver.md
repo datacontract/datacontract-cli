@@ -55,13 +55,14 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=sqlserver, host=localhost, port=1433, database=mydb, schema=dbo)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+╭────────┬─────────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                                   │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                         │          │         │
+│ passed │ Check that field 'order_id' is present                  │ order_id │         │
+│ passed │ Check that field order_id has physical type varchar(36) │ order_id │         │
+│  ...   │                                                         │          │         │
+╰────────┴─────────────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Run 24 checks. Took 3.7 seconds.
 ```
 

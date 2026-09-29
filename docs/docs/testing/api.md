@@ -45,7 +45,7 @@ servers:
   - server: api
     type: api
     location: "https://api.example.com/orders"
-    delimiter: none # new_line, array, or none (default)
+    delimiter: array # new_line, array, or none (default)
 ```
 
 ## 4. Test the actual data
@@ -56,15 +56,15 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: production (type=api, format=json, location=https://api.example.com/orders)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 1.2 seconds.
+Server: api (type=api, location=https://api.example.com/orders)
+╭────────┬───────────────────────────────────────────┬─────────────┬─────────────────────────────╮
+│ Result │ Check                                     │ Field       │ Details                     │
+├────────┼───────────────────────────────────────────┼─────────────┼─────────────────────────────┤
+│ passed │ Check that JSON has valid schema          │             │ All JSON entries are valid. │
+│ passed │ Check that field 'customer_id' is present │ customer_id │                             │
+│  ...   │                                           │             │                             │
+╰────────┴───────────────────────────────────────────┴─────────────┴─────────────────────────────╯
+🟢 Data contract is valid. Run 6 checks. Took 1.2 seconds.
 ```
 
 ## 5. Let it catch a violation

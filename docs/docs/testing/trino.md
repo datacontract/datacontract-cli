@@ -26,7 +26,7 @@ DATACONTRACT_TRINO_USERNAME=trino
 DATACONTRACT_TRINO_PASSWORD=mysecretpassword
 ```
 
-The default is `basic` auth; JWT and OAuth2 are also supported — see the [Trino Reference](../reference/trino.md).
+The default is `basic` auth, which connects over HTTPS whenever a password is set, so the server must serve TLS. JWT and OAuth2 are also supported — see the [Trino Reference](../reference/trino.md).
 
 ## 3. Create a contract from your tables
 
@@ -35,6 +35,7 @@ Import the table metadata directly from the catalog. This also generates a ready
 ```bash
 datacontract import trino \
   --source localhost \
+  --port 8443 \
   --catalog my_catalog \
   --schema my_schema \
   --table orders \
@@ -53,14 +54,15 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: trino (type=trino, host=localhost, port=8080, catalog=my_catalog, schema=my_schema)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+Server: trino (type=trino, host=localhost, port=8443, schema=my_schema, catalog=my_catalog)
+╭────────┬─────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                               │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                     │          │         │
+│ passed │ Check that field 'order_id' is present              │ order_id │         │
+│ passed │ Check that field order_id has physical type varchar │ order_id │         │
+│  ...   │                                                     │          │         │
+╰────────┴─────────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Run 24 checks. Took 1.9 seconds.
 ```
 

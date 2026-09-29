@@ -90,9 +90,9 @@ schema:
 ```
 
 Let's assume that a minimal model properties file already exists. This is what it looks like after running
-`datacontract dbt sync orders-v1.odcs.yaml` (highlighted lines got added):
+`datacontract dbt sync orders-v1.odcs.yaml`:
 
-```yaml title="models/orders.yml" {5-8,12-35,39-52}
+```yaml title="models/orders.yml"
 version: 2
 models:
   - name: orders

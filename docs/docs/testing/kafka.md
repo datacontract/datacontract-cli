@@ -64,13 +64,14 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=kafka, format=json, host=abc-12345.eu-central-1.aws.confluent.cloud:9092)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
+╭────────┬─────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                           │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                 │          │         │
+│ passed │ Check that field 'order_id' is present          │ order_id │         │
+│ passed │ Check that field order_id has no missing values │ order_id │         │
+│  ...   │                                                 │          │         │
+╰────────┴─────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Run 24 checks. Took 8.4 seconds.
 ```
 

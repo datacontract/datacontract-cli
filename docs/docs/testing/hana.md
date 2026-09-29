@@ -87,14 +87,15 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=hana, host=..., port=443, schema=SALES)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field ORDER_ID is present            │ ORDERS.ORDER_ID │         │
-│ passed │ Check that field ORDER_ID has no missing values │ ORDERS.ORDER_ID │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 Data contract is valid. Run 12 checks. Took 1.4 seconds.
+╭────────┬─────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                       │ Field    │ Details │
+├────────┼─────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                             │          │         │
+│ passed │ Check that field ORDER_ID is present        │ ORDER_ID │         │
+│ passed │ Check that field ORDER_ID has type NVARCHAR │ ORDER_ID │         │
+│  ...   │                                             │          │         │
+╰────────┴─────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 7 checks. Took 1.4 seconds.
 ```
 
 The engine reads the declared types from `SYS.TABLE_COLUMNS` and `SYS.VIEW_COLUMNS`, and runs every
