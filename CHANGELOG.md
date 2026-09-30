@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
+
+### Changed
+- `datacontract export pydantic-model`: optional fields default to `None` (#1679)
+
 ### Fixed
 - `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1677 @dmaresma)
 - `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662)
