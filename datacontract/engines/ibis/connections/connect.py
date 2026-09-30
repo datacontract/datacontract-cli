@@ -486,8 +486,7 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     for name in unknown_snowflake_env_names():
         run.log_warn(
             f"{name} is not a supported Snowflake option and is ignored. Arbitrary "
-            f"DATACONTRACT_SNOWFLAKE_* variables are no longer forwarded to the connector; "
-            f"use a connections.toml for parameters the CLI does not support directly."
+            f"DATACONTRACT_SNOWFLAKE_* variables are no longer forwarded to the connector."
         )
 
     kwargs = {}

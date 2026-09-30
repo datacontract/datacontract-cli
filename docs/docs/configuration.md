@@ -407,5 +407,5 @@ So a committed team config file can hold defaults, CI can override single values
 
 ## Notes for specific sources
 
-- **Snowflake**: only the documented `DATACONTRACT_SNOWFLAKE_*` options are passed to the connector. Unknown names are ignored with a warning; use a [connections.toml](./testing/snowflake.md) for connector parameters the CLI does not support directly.
+- **Snowflake**: only the documented `DATACONTRACT_SNOWFLAKE_*` options are passed to the connector. Unknown names are ignored with a warning. `datacontract test` does not read a `connections.toml`; only `datacontract import snowflake` does (see the [Snowflake Reference](./reference/snowflake.md)).
 - **AWS sources (S3, Athena, Redshift IAM, Glue)**: when no `DATACONTRACT_S3_*` options are set, boto3's own credential chain applies (`aws sso login`, `AWS_PROFILE`, instance roles, GitHub OIDC). The same credential set is used to read data contracts from `s3://` locations.
