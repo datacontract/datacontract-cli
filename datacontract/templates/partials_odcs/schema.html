@@ -35,12 +35,11 @@
           <thead class="bg-gray-50 print:table-header-group">
             <tr class="print:break-inside-avoid-page">
               <th scope="colgroup" colspan="3" class="py-2 pl-4 pr-3 text-left font-semibold text-gray-900 sm:pl-6">
-                {% if schema_business_name and schema_business_name != schema_name %}
-                  <span>{{ schema_business_name }}</span>
-                {% endif %}
-
-                <a href="#{{ schema_name }}" class="font-mono font-medium {% if schema_business_name and schema_business_name != schema_name %}ml-1{% endif %}">
-                  {{ schema_name }}
+                <a href="#{{ schema_name }}">
+                  {% if schema_business_name and schema_business_name != schema_name %}
+                    <span>{{ schema_business_name }}</span>
+                  {% endif %}
+                  <span class="font-mono font-medium {% if schema_business_name and schema_business_name != schema_name %}ml-1{% endif %}">{{ schema_name }}</span>
                 </a>
 
                 {% if schema_physical_name %}
