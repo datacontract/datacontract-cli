@@ -22,7 +22,7 @@ erDiagram
         order_id🔑🔒 string
         order_timestamp timestamp
         customer_id string
-        order_total number
+        order_total integer
         status string
 }
         "**line_items**" {

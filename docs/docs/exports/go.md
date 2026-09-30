@@ -24,7 +24,7 @@ type Orders struct {
     OrderId string `json:"order_id" avro:"order_id"`  // Unique identifier of the order.
     OrderTimestamp time.Time `json:"order_timestamp" avro:"order_timestamp"`  // Timestamp when the order was placed.
     CustomerId string `json:"customer_id" avro:"customer_id"`  // Reference to the customer who placed the order.
-    OrderTotal float64 `json:"order_total" avro:"order_total"`  // Total amount of the order in cents.
+    OrderTotal int `json:"order_total" avro:"order_total"`  // Total amount of the order in cents.
     Status string `json:"status" avro:"status"`  // Current fulfilment status of the order.
 }
 

@@ -51,8 +51,8 @@ schema:
         required: true
         description: Reference to the customer who placed the order.
       - name: order_total
-        logicalType: number
-        physicalType: NUMBER
+        logicalType: integer
+        physicalType: INTEGER
         required: true
         description: Total amount of the order in cents.
         quality:

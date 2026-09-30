@@ -49,7 +49,7 @@ Not suitable for real-time fraud detection; data is loaded in hourly batches.
 |  order_id | string | *Unique identifier of the order.*<br />• `primaryKey`<br />• `required`<br />• `unique`<br />• **examples:** ['ORD-1001', 'ORD-1002'] |
 |  order_timestamp | timestamp | *Timestamp when the order was placed.*<br />• `required` |
 |  customer_id | string | *Reference to the customer who placed the order.*<br />• `required` |
-|  order_total | number | *Total amount of the order in cents.*<br />• `required`<br />• **quality:** [{'description': 'Order total is never negative.', 'type': 'sql', 'mustBe': 0, 'query': 'SELECT COUNT(*) FROM orders WHERE order_total < 0'}] |
+|  order_total | integer | *Total amount of the order in cents.*<br />• `required`<br />• **quality:** [{'description': 'Order total is never negative.', 'type': 'sql', 'mustBe': 0, 'query': 'SELECT COUNT(*) FROM orders WHERE order_total < 0'}] |
 |  status | string | *Current fulfilment status of the order.*<br />• `required`<br />• **examples:** ['pending', 'shipped', 'delivered'] |
 <!-- … -->
 ```

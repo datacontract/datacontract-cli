@@ -30,7 +30,7 @@ message Orders {
   // Reference to the customer who placed the order.
   string customer_id = 3;
   // Total amount of the order in cents.
-  double order_total = 4;
+  int32 order_total = 4;
   // Current fulfilment status of the order.
   string status = 5;
 }

@@ -28,7 +28,7 @@ class Orders(pydantic.BaseModel):
     'Timestamp when the order was placed.'
     customer_id: str
     'Reference to the customer who placed the order.'
-    order_total: float
+    order_total: int
     'Total amount of the order in cents.'
     status: str
     'Current fulfilment status of the order.'
@@ -60,7 +60,7 @@ Fields that are not `required` are typed `typing.Optional[...]` and default to `
 
 ```python
 label: typing.Optional[str] = pydantic.Field(default=None, pattern='^[^,]+(,\\s*[^,]+)*$')
-order_total: float = pydantic.Field(ge=0)
+order_total: int = pydantic.Field(ge=0)
 ```
 
 All options: **[`datacontract export pydantic-model`](../commands/export/pydantic-model.md)**.

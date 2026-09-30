@@ -159,18 +159,18 @@ Running this against the [example `orders` contract](https://github.com/datacont
     },
     {
       "type": "expect_column_values_to_be_of_type",
-      "description": "order_total must be of type NUMBER",
+      "description": "order_total must be of type INTEGER",
       "kwargs": {
         "column": "order_total",
-        "type_": "NUMBER"
+        "type_": "INTEGER"
       },
       "meta": {
-        "expectation_id": "urn:datacontract:checkout:orders.order_total.order_total_must_be_of_type_number",
+        "expectation_id": "urn:datacontract:checkout:orders.order_total.order_total_must_be_of_type_integer",
         "data_contract_rule_location": {
           "origin": "schema_inferred",
           "scope": "column"
         },
-        "name": "order_total must be of type NUMBER",
+        "name": "order_total must be of type INTEGER",
         "dimension": "conformity"
       }
     },

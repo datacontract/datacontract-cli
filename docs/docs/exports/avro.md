@@ -43,7 +43,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
     {
       "name": "order_total",
       "doc": "Total amount of the order in cents.",
-      "type": "bytes"
+      "type": "int"
     },
     {
       "name": "status",
