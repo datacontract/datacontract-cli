@@ -60,7 +60,7 @@ Fields that are not `required` are typed `typing.Optional[...]` and default to `
 
 ```python
 label: typing.Optional[str] = pydantic.Field(default=None, pattern='^[^,]+(,\\s*[^,]+)*$')
-order_total: int = pydantic.Field(ge=0)
+order_total: float = pydantic.Field(ge=0)
 ```
 
 All options: **[`datacontract export pydantic-model`](../commands/export/pydantic-model.md)**.

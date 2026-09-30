@@ -22,8 +22,6 @@ from datacontract.data_contract import DataContract
 from datacontract.lint import resolve
 
 EXAMPLES = sorted((Path(__file__).resolve().parents[1] / "examples").rglob("*.odcs.yaml"))
-
-# The logicalTypeOptions the exporter writes as `pydantic.Field(...)` keywords and the importer reads back.
 CONSTRAINTS = {"pattern", "minLength", "maxLength", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"}
 
 

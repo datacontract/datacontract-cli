@@ -73,18 +73,19 @@ def product_of(nodes: list[typing.Any]) -> ast.Subscript:
 
 type_annotation_type = typing.Union[ast.Name, ast.Attribute, ast.Constant, ast.Subscript]
 
-# ODCS logicalTypeOptions -> pydantic.Field keyword, in the order they are written out.
-_STRING_CONSTRAINTS = (("pattern", "pattern"), ("minLength", "min_length"), ("maxLength", "max_length"))
-_RANGE_CONSTRAINTS = (("minimum", "ge"), ("maximum", "le"), ("exclusiveMinimum", "gt"), ("exclusiveMaximum", "lt"))
-
 
 def field_value(prop: SchemaProperty) -> ast.expr | None:
-    """The right-hand side of a field: `pydantic.Field(...)` for its constraints, `None` when optional, else nothing."""
+    """None means a bare annotation with no assignment."""
     match prop.logicalType:
         case "string":
-            constraints = _STRING_CONSTRAINTS
+            constraints = (("pattern", "pattern"), ("minLength", "min_length"), ("maxLength", "max_length"))
         case "integer" | "number" | "date" | "timestamp" | "time":
-            constraints = _RANGE_CONSTRAINTS
+            constraints = (
+                ("minimum", "ge"),
+                ("maximum", "le"),
+                ("exclusiveMinimum", "gt"),
+                ("exclusiveMaximum", "lt"),
+            )
         case _:
             constraints = ()
     options = prop.logicalTypeOptions or {}

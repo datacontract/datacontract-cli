@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `datacontract export pydantic-model`: `logicalTypeOptions` (pattern, min/max length, min/max, exclusive bounds) become `pydantic.Field` constraints (#1679)
+- `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
 
 ### Changed
 - `datacontract export pydantic-model`: optional fields default to `None` (#1679)
