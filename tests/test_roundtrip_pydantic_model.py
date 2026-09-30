@@ -7,9 +7,10 @@ corpus: they are produced by ten different importers, so they cover far more
 column shapes than a hand-written fixture would.
 
 What a Python annotation cannot carry does not survive, and is not asserted here:
-`physicalType` is database specific, and constraints, quality rules and examples
-have no place in a bare annotation. Name, logical type, requiredness, description
-and nesting do survive, and that is what a round trip has to preserve.
+`physicalType` is database specific, and quality rules and examples have no place
+in a bare annotation. Name, logical type, requiredness, description, nesting and
+the constraints a `pydantic.Field` can express do survive, and that is what a
+round trip has to preserve.
 """
 
 import ast
@@ -22,6 +23,9 @@ from datacontract.lint import resolve
 
 EXAMPLES = sorted((Path(__file__).resolve().parents[1] / "examples").rglob("*.odcs.yaml"))
 
+# The logicalTypeOptions the exporter writes as `pydantic.Field(...)` keywords and the importer reads back.
+CONSTRAINTS = {"pattern", "minLength", "maxLength", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"}
+
 
 def shape(properties):
     """The part of a property the Pydantic representation is able to carry."""
@@ -31,6 +35,7 @@ def shape(properties):
             prop.logicalType,
             bool(prop.required),
             prop.description,
+            {key: value for key, value in (prop.logicalTypeOptions or {}).items() if key in CONSTRAINTS},
             shape(prop.properties or []),
             shape([prop.items] if prop.items else []),
         )
