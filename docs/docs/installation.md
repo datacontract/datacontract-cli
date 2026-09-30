@@ -24,7 +24,7 @@ datacontract --version
 If you have [uv](https://docs.astral.sh/uv/) installed, you can run the CLI directly without installing it:
 
 ```bash
-uv run --with 'datacontract-cli[all]' datacontract --version
+uvx --from 'datacontract-cli[all]' datacontract --version
 ```
 
 ## pip

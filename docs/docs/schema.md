@@ -11,7 +11,7 @@ The `schema` block describes the structure of the data: the schemas (tables, vie
 This page covers only those attributes. Everything else in the `schema` block is documentation, carried into exports but never asserted against the data.
 
 ```bash
-datacontract test --checks schema datacontract.yaml
+datacontract test --checks properties datacontract.yaml
 ```
 
 ## What generates a check

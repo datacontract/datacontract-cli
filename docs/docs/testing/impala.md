@@ -44,7 +44,7 @@ servers:
     type: impala
     host: my-impala-host
     port: 21050 # 443 for a Cloudera Virtual Warehouse
-    database: my_database # optional default database
+    database: my_database
 ```
 
 ## 4. Test the actual data

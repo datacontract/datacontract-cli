@@ -192,7 +192,7 @@ The page for each source above lists its `servers` fields and the environment va
 
 `--server`, `--schema-name`, `--checks`, `--dimension`, `--quality-id`, and `--tag` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
 
-For CI/CD pipelines, use the [`ci`](../commands/ci.md) command, which wraps `test` with annotations, summaries, and exit-code control.
+For CI/CD pipelines, use the [`ci`](../commands/ci.md) command. It runs the same checks as `test`, takes several contracts at once, and adds annotations, summaries, and exit-code control.
 
 ## Testing only a subset of rows
 

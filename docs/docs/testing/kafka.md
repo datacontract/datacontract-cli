@@ -44,14 +44,13 @@ If you have an Avro schema for the topic (e.g. from a schema registry), import i
 datacontract import avro --source orders.avsc --output datacontract.yaml
 ```
 
-Then add a `servers` entry pointing at your broker and topic:
+The topic read is the schema's `physicalName` (or its `name`, if unset); set it to your topic name. Then add a `servers` entry pointing at your broker:
 
 ```yaml
 servers:
   - server: production
     type: kafka
     host: abc-12345.eu-central-1.aws.confluent.cloud:9092
-    topic: my-topic-name
     format: json # or avro
 ```
 
@@ -86,6 +85,6 @@ All authentication options (SASL mechanisms) and the Avro data type mappings: **
 ## Troubleshooting
 
 - **Authentication failures against Confluent Cloud** — use an API key/secret as `SASL_USERNAME`/`SASL_PASSWORD` with the default `PLAIN` mechanism.
-- **The test reads no messages** — the check consumes the topic from the beginning; verify the topic name in the `servers` block and that the topic contains messages in the declared `format`.
+- **The test reads no messages** — the check consumes the topic from the beginning; verify the topic name in the schema's `physicalName` and that the topic contains messages in the declared `format`.
 - **The test runs out of memory on a large topic** — every message is held in memory. Set `DATACONTRACT_KAFKA_MAX_MESSAGES` to check a sample of the topic instead; the run then reports that it read only part of it.
 - **`Cannot decode the Avro messages of the topic`** — the schema used for decoding is not the one the messages were written with. For a topic produced through the Confluent Schema Registry, set `DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL`; otherwise re-import the contract from the topic's Avro schema with `datacontract import avro`.

@@ -12,10 +12,10 @@ There are two proven ways to introduce data contracts with the Data Contract CLI
 
 Create a data contract based on the **actual data**. This is the fastest way to get started and to get feedback from data consumers.
 
-1. Use an existing physical schema (e.g. SQL DDL) as a starting point to define your logical data model in the contract. Right after the import, double-check that the actual data meets the imported model:
+1. Use an existing physical schema (e.g. SQL DDL) as a starting point to define your logical data model in the contract. Right after the import, fill in the connection details in the generated `servers` block and double-check that the actual data meets the imported model:
 
    ```bash
-   datacontract import sql --source ddl.sql
+   datacontract import sql --source ddl.sql --dialect postgres --output datacontract.yaml
    datacontract test
    ```
 

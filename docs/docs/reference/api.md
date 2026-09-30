@@ -13,10 +13,10 @@ Authentication options and data type handling for [HTTP API connections](../test
 
 ```yaml
 servers:
-  - server: production
+  - server: api
     type: api
     location: "https://api.example.com/orders"
-    format: json
+    delimiter: array # new_line, array, or none (default)
 ```
 
 ## Authentication
@@ -29,4 +29,4 @@ The `location` (URL) and `delimiter` (`new_line`, `array`, or `none`) come from 
 
 ## Data types
 
-The response is downloaded and tested like a local JSON file: records are read as the contract's types and validated against a JSON Schema derived from the contract's `logicalType`s. The nine ODCS logical types map to JSON Schema types (`string`, `integer`, `number`, `boolean`, `object`, `array`; `date`/`timestamp`/`time` become `string` with `format: date`/`date-time`/`time`); non-required fields also accept `null`. `physicalType` is not checked. Value constraints come from `logicalTypeOptions` (`pattern`, `minimum`, `enum`, …).
+The response is downloaded and tested like a local JSON file: records are read as the contract's types and validated against a JSON Schema derived from the contract's `logicalType`s. The ODCS logical types map to JSON Schema types (`string`, `integer`, `number`, `boolean`, `object`, `array`; `date`/`timestamp`/`time` become `string` with `format: date`/`date-time`/`time`, `map` an `object`, and `vector` an `array` of numbers); non-required fields also accept `null`. `physicalType` is not checked. Value constraints come from `logicalTypeOptions` (`pattern`, `minimum`, `enum`, …).
