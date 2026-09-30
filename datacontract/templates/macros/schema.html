@@ -1,7 +1,8 @@
 {% import 'macros/context.html' as context_macros %}
-{% macro render_nested_properties(properties, schema_name, indent=0) -%}
+{% macro render_nested_properties(properties, parent_anchor, indent=0) -%}
   {% for property in properties or [] %}
     {% set property_name = property.name if property.name is defined and property.name else "items" %}
+    {% set property_anchor = parent_anchor ~ "." ~ property_name %}
     {% set property_business_name = property.businessName if property.businessName is defined and property.businessName else none %}
     {% set property_physical_name = property.physicalName if property.physicalName is defined and property.physicalName else none %}
     {% set property_description = property.description if property.description is defined and property.description else none %}
@@ -61,7 +62,7 @@
       {% set transform_tooltip = transform_tooltip ~ ("\n" if transform_tooltip else "") ~ "Transformation Description: " ~ property.transformDescription %}
     {% endif %}
 
-    <tr class="print:break-inside-avoid-page align-top">
+    <tr class="print:break-inside-avoid-page align-top" id="{{ property_anchor }}">
       <td class="py-2 pl-4 pr-2 text-sm font-medium text-gray-900 sm:pl-6">
         <div class="flex items-start">
           <span style="padding-left: {{ left_pad }}rem;">
@@ -70,10 +71,12 @@
             {% endif %}
           </span>
           <div>
-            {% if property_business_name %}
-              <span>{{ property_business_name }}</span><br>
-            {% endif %}
-            <span class="font-mono">{{ property_name }}</span>
+            <a href="#{{ property_anchor }}">
+              {% if property_business_name %}
+                <span>{{ property_business_name }}</span><br>
+              {% endif %}
+              <span class="font-mono">{{ property_name }}</span>
+            </a>
             {% if property_physical_name %}
               <span class="ml-1 text-gray-400 cursor-help" title="{{ property_physical_name }}">ⓘ</span>
             {% endif %}
@@ -250,14 +253,14 @@
     </tr>
 
     {% if property.properties is defined and property.properties %}
-      {{ render_nested_properties(property.properties, schema_name, indent + 1) }}
+      {{ render_nested_properties(property.properties, property_anchor, indent + 1) }}
     {% endif %}
 
     {% if map_value is not none and ((map_value.properties is defined and map_value.properties) or (map_value.items is defined and map_value.items) or (map_value.map is defined and map_value.map)) %}
-      {{ render_nested_properties([map_value], schema_name, indent + 1) }}
+      {{ render_nested_properties([map_value], property_anchor, indent + 1) }}
     {% endif %}
     {% if property.items is defined and property.items %}
-      {{ render_nested_properties([property.items], schema_name, indent + 1) }}
+      {{ render_nested_properties([property.items], property_anchor, indent + 1) }}
     {% endif %}
   {% endfor %}
 {%- endmacro %}

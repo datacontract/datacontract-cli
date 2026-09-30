@@ -186,6 +186,8 @@ schema:
     assert ">extendedDescriptionEnglish<" in html
     assert ">barcodeSymbologyMulti<" in html
     assert ">symbologyCode<" in html
+    assert 'id="products.pharmaceuticalContent.items.barcodeSymbologyMulti.items.symbologyCode"' in html
+    assert 'href="#products.pharmaceuticalContent.items.barcodeSymbologyMulti.items.symbologyCode"' in html
 
 
 def test_html_export_renders_schema_anchors(tmp_path: Path):
