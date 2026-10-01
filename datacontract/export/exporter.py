@@ -80,6 +80,7 @@ class ExportFormat(str, Enum):
     custom = "custom"
     excel = "excel"
     dqx = "dqx"
+    sifflet = "sifflet"
 
     @classmethod
     def get_supported_formats(cls):

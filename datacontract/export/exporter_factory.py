@@ -198,6 +198,12 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
+    name=ExportFormat.sifflet,
+    module_path="datacontract.export.sifflet_exporter",
+    class_name="SiffletExporter",
+)
+
+exporter_factory.register_lazy_exporter(
     name=ExportFormat.iceberg, module_path="datacontract.export.iceberg_exporter", class_name="IcebergExporter"
 )
 

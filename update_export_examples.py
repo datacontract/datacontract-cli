@@ -54,6 +54,7 @@ EXPORTS = {
         "json",
         None,
     ),
+    "sifflet": ("datacontract export sifflet orders.odcs.yaml --output monitors.yaml", "yaml", 40),
     "sodacl": ("datacontract export sodacl orders.odcs.yaml --output sodacl.yaml", "yaml", 32),
     "great-expectations": (
         "datacontract export great-expectations orders.odcs.yaml --schema-name orders",

@@ -1,0 +1,65 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-contract
+version: 1.2.0
+status: active
+servers:
+  - server: production
+    type: snowflake
+    account: xyz12345.eu-central-1
+    database: SALES
+    schema: PUBLIC
+customProperties:
+  - property: sifflet.notifications
+    value:
+      - kind: Slack
+        name: data-orders-alerts
+  - property: sifflet.schedule
+    value: "@daily"
+schema:
+  - name: orders
+    physicalName: ORDERS
+    quality:
+      - type: library
+        metric: rowCount
+        mustBeGreaterThan: 1000
+        severity: error
+        scheduler: cron
+        schedule: "0 6 * * *"
+      - type: library
+        metric: rowCount
+        mustBeLessThan: 5000
+        severity: error
+        scheduler: cron
+        schedule: "0 6 * * *"
+      - type: sql
+        name: Max order age
+        description: Latest order must be less than one hour old
+        query: SELECT DATEDIFF('second', MAX(order_timestamp), CURRENT_TIMESTAMP()) FROM ${object}
+        mustBeLessThan: 3600
+        severity: warning
+      - type: sql
+        query: SELECT COUNT(*) FROM ${object} WHERE amount < 0
+        mustBe: 0
+    properties:
+      - name: order_id
+        logicalType: string
+        primaryKey: true
+      - name: customer_email
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          format: email
+      - name: status
+        logicalType: string
+        quality:
+          - type: library
+            metric: invalidValues
+            name: allowed statuses
+            arguments:
+              validValues: [pending, shipped, delivered]
+            mustBe: 0
+            severity: info
+            customProperties:
+              - property: sifflet.severity
+                value: Low

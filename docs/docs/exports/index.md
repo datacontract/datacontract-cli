@@ -121,6 +121,10 @@ Download a file and run the commands below against it to reproduce the output.
     <img src="/img/icons/rdf.svg" alt="" />
     <span><span className="doc-card-title">rdf</span><span className="doc-card-desc">RDF representation.</span></span>
   </a>
+  <a className="doc-card" href="/exports/sifflet">
+    <img src="/img/icons/sifflet.svg" alt="" />
+    <span><span className="doc-card-title">sifflet</span><span className="doc-card-desc">Sifflet monitors as code.</span></span>
+  </a>
   <a className="doc-card" href="/exports/sodacl">
     <img src="/img/icons/soda.svg" alt="" />
     <span><span className="doc-card-title">sodacl</span><span className="doc-card-desc">SodaCL checks.</span></span>
