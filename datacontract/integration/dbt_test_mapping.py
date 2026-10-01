@@ -97,9 +97,13 @@ def field_to_data_tests(
             tests.append({"dbt_expectations.expect_column_values_to_be_between": {"arguments": range_test}})
         else:
             if minimum is not None:
-                tests.append({"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": minimum}}})
+                tests.append(
+                    {"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": minimum}}}
+                )
             if maximum is not None:
-                tests.append({"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"max_value": maximum}}})
+                tests.append(
+                    {"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"max_value": maximum}}}
+                )
             if exclusive_minimum is not None:
                 tests.append(
                     {

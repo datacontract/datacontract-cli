@@ -727,7 +727,11 @@ def test_normalize_severity():
 
 def test_attach_config_dict_test():
     result = _attach_test_config(
-        {"accepted_values": {"arguments": {"values": [1, 2]}}}, "error", check_type="field_enum", model="orders", field="status"
+        {"accepted_values": {"arguments": {"values": [1, 2]}}},
+        "error",
+        check_type="field_enum",
+        model="orders",
+        field="status",
     )
     assert result == {
         "accepted_values": {
@@ -764,7 +768,11 @@ def test_attach_config_dict_test():
             "Check that field order_id references ref('customers').id",
         ),
         (
-            {"dbt_utils.unique_combination_of_columns": {"arguments": {"combination_of_columns": ["order_id", "order_status"]}}},
+            {
+                "dbt_utils.unique_combination_of_columns": {
+                    "arguments": {"combination_of_columns": ["order_id", "order_status"]}
+                }
+            },
             "Check that model orders has a unique combination of columns order_id, order_status",
         ),
         (

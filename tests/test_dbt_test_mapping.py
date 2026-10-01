@@ -98,7 +98,9 @@ def test_length_inclusive_range():
         _prop(name="x", logicalTypeOptions={"minLength": 3, "maxLength": 10}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_value_lengths_to_be_between": {"arguments": {"min_value": 3, "max_value": 10}}} in tests
+    assert {
+        "dbt_expectations.expect_column_value_lengths_to_be_between": {"arguments": {"min_value": 3, "max_value": 10}}
+    } in tests
 
 
 def test_regex():
@@ -114,7 +116,9 @@ def test_inclusive_range():
         _prop(name="x", logicalTypeOptions={"minimum": 0, "maximum": 100}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": 0, "max_value": 100}}} in tests
+    assert {
+        "dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": 0, "max_value": 100}}
+    } in tests
 
 
 def test_exclusive_range():
@@ -139,7 +143,9 @@ def test_mixed_inclusive_and_exclusive_range():
         supports_constraints=False,
     )
     assert {"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": 0}}} in tests
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"max_value": 100, "strictly": True}}} in tests
+    assert {
+        "dbt_expectations.expect_column_values_to_be_between": {"arguments": {"max_value": 100, "strictly": True}}
+    } in tests
 
 
 def test_relationships_uses_source_name():
