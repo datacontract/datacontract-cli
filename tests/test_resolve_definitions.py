@@ -382,6 +382,35 @@ def test_shared_definition_is_fetched_once(env):
 
 
 @responses.activate
+def test_cached_definition_is_refetched_after_it_expires(env, monkeypatch):
+    responses.add(responses.GET, f"{_HOST}/shared", body=_definition_body(logicalType="string"), status=200)
+    now = 1000.0
+    monkeypatch.setattr("datacontract.lint.resolve.time.monotonic", lambda: now)
+
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/shared", name="a")))
+    now += 61
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/shared", name="b")))
+
+    assert len(responses.calls) == 2
+
+
+@responses.activate
+def test_expired_definitions_are_dropped_even_if_never_requested_again(env, monkeypatch):
+    from datacontract.lint.resolve import _definition_cache
+
+    responses.add(responses.GET, f"{_HOST}/first", body=_definition_body(logicalType="string"), status=200)
+    responses.add(responses.GET, f"{_HOST}/second", body=_definition_body(logicalType="string"), status=200)
+    now = 1000.0
+    monkeypatch.setattr("datacontract.lint.resolve.time.monotonic", lambda: now)
+
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/first", name="a")))
+    now += 61
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/second", name="b")))
+
+    assert [key.split()[0] for key in _definition_cache._entries] == [f"{_HOST}/second"]
+
+
+@responses.activate
 def test_failed_resolution_is_not_cached(env):
     """A transient failure must not poison later runs: the second attempt
     refetches and succeeds."""
@@ -511,6 +540,17 @@ def test_semantics_iri_without_api_key_raises(env, monkeypatch):
     # The host mismatch is the likely root cause, so the fix is named explicitly.
     assert "ENTROPY_DATA_HOST=http://www.entropy-data.com" in msg
     assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_semantics_iri_without_host_does_not_suggest_a_host(env, monkeypatch):
+    monkeypatch.delenv("ENTROPY_DATA_API_KEY", raising=False)
+
+    with pytest.raises(DataContractException) as exc:
+        inline_definitions_into_data_contract(_contract(_semantics_prop("urn:acme:customer-id")))
+
+    assert "set ENTROPY_DATA_API_KEY" in str(exc.value)
+    assert "ENTROPY_DATA_HOST" not in str(exc.value)
 
 
 @responses.activate

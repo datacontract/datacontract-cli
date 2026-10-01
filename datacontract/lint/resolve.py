@@ -1,6 +1,7 @@
 import importlib.resources as resources
 import logging
 import re
+import time
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlparse
 
@@ -221,11 +222,40 @@ _DEFINITION_FILE_SUFFIXES = frozenset({".yaml", ".yml", ".json"})
 # `properties`/`items` are the contract author's structure.
 _NON_MERGEABLE_FIELDS = frozenset({"id", "name", "authoritativeDefinitions", "properties", "items"})
 
-# Per-process success-only caches: transient failures aren't cached so they
-# can retry on the next run.
-_definition_cache: dict[str, SchemaProperty] = {}
-_local_contract_cache: dict[str, OpenDataContractStandard] = {}
-_local_definition_cache: dict[str, SchemaProperty] = {}
+
+class _ExpiringCache:
+    """Success-only cache whose entries expire"""
+
+    def __init__(self):
+        self._entries: dict[str, tuple[float, object]] = {}
+
+    @staticmethod
+    def _expired(entry: tuple[float, object]) -> bool:
+        return time.monotonic() - entry[0] > 60
+
+    def get(self, key: str):
+        entry = self._entries.get(key)
+        if entry is None:
+            return None
+        if self._expired(entry):
+            self._entries.pop(key, None)
+            return None
+        return entry[1]
+
+    def put(self, key: str, value) -> None:
+        for stale_key, entry in list(self._entries.items()):
+            if self._expired(entry):
+                self._entries.pop(stale_key, None)
+        self._entries[key] = (time.monotonic(), value)
+
+    def clear(self) -> None:
+        self._entries.clear()
+
+
+# Transient failures aren't cached so they can retry on the next run.
+_definition_cache = _ExpiringCache()
+_local_contract_cache = _ExpiringCache()
+_local_definition_cache = _ExpiringCache()
 
 
 def clear_definition_cache() -> None:
@@ -341,8 +371,9 @@ def _resolve_local_definition(
 
     target_path = _resolve_local_path(url, path_part, base_location)
     cache_key = f"{target_path}#{fragment}" if fragment else str(target_path)
-    if cache_key in _local_definition_cache:
-        return _local_definition_cache[cache_key]
+    cached = _local_definition_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     if fragment:
         contract = _load_local_contract(url, target_path, visited, config)
@@ -350,7 +381,7 @@ def _resolve_local_definition(
     else:
         definition = _load_local_property(url, target_path, visited, config)
 
-    _local_definition_cache[cache_key] = definition
+    _local_definition_cache.put(cache_key, definition)
     return definition
 
 
@@ -378,8 +409,9 @@ def _load_local_contract(
     chain (technical field -> business attribute -> semantic concept) resolves.
     """
     key = str(contract_path)
-    if key in _local_contract_cache:
-        return _local_contract_cache[key]
+    cached = _local_contract_cache.get(key)
+    if cached is not None:
+        return cached
     if key in visited:
         raise _local_resolution_error(url, f"'{key}' is already being resolved, so the references form a cycle")
     if not contract_path.is_file():
@@ -391,7 +423,7 @@ def _load_local_contract(
         raise _local_resolution_error(url, f"'{key}' is not a valid data contract: {e.reason}", original_exception=e)
 
     inline_definitions_into_data_contract(contract, config, base_location=key, visited=visited | {key})
-    _local_contract_cache[key] = contract
+    _local_contract_cache.put(key, contract)
     return contract
 
 
@@ -516,12 +548,13 @@ def _resolve_definition(
     (anonymously, so the API key never leaks). The `x-api-key` is only
     ever sent to the configured host.
 
-    Cached per URL after a successful fetch; failures aren't cached.
+    Cached per target URL and API key after a successful fetch; failures aren't cached.
     """
-    if url in _definition_cache:
-        return _definition_cache[url]
-
     target_url, headers, host_hint = _build_request(url, type_, config, configured_host_only)
+    cache_key = f"{target_url} {headers.get('x-api-key')}"
+    cached = _definition_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     try:
         # Not following redirects keeps the API key from travelling to another host.
@@ -548,7 +581,7 @@ def _resolve_definition(
             url, target_url, f"response body is not a valid ODCS property: {e}", original_exception=e
         )
 
-    _definition_cache[url] = definition
+    _definition_cache.put(cache_key, definition)
     return definition
 
 
@@ -573,10 +606,10 @@ def _build_request(
         API key (that endpoint is API-key only). Only these two types name
         concepts by IRI; everything else is an address.
     """
-    from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
+    from datacontract.integration.entropy_data import _get_host, is_platform_url
 
     # An untrusted caller may set the host per request (API header); definitions are
-    # then still resolved against the environment's host, or the guard would be the caller's.
+    # then still resolved against the platform as the environment sees it, or the guard would be the caller's.
     platform_config = None if configured_host_only else config
     configured_host = _get_host(platform_config)
     # urljoin keeps absolute URLs as-is and joins leading-slash paths onto
@@ -584,8 +617,12 @@ def _build_request(
     direct_url = urljoin(configured_host, url)
     headers = {"Accept": "application/vnd.entropydata.odcs+json"}
 
-    if _hosts_match(direct_url, configured_host):
-        api_key = _get_api_key_or_none(platform_config)
+    if configured_host_only:
+        on_entropy_data_host = is_platform_url(direct_url, None)
+    else:
+        on_entropy_data_host = _hosts_match(direct_url, configured_host)
+    if on_entropy_data_host:
+        api_key = _api_key_for(direct_url, config, configured_host_only)
         if api_key is not None:
             headers["x-api-key"] = api_key
         return direct_url, headers, None
@@ -593,25 +630,68 @@ def _build_request(
     if type_ not in ("semantics", "semantic"):
         if configured_host_only:
             raise _definition_resolution_error(
-                url, direct_url, f"only the configured Entropy Data host '{configured_host}' may be contacted"
+                url,
+                direct_url,
+                f"only the Entropy Data platform or the configured host '{configured_host}' may be contacted",
             )
         # Third-party REST URL: fetch anonymously, no IRI fallback.
         return direct_url, headers, None
 
     # Off-host semantics reference: IRI lookup against the configured host.
     host_hint = _host_mismatch_hint(url, configured_host)
-    api_key = _get_api_key_or_none(platform_config)
+    api_key = _api_key_for(configured_host, config, configured_host_only)
     if api_key is None:
+        from datacontract.integration.entropy_data import _get_api_key_or_none
+
+        missing_key = "set ENTROPY_DATA_API_KEY"
+        if configured_host_only and _get_api_key_or_none(config) is not None:
+            missing_key = (
+                f"the request's API key belongs to its entropy-data-host '{_get_host(config)}', "
+                f"so set ENTROPY_DATA_HOST to that host on the server running the API"
+            )
         raise _definition_resolution_error(
             url,
             f"{configured_host.rstrip('/')}/api/semantics",
-            "the reference looks like an IRI, so it is resolved through /api/semantics, "
-            "which requires an API key: set ENTROPY_DATA_API_KEY",
+            f"the reference looks like an IRI, so it is resolved through /api/semantics, "
+            f"which requires an API key: {missing_key}",
             hint=host_hint,
         )
     headers["x-api-key"] = api_key
     lookup_url = f"{configured_host.rstrip('/')}/api/semantics?iri={quote(url, safe='')}"
     return lookup_url, headers, host_hint
+
+
+def _api_key_for(target_url: str, config: "Config | None", configured_host_only: bool) -> str | None:
+    """The API key that may travel to `target_url`.
+
+    With configured_host_only, a key goes only to the host it belongs to: the server's own key to exactly the
+    environment's host, a key the request brought to the request's host, with the platform's domains as one host.
+    """
+    from datacontract.integration.entropy_data import (
+        _get_api_key_or_none,
+        _get_host,
+        _host_and_port,
+        is_entropy_data_domain,
+    )
+
+    if not configured_host_only:
+        return _get_api_key_or_none(config)
+
+    server_key = _get_api_key_or_none(None)
+    request_key = _get_api_key_or_none(config)
+    request_host = _get_host(config)
+    if (
+        request_key is not None
+        and request_key != server_key
+        and (
+            _host_and_port(target_url) == _host_and_port(request_host)
+            or (is_entropy_data_domain(target_url) and is_entropy_data_domain(request_host))
+        )
+    ):
+        return request_key
+    if server_key is not None and _host_and_port(target_url) == _host_and_port(_get_host(None)):
+        return server_key
+    return None
 
 
 def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProperty):
@@ -632,15 +712,18 @@ def _hosts_match(url: str, host: str) -> bool:
     return urlparse(url).netloc == urlparse(host).netloc
 
 
-def _host_mismatch_hint(url: str, configured_host: str) -> str:
+def _host_mismatch_hint(url: str, configured_host: str) -> str | None:
     """Actionable hint for the usual cause of a failed IRI lookup: the
     configured entropy-data host (default https://api.entropy-data.com) is not
     the deployment that serves this IRI. Names the exact ENTROPY_DATA_HOST value
     to set -- derived from the IRI's own host -- so the fix is copy-pasteable
     instead of leaving the user to guess that the host, not the API key, is wrong.
+    None when the IRI names no host, like a URN.
     """
     iri = urlparse(url)
-    suggested = f"{iri.scheme}://{iri.netloc}" if iri.scheme and iri.netloc else iri.netloc
+    if not iri.netloc:
+        return None
+    suggested = f"{iri.scheme}://{iri.netloc}" if iri.scheme else iri.netloc
     return (
         f"the IRI's host '{iri.netloc}' does not match the configured entropy-data host "
         f"'{urlparse(configured_host).netloc}'; if your contract is served from "
