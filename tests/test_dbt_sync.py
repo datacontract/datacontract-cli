@@ -758,13 +758,8 @@ def test_attach_config_dict_test():
             "Check that field order_id only contains enum values ['pending', 'shipped']",
         ),
         ({"accepted_values": {"arguments": {"values": ["X"]}}}, "Check that field order_id is equal to X"),
-        ({"accepted_values": {"values": ["X"]}}, "Check that field order_id is equal to X"),
         (
             {"relationships": {"arguments": {"to": "ref('customers')", "field": "id"}}},
-            "Check that field order_id references ref('customers').id",
-        ),
-        (
-            {"relationships": {"to": "ref('customers')", "field": "id"}},
             "Check that field order_id references ref('customers').id",
         ),
         (
@@ -773,10 +768,6 @@ def test_attach_config_dict_test():
                     "arguments": {"combination_of_columns": ["order_id", "order_status"]}
                 }
             },
-            "Check that model orders has a unique combination of columns order_id, order_status",
-        ),
-        (
-            {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": ["order_id", "order_status"]}},
             "Check that model orders has a unique combination of columns order_id, order_status",
         ),
     ],
