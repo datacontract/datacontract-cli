@@ -92,5 +92,5 @@ def resolve_aws_credentials(config: Optional[Config] = None) -> Optional[AwsCred
         access_key_id=frozen.access_key,
         secret_access_key=frozen.secret_key,
         session_token=frozen.token,
-        region=session.region_name,
+        region=config.get_s3_region() or session.region_name,
     )
