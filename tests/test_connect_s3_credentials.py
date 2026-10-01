@@ -66,11 +66,21 @@ def test_explicit_keys_take_precedence_over_the_session(env):
     assert "ASIA_SSO" not in sql
 
 
-def test_no_secret_is_created_when_nothing_resolves():
-    """Public buckets are read without credentials; a secret would sign the request."""
-    sql = _setup(session=_session(access_key=None))
+def test_a_secret_without_a_key_is_created_when_nothing_resolves():
+    """Public buckets are read unsigned, but still at the server's endpoint."""
+    server = Server(
+        server="production",
+        type="s3",
+        location="s3://bucket/orders/*.csv",
+        format="csv",
+        endpointUrl="http://localhost:9000",
+    )
 
-    assert "CREATE OR REPLACE SECRET" not in sql
+    sql = _setup(server=server, session=_session(access_key=None))
+
+    assert "KEY_ID" not in sql
+    assert "localhost:9000" in sql
+    assert "URL_STYLE 'path'" in sql
 
 
 def test_a_session_without_a_token_omits_the_token_clause():

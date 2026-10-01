@@ -368,8 +368,8 @@ def setup_s3_connection(con, server: Server, config: Config | None = None):
 
     duckdb's own ``PROVIDER credential_chain`` cannot read an SSO cache, so an
     ``aws sso login`` session that works for Athena and Redshift would otherwise
-    fail here with a bare 403. Nothing resolvable leaves the connection without
-    a secret, which is what public buckets need.
+    fail here with a bare 403. Nothing resolvable leaves the secret without a
+    key, so a public bucket is read unsigned, yet still at the server's endpoint.
     """
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
@@ -382,21 +382,23 @@ def setup_s3_connection(con, server: Server, config: Config | None = None):
         if server.endpointUrl.startswith("http://"):
             use_ssl = "false"
 
+    credentials_clauses = ""
     credentials = resolve_aws_credentials(config)
-    if credentials is None:
-        return
-
-    region_clause = f"REGION '{_sql_literal(credentials.region)}'," if credentials.region else ""
-    token_clause = f"SESSION_TOKEN '{_sql_literal(credentials.session_token)}'," if credentials.session_token else ""
-    # No PROVIDER: defaults to `config`, which accepts the explicit KEY_ID/SECRET
-    # below. (duckdb >=1.5 rejects CREDENTIAL_CHAIN combined with explicit credentials.)
+    if credentials is not None:
+        # No PROVIDER: defaults to `config`, which accepts these explicit keys.
+        # (duckdb >=1.5 rejects CREDENTIAL_CHAIN combined with explicit credentials.)
+        credentials_clauses = (
+            f"KEY_ID '{_sql_literal(credentials.access_key_id)}', "
+            f"SECRET '{_sql_literal(credentials.secret_access_key)}',"
+        )
+        if credentials.region:
+            credentials_clauses += f" REGION '{_sql_literal(credentials.region)}',"
+        if credentials.session_token:
+            credentials_clauses += f" SESSION_TOKEN '{_sql_literal(credentials.session_token)}',"
     con.sql(f"""
         CREATE OR REPLACE SECRET s3_secret (
             TYPE S3,
-            {region_clause}
-            KEY_ID '{_sql_literal(credentials.access_key_id)}',
-            SECRET '{_sql_literal(credentials.secret_access_key)}',
-            {token_clause}
+            {credentials_clauses}
             ENDPOINT '{_sql_literal(s3_endpoint)}',
             USE_SSL '{_sql_literal(use_ssl)}',
             URL_STYLE '{_sql_literal(url_style)}'
