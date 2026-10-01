@@ -2849,6 +2849,27 @@ def test_versioned_sync_keeps_sibling_version_behavior(tmp_path: Path):
     assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["arguments"]["values"] == ["a", "b"]
 
 
+def test_versioned_sync_keeps_old_syntax_shared_test_shared(tmp_path: Path):
+    """A shared test written by an earlier CLI (args inline, no `arguments:`) still agrees with an identical v2."""
+    project = _versioned_project(tmp_path)
+    (project / "customers-v2.odcs.yaml").write_text(_V2_CONTRACT.replace("value: [a, b, c]", "value: [a, b]"))
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    models_yml = project / "models" / "customers.yml"
+    y = yaml.safe_load(models_yml.read_text())
+    status_test = _col(y["models"][0], "status")["data_tests"][0]["accepted_values"]
+    status_test.update(status_test.pop("arguments"))
+    models_yml.write_text(yaml.safe_dump(y, sort_keys=False))
+
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    status_test = _col(entry, "status")["data_tests"][0]
+    assert status_test["accepted_values"]["arguments"]["values"] == ["a", "b"]
+    assert _cv(status_test) == ["1.0.0", "2.0.0"]
+    for v in (1, 2):
+        assert "status" not in {e["name"] for e in _bullet(entry, v).get("columns", []) if "name" in e}
+
+
 _V2_NO_REGION = _V2_CONTRACT.replace("      - name: region\n        logicalType: string\n        required: true\n", "")
 
 

@@ -472,8 +472,7 @@ def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) ->
             return _describe_dbt_test(name, field_name, model_name)
         if not isinstance(args, dict):
             return None
-        if "arguments" in args and isinstance(args["arguments"], dict):
-            args = args["arguments"]
+        args = _test_args(args)
         if name == "accepted_values":
             values = args.get("values")
             if isinstance(values, list) and len(values) == 1:
@@ -1192,6 +1191,13 @@ def _test_body(entry: str | dict) -> dict:
     return {}
 
 
+def _test_args(body: dict) -> dict:
+    """A test's arguments, whether nested under `arguments:` (dbt 1.10+) or inline (older CLI output)."""
+    if isinstance(body.get("arguments"), dict):
+        return body["arguments"]
+    return {k: v for k, v in body.items() if k not in ("config", "description")}
+
+
 def _meta_block_for_test(entry: str | dict) -> dict:
     """The CLI's `config.meta.datacontract_cli` block on a test entry, or `{}`."""
     meta = (_test_body(entry).get("config") or {}).get("meta") or {}
@@ -1889,7 +1895,7 @@ def _managed_test_args(container: dict) -> dict[str, dict]:
             continue
         name = _test_name(test)
         if name is not None:
-            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+            out[name] = _test_args(_test_body(test))
     return out
 
 
@@ -1898,7 +1904,7 @@ def _desired_test_args(desired_tests: list) -> dict[str, dict]:
     for test in desired_tests or []:
         name = _test_name(test)
         if name is not None:
-            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+            out[name] = _test_args(_test_body(test))
     return out
 
 
