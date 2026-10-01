@@ -532,18 +532,12 @@ def _rewrite_relationships_to_ref(tests: list) -> list:
     for t in tests:
         if isinstance(t, dict) and "relationships" in t and isinstance(t["relationships"], dict):
             rel = dict(t["relationships"])
-            if "arguments" in rel and isinstance(rel["arguments"], dict):
-                args = dict(rel["arguments"])
-                to_value = args.get("to") or ""
-                m = _REL_SOURCE_RE.match(to_value)
-                if m:
-                    args["to"] = f"ref('{m.group(1)}')"
-                rel["arguments"] = args
-            else:
-                to_value = rel.get("to") or ""
-                m = _REL_SOURCE_RE.match(to_value)
-                if m:
-                    rel["to"] = f"ref('{m.group(1)}')"
+            args = dict(rel["arguments"])
+            to_value = args.get("to") or ""
+            m = _REL_SOURCE_RE.match(to_value)
+            if m:
+                args["to"] = f"ref('{m.group(1)}')"
+            rel["arguments"] = args
             out.append({"relationships": rel})
         else:
             out.append(t)
