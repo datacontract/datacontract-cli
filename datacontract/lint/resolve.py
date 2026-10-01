@@ -229,16 +229,23 @@ class _ExpiringCache:
     def __init__(self):
         self._entries: dict[str, tuple[float, object]] = {}
 
+    @staticmethod
+    def _expired(entry: tuple[float, object]) -> bool:
+        return time.monotonic() - entry[0] > 60
+
     def get(self, key: str):
         entry = self._entries.get(key)
         if entry is None:
             return None
-        if time.monotonic() - entry[0] > 60:  # expire after 60s
+        if self._expired(entry):
             self._entries.pop(key, None)
             return None
         return entry[1]
 
     def put(self, key: str, value) -> None:
+        for stale_key, entry in list(self._entries.items()):
+            if self._expired(entry):
+                self._entries.pop(stale_key, None)
         self._entries[key] = (time.monotonic(), value)
 
     def clear(self) -> None:

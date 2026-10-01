@@ -395,6 +395,22 @@ def test_cached_definition_is_refetched_after_it_expires(env, monkeypatch):
 
 
 @responses.activate
+def test_expired_definitions_are_dropped_even_if_never_requested_again(env, monkeypatch):
+    from datacontract.lint.resolve import _definition_cache
+
+    responses.add(responses.GET, f"{_HOST}/first", body=_definition_body(logicalType="string"), status=200)
+    responses.add(responses.GET, f"{_HOST}/second", body=_definition_body(logicalType="string"), status=200)
+    now = 1000.0
+    monkeypatch.setattr("datacontract.lint.resolve.time.monotonic", lambda: now)
+
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/first", name="a")))
+    now += 61
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/second", name="b")))
+
+    assert [key.split()[0] for key in _definition_cache._entries] == [f"{_HOST}/second"]
+
+
+@responses.activate
 def test_failed_resolution_is_not_cached(env):
     """A transient failure must not poison later runs: the second attempt
     refetches and succeeds."""
