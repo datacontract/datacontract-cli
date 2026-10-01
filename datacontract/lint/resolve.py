@@ -641,11 +641,19 @@ def _build_request(
     host_hint = _host_mismatch_hint(url, configured_host)
     api_key = _api_key_for(configured_host, config, configured_host_only)
     if api_key is None:
+        from datacontract.integration.entropy_data import _get_api_key_or_none
+
+        missing_key = "set ENTROPY_DATA_API_KEY"
+        if configured_host_only and _get_api_key_or_none(config) is not None:
+            missing_key = (
+                f"the request's API key belongs to its entropy-data-host '{_get_host(config)}', "
+                f"so set ENTROPY_DATA_HOST to that host on the server running the API"
+            )
         raise _definition_resolution_error(
             url,
             f"{configured_host.rstrip('/')}/api/semantics",
-            "the reference looks like an IRI, so it is resolved through /api/semantics, "
-            "which requires an API key: set ENTROPY_DATA_API_KEY",
+            f"the reference looks like an IRI, so it is resolved through /api/semantics, "
+            f"which requires an API key: {missing_key}",
             hint=host_hint,
         )
     headers["x-api-key"] = api_key
@@ -704,15 +712,18 @@ def _hosts_match(url: str, host: str) -> bool:
     return urlparse(url).netloc == urlparse(host).netloc
 
 
-def _host_mismatch_hint(url: str, configured_host: str) -> str:
+def _host_mismatch_hint(url: str, configured_host: str) -> str | None:
     """Actionable hint for the usual cause of a failed IRI lookup: the
     configured entropy-data host (default https://api.entropy-data.com) is not
     the deployment that serves this IRI. Names the exact ENTROPY_DATA_HOST value
     to set -- derived from the IRI's own host -- so the fix is copy-pasteable
     instead of leaving the user to guess that the host, not the API key, is wrong.
+    None when the IRI names no host, like a URN.
     """
     iri = urlparse(url)
-    suggested = f"{iri.scheme}://{iri.netloc}" if iri.scheme and iri.netloc else iri.netloc
+    if not iri.netloc:
+        return None
+    suggested = f"{iri.scheme}://{iri.netloc}" if iri.scheme else iri.netloc
     return (
         f"the IRI's host '{iri.netloc}' does not match the configured entropy-data host "
         f"'{urlparse(configured_host).netloc}'; if your contract is served from "

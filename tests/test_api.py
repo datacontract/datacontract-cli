@@ -405,6 +405,19 @@ def test_test_resolves_an_iri_with_the_request_api_key(clean_platform_env):
     assert responses.calls[0].request.headers["x-api-key"] == "request-key"
 
 
+def test_test_explains_that_an_iri_lookup_needs_the_request_host_on_the_server(clean_platform_env, caplog):
+    contract = _contract_referencing("urn:acme:customer-id").replace("type: definition", "type: semantics")
+
+    response = client.post(
+        url="/test",
+        json=contract,
+        headers={"entropy-data-host": "https://entropy.example.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 422
+    assert "set ENTROPY_DATA_HOST to that host on the server running the API" in caplog.text
+
+
 @responses.activate
 def test_test_does_not_echo_the_configured_host():
     internal_url = "http://internal.example.com:8080/admin/definitions/c"

@@ -543,6 +543,17 @@ def test_semantics_iri_without_api_key_raises(env, monkeypatch):
 
 
 @responses.activate
+def test_semantics_iri_without_host_does_not_suggest_a_host(env, monkeypatch):
+    monkeypatch.delenv("ENTROPY_DATA_API_KEY", raising=False)
+
+    with pytest.raises(DataContractException) as exc:
+        inline_definitions_into_data_contract(_contract(_semantics_prop("urn:acme:customer-id")))
+
+    assert "set ENTROPY_DATA_API_KEY" in str(exc.value)
+    assert "ENTROPY_DATA_HOST" not in str(exc.value)
+
+
+@responses.activate
 def test_semantics_iri_403_suggests_setting_host(env):
     """A 403 from the lookup usually means the configured host is the wrong
     deployment for this IRI; the error must name the ENTROPY_DATA_HOST fix
