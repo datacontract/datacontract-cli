@@ -164,7 +164,7 @@ def _to_dbt_model(
     if len(primary_key_columns) > 1:
         # Multiple columns: use dbt_utils.unique_combination_of_columns
         dbt_model["data_tests"] = [
-            {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": primary_key_columns}}
+            {"dbt_utils.unique_combination_of_columns": {"arguments": {"combination_of_columns": primary_key_columns}}}
         ]
 
     columns = _to_columns(
@@ -229,7 +229,11 @@ def _to_column(
         column["data_type"] = dbt_type
     else:
         column["data_tests"].append(
-            {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
+            {
+                "dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {
+                    "arguments": {"column_type": dbt_type}
+                }
+            }
         )
     if prop.description is not None:
         column["description"] = prop.description.strip().replace("\n", " ")

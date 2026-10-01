@@ -63,7 +63,7 @@ def test_enum_from_logical_type_options():
         _prop(name="x", logicalTypeOptions={"enum": ["a", "b"]}),
         supports_constraints=False,
     )
-    assert {"accepted_values": {"values": ["a", "b"]}} in tests
+    assert {"accepted_values": {"arguments": {"values": ["a", "b"]}}} in tests
 
 
 def test_enum_from_custom_property_string():
@@ -71,7 +71,7 @@ def test_enum_from_custom_property_string():
         _prop(name="x", customProperties=[CustomProperty(property="enum", value='["a", "b"]')]),
         supports_constraints=False,
     )
-    assert {"accepted_values": {"values": ["a", "b"]}} in tests
+    assert {"accepted_values": {"arguments": {"values": ["a", "b"]}}} in tests
 
 
 def test_enum_from_custom_property_list():
@@ -79,7 +79,7 @@ def test_enum_from_custom_property_list():
         _prop(name="x", customProperties=[CustomProperty(property="enum", value=["a", "b"])]),
         supports_constraints=False,
     )
-    assert {"accepted_values": {"values": ["a", "b"]}} in tests
+    assert {"accepted_values": {"arguments": {"values": ["a", "b"]}}} in tests
 
 
 def test_enum_from_quality_invalid_values():
@@ -90,7 +90,7 @@ def test_enum_from_quality_invalid_values():
         ),
         supports_constraints=False,
     )
-    assert {"accepted_values": {"values": ["a", "b"]}} in tests
+    assert {"accepted_values": {"arguments": {"values": ["a", "b"]}}} in tests
 
 
 def test_length_inclusive_range():
@@ -98,7 +98,9 @@ def test_length_inclusive_range():
         _prop(name="x", logicalTypeOptions={"minLength": 3, "maxLength": 10}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_value_lengths_to_be_between": {"min_value": 3, "max_value": 10}} in tests
+    assert {
+        "dbt_expectations.expect_column_value_lengths_to_be_between": {"arguments": {"min_value": 3, "max_value": 10}}
+    } in tests
 
 
 def test_regex():
@@ -106,7 +108,7 @@ def test_regex():
         _prop(name="x", logicalTypeOptions={"pattern": "^[A-Z]+$"}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_values_to_match_regex": {"regex": "^[A-Z]+$"}} in tests
+    assert {"dbt_expectations.expect_column_values_to_match_regex": {"arguments": {"regex": "^[A-Z]+$"}}} in tests
 
 
 def test_inclusive_range():
@@ -114,7 +116,9 @@ def test_inclusive_range():
         _prop(name="x", logicalTypeOptions={"minimum": 0, "maximum": 100}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"min_value": 0, "max_value": 100}} in tests
+    assert {
+        "dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": 0, "max_value": 100}}
+    } in tests
 
 
 def test_exclusive_range():
@@ -124,9 +128,11 @@ def test_exclusive_range():
     )
     assert {
         "dbt_expectations.expect_column_values_to_be_between": {
-            "min_value": 0,
-            "max_value": 100,
-            "strictly": True,
+            "arguments": {
+                "min_value": 0,
+                "max_value": 100,
+                "strictly": True,
+            }
         }
     } in tests
 
@@ -136,8 +142,10 @@ def test_mixed_inclusive_and_exclusive_range():
         _prop(name="x", logicalTypeOptions={"minimum": 0, "exclusiveMaximum": 100}),
         supports_constraints=False,
     )
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"min_value": 0}} in tests
-    assert {"dbt_expectations.expect_column_values_to_be_between": {"max_value": 100, "strictly": True}} in tests
+    assert {"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": 0}}} in tests
+    assert {
+        "dbt_expectations.expect_column_values_to_be_between": {"arguments": {"max_value": 100, "strictly": True}}
+    } in tests
 
 
 def test_relationships_uses_source_name():
@@ -148,8 +156,10 @@ def test_relationships_uses_source_name():
     )
     assert {
         "relationships": {
-            "to": 'source("orders-contract", "customers")',
-            "field": "id",
+            "arguments": {
+                "to": 'source("orders-contract", "customers")',
+                "field": "id",
+            }
         }
     } in tests
 

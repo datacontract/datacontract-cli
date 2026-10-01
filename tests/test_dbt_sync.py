@@ -727,11 +727,15 @@ def test_normalize_severity():
 
 def test_attach_config_dict_test():
     result = _attach_test_config(
-        {"accepted_values": {"values": [1, 2]}}, "error", check_type="field_enum", model="orders", field="status"
+        {"accepted_values": {"arguments": {"values": [1, 2]}}},
+        "error",
+        check_type="field_enum",
+        model="orders",
+        field="status",
     )
     assert result == {
         "accepted_values": {
-            "values": [1, 2],
+            "arguments": {"values": [1, 2]},
             "config": {
                 "severity": "error",
                 "meta": {"datacontract_cli": {"check": "orders__status__field_enum"}},
@@ -746,16 +750,24 @@ def test_attach_config_dict_test():
         ("not_null", "Check that field order_id has no missing values"),
         ("unique", "Check that field order_id has no duplicate values"),
         (
+            {"accepted_values": {"arguments": {"values": ["pending", "shipped"]}}},
+            "Check that field order_id only contains enum values ['pending', 'shipped']",
+        ),
+        (
             {"accepted_values": {"values": ["pending", "shipped"]}},
             "Check that field order_id only contains enum values ['pending', 'shipped']",
         ),
-        ({"accepted_values": {"values": ["X"]}}, "Check that field order_id is equal to X"),
+        ({"accepted_values": {"arguments": {"values": ["X"]}}}, "Check that field order_id is equal to X"),
         (
-            {"relationships": {"to": "ref('customers')", "field": "id"}},
+            {"relationships": {"arguments": {"to": "ref('customers')", "field": "id"}}},
             "Check that field order_id references ref('customers').id",
         ),
         (
-            {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": ["order_id", "order_status"]}},
+            {
+                "dbt_utils.unique_combination_of_columns": {
+                    "arguments": {"combination_of_columns": ["order_id", "order_status"]}
+                }
+            },
             "Check that model orders has a unique combination of columns order_id, order_status",
         ),
     ],
@@ -786,11 +798,11 @@ def test_generate_outputs_emits_descriptions_for_typed_field_tests():
 
 def test_rewrite_relationships_to_ref():
     tests = [
-        {"relationships": {"to": 'source("contract-id", "customers")', "field": "id"}},
+        {"relationships": {"arguments": {"to": 'source("contract-id", "customers")', "field": "id"}}},
         "not_null",
     ]
     rewritten = _rewrite_relationships_to_ref(tests)
-    assert rewritten[0] == {"relationships": {"to": "ref('customers')", "field": "id"}}
+    assert rewritten[0] == {"relationships": {"arguments": {"to": "ref('customers')", "field": "id"}}}
     assert rewritten[1] == "not_null"
 
 
@@ -1495,6 +1507,24 @@ def test_run_dbt_test_surfaces_failure_when_no_run_results(tmp_path: Path):
 
     assert "exit code 2" in exc.value.reason
     assert "some unrelated parse failure" in exc.value.reason
+
+
+def test_run_dbt_test_rejects_dbt_before_1_10(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    stdout = (
+        "14:13:33  Running with dbt=1.9.11\n"
+        "Compilation Error in test accepted_values_orders__pending_shipped___status (models/orders.yml)\n"
+        "  macro 'dbt_macro__test_accepted_values' takes no keyword argument 'arguments'\n"
+    )
+
+    def fake_run(args, **kwargs):
+        return subprocess.CompletedProcess(args=args, returncode=2, stdout=stdout, stderr="")
+
+    with mock.patch.object(subprocess, "run", side_effect=fake_run):
+        with pytest.raises(DataContractException) as exc:
+            run_dbt_test(project, target=None, profiles_dir=None)
+
+    assert exc.value.reason.startswith("dbt 1.9.11 is not supported: the generated tests need dbt 1.10 or later")
 
 
 def test_run_dbt_test_does_not_raise_when_run_results_present(tmp_path: Path):
@@ -2762,10 +2792,10 @@ def test_versioned_sync_divergent_column_goes_to_override(tmp_path: Path):
     # so a divergent column must have NO top-level tests — each version carries its full set in its bullet.
     assert "data_tests" not in _col(entry, "status")
     v1_status = _override(entry, 1, "status")["data_tests"][0]
-    assert v1_status["accepted_values"]["values"] == ["a", "b"]
+    assert v1_status["accepted_values"]["arguments"]["values"] == ["a", "b"]
     assert _cv(v1_status) == ["1.0.0"]
     v2_status = _override(entry, 2, "status")["data_tests"][0]
-    assert v2_status["accepted_values"]["values"] == ["a", "b", "c"]
+    assert v2_status["accepted_values"]["arguments"]["values"] == ["a", "b", "c"]
     assert _cv(v2_status) == ["2.0.0"]
 
     # Each override must ride alongside an `include: '*'` element, else dbt reads the version as having only `status`.
@@ -2825,7 +2855,28 @@ def test_versioned_sync_keeps_sibling_version_behavior(tmp_path: Path):
     # v1's effective slice is unchanged by the v2 sync: it still excludes region and still tests
     # `status` against [a,b] (relocated from top level to v1's bullet when v2 made the column diverge).
     assert [e for e in _bullet(entry, 1)["columns"] if "include" in e][0]["exclude"] == ["region"]
-    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["arguments"]["values"] == ["a", "b"]
+
+
+def test_versioned_sync_keeps_old_syntax_shared_test_shared(tmp_path: Path):
+    """A shared test written by an earlier CLI (args inline, no `arguments:`) still agrees with an identical v2."""
+    project = _versioned_project(tmp_path)
+    (project / "customers-v2.odcs.yaml").write_text(_V2_CONTRACT.replace("value: [a, b, c]", "value: [a, b]"))
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    models_yml = project / "models" / "customers.yml"
+    y = yaml.safe_load(models_yml.read_text())
+    status_test = _col(y["models"][0], "status")["data_tests"][0]["accepted_values"]
+    status_test.update(status_test.pop("arguments"))
+    models_yml.write_text(yaml.safe_dump(y, sort_keys=False))
+
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    status_test = _col(entry, "status")["data_tests"][0]
+    assert status_test["accepted_values"]["arguments"]["values"] == ["a", "b"]
+    assert _cv(status_test) == ["1.0.0", "2.0.0"]
+    for v in (1, 2):
+        assert "status" not in {e["name"] for e in _bullet(entry, v).get("columns", []) if "name" in e}
 
 
 _V2_NO_REGION = _V2_CONTRACT.replace("      - name: region\n        logicalType: string\n        required: true\n", "")
@@ -2849,7 +2900,7 @@ def test_versioned_prune_drops_version_only_column(tmp_path: Path):
     assert "region" not in {c["name"] for c in entry.get("columns", [])}
     assert "region" not in [e for e in _bullet(entry, 1)["columns"] if "include" in e][0].get("exclude", [])
     # v1's slice is untouched: still tests `status` against [a, b].
-    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["arguments"]["values"] == ["a", "b"]
 
 
 def test_versioned_prune_leaves_sibling_shared_column(tmp_path: Path):
@@ -2871,7 +2922,7 @@ def test_versioned_prune_leaves_sibling_shared_column(tmp_path: Path):
 
     entry = _versioned_entry(project)
     # status is still referenced by v1 → kept; v2 now excludes it.
-    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["arguments"]["values"] == ["a", "b"]
     assert "status" in [e for e in _bullet(entry, 2)["columns"] if "include" in e][0].get("exclude", [])
 
 

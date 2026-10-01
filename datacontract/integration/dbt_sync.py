@@ -472,6 +472,7 @@ def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) ->
             return _describe_dbt_test(name, field_name, model_name)
         if not isinstance(args, dict):
             return None
+        args = _test_args(args)
         if name == "accepted_values":
             values = args.get("values")
             if isinstance(values, list) and len(values) == 1:
@@ -531,10 +532,12 @@ def _rewrite_relationships_to_ref(tests: list) -> list:
     for t in tests:
         if isinstance(t, dict) and "relationships" in t and isinstance(t["relationships"], dict):
             rel = dict(t["relationships"])
-            to_value = rel.get("to") or ""
+            args = dict(rel["arguments"])
+            to_value = args.get("to") or ""
             m = _REL_SOURCE_RE.match(to_value)
             if m:
-                rel["to"] = f"ref('{m.group(1)}')"
+                args["to"] = f"ref('{m.group(1)}')"
+            rel["arguments"] = args
             out.append({"relationships": rel})
         else:
             out.append(t)
@@ -1060,7 +1063,7 @@ def _column_dict(
         if data_quality.query:
             continue
         if data_quality.mustBe is not None:
-            entry = {"accepted_values": {"values": [data_quality.mustBe]}}
+            entry = {"accepted_values": {"arguments": {"values": [data_quality.mustBe]}}}
             tests.append(
                 _attach_test_config(
                     entry,
@@ -1180,6 +1183,13 @@ def _test_body(entry: str | dict) -> dict:
         if isinstance(body, dict):
             return body
     return {}
+
+
+def _test_args(body: dict) -> dict:
+    """A test's arguments, whether nested under `arguments:` (dbt 1.10+) or inline (older CLI output)."""
+    if isinstance(body.get("arguments"), dict):
+        return body["arguments"]
+    return {k: v for k, v in body.items() if k not in ("config", "description")}
 
 
 def _meta_block_for_test(entry: str | dict) -> dict:
@@ -1879,7 +1889,7 @@ def _managed_test_args(container: dict) -> dict[str, dict]:
             continue
         name = _test_name(test)
         if name is not None:
-            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+            out[name] = _test_args(_test_body(test))
     return out
 
 
@@ -1888,7 +1898,7 @@ def _desired_test_args(desired_tests: list) -> dict[str, dict]:
     for test in desired_tests or []:
         name = _test_name(test)
         if name is not None:
-            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+            out[name] = _test_args(_test_body(test))
     return out
 
 
@@ -2502,6 +2512,15 @@ def run_dbt_test(
     ansi_control_chars = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
     output = ansi_control_chars.sub("", (result.stderr or "") + (result.stdout or ""))
     if result.returncode != 0 and not run_results_path.is_file():
+        dbt_version = re.search(r"Running with dbt=((\d+)\.(\d+)\S*)", output)
+        if dbt_version and (int(dbt_version.group(2)), int(dbt_version.group(3))) < (1, 10):
+            raise DataContractException(
+                type="dbt_sync",
+                name="dbt test",
+                reason=f"dbt {dbt_version.group(1)} is not supported: the generated tests need dbt 1.10 or later. "
+                "Upgrade dbt and run again.",
+                engine="datacontract-cli",
+            )
         raise DataContractException(
             type="dbt_sync",
             name="dbt test",
