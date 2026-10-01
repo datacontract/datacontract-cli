@@ -64,4 +64,6 @@ sources:
 
 As with [`dbt-models`](./dbt-models.md), selecting a server maps logical types to that server's data types; otherwise `snowflake` is used.
 
+The generated tests need dbt 1.10 or later.
+
 All options: **[`datacontract export dbt-sources`](../commands/export/dbt-sources.md)**.

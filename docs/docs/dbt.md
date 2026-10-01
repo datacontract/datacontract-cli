@@ -15,6 +15,9 @@ The Data Contract CLI integrates with [dbt](https://www.getdbt.com/) in multiple
 - **Export**: Do a one-time export from a data contract into a dbt model schema, a sources YAML, or a staging SQL file (`datacontract export`)
 - **Import**: Create a data contract from a dbt manifest file (`datacontract import dbt`)
 
+The tests that `dbt sync`, `dbt-models` and `dbt-sources` generate need dbt 1.10 or later. `datacontract dbt test`
+and `dbt sync --run-tests` stop with an error on an older dbt.
+
 
 ## `datacontract dbt sync`
 

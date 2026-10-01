@@ -1509,6 +1509,24 @@ def test_run_dbt_test_surfaces_failure_when_no_run_results(tmp_path: Path):
     assert "some unrelated parse failure" in exc.value.reason
 
 
+def test_run_dbt_test_rejects_dbt_before_1_10(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    stdout = (
+        "14:13:33  Running with dbt=1.9.11\n"
+        "Compilation Error in test accepted_values_orders__pending_shipped___status (models/orders.yml)\n"
+        "  macro 'dbt_macro__test_accepted_values' takes no keyword argument 'arguments'\n"
+    )
+
+    def fake_run(args, **kwargs):
+        return subprocess.CompletedProcess(args=args, returncode=2, stdout=stdout, stderr="")
+
+    with mock.patch.object(subprocess, "run", side_effect=fake_run):
+        with pytest.raises(DataContractException) as exc:
+            run_dbt_test(project, target=None, profiles_dir=None)
+
+    assert exc.value.reason.startswith("dbt 1.9.11 is not supported: the generated tests need dbt 1.10 or later")
+
+
 def test_run_dbt_test_does_not_raise_when_run_results_present(tmp_path: Path):
     """Test failures (non-zero exit but run_results.json exists) are normal, not errors."""
     project = _copy_dbt_project(tmp_path)

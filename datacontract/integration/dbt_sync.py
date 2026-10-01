@@ -2512,6 +2512,15 @@ def run_dbt_test(
     ansi_control_chars = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
     output = ansi_control_chars.sub("", (result.stderr or "") + (result.stdout or ""))
     if result.returncode != 0 and not run_results_path.is_file():
+        dbt_version = re.search(r"Running with dbt=((\d+)\.(\d+)\S*)", output)
+        if dbt_version and (int(dbt_version.group(2)), int(dbt_version.group(3))) < (1, 10):
+            raise DataContractException(
+                type="dbt_sync",
+                name="dbt test",
+                reason=f"dbt {dbt_version.group(1)} is not supported: the generated tests need dbt 1.10 or later. "
+                "Upgrade dbt and run again.",
+                engine="datacontract-cli",
+            )
         raise DataContractException(
             type="dbt_sync",
             name="dbt test",
