@@ -573,10 +573,10 @@ def _build_request(
         API key (that endpoint is API-key only). Only these two types name
         concepts by IRI; everything else is an address.
     """
-    from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
+    from datacontract.integration.entropy_data import _get_host, is_platform_url
 
     # An untrusted caller may set the host per request (API header); definitions are
-    # then still resolved against the environment's host, or the guard would be the caller's.
+    # then still resolved against the platform as the environment sees it, or the guard would be the caller's.
     platform_config = None if configured_host_only else config
     configured_host = _get_host(platform_config)
     # urljoin keeps absolute URLs as-is and joins leading-slash paths onto
@@ -584,8 +584,8 @@ def _build_request(
     direct_url = urljoin(configured_host, url)
     headers = {"Accept": "application/vnd.entropydata.odcs+json"}
 
-    if _hosts_match(direct_url, configured_host):
-        api_key = _get_api_key_or_none(platform_config)
+    if is_platform_url(direct_url, None) if configured_host_only else _hosts_match(direct_url, configured_host):
+        api_key = _api_key_for(direct_url, config, configured_host_only)
         if api_key is not None:
             headers["x-api-key"] = api_key
         return direct_url, headers, None
@@ -593,14 +593,16 @@ def _build_request(
     if type_ not in ("semantics", "semantic"):
         if configured_host_only:
             raise _definition_resolution_error(
-                url, direct_url, f"only the configured Entropy Data host '{configured_host}' may be contacted"
+                url,
+                direct_url,
+                f"only the Entropy Data platform or the configured host '{configured_host}' may be contacted",
             )
         # Third-party REST URL: fetch anonymously, no IRI fallback.
         return direct_url, headers, None
 
     # Off-host semantics reference: IRI lookup against the configured host.
     host_hint = _host_mismatch_hint(url, configured_host)
-    api_key = _get_api_key_or_none(platform_config)
+    api_key = _api_key_for(configured_host, config, configured_host_only)
     if api_key is None:
         raise _definition_resolution_error(
             url,
@@ -612,6 +614,36 @@ def _build_request(
     headers["x-api-key"] = api_key
     lookup_url = f"{configured_host.rstrip('/')}/api/semantics?iri={quote(url, safe='')}"
     return lookup_url, headers, host_hint
+
+
+def _api_key_for(target_url: str, config: "Config | None", configured_host_only: bool) -> str | None:
+    """The API key that may travel to `target_url`.
+
+    With configured_host_only, a key goes only to the host it belongs to -- the request's host for a key
+    the request brought, the environment's for the server's own -- and the platform's domains count as one host.
+    """
+    from datacontract.integration.entropy_data import (
+        _get_api_key_or_none,
+        _get_host,
+        _host_and_port,
+        is_entropy_data_domain,
+    )
+
+    if not configured_host_only:
+        return _get_api_key_or_none(config)
+
+    def belongs_to(owner: str) -> bool:
+        if is_entropy_data_domain(target_url) and is_entropy_data_domain(owner):
+            return True
+        return _host_and_port(target_url) == _host_and_port(owner)
+
+    server_key = _get_api_key_or_none(None)
+    request_key = _get_api_key_or_none(config)
+    if request_key is not None and request_key != server_key and belongs_to(_get_host(config)):
+        return request_key
+    if server_key is not None and belongs_to(_get_host(None)):
+        return server_key
+    return None
 
 
 def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProperty):
