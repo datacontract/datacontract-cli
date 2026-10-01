@@ -388,6 +388,8 @@ def create_field(
     if column.get("tags"):
         custom_props["tags"] = ",".join(column["tags"])
 
+    classification = (column.get("meta") or {}).get("classification")
+
     return create_property(
         name=column.get("name"),
         logical_type=column_type,
@@ -397,5 +399,6 @@ def create_field(
         unique=unique if unique else None,
         primary_key=is_primary_key if is_primary_key else None,
         primary_key_position=1 if is_primary_key else None,
+        classification=classification,
         custom_properties=custom_props if custom_props else None,
     )
