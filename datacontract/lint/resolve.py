@@ -1,6 +1,7 @@
 import importlib.resources as resources
 import logging
 import re
+import time
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlparse
 
@@ -221,11 +222,33 @@ _DEFINITION_FILE_SUFFIXES = frozenset({".yaml", ".yml", ".json"})
 # `properties`/`items` are the contract author's structure.
 _NON_MERGEABLE_FIELDS = frozenset({"id", "name", "authoritativeDefinitions", "properties", "items"})
 
-# Per-process success-only caches: transient failures aren't cached so they
-# can retry on the next run.
-_definition_cache: dict[str, SchemaProperty] = {}
-_local_contract_cache: dict[str, OpenDataContractStandard] = {}
-_local_definition_cache: dict[str, SchemaProperty] = {}
+
+class _ExpiringCache:
+    """Success-only cache whose entries expire"""
+
+    def __init__(self):
+        self._entries: dict[str, tuple[float, object]] = {}
+
+    def get(self, key: str):
+        entry = self._entries.get(key)
+        if entry is None:
+            return None
+        if time.monotonic() - entry[0] > 60:  # expire after 60s
+            del self._entries[key]
+            return None
+        return entry[1]
+
+    def put(self, key: str, value) -> None:
+        self._entries[key] = (time.monotonic(), value)
+
+    def clear(self) -> None:
+        self._entries.clear()
+
+
+# Transient failures aren't cached so they can retry on the next run.
+_definition_cache = _ExpiringCache()
+_local_contract_cache = _ExpiringCache()
+_local_definition_cache = _ExpiringCache()
 
 
 def clear_definition_cache() -> None:
@@ -341,8 +364,9 @@ def _resolve_local_definition(
 
     target_path = _resolve_local_path(url, path_part, base_location)
     cache_key = f"{target_path}#{fragment}" if fragment else str(target_path)
-    if cache_key in _local_definition_cache:
-        return _local_definition_cache[cache_key]
+    cached = _local_definition_cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     if fragment:
         contract = _load_local_contract(url, target_path, visited, config)
@@ -350,7 +374,7 @@ def _resolve_local_definition(
     else:
         definition = _load_local_property(url, target_path, visited, config)
 
-    _local_definition_cache[cache_key] = definition
+    _local_definition_cache.put(cache_key, definition)
     return definition
 
 
@@ -378,8 +402,9 @@ def _load_local_contract(
     chain (technical field -> business attribute -> semantic concept) resolves.
     """
     key = str(contract_path)
-    if key in _local_contract_cache:
-        return _local_contract_cache[key]
+    cached = _local_contract_cache.get(key)
+    if cached is not None:
+        return cached
     if key in visited:
         raise _local_resolution_error(url, f"'{key}' is already being resolved, so the references form a cycle")
     if not contract_path.is_file():
@@ -391,7 +416,7 @@ def _load_local_contract(
         raise _local_resolution_error(url, f"'{key}' is not a valid data contract: {e.reason}", original_exception=e)
 
     inline_definitions_into_data_contract(contract, config, base_location=key, visited=visited | {key})
-    _local_contract_cache[key] = contract
+    _local_contract_cache.put(key, contract)
     return contract
 
 
@@ -518,8 +543,9 @@ def _resolve_definition(
 
     Cached per URL after a successful fetch; failures aren't cached.
     """
-    if url in _definition_cache:
-        return _definition_cache[url]
+    cached = _definition_cache.get(url)
+    if cached is not None:
+        return cached
 
     target_url, headers, host_hint = _build_request(url, type_, config, configured_host_only)
 
@@ -548,7 +574,7 @@ def _resolve_definition(
             url, target_url, f"response body is not a valid ODCS property: {e}", original_exception=e
         )
 
-    _definition_cache[url] = definition
+    _definition_cache.put(url, definition)
     return definition
 
 

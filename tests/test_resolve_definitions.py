@@ -382,6 +382,19 @@ def test_shared_definition_is_fetched_once(env):
 
 
 @responses.activate
+def test_cached_definition_is_refetched_after_it_expires(env, monkeypatch):
+    responses.add(responses.GET, f"{_HOST}/shared", body=_definition_body(logicalType="string"), status=200)
+    now = 1000.0
+    monkeypatch.setattr("datacontract.lint.resolve.time.monotonic", lambda: now)
+
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/shared", name="a")))
+    now += 61
+    inline_definitions_into_data_contract(_contract(_prop_referencing("/shared", name="b")))
+
+    assert len(responses.calls) == 2
+
+
+@responses.activate
 def test_failed_resolution_is_not_cached(env):
     """A transient failure must not poison later runs: the second attempt
     refetches and succeeds."""
