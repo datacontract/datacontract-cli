@@ -144,7 +144,7 @@ A data contract carries SQL and names the hosts to connect to, so a contract tha
 - a `quality.type: sql` rule must be a **read-only query** — DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed;
 - a credential held in the server's environment is **never sent to a host the contract names** (see [Configuration](./configuration.md));
 - a `publish_url` may only point at the **Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this, and other hosts are refused;
-- `authoritativeDefinitions` are **only resolved against the Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server. An API key goes only to the host it belongs to — the server's `ENTROPY_DATA_API_KEY` to `ENTROPY_DATA_HOST`, an `entropy-data-api-key` sent to `/test` to that request's `entropy-data-host` (with all Entropy Data domains counting as one host);
+- `authoritativeDefinitions` are **only resolved against the Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server. An API key goes only to the host it belongs to — the server's `ENTROPY_DATA_API_KEY` to exactly `ENTROPY_DATA_HOST`, an `entropy-data-api-key` sent to `/test` to that request's `entropy-data-host`, with all Entropy Data domains counting as one host;
 - `servers[].type: local` is **refused**, so a caller cannot read the files of the machine running the API;
 - a `${VAR}` reference in the contract resolves **only from the variables the operator allow-listed**, so a posted contract cannot read the server's environment;
 - for a file-based server type (`s3`, `gcs`, `azure`), the DuckDB connection is **confined to the data locations the contract declares**.

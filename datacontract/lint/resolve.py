@@ -610,7 +610,11 @@ def _build_request(
     direct_url = urljoin(configured_host, url)
     headers = {"Accept": "application/vnd.entropydata.odcs+json"}
 
-    if is_platform_url(direct_url, None) if configured_host_only else _hosts_match(direct_url, configured_host):
+    if configured_host_only:
+        on_entropy_data_host = is_platform_url(direct_url, None)
+    else:
+        on_entropy_data_host = _hosts_match(direct_url, configured_host)
+    if on_entropy_data_host:
         api_key = _api_key_for(direct_url, config, configured_host_only)
         if api_key is not None:
             headers["x-api-key"] = api_key
@@ -645,8 +649,8 @@ def _build_request(
 def _api_key_for(target_url: str, config: "Config | None", configured_host_only: bool) -> str | None:
     """The API key that may travel to `target_url`.
 
-    With configured_host_only, a key goes only to the host it belongs to -- the request's host for a key
-    the request brought, the environment's for the server's own -- and the platform's domains count as one host.
+    With configured_host_only, a key goes only to the host it belongs to: the server's own key to exactly the
+    environment's host, a key the request brought to the request's host, with the platform's domains as one host.
     """
     from datacontract.integration.entropy_data import (
         _get_api_key_or_none,
@@ -658,16 +662,19 @@ def _api_key_for(target_url: str, config: "Config | None", configured_host_only:
     if not configured_host_only:
         return _get_api_key_or_none(config)
 
-    def belongs_to(owner: str) -> bool:
-        if is_entropy_data_domain(target_url) and is_entropy_data_domain(owner):
-            return True
-        return _host_and_port(target_url) == _host_and_port(owner)
-
     server_key = _get_api_key_or_none(None)
     request_key = _get_api_key_or_none(config)
-    if request_key is not None and request_key != server_key and belongs_to(_get_host(config)):
+    request_host = _get_host(config)
+    if (
+        request_key is not None
+        and request_key != server_key
+        and (
+            _host_and_port(target_url) == _host_and_port(request_host)
+            or (is_entropy_data_domain(target_url) and is_entropy_data_domain(request_host))
+        )
+    ):
         return request_key
-    if server_key is not None and belongs_to(_get_host(None)):
+    if server_key is not None and _host_and_port(target_url) == _host_and_port(_get_host(None)):
         return server_key
     return None
 

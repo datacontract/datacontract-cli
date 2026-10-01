@@ -365,6 +365,18 @@ def test_lint_does_not_send_a_self_hosted_api_key_to_the_platform_domains(clean_
 
 
 @responses.activate
+def test_lint_sends_the_environment_api_key_only_to_the_environment_host(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "server-key")
+    definition_url = "https://other.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(url="/lint", json=_contract_referencing(definition_url))
+
+    assert response.status_code == 200
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
 def test_test_does_not_send_a_self_hosted_request_api_key_to_the_platform_domains(clean_platform_env):
     clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
     definition_url = "https://app.entropy-data.com/acme/definitions/c"
