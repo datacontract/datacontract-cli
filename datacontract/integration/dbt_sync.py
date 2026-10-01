@@ -472,6 +472,8 @@ def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) ->
             return _describe_dbt_test(name, field_name, model_name)
         if not isinstance(args, dict):
             return None
+        if "arguments" in args and isinstance(args["arguments"], dict):
+            args = args["arguments"]
         if name == "accepted_values":
             values = args.get("values")
             if isinstance(values, list) and len(values) == 1:
@@ -531,10 +533,18 @@ def _rewrite_relationships_to_ref(tests: list) -> list:
     for t in tests:
         if isinstance(t, dict) and "relationships" in t and isinstance(t["relationships"], dict):
             rel = dict(t["relationships"])
-            to_value = rel.get("to") or ""
-            m = _REL_SOURCE_RE.match(to_value)
-            if m:
-                rel["to"] = f"ref('{m.group(1)}')"
+            if "arguments" in rel and isinstance(rel["arguments"], dict):
+                args = dict(rel["arguments"])
+                to_value = args.get("to") or ""
+                m = _REL_SOURCE_RE.match(to_value)
+                if m:
+                    args["to"] = f"ref('{m.group(1)}')"
+                rel["arguments"] = args
+            else:
+                to_value = rel.get("to") or ""
+                m = _REL_SOURCE_RE.match(to_value)
+                if m:
+                    rel["to"] = f"ref('{m.group(1)}')"
             out.append({"relationships": rel})
         else:
             out.append(t)
@@ -1060,7 +1070,7 @@ def _column_dict(
         if data_quality.query:
             continue
         if data_quality.mustBe is not None:
-            entry = {"accepted_values": {"values": [data_quality.mustBe]}}
+            entry = {"accepted_values": {"arguments": {"values": [data_quality.mustBe]}}}
             tests.append(
                 _attach_test_config(
                     entry,

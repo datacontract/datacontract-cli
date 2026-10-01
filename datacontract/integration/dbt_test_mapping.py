@@ -58,7 +58,7 @@ def field_to_data_tests(
 
     enum_values = get_enum_values(prop)
     if enum_values and len(enum_values) > 0:
-        tests.append({"accepted_values": {"values": enum_values}})
+        tests.append({"accepted_values": {"arguments": {"values": enum_values}}})
 
     if include_dbt_expectations_bounds:
         min_length = get_logical_type_option(prop, "minLength")
@@ -69,11 +69,11 @@ def field_to_data_tests(
                 length_test["min_value"] = min_length
             if max_length is not None:
                 length_test["max_value"] = max_length
-            tests.append({"dbt_expectations.expect_column_value_lengths_to_be_between": length_test})
+            tests.append({"dbt_expectations.expect_column_value_lengths_to_be_between": {"arguments": length_test}})
 
         pattern = get_logical_type_option(prop, "pattern")
         if pattern is not None:
-            tests.append({"dbt_expectations.expect_column_values_to_match_regex": {"regex": pattern}})
+            tests.append({"dbt_expectations.expect_column_values_to_match_regex": {"arguments": {"regex": pattern}}})
 
         minimum = get_logical_type_option(prop, "minimum")
         maximum = get_logical_type_option(prop, "maximum")
@@ -86,7 +86,7 @@ def field_to_data_tests(
                 range_test["min_value"] = minimum
             if maximum is not None:
                 range_test["max_value"] = maximum
-            tests.append({"dbt_expectations.expect_column_values_to_be_between": range_test})
+            tests.append({"dbt_expectations.expect_column_values_to_be_between": {"arguments": range_test}})
         elif (exclusive_minimum is not None or exclusive_maximum is not None) and minimum is None and maximum is None:
             range_test = {}
             if exclusive_minimum is not None:
@@ -94,18 +94,20 @@ def field_to_data_tests(
             if exclusive_maximum is not None:
                 range_test["max_value"] = exclusive_maximum
             range_test["strictly"] = True
-            tests.append({"dbt_expectations.expect_column_values_to_be_between": range_test})
+            tests.append({"dbt_expectations.expect_column_values_to_be_between": {"arguments": range_test}})
         else:
             if minimum is not None:
-                tests.append({"dbt_expectations.expect_column_values_to_be_between": {"min_value": minimum}})
+                tests.append({"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"min_value": minimum}}})
             if maximum is not None:
-                tests.append({"dbt_expectations.expect_column_values_to_be_between": {"max_value": maximum}})
+                tests.append({"dbt_expectations.expect_column_values_to_be_between": {"arguments": {"max_value": maximum}}})
             if exclusive_minimum is not None:
                 tests.append(
                     {
                         "dbt_expectations.expect_column_values_to_be_between": {
-                            "min_value": exclusive_minimum,
-                            "strictly": True,
+                            "arguments": {
+                                "min_value": exclusive_minimum,
+                                "strictly": True,
+                            }
                         }
                     }
                 )
@@ -113,8 +115,10 @@ def field_to_data_tests(
                 tests.append(
                     {
                         "dbt_expectations.expect_column_values_to_be_between": {
-                            "max_value": exclusive_maximum,
-                            "strictly": True,
+                            "arguments": {
+                                "max_value": exclusive_maximum,
+                                "strictly": True,
+                            }
                         }
                     }
                 )
@@ -131,8 +135,10 @@ def field_to_data_tests(
             tests.append(
                 {
                     "relationships": {
-                        "to": f"""source("{source_name}", "{table_name}")""",
-                        "field": f"{column_name}",
+                        "arguments": {
+                            "to": f"""source("{source_name}", "{table_name}")""",
+                            "field": f"{column_name}",
+                        }
                     }
                 }
             )

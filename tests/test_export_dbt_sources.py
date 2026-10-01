@@ -49,10 +49,12 @@ sources:
               - not_null
               - unique
               - dbt_expectations.expect_column_value_lengths_to_be_between:
-                  min_value: 8
-                  max_value: 10
+                  arguments:
+                    min_value: 8
+                    max_value: 10
               - dbt_expectations.expect_column_values_to_match_regex:
-                  regex: ^B[0-9]+$
+                  arguments:
+                    regex: ^B[0-9]+$
             meta:
               classification: sensitive
             tags:
@@ -63,17 +65,19 @@ sources:
             data_tests:
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
-                   min_value: 0
-                   max_value: 1000000
+                  arguments:
+                    min_value: 0
+                    max_value: 1000000
           - name: order_status
             data_type: TEXT
             data_tests:
               - not_null
               - accepted_values:
-                  values:
-                    - 'pending'
-                    - 'shipped'
-                    - 'delivered'
+                  arguments:
+                    values:
+                      - 'pending'
+                      - 'shipped'
+                      - 'delivered'
 """
 
     result = to_dbt_sources_yaml(data_contract, "production")
@@ -102,10 +106,12 @@ sources:
               - not_null
               - unique
               - dbt_expectations.expect_column_value_lengths_to_be_between:
-                  min_value: 8
-                  max_value: 10
+                  arguments:
+                    min_value: 8
+                    max_value: 10
               - dbt_expectations.expect_column_values_to_match_regex:
-                  regex: ^B[0-9]+$
+                  arguments:
+                    regex: ^B[0-9]+$
             meta:
               classification: sensitive
             tags:
@@ -116,23 +122,26 @@ sources:
             data_tests:
               - not_null
               - dbt_expectations.expect_column_values_to_be_between:
-                   min_value: 0
-                   max_value: 1000000
+                  arguments:
+                    min_value: 0
+                    max_value: 1000000
           - name: order_status
             data_type: STRING
             data_tests:
               - not_null
               - accepted_values:
-                  values:
-                    - 'pending'
-                    - 'shipped'
-                    - 'delivered'
+                  arguments:
+                    values:
+                      - 'pending'
+                      - 'shipped'
+                      - 'delivered'
           - name: user_id
             data_tests:
               - not_null
               - relationships:
-                  to: source("orders-unit-test", "users")
-                  field: user_id
+                  arguments:
+                    to: source("orders-unit-test", "users")
+                    field: user_id
             data_type: STRING
       - name: users
         description: The users model
