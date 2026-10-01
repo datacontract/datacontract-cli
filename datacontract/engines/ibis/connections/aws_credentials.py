@@ -60,12 +60,21 @@ class AwsCredentials:
     region: Optional[str] = None
 
 
-def resolve_aws_credentials() -> Optional[AwsCredentials]:
-    """Return the credentials boto3 resolves, or ``None`` when nothing resolves.
+def resolve_aws_credentials(config: Optional[Config] = None) -> Optional[AwsCredentials]:
+    """Return the DATACONTRACT_S3_* keys if set, else what boto3 resolves, else ``None``.
 
     ``None`` is a legitimate answer, not an error: reading a public bucket needs
     no credentials at all, and signing that request could only make it fail.
     """
+    config = Config.resolve(config)
+    access_key_id = config.get_s3_access_key_id()
+    if access_key_id is not None:
+        return AwsCredentials(
+            access_key_id=access_key_id,
+            secret_access_key=config.get_s3_secret_access_key(),
+            session_token=config.get_s3_session_token(),
+            region=config.get_s3_region(),
+        )
     try:
         import boto3
 
