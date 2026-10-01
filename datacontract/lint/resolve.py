@@ -234,7 +234,7 @@ class _ExpiringCache:
         if entry is None:
             return None
         if time.monotonic() - entry[0] > 60:  # expire after 60s
-            del self._entries[key]
+            self._entries.pop(key, None)
             return None
         return entry[1]
 
