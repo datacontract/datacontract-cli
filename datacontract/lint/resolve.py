@@ -541,13 +541,13 @@ def _resolve_definition(
     (anonymously, so the API key never leaks). The `x-api-key` is only
     ever sent to the configured host.
 
-    Cached per URL after a successful fetch; failures aren't cached.
+    Cached per target URL and API key after a successful fetch; failures aren't cached.
     """
-    cached = _definition_cache.get(url)
+    target_url, headers, host_hint = _build_request(url, type_, config, configured_host_only)
+    cache_key = f"{target_url} {headers.get('x-api-key')}"
+    cached = _definition_cache.get(cache_key)
     if cached is not None:
         return cached
-
-    target_url, headers, host_hint = _build_request(url, type_, config, configured_host_only)
 
     try:
         # Not following redirects keeps the API key from travelling to another host.
@@ -574,7 +574,7 @@ def _resolve_definition(
             url, target_url, f"response body is not a valid ODCS property: {e}", original_exception=e
         )
 
-    _definition_cache.put(url, definition)
+    _definition_cache.put(cache_key, definition)
     return definition
 
 

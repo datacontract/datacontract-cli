@@ -292,6 +292,21 @@ def test_test_resolves_a_definition_with_the_request_api_key(clean_platform_env)
 
 
 @responses.activate
+def test_test_does_not_reuse_a_definition_fetched_with_another_request_api_key(clean_platform_env):
+    url = "https://api.entropy-data.com/definitions/c"
+    responses.add(responses.GET, url, json={"name": "c"}, status=200)
+    client.post(url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "key-a"})
+    responses.replace(responses.GET, url, status=401)
+
+    response = client.post(
+        url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "key-b"}
+    )
+
+    assert [call.request.headers["x-api-key"] for call in responses.calls] == ["key-a", "key-b"]
+    assert response.status_code == 422
+
+
+@responses.activate
 def test_test_sends_the_request_api_key_for_a_platform_domain_to_the_environment_host(clean_platform_env):
     responses.add(responses.GET, "https://api.entropy-data.com/definitions/c", json={"name": "c"}, status=200)
 
