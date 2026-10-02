@@ -143,7 +143,7 @@ class XsdWriter:
 
     def text_type(self, name: str, text: SchemaProperty) -> str:
         """The type of the text of an element with attributes; an extension needs a named type for constraints."""
-        if not has_facets(text) and text.physicalType != "list":
+        if not facets(text) and text.physicalType != "list":
             return xsd_type(text)
         type_name = f"{name}Value"
         suffix = 1
@@ -195,10 +195,6 @@ def set_simple_type(node: ElementTree.Element, prop: SchemaProperty):
     )
     for facet, value in restrictions:
         ElementTree.SubElement(restriction, f"{XS}{facet}", {"value": lexical(value)})
-
-
-def has_facets(prop: SchemaProperty) -> bool:
-    return bool(facets(prop))
 
 
 def facets(prop: SchemaProperty) -> list[tuple[str, object]]:
