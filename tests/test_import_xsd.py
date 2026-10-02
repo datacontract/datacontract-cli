@@ -304,10 +304,10 @@ def test_import_malformed_xml(tmp_path: Path):
     source = tmp_path / "broken.xsd"
     source.write_text('<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"><xs:element name="a">')
 
-    with pytest.raises(DataContractException, match="Failed to parse xml schema"):
+    with pytest.raises(DataContractException, match="Failed to parse XML Schema"):
         DataContract.import_from_source("xsd", str(source))
 
 
 def test_import_a_missing_file():
-    with pytest.raises(DataContractException, match="Failed to parse xml schema"):
+    with pytest.raises(DataContractException, match="Failed to parse XML Schema"):
         DataContract.import_from_source("xsd", "fixtures/import/xsd/missing.xsd")

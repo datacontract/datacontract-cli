@@ -77,20 +77,20 @@ def load_xml_schema(source: str):
     except (OSError, xmlschema.XMLSchemaException) as e:
         raise DataContractException(
             type="schema",
-            name="Parse xml schema",
-            reason=f"Failed to parse xml schema from {source}: {e}",
+            name="Parse XML Schema",
+            reason=f"Failed to parse XML Schema from {source}: {e}",
             engine="datacontract-cli",
             original_exception=e,
         )
     for warning in caught:
         logger.warning(str(warning.message))
     for error in schema.all_errors:
-        logger.warning(f"Invalid xml schema: {error.message}")
+        logger.warning(f"Invalid XML Schema: {error.message}")
     if not schema.elements:
         raise DataContractException(
             type="schema",
-            name="Parse xml schema",
-            reason=f"The xml schema {source} declares no global element",
+            name="Parse XML Schema",
+            reason=f"The XML Schema {source} declares no global element",
             engine="datacontract-cli",
         )
     return schema
