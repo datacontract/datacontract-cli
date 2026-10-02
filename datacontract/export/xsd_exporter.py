@@ -50,9 +50,12 @@ class XsdExporter(Exporter):
 
 def to_xsd(data_contract: OpenDataContractStandard, schema_name: str = "all") -> str:
     """An XML Schema with one global element per schema of the data contract."""
-    schema_objects = [s for s in data_contract.schema_ or [] if schema_name in ("all", s.name)]
+    if not data_contract.schema_:
+        raise RuntimeError("Export to xsd requires a schema in the data contract.")
+    schema_objects = [s for s in data_contract.schema_ if schema_name in ("all", s.name)]
     if not schema_objects:
-        raise RuntimeError(f"Export to xsd requires schema in the data contract, found none named {schema_name}.")
+        names = ", ".join(s.name for s in data_contract.schema_)
+        raise RuntimeError(f"The data contract has no schema named {schema_name}, only {names}.")
 
     namespaces = list(dict.fromkeys(custom_property(s, "xmlNamespace") for s in schema_objects))
     if len(namespaces) > 1:
