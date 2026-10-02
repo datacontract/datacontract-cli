@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="urn:example:canonical" xmlns="urn:example:canonical">
+  <xs:element name="order">
+    <xs:annotation>
+      <xs:documentation>Every construct the XSD import and export carry over.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="order_id">
+          <xs:annotation>
+            <xs:documentation>Unique identifier of the order.</xs:documentation>
+          </xs:annotation>
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="ORD-[0-9]{4}" />
+              <xs:minLength value="8" />
+              <xs:maxLength value="8" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="code">
+          <xs:simpleType>
+            <xs:restriction base="xs:token">
+              <xs:maxLength value="10" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="placed_at" type="xs:dateTime" />
+        <xs:element name="delivery_date" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:date">
+              <xs:minInclusive value="2020-01-01" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="delivery_window" minOccurs="0" type="xs:time" />
+        <xs:element name="gift" minOccurs="0" type="xs:boolean" />
+        <xs:element name="total">
+          <xs:simpleType>
+            <xs:restriction base="xs:decimal">
+              <xs:minInclusive value="0" />
+              <xs:maxExclusive value="1000000" />
+              <xs:totalDigits value="10" />
+              <xs:fractionDigits value="2" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="weight" minOccurs="0" type="xs:double" />
+        <xs:element name="items_count" type="xs:unsignedInt" />
+        <xs:element name="priority" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:integer">
+              <xs:enumeration value="1" />
+              <xs:enumeration value="2" />
+              <xs:enumeration value="3" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="status">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="pending" />
+              <xs:enumeration value="shipped" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="reference" minOccurs="0">
+          <xs:simpleType>
+            <xs:union memberTypes="xs:integer xs:date" />
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="tags" minOccurs="0">
+          <xs:simpleType>
+            <xs:list itemType="xs:string" />
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="customer">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="display_name" type="xs:string" />
+              <xs:element name="email" minOccurs="0" type="xs:string" />
+            </xs:sequence>
+            <xs:attribute name="id" use="required" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="line_item" maxOccurs="100">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="sku" type="xs:string" />
+              <xs:element name="quantity">
+                <xs:simpleType>
+                  <xs:restriction base="xs:positiveInteger">
+                    <xs:maxInclusive value="999" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element name="price">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="priceValue">
+                      <xs:attribute name="currency" use="required">
+                        <xs:simpleType>
+                          <xs:restriction base="xs:string">
+                            <xs:minLength value="3" />
+                            <xs:maxLength value="3" />
+                          </xs:restriction>
+                        </xs:simpleType>
+                      </xs:attribute>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="note" minOccurs="0" maxOccurs="unbounded" type="xs:string" />
+        <xs:element name="extension" minOccurs="0" type="xs:anyType" />
+      </xs:sequence>
+      <xs:attribute name="version" use="required" type="xs:positiveInteger" />
+      <xs:attribute name="source" type="xs:string" />
+    </xs:complexType>
+  </xs:element>
+  <xs:simpleType name="priceValue">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

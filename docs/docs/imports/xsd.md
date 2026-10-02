@@ -98,7 +98,7 @@ Each global element that no other element references becomes a schema, named aft
 | Element with `maxOccurs` greater than 1 | `logicalType: array` with `items`; `minOccurs`/`maxOccurs` above 1 as `minItems`/`maxItems` |
 | `minOccurs="0"`, `nillable="true"`, inside `xs:choice` or an optional `xs:sequence` | not `required` |
 | `xs:string`, `xs:token`, `xs:anyURI`, `xs:duration`, `xs:gYear`, … | `string` |
-| `xs:int`, `xs:long`, `xs:integer`, `xs:positiveInteger`, `xs:unsignedByte`, … | `integer` |
+| `xs:int`, `xs:long`, `xs:integer`, `xs:positiveInteger`, `xs:unsignedByte`, … | `integer`, with the range of the type as `minimum`/`maximum` (`xs:unsignedInt`: 0 to 4294967295) unless a facet narrows it |
 | `xs:decimal`, `xs:float`, `xs:double` | `number` |
 | `xs:boolean` | `boolean` |
 | `xs:date` / `xs:dateTime` / `xs:time` | `date` / `timestamp` / `time` |
@@ -186,6 +186,17 @@ schema:
 ## Includes and imports
 
 `xs:include`, `xs:import`, and `xs:redefine` are followed for files next to the schema. Remote schemas (`http://`, `https://`) are never downloaded: they are skipped with a warning, and an element of a type they define becomes an `object` without properties. Rules of XML Schema the import does not depend on, such as an invalid restriction, are reported as warnings instead of failing the import.
+
+## Simplifications
+
+ODCS cannot express everything an XML Schema can. The import warns about each simplification it makes and names the properties concerned, for example:
+
+```
+These properties are unions; ODCS has no union type, so they are strings with the member types in physicalType: order.reference
+These properties contain their own type, so the repetition is an object without properties: category.parent
+```
+
+It warns about recursive types, unions, lists, wildcards, mixed content, and identity constraints.
 
 ## Not imported
 

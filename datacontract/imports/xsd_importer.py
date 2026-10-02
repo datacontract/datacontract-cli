@@ -30,6 +30,34 @@ LOGICAL_TYPES = {
     "time": "time",
 } | dict.fromkeys(INTEGER_TYPES, "integer")
 
+# The value range a builtin integer type implies, as (minimum, maximum)
+INTEGER_BOUNDS = {
+    "byte": (-(2**7), 2**7 - 1),
+    "short": (-(2**15), 2**15 - 1),
+    "int": (-(2**31), 2**31 - 1),
+    "long": (-(2**63), 2**63 - 1),
+    "unsignedByte": (0, 2**8 - 1),
+    "unsignedShort": (0, 2**16 - 1),
+    "unsignedInt": (0, 2**32 - 1),
+    # 2**64 - 1 is beyond the 64-bit integers the checks compare with
+    "unsignedLong": (0, None),
+    "nonNegativeInteger": (0, None),
+    "positiveInteger": (1, None),
+    "nonPositiveInteger": (None, 0),
+    "negativeInteger": (None, -1),
+}
+
+# What the import simplifies, and how it says so
+SIMPLIFICATIONS = {
+    "recursion": "contain their own type, so the repetition is an object without properties",
+    "union": "are unions; ODCS has no union type, so they are strings with the member types in physicalType",
+    "list": "are lists, imported as one space-separated string",
+    "any": "allow any element (xs:any), which is not imported",
+    "anyAttribute": "allow any attribute (xs:anyAttribute), which is not imported",
+    "mixed": "have mixed content, whose text is not imported",
+    "identity": "have identity constraints (xs:key, xs:keyref, xs:unique), which are not imported",
+}
+
 
 class XsdImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
@@ -47,8 +75,9 @@ def import_xsd(source: str) -> OpenDataContractStandard:
 
     odcs = create_odcs(name=roots[0].local_name if len(roots) == 1 else Path(source).stem)
     odcs.schema_ = []
+    reader = XsdReader()
     for root in roots:
-        prop = element_property(root, optional=False, stack=())
+        prop = reader.element_property(root, optional=False, stack=(), parent="")
         schema_object = create_schema_object(
             name=prop.name,
             physical_type="object",
@@ -58,6 +87,7 @@ def import_xsd(source: str) -> OpenDataContractStandard:
         if root.target_namespace:
             schema_object.customProperties = [CustomProperty(property="xmlNamespace", value=root.target_namespace)]
         odcs.schema_.append(schema_object)
+    reader.warn()
     return odcs
 
 
@@ -96,110 +126,149 @@ def load_xml_schema(source: str):
     return schema
 
 
-def element_property(element, optional: bool, stack: tuple) -> SchemaProperty:
-    name = element.local_name
-    description = documentation(element) or (documentation(element.ref) if element.ref is not None else None)
-    required = not optional and element.min_occurs > 0 and not element.nillable
-    value = type_property(name, element.type, stack)
+class XsdReader:
+    """Reads elements into properties and notes what ODCS cannot express."""
 
-    if element.max_occurs is None or element.max_occurs > 1:
-        value.name = "items"
-        array = create_property(
+    def __init__(self):
+        self.simplified: dict[str, list[str]] = {kind: [] for kind in SIMPLIFICATIONS}
+
+    def note(self, kind: str, path: str):
+        if path not in self.simplified[kind]:
+            self.simplified[kind].append(path)
+
+    def warn(self):
+        for kind, paths in self.simplified.items():
+            if paths:
+                listed = ", ".join(paths) if len(paths) <= 6 else ", ".join(paths[:5]) + f" and {len(paths) - 5} more"
+                logger.warning(f"These properties {SIMPLIFICATIONS[kind]}: {listed}")
+
+    def element_property(self, element, optional: bool, stack: tuple, parent: str) -> SchemaProperty:
+        name = element.local_name
+        path = f"{parent}.{name}" if parent else name
+        description = documentation(element) or (documentation(element.ref) if element.ref is not None else None)
+        required = not optional and element.min_occurs > 0 and not element.nillable
+        if element.identities:
+            self.note("identity", path)
+        repeats = element.max_occurs is None or element.max_occurs > 1
+        value = self.type_property(name, element.type, stack, f"{path}[]" if repeats else path)
+
+        if repeats:
+            value.name = "items"
+            array = create_property(
+                name=name,
+                logical_type="array",
+                physical_type="array",
+                description=description,
+                required=required or None,
+                items=value,
+            )
+            occurs = {
+                "minItems": element.min_occurs if element.min_occurs > 1 else None,
+                "maxItems": element.max_occurs,
+            }
+            array.logicalTypeOptions = {key: value for key, value in occurs.items() if value is not None} or None
+            return array
+        value.description = description
+        value.required = required or None
+        return value
+
+    def type_property(self, name: str, xsd_type, stack: tuple, path: str) -> SchemaProperty:
+        if xsd_type.is_simple():
+            return self.simple_property(name, xsd_type, path)
+        attributes = self.attribute_properties(xsd_type, path)
+        if xsd_type.has_simple_content():
+            if not attributes:
+                return self.simple_property(name, xsd_type.content, path)
+            # The text of an element with attributes is its value property
+            properties = [self.simple_property("value", xsd_type.content, path, xml_node="text")] + attributes
+        elif any(xsd_type is seen for seen in stack):
+            # A recursive type stops at its first repetition
+            self.note("recursion", path)
+            properties = None
+        else:
+            if xsd_type.mixed and xsd_type.name != f"{XS}anyType":
+                self.note("mixed", path)
+            content = xsd_type.content
+            properties = self.content_properties(content, content.model == "choice", stack + (xsd_type,), path)
+            properties += attributes
+        return create_property(name=name, logical_type="object", physical_type="object", properties=properties)
+
+    def content_properties(self, group, optional: bool, stack: tuple, path: str) -> list[SchemaProperty]:
+        """The elements of a model group, with nested groups flattened; a choice makes its elements optional."""
+        from xmlschema.validators import XsdAnyElement, XsdElement, XsdGroup
+
+        properties = []
+        for particle in group:
+            if isinstance(particle, XsdGroup):
+                nested_optional = optional or particle.model == "choice" or particle.min_occurs == 0
+                properties += self.content_properties(particle, nested_optional, stack, path)
+            elif isinstance(particle, XsdElement):
+                properties.append(self.element_property(particle, optional, stack, path))
+            elif isinstance(particle, XsdAnyElement):
+                self.note("any", path)
+        return properties
+
+    def attribute_properties(self, xsd_type, path: str) -> list[SchemaProperty]:
+        properties = []
+        for attribute in xsd_type.attributes.values():
+            if attribute.name is None:
+                self.note("anyAttribute", path)
+                continue
+            if attribute.use == "prohibited":
+                continue
+            prop = self.simple_property(
+                attribute.local_name, attribute.type, f"{path}.{attribute.local_name}", xml_node="attribute"
+            )
+            prop.description = documentation(attribute)
+            prop.required = attribute.use == "required" or None
+            properties.append(prop)
+        return properties
+
+    def simple_property(self, name: str, xsd_type, path: str, xml_node: str = None) -> SchemaProperty:
+        """A property of simple type; ``xml_node`` marks an attribute or the text of an element with attributes."""
+        custom_properties = {"xmlNode": xml_node} if xml_node else None
+        if xsd_type.is_list():
+            # One text value of space-separated items, whose facets count items rather than characters
+            self.note("list", path)
+            return create_property(
+                name=name, logical_type="string", physical_type="list", custom_properties=custom_properties
+            )
+        if xsd_type.is_union():
+            self.note("union", path)
+            members = "|".join(dict.fromkeys(builtin_type(member) for member in xsd_type.member_types))
+            return create_property(
+                name=name, logical_type="string", physical_type=members, custom_properties=custom_properties
+            )
+
+        base = builtin_type(xsd_type)
+        facets = derived_facets(xsd_type)
+        length = facets.get("length")
+        patterns = facets.get("pattern")
+        # The range of a builtin integer type, unless a facet narrows it
+        lowest, highest = INTEGER_BOUNDS.get(base, (None, None))
+        minimum = facets.get("minInclusive", lowest if "minExclusive" not in facets else None)
+        maximum = facets.get("maxInclusive", highest if "maxExclusive" not in facets else None)
+        return create_property(
             name=name,
-            logical_type="array",
-            physical_type="array",
-            description=description,
-            required=required or None,
-            items=value,
+            logical_type=LOGICAL_TYPES.get(base, "string"),
+            physical_type=base,
+            enum=[plain(value) for value in facets["enumeration"]] if "enumeration" in facets else None,
+            # XSD regular expressions have no non-capturing groups
+            pattern=None
+            if not patterns
+            else patterns[0]
+            if len(patterns) == 1
+            else "|".join(f"({p})" for p in patterns),
+            min_length=facets.get("minLength", length),
+            max_length=facets.get("maxLength", length),
+            minimum=plain(minimum),
+            maximum=plain(maximum),
+            exclusive_minimum=plain(facets.get("minExclusive")),
+            exclusive_maximum=plain(facets.get("maxExclusive")),
+            precision=facets.get("totalDigits"),
+            scale=facets.get("fractionDigits"),
+            custom_properties=custom_properties,
         )
-        occurs = {"minItems": element.min_occurs if element.min_occurs > 1 else None, "maxItems": element.max_occurs}
-        array.logicalTypeOptions = {key: value for key, value in occurs.items() if value is not None} or None
-        return array
-    value.description = description
-    value.required = required or None
-    return value
-
-
-def type_property(name: str, xsd_type, stack: tuple) -> SchemaProperty:
-    if xsd_type.is_simple():
-        return simple_property(name, xsd_type)
-    attributes = attribute_properties(xsd_type)
-    if xsd_type.has_simple_content():
-        if not attributes:
-            return simple_property(name, xsd_type.content)
-        # The text of an element with attributes is its value property
-        properties = [simple_property("value", xsd_type.content, xml_node="text")] + attributes
-    elif any(xsd_type is seen for seen in stack):
-        # A recursive type stops at its first repetition
-        properties = None
-    else:
-        properties = content_properties(xsd_type.content, xsd_type.content.model == "choice", stack + (xsd_type,))
-        properties += attributes
-    return create_property(name=name, logical_type="object", physical_type="object", properties=properties)
-
-
-def content_properties(group, optional: bool, stack: tuple) -> list[SchemaProperty]:
-    """The elements of a model group, with nested groups flattened; a choice makes its elements optional."""
-    from xmlschema.validators import XsdElement, XsdGroup
-
-    properties = []
-    for particle in group:
-        if isinstance(particle, XsdGroup):
-            nested_optional = optional or particle.model == "choice" or particle.min_occurs == 0
-            properties += content_properties(particle, nested_optional, stack)
-        elif isinstance(particle, XsdElement):
-            properties.append(element_property(particle, optional, stack))
-    return properties
-
-
-def attribute_properties(xsd_type) -> list[SchemaProperty]:
-    properties = []
-    for attribute in xsd_type.attributes.values():
-        if attribute.use == "prohibited" or attribute.name is None:
-            continue
-        prop = simple_property(attribute.local_name, attribute.type, xml_node="attribute")
-        prop.description = documentation(attribute)
-        prop.required = attribute.use == "required" or None
-        properties.append(prop)
-    return properties
-
-
-def simple_property(name: str, xsd_type, xml_node: str = None) -> SchemaProperty:
-    """A property of simple type; ``xml_node`` marks an attribute or the text of an element with attributes."""
-    custom_properties = {"xmlNode": xml_node} if xml_node else None
-    if xsd_type.is_list():
-        # One text value of space-separated items, whose facets count items rather than characters
-        return create_property(
-            name=name, logical_type="string", physical_type="list", custom_properties=custom_properties
-        )
-    if xsd_type.is_union():
-        members = "|".join(dict.fromkeys(builtin_type(member) for member in xsd_type.member_types))
-        # ODCS has no union type
-        return create_property(
-            name=name, logical_type="string", physical_type=members, custom_properties=custom_properties
-        )
-
-    base = builtin_type(xsd_type)
-    facets = derived_facets(xsd_type)
-    length = facets.get("length")
-    patterns = facets.get("pattern")
-    return create_property(
-        name=name,
-        logical_type=LOGICAL_TYPES.get(base, "string"),
-        physical_type=base,
-        enum=[plain(value) for value in facets["enumeration"]] if "enumeration" in facets else None,
-        # XSD regular expressions have no non-capturing groups
-        pattern=None if not patterns else patterns[0] if len(patterns) == 1 else "|".join(f"({p})" for p in patterns),
-        min_length=facets.get("minLength", length),
-        max_length=facets.get("maxLength", length),
-        minimum=plain(facets.get("minInclusive")),
-        maximum=plain(facets.get("maxInclusive")),
-        exclusive_minimum=plain(facets.get("minExclusive")),
-        exclusive_maximum=plain(facets.get("maxExclusive")),
-        precision=facets.get("totalDigits"),
-        scale=facets.get("fractionDigits"),
-        custom_properties=custom_properties,
-    )
 
 
 def builtin_type(xsd_type) -> str:

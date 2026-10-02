@@ -413,3 +413,36 @@ PLAIN_DOCUMENT = (
 )  # fmt: skip
 def test_a_plain_contract_validates_documents(schema_plain, old, new, valid):
     assert schema_plain.is_valid(PLAIN_DOCUMENT.replace(old, new) if old else PLAIN_DOCUMENT) == valid
+
+
+def test_export_leaves_out_the_range_its_integer_type_already_has():
+    contract = """
+apiVersion: v3.2.0
+kind: DataContract
+id: bounds
+version: 1.0.0
+status: active
+schema:
+  - name: counter
+    properties:
+      - name: count
+        logicalType: integer
+        physicalType: unsignedInt
+        required: true
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 4294967295
+      - name: score
+        logicalType: integer
+        physicalType: unsignedByte
+        required: true
+        logicalTypeOptions:
+          minimum: 1
+          maximum: 255
+"""
+    schema = xmlschema.XMLSchema(to_xsd(DataContract(data_contract_str=contract).get_data_contract()))
+
+    count, score = schema.elements["counter"].type.content.iter_elements()
+    assert count.type.name.endswith("unsignedInt")  # the builtin itself, no restriction
+    assert score.type.base_type.name.endswith("unsignedByte") and score.type.min_value == 1
+    assert f"{XS}maxInclusive" not in score.type.facets

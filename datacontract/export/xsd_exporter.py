@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
-from datacontract.imports.xsd_importer import LOGICAL_TYPES
+from datacontract.imports.xsd_importer import INTEGER_BOUNDS, LOGICAL_TYPES
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_key, get_map_value, is_map
 
@@ -105,7 +105,9 @@ class XsdWriter:
         if prop.logicalType == "array":
             value = prop.items or SchemaProperty(name=name, logicalType="string")
             min_items = option(prop, "minItems")
-            node.set("minOccurs", str(min_items if min_items is not None else 1 if prop.required else 0))
+            min_occurs = min_items if min_items is not None else 1 if prop.required else 0
+            if min_occurs != 1:
+                node.set("minOccurs", str(min_occurs))
             node.set("maxOccurs", str(option(prop, "maxItems") or "unbounded"))
         elif not prop.required:
             node.set("minOccurs", "0")
@@ -218,6 +220,12 @@ def facets(prop: SchemaProperty) -> list[tuple[str, object]]:
             if bounds[inclusive] is not None and bounds[exclusive] is not None:
                 loose = inclusive if tighter(bounds[inclusive], bounds[exclusive]) == bounds[exclusive] else exclusive
                 bounds[loose] = None
+        # The range of the builtin integer type itself needs no facet
+        lowest, highest = INTEGER_BOUNDS.get(xsd_type(prop).removeprefix("xs:"), (None, None))
+        if bounds["minimum"] is not None and bounds["minimum"] == lowest:
+            bounds["minimum"] = None
+        if bounds["maximum"] is not None and bounds["maximum"] == highest:
+            bounds["maximum"] = None
     result += [(FACETS[name], value) for name, value in bounds.items() if value is not None]
     if logical_type in ("integer", "number") and xsd_type(prop) not in ("xs:float", "xs:double"):
         for custom, facet in (("precision", "totalDigits"), ("scale", "fractionDigits")):

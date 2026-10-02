@@ -92,7 +92,8 @@ def test_purchase_order_items():
     assert items.logicalType == "array" and items.required is None  # minOccurs="0"
     item = properties(items.items)
     assert item["quantity"].physicalType == "positiveInteger"
-    assert item["quantity"].logicalTypeOptions == {"exclusiveMaximum": 100}
+    # a positiveInteger starts at 1; the facet sets the upper bound
+    assert item["quantity"].logicalTypeOptions == {"minimum": 1, "exclusiveMaximum": 100}
     # a simpleContent restriction keeps the attributes of the type it restricts
     price = properties(item["USPrice"])
     assert list(price) == ["value", "currency"]
@@ -311,3 +312,98 @@ def test_import_malformed_xml(tmp_path: Path):
 def test_import_a_missing_file():
     with pytest.raises(DataContractException, match="Failed to parse XML Schema"):
         DataContract.import_from_source("xsd", "fixtures/import/xsd/missing.xsd")
+
+
+@pytest.mark.parametrize(
+    "body, path, message",
+    [
+        (
+            """<xs:complexType name="Node"><xs:sequence>
+                 <xs:element name="child" type="Node" minOccurs="0"/>
+               </xs:sequence></xs:complexType>
+               <xs:element name="tree" type="Node"/>""",
+            "tree.child",
+            "contain their own type",
+        ),
+        (
+            '<xs:element name="ref"><xs:simpleType><xs:union memberTypes="xs:int xs:date"/></xs:simpleType></xs:element>',
+            "ref",
+            "are unions",
+        ),
+        (
+            '<xs:element name="tags"><xs:simpleType><xs:list itemType="xs:token"/></xs:simpleType></xs:element>',
+            "tags",
+            "are lists",
+        ),
+        (
+            '<xs:element name="doc"><xs:complexType><xs:sequence><xs:any processContents="lax"/></xs:sequence></xs:complexType></xs:element>',
+            "doc",
+            "allow any element",
+        ),
+        (
+            '<xs:element name="doc"><xs:complexType><xs:anyAttribute/></xs:complexType></xs:element>',
+            "doc",
+            "allow any attribute",
+        ),
+        (
+            """<xs:element name="para"><xs:complexType mixed="true"><xs:sequence>
+                 <xs:element name="b" type="xs:string" minOccurs="0"/>
+               </xs:sequence></xs:complexType></xs:element>""",
+            "para",
+            "mixed content",
+        ),
+        (
+            """<xs:element name="orders"><xs:complexType><xs:sequence>
+                 <xs:element name="id" type="xs:string" maxOccurs="unbounded"/>
+               </xs:sequence></xs:complexType>
+               <xs:unique name="unique_id"><xs:selector xpath="id"/><xs:field xpath="."/></xs:unique>
+               </xs:element>""",
+            "orders",
+            "identity constraints",
+        ),
+    ],
+)
+def test_import_warns_about_what_it_simplifies(tmp_path: Path, caplog, body, path, message):
+    with caplog.at_level(logging.WARNING):
+        import_xsd(tmp_path, body)
+
+    warning = next(r.getMessage() for r in caplog.records if message in r.getMessage())
+    assert warning.endswith(f": {path}")
+
+
+def test_import_warns_about_nothing_when_nothing_is_simplified(tmp_path: Path, caplog):
+    with caplog.at_level(logging.WARNING):
+        import_xsd(tmp_path, '<xs:element name="value" type="xs:string"/>')
+
+    assert caplog.records == []
+
+
+@pytest.mark.parametrize(
+    "xsd_type, bounds",
+    [
+        ("byte", {"minimum": -128, "maximum": 127}),
+        ("unsignedByte", {"minimum": 0, "maximum": 255}),
+        ("short", {"minimum": -32768, "maximum": 32767}),
+        ("unsignedInt", {"minimum": 0, "maximum": 4294967295}),
+        ("long", {"minimum": -9223372036854775808, "maximum": 9223372036854775807}),
+        ("unsignedLong", {"minimum": 0}),
+        ("positiveInteger", {"minimum": 1}),
+        ("nonPositiveInteger", {"maximum": 0}),
+        ("integer", None),
+    ],
+)
+def test_import_the_range_of_builtin_integer_types(tmp_path: Path, xsd_type, bounds):
+    result = import_xsd(tmp_path, f'<xs:element name="value" type="xs:{xsd_type}"/>')
+
+    assert result.schema_[0].properties[0].logicalTypeOptions == bounds
+
+
+def test_import_a_facet_narrows_the_range_of_its_integer_type(tmp_path: Path):
+    result = import_xsd(
+        tmp_path,
+        """<xs:element name="value"><xs:simpleType><xs:restriction base="xs:unsignedByte">
+             <xs:minExclusive value="9"/>
+           </xs:restriction></xs:simpleType></xs:element>""",
+    )
+
+    assert result.schema_[0].properties[0].logicalTypeOptions == {"exclusiveMinimum": 9, "maximum": 255}

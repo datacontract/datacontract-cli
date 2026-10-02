@@ -198,6 +198,7 @@ schema:
           physicalType: positiveInteger
           logicalType: integer
           logicalTypeOptions:
+            minimum: 1
             exclusiveMaximum: 100
           required: true
         - name: USPrice
@@ -273,6 +274,9 @@ schema:
       - name: revision
         physicalType: unsignedShort
         logicalType: integer
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 65535
         required: true
   - name: orderDate
     physicalType: date

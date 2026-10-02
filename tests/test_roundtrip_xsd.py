@@ -232,3 +232,15 @@ def test_a_plain_contract_to_xsd_and_back_keeps_its_structure_and_constraints(tm
     assert props["email"].logicalTypeOptions == {"maxLength": 320}
     # XSD patterns are anchored, so the anchors are gone
     assert props["phone_numbers"].items.logicalTypeOptions == {"pattern": "\\+[0-9 ]+"}
+
+
+def test_an_xsd_with_every_supported_construct_comes_back_byte_for_byte(tmp_path: Path):
+    """Import and export again: the schema is the one that went in, character for character."""
+    original = Path("fixtures/xsd/canonical.xsd").read_text()
+    xmlschema.XMLSchema(original)
+
+    imported = import_xsd("fixtures/xsd/canonical.xsd")
+
+    assert to_xsd(imported) == original
+    # and the contract it imports to survives the next round as well
+    assert roundtrip(imported, tmp_path).model_dump() == imported.model_dump()

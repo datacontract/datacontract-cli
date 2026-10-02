@@ -62,6 +62,8 @@ schema:
     - property: xmlNode
       value: attribute
     logicalType: integer
+    logicalTypeOptions:
+      minimum: 1
     required: true
 servers:
 - server: local

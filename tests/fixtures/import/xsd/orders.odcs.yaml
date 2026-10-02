@@ -68,6 +68,8 @@ schema:
     - name: loyalty_points
       physicalType: nonNegativeInteger
       logicalType: integer
+      logicalTypeOptions:
+        minimum: 0
       required: true
   - name: email
     physicalType: string
@@ -149,6 +151,8 @@ schema:
     - property: xmlNode
       value: attribute
     logicalType: integer
+    logicalTypeOptions:
+      minimum: 1
     required: true
   - name: created_by
     physicalType: string
