@@ -1,14 +1,17 @@
 """`datacontract test` against XML files, read through the webbed DuckDB community extension.
 
-The contract is the one `datacontract import xsd` creates from fixtures/import/xsd/orders.xsd,
-so these tests also show that an imported XML Schema is ready to test the documents it describes.
+The contracts are the ones `datacontract import xsd` creates from the test schemas, so these tests
+also show that an imported XML Schema is ready to test the documents it describes.
 """
 
+import glob
 from pathlib import Path
 
 import duckdb
 import pytest
+import xmlschema
 import yaml
+from open_data_contract_standard.model import Server
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -131,7 +134,8 @@ schema:
     run = DataContract(data_contract_str=contract_str).test()
 
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
-    assert len(run.checks) == 9
+    # presence is checked for the required order_id only: optional elements may be absent from every document
+    assert len(run.checks) == 7
 
 
 def test_a_record_element_that_is_not_in_the_documents_fails():
@@ -218,3 +222,92 @@ def test_an_imported_pattern_matches_the_whole_value(tmp_path: Path):
         results(run)["Check that field line_items.line_item[].sku matches regex pattern ^([A-Z]{3}-[0-9]{4})$"]
         == "failed"
     )
+
+
+# Each schema with documents that follow it and one document that breaks every constraint once
+SCHEMAS = {
+    "orders": ("fixtures/import/xsd/orders.xsd", "fixtures/xml/data/*.xml", "fixtures/xml/invalid/order-3.xml"),
+    "purchase-order": (
+        "fixtures/import/xsd/purchase-order.xsd",
+        "fixtures/xml/purchase-order/valid/*.xml",
+        "fixtures/xml/purchase-order/invalid/po-3.xml",
+    ),
+    "canonical": (
+        "fixtures/xsd/canonical.xsd",
+        "fixtures/xml/canonical/valid/*.xml",
+        "fixtures/xml/canonical/invalid/order-3.xml",
+    ),
+}
+
+
+def imported(xsd: str, path: str) -> DataContract:
+    """The contract `datacontract import xsd` creates, with a server for the documents."""
+    contract = DataContract.import_from_source("xsd", xsd)
+    contract.servers = [Server(server="local", type="local", path=path, format="xml")]
+    return DataContract(data_contract=contract)
+
+
+@pytest.mark.parametrize("name", SCHEMAS)
+def test_the_documents_follow_their_own_xsd(name):
+    """A planted violation must break the schema too, and a valid document must not."""
+    xsd, valid, invalid = SCHEMAS[name]
+    schema = xmlschema.XMLSchema(xsd, allow="local", validation="lax")
+
+    documents = sorted(glob.glob(valid))
+    assert documents
+    for document in documents:
+        assert list(schema.iter_errors(document)) == [], document
+    assert not schema.is_valid(invalid)
+
+
+@pytest.mark.parametrize("name", SCHEMAS)
+def test_valid_documents_pass_the_imported_contract(name):
+    xsd, valid, _ = SCHEMAS[name]
+
+    run = imported(xsd, valid).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+PLANTED = {
+    "purchase-order": {
+        "Check that field shipTo.state has a max length of 2",
+        "Check that field shipTo.latitude has a maximum of 90",
+        "Check that field creditCard.number matches regex pattern ^(\\d{16}|\\d{4}-\\d{4}-\\d{4}-\\d{4})$",
+        "Check that field items.item[].productName has no missing values",
+        "Check that field items.item[].quantity is not equal to 100",
+        "Check that field items.item[].USPrice.value has a maximum of 99999.99",
+        "Check that field items.item[].partNum matches regex pattern ^(\\d{3}-[A-Z]{2})$",
+        "Check that field metadata.channel only contains enum values ['web', 'phone', 'store']",
+        "Check that field 'orderDate' is present",
+        "Check that field orderDate has no missing values",
+        "Check that field priority only contains enum values [1, 2, 3]",
+    },
+    "canonical": {
+        "Check that field order_id has a min length of 8",
+        "Check that field order_id matches regex pattern ^(ORD-[0-9]{4})$",
+        "Check that field code has a max length of 10",
+        "Check that field delivery_date has a minimum of 2020-01-01",
+        "Check that field total is not equal to 1000000",
+        # the range of xs:unsignedInt
+        "Check that field items_count has a minimum of 0",
+        "Check that field priority only contains enum values [1, 2, 3]",
+        "Check that field status only contains enum values ['pending', 'shipped']",
+        "Check that field customer.display_name has no missing values",
+        "Check that field customer.id has no missing values",
+        "Check that field line_item[].quantity has a maximum of 999",
+        "Check that field line_item[].price.value has a minimum of 0",
+        "Check that field line_item[].price.currency has a max length of 3",
+        "Check that field 'version' is present",
+        "Check that field version has no missing values",
+    },
+}
+
+
+@pytest.mark.parametrize("name", PLANTED)
+def test_an_invalid_document_fails_exactly_the_planted_checks(name):
+    xsd, _, invalid = SCHEMAS[name]
+
+    run = imported(xsd, invalid).test()
+
+    assert {c.name for c in run.checks if c.result != "passed"} == PLANTED[name]

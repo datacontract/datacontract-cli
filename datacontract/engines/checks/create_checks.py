@@ -273,22 +273,28 @@ def _to_schema_checks(
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
+    # An XML element or attribute that is not required may be absent from every document, and the
+    # types DuckDB infers for the raw view drop the attributes of nested elements with children.
+    # The record element's required properties still show whether records are found at all.
+    xml = server is not None and server.format == "xml"
+
     for field, prop, nested in _iter_property_paths(properties):
         first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
-        checks.append(
-            CheckSpec(
-                key=f"{model}__{field}__field_is_present",
-                category="schema",
-                type="field_is_present",
-                name=f"Check that field '{field}' is present",
-                model=model,
-                field=field,
-                metric=MetricType.FIELD_PRESENT,
-                uses_raw_view=uses_raw_view,
+        if not xml or (prop.required and not nested):
+            checks.append(
+                CheckSpec(
+                    key=f"{model}__{field}__field_is_present",
+                    category="schema",
+                    type="field_is_present",
+                    name=f"Check that field '{field}' is present",
+                    model=model,
+                    field=field,
+                    metric=MetricType.FIELD_PRESENT,
+                    uses_raw_view=uses_raw_view,
+                )
             )
-        )
 
         # The raw view cannot provide nested type checks
         declared_base = normalize_type_name(prop.logicalType or prop.physicalType)

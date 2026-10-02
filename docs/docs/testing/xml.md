@@ -95,7 +95,7 @@ Server: local (type=local, format=xml, path=orders/*.xml)
 │        │ values ['pending', 'shipped']                    │                            │         │
 │ passed │ Check that field version has no missing values   │ version                    │         │
 ╰────────┴──────────────────────────────────────────────────┴────────────────────────────┴─────────╯
-🟢 Data contract is valid. Run 18 checks. Took 0.35 seconds.
+🟢 Data contract is valid. Run 15 checks. Took 0.35 seconds.
 ```
 
 ## 4. Let it catch a violation
@@ -146,6 +146,7 @@ The command exits with code `1`, so the same call works as a gate in [CI/CD pipe
   ```
 
 - **Namespaces.** Elements are matched by their local name, so `<o:order xmlns:o="urn:example:orders">` is an `order` record.
+- **Presence.** An element or attribute that is not required may be absent from every document, so only the required properties of the record element are checked for presence; that check fails when no record is found. Required values further down are checked for missing values.
 - **Types.** The documents are read as the contract's `logicalType`s, like [CSV files](../reference/local.md#data-types); `physicalType` is not checked.
 
 ## Reference
@@ -155,6 +156,6 @@ No environment variables are needed. The `path` supports glob patterns and a `{m
 ## Troubleshooting
 
 - **`Failed to install the 'webbed' DuckDB community extension`** — the first run downloads the extension. Run it once with network access; later runs use the installed copy.
-- **Every field is reported as missing** — no element in the documents is named like the schema's `physicalName`. Set `physicalName` to the element of one record, for example `order` rather than the wrapper `orders`.
+- **The record's required fields are reported as not present** — no element in the documents is named like the schema's `physicalName`. Set `physicalName` to the element of one record, for example `order` rather than the wrapper `orders`.
 - **`value '…' does not match column type …`** — a value cannot be read as its property's `logicalType`, such as `<quantity>many</quantity>` for an `integer`. The checks that need the value report the read error.
 - **The text of an element is always missing** — the property for it needs the custom property `xmlNode: text` (see above).
