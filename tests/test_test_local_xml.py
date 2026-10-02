@@ -6,6 +6,7 @@ so these tests also show that an imported XML Schema is ready to test the docume
 
 from pathlib import Path
 
+import duckdb
 import pytest
 import yaml
 from typer.testing import CliRunner
@@ -178,3 +179,18 @@ def test_an_element_without_its_attributes_keeps_its_text(tmp_path: Path):
 
     failed = {name for name, result in results(run).items() if result != "passed"}
     assert failed == {"Check that field line_items.line_item[].price.currency has no missing values"}
+
+
+@pytest.mark.parametrize(
+    "schema_changes",
+    [
+        {"name": 'o" AS SELECT 1; CREATE MACRO injected() AS 42; CREATE VIEW "z'},
+        {"physicalName": 'order" AS SELECT 1; CREATE MACRO injected() AS 42; --'},
+    ],
+)
+def test_names_from_the_contract_are_not_run_as_sql(schema_changes):
+    con = duckdb.connect()
+
+    DataContract(data_contract_str=contract("fixtures/xml/data/*.xml", **schema_changes), duckdb_connection=con).test()
+
+    assert con.sql("SELECT * FROM duckdb_functions() WHERE function_name = 'injected'").fetchall() == []

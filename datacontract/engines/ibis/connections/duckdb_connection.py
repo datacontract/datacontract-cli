@@ -119,7 +119,7 @@ def get_duckdb_connection(
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
             elif server.format == "xml":
                 create_xml_views(con, schema_obj, model_path)
-            table_info = con.sql(f'PRAGMA table_info("{model_name}");').fetchall()
+            table_info = con.sql(f"PRAGMA table_info({_quote(model_name)});").fetchall()
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
     return con
@@ -261,18 +261,24 @@ def create_xml_views(con, schema_obj: SchemaObject, model_path: str):
     The checks address a schema by its physical name, quality SQL often by its name, so both name the view.
     """
     record_element = schema_obj.physicalName or schema_obj.name
-    read_xml = f"read_xml('{model_path}', record_element='{_sql_literal(record_element)}', union_by_name=true"
+    read_xml = (
+        f"read_xml('{_sql_literal(model_path)}', record_element='{_sql_literal(record_element)}', union_by_name=true"
+    )
     columns = to_json_types(_with_xml_text_keys(schema_obj))
-    typed = f"{read_xml}, columns={columns})" if columns else f"{read_xml})"
-    con.sql(f'CREATE VIEW "{record_element}" AS {_xml_text_as_value(con, typed, schema_obj)};')
+    if columns:
+        struct = ", ".join(f"'{_sql_literal(name)}': '{_sql_literal(sql_type)}'" for name, sql_type in columns.items())
+        typed = f"{read_xml}, columns={{{struct}}})"
+    else:
+        typed = f"{read_xml})"
+    con.sql(f"CREATE VIEW {_quote(record_element)} AS {_xml_text_as_value(con, typed, schema_obj)};")
     if columns:
         add_nested_views(con, record_element, schema_obj.properties)
     # Raw view without the columns= projection to check for absent columns (check_property_is_present);
     # as text, so that a value of the wrong type fails the checks of its column, not the presence of all
     raw = f"{read_xml}, all_varchar=true)"
-    con.sql(f'CREATE VIEW "{record_element}__raw__" AS {_xml_text_as_value(con, raw, schema_obj)};')
+    con.sql(f"CREATE VIEW {_quote(record_element + '__raw__')} AS {_xml_text_as_value(con, raw, schema_obj)};")
     if schema_obj.name != record_element:
-        con.sql(f'CREATE VIEW "{schema_obj.name}" AS SELECT * FROM "{record_element}";')
+        con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(record_element)};")
 
 
 def _with_xml_text_keys(schema_obj: SchemaObject) -> SchemaObject:
@@ -412,10 +418,10 @@ def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properti
         ## if parent field is not required, the nested objects may resolve
         ## to a row of NULLs -- but if the objects themselves have required
         ## fields, this will fail the check.
-        where = "" if prop.required else f" WHERE {field_name} IS NOT NULL"
+        where = "" if prop.required else f" WHERE {_quote(field_name)} IS NOT NULL"
         con.sql(f"""
-            CREATE VIEW IF NOT EXISTS "{nested_model_name}" AS
-            SELECT unnest({field_name}, max_depth := {max_depth}) as {field_name} FROM "{model_name}" {where}
+            CREATE VIEW IF NOT EXISTS {_quote(nested_model_name)} AS
+            SELECT unnest({_quote(field_name)}, max_depth := {max_depth}) as {_quote(field_name)} FROM {_quote(model_name)} {where}
             """)
         if field_type == "array":
             add_nested_views(con, nested_model_name, prop.items.properties if prop.items else None)
