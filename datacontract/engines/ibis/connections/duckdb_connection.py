@@ -364,13 +364,7 @@ def _sql_literal(value) -> str:
 
 
 def setup_s3_connection(con, server: Server, config: Config | None = None):
-    """Hand duckdb the configured keys, else the credentials boto3 resolves.
-
-    duckdb's own ``PROVIDER credential_chain`` cannot read an SSO cache, so an
-    ``aws sso login`` session that works for Athena and Redshift would otherwise
-    fail here with a bare 403. Nothing resolvable leaves the secret without a
-    key, so a public bucket is read unsigned, yet still at the server's endpoint.
-    """
+    """boto3 resolves the credentials because duckdb's ``PROVIDER credential_chain`` cannot read an SSO cache."""
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
     s3_endpoint = "s3.amazonaws.com"
@@ -382,28 +376,19 @@ def setup_s3_connection(con, server: Server, config: Config | None = None):
         if server.endpointUrl.startswith("http://"):
             use_ssl = "false"
 
-    credentials_clauses = ""
+    options = {"ENDPOINT": s3_endpoint, "USE_SSL": use_ssl, "URL_STYLE": url_style}
     credentials = resolve_aws_credentials(config)
     if credentials is not None:
         # No PROVIDER: defaults to `config`, which accepts these explicit keys.
         # (duckdb >=1.5 rejects CREDENTIAL_CHAIN combined with explicit credentials.)
-        credentials_clauses = (
-            f"KEY_ID '{_sql_literal(credentials.access_key_id)}', "
-            f"SECRET '{_sql_literal(credentials.secret_access_key)}',"
-        )
-        if credentials.region:
-            credentials_clauses += f" REGION '{_sql_literal(credentials.region)}',"
-        if credentials.session_token:
-            credentials_clauses += f" SESSION_TOKEN '{_sql_literal(credentials.session_token)}',"
-    con.sql(f"""
-        CREATE OR REPLACE SECRET s3_secret (
-            TYPE S3,
-            {credentials_clauses}
-            ENDPOINT '{_sql_literal(s3_endpoint)}',
-            USE_SSL '{_sql_literal(use_ssl)}',
-            URL_STYLE '{_sql_literal(url_style)}'
-        );
-    """)
+        options |= {
+            "KEY_ID": credentials.access_key_id,
+            "SECRET": credentials.secret_access_key,
+            "REGION": credentials.region,
+            "SESSION_TOKEN": credentials.session_token,
+        }
+    clauses = ", ".join(f"{name} '{_sql_literal(value)}'" for name, value in options.items() if value)
+    con.sql(f"CREATE OR REPLACE SECRET s3_secret (TYPE S3, {clauses});")
 
 
 def setup_gcs_connection(con, server: Server, config: Config):
