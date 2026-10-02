@@ -1,4 +1,5 @@
 import json
+import math
 from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
@@ -127,19 +128,20 @@ def to_property(prop: SchemaProperty) -> dict:
     if prop.description:
         property_dict["description"] = prop.description
 
-    exclusive_minimum = _get_logical_type_option(prop, "exclusiveMinimum")
+    # An infinite bound bounds nothing, and JSON has no infinite numbers
+    exclusive_minimum = _finite(_get_logical_type_option(prop, "exclusiveMinimum"))
     if exclusive_minimum is not None:
         property_dict["exclusiveMinimum"] = exclusive_minimum
 
-    exclusive_maximum = _get_logical_type_option(prop, "exclusiveMaximum")
+    exclusive_maximum = _finite(_get_logical_type_option(prop, "exclusiveMaximum"))
     if exclusive_maximum is not None:
         property_dict["exclusiveMaximum"] = exclusive_maximum
 
-    minimum = _get_logical_type_option(prop, "minimum")
+    minimum = _finite(_get_logical_type_option(prop, "minimum"))
     if minimum is not None:
         property_dict["minimum"] = minimum
 
-    maximum = _get_logical_type_option(prop, "maximum")
+    maximum = _finite(_get_logical_type_option(prop, "maximum"))
     if maximum is not None:
         property_dict["maximum"] = maximum
 
@@ -163,6 +165,10 @@ def to_required(properties: List[SchemaProperty]) -> list:
         if prop.required is True:
             required.append(prop.physicalName or prop.name)
     return required
+
+
+def _finite(value):
+    return None if isinstance(value, float) and math.isinf(value) else value
 
 
 def convert_type_format(type_str: Optional[str], format_str: Optional[str]) -> tuple:

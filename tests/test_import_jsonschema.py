@@ -149,3 +149,27 @@ def test_import_json_schema_boolean_branches(tmp_path: Path):
     # true admits every value, so the property is untyped; false admits none, so it is dropped
     assert (properties["anything"].logicalType, properties["anything"].physicalType) == ("string", "string")
     assert properties["total"].logicalType == "integer"
+
+
+def test_import_boolean_schemas(tmp_path):
+    source = tmp_path / "schema.json"
+    source.write_text(
+        json.dumps({"properties": {"anything": True, "never": False, "list": {"type": "array", "items": True}}})
+    )
+
+    result = DataContract.import_from_source("jsonschema", str(source))
+
+    properties = {p.name: p for p in result.schema_[0].properties}
+    assert list(properties) == ["anything", "list"]
+    assert properties["list"].items is not None
+
+
+def test_import_an_infinite_bound_as_no_bound(tmp_path):
+    source = tmp_path / "schema.json"
+    source.write_text(
+        '{"properties": {"n": {"type": "number", "minimum": 0, "maximum": 1e400, "exclusiveMinimum": -1e400}}}'
+    )
+
+    result = DataContract.import_from_source("jsonschema", str(source))
+
+    assert result.schema_[0].properties[0].logicalTypeOptions == {"minimum": 0}

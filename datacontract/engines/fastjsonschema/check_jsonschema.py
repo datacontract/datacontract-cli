@@ -72,14 +72,15 @@ def resolve_error_limit(config: Config | None = None) -> int:
     return configured_limit
 
 
-def process_exceptions(run, exceptions: List[DataContractException], config: Config | None = None):
+def process_exceptions(run, exceptions: List[DataContractException], config: Config | None = None) -> bool:
+    """Record the validation failures as failed checks, up to the error limit; True when there were any.
+
+    The run goes on, so the other checks still report on the data.
+    """
     if not exceptions:
-        return
+        return False
 
-    # Calculate the effective limit to avoid index out of range
     limit = min(len(exceptions), resolve_error_limit(config))
-
-    # Add all exceptions up to the limit - 1 to `run.checks`.
     DEFAULT_ERROR_MESSAGE = "An error occurred during validation phase. See the logs for more details."
     run.checks.extend(
         [
@@ -93,13 +94,10 @@ def process_exceptions(run, exceptions: List[DataContractException], config: Con
                 engine=exception.engine,
                 message=exception.message or DEFAULT_ERROR_MESSAGE,
             )
-            for exception in exceptions[: limit - 1]
+            for exception in exceptions[:limit]
         ]
     )
-
-    # Raise the last exception within the limit.
-    last_exception = exceptions[limit - 1]
-    raise last_exception
+    return True
 
 
 def validate_json_stream(
@@ -160,27 +158,21 @@ def read_json_file_content(file_content: str):
     yield json.loads(file_content)
 
 
-def process_json_file(run, schema, model_name, validate, file, delimiter, config: Config | None = None):
+def validate_json_file(schema, model_name, validate, file, delimiter) -> List[DataContractException]:
     if delimiter == "new_line":
         json_stream = read_json_lines(file)
     elif delimiter == "array":
         json_stream = read_json_array(file)
     else:
         json_stream = read_json_file(file)
-
-    # Validate the JSON stream and collect exceptions.
-    exceptions = validate_json_stream(schema, model_name, validate, json_stream)
-
-    # Handle all errors from schema validation.
-    process_exceptions(run, exceptions, config)
+    return validate_json_stream(schema, model_name, validate, json_stream)
 
 
-def process_local_file(run, server, schema, model_name, validate, config: Config | None = None):
+def process_local_file(run, server, schema, model_name, validate, config: Config | None = None) -> bool:
     path = server.path
     if not path:
         raise DataContractException(
             type="schema",
-            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason="For server with type 'local', a 'path' must be defined.",
@@ -206,20 +198,24 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
     if not all_files:
         raise DataContractException(
             type="schema",
-            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"No files found in '{path}'.",
             engine="datacontract-cli",
         )
 
+    error_limit = resolve_error_limit(config)
+    exceptions: List[DataContractException] = []
     for file in all_files:
         logger.info(f"Processing file: {file}")
         with open(file, "r", encoding=getattr(server, "encoding", None) or "utf-8") as f:
-            process_json_file(run, schema, model_name, validate, f, server.delimiter, config)
+            exceptions.extend(validate_json_file(schema, model_name, validate, f, server.delimiter))
+        if len(exceptions) >= error_limit:
+            break
+    return process_exceptions(run, exceptions, config)
 
 
-def process_s3_file(run, server, schema, model_name, validate, config: Config | None = None):
+def process_s3_file(run, server, schema, model_name, validate, config: Config | None = None) -> bool:
     s3_endpoint_url = server.endpointUrl
     s3_location = server.location
     if "{model}" in s3_location:
@@ -247,15 +243,13 @@ def process_s3_file(run, server, schema, model_name, validate, config: Config | 
     if not found_file:
         raise DataContractException(
             type="schema",
-            dimension=default_dimension("schema"),
             name="Check that JSON has valid schema",
             result=ResultEnum.warning,
             reason=f"Cannot find any file in {s3_location}",
             engine="datacontract-cli",
         )
 
-    # Handle all errors from schema validation.
-    process_exceptions(run, exceptions, config)
+    return process_exceptions(run, exceptions, config)
 
 
 def check_jsonschema(
@@ -318,9 +312,9 @@ def check_jsonschema(
 
         # Process files based on server type
         if server.type == "local":
-            process_local_file(run, server, schema, model_name, validate, config)
+            failed = process_local_file(run, server, schema, model_name, validate, config)
         elif server.type == "s3":
-            process_s3_file(run, server, schema, model_name, validate, config)
+            failed = process_s3_file(run, server, schema, model_name, validate, config)
         elif server.type == "gcs":
             run.checks.append(
                 Check(
@@ -359,14 +353,15 @@ def check_jsonschema(
             )
             return
 
-        run.checks.append(
-            Check(
-                type="schema",
-                dimension=default_dimension("schema"),
-                name="Check that JSON has valid schema",
-                model=model_name,
-                result=ResultEnum.passed,
-                reason="All JSON entries are valid.",
-                engine="jsonschema",
+        if server.type in ("local", "s3") and not failed:
+            run.checks.append(
+                Check(
+                    type="schema",
+                    dimension=default_dimension("schema"),
+                    name="Check that JSON has valid schema",
+                    model=model_name,
+                    result=ResultEnum.passed,
+                    reason="All JSON entries are valid.",
+                    engine="jsonschema",
+                )
             )
-        )

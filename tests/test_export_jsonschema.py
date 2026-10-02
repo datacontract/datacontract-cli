@@ -200,3 +200,29 @@ def read_file(data_contract_file):
     with open(data_contract_file, "r") as file:
         file_content = file.read()
     return file_content
+
+
+def test_an_infinite_bound_is_not_exported():
+    contract = DataContract(
+        data_contract_str="""
+apiVersion: v3.2.0
+kind: DataContract
+id: inf
+version: 1.0.0
+status: active
+schema:
+  - name: measure
+    properties:
+      - name: n
+        logicalType: number
+        logicalTypeOptions:
+          minimum: 0
+          maximum: .inf
+"""
+    ).get_data_contract()
+
+    exported = to_jsonschema("measure", contract.schema_[0])
+
+    # JSON has no infinite numbers, and an infinite bound bounds nothing
+    assert exported["properties"]["n"]["minimum"] == 0
+    assert "maximum" not in exported["properties"]["n"]

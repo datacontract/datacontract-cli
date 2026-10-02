@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 from typing import Any, Dict, List
 
 import fastjsonschema
@@ -94,6 +95,9 @@ def jsonschema_to_properties(json_properties: Dict[str, Any], required_propertie
     properties = []
 
     for prop_name, prop_schema in json_properties.items():
+        if prop_schema is False:
+            # a property that no value satisfies, i.e. one that must be absent
+            continue
         is_required = prop_name in required_properties
         prop = schema_to_property(prop_name, prop_schema, is_required)
         properties.append(prop)
@@ -103,6 +107,9 @@ def jsonschema_to_properties(json_properties: Dict[str, Any], required_propertie
 
 def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool = None) -> SchemaProperty:
     """Convert a JSON Schema property to an ODCS SchemaProperty."""
+    if prop_schema is True:
+        # the boolean schema true admits every value, like {}
+        prop_schema = {}
     key = "anyOf" if "anyOf" in prop_schema else "oneOf"
     if key in prop_schema:
         # A true branch admits every value, a false one none
@@ -125,15 +132,16 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
     pattern = prop_schema.get("pattern")
     min_length = prop_schema.get("minLength")
     max_length = prop_schema.get("maxLength")
-    minimum = prop_schema.get("minimum")
-    maximum = prop_schema.get("maximum")
+    # An infinite bound, such as 1e400, bounds nothing
+    minimum = finite(prop_schema.get("minimum"))
+    maximum = finite(prop_schema.get("maximum"))
     format_val = prop_schema.get("format")
 
     # Handle exclusiveMinimum/exclusiveMaximum (draft-04: boolean, draft-06+: number)
     exclusive_minimum = None
     exclusive_maximum = None
-    raw_exclusive_min = prop_schema.get("exclusiveMinimum")
-    raw_exclusive_max = prop_schema.get("exclusiveMaximum")
+    raw_exclusive_min = finite(prop_schema.get("exclusiveMinimum"))
+    raw_exclusive_max = finite(prop_schema.get("exclusiveMaximum"))
 
     if isinstance(raw_exclusive_min, bool):
         # Draft-04: boolean, use minimum value as exclusive
@@ -263,3 +271,8 @@ def map_jsonschema_type_to_odcs(json_type: str) -> str:
         "null": "string",
     }
     return type_mapping.get(json_type, "string")
+
+
+def finite(value):
+    """The value, or None for an infinite number."""
+    return None if isinstance(value, float) and math.isinf(value) else value

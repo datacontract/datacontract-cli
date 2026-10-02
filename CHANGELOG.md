@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export pydantic-model`: optional fields default to `None` (#1679)
 
 ### Fixed
+- `datacontract test`: a JSON record that breaks the JSON Schema no longer stops the other checks, and every such record is reported
+- `datacontract test`: JSON files that are not found are reported instead of failing with a TypeError
+- `datacontract import jsonschema`: boolean schemas (`true`, `false`) no longer fail the import
+- `datacontract import jsonschema` and `datacontract export jsonschema`: infinite bounds are left out instead of failing `datacontract test`
 - `datacontract test`: constraints on the items of an array of plain values (`pattern`, `enum`, `minimum`, …) are checked
 - `datacontract test`: required fields of an absent optional object are no longer reported as missing
 - `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1677 @dmaresma)
