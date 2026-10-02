@@ -184,6 +184,8 @@ properties:
 
 `exclusiveMinimum` and `exclusiveMaximum` each produce two checks — a bound check and an inequality check — so a violation of either is reported separately.
 
+The value options also apply to the `items` of an array of plain values, such as a `pattern` on every tag or a `minimum` on every score. The check is named after the items, `tags[]`, and counts the rows with at least one item that breaks it; `unique` on the items fails a row that repeats an item. Items inside an array of objects are reached the same way, as in `orders[].codes[]`.
+
 ## Descriptive metadata
 
 ODCS v3.2.0 adds fields that describe a schema object or property for people and tools without generating a check: `semanticType` (`column`, `measure`, `dimension`), `synonyms`, `deprecated`, and a `context` block with `instructions`, `verifiedStatements` and `constraints` for AI agents and semantic layers. The [HTML](./exports/html.md) and [Markdown](./exports/markdown.md) exports render them, [`changelog`](./commands/changelog.md) reports changes to them by their natural key (a synonym's `synonym` or `id`, an enum entry's `value` or `id`), and `export odcs` keeps them. The DCS export drops them, as the Data Contract Specification has no equivalent.

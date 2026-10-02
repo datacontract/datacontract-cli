@@ -801,10 +801,14 @@ def _is_item_duplicate(spec: CheckSpec) -> bool:
 
 def _item_duplicate_predicate(t, columns, field: str):
     """Parent rows whose array repeats a value in the item property ``field``."""
-    array_path, _, leaf = field.rpartition("[].")
+    if field.endswith("[]"):
+        # the items of an array of plain values are the values themselves
+        array_path, leaf = field[:-2], None
+    else:
+        array_path, _, leaf = field.rpartition("[].")
 
     def _repeats(array):
-        values = array.map(lambda element: _struct_path(element, leaf))
+        values = array if leaf is None else array.map(lambda element: _struct_path(element, leaf))
         return values.unique().length() < values.length()
 
     return _row_predicate(t, columns, array_path, _repeats)
@@ -1292,6 +1296,9 @@ def _row_predicate(t, columns: dict, field: str, build):
     An array hop (``items[].sku``) becomes "some element satisfies build", so the
     row count never changes and an empty array is never a violation.
     """
+    if field.endswith("[]"):
+        # The items of an array of plain values: the row breaks the rule when one of its items does
+        return _row_predicate(t, columns, field[:-2], lambda array: array.filter(build).length() > 0)
     head, marker, tail = field.partition("[].")
     if not marker:
         if "." not in field:

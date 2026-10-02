@@ -440,3 +440,24 @@ def test_a_fixed_value_is_checked(tmp_path: Path):
     ).test()
 
     assert results(run)["Check that field country only contains enum values ['US']"] == "failed"
+
+
+def test_a_pattern_on_repeated_elements_is_checked(tmp_path: Path):
+    run = xsd_contract(
+        tmp_path,
+        """<xs:element name="contact"><xs:complexType><xs:sequence>
+             <xs:element name="email" maxOccurs="unbounded"><xs:simpleType><xs:restriction base="xs:string">
+               <xs:pattern value="[^@]+@[^@]+"/></xs:restriction></xs:simpleType></xs:element>
+           </xs:sequence></xs:complexType></xs:element>""",
+        {
+            "a.xml": "<contact><email>a@x.org</email><email>b@x.org</email></contact>",
+            "b.xml": "<contact><email>c@x.org</email><email>not-an-email</email></contact>",
+        },
+    ).test()
+
+    check = next(c for c in run.checks if "regex pattern" in c.name)
+    assert (check.name, check.result, check.reason) == (
+        "Check that field email[] matches regex pattern ^([^@]+@[^@]+)$",
+        "failed",
+        "Actual invalid_count(email[]) was 1, expected = 0",
+    )

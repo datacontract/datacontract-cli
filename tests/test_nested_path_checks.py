@@ -116,3 +116,19 @@ def test_the_fields_of_an_absent_optional_object_are_not_missing(path):
     predicate = _row_predicate(t, {c: c for c in t.columns}, path, lambda c: _missing_expr(c, None))
 
     assert t.filter(predicate).order_id.to_list() == ["empty"]
+
+
+def test_a_path_to_the_items_of_an_array_of_plain_values_is_a_predicate_over_the_items():
+    t = ibis.memtable({"id": ["clean", "bad", "none"], "tags": [["a", "b"], ["a", None], None]})
+
+    predicate = _row_predicate(t, {c: c for c in t.columns}, "tags[]", lambda c: _missing_expr(c, None))
+
+    assert t.filter(predicate).id.to_list() == ["bad"]
+
+
+def test_a_path_to_items_inside_an_array_of_objects_checks_every_level():
+    t = ibis.memtable({"id": ["clean", "bad"], "orders": [[{"codes": ["X1"]}], [{"codes": ["X1"]}, {"codes": [None]}]]})
+
+    predicate = _row_predicate(t, {c: c for c in t.columns}, "orders[].codes[]", lambda c: _missing_expr(c, None))
+
+    assert t.filter(predicate).id.to_list() == ["bad"]

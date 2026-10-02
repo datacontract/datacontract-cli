@@ -138,6 +138,13 @@ def _iter_property_paths(
             # `[]` marks the array hop; the executor turns it into a predicate
             # over the elements instead of a column lookup.
             yield from _iter_property_paths(prop.items.properties, f"{field_path}[]")
+        elif prop_type == "array" and prop.items and _constrains_values(prop.items):
+            # The items of an array of plain values, such as a pattern on every tag
+            yield f"{field_path}[]", prop.items, True
+
+
+def _constrains_values(prop: SchemaProperty) -> bool:
+    return bool(prop.logicalTypeOptions or prop.enum or prop.required or prop.unique or prop.quality)
 
 
 def nested_not_run_reason(server_type: Optional[str]) -> str:
