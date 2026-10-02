@@ -145,7 +145,7 @@ def test_parquet_required_field_missing_fails():
 
 
 def test_json_optional_field_missing_from_old_data():
-    """Optional field not present in historical JSON data is correctly detected as missing"""
+    """An optional field that no record of historical JSON data has is fine: a JSON document may leave it out"""
     data_contract = DataContract(
         data_contract_file="fixtures/schema-evolution/odcs-datacontract-cities-version-2.yaml",
         server="historical-json",
@@ -153,14 +153,8 @@ def test_json_optional_field_missing_from_old_data():
 
     run = data_contract.test()
 
-    # field_is_present should detect that 'population' is missing from historical JSON
-    assert run.result == "failed"
-    missing_field_checks = [c for c in run.checks if c.type == "field_is_present" and c.field == "population"]
-    assert len(missing_field_checks) == 1
-    assert missing_field_checks[0].result == "failed"
-    # Other field_is_present checks should still pass
-    present_field_checks = [c for c in run.checks if c.type == "field_is_present" and c.field != "population"]
-    assert all(c.result == "passed" for c in present_field_checks)
+    assert run.result == "passed", run.pretty()
+    assert not [c for c in run.checks if c.type == "field_is_present" and c.field == "population"]
 
 
 def test_json_optional_field_present_in_new_data():

@@ -77,6 +77,35 @@ def test_every_record_that_breaks_the_json_schema_is_reported(tmp_path):
     assert [c.result for c in schema_checks] == ["failed", "failed"]
 
 
+def test_an_optional_field_that_no_record_has_passes(tmp_path):
+    # a document may leave out what is not required, unlike a table its columns
+    properties = (
+        ORDER_PROPERTIES
+        + """
+      - name: customer
+        logicalType: object
+        properties:
+          - name: customer_id
+            logicalType: string
+            required: true"""
+    )
+    (tmp_path / "orders.json").write_text('[{"id": "1", "status": "new"}, {"id": "2", "status": "paid"}]')
+
+    run = DataContract(data_contract_str=json_contract(tmp_path / "orders.json", properties)).test()
+
+    assert run.result == "passed", run.pretty()
+
+
+def test_a_required_field_that_no_record_has_fails(tmp_path):
+    (tmp_path / "orders.json").write_text('[{"id": "1", "qty": 3}, {"id": "2", "qty": 4}]')
+
+    run = DataContract(data_contract_str=json_contract(tmp_path / "orders.json", ORDER_PROPERTIES)).test()
+
+    results = {c.name: c.result for c in run.checks}
+    assert results["Check that field 'status' is present"] == "failed"
+    assert "Check that field 'qty' is present" not in results
+
+
 def test_json_files_that_do_not_exist_are_reported(tmp_path):
     run = DataContract(data_contract_str=json_contract(tmp_path / "missing.json", ORDER_PROPERTIES)).test()
 

@@ -34,6 +34,10 @@ ORDERS_JSON = [
     }
     for n, status, total in [(1, "placed", 12.5), (2, "delivered", None)]
 ]
+# optional properties may be absent from every record
+ORDERS_JSON_MINIMAL = [
+    {"order_id": "ORD-1003", "order_timestamp": "2024-01-03T10:00:00Z", "status": "placed"},
+]
 
 
 @pytest.fixture
@@ -110,6 +114,16 @@ def test_json_response(api, monkeypatch):
     assert run.result == "passed", run.pretty()
     # the required query parameter is a variable, set in the environment
     assert api["paths"] == ["/v1/orders?limit=2"]
+
+
+@pytest.mark.parametrize("content_type", ["application/json", "application/yaml"])
+def test_optional_properties_absent_from_every_record(api, content_type):
+    api["body"] = json.dumps(ORDERS_JSON_MINIMAL)
+    api["content_type"] = content_type
+
+    run = contract_for(api, "listOrders").test()
+
+    assert run.result == "passed", run.pretty()
 
 
 def test_json_response_violates_the_contract(api):

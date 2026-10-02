@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `datacontract export dbt-models`, `datacontract export dbt-sources` and `datacontract dbt sync` nest generic-test parameters under `arguments:` **(we now require dbt 1.10+)** (#1680)
 - `datacontract export pydantic-model`: optional fields default to `None` (#1679)
+- `datacontract test`: an optional field that no record of a JSON, YAML or XML document has is no longer reported as missing
 
 ### Fixed
 - `datacontract test`: a JSON value of the wrong type fails the JSON Schema check, not every check on its column

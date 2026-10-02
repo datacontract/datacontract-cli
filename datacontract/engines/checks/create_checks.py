@@ -280,10 +280,11 @@ def _to_schema_checks(
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
-    # An XML element or attribute that is not required may be absent from every document, and the
-    # types DuckDB infers for the raw view drop the attributes of nested elements with children.
-    # The record element's required properties still show whether records are found at all.
+    # In a JSON, YAML or XML document, a property that is not required may be absent from every record,
+    # unlike a column of a table. For XML, the types DuckDB infers for the raw view also drop the attributes
+    # of nested elements with children. The required top-level properties are still checked for presence.
     xml = server is not None and server.format == "xml"
+    documents = server is not None and server.format in ("json", "xml")
     if xml:
         # A record element that matches nothing would pass every other check
         checks.append(
@@ -303,7 +304,7 @@ def _to_schema_checks(
         first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
-        if not xml or (prop.required and not nested):
+        if not documents or (prop.required and not nested):
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_is_present",
