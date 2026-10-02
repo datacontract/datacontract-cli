@@ -77,7 +77,7 @@ schema:
 
 ## Presence and naming
 
-Every property produces a **presence check** — the column must exist in the data source. This is the one check you always get, even for a property that declares nothing but a name.
+Every property produces a **presence check** — the column must exist in the data source. This is the one check you always get, even for a property that declares nothing but a name. The exception are [XML files](./testing/xml.md#how-documents-become-records), where an element or attribute that is not required may be absent from every document: there only the required properties of the record element are checked for presence.
 
 `physicalName` selects the real object in the data source; `name` is the logical name used in the contract. When `physicalName` is set, the checks run against it:
 
@@ -97,7 +97,7 @@ A property can declare a portable `logicalType`, a native `physicalType`, or bot
 - **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the nine backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, and Athena. It takes precedence over `logicalType`.
 - **`logicalType`** is used everywhere else, and as the fallback when the native type cannot be read. Both the declared and the actual type are normalized to an ODCS category before comparison, so `integer` and `number` are mutually compatible.
 
-On every backend except `csv`, `json` and `parquet` files, a property with a complex `logicalType` (`object`, `array` or `map`) gets a **nested type check** covering the full declared structure.
+On every backend except `csv`, `json`, `parquet` and `xml` files, a property with a complex `logicalType` (`object`, `array` or `map`) gets a **nested type check** covering the full declared structure.
 
 ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
 
@@ -106,7 +106,7 @@ Property-level `enum` entries must have distinct values, even if their labels, I
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
 :::note
-For file servers with `format: csv`, `json`, `avro` or `parquet` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: delta` is read with the table's own types, so its types, nested ones included, are checked. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
+For file servers with `format: csv`, `json`, `xml`, `avro` or `parquet` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: delta` is read with the table's own types, so its types, nested ones included, are checked. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
 :::
 
 ## Required, unique, and primary keys

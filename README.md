@@ -298,6 +298,7 @@ A list of available extras:
 | Snowflake | `pip install datacontract-cli[snowflake]` |
 | Microsoft SQL Server | `pip install datacontract-cli[sqlserver]` |
 | Trino | `pip install datacontract-cli[trino]` |
+| XML Schema (import) | `pip install datacontract-cli[xml]` |
 
 
 ## Documentation

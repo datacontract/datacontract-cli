@@ -52,7 +52,7 @@ def is_check_types(server: Optional[Server]) -> bool:
     """Type checks only make sense where the data source carries real types."""
     if server is None:
         return True
-    return server.format not in ("json", "csv", "avro")
+    return server.format not in ("json", "csv", "avro", "xml")
 
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
@@ -261,7 +261,7 @@ def _to_schema_checks(
     properties = schema_object.properties or []
     check_types = is_check_types(server)
     uses_raw_view = (
-        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json", "xml")
     )
 
     # A primary key is both not-null and unique. A composite key is unique as a
@@ -273,22 +273,42 @@ def _to_schema_checks(
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
+    # An XML element or attribute that is not required may be absent from every document, and the
+    # types DuckDB infers for the raw view drop the attributes of nested elements with children.
+    # The record element's required properties still show whether records are found at all.
+    xml = server is not None and server.format == "xml"
+    if xml:
+        # A record element that matches nothing would pass every other check
+        checks.append(
+            CheckSpec(
+                key=f"{model}__records_found",
+                category="schema",
+                type="records_found",
+                name=f"Check that the documents have {model} elements",
+                model=model,
+                field=None,
+                metric=MetricType.ROW_COUNT,
+                threshold=Threshold(Op.GT, 0),
+            )
+        )
+
     for field, prop, nested in _iter_property_paths(properties):
         first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
-        checks.append(
-            CheckSpec(
-                key=f"{model}__{field}__field_is_present",
-                category="schema",
-                type="field_is_present",
-                name=f"Check that field '{field}' is present",
-                model=model,
-                field=field,
-                metric=MetricType.FIELD_PRESENT,
-                uses_raw_view=uses_raw_view,
+        if not xml or (prop.required and not nested):
+            checks.append(
+                CheckSpec(
+                    key=f"{model}__{field}__field_is_present",
+                    category="schema",
+                    type="field_is_present",
+                    name=f"Check that field '{field}' is present",
+                    model=model,
+                    field=field,
+                    metric=MetricType.FIELD_PRESENT,
+                    uses_raw_view=uses_raw_view,
+                )
             )
-        )
 
         # The raw view cannot provide nested type checks
         declared_base = normalize_type_name(prop.logicalType or prop.physicalType)

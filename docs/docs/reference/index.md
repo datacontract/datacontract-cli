@@ -25,7 +25,7 @@ When you run `datacontract test`, type checks work in one of two modes:
 1. **Native type check** (`Check that field x has physical type y`) — on sources with catalog introspection (Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, Athena, Exasol), the declared `physicalType` is compared against the actual column type from the catalog. Timezone variants of timestamps are interchangeable; length/precision is only enforced when the contract declares it (`varchar` matches `varchar(255)`, but `varchar(255)` does not match `varchar(100)`). A `physicalType` that can't be interpreted in the server's dialect degrades to the logical check or a warning — never a hard failure.
 2. **Logical type check** (`Check that field x has type y`) — everywhere else (and as fallback), both the declared and the actual type are normalized to one of the ODCS logical types and compared. `integer` and `number` are mutually compatible; a bare `object` or `array` matches any structure with the same base.
 
-For file sources with `format: csv`, `json`, or `avro`, no type checks are generated — the file is read *as* the contract's types, and violations surface as read errors (plus JSON Schema validation for `format: json`).
+For file sources with `format: csv`, `json`, `xml`, or `avro`, no type checks are generated — the file is read *as* the contract's types, and violations surface as read errors (plus JSON Schema validation for `format: json`).
 
 Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `minLength`, `maxLength`, `pattern`, `enum`, …) generate value checks that behave identically on every source.
 
@@ -82,7 +82,7 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
   </a>
   <a className="doc-card" href="/reference/local">
     <img src="/img/icons/local.svg" alt="" />
-    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Data types for CSV, JSON, Parquet, Delta</span></span>
+    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Data types for CSV, JSON, XML, Parquet, Delta</span></span>
   </a>
   <a className="doc-card" href="/reference/sqlserver">
     <img src="/img/icons/sqlserver.svg" alt="" />

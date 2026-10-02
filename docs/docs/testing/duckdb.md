@@ -8,7 +8,7 @@ description: "Test the tables inside a DuckDB database file."
 
 Test the tables inside a DuckDB database file.
 
-This is different from [Local files](./local.md): there the CLI reads data *files* (CSV, JSON, Parquet, Delta) through DuckDB, and the contract's `path` points at those files. Here the DuckDB database itself is the data source, and the contract's schema objects are the tables inside it.
+This is different from [Local files](./local.md): there the CLI reads data *files* (CSV, JSON, XML, Parquet, Delta) through DuckDB, and the contract's `path` points at those files. Here the DuckDB database itself is the data source, and the contract's schema objects are the tables inside it.
 
 ## 1. Install
 

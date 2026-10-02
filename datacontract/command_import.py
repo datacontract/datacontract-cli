@@ -317,6 +317,26 @@ def import_jsonschema(
 
 
 @import_app.command(
+    name="xsd",
+    epilog="Example: datacontract import xsd --source schema.xsd --output datacontract.yaml",
+)
+def import_xsd(
+    source: Annotated[Optional[str], typer.Option(help="Path to the XML Schema (XSD) file.")] = None,
+    output: output_option = None,
+    schema: schema_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from an XML Schema (XSD) file."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="xsd", source=source, schema=schema, owner=owner, id=id
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="json",
     epilog="Example: datacontract import json --source data.json --output datacontract.yaml",
 )

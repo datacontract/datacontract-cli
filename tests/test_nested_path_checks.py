@@ -100,3 +100,19 @@ def test_item_duplicate_samples_use_the_same_predicate_as_the_check():
 
     assert samples is not None
     assert [row["order_id"] for row in samples] == ["repeats"]
+
+
+@pytest.mark.parametrize("path", ["customer.address.city", "items[].supplier.name"])
+def test_the_fields_of_an_absent_optional_object_are_not_missing(path):
+    # Its own `required` check reports the object; counting its fields as well
+    # would fail every required field inside an optional object.
+    t = ibis.memtable(
+        {
+            "order_id": ["with", "without", "empty"],
+            "customer": [{"address": {"city": "Berlin"}}, {"address": None}, {"address": {"city": None}}],
+            "items": [[{"supplier": {"name": "ACME"}}], [{"supplier": None}], [{"supplier": {"name": None}}]],
+        }
+    )
+    predicate = _row_predicate(t, {c: c for c in t.columns}, path, lambda c: _missing_expr(c, None))
+
+    assert t.filter(predicate).order_id.to_list() == ["empty"]

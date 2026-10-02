@@ -307,6 +307,24 @@ def export_jsonschema(
 
 
 @export_app.command(
+    name="xsd",
+    epilog="Example: datacontract export xsd datacontract.yaml --output schema.xsd",
+)
+def export_xsd(
+    location: location_arg = "datacontract.yaml",
+    output: output_option = None,
+    server: server_option = None,
+    schema_name: schema_name_option = "all",
+    schema: schema_option = None,
+    inline_references: inline_references_option = True,
+    debug: debug_option = None,
+):
+    """Export a data contract to an XML Schema (XSD)."""
+    enable_debug_logging(debug)
+    _export(ExportFormat.xsd, location, output, server, schema_name, schema, inline_references=inline_references)
+
+
+@export_app.command(
     name="pydantic-model",
     epilog="Example: datacontract export pydantic-model datacontract.yaml --output models.py",
 )

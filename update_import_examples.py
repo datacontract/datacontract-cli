@@ -27,6 +27,7 @@ IMPORTS = {
     "dbml": ("examples/imports/dbml/orders.dbml", "text", []),
     "bigquery": ("examples/imports/bigquery/orders.json", "json", []),
     "iceberg": ("examples/imports/iceberg/orders.json", "json", []),
+    "xsd": ("examples/imports/xsd/orders.xsd", "xml", []),
 }
 
 OUT_MAX = 34  # max lines of generated ODCS shown before truncating

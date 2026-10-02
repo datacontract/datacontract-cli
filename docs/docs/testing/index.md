@@ -108,6 +108,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/trino.svg" alt="" />
     <span><span className="doc-card-title">Trino</span><span className="doc-card-desc">Trino (basic, JWT, OAuth2)</span></span>
   </a>
+  <a className="doc-card" href="/testing/xml">
+    <img src="/img/icons/custom.svg" alt="" />
+    <span><span className="doc-card-title">XML files</span><span className="doc-card-desc">XML documents, with a contract from their XML Schema</span></span>
+  </a>
 </div>
 
 :::tip

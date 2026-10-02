@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Every constraint the contract checks, broken once -->
+<po:purchaseOrder xmlns:po="urn:example:po" priority="7">
+  <po:shipTo latitude="95">
+    <name>Bad Address</name>
+    <street>1 Nowhere</street>
+    <city>Nowhere</city>
+    <state>California</state>
+    <zip>1</zip>
+  </po:shipTo>
+  <po:billTo>
+    <name>Bad Address</name>
+    <street>1 Nowhere</street>
+    <city>Nowhere</city>
+    <state>CA</state>
+    <zip>1</zip>
+  </po:billTo>
+  <po:creditCard>
+    <po:number>1234</po:number>
+    <po:expires>2027-08</po:expires>
+  </po:creditCard>
+  <po:items>
+    <po:item partNum="ABC">
+      <po:quantity>100</po:quantity>
+      <po:USPrice currency="USD">100000.00</po:USPrice>
+    </po:item>
+  </po:items>
+  <po:metadata>
+    <po:channel>fax</po:channel>
+    <po:audit>
+      <po:createdAt>2026-09-20T10:00:00</po:createdAt>
+      <po:revision>1</po:revision>
+    </po:audit>
+  </po:metadata>
+</po:purchaseOrder>

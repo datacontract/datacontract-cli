@@ -148,6 +148,10 @@ Each import page shows a runnable example: a small source file under [`examples/
     <img src="/img/icons/trino.svg" alt="" />
     <span><span className="doc-card-title">trino</span><span className="doc-card-desc">A Trino catalog.</span></span>
   </a>
+  <a className="doc-card" href="/imports/xsd">
+    <img src="/img/icons/custom.svg" alt="" />
+    <span><span className="doc-card-title">xsd</span><span className="doc-card-desc">An XML Schema (XSD) file.</span></span>
+  </a>
 </div>
 
 See the [`import` command reference](../commands/import/index.md) for the common signature.
