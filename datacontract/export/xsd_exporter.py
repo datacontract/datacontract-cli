@@ -205,8 +205,7 @@ def facets(prop: SchemaProperty) -> list[tuple[str, object]]:
     result = [("enumeration", value) for value in get_enum_values(prop) or []]
     pattern = option(prop, "pattern")
     if pattern:
-        # XSD patterns always match the whole value
-        result.append(("pattern", pattern.removeprefix("^").removesuffix("$")))
+        result.append(("pattern", xsd_pattern(pattern)))
     bounds = {name: option(prop, name) for name in FACETS}
     if logical_type == "string":
         bounds = {name: value for name, value in bounds.items() if name in ("minLength", "maxLength")}
@@ -233,6 +232,43 @@ def facets(prop: SchemaProperty) -> list[tuple[str, object]]:
             if value is not None:
                 result.append((facet, value))
     return result
+
+
+def xsd_pattern(pattern: str) -> str:
+    """The pattern as XSD reads it: XSD patterns match the whole value, contract patterns anywhere unless anchored."""
+    start = pattern.startswith("^")
+    end = pattern.endswith("$") and not pattern.endswith("\\$")
+    body = pattern[1 if start else 0 : -1 if end else None]
+    if start and end:
+        # The import writes an XSD pattern as ^(pattern)$
+        return unwrap(body)
+    return f"{'' if start else '.*'}({body}){'' if end else '.*'}"
+
+
+def unwrap(body: str) -> str:
+    """The pattern without the parentheses around all of it, if it has them."""
+    if not (body.startswith("(") and body.endswith(")")) or body.startswith("(?"):
+        return body
+    depth = 0
+    in_class = False
+    escaped = False
+    for index, char in enumerate(body):
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif in_class:
+            in_class = char != "]"
+        elif char == "[":
+            in_class = True
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0 and index < len(body) - 1:
+                # the first group closes before the end, so the parentheses do not wrap it all
+                return body
+    return body[1:-1]
 
 
 def xsd_type(prop: SchemaProperty) -> str:

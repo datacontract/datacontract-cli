@@ -64,7 +64,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 
 - Objects become nested complex types, arrays become elements that repeat (`minItems`/`maxItems` set `minOccurs`/`maxOccurs`), and a property that is not `required` gets `minOccurs="0"`.
 - The `logicalType` sets the XSD type (`timestamp` → `xs:dateTime`, `number` → `xs:decimal`, …), unless the `physicalType` names a built-in XSD type of the same logical type, such as `positiveInteger` or `token`.
-- `enum`, `pattern`, `minLength`/`maxLength`, `minimum`/`maximum` (and their exclusive forms), and the `precision`/`scale` of decimals become facets. A bound that only repeats the range of the XSD type, such as `minimum: 0` on an `unsignedInt`, is left out. XSD patterns always match the whole value, so `^` and `$` are dropped.
+- `enum`, `pattern`, `minLength`/`maxLength`, `minimum`/`maximum` (and their exclusive forms), and the `precision`/`scale` of decimals become facets. A bound that only repeats the range of the XSD type, such as `minimum: 0` on an `unsignedInt`, is left out. XSD patterns always match the whole value, contract patterns anywhere unless anchored: `^ORD$` exports as `ORD`, `ORD` as `.*(ORD).*`.
 - A property with the custom property `xmlNode: attribute` becomes an attribute, and one with `xmlNode: text` the text of an element with attributes. A schema's `xmlNamespace` custom property becomes the target namespace. [`datacontract import xsd`](../imports/xsd.md) sets all three, so an imported XML Schema exports back to an equivalent one.
 - Names that are not valid XML names are changed to valid ones, with a warning.
 

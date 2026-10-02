@@ -33,7 +33,7 @@ schema:
         description: Unique identifier of the order.
         required: true
         logicalTypeOptions:
-          pattern: ORD-[0-9]{4}
+          pattern: ^(ORD-[0-9]{4})$
           maxLength: 8
       - name: placed_at
         logicalType: timestamp
@@ -230,8 +230,8 @@ def test_a_plain_contract_to_xsd_and_back_keeps_its_structure_and_constraints(tm
     # what XML Schema cannot say: SQL physical types, the primary key, and string formats
     assert props["customer_id"].physicalType == "string" and not props["customer_id"].primaryKey
     assert props["email"].logicalTypeOptions == {"maxLength": 320}
-    # XSD patterns are anchored, so the anchors are gone
-    assert props["phone_numbers"].items.logicalTypeOptions == {"pattern": "\\+[0-9 ]+"}
+    # XSD patterns match the whole value, so the anchored pattern comes back anchored
+    assert props["phone_numbers"].items.logicalTypeOptions == {"pattern": "^(\\+[0-9 ]+)$"}
 
 
 def test_an_xsd_with_every_supported_construct_comes_back_byte_for_byte(tmp_path: Path):

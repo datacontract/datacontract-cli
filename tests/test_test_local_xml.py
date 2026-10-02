@@ -45,7 +45,7 @@ def test_the_imported_contract_holds_for_valid_documents():
     # nested objects, repeated elements, attributes, and the text of an element with attributes are all checked
     for name in [
         "Check that field customer.name has no missing values",
-        "Check that field line_items.line_item[].sku matches regex pattern [A-Z]{3}-[0-9]{4}",
+        "Check that field line_items.line_item[].sku matches regex pattern ^([A-Z]{3}-[0-9]{4})$",
         "Check that field line_items.line_item[].price.value has a minimum of 0",
         "Check that field line_items.line_item[].price.currency has a max length of 3",
         "Check that field version has no missing values",
@@ -64,7 +64,7 @@ def test_every_violation_is_found_and_nothing_else():
         "Check that field order_total has a minimum of 0",
         "Check that field status only contains enum values ['pending', 'shipped', 'delivered']",
         "Check that field customer.name has no missing values",
-        "Check that field line_items.line_item[].sku matches regex pattern [A-Z]{3}-[0-9]{4}",
+        "Check that field line_items.line_item[].sku matches regex pattern ^([A-Z]{3}-[0-9]{4})$",
         "Check that field line_items.line_item[].quantity is not equal to 1000",
         "Check that field line_items.line_item[].price.value has a minimum of 0",
         "Check that field line_items.line_item[].price.currency has a max length of 3",
@@ -194,3 +194,27 @@ def test_names_from_the_contract_are_not_run_as_sql(schema_changes):
     DataContract(data_contract_str=contract("fixtures/xml/data/*.xml", **schema_changes), duckdb_connection=con).test()
 
     assert con.sql("SELECT * FROM duckdb_functions() WHERE function_name = 'injected'").fetchall() == []
+
+
+def test_an_element_that_occurs_once_in_every_document_is_still_an_array(tmp_path: Path):
+    # order-2.xml has a single line_item, which DuckDB infers as one object rather than a list of one
+    (tmp_path / "order.xml").write_text(Path("fixtures/xml/data/order-2.xml").read_text())
+
+    run = DataContract(data_contract_str=contract(str(tmp_path / "order.xml"))).test()
+
+    line_item_checks = {name: result for name, result in results(run).items() if "line_item" in name}
+    assert len(line_item_checks) > 10
+    assert set(line_item_checks.values()) == {"passed"}, line_item_checks
+
+
+def test_an_imported_pattern_matches_the_whole_value(tmp_path: Path):
+    # XSD patterns are anchored; the sku ABC-0001x would pass an unanchored search for [A-Z]{3}-[0-9]{4}
+    document = Path("fixtures/xml/data/order-2.xml").read_text().replace("DEF-1234", "xDEF-1234x")
+    (tmp_path / "order.xml").write_text(document)
+
+    run = DataContract(data_contract_str=contract(str(tmp_path / "order.xml"))).test()
+
+    assert (
+        results(run)["Check that field line_items.line_item[].sku matches regex pattern ^([A-Z]{3}-[0-9]{4})$"]
+        == "failed"
+    )

@@ -103,7 +103,7 @@ Each global element that no other element references becomes a schema, named aft
 | `xs:boolean` | `boolean` |
 | `xs:date` / `xs:dateTime` / `xs:time` | `date` / `timestamp` / `time` |
 | `xs:enumeration` | `enum` |
-| `xs:pattern` (several are alternatives) | `logicalTypeOptions.pattern` |
+| `xs:pattern` (several are alternatives) | `logicalTypeOptions.pattern`, anchored as `^(…)$` because XSD patterns match the whole value |
 | `xs:length`, `xs:minLength`, `xs:maxLength` | `logicalTypeOptions.minLength` / `maxLength` |
 | `xs:minInclusive`, `xs:maxInclusive`, `xs:minExclusive`, `xs:maxExclusive` | `logicalTypeOptions.minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum` |
 | `xs:totalDigits`, `xs:fractionDigits` | `precision` / `scale` custom properties |
@@ -196,7 +196,7 @@ These properties are unions; ODCS has no union type, so they are strings with th
 These properties contain their own type, so the repetition is an object without properties: category.parent
 ```
 
-It warns about recursive types, unions, lists, wildcards, mixed content, and identity constraints.
+It warns about recursive types, unions, lists, wildcards, mixed content, identity constraints, and patterns with syntax only XSD has (`\i`, `\c`, character class subtraction), which are left out because `datacontract test` cannot run them.
 
 ## Not imported
 

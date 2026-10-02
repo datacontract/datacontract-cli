@@ -68,9 +68,9 @@ def test_purchase_order():
     assert props["creditCard"].required is None and props["invoice"].required is None
     # an optional sequence makes its elements optional
     assert props["approvedBy"].required is None and props["approvedAt"].logicalType == "timestamp"
-    # two patterns on one restriction are alternatives
+    # two patterns on one restriction are alternatives, anchored like XSD patterns
     card = properties(props["creditCard"])
-    assert card["number"].logicalTypeOptions["pattern"] == r"(\d{16})|(\d{4}-\d{4}-\d{4}-\d{4})"
+    assert card["number"].logicalTypeOptions["pattern"] == r"^(\d{16}|\d{4}-\d{4}-\d{4}-\d{4})$"
     assert card["expires"].physicalType == "gYearMonth" and card["expires"].logicalType == "string"
     # the facets of an inline base type are merged into those of the type restricting it
     channel = properties(props["metadata"])["channel"]
@@ -104,7 +104,7 @@ def test_purchase_order_items():
     assert "legacyCode" not in item
     # Items contains itself through bundle, which stops at the repetition
     assert item["bundle"].logicalType == "object" and item["bundle"].properties is None
-    assert item["partNum"].logicalTypeOptions == {"pattern": r"\d{3}-[A-Z]{2}"}
+    assert item["partNum"].logicalTypeOptions == {"pattern": r"^(\d{3}-[A-Z]{2})$"}
 
 
 def test_import_one_schema_per_root_element(tmp_path: Path):
@@ -205,7 +205,7 @@ def test_import_builtin_types(tmp_path: Path, xsd_type, logical_type):
          {"exclusiveMinimum": 0.5, "exclusiveMaximum": 10}),
         ("integer", '<xs:minInclusive value="-3"/><xs:maxInclusive value="3"/>', {"minimum": -3, "maximum": 3}),
         ("date", '<xs:minInclusive value="2020-01-01"/>', {"minimum": "2020-01-01"}),
-        ("string", '<xs:pattern value="[a-z]+"/>', {"pattern": "[a-z]+"}),
+        ("string", '<xs:pattern value="[a-z]+"/>', {"pattern": "^([a-z]+)$"}),
     ],
 )  # fmt: skip
 def test_import_facets(tmp_path: Path, base, facets, options):
@@ -361,6 +361,11 @@ def test_import_a_missing_file():
             "orders",
             "identity constraints",
         ),
+        (
+            '<xs:element name="tag"><xs:simpleType><xs:restriction base="xs:string"><xs:pattern value="\\i\\c*"/></xs:restriction></xs:simpleType></xs:element>',
+            "tag",
+            "XSD-only syntax",
+        ),
     ],
 )
 def test_import_warns_about_what_it_simplifies(tmp_path: Path, caplog, body, path, message):
@@ -407,3 +412,32 @@ def test_import_a_facet_narrows_the_range_of_its_integer_type(tmp_path: Path):
     )
 
     assert result.schema_[0].properties[0].logicalTypeOptions == {"exclusiveMinimum": 9, "maximum": 255}
+
+
+@pytest.mark.parametrize(
+    "patterns",
+    [
+        ["\\i\\c*"],  # XML name characters
+        ["[a-z-[aeiou]]"],  # character class subtraction
+        ["[0-9]+", "\\i\\c*"],  # one alternative the checks cannot run drops all, or it would reject what it allows
+    ],
+)
+def test_import_leaves_out_patterns_with_xsd_only_syntax(tmp_path: Path, patterns):
+    facets = "".join(f'<xs:pattern value="{p}"/>' for p in patterns)
+    result = import_xsd(
+        tmp_path,
+        f'<xs:element name="tag"><xs:simpleType><xs:restriction base="xs:string">{facets}</xs:restriction></xs:simpleType></xs:element>',
+    )
+
+    assert result.schema_[0].properties[0].logicalTypeOptions is None
+
+
+def test_import_keeps_a_pattern_with_an_escaped_backslash_or_a_hyphen_between_classes(tmp_path: Path):
+    result = import_xsd(
+        tmp_path,
+        """<xs:element name="tag"><xs:simpleType><xs:restriction base="xs:string">
+             <xs:pattern value="[A-Z]{3}-[0-9]{4}\\\\i"/>
+           </xs:restriction></xs:simpleType></xs:element>""",
+    )
+
+    assert result.schema_[0].properties[0].logicalTypeOptions == {"pattern": "^([A-Z]{3}-[0-9]{4}\\\\i)$"}

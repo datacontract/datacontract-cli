@@ -1,5 +1,6 @@
 import inspect
 import logging
+import re
 import warnings
 from decimal import Decimal
 from pathlib import Path
@@ -47,6 +48,10 @@ INTEGER_BOUNDS = {
     "negativeInteger": (None, -1),
 }
 
+# Regular expression syntax of XSD that the contract's checks do not understand: the name character
+# escapes \i, \I, \c, \C, and character class subtraction such as [a-z-[aeiou]]
+XSD_ONLY_REGEX = re.compile(r"(?<!\\)(?:\\\\)*\\[iIcC]|\[[^\]]*-\[")
+
 # What the import simplifies, and how it says so
 SIMPLIFICATIONS = {
     "recursion": "contain their own type, so the repetition is an object without properties",
@@ -56,6 +61,7 @@ SIMPLIFICATIONS = {
     "anyAttribute": "allow any attribute (xs:anyAttribute), which is not imported",
     "mixed": "have mixed content, whose text is not imported",
     "identity": "have identity constraints (xs:key, xs:keyref, xs:unique), which are not imported",
+    "pattern": "have patterns with XSD-only syntax (\\i, \\c, character class subtraction), which are not imported",
 }
 
 
@@ -244,6 +250,10 @@ class XsdReader:
         facets = derived_facets(xsd_type)
         length = facets.get("length")
         patterns = facets.get("pattern")
+        if patterns and any(XSD_ONLY_REGEX.search(p) for p in patterns):
+            # Dropping one alternative would reject what it allows, so all of them go
+            self.note("pattern", path)
+            patterns = None
         # The range of a builtin integer type, unless a facet narrows it
         lowest, highest = INTEGER_BOUNDS.get(base, (None, None))
         minimum = facets.get("minInclusive", lowest if "minExclusive" not in facets else None)
@@ -253,12 +263,8 @@ class XsdReader:
             logical_type=LOGICAL_TYPES.get(base, "string"),
             physical_type=base,
             enum=[plain(value) for value in facets["enumeration"]] if "enumeration" in facets else None,
-            # XSD regular expressions have no non-capturing groups
-            pattern=None
-            if not patterns
-            else patterns[0]
-            if len(patterns) == 1
-            else "|".join(f"({p})" for p in patterns),
+            # XSD patterns match the whole value, contract patterns anywhere; XSD has no non-capturing groups
+            pattern=f"^({'|'.join(patterns)})$" if patterns else None,
             min_length=facets.get("minLength", length),
             max_length=facets.get("maxLength", length),
             minimum=plain(minimum),

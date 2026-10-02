@@ -95,7 +95,7 @@ schema:
           physicalType: string
           logicalType: string
           logicalTypeOptions:
-            pattern: '[A-Z]{3}-[0-9]{4}'
+            pattern: ^([A-Z]{3}-[0-9]{4})$
           required: true
         - name: quantity
           physicalType: int

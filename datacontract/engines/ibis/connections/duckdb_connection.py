@@ -318,6 +318,9 @@ def _xml_value(expression: str, dtype, prop: Optional[SchemaProperty], depth: in
         variable = f"x{depth}"
         value = _xml_value(variable, dtype.child, prop.items if prop else None, depth + 1)
         return expression if value == variable else f"list_transform({expression}, lambda {variable}: {value})"
+    if prop is not None and prop.logicalType == "array":
+        # An element that occurs once in every document is inferred as one value, not as a list of one
+        return f"CASE WHEN {expression} IS NULL THEN NULL ELSE [{_xml_value(expression, dtype, prop.items, depth)}] END"
     if dtype.id != "struct":
         text = next((child for child in children if _is_xml_text(child)), None)
         if text is None:

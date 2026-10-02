@@ -446,3 +446,61 @@ schema:
     assert count.type.name.endswith("unsignedInt")  # the builtin itself, no restriction
     assert score.type.base_type.name.endswith("unsignedByte") and score.type.min_value == 1
     assert f"{XS}maxInclusive" not in score.type.facets
+
+
+@pytest.mark.parametrize(
+    "pattern, exported",
+    [
+        ("^ORD-[0-9]{4}$", "ORD-[0-9]{4}"),
+        ("^(ORD-[0-9]{4})$", "ORD-[0-9]{4}"),  # as the import writes it
+        ("^(a|b)$", "a|b"),
+        ("^(a)|(b)$", "(a)|(b)"),  # the first group closes early, so the parentheses stay
+        ("ORD", ".*(ORD).*"),
+        ("^ORD", "(ORD).*"),
+        ("ORD$", ".*(ORD)"),
+        ("price\\$", ".*(price\\$).*"),  # an escaped dollar is not an anchor
+    ],
+)
+def test_export_patterns_match_where_the_contract_matches(pattern, exported):
+    """A contract pattern matches anywhere unless anchored; an XSD pattern always matches the whole value."""
+    contract = f"""
+apiVersion: v3.2.0
+kind: DataContract
+id: patterns
+version: 1.0.0
+status: active
+schema:
+  - name: code
+    properties:
+      - name: value
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: '{pattern}'
+"""
+    schema = xmlschema.XMLSchema(to_xsd(DataContract(data_contract_str=contract).get_data_contract()))
+
+    (value,) = schema.elements["code"].type.content.iter_elements()
+    assert value.type.patterns.regexps == [exported]
+
+
+@pytest.mark.parametrize("text, valid", [("ORD", True), ("xORDx", True), ("ord", False)])
+def test_an_unanchored_pattern_accepts_what_the_check_accepts(text, valid):
+    contract = """
+apiVersion: v3.2.0
+kind: DataContract
+id: patterns
+version: 1.0.0
+status: active
+schema:
+  - name: code
+    properties:
+      - name: value
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: ORD
+"""
+    schema = xmlschema.XMLSchema(to_xsd(DataContract(data_contract_str=contract).get_data_contract()))
+
+    assert schema.is_valid(f"<code><value>{text}</value></code>") == valid
