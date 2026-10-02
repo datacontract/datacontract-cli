@@ -38,16 +38,16 @@ def test_definition_lookup_uses_the_passed_config(monkeypatch):
 
 
 def test_s3_duckdb_setup_uses_the_passed_config(monkeypatch):
-    from datacontract.engines.ibis.connections import aws_credentials, duckdb_connection
+    from datacontract.engines.ibis.connections import duckdb_connection
 
     seen = {}
-    real = aws_credentials.client_kwargs
+    real = duckdb_connection.resolve_aws_credentials
 
-    def capture(region=None, config=None):
+    def capture(config=None):
         seen["config"] = config
-        return real(region, config)
+        return real(config)
 
-    monkeypatch.setattr(aws_credentials, "client_kwargs", capture)
+    monkeypatch.setattr(duckdb_connection, "resolve_aws_credentials", capture)
     duckdb = pytest.importorskip("duckdb")
     con = duckdb.connect()
     from open_data_contract_standard.model import Server

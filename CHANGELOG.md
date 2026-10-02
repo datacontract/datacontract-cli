@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1677 @dmaresma)
 - `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662)
 - `datacontract test`: JSON schema validation on S3 checks every file matched by the location, not only the last one (#1511)
+- `datacontract test`: JSON schema validation on S3 uses the AWS credential chain
+- `datacontract test` and `datacontract import s3`: public S3 buckets are read at the server's `endpointUrl`
 - `datacontract test` reports "no checks were executed" instead of failing when nothing was tested (#1504)
 - `datacontract api`: authoritative definitions are looked up with the Entropy Data API key sent with the request again (since v1.2.1, the API was unable to resolve authoritative definitions if ENTROPY_DATA_API_KEY was unset)
 - `datacontract api` caches authoritative definitions for only 60s, previously until the next restart

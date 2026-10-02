@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.config import Config
-from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
@@ -365,13 +364,9 @@ def _sql_literal(value) -> str:
 
 
 def setup_s3_connection(con, server: Server, config: Config | None = None):
+    """boto3 resolves the credentials because duckdb's ``PROVIDER credential_chain`` cannot read an SSO cache."""
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
-    configured = aws_credentials.client_kwargs(config=config)
-    s3_region = configured["region_name"]
-    s3_access_key_id = configured["aws_access_key_id"]
-    s3_secret_access_key = configured["aws_secret_access_key"]
-    s3_session_token = configured["aws_session_token"]
     s3_endpoint = "s3.amazonaws.com"
     use_ssl = "true"
     url_style = "vhost"
@@ -381,66 +376,19 @@ def setup_s3_connection(con, server: Server, config: Config | None = None):
         if server.endpointUrl.startswith("http://"):
             use_ssl = "false"
 
-    if s3_access_key_id is not None:
-        if s3_session_token is not None:
-            # No PROVIDER: defaults to `config`, which accepts the explicit
-            # KEY_ID/SECRET below. (duckdb >=1.5 rejects CREDENTIAL_CHAIN
-            # combined with explicit credentials.)
-            con.sql(f"""
-                CREATE OR REPLACE SECRET s3_secret (
-                    TYPE S3,
-                    REGION '{_sql_literal(s3_region)}',
-                    KEY_ID '{_sql_literal(s3_access_key_id)}',
-                    SECRET '{_sql_literal(s3_secret_access_key)}',
-                    SESSION_TOKEN '{_sql_literal(s3_session_token)}',
-                    ENDPOINT '{_sql_literal(s3_endpoint)}',
-                    USE_SSL '{_sql_literal(use_ssl)}',
-                    URL_STYLE '{_sql_literal(url_style)}'
-                );
-            """)
-        else:
-            con.sql(f"""
-                CREATE OR REPLACE SECRET s3_secret (
-                    TYPE S3,
-                    REGION '{_sql_literal(s3_region)}',
-                    KEY_ID '{_sql_literal(s3_access_key_id)}',
-                    SECRET '{_sql_literal(s3_secret_access_key)}',
-                    ENDPOINT '{_sql_literal(s3_endpoint)}',
-                    USE_SSL '{_sql_literal(use_ssl)}',
-                    URL_STYLE '{_sql_literal(url_style)}'
-                );
-            """)
-    else:
-        _create_s3_secret_from_aws_session(con, s3_region, s3_endpoint, use_ssl, url_style)
-
-
-def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style):
-    """Hand duckdb the credentials boto3 resolves, when no explicit key is set.
-
-    duckdb's own ``PROVIDER credential_chain`` cannot read an SSO cache, so an
-    ``aws sso login`` session that works for Athena and Redshift would otherwise
-    fail here with a bare 403. Nothing resolvable leaves the connection without
-    a secret, which is what public buckets need.
-    """
-    credentials = resolve_aws_credentials()
-    if credentials is None:
-        return
-
-    region = region or credentials.region
-    token_clause = f"SESSION_TOKEN '{credentials.session_token}'," if credentials.session_token else ""
-    region_clause = f"REGION '{_sql_literal(region)}'," if region else ""
-    con.sql(f"""
-        CREATE OR REPLACE SECRET s3_secret (
-            TYPE S3,
-            {region_clause}
-            KEY_ID '{credentials.access_key_id}',
-            SECRET '{credentials.secret_access_key}',
-            {token_clause}
-            ENDPOINT '{_sql_literal(endpoint)}',
-            USE_SSL '{_sql_literal(use_ssl)}',
-            URL_STYLE '{_sql_literal(url_style)}'
-        );
-    """)
+    options = {"ENDPOINT": s3_endpoint, "USE_SSL": use_ssl, "URL_STYLE": url_style}
+    credentials = resolve_aws_credentials(config)
+    if credentials is not None:
+        # No PROVIDER: defaults to `config`, which accepts these explicit keys.
+        # (duckdb >=1.5 rejects CREDENTIAL_CHAIN combined with explicit credentials.)
+        options |= {
+            "KEY_ID": credentials.access_key_id,
+            "SECRET": credentials.secret_access_key,
+            "REGION": credentials.region,
+            "SESSION_TOKEN": credentials.session_token,
+        }
+    clauses = ", ".join(f"{name} '{_sql_literal(value)}'" for name, value in options.items() if value)
+    con.sql(f"CREATE OR REPLACE SECRET s3_secret (TYPE S3, {clauses});")
 
 
 def setup_gcs_connection(con, server: Server, config: Config):
