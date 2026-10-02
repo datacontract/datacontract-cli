@@ -80,4 +80,6 @@ ODCS has no union type. A property that allows more than one type (`"type": ["st
 
 Local references (`$ref` to `#/$defs/…` or `#/definitions/…`, also at the root) are resolved, and the branches of an `allOf` are merged: their properties are combined, the schema's own first, and so are their `required` lists. A definition that contains itself stops at its first repetition, as an `object` without properties. References to other documents are not loaded. The import warns about both.
 
+`const` becomes an `enum` with that one value, an object with `additionalProperties` but no `properties` becomes a `map`, and `minItems`, `maxItems`, `uniqueItems`, `multipleOf`, and `examples` are kept. Keywords ODCS cannot express, such as `patternProperties`, `if`, `not`, or `dependentRequired`, are left out with a warning that names the properties.
+
 All options: **[`datacontract import jsonschema`](../commands/import/jsonschema.md)**.

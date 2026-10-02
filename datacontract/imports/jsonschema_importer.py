@@ -47,6 +47,10 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
     )
 
     odcs.schema_ = [schema_obj]
+    ignored = list(_ignored_keywords(json_schema, ""))
+    if ignored:
+        listed = ", ".join(f"{keyword} ({path or 'root'})" for keyword, path in ignored)
+        logger.warning(f"ODCS cannot express these keywords, which are not imported: {listed}")
     unions = [path for prop in properties for path in _union_paths(prop, prop.name)]
     if unions:
         listed = ", ".join(unions) if len(unions) <= 6 else ", ".join(unions[:5]) + f" and {len(unions) - 5} others"
@@ -154,6 +158,34 @@ def merge_all_of(node: dict) -> dict:
     return merged
 
 
+# Keywords that constrain a value in a way ODCS cannot express
+IGNORED_KEYWORDS = (
+    "patternProperties", "if", "not", "contains", "propertyNames", "minProperties", "maxProperties",
+    "dependentRequired", "dependentSchemas", "dependencies",
+)  # fmt: skip
+
+
+def _ignored_keywords(schema, path: str):
+    """The keywords the import leaves out, with the path of the property that has them."""
+    if not isinstance(schema, dict):
+        return
+    for keyword in IGNORED_KEYWORDS:
+        if keyword in schema:
+            yield keyword, path
+    properties = schema.get("properties") if isinstance(schema.get("properties"), dict) else {}
+    if properties and isinstance(schema.get("additionalProperties"), dict):
+        # a map with properties of its own
+        yield "additionalProperties", path
+    for name, child in properties.items():
+        yield from _ignored_keywords(child, f"{path}.{name}" if path else name)
+    items = schema.get("items")
+    for item in items if isinstance(items, list) else [items]:
+        yield from _ignored_keywords(item, f"{path}[]")
+    for key in ("anyOf", "oneOf"):
+        for branch in schema.get(key) or []:
+            yield from _ignored_keywords(branch, path)
+
+
 def _union_paths(prop: SchemaProperty, path: str):
     if "|" in (prop.physicalType or ""):
         yield f"{path} ({prop.physicalType})"
@@ -221,6 +253,13 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
         # One type or null is a nullable property, not a union
         outer = {key: value for key, value in prop_schema.items() if key not in ("anyOf", "oneOf")}
         prop_schema = {**non_null_branches[0], **outer}
+    if "const" in prop_schema and "enum" not in prop_schema:
+        # const allows one value, typed like it
+        prop_schema = {
+            "type": _JSON_VALUE_TYPES[type(prop_schema["const"])],
+            **prop_schema,
+            "enum": [prop_schema["const"]],
+        }
 
     # Determine the type
     property_type = determine_type(prop_schema)
@@ -295,9 +334,13 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
             else:
                 items_prop = schema_to_property("items", nested_items)
 
+    # An object with additionalProperties but no properties of its own is a map
+    additional = prop_schema.get("additionalProperties")
+    is_map = property_type == "object" and not nested_properties and isinstance(additional, dict)
+
     prop = create_property(
         name=name,
-        logical_type=logical_type,
+        logical_type="map" if is_map else logical_type,
         physical_type=property_type,
         description=description,
         required=is_required if is_required else None,
@@ -313,7 +356,18 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
         items=items_prop,
         custom_properties=custom_props if custom_props else None,
         enum=prop_schema.get("enum"),
+        examples=prop_schema.get("examples"),
+        map_value=schema_to_property("value", additional) if is_map else None,
     )
+    options = {}
+    if property_type == "array":
+        options = {key: prop_schema[key] for key in ("minItems", "maxItems") if key in prop_schema}
+        if prop_schema.get("uniqueItems"):
+            options["uniqueItems"] = True
+    if logical_type in ("integer", "number") and "multipleOf" in prop_schema:
+        options["multipleOf"] = prop_schema["multipleOf"]
+    if options:
+        prop.logicalTypeOptions = {**(prop.logicalTypeOptions or {}), **options}
 
     # Set title as businessName if present
     if title:

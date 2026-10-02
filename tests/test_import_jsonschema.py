@@ -283,3 +283,58 @@ def test_import_merges_all_of(tmp_path: Path):
     ]
     assert props["score"].logicalTypeOptions == {"minimum": 5}
     assert [p.name for p in props["address"].properties] == ["city", "zip", "country"]
+
+
+def test_import_const_as_the_only_value(tmp_path: Path):
+    properties = _import_properties(tmp_path, {"version": {"type": "string", "const": "v1"}, "kind": {"const": 42}})
+
+    assert [e.value for e in properties["version"].enum] == ["v1"]
+    assert (properties["kind"].logicalType, [e.value for e in properties["kind"].enum]) == ("integer", [42])
+
+
+def test_import_array_and_number_options(tmp_path: Path):
+    properties = _import_properties(
+        tmp_path,
+        {
+            "tags": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 3, "uniqueItems": True},
+            "step": {"type": "number", "multipleOf": 0.5, "examples": [1.5, 2]},
+        },
+    )
+
+    assert properties["tags"].logicalTypeOptions == {"minItems": 1, "maxItems": 3, "uniqueItems": True}
+    assert properties["step"].logicalTypeOptions == {"multipleOf": 0.5}
+    assert properties["step"].examples == [1.5, 2]
+
+
+def test_import_additional_properties_as_a_map(tmp_path: Path):
+    properties = _import_properties(
+        tmp_path, {"labels": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}}
+    )
+
+    labels = properties["labels"]
+    assert labels.logicalType == "map"
+    assert (labels.map.value.logicalType, labels.map.value.logicalTypeOptions) == ("integer", {"minimum": 0})
+
+
+def test_import_warns_about_keywords_odcs_cannot_express(tmp_path: Path, caplog):
+    with caplog.at_level(logging.WARNING):
+        _import(
+            tmp_path,
+            {
+                "properties": {
+                    "meta": {
+                        "type": "object",
+                        "properties": {"a": {"type": "string"}},
+                        "additionalProperties": {"type": "string"},
+                        "patternProperties": {"^x": {}},
+                    },
+                    "cond": {"type": "string", "not": {"const": "x"}, "if": {"minLength": 2}, "then": {"maxLength": 4}},
+                },
+                "dependentRequired": {"a": ["b"]},
+            },
+        )
+
+    assert (
+        "ODCS cannot express these keywords, which are not imported: dependentRequired (root), "
+        "patternProperties (meta), additionalProperties (meta), if (cond), not (cond)"
+    ) in caplog.text

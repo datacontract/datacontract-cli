@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export pydantic-model`: optional fields default to `None` (#1679)
 
 ### Fixed
+- `datacontract test`: a JSON value of the wrong type fails the JSON Schema check, not every check on its column
+- `datacontract test`: the JSON Schema check reads `.jsonl` and `.ndjson` files, and files without a `delimiter` the way DuckDB does
+- `datacontract import jsonschema`: imports `const`, `additionalProperties` as a map, `minItems`, `maxItems`, `uniqueItems`, `multipleOf` and `examples`, and warns about the keywords it leaves out
 - `datacontract import jsonschema`: resolves local `$ref`s and merges `allOf`, which imported as strings or not at all
 - `datacontract test`: a JSON record that breaks the JSON Schema no longer stops the other checks, and every such record is reported
 - `datacontract test`: JSON files that are not found are reported instead of failing with a TypeError

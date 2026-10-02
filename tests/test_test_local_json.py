@@ -83,3 +83,48 @@ def test_json_files_that_do_not_exist_are_reported(tmp_path):
     check = next(c for c in run.checks if c.name == "Check that JSON has valid schema")
     assert check.result == "warning"
     assert "No files found" in check.reason
+
+
+def test_a_value_of_the_wrong_type_fails_the_json_schema_check_only(tmp_path):
+    (tmp_path / "orders.json").write_text(
+        '[{"id": "1", "qty": 3, "status": "new"}, {"id": "2", "qty": "many", "status": "new"}, {"id": "3", "qty": 0, "status": "new"}]'
+    )
+
+    run = DataContract(data_contract_str=json_contract(tmp_path / "orders.json", ORDER_PROPERTIES)).test()
+
+    results = {c.name: (c.result, c.reason) for c in run.checks}
+    assert results["Check that JSON has valid schema"][0] == "failed"
+    assert "qty" in results["Check that JSON has valid schema"][1]
+    # the other checks on the column still run, and find the record that breaks them
+    assert results["Check that field qty has a minimum of 1"] == (
+        "failed",
+        "Actual invalid_count(qty) was 1, expected = 0",
+    )
+    assert not [name for name, (result, _) in results.items() if result == "error"]
+
+
+@pytest.mark.parametrize("name", ["orders.jsonl", "orders.ndjson"])
+def test_newline_delimited_json_files_are_validated(tmp_path, name):
+    (tmp_path / name).write_text('{"id": "1", "status": "new"}\n{"id": "2"}\n')
+    contract = json_contract(tmp_path / name, ORDER_PROPERTIES).replace("delimiter: array", "delimiter: new_line")
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert [c.result for c in run.checks if c.name == "Check that JSON has valid schema"] == ["failed"]
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        '[{"id": "1", "qty": 1, "status": "new"}, {"id": "2", "qty": 2, "status": "new"}]',
+        '{"id": "1", "qty": 1, "status": "new"}\n\n{"id": "2", "qty": 2, "status": "new"}\n',
+    ],
+    ids=["array", "newline-delimited"],
+)
+def test_without_a_delimiter_json_files_are_read_as_duckdb_reads_them(tmp_path, content):
+    (tmp_path / "orders.json").write_text(content)
+    contract = json_contract(tmp_path / "orders.json", ORDER_PROPERTIES).replace("    delimiter: array\n", "")
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]

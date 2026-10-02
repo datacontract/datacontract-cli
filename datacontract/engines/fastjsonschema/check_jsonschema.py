@@ -127,6 +127,10 @@ def validate_json_stream(
     return exceptions
 
 
+# Newline-delimited JSON is often named .jsonl or .ndjson
+JSON_SUFFIXES = (".json", ".jsonl", ".ndjson")
+
+
 def read_json_lines(file):
     file_content = file.read()
     for line in file_content.splitlines():
@@ -151,11 +155,21 @@ def read_json_array_content(file_content: str):
 
 
 def read_json_file(file):
-    yield json.load(file)
+    yield from read_json_file_content(file.read())
 
 
 def read_json_file_content(file_content: str):
-    yield json.loads(file_content)
+    """Without a delimiter, the file holds one record, an array of records, or one record per line,
+    as DuckDB detects it too."""
+    try:
+        data = json.loads(file_content)
+    except json.JSONDecodeError:
+        yield from (json.loads(line) for line in file_content.splitlines() if line.strip())
+        return
+    if isinstance(data, list):
+        yield from data
+    else:
+        yield data
 
 
 def validate_json_file(schema, model_name, validate, file, delimiter) -> List[DataContractException]:
@@ -186,13 +200,13 @@ def process_local_file(run, server, schema, model_name, validate, config: Config
         # Fetch all JSONs in the directory
         for root, _, files in os.walk(path):
             for file in files:
-                if file.endswith(".json"):
+                if file.endswith(JSON_SUFFIXES):
                     all_files.append(os.path.join(root, file))
     else:
         # Use glob to fetch all JSONs
         for file_path in glob.glob(path, recursive=True):
             if os.path.isfile(file_path):
-                if file_path.endswith(".json"):
+                if file_path.endswith(JSON_SUFFIXES):
                     all_files.append(file_path)
 
     if not all_files:

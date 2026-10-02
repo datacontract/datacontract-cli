@@ -101,7 +101,9 @@ def get_duckdb_connection(
                             """)
                 else:
                     con.sql(
-                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
+                        # A value of the wrong type reads as NULL, so the other checks on its column still run;
+                        # the JSON Schema check reports the value itself
+                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1, ignore_errors=true);"""
                     )
                     add_nested_views(con, model_name, schema_obj.properties)
                 # Raw view without the columns= projection to check for absent columns (check_property_is_present)
