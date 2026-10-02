@@ -98,7 +98,7 @@ Each global element that no other element references becomes a schema, named aft
 | Element with `maxOccurs` greater than 1 | `logicalType: array` with `items`; `minOccurs`/`maxOccurs` above 1 as `minItems`/`maxItems` |
 | `minOccurs="0"`, `nillable="true"`, inside `xs:choice` or an optional `xs:sequence` | not `required` |
 | `xs:string`, `xs:token`, `xs:anyURI`, `xs:duration`, `xs:gYear`, … | `string` |
-| `xs:int`, `xs:long`, `xs:integer`, `xs:positiveInteger`, `xs:unsignedByte`, … | `integer`, with the range of the type as `minimum`/`maximum` (`xs:unsignedInt`: 0 to 4294967295) unless a facet narrows it |
+| `xs:int`, `xs:long`, `xs:integer`, `xs:positiveInteger`, `xs:unsignedByte`, … | `integer`, with the range of the type as `minimum`/`maximum` (`xs:unsignedInt`: 0 to 4294967295) unless a facet narrows it; `xs:unsignedLong` gets only its minimum, as its maximum is beyond the 64-bit integers the checks compare with |
 | `xs:decimal`, `xs:float`, `xs:double` | `number` |
 | `xs:boolean` | `boolean` |
 | `xs:date` / `xs:dateTime` / `xs:time` | `date` / `timestamp` / `time` |
@@ -106,7 +106,7 @@ Each global element that no other element references becomes a schema, named aft
 | `xs:pattern` (several are alternatives) | `logicalTypeOptions.pattern`, anchored as `^(…)$` because XSD patterns match the whole value |
 | `xs:length`, `xs:minLength`, `xs:maxLength` | `logicalTypeOptions.minLength` / `maxLength` |
 | `xs:minInclusive`, `xs:maxInclusive`, `xs:minExclusive`, `xs:maxExclusive` | `logicalTypeOptions.minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum` |
-| `xs:totalDigits`, `xs:fractionDigits` | `precision` / `scale` custom properties |
+| `xs:totalDigits`, `xs:fractionDigits` | `precision` / `scale` custom properties, which the SQL exports read too (ODCS has no field for them) |
 | `xs:union` | `string`, with the member types in `physicalType` (`date\|string\|integer`) |
 | `xs:list` | `string` with `physicalType: list`: one space-separated text value |
 | `xs:documentation` | `description` |
@@ -185,7 +185,7 @@ schema:
 
 ## Includes and imports
 
-`xs:include`, `xs:import`, and `xs:redefine` are followed for files next to the schema. Remote schemas (`http://`, `https://`) are never downloaded: they are skipped with a warning, and an element of a type they define becomes an `object` without properties. Rules of XML Schema the import does not depend on, such as an invalid restriction, are reported as warnings instead of failing the import.
+`xs:include`, `xs:import`, and `xs:redefine` are followed for local files, relative to the schema that names them. Remote schemas (`http://`, `https://`) are never downloaded: they are skipped with a warning, and an element of a type they define becomes an `object` without properties. Rules of XML Schema the import does not depend on, such as an invalid restriction, are reported as warnings instead of failing the import.
 
 ## Simplifications
 

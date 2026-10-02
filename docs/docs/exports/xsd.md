@@ -66,6 +66,12 @@ Running this against the [example `orders` contract](https://github.com/datacont
 - The `logicalType` sets the XSD type (`timestamp` → `xs:dateTime`, `number` → `xs:decimal`, …), unless the `physicalType` names a built-in XSD type of the same logical type, such as `positiveInteger` or `token`.
 - `enum`, `pattern`, `minLength`/`maxLength`, `minimum`/`maximum` (and their exclusive forms), and the `precision`/`scale` of decimals become facets. A bound that only repeats the range of the XSD type, such as `minimum: 0` on an `unsignedInt`, is left out. XSD patterns always match the whole value, contract patterns anywhere unless anchored: `^ORD$` exports as `ORD`, `ORD` as `.*(ORD).*`.
 - A property with the custom property `xmlNode: attribute` becomes an attribute, and one with `xmlNode: text` the text of an element with attributes. A schema's `xmlNamespace` custom property becomes the target namespace. [`datacontract import xsd`](../imports/xsd.md) sets all three, so an imported XML Schema exports back to an equivalent one.
+- An object without properties accepts any content (`xs:anyType`). A `map` becomes repeated `entry` elements with a `key` and a `value`.
+- A `string` with `physicalType: list` exports as an `xs:list`, and one with a union of built-in XSD types in `physicalType` (`integer|date`) as an `xs:union`, the way the import writes them.
+- XSD allows one lower and one upper bound per type, so when a property has both `minimum` and `exclusiveMinimum` (or both maximums), the tighter one is exported.
+- Every schema becomes a global element of the same XML Schema, which has one target namespace: when schemas declare different `xmlNamespace`s, the first one is used, with a warning. `--schema-name` exports a single schema.
 - Names that are not valid XML names are changed to valid ones, with a warning.
+
+XML Schema has nothing for `primaryKey`, `unique`, string `format`s, `examples`, and quality rules, so they are not exported. The digits of a decimal come from the `precision` and `scale` custom properties; a `physicalType` such as `NUMERIC(12,2)` is not read.
 
 All options: **[`datacontract export xsd`](../commands/export/xsd.md)**.
