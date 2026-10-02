@@ -366,6 +366,27 @@ def test_import_a_missing_file():
             "tag",
             "XSD-only syntax",
         ),
+        (
+            """<xs:element name="shape" abstract="true" type="xs:string"/>
+               <xs:element name="circle" substitutionGroup="shape" type="xs:string"/>
+               <xs:element name="drawing"><xs:complexType><xs:sequence>
+                 <xs:element ref="shape" maxOccurs="unbounded"/>
+               </xs:sequence></xs:complexType></xs:element>""",
+            "drawing.shape",
+            "substitution groups",
+        ),
+        (
+            """<xs:element name="range"><xs:complexType><xs:sequence>
+                 <xs:element name="low" type="xs:int"/><xs:element name="high" type="xs:int"/>
+               </xs:sequence><xs:assert test="low le high"/></xs:complexType></xs:element>""",
+            "range",
+            "XSD 1.1 assertions",
+        ),
+        (
+            '<xs:element name="even"><xs:simpleType><xs:restriction base="xs:int"><xs:assertion test="$value mod 2 = 0"/></xs:restriction></xs:simpleType></xs:element>',
+            "even",
+            "XSD 1.1 assertions",
+        ),
     ],
 )
 def test_import_warns_about_what_it_simplifies(tmp_path: Path, caplog, body, path, message):
@@ -386,18 +407,18 @@ def test_import_warns_about_nothing_when_nothing_is_simplified(tmp_path: Path, c
 @pytest.mark.parametrize(
     "xsd_type, bounds",
     [
-        ("byte", {"minimum": -128, "maximum": 127}),
-        ("unsignedByte", {"minimum": 0, "maximum": 255}),
-        ("short", {"minimum": -32768, "maximum": 32767}),
-        ("unsignedInt", {"minimum": 0, "maximum": 4294967295}),
-        ("long", {"minimum": -9223372036854775808, "maximum": 9223372036854775807}),
-        ("unsignedLong", {"minimum": 0}),
+        ("byte", {"minimum": -128, "maximum": 127, "format": "i8"}),
+        ("unsignedByte", {"minimum": 0, "maximum": 255, "format": "u8"}),
+        ("short", {"minimum": -32768, "maximum": 32767, "format": "i16"}),
+        ("unsignedInt", {"minimum": 0, "maximum": 4294967295, "format": "u32"}),
+        ("long", {"minimum": -9223372036854775808, "maximum": 9223372036854775807, "format": "i64"}),
+        ("unsignedLong", {"minimum": 0, "format": "u64"}),
         ("positiveInteger", {"minimum": 1}),
         ("nonPositiveInteger", {"maximum": 0}),
         ("integer", None),
     ],
 )
-def test_import_the_range_of_builtin_integer_types(tmp_path: Path, xsd_type, bounds):
+def test_import_the_range_and_format_of_builtin_integer_types(tmp_path: Path, xsd_type, bounds):
     result = import_xsd(tmp_path, f'<xs:element name="value" type="xs:{xsd_type}"/>')
 
     assert result.schema_[0].properties[0].logicalTypeOptions == bounds
@@ -411,7 +432,7 @@ def test_import_a_facet_narrows_the_range_of_its_integer_type(tmp_path: Path):
            </xs:restriction></xs:simpleType></xs:element>""",
     )
 
-    assert result.schema_[0].properties[0].logicalTypeOptions == {"exclusiveMinimum": 9, "maximum": 255}
+    assert result.schema_[0].properties[0].logicalTypeOptions == {"exclusiveMinimum": 9, "maximum": 255, "format": "u8"}
 
 
 @pytest.mark.parametrize(
@@ -441,3 +462,122 @@ def test_import_keeps_a_pattern_with_an_escaped_backslash_or_a_hyphen_between_cl
     )
 
     assert result.schema_[0].properties[0].logicalTypeOptions == {"pattern": "^([A-Z]{3}-[0-9]{4}\\\\i)$"}
+
+
+@pytest.mark.parametrize("group", ["xs:choice", "xs:sequence"])
+def test_import_the_elements_of_a_repeating_group_as_arrays(tmp_path: Path, group):
+    result = import_xsd(
+        tmp_path,
+        f"""<xs:element name="contacts"><xs:complexType>
+              <{group} maxOccurs="unbounded">
+                <xs:element name="email" type="xs:string"/>
+                <xs:element name="phone" type="xs:string"/>
+              </{group}>
+            </xs:complexType></xs:element>""",
+    )
+
+    assert [(p.name, p.logicalType, p.items.logicalType) for p in result.schema_[0].properties] == [
+        ("email", "array", "string"),
+        ("phone", "array", "string"),
+    ]
+
+
+def test_import_an_infinite_bound_as_no_bound(tmp_path: Path):
+    result = import_xsd(
+        tmp_path,
+        """<xs:element name="measure"><xs:complexType><xs:sequence>
+             <xs:element name="value"><xs:simpleType><xs:restriction base="xs:double">
+               <xs:minInclusive value="0"/><xs:maxInclusive value="INF"/>
+             </xs:restriction></xs:simpleType></xs:element>
+             <xs:element name="special"><xs:simpleType><xs:restriction base="xs:float">
+               <xs:enumeration value="INF"/><xs:enumeration value="NaN"/><xs:enumeration value="1.5"/>
+             </xs:restriction></xs:simpleType></xs:element>
+           </xs:sequence></xs:complexType></xs:element>""",
+    )
+
+    value, special = result.schema_[0].properties
+    assert value.logicalTypeOptions == {"minimum": 0, "format": "f64"}
+    assert [e.value for e in special.enum] == ["INF", "NaN", 1.5]
+
+
+def test_import_an_attribute_named_like_another_property_with_an_at_prefix(tmp_path: Path, caplog):
+    with caplog.at_level(logging.WARNING):
+        result = import_xsd(
+            tmp_path,
+            """<xs:element name="order"><xs:complexType>
+                 <xs:sequence>
+                   <xs:element name="id" type="xs:string"/>
+                   <xs:element name="price"><xs:complexType><xs:simpleContent>
+                     <xs:extension base="xs:decimal"><xs:attribute name="value" type="xs:string"/></xs:extension>
+                   </xs:simpleContent></xs:complexType></xs:element>
+                 </xs:sequence>
+                 <xs:attribute name="id" type="xs:int"/>
+                 <xs:attribute name="source" type="xs:string"/>
+               </xs:complexType></xs:element>""",
+        )
+
+    order = properties(result.schema_[0])
+    assert list(order) == ["id", "price", "@id", "source"]  # an attribute without a namesake keeps its name
+    assert [p.name for p in order["price"].properties] == ["value", "@value"]
+    assert "order.id, order.price.value" in caplog.text or "order.price.value, order.id" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "xsd_type, logical_type, odcs_format",
+    [("float", "number", "f32"), ("double", "number", "f64"), ("int", "integer", "i32"), ("decimal", "number", None)],
+)
+def test_import_the_size_of_a_type_as_its_odcs_format(tmp_path: Path, xsd_type, logical_type, odcs_format):
+    result = import_xsd(tmp_path, f'<xs:element name="value" type="xs:{xsd_type}"/>')
+
+    prop = result.schema_[0].properties[0]
+    assert prop.logicalType == logical_type
+    assert (prop.logicalTypeOptions or {}).get("format") == odcs_format
+
+
+def test_import_a_fixed_value_as_the_only_value(tmp_path: Path):
+    result = import_xsd(
+        tmp_path,
+        """<xs:element name="address"><xs:complexType>
+             <xs:sequence>
+               <xs:element name="country" type="xs:string" fixed="US"/>
+               <xs:element name="tags" type="xs:string" fixed="none" maxOccurs="unbounded"/>
+               <xs:element name="price" fixed="9.50"><xs:complexType><xs:simpleContent>
+                 <xs:extension base="xs:decimal"><xs:attribute name="currency" type="xs:string" fixed="USD"/></xs:extension>
+               </xs:simpleContent></xs:complexType></xs:element>
+             </xs:sequence>
+             <xs:attribute name="version" type="xs:int" fixed="2"/>
+             <xs:attribute name="active" type="xs:boolean" fixed="true"/>
+           </xs:complexType></xs:element>""",
+    )
+
+    props = properties(result.schema_[0])
+    assert [e.value for e in props["country"].enum] == ["US"]
+    assert [e.value for e in props["tags"].items.enum] == ["none"]
+    price = properties(props["price"])
+    assert [e.value for e in price["value"].enum] == [9.5]
+    assert [e.value for e in price["currency"].enum] == ["USD"]
+    assert [e.value for e in props["version"].enum] == [2]
+    assert [e.value for e in props["active"].enum] == [True]
+
+
+def test_import_marks_elements_in_no_namespace(tmp_path: Path):
+    """Local elements of a schema without elementFormDefault are unqualified, in no namespace."""
+    result = import_xsd(
+        tmp_path,
+        """<xs:element name="order"><xs:complexType><xs:sequence>
+             <xs:element name="id" type="xs:string"/>
+           </xs:sequence><xs:attribute name="version" type="xs:int"/></xs:complexType></xs:element>""",
+    )
+    assert custom(result.schema_[0].properties[0], "xmlNamespace") is None  # no target namespace at all
+
+    source = tmp_path / "ns.xsd"
+    source.write_text(
+        '<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:x">'
+        '<xs:element name="order"><xs:complexType><xs:sequence><xs:element name="id" type="xs:string"/>'
+        '</xs:sequence><xs:attribute name="version" type="xs:int"/></xs:complexType></xs:element></xs:schema>'
+    )
+    order = DataContract.import_from_source("xsd", str(source)).schema_[0]
+    identifier, version = order.properties
+    assert custom(order, "xmlNamespace") == "urn:x"
+    assert custom(identifier, "xmlNamespace") == ""
+    assert custom(version, "xmlNamespace") is None  # attributes are in no namespace unless qualified

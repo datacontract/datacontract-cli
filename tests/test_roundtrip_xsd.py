@@ -168,13 +168,23 @@ def test_xsd_to_contract_and_back(fixture, tmp_path: Path):
     assert roundtrip(imported, tmp_path).model_dump() == imported.model_dump()
 
 
-def test_exported_xsd_validates_the_documents_of_the_imported_one():
-    original = xmlschema.XMLSchema("fixtures/import/xsd/orders.xsd")
-    exported = xmlschema.XMLSchema(to_xsd(DataContract.import_from_source("xsd", "fixtures/import/xsd/orders.xsd")))
+@pytest.mark.parametrize(
+    "xsd, documents",
+    [
+        ("fixtures/import/xsd/orders.xsd", "fixtures/xml/*/order-*.xml"),
+        # unqualified address elements from an imported namespace
+        ("fixtures/import/xsd/purchase-order.xsd", "fixtures/xml/purchase-order/*/*.xml"),
+        ("fixtures/xsd/canonical.xsd", "fixtures/xml/canonical/*/*.xml"),
+    ],
+)
+def test_exported_xsd_validates_the_documents_of_the_imported_one(xsd, documents):
+    original = xmlschema.XMLSchema(xsd, allow="local", validation="lax")
+    exported = xmlschema.XMLSchema(to_xsd(DataContract.import_from_source("xsd", xsd)))
 
-    for document in sorted(glob.glob("fixtures/xml/data/*.xml")) + sorted(glob.glob("fixtures/xml/invalid/*.xml")):
+    paths = sorted(glob.glob(documents))
+    assert any(original.is_valid(d) for d in paths) and not all(original.is_valid(d) for d in paths)
+    for document in paths:
         assert exported.is_valid(document) == original.is_valid(document), document
-    assert not exported.is_valid("fixtures/xml/invalid/order-3.xml")
 
 
 CONTRACTS = sorted(

@@ -1,11 +1,12 @@
 import inspect
 import logging
+import math
 import re
 import warnings
 from decimal import Decimal
 from pathlib import Path
 
-from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import CustomProperty, EnumValue, OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object
@@ -48,6 +49,20 @@ INTEGER_BOUNDS = {
     "negativeInteger": (None, -1),
 }
 
+# The ODCS format of builtin XSD types with a fixed size
+FORMATS = {
+    "byte": "i8",
+    "short": "i16",
+    "int": "i32",
+    "long": "i64",
+    "unsignedByte": "u8",
+    "unsignedShort": "u16",
+    "unsignedInt": "u32",
+    "unsignedLong": "u64",
+    "float": "f32",
+    "double": "f64",
+}
+
 # Regular expression syntax of XSD that the contract's checks do not understand: the name character
 # escapes \i, \I, \c, \C, and character class subtraction such as [a-z-[aeiou]]
 XSD_ONLY_REGEX = re.compile(r"(?<!\\)(?:\\\\)*\\[iIcC]|\[[^\]]*-\[")
@@ -62,6 +77,9 @@ SIMPLIFICATIONS = {
     "mixed": "have mixed content, whose text is not imported",
     "identity": "have identity constraints (xs:key, xs:keyref, xs:unique), which are not imported",
     "pattern": "have patterns with XSD-only syntax (\\i, \\c, character class subtraction), which are not imported",
+    "substitution": "can be replaced by other elements (substitution groups), which are imported as declared",
+    "assertion": "have XSD 1.1 assertions, which are not imported",
+    "collision": "are attributes named like another property, so their name has an @ prefix",
 }
 
 
@@ -81,8 +99,9 @@ def import_xsd(source: str) -> OpenDataContractStandard:
 
     odcs = create_odcs(name=roots[0].local_name if len(roots) == 1 else Path(source).stem)
     odcs.schema_ = []
-    reader = XsdReader()
+    reader = XsdReader(set(schema.maps.substitution_groups))
     for root in roots:
+        reader.namespace = root.target_namespace
         prop = reader.element_property(root, optional=False, stack=(), parent="")
         schema_object = create_schema_object(
             name=prop.name,
@@ -108,8 +127,9 @@ def load_xml_schema(source: str):
     try:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            # lax: real-world schemas break rules the import does not depend on, or reference remote schemas
-            schema = xmlschema.XMLSchema(source, validation="lax", allow="local")
+            # lax: real-world schemas break rules the import does not depend on, or reference remote schemas;
+            # XSD 1.1 reads XSD 1.0 schemas too
+            schema = xmlschema.XMLSchema11(source, validation="lax", allow="local")
     except (OSError, xmlschema.XMLSchemaException) as e:
         raise DataContractException(
             type="schema",
@@ -135,8 +155,11 @@ def load_xml_schema(source: str):
 class XsdReader:
     """Reads elements into properties and notes what ODCS cannot express."""
 
-    def __init__(self):
+    def __init__(self, substitution_heads: set[str]):
         self.simplified: dict[str, list[str]] = {kind: [] for kind in SIMPLIFICATIONS}
+        self.substitution_heads = substitution_heads
+        # The target namespace of the schema being read; elements in another namespace say so
+        self.namespace = None
 
     def note(self, kind: str, path: str):
         if path not in self.simplified[kind]:
@@ -148,19 +171,27 @@ class XsdReader:
                 listed = ", ".join(paths) if len(paths) <= 6 else ", ".join(paths[:5]) + f" and {len(paths) - 5} more"
                 logger.warning(f"These properties {SIMPLIFICATIONS[kind]}: {listed}")
 
-    def element_property(self, element, optional: bool, stack: tuple, parent: str) -> SchemaProperty:
+    def element_property(
+        self, element, optional: bool, stack: tuple, parent: str, in_repeating_group: bool = False
+    ) -> SchemaProperty:
         name = element.local_name
         path = f"{parent}.{name}" if parent else name
         description = documentation(element) or (documentation(element.ref) if element.ref is not None else None)
         required = not optional and element.min_occurs > 0 and not element.nillable
         if element.identities:
             self.note("identity", path)
-        repeats = element.max_occurs is None or element.max_occurs > 1
+        declaration = element.ref if element.ref is not None else element
+        if declaration.abstract or declaration.name in self.substitution_heads:
+            self.note("substitution", path)
+        # An element repeats on its own, or because the group around it does
+        repeats = element.max_occurs is None or element.max_occurs > 1 or in_repeating_group
         value = self.type_property(name, element.type, stack, f"{path}[]" if repeats else path)
+        if declaration.fixed is not None:
+            fix(value, declaration.fixed)
 
         if repeats:
             value.name = "items"
-            array = create_property(
+            prop = create_property(
                 name=name,
                 logical_type="array",
                 physical_type="array",
@@ -168,19 +199,27 @@ class XsdReader:
                 required=required or None,
                 items=value,
             )
-            occurs = {
-                "minItems": element.min_occurs if element.min_occurs > 1 else None,
-                "maxItems": element.max_occurs,
-            }
-            array.logicalTypeOptions = {key: value for key, value in occurs.items() if value is not None} or None
-            return array
-        value.description = description
-        value.required = required or None
-        return value
+            if not in_repeating_group:
+                occurs = {
+                    "minItems": element.min_occurs if element.min_occurs > 1 else None,
+                    "maxItems": element.max_occurs,
+                }
+                prop.logicalTypeOptions = {key: value for key, value in occurs.items() if value is not None} or None
+        else:
+            prop = value
+            prop.description = description
+            prop.required = required or None
+        namespace = namespace_of(element.name)
+        if namespace != (self.namespace or ""):
+            # "" is an element in no namespace, such as the unqualified local elements of a schema
+            set_custom(prop, "xmlNamespace", namespace)
+        return prop
 
     def type_property(self, name: str, xsd_type, stack: tuple, path: str) -> SchemaProperty:
         if xsd_type.is_simple():
             return self.simple_property(name, xsd_type, path)
+        if getattr(xsd_type, "assertions", None):
+            self.note("assertion", path)
         attributes = self.attribute_properties(xsd_type, path)
         if xsd_type.has_simple_content():
             if not attributes:
@@ -195,21 +234,36 @@ class XsdReader:
             if xsd_type.mixed and xsd_type.name != f"{XS}anyType":
                 self.note("mixed", path)
             content = xsd_type.content
-            properties = self.content_properties(content, content.model == "choice", stack + (xsd_type,), path)
+            repeating = content.max_occurs is None or content.max_occurs > 1
+            optional = content.model == "choice" or content.min_occurs == 0
+            properties = self.content_properties(content, optional, stack + (xsd_type,), path, repeating)
             properties += attributes
+        if properties:
+            # An attribute named like a child element or like the text gets an @ prefix
+            others = {p.name for p in properties if xml_node(p) != "attribute"}
+            for prop in properties:
+                if xml_node(prop) == "attribute" and prop.name in others:
+                    self.note("collision", f"{path}.{prop.name}")
+                    prop.name = f"@{prop.name}"
         return create_property(name=name, logical_type="object", physical_type="object", properties=properties)
 
-    def content_properties(self, group, optional: bool, stack: tuple, path: str) -> list[SchemaProperty]:
-        """The elements of a model group, with nested groups flattened; a choice makes its elements optional."""
+    def content_properties(
+        self, group, optional: bool, stack: tuple, path: str, repeating: bool = False
+    ) -> list[SchemaProperty]:
+        """The elements of a model group, with nested groups flattened.
+
+        A choice makes its elements optional, and a group that repeats makes them arrays.
+        """
         from xmlschema.validators import XsdAnyElement, XsdElement, XsdGroup
 
         properties = []
         for particle in group:
             if isinstance(particle, XsdGroup):
                 nested_optional = optional or particle.model == "choice" or particle.min_occurs == 0
-                properties += self.content_properties(particle, nested_optional, stack, path)
+                nested_repeating = repeating or particle.max_occurs is None or particle.max_occurs > 1
+                properties += self.content_properties(particle, nested_optional, stack, path, nested_repeating)
             elif isinstance(particle, XsdElement):
-                properties.append(self.element_property(particle, optional, stack, path))
+                properties.append(self.element_property(particle, optional, stack, path, repeating))
             elif isinstance(particle, XsdAnyElement):
                 self.note("any", path)
         return properties
@@ -227,6 +281,11 @@ class XsdReader:
             )
             prop.description = documentation(attribute)
             prop.required = attribute.use == "required" or None
+            if attribute.fixed is not None:
+                fix(prop, attribute.fixed)
+            if namespace := namespace_of(attribute.name):
+                # attributes are in no namespace unless qualified
+                set_custom(prop, "xmlNamespace", namespace)
             properties.append(prop)
         return properties
 
@@ -248,6 +307,8 @@ class XsdReader:
 
         base = builtin_type(xsd_type)
         facets = derived_facets(xsd_type)
+        if facets.pop("assertion", None):
+            self.note("assertion", path)
         length = facets.get("length")
         patterns = facets.get("pattern")
         if patterns and any(XSD_ONLY_REGEX.search(p) for p in patterns):
@@ -258,6 +319,11 @@ class XsdReader:
         lowest, highest = INTEGER_BOUNDS.get(base, (None, None))
         minimum = facets.get("minInclusive", lowest if "minExclusive" not in facets else None)
         maximum = facets.get("maxInclusive", highest if "maxExclusive" not in facets else None)
+        # An infinite bound, such as maxInclusive="INF" on a double, bounds nothing
+        minimum, maximum, exclusive_minimum, exclusive_maximum = (
+            None if is_infinite(bound) else bound
+            for bound in (minimum, maximum, facets.get("minExclusive"), facets.get("maxExclusive"))
+        )
         return create_property(
             name=name,
             logical_type=LOGICAL_TYPES.get(base, "string"),
@@ -269,8 +335,9 @@ class XsdReader:
             max_length=facets.get("maxLength", length),
             minimum=plain(minimum),
             maximum=plain(maximum),
-            exclusive_minimum=plain(facets.get("minExclusive")),
-            exclusive_maximum=plain(facets.get("maxExclusive")),
+            exclusive_minimum=plain(exclusive_minimum),
+            exclusive_maximum=plain(exclusive_maximum),
+            format=FORMATS.get(base),
             precision=facets.get("totalDigits"),
             scale=facets.get("fractionDigits"),
             custom_properties=custom_properties,
@@ -292,7 +359,9 @@ def derived_facets(xsd_type) -> dict:
             key = qname.removeprefix(XS)
             if key in facets or facet is None:
                 continue
-            if key == "enumeration":
+            if key == "assertion":
+                facets[key] = True
+            elif key == "enumeration":
                 facets[key] = facet.enumeration
             elif key == "pattern":
                 facets[key] = facet.regexps
@@ -313,8 +382,46 @@ def plain(value):
     if value is None or isinstance(value, (bool, int)):
         return value
     if isinstance(value, (Decimal, float)):
+        if is_infinite(value) or value != value:
+            # INF, -INF, and NaN in their XSD spelling
+            return "NaN" if value != value else "INF" if value > 0 else "-INF"
         return int(value) if value == int(value) else float(value)
     return str(value)
+
+
+def is_infinite(value) -> bool:
+    if isinstance(value, Decimal):
+        return value.is_infinite()
+    return isinstance(value, float) and math.isinf(value)
+
+
+def namespace_of(qname: str | None) -> str:
+    """The namespace of a {namespace}local name, or "" for a name in no namespace."""
+    return qname[1:].split("}", 1)[0] if qname and qname.startswith("{") else ""
+
+
+def xml_node(prop: SchemaProperty) -> str | None:
+    return next((c.value for c in prop.customProperties or [] if c.property == "xmlNode"), None)
+
+
+def set_custom(prop: SchemaProperty, name: str, value):
+    custom = [c for c in prop.customProperties or [] if c.property != name]
+    prop.customProperties = custom + [CustomProperty(property=name, value=value)]
+
+
+def fix(prop: SchemaProperty, value: str):
+    """A fixed value as the only value the property allows; for an element with attributes, its text."""
+    if prop.logicalType == "object":
+        prop = next((p for p in prop.properties or [] if xml_node(p) == "text"), None)
+        if prop is None:
+            return
+    if prop.logicalType in ("integer", "number"):
+        typed = plain(Decimal(value))
+    elif prop.logicalType == "boolean":
+        typed = value.strip() in ("true", "1")
+    else:
+        typed = value
+    prop.enum = [EnumValue(value=typed)]
 
 
 def documentation(component) -> str | None:

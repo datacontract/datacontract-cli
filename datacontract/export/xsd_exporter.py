@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.export.exporter import Exporter
-from datacontract.imports.xsd_importer import INTEGER_BOUNDS, LOGICAL_TYPES
+from datacontract.imports.xsd_importer import FORMATS, INTEGER_BOUNDS, LOGICAL_TYPES
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_key, get_map_value, is_map
 
@@ -31,6 +31,9 @@ STRING_TYPES = {
     "IDREFS", "ENTITY", "ENTITIES", "QName", "NOTATION", "anyURI", "base64Binary", "hexBinary", "duration",
     "dayTimeDuration", "yearMonthDuration", "gYear", "gYearMonth", "gMonth", "gMonthDay", "gDay",
 }  # fmt: skip
+
+# The XSD type of an ODCS integer or number format
+SIZED_TYPES = {odcs_format: xsd for xsd, odcs_format in FORMATS.items()}
 
 # logicalTypeOptions and the facets they become
 FACETS = {
@@ -68,7 +71,7 @@ def to_xsd(data_contract: OpenDataContractStandard, schema_name: str = "all") ->
         # The default namespace resolves references to the named types below
         root.set("targetNamespace", namespace)
         root.set("xmlns", namespace)
-    writer = XsdWriter()
+    writer = XsdWriter(namespace)
     root.extend([writer.schema_element(schema_object) for schema_object in schema_objects])
     root.extend(writer.types.values())
 
@@ -79,8 +82,9 @@ def to_xsd(data_contract: OpenDataContractStandard, schema_name: str = "all") ->
 class XsdWriter:
     """Writes elements and collects the named simple types they need."""
 
-    def __init__(self):
+    def __init__(self, namespace: str | None):
         self.types: dict[str, ElementTree.Element] = {}
+        self.namespace = namespace or ""
 
     def schema_element(self, schema_object: SchemaObject) -> ElementTree.Element:
         name = xml_name(schema_object.physicalName or schema_object.name)
@@ -91,16 +95,29 @@ class XsdWriter:
 
     def property_node(self, prop: SchemaProperty) -> ElementTree.Element:
         """The xs:attribute or xs:element of a property; an array becomes an element that repeats."""
-        name = xml_name(prop.physicalName or prop.name)
         if xml_node(prop) == "attribute":
+            # the import names an attribute like another property with an @ prefix
+            name = xml_name((prop.physicalName or prop.name).removeprefix("@"))
             node = ElementTree.Element(f"{XS}attribute", {"name": name})
+            namespace = custom_property(prop, "xmlNamespace")
+            if namespace and namespace == self.namespace:
+                node.set("form", "qualified")
+            elif namespace:
+                logger.warning(f"Attribute {name} is in namespace {namespace}, which needs a schema of its own")
             if prop.required:
                 node.set("use", "required")
             annotate(node, prop.description)
             set_simple_type(node, prop)
             return node
 
+        name = xml_name(prop.physicalName or prop.name)
         node = ElementTree.Element(f"{XS}element", {"name": name})
+        namespace = custom_property(prop, "xmlNamespace")
+        if namespace == "" and self.namespace:
+            # a local element in no namespace, such as one from a schema without elementFormDefault
+            node.set("form", "unqualified")
+        elif namespace and namespace != self.namespace:
+            logger.warning(f"Element {name} is in namespace {namespace}, which needs a schema of its own")
         value = prop
         if prop.logicalType == "array":
             value = prop.items or SchemaProperty(name=name, logicalType="string")
@@ -277,6 +294,10 @@ def xsd_type(prop: SchemaProperty) -> str:
     if prop.physicalType in LOGICAL_TYPES or prop.physicalType in STRING_TYPES:
         if LOGICAL_TYPES.get(prop.physicalType, "string") == logical_type:
             return f"xs:{prop.physicalType}"
+    # the ODCS format of a sized integer or number, such as i32 or f64
+    sized = SIZED_TYPES.get(option(prop, "format"))
+    if sized and LOGICAL_TYPES[sized] == logical_type:
+        return f"xs:{sized}"
     return f"xs:{XSD_TYPES.get(logical_type, 'string')}"
 
 

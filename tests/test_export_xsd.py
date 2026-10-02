@@ -504,3 +504,91 @@ schema:
     schema = xmlschema.XMLSchema(to_xsd(DataContract(data_contract_str=contract).get_data_contract()))
 
     assert schema.is_valid(f"<code><value>{text}</value></code>") == valid
+
+
+@pytest.mark.parametrize(
+    "logical_type, odcs_format, physical_type, exported",
+    [
+        ("integer", "i16", "SMALLINT", "short"),
+        ("integer", "u32", None, "unsignedInt"),
+        ("number", "f32", "REAL", "float"),
+        ("number", "f64", None, "double"),
+        ("integer", "i64", "int", "int"),  # an XSD physicalType wins
+    ],
+)
+def test_export_the_odcs_format_as_the_sized_xsd_type(logical_type, odcs_format, physical_type, exported):
+    physical = f"\n        physicalType: {physical_type}" if physical_type else ""
+    contract = f"""
+apiVersion: v3.2.0
+kind: DataContract
+id: sizes
+version: 1.0.0
+status: active
+schema:
+  - name: measure
+    properties:
+      - name: value
+        logicalType: {logical_type}{physical}
+        required: true
+        logicalTypeOptions:
+          format: {odcs_format}
+"""
+    schema = xmlschema.XMLSchema(to_xsd(DataContract(data_contract_str=contract).get_data_contract()))
+
+    (value,) = schema.elements["measure"].type.content.iter_elements()
+    assert value.type.local_name == exported
+
+
+def test_export_an_attribute_with_an_at_prefix_without_it():
+    contract = """
+apiVersion: v3.2.0
+kind: DataContract
+id: names
+version: 1.0.0
+status: active
+schema:
+  - name: order
+    properties:
+      - name: id
+        logicalType: string
+        required: true
+      - name: "@id"
+        logicalType: integer
+        customProperties:
+          - property: xmlNode
+            value: attribute
+"""
+    schema = xmlschema.XMLSchema(to_xsd(DataContract(data_contract_str=contract).get_data_contract()))
+
+    order = schema.elements["order"].type
+    assert [e.local_name for e in order.content.iter_elements()] == ["id"]
+    assert list(order.attributes) == ["id"]
+
+
+def test_export_an_element_in_no_namespace_as_unqualified():
+    contract = """
+apiVersion: v3.2.0
+kind: DataContract
+id: forms
+version: 1.0.0
+status: active
+schema:
+  - name: order
+    customProperties:
+      - property: xmlNamespace
+        value: urn:x
+    properties:
+      - name: id
+        logicalType: string
+        required: true
+        customProperties:
+          - property: xmlNamespace
+            value: ""
+      - name: note
+        logicalType: string
+        required: true
+"""
+    schema = xmlschema.XMLSchema(to_xsd(DataContract(data_contract_str=contract).get_data_contract()))
+
+    assert schema.is_valid('<o:order xmlns:o="urn:x"><id>1</id><o:note>n</o:note></o:order>')
+    assert not schema.is_valid('<o:order xmlns:o="urn:x"><o:id>1</o:id><o:note>n</o:note></o:order>')

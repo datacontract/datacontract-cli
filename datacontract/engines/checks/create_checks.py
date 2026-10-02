@@ -277,6 +277,20 @@ def _to_schema_checks(
     # types DuckDB infers for the raw view drop the attributes of nested elements with children.
     # The record element's required properties still show whether records are found at all.
     xml = server is not None and server.format == "xml"
+    if xml:
+        # A record element that matches nothing would pass every other check
+        checks.append(
+            CheckSpec(
+                key=f"{model}__records_found",
+                category="schema",
+                type="records_found",
+                name=f"Check that the documents have {model} elements",
+                model=model,
+                field=None,
+                metric=MetricType.ROW_COUNT,
+                threshold=Threshold(Op.GT, 0),
+            )
+        )
 
     for field, prop, nested in _iter_property_paths(properties):
         first_check = len(checks)

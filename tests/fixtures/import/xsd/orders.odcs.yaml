@@ -103,6 +103,7 @@ schema:
           logicalTypeOptions:
             minimum: 1
             exclusiveMaximum: 1000
+            format: i32
           required: true
         - name: price
           physicalType: object

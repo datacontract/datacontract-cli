@@ -21,10 +21,16 @@ schema:
     properties:
     - name: name
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       required: true
     - name: street
       physicalType: array
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: array
       logicalTypeOptions:
         maxItems: 3
@@ -34,10 +40,16 @@ schema:
         logicalType: string
     - name: city
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       required: true
     - name: state
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       logicalTypeOptions:
         minLength: 2
@@ -45,6 +57,9 @@ schema:
       required: true
     - name: zip
       physicalType: decimal
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: number
       required: true
     - name: latitude
@@ -56,6 +71,7 @@ schema:
       logicalTypeOptions:
         minimum: -90
         maximum: 90
+        format: f64
     - name: longitude
       physicalType: double
       customProperties:
@@ -65,22 +81,31 @@ schema:
       logicalTypeOptions:
         minimum: -180
         maximum: 180
+        format: f64
     - name: country
       physicalType: NMTOKEN
       customProperties:
       - property: xmlNode
         value: attribute
       logicalType: string
+      enum:
+      - value: US
   - name: billTo
     physicalType: object
     logicalType: object
     properties:
     - name: name
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       required: true
     - name: street
       physicalType: array
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: array
       logicalTypeOptions:
         maxItems: 3
@@ -90,10 +115,16 @@ schema:
         logicalType: string
     - name: city
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       required: true
     - name: state
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       logicalTypeOptions:
         minLength: 2
@@ -101,6 +132,9 @@ schema:
       required: true
     - name: zip
       physicalType: decimal
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: number
       required: true
     - name: latitude
@@ -112,6 +146,7 @@ schema:
       logicalTypeOptions:
         minimum: -90
         maximum: 90
+        format: f64
     - name: longitude
       physicalType: double
       customProperties:
@@ -121,22 +156,31 @@ schema:
       logicalTypeOptions:
         minimum: -180
         maximum: 180
+        format: f64
     - name: country
       physicalType: NMTOKEN
       customProperties:
       - property: xmlNode
         value: attribute
       logicalType: string
+      enum:
+      - value: US
   - name: returnTo
     physicalType: object
     logicalType: object
     properties:
     - name: name
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       required: true
     - name: city
       physicalType: string
+      customProperties:
+      - property: xmlNamespace
+        value: ''
       logicalType: string
       required: true
     - name: latitude
@@ -148,6 +192,7 @@ schema:
       logicalTypeOptions:
         minimum: -90
         maximum: 90
+        format: f64
     - name: longitude
       physicalType: double
       customProperties:
@@ -157,6 +202,7 @@ schema:
       logicalTypeOptions:
         minimum: -180
         maximum: 180
+        format: f64
   - name: comment
     physicalType: string
     logicalType: string
@@ -277,6 +323,7 @@ schema:
         logicalTypeOptions:
           minimum: 0
           maximum: 65535
+          format: u16
         required: true
   - name: orderDate
     physicalType: date

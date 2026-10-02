@@ -11,7 +11,7 @@ import duckdb
 import pytest
 import xmlschema
 import yaml
-from open_data_contract_standard.model import Server
+from open_data_contract_standard.model import DataQuality, Server
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -134,8 +134,8 @@ schema:
     run = DataContract(data_contract_str=contract_str).test()
 
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
-    # presence is checked for the required order_id only: optional elements may be absent from every document
-    assert len(run.checks) == 7
+    # records found, and presence for the required order_id only: optional elements may be absent everywhere
+    assert len(run.checks) == 8
 
 
 def test_a_record_element_that_is_not_in_the_documents_fails():
@@ -311,3 +311,132 @@ def test_an_invalid_document_fails_exactly_the_planted_checks(name):
     run = imported(xsd, invalid).test()
 
     assert {c.name for c in run.checks if c.result != "passed"} == PLANTED[name]
+
+
+def xsd_contract(tmp_path: Path, body: str, documents: dict[str, str]) -> DataContract:
+    """The contract imported from an XML Schema, testing the given documents."""
+    source = tmp_path / "schema.xsd"
+    source.write_text(f'<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">{body}</xs:schema>')
+    for name, text in documents.items():
+        (tmp_path / name).write_text(text)
+    return imported(str(source), str(tmp_path / "*.xml"))
+
+
+def test_a_file_larger_than_16_mb_is_read(tmp_path: Path):
+    # read_xml refuses files above 16 MB by default, with a SAX parsing error
+    records = "".join(f"<order><id>A-{i}</id><note>{'x' * 40}</note></order>" for i in range(300_000))
+    (tmp_path / "orders.xml").write_text(f"<orders>{records}</orders>")
+    assert (tmp_path / "orders.xml").stat().st_size > 16 * 2**20
+    contract = f"""
+apiVersion: v3.2.0
+kind: DataContract
+id: big
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: {tmp_path / "orders.xml"}
+    format: xml
+schema:
+  - name: order
+    properties:
+      - name: id
+        logicalType: string
+        required: true
+    quality:
+      - type: sql
+        query: SELECT COUNT(*) FROM {{model}}
+        mustBe: 300000
+"""
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+def test_documents_without_any_record_fail(tmp_path: Path):
+    # all properties optional: without a check for records, a wrong record element would pass every check
+    run = DataContract(
+        data_contract_str=contract(
+            "fixtures/xml/data/*.xml",
+            physicalName="shipment",
+            properties=[{"name": "tracking", "logicalType": "string", "logicalTypeOptions": {"pattern": "^[A-Z]+$"}}],
+        )
+    ).test()
+
+    assert run.result == "failed"
+    assert results(run)["Check that the documents have shipment elements"] == "failed"
+
+
+def test_the_elements_of_a_repeating_group_are_arrays(tmp_path: Path):
+    contract = xsd_contract(
+        tmp_path,
+        """<xs:element name="contact"><xs:complexType>
+             <xs:choice maxOccurs="unbounded">
+               <xs:element name="email" type="xs:string"/>
+               <xs:element name="phone" type="xs:string"/>
+             </xs:choice>
+           </xs:complexType></xs:element>""",
+        {
+            "a.xml": "<contact><email>a@x.org</email><phone>1</phone><email>b@x.org</email></contact>",
+            "b.xml": "<contact><email>c@x.org</email></contact>",
+        },
+    )
+    odcs = contract.get_data_contract()
+    odcs.schema_[0].quality = [
+        DataQuality(type="sql", query="SELECT SUM(len(email)) + SUM(len(phone)) FROM {model}", mustBe=4)
+    ]
+
+    run = DataContract(data_contract=odcs).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+def test_an_attribute_named_value_next_to_text_is_read(tmp_path: Path):
+    run = xsd_contract(
+        tmp_path,
+        """<xs:element name="item"><xs:complexType><xs:sequence>
+             <xs:element name="price"><xs:complexType><xs:simpleContent>
+               <xs:extension base="xs:decimal">
+                 <xs:attribute name="value" use="required"><xs:simpleType><xs:restriction base="xs:string">
+                   <xs:enumeration value="list"/><xs:enumeration value="net"/>
+                 </xs:restriction></xs:simpleType></xs:attribute>
+               </xs:extension>
+             </xs:simpleContent></xs:complexType></xs:element>
+           </xs:sequence></xs:complexType></xs:element>""",
+        {
+            "a.xml": '<item><price value="list">9.50</price></item>',
+            "b.xml": '<item><price value="gross">-1</price></item>',
+        },
+    ).test()
+
+    failed = {c.name for c in run.checks if c.result != "passed"}
+    assert failed == {"Check that field price.@value only contains enum values ['list', 'net']"}
+
+
+def test_an_attribute_named_like_an_element_is_read_as_the_attribute(tmp_path: Path, caplog):
+    # read_xml reads only the attribute when an element has the same name
+    with caplog.at_level("WARNING"):
+        run = xsd_contract(
+            tmp_path,
+            """<xs:element name="order"><xs:complexType>
+                 <xs:sequence><xs:element name="id" type="xs:string"/></xs:sequence>
+                 <xs:attribute name="id" type="xs:unsignedByte" use="required"/>
+               </xs:complexType></xs:element>""",
+            {"a.xml": '<order id="7"><id>A-1</id></order>', "b.xml": '<order id="300"><id>A-2</id></order>'},
+        ).test()
+
+    assert results(run)["Check that field @id has a maximum of 255"] == "failed"
+    assert "read_xml reads only the attribute" in caplog.text
+
+
+def test_a_fixed_value_is_checked(tmp_path: Path):
+    run = xsd_contract(
+        tmp_path,
+        """<xs:element name="address"><xs:complexType>
+             <xs:sequence><xs:element name="country" type="xs:string" fixed="US"/></xs:sequence>
+           </xs:complexType></xs:element>""",
+        {"a.xml": "<address><country>US</country></address>", "b.xml": "<address><country>DE</country></address>"},
+    ).test()
+
+    assert results(run)["Check that field country only contains enum values ['US']"] == "failed"

@@ -95,17 +95,18 @@ Each global element that no other element references becomes a schema, named aft
 |---|---|
 | Global element | Schema with `physicalType: object` |
 | Element with a complex type | `logicalType: object` with `properties` |
-| Element with `maxOccurs` greater than 1 | `logicalType: array` with `items`; `minOccurs`/`maxOccurs` above 1 as `minItems`/`maxItems` |
+| Element with `maxOccurs` greater than 1, or in an `xs:sequence` or `xs:choice` that repeats | `logicalType: array` with `items`; an element's own `minOccurs`/`maxOccurs` above 1 as `minItems`/`maxItems` |
 | `minOccurs="0"`, `nillable="true"`, inside `xs:choice` or an optional `xs:sequence` | not `required` |
 | `xs:string`, `xs:token`, `xs:anyURI`, `xs:duration`, `xs:gYear`, … | `string` |
-| `xs:int`, `xs:long`, `xs:integer`, `xs:positiveInteger`, `xs:unsignedByte`, … | `integer`, with the range of the type as `minimum`/`maximum` (`xs:unsignedInt`: 0 to 4294967295) unless a facet narrows it; `xs:unsignedLong` gets only its minimum, as its maximum is beyond the 64-bit integers the checks compare with |
-| `xs:decimal`, `xs:float`, `xs:double` | `number` |
+| `xs:int`, `xs:long`, `xs:integer`, `xs:positiveInteger`, `xs:unsignedByte`, … | `integer`, with the range of the type as `minimum`/`maximum` (`xs:unsignedInt`: 0 to 4294967295) unless a facet narrows it; `xs:unsignedLong` gets only its minimum, as its maximum is beyond the 64-bit integers the checks compare with. Sized types also get their ODCS `format`: `xs:byte` `i8`, `xs:short` `i16`, `xs:int` `i32`, `xs:long` `i64`, and `u8` to `u64` for the unsigned ones |
+| `xs:decimal`, `xs:float`, `xs:double` | `number`; `xs:float` and `xs:double` with the `format` `f32` and `f64` |
 | `xs:boolean` | `boolean` |
 | `xs:date` / `xs:dateTime` / `xs:time` | `date` / `timestamp` / `time` |
 | `xs:enumeration` | `enum` |
 | `xs:pattern` (several are alternatives) | `logicalTypeOptions.pattern`, anchored as `^(…)$` because XSD patterns match the whole value |
 | `xs:length`, `xs:minLength`, `xs:maxLength` | `logicalTypeOptions.minLength` / `maxLength` |
-| `xs:minInclusive`, `xs:maxInclusive`, `xs:minExclusive`, `xs:maxExclusive` | `logicalTypeOptions.minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum` |
+| `xs:minInclusive`, `xs:maxInclusive`, `xs:minExclusive`, `xs:maxExclusive` | `logicalTypeOptions.minimum` / `maximum` / `exclusiveMinimum` / `exclusiveMaximum`; `INF` bounds nothing and is left out |
+| `fixed` on an element or attribute | `enum` with that one value |
 | `xs:totalDigits`, `xs:fractionDigits` | `precision` / `scale` custom properties, which the SQL exports read too (ODCS has no field for them) |
 | `xs:union` | `string`, with the member types in `physicalType` (`date\|string\|integer`) |
 | `xs:list` | `string` with `physicalType: list`: one space-separated text value |
@@ -179,7 +180,8 @@ schema:
 
 - `xmlNode: attribute` marks a property that is an attribute rather than a child element.
 - `xmlNode: text` marks the text of an element that has attributes; it is always named `value`.
-- `xmlNamespace` on a schema holds the target namespace of its element.
+- `xmlNamespace` on a schema holds the target namespace of its element. On a property, it holds the namespace of an element that is not in the schema's, and `""` an element in no namespace, such as the local elements of a schema without `elementFormDefault="qualified"`.
+- An attribute named like a child element of the same element, or `value` next to the element's text, gets an `@` prefix (`@id`), with a warning.
 
 [Testing XML files](../testing/xml.md) reads the text through `xmlNode: text`, and [`datacontract export xsd`](../exports/xsd.md) turns all three back into attributes, text content, and a target namespace, so a contract exports back to an equivalent XML Schema.
 
@@ -196,12 +198,13 @@ These properties are unions; ODCS has no union type, so they are strings with th
 These properties contain their own type, so the repetition is an object without properties: category.parent
 ```
 
-It warns about recursive types, unions, lists, wildcards, mixed content, identity constraints, and patterns with syntax only XSD has (`\i`, `\c`, character class subtraction), which are left out because `datacontract test` cannot run them.
+It warns about recursive types, unions, lists, wildcards, mixed content, identity constraints, substitution groups, XSD 1.1 assertions, attributes renamed with an `@` prefix, and patterns with syntax only XSD has (`\i`, `\c`, character class subtraction), which are left out because `datacontract test` cannot run them.
 
 ## Not imported
 
 - Wildcards (`xs:any`, `xs:anyAttribute`) and the text of mixed content.
 - Identity constraints (`xs:key`, `xs:keyref`, `xs:unique`) and default or fixed values.
 - Substitution groups: an element is imported as declared, not with its substitutes.
+- XSD 1.1 assertions (`xs:assert`, `xs:assertion`). XSD 1.1 schemas are read, but their assertions are not imported.
 
 All options: **[`datacontract import xsd`](../commands/import/xsd.md)**.
