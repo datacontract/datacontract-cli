@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order version="1">
+  <order_id>ORD-1002</order_id>
+  <placed_at>2026-09-02T08:00:00</placed_at>
+  <status>pending</status>
+  <line_item>
+    <sku>DEF-7</sku>
+    <price currency="USD">12.00</price>
+  </line_item>
+</order>

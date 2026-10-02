@@ -52,7 +52,7 @@ def is_check_types(server: Optional[Server]) -> bool:
     """Type checks only make sense where the data source carries real types."""
     if server is None:
         return True
-    return server.format not in ("json", "csv", "avro")
+    return server.format not in ("json", "csv", "avro", "xml")
 
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
@@ -261,7 +261,7 @@ def _to_schema_checks(
     properties = schema_object.properties or []
     check_types = is_check_types(server)
     uses_raw_view = (
-        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json", "xml")
     )
 
     # A primary key is both not-null and unique. A composite key is unique as a

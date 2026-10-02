@@ -192,3 +192,8 @@ importer_factory.register_lazy_importer(
     module_path="datacontract.imports.odata_importer",
     class_name="ODataImporter",
 )
+importer_factory.register_lazy_importer(
+    name=ImportFormat.xsd,
+    module_path="datacontract.imports.xsd_importer",
+    class_name="XsdImporter",
+)

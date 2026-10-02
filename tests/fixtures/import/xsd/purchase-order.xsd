@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Modelled on the purchase order of the W3C XML Schema Primer -->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:po="urn:example:po"
+            xmlns:addr="urn:example:address"
+            targetNamespace="urn:example:po"
+            elementFormDefault="qualified">
+
+  <xsd:import namespace="urn:example:address" schemaLocation="address.xsd"/>
+  <xsd:import namespace="urn:example:remote" schemaLocation="https://example.com/remote.xsd"/>
+
+  <xsd:annotation>
+    <xsd:documentation>Purchase order schema for Example.com.</xsd:documentation>
+  </xsd:annotation>
+
+  <xsd:element name="purchaseOrder" type="po:PurchaseOrderType">
+    <xsd:annotation><xsd:documentation>A purchase order with its items.</xsd:documentation></xsd:annotation>
+  </xsd:element>
+
+  <xsd:element name="comment" type="xsd:string"/>
+
+  <xsd:complexType name="PurchaseOrderType">
+    <xsd:sequence>
+      <xsd:element name="shipTo" type="addr:USAddress"/>
+      <xsd:element name="billTo" type="addr:USAddress" nillable="true"/>
+      <xsd:element name="returnTo" type="addr:PostalAddress" minOccurs="0"/>
+      <xsd:element ref="po:comment" minOccurs="0"/>
+      <xsd:group ref="po:paymentGroup"/>
+      <xsd:element name="items" type="po:Items"/>
+      <xsd:sequence minOccurs="0">
+        <xsd:element name="approvedBy" type="xsd:string"/>
+        <xsd:element name="approvedAt" type="xsd:dateTime"/>
+      </xsd:sequence>
+      <xsd:element name="metadata" minOccurs="0">
+        <xsd:complexType>
+          <xsd:all>
+            <xsd:element name="channel" type="po:Channel"/>
+            <xsd:element name="campaign" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="audit">
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element name="createdAt" type="xsd:dateTime"/>
+                  <xsd:element name="revision" type="xsd:unsignedShort"/>
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:all>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name="orderDate" type="xsd:date" use="required"/>
+    <xsd:attribute name="priority" type="po:Priority" default="3"/>
+    <xsd:attribute name="reference" type="po:Reference"/>
+  </xsd:complexType>
+
+  <xsd:group name="paymentGroup">
+    <xsd:choice>
+      <xsd:element name="creditCard" type="po:CreditCard"/>
+      <xsd:element name="invoice" type="xsd:boolean"/>
+    </xsd:choice>
+  </xsd:group>
+
+  <xsd:complexType name="CreditCard">
+    <xsd:sequence>
+      <xsd:element name="number">
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:pattern value="\d{16}"/>
+            <xsd:pattern value="\d{4}-\d{4}-\d{4}-\d{4}"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+      <xsd:element name="expires" type="xsd:gYearMonth"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="Items">
+    <xsd:sequence>
+      <xsd:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="productName" type="xsd:string"/>
+            <xsd:element name="quantity">
+              <xsd:simpleType>
+                <xsd:restriction base="xsd:positiveInteger">
+                  <xsd:maxExclusive value="100"/>
+                </xsd:restriction>
+              </xsd:simpleType>
+            </xsd:element>
+            <xsd:element name="USPrice" type="po:Price"/>
+            <xsd:element ref="po:comment" minOccurs="0"/>
+            <xsd:element name="shipDate" type="xsd:date" minOccurs="0"/>
+            <xsd:element name="bundle" type="po:Items" minOccurs="0"/>
+          </xsd:sequence>
+          <xsd:attribute name="partNum" type="po:SKU" use="required"/>
+          <xsd:attribute name="legacyCode" type="xsd:string" use="prohibited"/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="Price">
+    <xsd:simpleContent>
+      <xsd:restriction base="po:Amount">
+        <xsd:maxInclusive value="99999.99"/>
+      </xsd:restriction>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <xsd:complexType name="Amount">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:decimal">
+        <xsd:attribute name="currency" type="xsd:string" use="required"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+  <xsd:simpleType name="SKU">
+    <xsd:annotation><xsd:documentation>Stock Keeping Unit, a code for identifying products.</xsd:documentation></xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="\d{3}-[A-Z]{2}"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="Priority">
+    <xsd:restriction base="xsd:integer">
+      <xsd:enumeration value="1"/>
+      <xsd:enumeration value="2"/>
+      <xsd:enumeration value="3"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="Channel">
+    <xsd:restriction>
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:token">
+          <xsd:maxLength value="10"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+      <xsd:enumeration value="web"/>
+      <xsd:enumeration value="phone"/>
+      <xsd:enumeration value="store"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+  <xsd:simpleType name="Reference">
+    <xsd:union memberTypes="po:SKU xsd:integer">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:date"/>
+      </xsd:simpleType>
+    </xsd:union>
+  </xsd:simpleType>
+</xsd:schema>

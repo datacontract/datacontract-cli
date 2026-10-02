@@ -1,0 +1,299 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: my-data-contract
+name: purchaseOrder
+status: draft
+schema:
+- name: purchaseOrder
+  physicalType: object
+  description: A purchase order with its items.
+  customProperties:
+  - property: xmlNamespace
+    value: urn:example:po
+  logicalType: object
+  physicalName: purchaseOrder
+  properties:
+  - name: shipTo
+    physicalType: object
+    logicalType: object
+    required: true
+    properties:
+    - name: name
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: street
+      physicalType: array
+      logicalType: array
+      logicalTypeOptions:
+        maxItems: 3
+      items:
+        name: items
+        physicalType: string
+        logicalType: string
+    - name: city
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: state
+      physicalType: string
+      logicalType: string
+      logicalTypeOptions:
+        minLength: 2
+        maxLength: 2
+      required: true
+    - name: zip
+      physicalType: decimal
+      logicalType: number
+      required: true
+    - name: latitude
+      physicalType: double
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: number
+      logicalTypeOptions:
+        minimum: -90
+        maximum: 90
+    - name: longitude
+      physicalType: double
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: number
+      logicalTypeOptions:
+        minimum: -180
+        maximum: 180
+    - name: country
+      physicalType: NMTOKEN
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: string
+  - name: billTo
+    physicalType: object
+    logicalType: object
+    properties:
+    - name: name
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: street
+      physicalType: array
+      logicalType: array
+      logicalTypeOptions:
+        maxItems: 3
+      items:
+        name: items
+        physicalType: string
+        logicalType: string
+    - name: city
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: state
+      physicalType: string
+      logicalType: string
+      logicalTypeOptions:
+        minLength: 2
+        maxLength: 2
+      required: true
+    - name: zip
+      physicalType: decimal
+      logicalType: number
+      required: true
+    - name: latitude
+      physicalType: double
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: number
+      logicalTypeOptions:
+        minimum: -90
+        maximum: 90
+    - name: longitude
+      physicalType: double
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: number
+      logicalTypeOptions:
+        minimum: -180
+        maximum: 180
+    - name: country
+      physicalType: NMTOKEN
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: string
+  - name: returnTo
+    physicalType: object
+    logicalType: object
+    properties:
+    - name: name
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: city
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: latitude
+      physicalType: double
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: number
+      logicalTypeOptions:
+        minimum: -90
+        maximum: 90
+    - name: longitude
+      physicalType: double
+      customProperties:
+      - property: xmlNode
+        value: attribute
+      logicalType: number
+      logicalTypeOptions:
+        minimum: -180
+        maximum: 180
+  - name: comment
+    physicalType: string
+    logicalType: string
+  - name: creditCard
+    physicalType: object
+    logicalType: object
+    properties:
+    - name: number
+      physicalType: string
+      logicalType: string
+      logicalTypeOptions:
+        pattern: (\d{16})|(\d{4}-\d{4}-\d{4}-\d{4})
+      required: true
+    - name: expires
+      physicalType: gYearMonth
+      logicalType: string
+      required: true
+  - name: invoice
+    physicalType: boolean
+    logicalType: boolean
+  - name: items
+    physicalType: object
+    logicalType: object
+    required: true
+    properties:
+    - name: item
+      physicalType: array
+      logicalType: array
+      items:
+        name: items
+        physicalType: object
+        logicalType: object
+        properties:
+        - name: productName
+          physicalType: string
+          logicalType: string
+          required: true
+        - name: quantity
+          physicalType: positiveInteger
+          logicalType: integer
+          logicalTypeOptions:
+            exclusiveMaximum: 100
+          required: true
+        - name: USPrice
+          physicalType: object
+          logicalType: object
+          required: true
+          properties:
+          - name: value
+            physicalType: decimal
+            customProperties:
+            - property: xmlNode
+              value: text
+            logicalType: number
+            logicalTypeOptions:
+              maximum: 99999.99
+          - name: currency
+            physicalType: string
+            customProperties:
+            - property: xmlNode
+              value: attribute
+            logicalType: string
+            required: true
+        - name: comment
+          physicalType: string
+          logicalType: string
+        - name: shipDate
+          physicalType: date
+          logicalType: date
+        - name: bundle
+          physicalType: object
+          logicalType: object
+        - name: partNum
+          physicalType: string
+          customProperties:
+          - property: xmlNode
+            value: attribute
+          logicalType: string
+          logicalTypeOptions:
+            pattern: \d{3}-[A-Z]{2}
+          required: true
+  - name: approvedBy
+    physicalType: string
+    logicalType: string
+  - name: approvedAt
+    physicalType: dateTime
+    logicalType: timestamp
+  - name: metadata
+    physicalType: object
+    logicalType: object
+    properties:
+    - name: channel
+      physicalType: token
+      logicalType: string
+      logicalTypeOptions:
+        maxLength: 10
+      required: true
+      enum:
+      - value: web
+      - value: phone
+      - value: store
+    - name: campaign
+      physicalType: string
+      logicalType: string
+    - name: audit
+      physicalType: object
+      logicalType: object
+      required: true
+      properties:
+      - name: createdAt
+        physicalType: dateTime
+        logicalType: timestamp
+        required: true
+      - name: revision
+        physicalType: unsignedShort
+        logicalType: integer
+        required: true
+  - name: orderDate
+    physicalType: date
+    customProperties:
+    - property: xmlNode
+      value: attribute
+    logicalType: date
+    required: true
+  - name: priority
+    physicalType: integer
+    customProperties:
+    - property: xmlNode
+      value: attribute
+    logicalType: integer
+    enum:
+    - value: 1
+    - value: 2
+    - value: 3
+  - name: reference
+    physicalType: date|string|integer
+    customProperties:
+    - property: xmlNode
+      value: attribute
+    logicalType: string

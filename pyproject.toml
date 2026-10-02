@@ -276,13 +276,18 @@ protobuf = [
   "proto-schema-parser>=1.0,<3.0",
 ]
 
+xml = [
+  # Resolves includes, imports, groups and type derivation of XML Schemas for `import xsd`
+  "xmlschema>=4.0,<5.0",
+]
+
 # NOTE: `hana` is intentionally NOT part of `all`. It depends on `hdbcli`, the
 # SAP HANA Client, which is distributed under SAP's proprietary license (SAP
 # Developer License), not an OSI-approved open-source license. Bundling it into
 # the `all` meta-extra would pull a proprietary package into a default-ish
 # install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
-  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle,xml]"
 ]
 
 # for development, we pin all libraries to an exact version

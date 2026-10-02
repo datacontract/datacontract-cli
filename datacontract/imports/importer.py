@@ -62,6 +62,7 @@ class ImportFormat(str, Enum):
     adls = "adls"
     oracle = "oracle"
     trino = "trino"
+    xsd = "xsd"
 
     @classmethod
     def get_supported_formats(cls):

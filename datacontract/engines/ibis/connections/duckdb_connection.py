@@ -61,6 +61,12 @@ def get_duckdb_connection(
         # both of which the sandbox below takes away -- so do it first, and once
         # for the whole connection rather than once per model.
         con.sql("update extensions;")  # Make sure we have the latest delta extension
+    if server.format == "xml":
+        try:
+            con.install_extension("webbed", repository="community")
+            con.load_extension("webbed")
+        except Exception as e:
+            raise RuntimeError("Failed to install the 'webbed' DuckDB community extension to read XML files.") from e
 
     model_paths = _model_paths(data_contract, path, schema_name)
     if untrusted_contract and own_connection:
@@ -111,6 +117,8 @@ def get_duckdb_connection(
                 )
             elif server.format == "delta":
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
+            elif server.format == "xml":
+                create_xml_views(con, schema_obj, model_path)
             table_info = con.sql(f'PRAGMA table_info("{model_name}");').fetchall()
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
@@ -245,6 +253,102 @@ def create_view_with_schema_union(
         con.sql(
             f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1{read_options});"""
         )
+
+
+def create_xml_views(con, schema_obj: SchemaObject, model_path: str):
+    """Views over the records of XML documents: every element named like the schema's physical name is one.
+
+    The checks address a schema by its physical name, quality SQL often by its name, so both name the view.
+    """
+    record_element = schema_obj.physicalName or schema_obj.name
+    read_xml = f"read_xml('{model_path}', record_element='{_sql_literal(record_element)}', union_by_name=true"
+    columns = to_json_types(_with_xml_text_keys(schema_obj))
+    typed = f"{read_xml}, columns={columns})" if columns else f"{read_xml})"
+    con.sql(f'CREATE VIEW "{record_element}" AS {_xml_text_as_value(con, typed, schema_obj)};')
+    if columns:
+        add_nested_views(con, record_element, schema_obj.properties)
+    # Raw view without the columns= projection to check for absent columns (check_property_is_present);
+    # as text, so that a value of the wrong type fails the checks of its column, not the presence of all
+    raw = f"{read_xml}, all_varchar=true)"
+    con.sql(f'CREATE VIEW "{record_element}__raw__" AS {_xml_text_as_value(con, raw, schema_obj)};')
+    if schema_obj.name != record_element:
+        con.sql(f'CREATE VIEW "{schema_obj.name}" AS SELECT * FROM "{record_element}";')
+
+
+def _with_xml_text_keys(schema_obj: SchemaObject) -> SchemaObject:
+    """The schema with the text of elements with attributes under the key read_xml reads it as."""
+
+    def rename(prop: SchemaProperty) -> SchemaProperty:
+        return prop.model_copy(
+            update={
+                "physicalName": "#text" if _is_xml_text(prop) else prop.physicalName,
+                "properties": [rename(p) for p in prop.properties] if prop.properties else prop.properties,
+                "items": rename(prop.items) if prop.items else prop.items,
+            }
+        )
+
+    return schema_obj.model_copy(update={"properties": [rename(p) for p in schema_obj.properties or []]})
+
+
+def _xml_text_as_value(con, read_xml: str, schema_obj: SchemaObject) -> str:
+    """A query that gives the text of elements with attributes the name of the contract's xmlNode: text property.
+
+    read_xml reads that text as #text; its own text_key option names the key but leaves its value empty.
+    """
+    relation = con.sql(f"SELECT * FROM {read_xml}")
+    properties = schema_obj.properties or []
+    by_name = {_xml_name(p): p for p in properties}
+    columns = []
+    for name, dtype in zip(relation.columns, relation.types):
+        target = _xml_text_name(properties) if name == "#text" else name
+        columns.append(f"{_xml_value(_quote(name), dtype, by_name.get(target))} AS {_quote(target)}")
+    return f"SELECT {', '.join(columns)} FROM {read_xml}"
+
+
+def _xml_value(expression: str, dtype, prop: Optional[SchemaProperty], depth: int = 0) -> str:
+    """The expression with the #text keys inside it renamed, shaped as the contract expects."""
+    children = (prop.properties if prop else None) or []
+    if dtype.id == "list":
+        variable = f"x{depth}"
+        value = _xml_value(variable, dtype.child, prop.items if prop else None, depth + 1)
+        return expression if value == variable else f"list_transform({expression}, lambda {variable}: {value})"
+    if dtype.id != "struct":
+        text = next((child for child in children if _is_xml_text(child)), None)
+        if text is None:
+            return expression
+        # Inferred as plain text where some of the elements carry none of their attributes
+        fields = ", ".join(f"{_quote(_xml_name(c))} := {expression if c is text else 'NULL'}" for c in children)
+        return f"CASE WHEN {expression} IS NULL THEN NULL ELSE struct_pack({fields}) END"
+
+    by_name = {_xml_name(child): child for child in children}
+    fields = []
+    changed = False
+    for name, child_type in dtype.children:
+        target = _xml_text_name(children) if name == "#text" else name
+        source = f"struct_extract({expression}, '{_sql_literal(name)}')"
+        value = _xml_value(source, child_type, by_name.get(target), depth)
+        changed = changed or target != name or value != source
+        fields.append(f"{_quote(target)} := {value}")
+    if not changed:
+        return expression
+    # An absent object stays NULL, rather than becoming one whose fields are all NULL
+    return f"CASE WHEN {expression} IS NULL THEN NULL ELSE struct_pack({', '.join(fields)}) END"
+
+
+def _is_xml_text(prop: SchemaProperty) -> bool:
+    return any(c.property == "xmlNode" and c.value == "text" for c in prop.customProperties or [])
+
+
+def _xml_text_name(properties: List[SchemaProperty]) -> str:
+    return next((_xml_name(p) for p in properties if _is_xml_text(p)), "value")
+
+
+def _xml_name(prop: SchemaProperty) -> str:
+    return prop.physicalName or prop.name
+
+
+def _quote(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
 
 
 def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:

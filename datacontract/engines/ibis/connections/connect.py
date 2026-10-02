@@ -32,7 +32,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _FILE_SERVER_TYPES = {"s3", "gcs", "azure", "local"}
-_SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta"}
+_SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta", "xml"}
 
 
 def _import_ibis():

@@ -82,7 +82,7 @@ Independent of the type checks, `logicalTypeOptions` (`minimum`, `maximum`, `min
   </a>
   <a className="doc-card" href="/reference/local">
     <img src="/img/icons/local.svg" alt="" />
-    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Data types for CSV, JSON, Parquet, Delta</span></span>
+    <span><span className="doc-card-title">Local files</span><span className="doc-card-desc">Data types for CSV, JSON, XML, Parquet, Delta</span></span>
   </a>
   <a className="doc-card" href="/reference/sqlserver">
     <img src="/img/icons/sqlserver.svg" alt="" />

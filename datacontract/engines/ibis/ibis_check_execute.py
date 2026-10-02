@@ -1294,15 +1294,33 @@ def _row_predicate(t, columns: dict, field: str, build):
     """
     head, marker, tail = field.partition("[].")
     if not marker:
-        return build(_resolve_expr(t, columns, field))
+        if "." not in field:
+            return build(_resolve_expr(t, columns, field))
+        column, _, path = field.partition(".")
+        return _path_predicate(t[_resolve_col(columns, column)], path, build)
     return _resolve_expr(t, columns, head).filter(lambda i: _element_predicate(i, tail, build)).length() > 0
 
 
 def _element_predicate(element, path: str, build):
     head, marker, tail = path.partition("[].")
     if not marker:
-        return build(_struct_path(element, path))
+        first, _, rest = path.partition(".")
+        value = _struct_path(element, first)
+        return _path_predicate(value, rest, build) if rest else build(value)
     return _struct_path(element, head).filter(lambda i: _element_predicate(i, tail, build)).length() > 0
+
+
+def _path_predicate(value, path: str, build):
+    """``build`` at ``path`` inside the struct ``value``, false where a struct on the way is null.
+
+    The fields of an absent optional object are not missing; the object's own
+    ``required`` check covers its absence.
+    """
+    present = None
+    for part in path.split("."):
+        present = value.notnull() if present is None else present & value.notnull()
+        value = value[_struct_field_name(value, part)]
+    return present & build(value)
 
 
 def _struct_path(value, path: str):

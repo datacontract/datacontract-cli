@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract import xsd`: import a data contract from an XML Schema (XSD) file (new `xml` extra)
+- `datacontract export xsd`: export a data contract to an XML Schema (XSD)
+- `datacontract test`: test XML files (`format: xml`)
 - `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
 
 ### Changed
@@ -15,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export pydantic-model`: optional fields default to `None` (#1679)
 
 ### Fixed
+- `datacontract test`: required fields of an absent optional object are no longer reported as missing
 - `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1677 @dmaresma)
 - `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662)
 - `datacontract test`: JSON schema validation on S3 checks every file matched by the location, not only the last one (#1511)

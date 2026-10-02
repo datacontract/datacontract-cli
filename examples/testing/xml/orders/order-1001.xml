@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order version="1">
+  <order_id>ORD-1001</order_id>
+  <placed_at>2026-09-01T10:15:00</placed_at>
+  <status>shipped</status>
+  <line_item>
+    <sku>ABC-1</sku>
+    <price currency="EUR">49.95</price>
+  </line_item>
+  <line_item>
+    <sku>XYZ-42</sku>
+    <price currency="EUR">5.00</price>
+  </line_item>
+</order>

@@ -33,6 +33,7 @@ EXPORTS = {
     ),
     "pydantic-model": ("datacontract export pydantic-model orders.odcs.yaml --output orders.py", "python", None),
     "protobuf": ("datacontract export protobuf orders.odcs.yaml --output orders.proto", "protobuf", None),
+    "xsd": ("datacontract export xsd orders.odcs.yaml --output orders.xsd", "xml", 40),
     "odcs": ("datacontract export odcs orders.odcs.yaml --output orders.normalized.yaml", "yaml", 32),
     # rdf is intentionally not managed here: its Turtle serialization orders
     # triples non-deterministically, so a regenerated example would churn on
