@@ -1,6 +1,15 @@
+"""Sifflet monitors-as-code generator for the ``sifflet`` export format.
+
+Turns the quality rules of an ODCS data contract, plus monitors implied by the schema
+(schema change, required, unique, primary key, format, pattern), into Sifflet monitor
+YAML documents. ``sifflet.*`` custom properties on the contract, server, schema,
+property, or rule tune the output. Nothing is sent to the Sifflet API.
+"""
+
 import logging
 import re
 from dataclasses import dataclass
+from enum import Enum
 
 import yaml
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject, Server
@@ -12,6 +21,7 @@ logger = logging.getLogger(__name__)
 _SEVERITIES = ("Low", "Moderate", "High", "Critical")
 _ODCS_SEVERITY = {"info": "Moderate", "warning": "High", "error": "Critical"}
 _DEFAULT_SEVERITY = "Moderate"
+# Sifflet alerts on any violation for these kinds when no threshold is given.
 _ZERO_DEFAULT_KINDS = {"FieldInList", "FieldFormat", "FieldDuplicates"}
 _PERCENT_UNITS = {"percent", "percentage", "%"}
 _OPERATORS = {
@@ -22,30 +32,45 @@ _OPERATORS = {
     "mustBeLessOrEqualTo": "le",
     "mustBeBetween": "between",
 }
-_KNOWN_PROPERTIES = {
-    "sifflet.enabled",
-    "sifflet.implicitMonitors",
-    "sifflet.friendlyId",
-    "sifflet.name",
-    "sifflet.severity",
-    "sifflet.schedule",
-    "sifflet.incidentMessage",
-    "sifflet.createOnFailure",
-    "sifflet.notifications",
-    "sifflet.tags",
-    "sifflet.threshold",
-    "sifflet.parameters",
-    "sifflet.datasetId",
-    "sifflet.datasourceId",
-    "sifflet.datasource",
+
+
+class _SiffletCustomProperty(str, Enum):
+    """The ``sifflet.*`` custom properties the exporter reads."""
+
+    ENABLED = "sifflet.enabled"
+    IMPLICIT_MONITORS = "sifflet.implicitMonitors"
+    FRIENDLY_ID = "sifflet.friendlyId"
+    NAME = "sifflet.name"
+    SEVERITY = "sifflet.severity"
+    SCHEDULE = "sifflet.schedule"
+    INCIDENT_MESSAGE = "sifflet.incidentMessage"
+    CREATE_ON_FAILURE = "sifflet.createOnFailure"
+    NOTIFICATIONS = "sifflet.notifications"
+    TAGS = "sifflet.tags"
+    THRESHOLD = "sifflet.threshold"
+    PARAMETERS = "sifflet.parameters"
+    DATASET_ID = "sifflet.datasetId"
+    DATASOURCE_ID = "sifflet.datasourceId"
+    DATASOURCE = "sifflet.datasource"
+
+
+_KNOWN_PROPERTIES = set(_SiffletCustomProperty)
+_QUALITY_ONLY = {_SiffletCustomProperty.FRIENDLY_ID, _SiffletCustomProperty.NAME}
+_SCHEMA_ONLY = {_SiffletCustomProperty.DATASET_ID}
+_SERVER_OR_CONTRACT = {_SiffletCustomProperty.DATASOURCE, _SiffletCustomProperty.DATASOURCE_ID}
+_STRUCTURED = {
+    _SiffletCustomProperty.NOTIFICATIONS,
+    _SiffletCustomProperty.TAGS,
+    _SiffletCustomProperty.THRESHOLD,
+    _SiffletCustomProperty.PARAMETERS,
 }
-_QUALITY_ONLY = {"sifflet.friendlyId", "sifflet.name"}
-_SCHEMA_ONLY = {"sifflet.datasetId"}
-_SERVER_OR_CONTRACT = {"sifflet.datasource", "sifflet.datasourceId"}
-_STRUCTURED = {"sifflet.notifications", "sifflet.tags", "sifflet.threshold", "sifflet.parameters"}
-_BOOLEANS = {"sifflet.enabled", "sifflet.implicitMonitors", "sifflet.createOnFailure"}
-_LIST_KEYS = {"sifflet.notifications", "sifflet.tags"}
-_OBJECT_KEYS = {"sifflet.threshold", "sifflet.parameters"}
+_BOOLEANS = {
+    _SiffletCustomProperty.ENABLED,
+    _SiffletCustomProperty.IMPLICIT_MONITORS,
+    _SiffletCustomProperty.CREATE_ON_FAILURE,
+}
+_LIST_KEYS = {_SiffletCustomProperty.NOTIFICATIONS, _SiffletCustomProperty.TAGS}
+_OBJECT_KEYS = {_SiffletCustomProperty.THRESHOLD, _SiffletCustomProperty.PARAMETERS}
 _FORMATS = {"email": ("Email", "valid email"), "uuid": ("UUID", "valid UUID")}
 _BACKTICK_DIALECTS = {"databricks", "bigquery", "mysql", "impala", "dataframe", "kafka"}
 _ANSI_QUOTING_DIALECTS = {
@@ -60,11 +85,14 @@ _ANSI_QUOTING_DIALECTS = {
     "local",
     "hana",
 }
+# ``${name}`` or ``{name}``, with the quotes around it, so the replacement can supply its own quoting.
 _PLACEHOLDER = re.compile(r"""["']?\$?\{([A-Za-z_][A-Za-z0-9_]*)\}["']?""")
 _CAMEL = re.compile(r"([a-z0-9])([A-Z])")
 
 
 class SkipRule(Exception):
+    """A quality rule that cannot become a monitor. The caller logs the reason and drops the rule."""
+
     def __init__(self, reason: str):
         super().__init__(reason)
         self.reason = reason
@@ -72,6 +100,14 @@ class SkipRule(Exception):
 
 @dataclass
 class _Draft:
+    """A monitor document with what the collision and deduplication passes need to know about it.
+
+    ``override`` is set when the friendlyId was given by the user (custom property, rule
+    ``id`` or ``name``), so a collision is an error rather than a skipped rule.
+    ``implicit`` marks monitors derived from the schema (schema change and property
+    constraints) instead of from a quality rule.
+    """
+
     friendly_id: str
     override: bool
     implicit: bool
@@ -108,6 +144,7 @@ def map_threshold(quality: DataQuality) -> dict | None:
     upper = None
     upper_inclusive = None
 
+    # Several operators may bound the same side: keep the tightest, and the exclusive one on a tie.
     def tighten_lower(value, inclusive: bool):
         nonlocal lower, lower_inclusive
         if lower is None or value > lower:
@@ -148,6 +185,7 @@ def map_threshold(quality: DataQuality) -> dict | None:
             and (lower > upper or (lower == upper and not (lower_inclusive and upper_inclusive)))
         ):
             raise SkipRule("threshold operators conflict")
+    # Bounds of incomparable types, such as a number and a string.
     except TypeError:
         raise SkipRule("threshold operators conflict") from None
 
@@ -162,8 +200,15 @@ def map_threshold(quality: DataQuality) -> dict | None:
 
 
 def map_severity(quality: DataQuality | None, quality_props: dict, inherited: list[dict], friendly_id: str) -> str:
-    if quality is not None and "sifflet.severity" in quality_props:
-        return _require_severity(quality_props["sifflet.severity"])
+    """Resolve the incident severity.
+
+    Precedence: the rule's ``sifflet.severity``, then its ODCS ``severity`` (info, warning,
+    error map to Moderate, High, Critical; any other value gives Moderate with a warning),
+    then ``sifflet.severity`` inherited from the property, schema, or contract, then
+    Moderate. Raises on a ``sifflet.severity`` that is not a Sifflet severity.
+    """
+    if quality is not None and _SiffletCustomProperty.SEVERITY in quality_props:
+        return _require_severity(quality_props[_SiffletCustomProperty.SEVERITY])
     if quality is not None and quality.severity:
         mapped = _ODCS_SEVERITY.get(str(quality.severity).lower())
         if mapped:
@@ -173,17 +218,22 @@ def map_severity(quality: DataQuality | None, quality_props: dict, inherited: li
         )
         return _DEFAULT_SEVERITY
     for props in inherited:
-        if "sifflet.severity" in props:
-            return _require_severity(props["sifflet.severity"])
+        if _SiffletCustomProperty.SEVERITY in props:
+            return _require_severity(props[_SiffletCustomProperty.SEVERITY])
     return _DEFAULT_SEVERITY
 
 
 def map_schedule(
     quality: DataQuality | None, quality_props: dict, inherited: list[dict], friendly_id: str
 ) -> str | None:
-    """Return the cron expression to write, or None when the schedule key is omitted."""
-    if "sifflet.schedule" in quality_props:
-        return _validate_cron(quality_props["sifflet.schedule"], friendly_id)
+    """Return the cron expression to write, or None when the schedule key is omitted.
+
+    Precedence: the rule's ``sifflet.schedule``, then its ODCS ``schedule``, then
+    ``sifflet.schedule`` inherited from the property, schema, or contract. An ODCS schedule
+    with a scheduler other than cron gives no schedule, without falling back to inherited ones.
+    """
+    if _SiffletCustomProperty.SCHEDULE in quality_props:
+        return _validate_cron(quality_props[_SiffletCustomProperty.SCHEDULE], friendly_id)
     if quality is not None and quality.schedule:
         scheduler = quality.scheduler or "cron"
         if str(scheduler).lower() != "cron":
@@ -194,15 +244,16 @@ def map_schedule(
             return None
         return _validate_cron(quality.schedule, friendly_id)
     for props in inherited:
-        if "sifflet.schedule" in props:
-            return _validate_cron(props["sifflet.schedule"], friendly_id)
+        if _SiffletCustomProperty.SCHEDULE in props:
+            return _validate_cron(props[_SiffletCustomProperty.SCHEDULE], friendly_id)
     return None
 
 
 def prepare_query(query: str, table_name: str, field_name: str | None, server: Server) -> str:
     """Replace ODCS placeholders with identifiers quoted for the server's dialect.
 
-    Quotes written around a placeholder are dropped. ``${object}`` becomes the fully
+    Quotes written around a replaced placeholder are dropped; unknown placeholders, and
+    field placeholders on a table-level rule, are left as written. ``${object}`` becomes the fully
     qualified table name built from the server's catalog, database or project and its
     schema or dataset; ``${model}`` and ``${table}`` stay the bare table name.
     """
@@ -240,6 +291,7 @@ def prepare_query(query: str, table_name: str, field_name: str | None, server: S
 
 
 def select_server(data_contract: OpenDataContractStandard, server_name: str | None) -> Server:
+    """Return the named server, or the first one when no name is given."""
     servers = data_contract.servers or []
     if not servers:
         raise RuntimeError("Export to sifflet requires a server in the data contract.")
@@ -253,6 +305,7 @@ def select_server(data_contract: OpenDataContractStandard, server_name: str | No
 
 
 def select_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> list[SchemaObject]:
+    """Return every schema for ``all``, otherwise the one with that name."""
     schemas = list(data_contract.schema_ or [])
     if not schemas:
         raise RuntimeError("Export to sifflet requires schema in the data contract.")
@@ -267,6 +320,10 @@ def select_schemas(data_contract: OpenDataContractStandard, schema_name: str) ->
 
 class SiffletExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
+        """Render one YAML document per monitor.
+
+        Implicit monitors are dropped when an explicit rule already monitors the same thing.
+        """
         contract_id = data_contract.id or "unknown"
         version = data_contract.version or "unknown"
         selected_server = select_server(data_contract, server)
@@ -292,16 +349,21 @@ class SiffletExporter(Exporter):
 
 
 def _schema_drafts(schema, server, contract_props, server_props, contract_id, version) -> list[_Draft]:
+    """Build the drafts of one schema: its implicit monitors, then its quality rules and its properties'.
+
+    Settings are looked up along a chain ordered from the most specific level to the
+    contract; the datasource is read from the server first, then the contract.
+    """
     schema_props = _read_properties(schema, "schema")
     schema_chain = [schema_props, contract_props]
     datasource_chain = [server_props, contract_props]
-    datasource = {"name": _lookup(datasource_chain, "sifflet.datasource") or server.server}
-    datasource_id = _lookup(datasource_chain, "sifflet.datasourceId")
+    datasource = {"name": _lookup(datasource_chain, _SiffletCustomProperty.DATASOURCE) or server.server}
+    datasource_id = _lookup(datasource_chain, _SiffletCustomProperty.DATASOURCE_ID)
     if datasource_id:
         datasource["id"] = datasource_id
     dataset = {"name": _physical_name(schema)}
-    if "sifflet.datasetId" in schema_props:
-        dataset["id"] = schema_props["sifflet.datasetId"]
+    if _SiffletCustomProperty.DATASET_ID in schema_props:
+        dataset["id"] = schema_props[_SiffletCustomProperty.DATASET_ID]
     dataset["datasource"] = datasource
     properties = [prop for prop in schema.properties or [] if prop.name]
     for prop in properties:
@@ -311,7 +373,9 @@ def _schema_drafts(schema, server, contract_props, server_props, contract_id, ve
             )
     drafts = []
     primary_keys = [prop for prop in properties if prop.primaryKey]
-    if _lookup(schema_chain, "sifflet.enabled", True) and _lookup(schema_chain, "sifflet.implicitMonitors", True):
+    if _lookup(schema_chain, _SiffletCustomProperty.ENABLED, True) and _lookup(
+        schema_chain, _SiffletCustomProperty.IMPLICIT_MONITORS, True
+    ):
         drafts.append(
             _implicit_draft(
                 schema,
@@ -347,7 +411,9 @@ def _schema_drafts(schema, server, contract_props, server_props, contract_id, ve
     for prop in properties:
         prop_props = _read_properties(prop, "property")
         prop_chain = [prop_props, *schema_chain]
-        if _lookup(prop_chain, "sifflet.enabled", True) and _lookup(prop_chain, "sifflet.implicitMonitors", True):
+        if _lookup(prop_chain, _SiffletCustomProperty.ENABLED, True) and _lookup(
+            prop_chain, _SiffletCustomProperty.IMPLICIT_MONITORS, True
+        ):
             drafts.extend(
                 _property_implicits(schema, prop, single_primary_key, prop_chain, dataset, contract_id, version)
             )
@@ -359,6 +425,10 @@ def _schema_drafts(schema, server, contract_props, server_props, contract_id, ve
 
 
 def _property_implicits(schema, prop, single_primary_key, chain, dataset, contract_id, version) -> list[_Draft]:
+    """Monitors implied by a property: not null, unique, email or UUID format, and pattern.
+
+    A single-column primary key counts as unique; a composite one is monitored at schema level.
+    """
     drafts = []
     field = _physical_name(prop)
     if prop.required:
@@ -444,10 +514,10 @@ def _implicit_draft(schema, prop, suffix, label, parameters, chain, dataset, con
             description=_description(None, contract_id, version),
             schedule=map_schedule(None, {}, chain, friendly_id),
             severity=map_severity(None, {}, chain, friendly_id),
-            message=_lookup(chain, "sifflet.incidentMessage"),
-            create_on_failure=_lookup(chain, "sifflet.createOnFailure"),
-            notifications=_lookup(chain, "sifflet.notifications"),
-            tags=_lookup(chain, "sifflet.tags"),
+            message=_lookup(chain, _SiffletCustomProperty.INCIDENT_MESSAGE),
+            create_on_failure=_lookup(chain, _SiffletCustomProperty.CREATE_ON_FAILURE),
+            notifications=_lookup(chain, _SiffletCustomProperty.NOTIFICATIONS),
+            tags=_lookup(chain, _SiffletCustomProperty.TAGS),
             dataset=dataset,
             parameters=parameters,
         ),
@@ -455,6 +525,12 @@ def _implicit_draft(schema, prop, suffix, label, parameters, chain, dataset, con
 
 
 def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, contract_id, version):
+    """Build the draft of one library or SQL quality rule, or return None when the rule is skipped.
+
+    The friendlyId is the rule's ``sifflet.friendlyId``, else its ``id``, else its ``name``
+    in snake case. A library rule with none of these gets one computed from the schema,
+    property, metric, and operator; a SQL rule with none of these is skipped.
+    """
     column = prop.name if prop else None
     if column:
         path = f"schema[{schema.name}].properties[{column}].quality[{index}]"
@@ -462,7 +538,7 @@ def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, 
         path = f"schema[{schema.name}].quality[{index}]"
     quality_props = _read_properties(quality, "quality")
     chain = [quality_props, *parent_chain]
-    if not _lookup(chain, "sifflet.enabled", True):
+    if not _lookup(chain, _SiffletCustomProperty.ENABLED, True):
         return None
     kind = _quality_kind(quality)
     if kind == "custom":
@@ -471,7 +547,7 @@ def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, 
     if kind == "text":
         logger.debug(f"Rule at {path}: type text is not exported.")
         return None
-    if kind == "sql" and not ("sifflet.friendlyId" in quality_props or quality.id or quality.name):
+    if kind == "sql" and not (_SiffletCustomProperty.FRIENDLY_ID in quality_props or quality.id or quality.name):
         logger.warning(
             f"Rule at {path}: 'id' or 'name' is required for SQL quality rules in the Sifflet export; rule skipped."
         )
@@ -485,8 +561,8 @@ def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, 
         logger.warning(f"Rule at {path}: library rule has no metric; rule skipped.")
         return None
     override = True
-    if "sifflet.friendlyId" in quality_props:
-        friendly_id = str(quality_props["sifflet.friendlyId"])
+    if _SiffletCustomProperty.FRIENDLY_ID in quality_props:
+        friendly_id = str(quality_props[_SiffletCustomProperty.FRIENDLY_ID])
     elif quality.id:
         friendly_id = str(quality.id)
     elif quality.name:
@@ -515,7 +591,7 @@ def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, 
     except SkipRule as error:
         logger.warning(f"Rule {friendly_id}: {error.reason}; rule skipped.")
         return None
-    extra_parameters = quality_props.get("sifflet.parameters")
+    extra_parameters = quality_props.get(_SiffletCustomProperty.PARAMETERS)
     if isinstance(extra_parameters, dict):
         extra_parameters = dict(extra_parameters)
         if "kind" in extra_parameters:
@@ -523,7 +599,7 @@ def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, 
             del extra_parameters["kind"]
         parameters = _deep_merge(parameters, extra_parameters)
 
-    label = quality_props.get("sifflet.name")
+    label = quality_props.get(_SiffletCustomProperty.NAME)
     if label is None:
         label = _label(quality, metric)
         name = _monitor_name(contract_id, schema.name, column, label)
@@ -539,10 +615,10 @@ def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, 
             description=_description(quality, contract_id, version),
             schedule=map_schedule(quality, quality_props, inherited, friendly_id),
             severity=map_severity(quality, quality_props, inherited, friendly_id),
-            message=_lookup(chain, "sifflet.incidentMessage") or quality.description or None,
-            create_on_failure=_lookup(chain, "sifflet.createOnFailure"),
-            notifications=_lookup(chain, "sifflet.notifications"),
-            tags=_lookup(chain, "sifflet.tags"),
+            message=_lookup(chain, _SiffletCustomProperty.INCIDENT_MESSAGE) or quality.description or None,
+            create_on_failure=_lookup(chain, _SiffletCustomProperty.CREATE_ON_FAILURE),
+            notifications=_lookup(chain, _SiffletCustomProperty.NOTIFICATIONS),
+            tags=_lookup(chain, _SiffletCustomProperty.TAGS),
             dataset=dataset,
             parameters=parameters,
         ),
@@ -550,6 +626,11 @@ def _quality_draft(quality, schema, prop, index, parent_chain, dataset, server, 
 
 
 def _library_parameters(quality, prop, friendly_id) -> dict:
+    """Map an ODCS library metric to Sifflet monitor parameters, without the threshold.
+
+    Raises SkipRule for a metric that has no Sifflet equivalent at the rule's level, and
+    for an invalidValues rule that needs exactly one of a ``validValues`` list or a ``pattern``.
+    """
     metric = _metric_name(quality)
     arguments = quality.arguments if isinstance(quality.arguments, dict) else {}
     level = "property" if prop is not None else "table"
@@ -600,8 +681,16 @@ def _field_nulls(quality, field) -> dict:
 
 
 def _attach_threshold(parameters, quality, quality_props, friendly_id, is_sql: bool):
-    if "sifflet.threshold" in quality_props:
-        parameters["threshold"] = quality_props["sifflet.threshold"]
+    """Add the threshold to ``parameters`` in place.
+
+    ``sifflet.threshold`` is used as is. Otherwise the threshold comes from the ODCS
+    operators. It is left out for the zero-default kinds when there is no operator or the
+    operators mean exactly zero, and for a SQL rule without an operator, which then gets
+    Sifflet's dynamic threshold. Raises SkipRule when any other rule has no operator, or
+    when ``map_threshold`` rejects the operators.
+    """
+    if _SiffletCustomProperty.THRESHOLD in quality_props:
+        parameters["threshold"] = quality_props[_SiffletCustomProperty.THRESHOLD]
         return
     derived = map_threshold(quality)
     kind = parameters["kind"]
@@ -653,13 +742,13 @@ def _document(
         document["notifications"] = notifications
     if tags:
         document["tags"] = tags
-    # A fresh copy per monitor: yaml.dump writes shared dicts as anchors and aliases.
-    document["datasets"] = [{**dataset, "datasource": dict(dataset["datasource"])}]
+    document["datasets"] = [dataset]
     document["parameters"] = parameters
     return document
 
 
 def _label(quality, metric) -> str:
+    """Human-readable part of the monitor name: the rule's name, or a phrase built from its metric."""
     if quality.name:
         return quality.name
     phrase = _operator_phrase(quality)
@@ -706,6 +795,7 @@ def _monitor_name(contract_id, table, column, label) -> str:
 
 
 def _join_id(*parts) -> str:
+    """Join non-empty parts with underscores, snake-casing the ones that are not already lowercase tokens."""
     tokens = []
     for part in parts:
         if part is None or part == "":
@@ -718,6 +808,11 @@ def _join_id(*parts) -> str:
 
 
 def _quality_kind(quality) -> str:
+    """Classify a rule as custom, text, sql, library, or other.
+
+    custom, text, and sql come from ``type``. Any other or missing type is library when
+    ``type`` is library or a metric is set, else sql when a query is set, else other.
+    """
     if quality.type == "custom":
         return "custom"
     if quality.type == "text":
@@ -732,6 +827,7 @@ def _quality_kind(quality) -> str:
 
 
 def _metric_name(quality) -> str | None:
+    """The library metric, read from ``metric`` or from ``rule``, its name in ODCS v3.0."""
     metric = quality.metric or getattr(quality, "rule", None)
     if metric is None:
         return None
@@ -756,6 +852,7 @@ def _require_severity(value) -> str:
 
 
 def _validate_cron(value, friendly_id) -> str | None:
+    """Return the trimmed schedule, or None when empty. A value that does not look like cron is kept, with a warning."""
     text = str(value).strip()
     if not text:
         return None
@@ -767,6 +864,12 @@ def _validate_cron(value, friendly_id) -> str | None:
 
 
 def _read_properties(element, level: str) -> dict:
+    """Collect the ``sifflet.*`` custom properties of a contract element.
+
+    ``level`` is the kind of element (contract, server, schema, property, or quality).
+    Unknown keys, keys set at a level that does not read them, and values of the wrong
+    type are dropped with a warning; structured values and booleans are parsed.
+    """
     found = {}
     for entry in getattr(element, "customProperties", None) or []:
         key = getattr(entry, "property", None)
@@ -800,6 +903,7 @@ def _read_properties(element, level: str) -> dict:
 
 
 def _structured(key, value):
+    """Parse a list or object value, which may be written as a YAML string. Returns None when invalid."""
     if isinstance(value, str):
         try:
             value = yaml.safe_load(value)
@@ -818,6 +922,7 @@ def _structured(key, value):
 
 
 def _lookup(chain: list[dict], key: str, default=None):
+    """Value of ``key`` in the first level of the chain that sets it, most specific level first."""
     for props in chain:
         if key in props:
             return props[key]
@@ -825,6 +930,7 @@ def _lookup(chain: list[dict], key: str, default=None):
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
+    """Merge nested dicts key by key; any other value in ``override`` replaces the one in ``base``."""
     merged = dict(base)
     for key, value in override.items():
         if isinstance(merged.get(key), dict) and isinstance(value, dict):
@@ -835,6 +941,11 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 
 def _resolve_collisions(drafts: list[_Draft]) -> list[_Draft]:
+    """Keep one draft per friendlyId.
+
+    Raises when a user-given friendlyId is shared; when only computed ones are, the
+    first draft wins and the others are skipped with a warning.
+    """
     groups: dict[str, list[_Draft]] = {}
     for draft in drafts:
         groups.setdefault(draft.friendly_id, []).append(draft)
@@ -855,6 +966,7 @@ def _resolve_collisions(drafts: list[_Draft]) -> list[_Draft]:
 
 
 def _identity(parameters: dict) -> tuple:
+    """What a monitor checks: kind, field, format, and allowed values. The threshold is not part of it."""
     field = parameters.get("field")
     field_key = tuple(field) if isinstance(field, list) else field
     fmt = parameters.get("format") if isinstance(parameters.get("format"), dict) else {}
@@ -864,6 +976,7 @@ def _identity(parameters: dict) -> tuple:
 
 
 def _num(value) -> str:
+    """Format a bound for names and IDs, dropping the ``.0`` of whole floats."""
     if isinstance(value, float) and value.is_integer():
         return str(int(value))
     return str(value)
