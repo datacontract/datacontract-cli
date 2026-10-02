@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 21
 title: "Import: Oracle"
 description: "Create a data contract from an Oracle database."
 ---

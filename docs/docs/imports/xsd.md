@@ -1,5 +1,5 @@
 ---
-sidebar_position: 31
+sidebar_position: 32
 title: "Import: XML Schema"
 description: "Create a data contract from an XML Schema (XSD) file."
 ---

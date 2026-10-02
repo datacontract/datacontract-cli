@@ -4,7 +4,7 @@ import math
 from typing import Any, Dict, List
 
 import fastjsonschema
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -29,24 +29,21 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
     resolver.warn()
 
     title = json_schema.get("title", "default_model")
-    description = json_schema.get("description")
-    type_ = json_schema.get("type", "object")
-    json_properties = json_schema.get("properties", {})
-    required_properties = json_schema.get("required", [])
-
     odcs = create_odcs(name=title)
+    odcs.schema_ = [to_schema_object(json_schema, title, json_schema.get("description"), business_name=title)]
+    return odcs
 
-    properties = jsonschema_to_properties(json_properties, required_properties)
 
+def to_schema_object(json_schema: dict, name: str, description: str = None, business_name: str = None) -> SchemaObject:
+    """The ODCS schema of a resolved JSON Schema object, warning about what ODCS cannot express."""
+    properties = jsonschema_to_properties(json_schema.get("properties", {}), json_schema.get("required", []))
     schema_obj = create_schema_object(
-        name=title,
-        physical_type=type_,
+        name=name,
+        physical_type=json_schema.get("type", "object"),
         description=description,
-        business_name=title,
+        business_name=business_name,
         properties=properties,
     )
-
-    odcs.schema_ = [schema_obj]
     ignored = list(_ignored_keywords(json_schema, ""))
     if ignored:
         listed = ", ".join(f"{keyword} ({path or 'root'})" for keyword, path in ignored)
@@ -55,8 +52,7 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
     if unions:
         listed = ", ".join(unions) if len(unions) <= 6 else ", ".join(unions[:5]) + f" and {len(unions) - 5} others"
         logger.warning(f"ODCS has no union type, so these properties are imported as string: {listed}")
-
-    return odcs
+    return schema_obj
 
 
 class SchemaResolver:

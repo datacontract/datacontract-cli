@@ -1,9 +1,11 @@
 import atexit
+import json
 import tempfile
 import typing
 from typing import Mapping
 
 import requests
+import yaml
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.config import Config
@@ -27,6 +29,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
 from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
+from datacontract.lint.resolve import _SafeLoaderNoTimestamp
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import resolve_server_overrides
@@ -431,7 +434,7 @@ def process_api_response(run, server, config: Config | None = None):
     config = Config.resolve(config)
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract_cli_api_")
     atexit.register(tmp_dir.cleanup)
-    headers = {}
+    headers = {"Accept": "application/json, application/yaml;q=0.9, */*;q=0.8"}
     if config.get_api_header_authorization() is not None:
         headers["Authorization"] = config.get_api_header_authorization()
     try:
@@ -445,8 +448,23 @@ def process_api_response(run, server, config: Config | None = None):
             reason=f"Failed to fetch API response from {server.location}: {e}",
             engine="datacontract-cli",
         )
+    content = response.text
+    if "yaml" in response.headers.get("Content-Type", "").lower():
+        # a YAML response is tested as the JSON it holds
+        try:
+            documents = list(yaml.load_all(content, Loader=_SafeLoaderNoTimestamp))
+        except yaml.YAMLError as e:
+            raise DataContractException(
+                type="schema",
+                name="Parse API response",
+                result=ResultEnum.error,
+                reason=f"Failed to parse the YAML response from {server.location}: {e}",
+                engine="datacontract-cli",
+            )
+        # a stream of several documents holds one record each
+        content = json.dumps(documents[0] if len(documents) == 1 else documents, default=str)
     with open(f"{tmp_dir.name}/api_response.json", "w", encoding="utf-8") as f:
-        f.write(response.text)
+        f.write(content)
     run.log_info(f"Saved API response to {tmp_dir.name}/api_response.json")
     new_server = Server(
         server="api_local",

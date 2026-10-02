@@ -25,8 +25,8 @@ servers:
 |---|---|---|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `Bearer <token>` | Value for the `authorization` header (optional) |
 
-The `location` (URL) and `delimiter` (`new_line`, `array`, or `none`) come from the contract's `servers` block. Only GET requests are supported.
+The `location` (URL) and `delimiter` (`new_line`, `array`, or `none`) come from the contract's `servers` block. The `location` may contain [variables](../configuration.md#variables-in-the-data-contract), such as `https://api.example.com/orders/${orderId:-ORD-1001}`. Only GET requests are supported.
 
 ## Data types
 
-The response is downloaded and tested like a local JSON file: records are read as the contract's types and validated against a JSON Schema derived from the contract's `logicalType`s. The ODCS logical types map to JSON Schema types (`string`, `integer`, `number`, `boolean`, `object`, `array`; `date`/`timestamp`/`time` become `string` with `format: date`/`date-time`/`time`, `map` an `object`, and `vector` an `array` of numbers); non-required fields also accept `null`. `physicalType` is not checked. Value constraints come from `logicalTypeOptions` (`pattern`, `minimum`, `enum`, …).
+The response may be JSON or YAML, as its `Content-Type` states (`application/yaml`, `application/x-yaml`, or `text/yaml` for YAML). A YAML response is read as the JSON it holds; a stream of several YAML documents is one record per document. The response is then downloaded and tested like a local JSON file: records are read as the contract's types and validated against a JSON Schema derived from the contract's `logicalType`s. The ODCS logical types map to JSON Schema types (`string`, `integer`, `number`, `boolean`, `object`, `array`; `date`/`timestamp`/`time` become `string` with `format: date`/`date-time`/`time`, `map` an `object`, and `vector` an `array` of numbers); non-required fields also accept `null`. `physicalType` is not checked. Value constraints come from `logicalTypeOptions` (`pattern`, `minimum`, `enum`, …).

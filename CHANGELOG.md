@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import xsd`: import a data contract from an XML Schema (XSD) file (new `xml` extra)
 - `datacontract export xsd`: export a data contract to an XML Schema (XSD)
 - `datacontract test`: test XML files (`format: xml`)
+- `datacontract import openapi`: import a data contract from the response of a GET operation in an OpenAPI 3.x document
+- `datacontract test`: test YAML responses of API servers
 - `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
 
 ### Changed

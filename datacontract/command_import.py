@@ -978,3 +978,29 @@ def import_odata(
         id=id,
     )
     _write_result(result, output)
+
+
+@import_app.command(
+    name="openapi",
+    epilog="Example: datacontract import openapi --source openapi.yaml --operation listOrders --output datacontract.yaml",
+)
+def import_openapi(
+    source: Annotated[Optional[str], typer.Option(help="Path to the OpenAPI 3.x document (YAML or JSON).")] = None,
+    operation: Annotated[
+        Optional[str],
+        typer.Option(
+            help="The GET operation to import, by operationId or path (e.g. listOrders or /orders). "
+            "Required when the document has more than one GET operation."
+        ),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from the response of a GET operation in an OpenAPI 3.x document."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        config=cli_config(), format="openapi", source=source, openapi_operation=operation, owner=owner, id=id
+    )
+    _write_result(result, output)

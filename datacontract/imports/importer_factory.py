@@ -193,6 +193,11 @@ importer_factory.register_lazy_importer(
     class_name="ODataImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.openapi,
+    module_path="datacontract.imports.openapi_importer",
+    class_name="OpenApiImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.xsd,
     module_path="datacontract.imports.xsd_importer",
     class_name="XsdImporter",
