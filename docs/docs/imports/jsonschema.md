@@ -78,4 +78,6 @@ schema:
 
 ODCS has no union type. A property that allows more than one type (`"type": ["string", "integer"]`, or several `anyOf`/`oneOf` branches) is imported as `logicalType: string` with the union in `physicalType` (`string|integer`), and the import prints a warning naming it. A single type plus `null` is not a union and imports as that type.
 
+Local references (`$ref` to `#/$defs/…` or `#/definitions/…`, also at the root) are resolved, and the branches of an `allOf` are merged: their properties are combined, the schema's own first, and so are their `required` lists. A definition that contains itself stops at its first repetition, as an `object` without properties. References to other documents are not loaded. The import warns about both.
+
 All options: **[`datacontract import jsonschema`](../commands/import/jsonschema.md)**.

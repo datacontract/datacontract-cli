@@ -24,7 +24,9 @@ class JsonSchemaImporter(Importer):
 
 def import_jsonschema(source: str) -> OpenDataContractStandard:
     """Import a JSON Schema and create an ODCS data contract."""
-    json_schema = load_and_validate_json_schema(source)
+    resolver = SchemaResolver(load_and_validate_json_schema(source))
+    json_schema = resolver.resolve(resolver.root)
+    resolver.warn()
 
     title = json_schema.get("title", "default_model")
     description = json_schema.get("description")
@@ -51,6 +53,105 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
         logger.warning(f"ODCS has no union type, so these properties are imported as string: {listed}")
 
     return odcs
+
+
+class SchemaResolver:
+    """Resolves the local $refs of a JSON Schema and merges its allOf branches, so properties can be read directly."""
+
+    def __init__(self, root: dict):
+        self.root = root
+        self.recursive: list[str] = []
+        self.unresolved: list[str] = []
+
+    def resolve(self, node, refs: tuple = ()):
+        if not isinstance(node, dict):
+            return node
+        if isinstance(node.get("$ref"), str):
+            ref = node["$ref"]
+            siblings = {key: value for key, value in node.items() if key != "$ref"}
+            if not ref.startswith("#"):
+                # another document, which is not loaded; the reference stays, and names the type in a union
+                if ref not in self.unresolved:
+                    self.unresolved.append(ref)
+                return {"$ref": ref, **self.resolve(siblings, refs)}
+            if ref in refs:
+                # A definition that contains itself stops at its first repetition
+                if ref not in self.recursive:
+                    self.recursive.append(ref)
+                return {"type": "object", **siblings}
+            target = self.lookup(ref)
+            if target is None:
+                if ref not in self.unresolved:
+                    self.unresolved.append(ref)
+                return {"$ref": ref, **self.resolve(siblings, refs)}
+            # keywords next to $ref apply as well, and win
+            return {**self.resolve(target, refs + (ref,)), **self.resolve(siblings, refs)}
+
+        resolved = {}
+        for key, value in node.items():
+            if key in ("properties", "patternProperties", "$defs", "definitions"):
+                resolved[key] = (
+                    {name: self.resolve(child, refs) for name, child in value.items()}
+                    if isinstance(value, dict)
+                    else value
+                )
+            elif key in ("items", "additionalProperties", "not", "if", "then", "else", "contains"):
+                resolved[key] = (
+                    [self.resolve(v, refs) for v in value] if isinstance(value, list) else self.resolve(value, refs)
+                )
+            elif key in ("anyOf", "oneOf", "allOf") and isinstance(value, list):
+                resolved[key] = [self.resolve(branch, refs) for branch in value]
+            else:
+                resolved[key] = value
+        if isinstance(resolved.get("allOf"), list):
+            resolved = merge_all_of(resolved)
+        return resolved
+
+    def lookup(self, ref: str):
+        """The node a JSON pointer such as #/$defs/Address points to, or None."""
+        node = self.root
+        for part in ref.lstrip("#").strip("/").split("/") if ref not in ("#", "#/") else []:
+            part = part.replace("~1", "/").replace("~0", "~")
+            if isinstance(node, dict) and part in node:
+                node = node[part]
+            elif isinstance(node, list) and part.isdigit() and int(part) < len(node):
+                node = node[int(part)]
+            else:
+                return None
+        return node
+
+    def warn(self):
+        if self.recursive:
+            logger.warning(
+                f"These definitions contain themselves, so the repetition is an object without properties: "
+                f"{', '.join(self.recursive)}"
+            )
+        if self.unresolved:
+            logger.warning(
+                f"These $refs could not be resolved and are imported as strings: {', '.join(self.unresolved)}"
+            )
+
+
+def merge_all_of(node: dict) -> dict:
+    """The schema with its allOf branches merged in: properties and required combine, other keywords are kept
+    from the schema itself, then from the first branch that has them."""
+    branches = [b for b in node["allOf"] if isinstance(b, dict)]
+    merged = {key: value for key, value in node.items() if key != "allOf"}
+    for branch in branches:
+        if isinstance(branch.get("allOf"), list):
+            branch = merge_all_of(branch)
+        for key, value in branch.items():
+            if key == "properties":
+                # in the order they come, base branches first; what comes first wins
+                known = merged.get("properties", {})
+                merged["properties"] = {**known, **{name: v for name, v in value.items() if name not in known}}
+            elif key == "required":
+                merged["required"] = list(dict.fromkeys(merged.get("required", []) + value))
+            else:
+                merged.setdefault(key, value)
+    if "properties" in merged and "type" not in merged:
+        merged["type"] = "object"
+    return merged
 
 
 def _union_paths(prop: SchemaProperty, path: str):

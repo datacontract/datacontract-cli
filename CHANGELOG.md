@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export pydantic-model`: optional fields default to `None` (#1679)
 
 ### Fixed
+- `datacontract import jsonschema`: resolves local `$ref`s and merges `allOf`, which imported as strings or not at all
 - `datacontract test`: a JSON record that breaks the JSON Schema no longer stops the other checks, and every such record is reported
 - `datacontract test`: JSON files that are not found are reported instead of failing with a TypeError
 - `datacontract import jsonschema`: boolean schemas (`true`, `false`) no longer fail the import

@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 
+import pytest
 import yaml
 from typer.testing import CliRunner
 
@@ -173,3 +174,112 @@ def test_import_an_infinite_bound_as_no_bound(tmp_path):
     result = DataContract.import_from_source("jsonschema", str(source))
 
     assert result.schema_[0].properties[0].logicalTypeOptions == {"minimum": 0}
+
+
+def _import(tmp_path: Path, schema: dict):
+    source = tmp_path / "schema.json"
+    source.write_text(json.dumps(schema))
+    return DataContract.import_from_source("jsonschema", str(source))
+
+
+ADDRESS = {
+    "type": "object",
+    "properties": {"city": {"type": "string"}, "zip": {"type": "string", "pattern": "^[0-9]{5}$"}},
+    "required": ["city"],
+}
+
+
+@pytest.mark.parametrize("definitions", ["$defs", "definitions"])
+def test_import_resolves_local_refs(tmp_path: Path, definitions):
+    result = _import(
+        tmp_path,
+        {
+            "title": "customer",
+            "properties": {
+                "home": {"$ref": f"#/{definitions}/Address", "description": "Where they live"},
+                "addresses": {"type": "array", "items": {"$ref": f"#/{definitions}/Address"}},
+                "id": {"$ref": f"#/{definitions}/Id"},
+            },
+            definitions: {"Address": ADDRESS, "Id": {"type": "integer", "minimum": 1}},
+        },
+    )
+
+    props = {p.name: p for p in result.schema_[0].properties}
+    home = props["home"]
+    assert (home.logicalType, home.description) == ("object", "Where they live")  # keywords next to $ref apply
+    assert [(p.name, p.required) for p in home.properties] == [("city", True), ("zip", None)]
+    assert [p.name for p in props["addresses"].items.properties] == ["city", "zip"]
+    assert (props["id"].logicalType, props["id"].logicalTypeOptions) == ("integer", {"minimum": 1})
+
+
+def test_import_resolves_a_ref_at_the_root(tmp_path: Path):
+    result = _import(tmp_path, {"title": "address", "$ref": "#/$defs/Address", "$defs": {"Address": ADDRESS}})
+
+    assert [p.name for p in result.schema_[0].properties] == ["city", "zip"]
+
+
+def test_import_stops_a_recursive_ref_at_its_repetition(tmp_path: Path, caplog):
+    with caplog.at_level(logging.WARNING):
+        result = _import(
+            tmp_path,
+            {
+                "properties": {"tree": {"$ref": "#/$defs/Node"}},
+                "$defs": {
+                    "Node": {
+                        "type": "object",
+                        "properties": {
+                            "label": {"type": "string"},
+                            "children": {"type": "array", "items": {"$ref": "#/$defs/Node"}},
+                        },
+                    }
+                },
+            },
+        )
+
+    tree = result.schema_[0].properties[0]
+    children = {p.name: p for p in tree.properties}["children"]
+    assert children.items.logicalType == "object" and children.items.properties is None
+    assert "contain themselves" in caplog.text and "#/$defs/Node" in caplog.text
+
+
+def test_import_warns_about_refs_it_cannot_resolve(tmp_path: Path, caplog):
+    with caplog.at_level(logging.WARNING):
+        result = _import(
+            tmp_path,
+            {"properties": {"remote": {"$ref": "https://example.com/address.json"}, "gone": {"$ref": "#/$defs/Gone"}}},
+        )
+
+    assert [p.logicalType for p in result.schema_[0].properties] == ["string", "string"]
+    assert "https://example.com/address.json" in caplog.text and "#/$defs/Gone" in caplog.text
+
+
+def test_import_merges_all_of(tmp_path: Path):
+    result = _import(
+        tmp_path,
+        {
+            "title": "customer",
+            "allOf": [
+                {"$ref": "#/$defs/Base"},
+                {"properties": {"name": {"type": "string"}, "id": {"type": "string"}}, "required": ["name"]},
+            ],
+            "properties": {
+                "score": {"allOf": [{"type": "integer"}, {"minimum": 5}]},
+                "address": {"allOf": [{"$ref": "#/$defs/Address"}, {"properties": {"country": {"type": "string"}}}]},
+            },
+            "$defs": {
+                "Base": {"type": "object", "properties": {"id": {"type": "integer"}}, "required": ["id"]},
+                "Address": ADDRESS,
+            },
+        },
+    )
+
+    props = {p.name: p for p in result.schema_[0].properties}
+    # the schema's own properties, then those of its branches in order; the first definition of a name wins
+    assert [(p.name, p.logicalType, p.required) for p in result.schema_[0].properties] == [
+        ("score", "integer", None),
+        ("address", "object", None),
+        ("id", "integer", True),
+        ("name", "string", True),
+    ]
+    assert props["score"].logicalTypeOptions == {"minimum": 5}
+    assert [p.name for p in props["address"].properties] == ["city", "zip", "country"]
