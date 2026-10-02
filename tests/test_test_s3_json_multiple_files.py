@@ -53,11 +53,14 @@ def test_test_s3_json_stops_reading_files_at_error_limit(monkeypatch):
     schema = {"type": "object", "properties": {"order_total": {"type": "integer"}}}
     server = SimpleNamespace(endpointUrl=None, location="s3://bucket/*.json", delimiter="new_line")
 
-    with pytest.raises(DataContractException):
-        check_jsonschema.process_s3_file(
-            Run.create_run(), server, schema, "orders", fastjsonschema.compile(schema), Config(max_errors=1)
-        )
+    run = Run.create_run()
 
+    failed = check_jsonschema.process_s3_file(
+        run, server, schema, "orders", fastjsonschema.compile(schema), Config(max_errors=1)
+    )
+
+    assert failed
+    assert [check.result for check in run.checks] == ["failed"]
     assert read_files == ["orders-1.json"]
 
 
