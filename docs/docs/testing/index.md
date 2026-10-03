@@ -56,6 +56,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/athena.svg" alt="" />
     <span><span className="doc-card-title">Amazon Athena</span><span className="doc-card-desc">Athena over data in S3</span></span>
   </a>
+  <a className="doc-card" href="/testing/hive">
+    <img src="/img/icons/database.svg" alt="" />
+    <span><span className="doc-card-title">Apache Hive</span><span className="doc-card-desc">Tables in a HiveServer2</span></span>
+  </a>
   <a className="doc-card" href="/testing/iceberg">
     <img src="/img/icons/iceberg.svg" alt="" />
     <span><span className="doc-card-title">Apache Iceberg</span><span className="doc-card-desc">Tables in a REST catalog (Polaris, Nessie, Unity, Glue, S3 Tables)</span></span>
@@ -67,6 +71,10 @@ datacontract test --server production datacontract.yaml
   <a className="doc-card" href="/testing/azure">
     <img src="/img/icons/azure.svg" alt="" />
     <span><span className="doc-card-title">Azure Blob / ADLS</span><span className="doc-card-desc">Files on Azure Blob storage or ADLS Gen2</span></span>
+  </a>
+  <a className="doc-card" href="/testing/clickhouse">
+    <img src="/img/icons/clickhouse.svg" alt="" />
+    <span><span className="doc-card-title">ClickHouse</span><span className="doc-card-desc">ClickHouse databases</span></span>
   </a>
   <a className="doc-card" href="/testing/exasol">
     <img src="/img/icons/exasol.svg" alt="" />

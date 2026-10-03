@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 20
 title: "Oracle"
 description: "Create a data contract from your Oracle tables and test the actual data against it."
 ---

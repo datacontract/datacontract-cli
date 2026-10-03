@@ -77,6 +77,39 @@ def test_diagnostics_duplicate_and_present():
     assert present.diagnostics == {"metric": "field_present", "field": "order_id", "present": True}
 
 
+def test_diagnostics_of_a_composite_key_name_its_columns():
+    contract = """apiVersion: v3.2.0
+kind: DataContract
+id: diagnostics_composite_key
+name: Composite key diagnostics
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: integer
+        primaryKey: true
+        primaryKeyPosition: 1
+      - name: email
+        logicalType: string
+        primaryKey: true
+        primaryKeyPosition: 2
+"""
+    run = DataContract(data_contract_str=contract).test()
+
+    key = next(c for c in run.checks if c.type == "primary_key_unique")
+    assert key.result == ResultEnum.passed
+    assert key.diagnostics["columns"] == ["order_id", "email"]
+    # the run is written as JSON by `--output-format json` and printed by `run.pretty()`
+    run.model_dump_json()
+
+
 def _run_with(specs):
     run = Run.create_run()
     run.checks = build_check_stubs(specs)

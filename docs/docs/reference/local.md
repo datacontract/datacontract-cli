@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 15
 title: "Local Files Reference"
 sidebar_label: "Local files"
 description: "Data type handling for local CSV, JSON, XML, Parquet, and Delta files."

@@ -1,0 +1,48 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-quality-clickhouse
+name: Orders quality rules (clickhouse)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a clickhouse server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: clickhouse
+    host: localhost
+    port: 8123
+    database: sales
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: String
+      - name: order_total
+        logicalType: number
+        physicalType: Decimal(10, 2)
+      - name: order_status
+        logicalType: string
+        physicalType: LowCardinality(String)
+      - name: order_timestamp
+        logicalType: timestamp
+        physicalType: DateTime64(3)
+    quality:
+      - type: sql
+        description: "Every order has a known status"
+        query: |
+          SELECT countIf(NOT match(order_status, '^(open|shipped)$')) FROM ${model}
+        mustBe: 0
+      - type: sql
+        description: "95th percentile of the order total"
+        query: |
+          SELECT quantile(0.95)(order_total) FROM ${model}
+        mustBeLessThan: 100000
+      - type: sql
+        description: "No order is older than a year"
+        query: |
+          SELECT count() FROM ${model} WHERE order_timestamp < now() - INTERVAL 1 YEAR
+        mustBe: 0

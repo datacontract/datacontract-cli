@@ -802,7 +802,7 @@ def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_coun
     _evaluate(run, spec, dup_count, row_count=row_count)
     extra = {"failed_rows": _int(row["_dup_rows"])}
     if len(cols) > 1:
-        extra["columns"] = cols
+        extra["columns"] = spec.columns
     _update_diagnostics(run, spec.key, extra)
 
 

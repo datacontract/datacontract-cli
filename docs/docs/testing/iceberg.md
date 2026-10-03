@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: "Apache Iceberg"
 description: "Test Apache Iceberg tables through a REST catalog (Polaris, Nessie, Unity Catalog, Glue, S3 Tables) in 5 minutes."
 ---

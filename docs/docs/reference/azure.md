@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: "Azure Blob / ADLS Reference"
 sidebar_label: "Azure Blob / ADLS"
 description: "All Azure storage authentication options and data type handling."

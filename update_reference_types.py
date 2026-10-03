@@ -46,6 +46,7 @@ SQL_PAGES = {
     "sqlserver": ("sqlserver", "SQL Server type"),
     "oracle": ("oracle", "Oracle type"),
     "trino": ("trino", "Trino type"),
+    "clickhouse": ("clickhouse", "ClickHouse type"),
     "dataframe": ("dataframe", "Spark type"),
 }
 

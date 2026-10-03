@@ -8,6 +8,7 @@ import sqlglot
 from open_data_contract_standard.model import OpenDataContractStandard, Relationship, SchemaProperty
 from sqlglot.dialects.dialect import Dialects
 
+from datacontract.imports.clickhouse_importer import is_clickhouse_required, map_clickhouse_type
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -36,6 +37,8 @@ class SqlDialect(str, Enum):
     oracle = "oracle"
     mysql = "mysql"
     redshift = "redshift"
+    clickhouse = "clickhouse"
+    hive = "hive"
 
 
 class SqlImporter(Importer):
@@ -113,11 +116,15 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
             col_name = column.this.name
             col_type = to_col_type(column, dialect)
             logical_type, format = map_type_from_sql(col_type)
+            if dialect == Dialects.CLICKHOUSE and col_type:
+                logical_type = map_clickhouse_type(col_type) or logical_type
             col_description = get_description(column)
             max_length = get_max_length(column)
             precision, scale = get_precision_scale(column)
             is_primary_key = col_name.lower() in primary_key_names or None
             is_required = column.find(sqlglot.exp.NotNullColumnConstraint) is not None or is_primary_key or None
+            if dialect == Dialects.CLICKHOUSE and col_type:
+                is_required = is_required or is_clickhouse_required(col_type) or None
             is_unique = True if is_primary_key and has_single_primary_key else None
             col_relationship = get_relationship(column, create)
             tags = get_tags(column)
@@ -275,6 +282,8 @@ def get_server_defaults(server_type: str) -> dict:
         "oracle": 1521,
         "snowflake": 443,
         "databricks": 443,
+        "clickhouse": 8123,
+        "hive": 10000,
     }
     schema_map = {
         "postgres": "public",
@@ -283,8 +292,10 @@ def get_server_defaults(server_type: str) -> dict:
     defaults = {
         "host": "my_host",
         "database": "my_database",
-        "schema": schema_map.get(server_type, "my_schema"),
     }
+    # a ClickHouse or Hive database holds the tables directly
+    if server_type not in ("clickhouse", "hive"):
+        defaults["schema"] = schema_map.get(server_type, "my_schema")
     port = port_map.get(server_type)
     if port is not None:
         defaults["port"] = port
@@ -303,6 +314,8 @@ def to_server_type(source, dialect: Dialects | None) -> str | None:
         Dialects.ORACLE: "oracle",
         Dialects.MYSQL: "mysql",
         Dialects.DATABRICKS: "databricks",
+        Dialects.CLICKHOUSE: "clickhouse",
+        Dialects.HIVE: "hive",
     }
     return dialect_map.get(dialect, None)
 

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 22
 title: "Trino Reference"
 sidebar_label: "Trino"
 description: "All Trino authentication options and data type handling."

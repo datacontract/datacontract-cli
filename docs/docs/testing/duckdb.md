@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 11
 title: "DuckDB"
 description: "Test the tables inside a DuckDB database file."
 ---

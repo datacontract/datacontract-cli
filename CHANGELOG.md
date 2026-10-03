@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import openapi`: import a data contract from the response of a GET operation in an OpenAPI 3.x document
 - `datacontract test`: test YAML responses of API servers
 - `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
+- `datacontract test`: test ClickHouse and Hive servers (new `clickhouse` and `hive` extras)
+- `datacontract import clickhouse` and `datacontract import hive`: import a data contract from a live ClickHouse or Hive database
+- `datacontract import sql`: support the `clickhouse` and `hive` dialects
 
 ### Changed
 - `datacontract test`: warns when the column types cannot be read from the catalog, as the physical type checks then compare only the logicalType
@@ -24,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract import sql`: the fields of a `STRUCT` column are no longer imported as columns of the table
+- `datacontract test`: a duplicate check on a composite primary key no longer breaks the JSON output and `run.pretty()`
 - `datacontract test`: a JSON value of the wrong type fails the JSON Schema check, not every check on its column
 - `datacontract test`: the JSON Schema check reads `.jsonl` and `.ndjson` files, and files without a `delimiter` the way DuckDB does
 - `datacontract import jsonschema`: imports `const`, `additionalProperties` as a map, `minItems`, `maxItems`, `uniqueItems`, `multipleOf` and `examples`, and warns about the keywords it leaves out

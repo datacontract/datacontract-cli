@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 20
 title: "Import: OData"
 description: "Create a data contract from one or more OData 4.x EntitySets using CSDL XML or JSON."
 ---
