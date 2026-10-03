@@ -13,7 +13,7 @@ jobs:
     secrets: inherit
 
   check_version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: check tag version == pyproject.version
@@ -39,7 +39,7 @@ jobs:
           echo "Public version: ${{ steps.versioncheck.outputs.public_version }}"   # e.g., 0.1.0
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - test
       - check_version
@@ -72,7 +72,7 @@ jobs:
       Publish Python 🐍 distribution 📦 to PyPI
     needs:
       - build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: release-pypi
       url: https://pypi.org/p/datacontract-cli
@@ -93,7 +93,7 @@ jobs:
       Create a GitHub Release
     needs:
       - publish-to-pypi
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     permissions:
       contents: write  # IMPORTANT: mandatory for making GitHub Releases
@@ -142,7 +142,7 @@ jobs:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
     needs:
       - build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: release-testpypi
       url: https://test.pypi.org/p/datacontract-cli
@@ -160,7 +160,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - test
       - check_version
@@ -222,7 +222,7 @@ jobs:
         run: cosign sign --yes "datacontract/cli@${DIGEST}"
 
   push-to-ecr:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Minting the OIDC token needs this explicitly; the workflow-level default
     # is `contents: read` only.
     permissions:
