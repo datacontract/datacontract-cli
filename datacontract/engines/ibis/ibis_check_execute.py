@@ -30,7 +30,11 @@ from datacontract.engines.checks.type_normalize import (
 )
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
-from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
+from datacontract.engines.ibis.native_type import (
+    fetch_native_types,
+    sqlglot_dialect,
+    supports_native_type_introspection,
+)
 from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types, has_nesting
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -236,6 +240,13 @@ def _run_model(
     native_types = None
     if any(spec.metric == MetricType.FIELD_PHYSICAL_TYPE for spec in specs):
         native_types = fetch_native_types(con, server, model)
+        if native_types is None and supports_native_type_introspection(get_server_type(server)):
+            # Each physical type check falls back to its logicalType, which can pass a
+            # physicalType nothing compared, so the run has to say so.
+            run.log_warn(
+                f"Could not read the column types of '{model}' from the {get_server_type(server)} catalog; "
+                "the physical type checks compare the logicalType instead"
+            )
 
     # Snowflake collapses structured OBJECT/ARRAY nesting in the ibis dtype; read
     # the real nested types from SHOW COLUMNS so field_type checks can recurse.

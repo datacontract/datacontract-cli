@@ -50,6 +50,25 @@ def test_test_redshift_path_via_postgres_wire(postgres_container, monkeypatch):
     assert all(check.result == ResultEnum.passed for check in run.checks)
 
 
+def test_test_redshift_wrong_physical_type_fails(postgres_container, monkeypatch):
+    """A physicalType is only checked when the catalog is read: one that differs
+    from the column must fail, not fall back to a passing logicalType check."""
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_REDSHIFT_PASSWORD", postgres.password)
+    _init_sql("fixtures/postgres/data/data.sql")
+
+    data_contract_str = _setup_datacontract("fixtures/redshift/odcs.yaml").replace(
+        "physicalType: integer", "physicalType: bigint"
+    )
+
+    run = DataContract(data_contract_str=data_contract_str).test()
+
+    failed = {check.name: check.reason for check in run.checks if check.result != ResultEnum.passed}
+    assert failed == {
+        "Check that field field_two has physical type bigint": "expected physical type 'bigint' but the column is 'integer'"
+    }
+
+
 def _setup_datacontract(file):
     with open(file) as data_contract_file:
         data_contract_str = data_contract_file.read()

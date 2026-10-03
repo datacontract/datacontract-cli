@@ -16,11 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
 
 ### Changed
+- `datacontract test`: warns when the column types cannot be read from the catalog, as the physical type checks then compare only the logicalType
+- `datacontract test`: `glue`, `kinesis` and `sftp` servers report that they are valid ODCS but cannot be tested yet, like the other untestable server types
 - `datacontract export dbt-models`, `datacontract export dbt-sources` and `datacontract dbt sync` nest generic-test parameters under `arguments:` **(we now require dbt 1.10+)** (#1680)
 - `datacontract export pydantic-model`: optional fields default to `None` (#1679)
 - `datacontract test`: an optional field that no record of a JSON, YAML or XML document has is no longer reported as missing
 
 ### Fixed
+- `datacontract import sql`: the fields of a `STRUCT` column are no longer imported as columns of the table
 - `datacontract test`: a JSON value of the wrong type fails the JSON Schema check, not every check on its column
 - `datacontract test`: the JSON Schema check reads `.jsonl` and `.ndjson` files, and files without a `delimiter` the way DuckDB does
 - `datacontract import jsonschema`: imports `const`, `additionalProperties` as a map, `minItems`, `maxItems`, `uniqueItems`, `multipleOf` and `examples`, and warns about the keywords it leaves out

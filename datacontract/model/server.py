@@ -27,17 +27,20 @@ SERVER_TYPE_SYNONYMS = {
 # ODCS server types the CLI validates and exports but cannot connect to with
 # `datacontract test`: no driver is bundled for them yet.
 LINT_ONLY_SERVER_TYPES = {
+    "clickhouse",
     "cloudsql",
     "db2",
     "denodo",
     "dremio",
-    "hana",
+    "glue",
     "hive",
     "informix",
     "ingres",
+    "kinesis",
     "poet",
     "presto",
     "pubsub",
+    "sftp",
     "synapse",
     "teradata",
     "vectorwise",
