@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 9
 title: "Databricks Reference"
 sidebar_label: "Databricks"
 description: "All Databricks authentication options and data type mappings."

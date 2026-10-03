@@ -43,8 +43,10 @@ _DIALECT_BY_SERVER_TYPE = {
     # same name in sqlglot
     "athena": "athena",
     "bigquery": "bigquery",
+    "clickhouse": "clickhouse",
     "databricks": "databricks",
     "exasol": "exasol",
+    "hive": "hive",
     "oracle": "oracle",
     "postgres": "postgres",
     "redshift": "redshift",

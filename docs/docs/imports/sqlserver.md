@@ -1,5 +1,5 @@
 ---
-sidebar_position: 30
+sidebar_position: 32
 title: "Import: SQL Server"
 description: "Create a data contract from a SQL Server database."
 ---

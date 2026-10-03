@@ -81,6 +81,14 @@ bigquery = [
   "ibis-framework[bigquery]>=10.0.0,<13.0.0",
 ]
 
+# ibis's ClickHouse backend talks to the HTTP interface through clickhouse-connect,
+# whose wheels need no ClickHouse client libraries on the system.
+clickhouse = [
+  "ibis-framework[clickhouse]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
+]
+
 # CSV import reads through DuckDB; kept as an alias so existing installs keep working.
 csv = [
   "datacontract-cli[duckdb]",
@@ -246,6 +254,14 @@ impala = [
   "packaging>=21.3,<27.0",
 ]
 
+# ibis has no Hive backend; its Impala backend reaches a HiveServer2 through impyla,
+# which speaks the HiveServer2 protocol of both (see connections/hive_patch.py).
+hive = [
+  "ibis-framework[impala]>=10.0.0,<13.0.0",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from this extra.
+  "packaging>=21.3,<27.0",
+]
+
 dbml = [
   "pydbml>=1.1.1"
 ]
@@ -287,7 +303,7 @@ xml = [
 # the `all` meta-extra would pull a proprietary package into a default-ish
 # install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
-  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle,xml]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,clickhouse,hive,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle,xml]"
 ]
 
 # for development, we pin all libraries to an exact version

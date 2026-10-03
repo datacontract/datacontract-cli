@@ -160,6 +160,16 @@ importer_factory.register_lazy_importer(
     class_name="TrinoImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.clickhouse,
+    module_path="datacontract.imports.clickhouse_importer",
+    class_name="ClickHouseImporter",
+)
+importer_factory.register_lazy_importer(
+    name=ImportFormat.hive,
+    module_path="datacontract.imports.hive_importer",
+    class_name="HiveImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.oracle,
     module_path="datacontract.imports.oracle_importer",
     class_name="OracleImporter",

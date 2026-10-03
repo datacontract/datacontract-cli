@@ -35,6 +35,9 @@ SERVER_OVERRIDE_OPTIONS = {
     "athena_workgroup": "workgroup",
     "bigquery_project": "project",
     "bigquery_dataset": "dataset",
+    "clickhouse_host": "host",
+    "clickhouse_port": "port",
+    "clickhouse_database": "database",
     "databricks_server_hostname": "host",
     "databricks_catalog": "catalog",
     "databricks_schema": "schema",
@@ -43,6 +46,9 @@ SERVER_OVERRIDE_OPTIONS = {
     "exasol_host": "host",
     "exasol_port": "port",
     "exasol_schema": "schema",
+    "hive_host": "host",
+    "hive_port": "port",
+    "hive_database": "database",
     "iceberg_catalog_url": "catalogUrl",
     "iceberg_catalog": "catalog",
     "iceberg_namespace": "namespace",
@@ -128,6 +134,15 @@ class Config(BaseSettings):
     bigquery_project: str | None = None
     bigquery_dataset: str | None = None
 
+    # clickhouse
+    clickhouse_username: str | None = None
+    clickhouse_password: SecretStr | None = None
+    clickhouse_secure: bool | None = None
+    # overrides for the contract's servers block
+    clickhouse_host: str | None = None
+    clickhouse_port: int | None = None
+    clickhouse_database: str | None = None
+
     # databricks
     databricks_server_hostname: str | None = None
     databricks_http_path: str | None = None
@@ -155,6 +170,18 @@ class Config(BaseSettings):
     hana_encrypt: bool | None = None
     hana_ssl_validate_certificate: bool | None = None
     hana_ssl_hostname_in_certificate: str | None = None
+
+    # hive
+    hive_username: str | None = None
+    hive_password: SecretStr | None = None
+    hive_auth_mechanism: str | None = None
+    hive_use_ssl: bool | None = None
+    hive_use_http_transport: bool | None = None
+    hive_http_path: str | None = None
+    # overrides for the contract's servers block
+    hive_host: str | None = None
+    hive_port: int | None = None
+    hive_database: str | None = None
 
     # iceberg (REST catalog by default; data files use the s3_* options)
     iceberg_catalog_type: str | None = None
@@ -543,6 +570,25 @@ class Config(BaseSettings):
     def get_bigquery_dataset(self, required: bool = False) -> str | None:
         return self._str_option("bigquery_dataset", required)
 
+    # --- clickhouse ---
+    def get_clickhouse_username(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_username", required)
+
+    def get_clickhouse_password(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_password", required)
+
+    def get_clickhouse_secure(self, default: bool = False) -> bool:
+        return self._bool_option("clickhouse_secure", default)
+
+    def get_clickhouse_host(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_host", required)
+
+    def get_clickhouse_port(self) -> int | None:
+        return self._int_option("clickhouse_port")
+
+    def get_clickhouse_database(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_database", required)
+
     # --- databricks ---
     def get_databricks_server_hostname(self, required: bool = False) -> str | None:
         return self._str_option("databricks_server_hostname", required)
@@ -593,6 +639,34 @@ class Config(BaseSettings):
 
     def get_hana_ssl_hostname_in_certificate(self, required: bool = False) -> str | None:
         return self._str_option("hana_ssl_hostname_in_certificate", required)
+
+    # --- hive ---
+    def get_hive_username(self, required: bool = False) -> str | None:
+        return self._str_option("hive_username", required)
+
+    def get_hive_password(self, required: bool = False) -> str | None:
+        return self._str_option("hive_password", required)
+
+    def get_hive_auth_mechanism(self, required: bool = False) -> str | None:
+        return self._str_option("hive_auth_mechanism", required)
+
+    def get_hive_use_ssl(self, default: bool = False) -> bool:
+        return self._bool_option("hive_use_ssl", default)
+
+    def get_hive_use_http_transport(self, default: bool = False) -> bool:
+        return self._bool_option("hive_use_http_transport", default)
+
+    def get_hive_http_path(self, required: bool = False) -> str | None:
+        return self._str_option("hive_http_path", required)
+
+    def get_hive_host(self, required: bool = False) -> str | None:
+        return self._str_option("hive_host", required)
+
+    def get_hive_port(self) -> int | None:
+        return self._int_option("hive_port")
+
+    def get_hive_database(self, required: bool = False) -> str | None:
+        return self._str_option("hive_database", required)
 
     # --- iceberg ---
     def get_iceberg_catalog_type(self, required: bool = False) -> str | None:

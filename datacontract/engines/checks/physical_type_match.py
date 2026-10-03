@@ -119,6 +119,32 @@ def _normalize_exasol_declared(expected: str) -> str:
     return expected
 
 
+# ClickHouse accepts these SQL-standard spellings in DDL but stores, and its
+# catalog reports, the type on the right; a string type's length is discarded
+# (https://clickhouse.com/docs/sql-reference/data-types/string).
+_CLICKHOUSE_ALIAS_PATTERN = re.compile(
+    r"\b(?:(?:character varying|varchar|nvarchar|nchar|char|character|text|clob|blob)(?:\s*\(\s*\d+\s*\))?"
+    r"|(?P<timestamp>timestamp))(?![\w(])",
+    re.IGNORECASE,
+)
+_CLICKHOUSE_DATETIME_TYPES = {exp.DataType.Type.DATETIME, exp.DataType.Type.DATETIME64}
+
+
+def _normalize_clickhouse_declared(expected: str) -> str:
+    return _CLICKHOUSE_ALIAS_PATTERN.sub(lambda m: "DateTime" if m.group("timestamp") else "String", expected.strip())
+
+
+def _clickhouse_time_zone_omitted(exp_dt: exp.DataType, act_dt: exp.DataType) -> bool:
+    """A declared ``DateTime64(3)`` matches a ``DateTime64(3, 'UTC')`` column: the time
+    zone only changes how ClickHouse renders the stored instant."""
+    expected, actual = _params(exp_dt), _params(act_dt)
+    return (
+        {exp_dt.this, act_dt.this} <= _CLICKHOUSE_DATETIME_TYPES
+        and len(expected) < len(actual)
+        and actual[: len(expected)] == expected
+    )
+
+
 def _parse(type_str: str, dialect) -> Optional[exp.DataType]:
     """Parse a type string into an ``exp.DataType`` for ``dialect``, or ``None``."""
     if not type_str or not type_str.strip():
@@ -266,7 +292,11 @@ def physical_type_matches(
     if not expected or not expected.strip() or not actual or not actual.strip():
         return None, "no physical type to compare; skipping the physical type check"
     # The declared type as parsed; `expected` itself stays the author's spelling for messages.
-    declared = _normalize_exasol_declared(expected) if _dialect_name(dialect) == "exasol" else expected
+    declared = expected
+    if _dialect_name(dialect) == "exasol":
+        declared = _normalize_exasol_declared(expected)
+    elif _dialect_name(dialect) == "clickhouse":
+        declared = _normalize_clickhouse_declared(expected)
     exp_dt = _parse(declared, dialect)
     act_dt = _parse(actual, dialect)
 
@@ -296,6 +326,8 @@ def physical_type_matches(
             return True, ""
         return False, f"expected physical type '{expected}' but the column is '{actual}'"
 
+    if _dialect_name(dialect) == "clickhouse" and _clickhouse_time_zone_omitted(exp_dt, act_dt):
+        return True, ""
     # sqlglot fills in a dialect's default precision (a bare NUMBER parses as
     # DECIMAL(38,0)), so what the contract declares is read off the raw string.
     if _split_base(_normalize_raw(declared))[1] and not _scalar_params_equal(exp_dt, act_dt):

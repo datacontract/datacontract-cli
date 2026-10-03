@@ -199,6 +199,12 @@ def connect_ibis(
     if server_type == "exasol":
         return _connect_exasol(ibis, server, config)
 
+    if server_type == "clickhouse":
+        return _connect_clickhouse(ibis, server, run, config)
+
+    if server_type == "hive":
+        return _connect_hive(ibis, server, config)
+
     if server_type in LINT_ONLY_SERVER_TYPES:
         _unsupported(
             run,
@@ -917,6 +923,55 @@ def _connect_exasol(ibis, server: Server, config: Config):
             raise ConnectionError(message) from e
         raise
     apply_exasol_compatibility_patch(con)
+    return con
+
+
+# clickhouse-connect speaks ClickHouse's HTTP interface, but contracts often name
+# the native protocol port that clickhouse-client uses.
+_CLICKHOUSE_NATIVE_TO_HTTP_PORT = {9000: 8123, 9440: 8443}
+
+
+def _connect_clickhouse(ibis, server: Server, run: Run | None, config: Config):
+    secure = config.get_clickhouse_secure(default=False)
+    port = config.get_clickhouse_port() or (int(server.port) if server.port else None)
+    if port in _CLICKHOUSE_NATIVE_TO_HTTP_PORT:
+        http_port = _CLICKHOUSE_NATIVE_TO_HTTP_PORT[port]
+        message = f"Port {port} is ClickHouse's native protocol port; connecting to its HTTP port {http_port}"
+        if run:
+            run.log_info(message)
+        else:
+            logger.info(message)
+        port = http_port
+    return ibis.clickhouse.connect(
+        host=config.get_clickhouse_host() or server.host,
+        port=port or (8443 if secure else 8123),
+        database=config.get_clickhouse_database() or server.database or "default",
+        user=config.get_clickhouse_username() or "default",
+        password=config.get_clickhouse_password() or "",
+        secure=secure,
+    )
+
+
+def _connect_hive(ibis, server: Server, config: Config):
+    """Connect to a HiveServer2 through ibis's Impala backend: impyla speaks both.
+
+    The defaults match a HiveServer2 with ``hive.server2.authentication=NONE``,
+    which still expects a SASL PLAIN handshake with any user name.
+    """
+    from datacontract.engines.ibis.connections.hive_patch import apply_hive_compatibility_patch
+
+    con = ibis.impala.connect(
+        host=config.get_hive_host() or server.host,
+        port=config.get_hive_port() or (int(server.port) if server.port else 10000),
+        user=config.get_hive_username() or "hive",
+        password=config.get_hive_password() or "hive",
+        database=config.get_hive_database() or server.database,
+        use_ssl=config.get_hive_use_ssl(default=False),
+        auth_mechanism=config.get_hive_auth_mechanism() or "PLAIN",
+        use_http_transport=config.get_hive_use_http_transport(default=False),
+        http_path=config.get_hive_http_path() or "",
+    )
+    apply_hive_compatibility_patch(con)
     return con
 
 

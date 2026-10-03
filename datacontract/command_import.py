@@ -856,6 +856,70 @@ def import_mysql(
 
 
 @import_app.command(
+    name="clickhouse",
+    epilog="Example: datacontract import clickhouse --source localhost --database default --output datacontract.yaml",
+)
+def import_clickhouse(
+    source: Annotated[Optional[str], typer.Option(help="The host of the ClickHouse server.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The ClickHouse HTTP port (default 8123).")] = None,
+    database: database_option = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a ClickHouse database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        config=cli_config(),
+        format="clickhouse",
+        source=source,
+        port=port,
+        database=database,
+        clickhouse_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
+    name="hive",
+    epilog="Example: datacontract import hive --source localhost --database default --output datacontract.yaml",
+)
+def import_hive(
+    source: Annotated[Optional[str], typer.Option(help="The host of the HiveServer2.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The HiveServer2 port (default 10000).")] = None,
+    database: database_option = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table to import (repeat for multiple tables, omit for all tables)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from a Hive database."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        config=cli_config(),
+        format="hive",
+        source=source,
+        port=port,
+        database=database,
+        hive_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="s3",
     epilog="Example: datacontract import s3 --source s3://my-bucket/orders/*.json --output datacontract.yaml",
 )

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 title: "Apache Iceberg Reference"
 sidebar_label: "Apache Iceberg"
 description: "Authentication and data type handling for Apache Iceberg REST catalogs."

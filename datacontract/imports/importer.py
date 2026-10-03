@@ -63,6 +63,8 @@ class ImportFormat(str, Enum):
     adls = "adls"
     oracle = "oracle"
     trino = "trino"
+    clickhouse = "clickhouse"
+    hive = "hive"
     xsd = "xsd"
 
     @classmethod

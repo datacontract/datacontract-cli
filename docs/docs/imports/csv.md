@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 9
 title: "Import: CSV"
 description: "Create a data contract by inferring a schema from a CSV file."
 ---

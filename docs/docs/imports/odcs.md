@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 21
 title: "Import: ODCS"
 description: "Create a data contract from an existing ODCS file."
 ---
