@@ -91,7 +91,12 @@ def import_sql(source: str, import_args: dict = None) -> OpenDataContractStandar
         table_name = table.this.name
         properties = []
 
-        columns = list(create.find_all(sqlglot.exp.ColumnDef))
+        # A STRUCT's fields are column definitions too, nested in the type of their column.
+        columns = [
+            column
+            for column in create.find_all(sqlglot.exp.ColumnDef)
+            if column.find_ancestor(sqlglot.exp.ColumnDef) is None
+        ]
         # A table-level PRIMARY KEY (b, a) defines the key order; inline PKs follow column order.
         table_primary_key = create.find(sqlglot.exp.PrimaryKey)
         if table_primary_key is not None:

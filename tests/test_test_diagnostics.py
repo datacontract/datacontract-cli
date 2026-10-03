@@ -130,3 +130,42 @@ def test_diagnostics_freshness_exceeded():
     assert check.diagnostics["threshold_seconds"] == 3600
     assert check.diagnostics["age_seconds"] > 3600
     assert "latest_timestamp" in check.diagnostics
+
+
+def test_a_catalog_that_cannot_be_read_is_reported(monkeypatch):
+    """The physical type checks then fall back to the logicalType and can pass, so
+    without a warning nobody learns that no physicalType was compared."""
+    from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, Server
+
+    from datacontract.engines.checks.create_checks import create_checks
+    from datacontract.engines.ibis import ibis_check_execute
+
+    monkeypatch.setattr(ibis_check_execute, "fetch_native_types", lambda con, server, model: None)
+    con = ibis.duckdb.connect()
+    con.create_table("orders", pd.DataFrame({"order_id": [1, 2]}))
+    server = Server(server="production", type="postgres", host="localhost", port=5432, database="db")
+    contract = OpenDataContractStandard(
+        apiVersion="v3.2.0",
+        kind="DataContract",
+        id="orders",
+        version="1.0.0",
+        status="active",
+        servers=[server],
+        schema=[
+            SchemaObject(
+                name="orders",
+                properties=[SchemaProperty(name="order_id", logicalType="integer", physicalType="bigint")],
+            )
+        ],
+    )
+    specs = create_checks(contract, server)
+    run = _run_with(specs)
+
+    ibis_check_execute._run_model(run, con, "orders", specs, contract, server)
+
+    physical = next(c for c in run.checks if c.type == "field_physical_type")
+    assert physical.result == ResultEnum.passed
+    assert any(
+        log.level == "WARN" and "Could not read the column types of 'orders' from the postgres catalog" in log.message
+        for log in run.logs
+    )

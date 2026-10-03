@@ -141,3 +141,53 @@ def test_csv_files_default_to_utf8(tmp_path):
 
     print(run.pretty())
     assert run.result == ResultEnum.passed
+
+
+# The server types `datacontract test` connects to.
+TESTABLE_SERVER_TYPES = {
+    "api",
+    "athena",
+    "azure",
+    "bigquery",
+    "databricks",
+    "duckdb",
+    "exasol",
+    "hana",
+    "iceberg",
+    "impala",
+    "kafka",
+    "local",
+    "mysql",
+    "oracle",
+    "postgres",
+    "redshift",
+    "s3",
+    "snowflake",
+    "sqlserver",
+    "trino",
+}
+
+
+def test_every_odcs_server_type_is_either_testable_or_lint_only():
+    """A type in neither set fails `datacontract test` with a generic "not yet
+    supported" instead of saying it is valid ODCS that cannot be tested yet."""
+    import json
+    from pathlib import Path
+
+    from datacontract.model.server import normalize_server_type
+
+    schema = json.loads((Path(__file__).parent.parent / "datacontract/schemas/odcs-3.2.0.schema.json").read_text())
+    odcs_types = {normalize_server_type(t) for t in schema["$defs"]["Server"]["properties"]["type"]["enum"]}
+
+    assert TESTABLE_SERVER_TYPES.isdisjoint(LINT_ONLY_SERVER_TYPES)
+    assert odcs_types - {"custom"} == TESTABLE_SERVER_TYPES | LINT_ONLY_SERVER_TYPES
+
+
+@pytest.mark.parametrize("server_type", ["glue", "kinesis", "sftp"])
+def test_odcs_server_types_without_a_connection_explain_themselves(server_type):
+    run = Run.create_run()
+
+    connection = connect_ibis(run, data_contract=None, server=Server(server="s", type=server_type))
+
+    assert connection is None
+    assert "valid in ODCS" in run.checks[-1].reason
