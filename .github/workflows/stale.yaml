@@ -16,7 +16,7 @@ jobs:
   # are pushed to a PR, so contributors don't wait until the next scheduled run.
   unstale:
     if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pull-requests: write
     steps:
@@ -28,7 +28,7 @@ jobs:
 
   stale:
     if: github.event_name != 'pull_request_target'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93 # v11.0.0
         with:

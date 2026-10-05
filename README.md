@@ -23,7 +23,7 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 >
 > Quick links: [Quickstart](https://docs.datacontract.com/quickstart) · [Commands](https://docs.datacontract.com/commands) · [Best Practices](https://docs.datacontract.com/best-practices) · [Custom Export and Import](https://docs.datacontract.com/extending) · [Release Notes](https://docs.datacontract.com/release-notes) · [Development Setup](#development-setup)
 >
-> For LLMs: [cli.datacontract.com/llms.txt](https://cli.datacontract.com/llms.txt) · [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt)
+> For LLMs: [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt)
 
 ## Getting started
 
@@ -51,36 +51,41 @@ $ datacontract test https://datacontract.com/orders-v1.odcs.yaml
 # returns:
 Testing https://datacontract.com/orders-v1.odcs.yaml
 Server: production (type=postgres, host=aws-1-eu-central-2.pooler.supabase.com, port=6543, database=postgres, schema=dp_orders_v1)
-╭────────┬──────────────────────────────────────────────────────────┬─────────────────────────┬─────────╮
-│ Result │ Check                                                    │ Field                   │ Details │
-├────────┼──────────────────────────────────────────────────────────┼─────────────────────────┼─────────┤
-│ passed │ Check that field 'line_item_id' is present               │ line_items.line_item_id │         │
-│ passed │ Check that field line_item_id has type UUID              │ line_items.line_item_id │         │
-│ passed │ Check that field line_item_id has no missing values      │ line_items.line_item_id │         │
-│ passed │ Check that field 'order_id' is present                   │ line_items.order_id     │         │
-│ passed │ Check that field order_id has type UUID                  │ line_items.order_id     │         │
-│ passed │ Check that field 'price' is present                      │ line_items.price        │         │
-│ passed │ Check that field price has type INTEGER                  │ line_items.price        │         │
-│ passed │ Check that field price has no missing values             │ line_items.price        │         │
-│ passed │ Check that field 'sku' is present                        │ line_items.sku          │         │
-│ passed │ Check that field sku has type TEXT                       │ line_items.sku          │         │
-│ passed │ Check that field sku has no missing values               │ line_items.sku          │         │
-│ passed │ Check that field 'customer_id' is present                │ orders.customer_id      │         │
-│ passed │ Check that field customer_id has type TEXT               │ orders.customer_id      │         │
-│ passed │ Check that field customer_id has no missing values       │ orders.customer_id      │         │
-│ passed │ Check that field 'order_id' is present                   │ orders.order_id         │         │
-│ passed │ Check that field order_id has type UUID                  │ orders.order_id         │         │
-│ passed │ Check that field order_id has no missing values          │ orders.order_id         │         │
-│ passed │ Check that unique field order_id has no duplicate values │ orders.order_id         │         │
-│ passed │ Check that field 'order_status' is present               │ orders.order_status     │         │
-│ passed │ Check that field order_status has type TEXT              │ orders.order_status     │         │
-│ passed │ Check that field 'order_timestamp' is present            │ orders.order_timestamp  │         │
-│ passed │ Check that field order_timestamp has type TIMESTAMPTZ    │ orders.order_timestamp  │         │
-│ passed │ Check that field 'order_total' is present                │ orders.order_total      │         │
-│ passed │ Check that field order_total has type INTEGER            │ orders.order_total      │         │
-│ passed │ Check that field order_total has no missing values       │ orders.order_total      │         │
-╰────────┴──────────────────────────────────────────────────────────┴─────────────────────────┴─────────╯
-🟢 data contract is valid. Run 25 checks. Took 3.938887 seconds.
+╭────────┬───────────────────────────────────────────────────────────────────┬─────────────────────────┬─────────╮
+│ Result │ Check                                                             │ Field                   │ Details │
+├────────┼───────────────────────────────────────────────────────────────────┼─────────────────────────┼─────────┤
+│ passed │ Check that field 'line_item_id' is present                        │ line_items.line_item_id │         │
+│ passed │ Check that field line_item_id has physical type UUID              │ line_items.line_item_id │         │
+│ passed │ Check that field line_item_id has no missing values               │ line_items.line_item_id │         │
+│ passed │ Check that primary key field line_item_id has no duplicate values │ line_items.line_item_id │         │
+│ passed │ Check that field 'order_id' is present                            │ line_items.order_id     │         │
+│ passed │ Check that field order_id has physical type UUID                  │ line_items.order_id     │         │
+│ passed │ Check that field 'price' is present                               │ line_items.price        │         │
+│ passed │ Check that field price has physical type INTEGER                  │ line_items.price        │         │
+│ passed │ Check that field price has no missing values                      │ line_items.price        │         │
+│ passed │ Check that field 'sku' is present                                 │ line_items.sku          │         │
+│ passed │ Check that field sku has physical type TEXT                       │ line_items.sku          │         │
+│ passed │ Check that field sku has no missing values                        │ line_items.sku          │         │
+│ passed │ Check that model orders has row_count > 100000                    │ orders                  │         │
+│ passed │ Check that field 'customer_id' is present                         │ orders.customer_id      │         │
+│ passed │ Check that field customer_id has physical type TEXT               │ orders.customer_id      │         │
+│ passed │ Check that field customer_id has no missing values                │ orders.customer_id      │         │
+│ passed │ Check that field customer_id has a min length of 10               │ orders.customer_id      │         │
+│ passed │ Check that field customer_id has a max length of 10               │ orders.customer_id      │         │
+│ passed │ Check that field 'order_id' is present                            │ orders.order_id         │         │
+│ passed │ Check that field order_id has physical type UUID                  │ orders.order_id         │         │
+│ passed │ Check that field order_id has no missing values                   │ orders.order_id         │         │
+│ passed │ Check that unique field order_id has no duplicate values          │ orders.order_id         │         │
+│ passed │ Check that field 'order_status' is present                        │ orders.order_status     │         │
+│ passed │ Check that field order_status has physical type TEXT              │ orders.order_status     │         │
+│ passed │ Check that field order_status has invalid_count = 0               │ orders.order_status     │         │
+│ passed │ Check that field 'order_timestamp' is present                     │ orders.order_timestamp  │         │
+│ passed │ Check that field order_timestamp has physical type TIMESTAMPTZ    │ orders.order_timestamp  │         │
+│ passed │ Check that field 'order_total' is present                         │ orders.order_total      │         │
+│ passed │ Check that field order_total has physical type INTEGER            │ orders.order_total      │         │
+│ passed │ Check that field order_total has no missing values                │ orders.order_total      │         │
+╰────────┴───────────────────────────────────────────────────────────────────┴─────────────────────────┴─────────╯
+🟢 Data contract is valid. Run 30 checks. Took 2.504495 seconds.
 ```
 
 Voilà, the CLI tested that the YAML itself is valid, all records comply with the schema, and all quality attributes are met.
@@ -179,7 +184,7 @@ if not run.has_passed():
 ## How to
 
 - [How to integrate Data Contract CLI in your CI/CD pipeline as a GitHub Action](https://github.com/datacontract/datacontract-action/)
-- [How to run the Data Contract CLI API to test data contracts with POST requests](https://cli.datacontract.com/API)
+- [How to run the Data Contract CLI API to test data contracts with POST requests](https://docs.datacontract.com/api)
 - [How to run Data Contract CLI in a Databricks pipeline](https://www.datamesh-architecture.com/howto/build-a-dataproduct-with-databricks#test-the-data-product)
 
 
@@ -200,11 +205,11 @@ uv tool install --python python3.11 --upgrade 'datacontract-cli[all]'
 If you have [uv](https://docs.astral.sh/uv/) installed, you can run datacontract-cli directly without installing:
 
 ```
-uv run --with 'datacontract-cli[all]' datacontract --version
+uvx --from 'datacontract-cli[all]' datacontract --version
 ```
 
 ### pip
-Python 3.10, 3.11, and 3.12 are supported. We recommend using Python 3.11.
+Python 3.10–3.14 are supported. We recommend using Python 3.11.
 
 ```bash
 python3 -m pip install 'datacontract-cli[all]'
@@ -293,6 +298,7 @@ A list of available extras:
 | Snowflake | `pip install datacontract-cli[snowflake]` |
 | Microsoft SQL Server | `pip install datacontract-cli[sqlserver]` |
 | Trino | `pip install datacontract-cli[trino]` |
+| XML Schema (import) | `pip install datacontract-cli[xml]` |
 
 
 ## Documentation

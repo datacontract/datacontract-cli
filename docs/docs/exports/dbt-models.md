@@ -66,6 +66,8 @@ If a server is selected via `--server` (based on its `type`), the dbt column `da
 
 A property's `classification` and its `meta` custom property are written to the column's `config.meta`, its tags to `config.tags`.
 
+The generated tests need dbt 1.10 or later.
+
 See the [dbt Integration](../dbt.md) guide for the full picture, including `datacontract dbt sync`.
 
 All options: **[`datacontract export dbt-models`](../commands/export/dbt-models.md)**.

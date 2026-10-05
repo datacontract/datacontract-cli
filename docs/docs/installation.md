@@ -24,7 +24,7 @@ datacontract --version
 If you have [uv](https://docs.astral.sh/uv/) installed, you can run the CLI directly without installing it:
 
 ```bash
-uv run --with 'datacontract-cli[all]' datacontract --version
+uvx --from 'datacontract-cli[all]' datacontract --version
 ```
 
 ## pip
@@ -128,6 +128,7 @@ Available extras:
 | Avro | `pip install datacontract-cli[avro]` |
 | Azure | `pip install datacontract-cli[azure]` |
 | Google BigQuery | `pip install datacontract-cli[bigquery]` |
+| ClickHouse | `pip install datacontract-cli[clickhouse]` |
 | Databricks | `pip install datacontract-cli[databricks]` (also inside a Databricks Runtime, using the cluster's own Spark session — see [Databricks Notebooks and Jobs](./databricks.md)) |
 | DataFrame (Spark) | `pip install datacontract-cli[dataframe]` (PySpark not included — you supply the Spark session) |
 | DBML | `pip install datacontract-cli[dbml]` |
@@ -135,6 +136,7 @@ Available extras:
 | Exasol | `pip install datacontract-cli[exasol]` |
 | Excel | `pip install datacontract-cli[excel]` |
 | GCS | `pip install datacontract-cli[gcs]` |
+| Apache Hive | `pip install datacontract-cli[hive]` |
 | SAP HANA / Datasphere | `pip install datacontract-cli[hana]` (not part of `all`: `hdbcli` is proprietary) |
 | Apache Iceberg (schema import and export, REST catalog testing) | `pip install datacontract-cli[iceberg]` |
 | Impala | `pip install datacontract-cli[impala]` |
@@ -150,5 +152,6 @@ Available extras:
 | Snowflake | `pip install datacontract-cli[snowflake]` |
 | Microsoft SQL Server | `pip install datacontract-cli[sqlserver]` |
 | Trino | `pip install datacontract-cli[trino]` |
+| XML Schema (import) | `pip install datacontract-cli[xml]` |
 
 Each [data source](./testing/index.md) lists the extra it needs.

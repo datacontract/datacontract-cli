@@ -1,0 +1,124 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 2.1.0
+servers:
+  - url: https://{region}.api.example.com/v1
+    description: Production
+    variables:
+      region:
+        default: eu
+        enum: [eu, us]
+  - url: https://staging.api.example.com/v1/
+    description: Staging
+  - url: /v1
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: All orders of the last 30 days.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: The orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          description: Created.
+  /orders/{orderId}:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    get:
+      operationId: getOrder
+      description: One order.
+      responses:
+        "404":
+          description: Not found.
+        "200":
+          $ref: "#/components/responses/Order"
+  /health:
+    get:
+      responses:
+        "200":
+          description: Healthy.
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      example: ORD-1001
+      schema:
+        type: string
+  responses:
+    Order:
+      description: The order.
+      content:
+        application/yaml:
+          schema:
+            $ref: "#/components/schemas/Order"
+  schemas:
+    Order:
+      type: object
+      required: [order_id, order_timestamp, status]
+      properties:
+        order_id:
+          type: string
+          pattern: "^ORD-[0-9]+$"
+          example: ORD-1001
+        order_timestamp:
+          type: string
+          format: date-time
+          example: 2024-01-01T10:00:00Z
+        status:
+          type: string
+          enum: [placed, shipped, delivered]
+        total:
+          type: number
+          minimum: 0
+          nullable: true
+        customer:
+          $ref: "#/components/schemas/Customer"
+        items:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/Item"
+              - required: [sku]
+    Customer:
+      type: object
+      properties:
+        customer_id:
+          type: string
+        email:
+          type: string
+          format: email
+    Item:
+      type: object
+      properties:
+        sku:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1

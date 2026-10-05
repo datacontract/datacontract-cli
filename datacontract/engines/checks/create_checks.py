@@ -21,11 +21,12 @@ from open_data_contract_standard.model import (
     SchemaProperty,
     Server,
 )
+from sqlglot import Dialect, exp
 
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
 from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, MetricType, Op, Threshold
 from datacontract.engines.checks.dimensions import default_dimension
-from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
+from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect_by_name
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 from datacontract.model.enum_values import get_enum_values
@@ -51,7 +52,7 @@ def is_check_types(server: Optional[Server]) -> bool:
     """Type checks only make sense where the data source carries real types."""
     if server is None:
         return True
-    return server.format not in ("json", "csv", "avro")
+    return server.format not in ("json", "csv", "avro", "xml")
 
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
@@ -137,6 +138,13 @@ def _iter_property_paths(
             # `[]` marks the array hop; the executor turns it into a predicate
             # over the elements instead of a column lookup.
             yield from _iter_property_paths(prop.items.properties, f"{field_path}[]")
+        elif prop_type == "array" and prop.items and _constrains_values(prop.items):
+            # The items of an array of plain values, such as a pattern on every tag
+            yield f"{field_path}[]", prop.items, True
+
+
+def _constrains_values(prop: SchemaProperty) -> bool:
+    return bool(prop.logicalTypeOptions or prop.enum or prop.required or prop.unique or prop.quality)
 
 
 def nested_not_run_reason(server_type: Optional[str]) -> str:
@@ -187,31 +195,35 @@ def prepare_query(
 ) -> Optional[str]:
     """Substitute placeholders in a user SQL query.
 
-    Identifiers are emitted unquoted: the query runs through ibis against the
-    backend, which resolves unquoted names per its own casing rules (this is
-    what soda effectively did for the common backends).
+    Each dot-separated part of a name is quoted only where the server's dialect
+    cannot read it bare, so a plain name keeps the backend's case-insensitive
+    resolution. Quotes the author wrote around a placeholder are dropped, except
+    that backticks force the name to be quoted (e.g. a reserved word on Spark).
     """
     if not quality.query:
         return None
 
-    query = quality.query
-    query = re.sub(r'["\']?\$?\{model}["\']?', model_name, query)
-    query = re.sub(r'["\']?\$?\{table}["\']?', model_name, query)
-    query = re.sub(r'["\']?\$?\{object}["\']?', model_name, query)
+    dialect = sqlglot_dialect_by_name(dialect_for_server_type(get_server_type(server)))
+    # the dialect's extra name characters, e.g. `$` in Snowflake's `amount$usd`
+    name_chars = re.escape("".join(Dialect.get_or_raise(dialect).tokenizer_class.VAR_SINGLE_TOKENS))
+    bare = re.compile(rf"[_a-zA-Z][\w{name_chars}]*")
 
-    schema_replacement = server.schema_ if server and server.schema_ else model_name
-    query = re.sub(r'["\']?\$?\{schema}["\']?', schema_replacement, query)
-
+    names = dict.fromkeys(("model", "table", "object"), model_name)
+    names["schema"] = server.schema_ if server and server.schema_ else model_name
     for placeholder in ("dataset", "project", "catalog", "database"):
-        replacement = getattr(server, placeholder, None) if server else None
-        query = re.sub(rf'["\']?\$?\{{{placeholder}}}["\']?', replacement or model_name, query)
-
+        names[placeholder] = (getattr(server, placeholder, None) if server else None) or model_name
     if field_name is not None:
-        query = re.sub(r'["\']?\$?\{field}["\']?', field_name, query)
-        query = re.sub(r'["\']?\$?\{column}["\']?', field_name, query)
-        query = re.sub(r'["\']?\$?\{property}["\']?', field_name, query)
+        names |= dict.fromkeys(("field", "column", "property"), field_name)
 
-    return query
+    def identifier(match: re.Match) -> str:
+        forced = "`" in match.group(0)
+        return ".".join(
+            exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
+            for part in names[match.group(1)].split(".")
+        )
+
+    # one pass, so a substituted name is not searched for placeholders again
+    return re.sub(rf"[\"'`]?\$?\{{({'|'.join(names)})}}[\"'`]?", identifier, quality.query)
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +268,7 @@ def _to_schema_checks(
     properties = schema_object.properties or []
     check_types = is_check_types(server)
     uses_raw_view = (
-        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json")
+        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json", "xml")
     )
 
     # A primary key is both not-null and unique. A composite key is unique as a
@@ -268,22 +280,43 @@ def _to_schema_checks(
     )
     primary_key_is_composite = len(primary_key_props) > 1
 
+    # In a JSON, YAML or XML document, a property that is not required may be absent from every record,
+    # unlike a column of a table. For XML, the types DuckDB infers for the raw view also drop the attributes
+    # of nested elements with children. The required top-level properties are still checked for presence.
+    xml = server is not None and server.format == "xml"
+    documents = server is not None and server.format in ("json", "xml")
+    if xml:
+        # A record element that matches nothing would pass every other check
+        checks.append(
+            CheckSpec(
+                key=f"{model}__records_found",
+                category="schema",
+                type="records_found",
+                name=f"Check that the documents have {model} elements",
+                model=model,
+                field=None,
+                metric=MetricType.ROW_COUNT,
+                threshold=Threshold(Op.GT, 0),
+            )
+        )
+
     for field, prop, nested in _iter_property_paths(properties):
         first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
-        checks.append(
-            CheckSpec(
-                key=f"{model}__{field}__field_is_present",
-                category="schema",
-                type="field_is_present",
-                name=f"Check that field '{field}' is present",
-                model=model,
-                field=field,
-                metric=MetricType.FIELD_PRESENT,
-                uses_raw_view=uses_raw_view,
+        if not documents or (prop.required and not nested):
+            checks.append(
+                CheckSpec(
+                    key=f"{model}__{field}__field_is_present",
+                    category="schema",
+                    type="field_is_present",
+                    name=f"Check that field '{field}' is present",
+                    model=model,
+                    field=field,
+                    metric=MetricType.FIELD_PRESENT,
+                    uses_raw_view=uses_raw_view,
+                )
             )
-        )
 
         # The raw view cannot provide nested type checks
         declared_base = normalize_type_name(prop.logicalType or prop.physicalType)
@@ -844,13 +877,9 @@ def _quality_rule_checks(
             return not_executed(str(e))
         # The query is read as the dialect of the server it runs against, so
         # dialect-specific syntax is not mistaken for something that is not a query.
-        parse_dialect = dialect_for_server_type(get_server_type(server))
-        if not is_read_only_query(query, parse_dialect):
-            return not_executed(
-                f"A quality rule query must be a single read-only query, and this one could "
-                f"not be read as one{f' ({parse_dialect} SQL)' if parse_dialect else ''}, "
-                f"so it was not executed."
-            )
+        refusal = refusal_reason(query, dialect_for_server_type(get_server_type(server)))
+        if refusal is not None:
+            return not_executed(refusal)
         return [
             CheckSpec(
                 key=check_key,

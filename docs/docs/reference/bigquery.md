@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 11
 title: "Google BigQuery Reference"
 sidebar_label: "Google BigQuery"
 description: "All BigQuery authentication options and data type mappings."
@@ -21,7 +21,7 @@ servers:
 
 ## Authentication
 
-Authentication uses a Service Account Key or Application Default Credentials (ADC) — including Workload Identity Federation (WIF), the GCE metadata server, and `gcloud auth application-default login`. The account needs the **BigQuery Job User** and **BigQuery Data Viewer** roles.
+Authentication uses a Service Account Key or Application Default Credentials (ADC) — including Workload Identity Federation (WIF), the GCE metadata server, and `gcloud auth application-default login`. The account needs the **BigQuery Job User**, **BigQuery Data Viewer** and **BigQuery Read Session User** roles.
 
 | Variable | Example | Description |
 |---|---|---|

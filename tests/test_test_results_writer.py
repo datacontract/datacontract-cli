@@ -1,8 +1,12 @@
 import typer
 from rich.console import Console
+from typer.testing import CliRunner
 
+from datacontract.cli import app
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.output.test_results_writer import write_test_result
+
+runner = CliRunner()
 
 NESTED = "Checks on nested properties are not supported on postgres servers."
 
@@ -42,3 +46,26 @@ def test_a_reason_of_its_own_keeps_its_check_line():
     )
 
     assert "1) amount Check d: was 1" in printed
+
+
+def test_a_selection_that_matches_nothing_is_not_a_failure():
+    result = runner.invoke(app, ["test", "--tag", "nightly", "./fixtures/quality-id/datacontract.yaml"])
+    assert result.exit_code == 0
+    assert "⚪ No checks were executed. Took" in result.stdout
+
+
+def test_a_contract_without_schema_is_not_a_failure(tmp_path):
+    contract = tmp_path / "datacontract.yaml"
+    contract.write_text("apiVersion: v3.1.0\nkind: DataContract\nid: no-schema\nversion: 1.0.0\nstatus: draft\n")
+    result = runner.invoke(app, ["test", "--logs", str(contract)])
+    assert result.exit_code == 0
+    assert "⚪ No checks were executed. Took" in result.stdout
+    assert "The data contract declares no schema" in result.stdout
+
+
+def test_a_run_that_skipped_every_check_says_so():
+    result = runner.invoke(
+        app, ["test", "--checks", "quality", "--metadata-only", "./fixtures/quality-id/datacontract.yaml"]
+    )
+    assert result.exit_code == 0
+    assert "All checks were skipped" in result.stdout

@@ -28,7 +28,7 @@ Never in the contract. Connection details live in `servers`; credentials come fr
 
 ## How do I run only some checks?
 
-`--checks schema`, `quality`, or `servicelevel`, comma-separated. Omit it to run everything. See [Test your Data](./testing/index.md).
+`--checks properties`, `quality`, `slaProperties`, or `custom`, comma-separated. Omit it to run everything. See [Test your Data](./testing/index.md).
 
 ## Which optional dependency do I need?
 

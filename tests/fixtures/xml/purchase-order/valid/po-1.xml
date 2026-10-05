@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<po:purchaseOrder xmlns:po="urn:example:po" orderDate="2026-09-20" priority="2" reference="926-AA">
+  <po:shipTo country="US" latitude="37.9" longitude="-122.5">
+    <name>Alice Smith</name>
+    <street>123 Maple Street</street>
+    <city>Mill Valley</city>
+    <state>CA</state>
+    <zip>90952</zip>
+  </po:shipTo>
+  <po:billTo>
+    <name>Robert Smith</name>
+    <street>8 Oak Avenue</street>
+    <street>Suite 4</street>
+    <city>Old Town</city>
+    <state>PA</state>
+    <zip>95819</zip>
+  </po:billTo>
+  <po:comment>Hurry, my lawn is going wild!</po:comment>
+  <po:creditCard>
+    <po:number>1234-5678-9012-3456</po:number>
+    <po:expires>2027-08</po:expires>
+  </po:creditCard>
+  <po:items>
+    <po:item partNum="872-AA">
+      <po:productName>Lawnmower</po:productName>
+      <po:quantity>1</po:quantity>
+      <po:USPrice currency="USD">148.95</po:USPrice>
+      <po:comment>Confirm this is electric</po:comment>
+    </po:item>
+    <po:item partNum="926-AA">
+      <po:productName>Baby Monitor</po:productName>
+      <po:quantity>2</po:quantity>
+      <po:USPrice currency="USD">39.98</po:USPrice>
+      <po:shipDate>2026-09-21</po:shipDate>
+    </po:item>
+  </po:items>
+  <po:metadata>
+    <po:channel>web</po:channel>
+    <po:audit>
+      <po:createdAt>2026-09-20T10:00:00</po:createdAt>
+      <po:revision>3</po:revision>
+    </po:audit>
+  </po:metadata>
+</po:purchaseOrder>

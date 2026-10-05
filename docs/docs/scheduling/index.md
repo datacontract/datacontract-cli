@@ -8,7 +8,7 @@ description: "Run data contract tests continuously: in CI/CD on every change and
 
 Data contracts deliver the most value when they are checked **continuously**, not just once. The recommended practice is to test contracts in CI/CD on every change and, in addition, to run them on a recurring schedule (for example daily) so you detect data drift and quality regressions in production data over time.
 
-The [`ci`](../commands/ci.md) command is purpose-built for automated runs: it wraps [`test`](../commands/test.md) with CI-friendly annotations, a markdown summary, machine-readable output, and exit-code control via `--fail-on`.
+The [`ci`](../commands/ci.md) command is purpose-built for automated runs: like [`test`](../commands/test.md), it runs a contract's checks, and adds CI-friendly annotations, a markdown summary, machine-readable output, and exit-code control via `--fail-on`. It has no options to narrow a run down (`--schema-name`, `--checks`, `--filter`, `--dry-run` and the like); use `test` for those.
 
 Two setups are covered in detail:
 

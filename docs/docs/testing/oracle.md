@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 20
 title: "Oracle"
 description: "Create a data contract from your Oracle tables and test the actual data against it."
 ---
@@ -52,14 +52,15 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: oracle (type=oracle, host=localhost, port=1521, schema=ADMIN)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 3.4 seconds.
+╭────────┬──────────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                                    │ Field    │ Details │
+├────────┼──────────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                          │          │         │
+│ passed │ Check that field 'ORDER_ID' is present                   │ ORDER_ID │         │
+│ passed │ Check that field ORDER_ID has physical type VARCHAR2(36) │ ORDER_ID │         │
+│  ...   │                                                          │          │         │
+╰────────┴──────────────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 3.4 seconds.
 ```
 
 ## 5. Let it catch a violation
@@ -68,12 +69,12 @@ The contract becomes valuable when it detects drift. Tighten an expectation — 
 
 ```yaml
 schema:
-  - name: orders
+  - name: ORDERS
     # ...
     quality:
       - type: sql
         description: No order has a negative total
-        query: SELECT COUNT(*) FROM orders WHERE order_total < 0
+        query: SELECT COUNT(*) FROM ORDERS WHERE ORDER_TOTAL < 0
         mustBe: 0
 ```
 

@@ -8,12 +8,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract import xsd`: import a data contract from an XML Schema (XSD) file (new `xml` extra)
+- `datacontract export xsd`: export a data contract to an XML Schema (XSD)
+- `datacontract test`: test XML files (`format: xml`)
+- `datacontract import openapi`: import a data contract from the response of a GET operation in an OpenAPI 3.x document
+- `datacontract test`: test YAML responses of API servers
+- `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
+- `datacontract test`: test ClickHouse and Hive servers (new `clickhouse` and `hive` extras)
+- `datacontract import clickhouse` and `datacontract import hive`: import a data contract from a live ClickHouse or Hive database
+- `datacontract import sql`: support the `clickhouse` and `hive` dialects
+
+### Changed
+- `datacontract test`: warns when the column types cannot be read from the catalog, as the physical type checks then compare only the logicalType
+- `datacontract test`: `glue`, `kinesis` and `sftp` servers report that they are valid ODCS but cannot be tested yet, like the other untestable server types
+- `datacontract export dbt-models`, `datacontract export dbt-sources` and `datacontract dbt sync` nest generic-test parameters under `arguments:` **(we now require dbt 1.10+)** (#1680)
+- `datacontract export pydantic-model`: optional fields default to `None` (#1679)
+- `datacontract test`: an optional field that no record of a JSON, YAML or XML document has is no longer reported as missing
+
+### Fixed
+- `datacontract import sql`: the fields of a `STRUCT` column are no longer imported as columns of the table
+- `datacontract test`: a duplicate check on a composite primary key no longer breaks the JSON output and `run.pretty()`
+- `datacontract test`: a JSON value of the wrong type fails the JSON Schema check, not every check on its column
+- `datacontract test`: the JSON Schema check reads `.jsonl` and `.ndjson` files, and files without a `delimiter` the way DuckDB does
+- `datacontract import jsonschema`: imports `const`, `additionalProperties` as a map, `minItems`, `maxItems`, `uniqueItems`, `multipleOf` and `examples`, and warns about the keywords it leaves out
+- `datacontract import jsonschema`: resolves local `$ref`s and merges `allOf`, which imported as strings or not at all
+- `datacontract test`: a JSON record that breaks the JSON Schema no longer stops the other checks, and every such record is reported
+- `datacontract test`: JSON files that are not found are reported instead of failing with a TypeError
+- `datacontract import jsonschema`: boolean schemas (`true`, `false`) no longer fail the import
+- `datacontract import jsonschema` and `datacontract export jsonschema`: infinite bounds are left out instead of failing `datacontract test`
+- `datacontract test`: constraints on the items of an array of plain values (`pattern`, `enum`, `minimum`, …) are checked
+- `datacontract test`: required fields of an absent optional object are no longer reported as missing
+- `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1677 @dmaresma)
+- `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662)
+- `datacontract test`: JSON schema validation on S3 checks every file matched by the location, not only the last one (#1511)
+- `datacontract test`: JSON schema validation on S3 uses the AWS credential chain
+- `datacontract test` and `datacontract import s3`: public S3 buckets are read at the server's `endpointUrl`
+- `datacontract test` reports "no checks were executed" instead of failing when nothing was tested (#1504)
+- `datacontract api`: authoritative definitions are looked up with the Entropy Data API key sent with the request again (since v1.2.1, the API was unable to resolve authoritative definitions if ENTROPY_DATA_API_KEY was unset)
+- `datacontract api` caches authoritative definitions for only 60s, previously until the next restart
+
+## [1.2.2] - 2026-09-25
+
+### Added
 - `datacontract api`: `--contract-variables` and `--allow-local-files` options, as alternatives to their environment variables
+- `datacontract import odata` creates a datacontract from OData 4 metadata at a URL or from a local file (#1649 @jahlen)
+- `datacontract export` writes SQL Server `VECTOR(n)` and `VECTOR(n, float16)` vector types
 - `datacontract test` checks constraints and quality rules of nested properties on servers read through DuckDB (#1278)
 - `datacontract export dbt-models` and `dbt-sources` write a property's `meta` custom property to the column's `config.meta` (#1655)
 
 ### Changed
 - `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.14
 - `${VAR}` references are accepted in fields with a fixed set of values (`quality.type`, `quality.metric`, `quality.dimension`, `logicalType`, `servers[].type`); `datacontract test` fails when one resolves into anything else
 - `datacontract test` reports nested checks it cannot run and unsupported type checks on parquet files as warnings (#1278)
 
@@ -21,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract api`:
   - a posted data contract resolves `${VAR}` only from the variables allow-listed with `--contract-variables`
   - a `${X:-local}` server type no longer slips past the checks for local files and environment-held credentials
+- `datacontract test`: a SQL quality rule on a `mysql` server can no longer reach the MySQL server or its credentials; rules on `mysql` and `iceberg` servers are read as DuckDB SQL
 
 ### Fixed
 - `datacontract export dbt-models` and `dbt-sources` write column `meta` and `tags` under `config`, so dbt Fusion accepts the output
@@ -28,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)
-- `datacontract import spark` preserves `varchar(...)` and `char(...)` types nested inside `struct`, `array` and `map` columns instead of widening them to `string` (#1634)
+- `datacontract test`: SQL quality rule placeholders are quoted when the name needs it (e.g. a column with a space), and a query that does not parse reports the parse error (#1653)
+- `datacontract import spark` preserves `varchar(...)` and `char(...)` types nested inside `struct`, `array` and `map` columns instead of widening them to `string` (#1634 @IchEssBlumen)
 - `datacontract import jsonschema` keeps the type of nullable `anyOf`/`oneOf` properties and warns about union types (#1278)
 - `datacontract export sodacl` warns about the nested properties it leaves out (#1278)
 

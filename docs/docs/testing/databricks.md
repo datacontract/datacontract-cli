@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 10
 title: "Databricks"
 description: "Create a data contract from Unity Catalog and test the actual data against it — in about 5 minutes."
 ---
@@ -49,15 +49,16 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: databricks (type=databricks, catalog=my_catalog, schema=my_schema)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 8.4 seconds.
+Server: databricks (type=databricks, schema=my_schema, catalog=my_catalog)
+╭────────┬────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                              │ Field    │ Details │
+├────────┼────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                    │          │         │
+│ passed │ Check that field 'order_id' is present             │ order_id │         │
+│ passed │ Check that field order_id has physical type string │ order_id │         │
+│  ...   │                                                    │          │         │
+╰────────┴────────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 8.4 seconds.
 ```
 
 ## 5. Let it catch a violation

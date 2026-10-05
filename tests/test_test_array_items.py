@@ -107,3 +107,87 @@ schema:
     check = check_named(run, "at least 2 items")
     assert check.result == "error"
     assert "not an array" in check.reason
+
+
+ITEMS_CONTRACT = """
+apiVersion: v3.2.0
+kind: DataContract
+id: items
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: {path}
+    format: parquet
+schema:
+  - name: records
+    properties:
+      - name: id
+        logicalType: string
+      - name: tags
+        logicalType: array
+        items:
+          logicalType: string
+          unique: true
+          enum:
+            - value: ab
+            - value: cd
+          logicalTypeOptions:
+            maxLength: 2
+      - name: scores
+        logicalType: array
+        items:
+          logicalType: integer
+          logicalTypeOptions:
+            minimum: 1
+            maximum: 5
+      - name: orders
+        logicalType: array
+        items:
+          logicalType: object
+          properties:
+            - name: codes
+              logicalType: array
+              items:
+                logicalType: string
+                logicalTypeOptions:
+                  pattern: ^[A-Z][0-9]$
+"""
+
+
+def items_run(tmp_path, rows: str):
+    import duckdb
+
+    path = tmp_path / "records.parquet"
+    duckdb.sql(f"COPY (SELECT * FROM (VALUES {rows}) t(id, tags, scores, orders)) TO '{path}' (FORMAT parquet)")
+    return DataContract(data_contract_str=ITEMS_CONTRACT.format(path=path)).test()
+
+
+def test_the_items_of_an_array_of_plain_values_are_checked(tmp_path):
+    """Record 2 breaks every item constraint once; record 3 has no arrays, which breaks nothing."""
+    run = items_run(
+        tmp_path,
+        """('1', ['ab', 'cd'], [1, 2], [{'codes': ['X1', 'Y2']}]),
+           ('2', ['ab', 'TOO-LONG', 'ab'], [0, 7], [{'codes': ['bad']}]),
+           ('3', NULL, NULL, NULL)""",
+    )
+
+    failed = {c.name: c.reason for c in run.checks if c.result == "failed"}
+    assert failed == {
+        "Check that unique field tags[] has no duplicate values": "Actual duplicate_count(tags[]) was 1, expected = 0",
+        "Check that field tags[] has a max length of 2": "Actual invalid_count(tags[]) was 1, expected = 0",
+        "Check that field tags[] only contains enum values ['ab', 'cd']": "Actual invalid_count(tags[]) was 1, expected = 0",
+        "Check that field scores[] has a minimum of 1": "Actual invalid_count(scores[]) was 1, expected = 0",
+        "Check that field scores[] has a maximum of 5": "Actual invalid_count(scores[]) was 1, expected = 0",
+        "Check that field orders[].codes[] matches regex pattern ^[A-Z][0-9]$": (
+            "Actual invalid_count(orders[].codes[]) was 1, expected = 0"
+        ),
+    }
+
+
+def test_the_items_of_an_array_of_plain_values_that_hold_pass(tmp_path):
+    run = items_run(tmp_path, "('1', ['ab', 'cd'], [1, 5], [{'codes': ['X1']}]), ('2', [], [], [])")
+
+    # type checks on parquet are warnings, as they are not supported yet
+    assert [(c.name, c.reason) for c in run.checks if c.result not in ("passed", "warning")] == []

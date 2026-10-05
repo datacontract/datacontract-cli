@@ -1,5 +1,5 @@
 ---
-sidebar_position: 22
+sidebar_position: 24
 title: "Spark DataFrame"
 description: "Test in-memory Spark DataFrames in a pipeline (programmatic)."
 ---
@@ -26,12 +26,15 @@ Inside an active Spark session, import the schema of registered tables or views:
 datacontract import spark --tables my_table --output datacontract.yaml
 ```
 
-The generated contract includes a `servers` entry of type `dataframe`:
+The generated contract includes a `servers` entry for a DataFrame. `dataframe` is not an ODCS server type, so it is written as `type: custom` with a `customType` property:
 
 ```yaml
 servers:
-  - server: production
-    type: dataframe
+  - server: local
+    type: custom
+    customProperties:
+      - property: customType
+        value: dataframe
 ```
 
 ## 3. Test the DataFrame

@@ -28,7 +28,7 @@ protocol Orders {
         /** Reference to the customer who placed the order. */
         string customer_id;
         /** Total amount of the order in cents. */
-        double order_total;
+        int order_total;
         /** Current fulfilment status of the order. */
         string status;
     }

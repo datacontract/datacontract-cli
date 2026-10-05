@@ -40,7 +40,7 @@ const faq: [question: string, answer: string][] = [
   ],
   [
     'Which data sources can the Data Contract CLI test?',
-    'Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files.',
+    'Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, ClickHouse, Apache Hive, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files.',
   ],
   [
     'Is the Data Contract CLI free to use?',

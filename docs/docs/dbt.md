@@ -15,6 +15,9 @@ The Data Contract CLI integrates with [dbt](https://www.getdbt.com/) in multiple
 - **Export**: Do a one-time export from a data contract into a dbt model schema, a sources YAML, or a staging SQL file (`datacontract export`)
 - **Import**: Create a data contract from a dbt manifest file (`datacontract import dbt`)
 
+The tests that `dbt sync`, `dbt-models` and `dbt-sources` generate need dbt 1.10 or later. `datacontract dbt test`
+and `dbt sync --run-tests` stop with an error on an older dbt.
+
 
 ## `datacontract dbt sync`
 
@@ -90,9 +93,9 @@ schema:
 ```
 
 Let's assume that a minimal model properties file already exists. This is what it looks like after running
-`datacontract dbt sync orders-v1.odcs.yaml` (highlighted lines got added):
+`datacontract dbt sync orders-v1.odcs.yaml`:
 
-```yaml title="models/orders.yml" {5-8,12-35,39-52}
+```yaml title="models/orders.yml"
 version: 2
 models:
   - name: orders

@@ -177,6 +177,17 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_BIGQUERY_PROJECT` | `bigquery_project` | string | Overrides `project` from the contract's `servers` block |
 | `DATACONTRACT_BIGQUERY_DATASET` | `bigquery_dataset` | string | Overrides `dataset` from the contract's `servers` block |
 
+### ClickHouse
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_CLICKHOUSE_USERNAME` | `clickhouse_username` | string |  |
+| `DATACONTRACT_CLICKHOUSE_PASSWORD` | `clickhouse_password` | string (secret) |  |
+| `DATACONTRACT_CLICKHOUSE_SECURE` | `clickhouse_secure` | boolean |  |
+| `DATACONTRACT_CLICKHOUSE_HOST` | `clickhouse_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_CLICKHOUSE_PORT` | `clickhouse_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_CLICKHOUSE_DATABASE` | `clickhouse_database` | string | Overrides `database` from the contract's `servers` block |
+
 ### Databricks
 
 | Environment variable | `Config` field | Type | Notes |
@@ -214,6 +225,20 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_HANA_ENCRYPT` | `hana_encrypt` | boolean |  |
 | `DATACONTRACT_HANA_SSL_VALIDATE_CERTIFICATE` | `hana_ssl_validate_certificate` | boolean |  |
 | `DATACONTRACT_HANA_SSL_HOSTNAME_IN_CERTIFICATE` | `hana_ssl_hostname_in_certificate` | string |  |
+
+### Hive
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_HIVE_USERNAME` | `hive_username` | string |  |
+| `DATACONTRACT_HIVE_PASSWORD` | `hive_password` | string (secret) |  |
+| `DATACONTRACT_HIVE_AUTH_MECHANISM` | `hive_auth_mechanism` | string |  |
+| `DATACONTRACT_HIVE_USE_SSL` | `hive_use_ssl` | boolean |  |
+| `DATACONTRACT_HIVE_USE_HTTP_TRANSPORT` | `hive_use_http_transport` | boolean |  |
+| `DATACONTRACT_HIVE_HTTP_PATH` | `hive_http_path` | string |  |
+| `DATACONTRACT_HIVE_HOST` | `hive_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_HIVE_PORT` | `hive_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_HIVE_DATABASE` | `hive_database` | string | Overrides `database` from the contract's `servers` block |
 
 ### Iceberg
 
@@ -407,5 +432,5 @@ So a committed team config file can hold defaults, CI can override single values
 
 ## Notes for specific sources
 
-- **Snowflake**: only the documented `DATACONTRACT_SNOWFLAKE_*` options are passed to the connector. Unknown names are ignored with a warning; use a [connections.toml](./testing/snowflake.md) for connector parameters the CLI does not support directly.
+- **Snowflake**: only the documented `DATACONTRACT_SNOWFLAKE_*` options are passed to the connector. Unknown names are ignored with a warning. `datacontract test` does not read a `connections.toml`; only `datacontract import snowflake` does (see the [Snowflake Reference](./reference/snowflake.md)).
 - **AWS sources (S3, Athena, Redshift IAM, Glue)**: when no `DATACONTRACT_S3_*` options are set, boto3's own credential chain applies (`aws sso login`, `AWS_PROFILE`, instance roles, GitHub OIDC). The same credential set is used to read data contracts from `s3://` locations.

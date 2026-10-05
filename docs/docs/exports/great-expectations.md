@@ -159,18 +159,18 @@ Running this against the [example `orders` contract](https://github.com/datacont
     },
     {
       "type": "expect_column_values_to_be_of_type",
-      "description": "order_total must be of type NUMBER",
+      "description": "order_total must be of type INTEGER",
       "kwargs": {
         "column": "order_total",
-        "type_": "NUMBER"
+        "type_": "INTEGER"
       },
       "meta": {
-        "expectation_id": "urn:datacontract:checkout:orders.order_total.order_total_must_be_of_type_number",
+        "expectation_id": "urn:datacontract:checkout:orders.order_total.order_total_must_be_of_type_integer",
         "data_contract_rule_location": {
           "origin": "schema_inferred",
           "scope": "column"
         },
-        "name": "order_total must be of type NUMBER",
+        "name": "order_total must be of type INTEGER",
         "dimension": "conformity"
       }
     },
@@ -237,9 +237,9 @@ The export builds expectations from the model definition (with a fixed mapping) 
 
 ## Additional options
 
-- `suite_name` — the name of the expectation suite. Defaults to a name derived from the model name(s).
-- `engine` — the execution engine: `pandas` (in-memory dataframes), `spark` (Spark dataframes), or `sql` (SQL databases).
-- `sql_server_type` — the SQL server type to connect with when `engine` is `sql`. Ensures the correct SQL dialect and connection settings are applied.
-- `checks` — comma-separated list of check categories to export: `properties` (constraints inferred from logical types) and/or `quality` (rules from the contract's `quality` blocks). Omit to export both.
+- `--suite-name` — the name of the expectation suite. Defaults to a name derived from the model name(s).
+- `--engine` — the execution engine: `pandas` (in-memory dataframes), `spark` (Spark dataframes), or `sql` (SQL databases).
+- `--dialect` — the SQL dialect when `--engine` is `sql`. `auto` (default) detects it from the contract's servers.
+- `--checks` — comma-separated list of check categories to export: `properties` (constraints inferred from logical types) and/or `quality` (rules from the contract's `quality` blocks). Omit to export both.
 
 All options: **[`datacontract export great-expectations`](../commands/export/great-expectations.md)**.

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pays by invoice, has a return address and an approval, and bundles items -->
+<po:purchaseOrder xmlns:po="urn:example:po" orderDate="2026-09-22" reference="4711">
+  <po:shipTo>
+    <name>Grace Hopper</name>
+    <street>1 Navy Yard</street>
+    <city>Arlington</city>
+    <state>VA</state>
+    <zip>22202</zip>
+  </po:shipTo>
+  <po:billTo>
+    <name>Grace Hopper</name>
+    <street>1 Navy Yard</street>
+    <city>Arlington</city>
+    <state>VA</state>
+    <zip>22202</zip>
+  </po:billTo>
+  <po:returnTo>
+    <name>Returns Desk</name>
+    <city>Reno</city>
+  </po:returnTo>
+  <po:invoice>true</po:invoice>
+  <po:items>
+    <po:item partNum="100-ZZ">
+      <po:productName>Starter Kit</po:productName>
+      <po:quantity>1</po:quantity>
+      <po:USPrice currency="USD">99.00</po:USPrice>
+      <po:bundle>
+        <po:item partNum="101-ZZ">
+          <po:productName>Manual</po:productName>
+          <po:quantity>1</po:quantity>
+          <po:USPrice currency="USD">0.00</po:USPrice>
+        </po:item>
+      </po:bundle>
+    </po:item>
+  </po:items>
+  <po:approvedBy>Jean Sammet</po:approvedBy>
+  <po:approvedAt>2026-09-22T09:30:00</po:approvedAt>
+</po:purchaseOrder>

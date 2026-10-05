@@ -1,0 +1,72 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: orders-xml
+name: Orders
+status: draft
+schema:
+- name: order
+  physicalType: object
+  logicalType: object
+  physicalName: order
+  properties:
+  - name: order_id
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: placed_at
+    physicalType: dateTime
+    logicalType: timestamp
+    required: true
+  - name: status
+    physicalType: string
+    logicalType: string
+    required: true
+    enum:
+    - value: pending
+    - value: shipped
+  - name: line_item
+    physicalType: array
+    logicalType: array
+    required: true
+    items:
+      name: items
+      physicalType: object
+      logicalType: object
+      properties:
+      - name: sku
+        physicalType: string
+        logicalType: string
+        required: true
+      - name: price
+        physicalType: object
+        logicalType: object
+        required: true
+        properties:
+        - name: value
+          physicalType: decimal
+          customProperties:
+          - property: xmlNode
+            value: text
+          logicalType: number
+        - name: currency
+          physicalType: string
+          customProperties:
+          - property: xmlNode
+            value: attribute
+          logicalType: string
+          required: true
+  - name: version
+    physicalType: positiveInteger
+    customProperties:
+    - property: xmlNode
+      value: attribute
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 1
+    required: true
+servers:
+- server: local
+  type: local
+  path: orders/*.xml
+  format: xml

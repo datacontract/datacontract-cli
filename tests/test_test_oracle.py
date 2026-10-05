@@ -51,6 +51,28 @@ def test_test_oracle_contract_odcs(oracle_container, monkeypatch):
     assert all(check.result == "passed" for check in run.checks)
 
 
+def test_test_oracle_wrong_physical_type_fails(oracle_container, monkeypatch):
+    """A physicalType is only checked when the catalog is read: one that differs
+    from the column must fail, not fall back to a passing logicalType check."""
+    monkeypatch.setenv("DATACONTRACT_ORACLE_USERNAME", "SYSTEM")
+    monkeypatch.setenv("DATACONTRACT_ORACLE_PASSWORD", oracleContainer.oracle_password)
+
+    _init_sql("fixtures/oracle/data/testcase.sql")
+
+    data_contract_str = _setup_datacontract("fixtures/oracle/datacontract-oracle-odcs.yaml").replace(
+        "logicalType: string\n        physicalType: VARCHAR2\n",
+        "logicalType: string\n        physicalType: NVARCHAR2\n",
+        1,
+    )
+    assert "physicalType: VARCHAR2" not in data_contract_str.split("DESCRIPTION", 1)[1].split("AMOUNT", 1)[0]
+
+    run = DataContract(data_contract_str=data_contract_str).test()
+
+    failed = {check.name: check.reason for check in run.checks if check.result != "passed"}
+    assert list(failed) == ["Check that field DESCRIPTION has physical type NVARCHAR2"]
+    assert "but the column is 'VARCHAR2" in failed["Check that field DESCRIPTION has physical type NVARCHAR2"]
+
+
 def _init_sql(sql_file_path):
     with sqlalchemy.create_engine(oracleContainer.get_connection_url()).begin() as engine:
         with engine.connection.cursor() as cursor:

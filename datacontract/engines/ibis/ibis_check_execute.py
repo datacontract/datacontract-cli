@@ -30,7 +30,11 @@ from datacontract.engines.checks.type_normalize import (
 )
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
-from datacontract.engines.ibis.native_type import fetch_native_types, sqlglot_dialect
+from datacontract.engines.ibis.native_type import (
+    fetch_native_types,
+    sqlglot_dialect,
+    supports_native_type_introspection,
+)
 from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types, has_nesting
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
@@ -236,6 +240,13 @@ def _run_model(
     native_types = None
     if any(spec.metric == MetricType.FIELD_PHYSICAL_TYPE for spec in specs):
         native_types = fetch_native_types(con, server, model)
+        if native_types is None and supports_native_type_introspection(get_server_type(server)):
+            # Each physical type check falls back to its logicalType, which can pass a
+            # physicalType nothing compared, so the run has to say so.
+            run.log_warn(
+                f"Could not read the column types of '{model}' from the {get_server_type(server)} catalog; "
+                "the physical type checks compare the logicalType instead"
+            )
 
     # Snowflake collapses structured OBJECT/ARRAY nesting in the ibis dtype; read
     # the real nested types from SHOW COLUMNS so field_type checks can recurse.
@@ -791,7 +802,7 @@ def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_coun
     _evaluate(run, spec, dup_count, row_count=row_count)
     extra = {"failed_rows": _int(row["_dup_rows"])}
     if len(cols) > 1:
-        extra["columns"] = cols
+        extra["columns"] = spec.columns
     _update_diagnostics(run, spec.key, extra)
 
 
@@ -801,10 +812,14 @@ def _is_item_duplicate(spec: CheckSpec) -> bool:
 
 def _item_duplicate_predicate(t, columns, field: str):
     """Parent rows whose array repeats a value in the item property ``field``."""
-    array_path, _, leaf = field.rpartition("[].")
+    if field.endswith("[]"):
+        # the items of an array of plain values are the values themselves
+        array_path, leaf = field[:-2], None
+    else:
+        array_path, _, leaf = field.rpartition("[].")
 
     def _repeats(array):
-        values = array.map(lambda element: _struct_path(element, leaf))
+        values = array if leaf is None else array.map(lambda element: _struct_path(element, leaf))
         return values.unique().length() < values.length()
 
     return _row_predicate(t, columns, array_path, _repeats)
@@ -1292,17 +1307,38 @@ def _row_predicate(t, columns: dict, field: str, build):
     An array hop (``items[].sku``) becomes "some element satisfies build", so the
     row count never changes and an empty array is never a violation.
     """
+    if field.endswith("[]"):
+        # The items of an array of plain values: the row breaks the rule when one of its items does
+        return _row_predicate(t, columns, field[:-2], lambda array: array.filter(build).length() > 0)
     head, marker, tail = field.partition("[].")
     if not marker:
-        return build(_resolve_expr(t, columns, field))
+        if "." not in field:
+            return build(_resolve_expr(t, columns, field))
+        column, _, path = field.partition(".")
+        return _path_predicate(t[_resolve_col(columns, column)], path, build)
     return _resolve_expr(t, columns, head).filter(lambda i: _element_predicate(i, tail, build)).length() > 0
 
 
 def _element_predicate(element, path: str, build):
     head, marker, tail = path.partition("[].")
     if not marker:
-        return build(_struct_path(element, path))
+        first, _, rest = path.partition(".")
+        value = _struct_path(element, first)
+        return _path_predicate(value, rest, build) if rest else build(value)
     return _struct_path(element, head).filter(lambda i: _element_predicate(i, tail, build)).length() > 0
+
+
+def _path_predicate(value, path: str, build):
+    """``build`` at ``path`` inside the struct ``value``, false where a struct on the way is null.
+
+    The fields of an absent optional object are not missing; the object's own
+    ``required`` check covers its absence.
+    """
+    present = None
+    for part in path.split("."):
+        present = value.notnull() if present is None else present & value.notnull()
+        value = value[_struct_field_name(value, part)]
+    return present & build(value)
 
 
 def _struct_path(value, path: str):

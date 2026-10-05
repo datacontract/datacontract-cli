@@ -56,6 +56,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/athena.svg" alt="" />
     <span><span className="doc-card-title">Amazon Athena</span><span className="doc-card-desc">Athena over data in S3</span></span>
   </a>
+  <a className="doc-card" href="/testing/hive">
+    <img src="/img/icons/database.svg" alt="" />
+    <span><span className="doc-card-title">Apache Hive</span><span className="doc-card-desc">Tables in a HiveServer2</span></span>
+  </a>
   <a className="doc-card" href="/testing/iceberg">
     <img src="/img/icons/iceberg.svg" alt="" />
     <span><span className="doc-card-title">Apache Iceberg</span><span className="doc-card-desc">Tables in a REST catalog (Polaris, Nessie, Unity, Glue, S3 Tables)</span></span>
@@ -67,6 +71,10 @@ datacontract test --server production datacontract.yaml
   <a className="doc-card" href="/testing/azure">
     <img src="/img/icons/azure.svg" alt="" />
     <span><span className="doc-card-title">Azure Blob / ADLS</span><span className="doc-card-desc">Files on Azure Blob storage or ADLS Gen2</span></span>
+  </a>
+  <a className="doc-card" href="/testing/clickhouse">
+    <img src="/img/icons/clickhouse.svg" alt="" />
+    <span><span className="doc-card-title">ClickHouse</span><span className="doc-card-desc">ClickHouse databases</span></span>
   </a>
   <a className="doc-card" href="/testing/exasol">
     <img src="/img/icons/exasol.svg" alt="" />
@@ -107,6 +115,10 @@ datacontract test --server production datacontract.yaml
   <a className="doc-card" href="/testing/trino">
     <img src="/img/icons/trino.svg" alt="" />
     <span><span className="doc-card-title">Trino</span><span className="doc-card-desc">Trino (basic, JWT, OAuth2)</span></span>
+  </a>
+  <a className="doc-card" href="/testing/xml">
+    <img src="/img/icons/custom.svg" alt="" />
+    <span><span className="doc-card-title">XML files</span><span className="doc-card-desc">XML documents, with a contract from their XML Schema</span></span>
   </a>
 </div>
 
@@ -192,7 +204,7 @@ The page for each source above lists its `servers` fields and the environment va
 
 `--server`, `--schema-name`, `--checks`, `--dimension`, `--quality-id`, and `--tag` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
 
-For CI/CD pipelines, use the [`ci`](../commands/ci.md) command, which wraps `test` with annotations, summaries, and exit-code control.
+For CI/CD pipelines, use the [`ci`](../commands/ci.md) command. It runs the same checks as `test`, takes several contracts at once, and adds annotations, summaries, and exit-code control.
 
 ## Testing only a subset of rows
 

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 12
 title: "Exasol"
 description: "Test the actual data in Exasol against your data contract."
 ---
@@ -70,14 +70,14 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=exasol, host=exasol.acme.com, port=8563, schema=sales)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 12 checks. Took 1.4 seconds.
+╭────────┬───────────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                                     │ Field    │ Details │
+├────────┼───────────────────────────────────────────────────────────┼──────────┼─────────┤
+│ passed │ Check that field 'order_id' is present                    │ order_id │         │
+│ passed │ Check that field order_id has physical type DECIMAL(18,0) │ order_id │         │
+│  ...   │                                                           │          │         │
+╰────────┴───────────────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 6 checks. Took 1.4 seconds.
 ```
 
 ## 5. Let it catch a violation

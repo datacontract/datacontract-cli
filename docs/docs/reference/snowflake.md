@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 20
 title: "Snowflake Reference"
 sidebar_label: "Snowflake"
 description: "All Snowflake authentication options and data type mappings."
@@ -22,29 +22,29 @@ servers:
 
 ## Authentication
 
-Any `DATACONTRACT_SNOWFLAKE_`-prefixed variable is passed (lowercased, prefix stripped) as a connection parameter to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver. Set the variables required by your workspace's `authenticator` mode.
+The variables below are passed as connection parameters to the [snowflake-connector-python](https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-api#connect) driver. Set the ones required by your workspace's `authenticator` mode. Any other `DATACONTRACT_SNOWFLAKE_`-prefixed variable is ignored with a warning.
 
 | Connection parameter | Environment variable |
 |---|---|
-| `user` | `DATACONTRACT_SNOWFLAKE_USERNAME` (also `..._USER`) |
+| `user` | `DATACONTRACT_SNOWFLAKE_USERNAME` |
 | `password` | `DATACONTRACT_SNOWFLAKE_PASSWORD` |
 | `warehouse` | `DATACONTRACT_SNOWFLAKE_WAREHOUSE` |
 | `role` | `DATACONTRACT_SNOWFLAKE_ROLE` |
 | `authenticator` | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR` |
+| `token` | `DATACONTRACT_SNOWFLAKE_TOKEN` |
+| `passcode` | `DATACONTRACT_SNOWFLAKE_PASSCODE` |
 | `private_key_file` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` |
 | `private_key_file_pwd` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE_PWD` |
 | `private_key` | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY` |
 | `login_timeout` | `DATACONTRACT_SNOWFLAKE_LOGIN_TIMEOUT` |
 | `network_timeout` | `DATACONTRACT_SNOWFLAKE_NETWORK_TIMEOUT` |
 | `socket_timeout` | `DATACONTRACT_SNOWFLAKE_SOCKET_TIMEOUT` |
+| `host` | `DATACONTRACT_SNOWFLAKE_HOST` |
+| `port` | `DATACONTRACT_SNOWFLAKE_PORT` |
 
 `account`, `database`, and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_SNOWFLAKE_ACCOUNT`, `DATACONTRACT_SNOWFLAKE_DATABASE`, and `DATACONTRACT_SNOWFLAKE_SCHEMA`.
 
-For key-pair auth, set `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` to the path of the key file and `..._PRIVATE_KEY_FILE_PWD` to its passphrase, if it has one. `..._PRIVATE_KEY` takes the key itself rather than a path.
-
-:::warning
-The variable name after the prefix must match the driver's parameter name exactly. The driver ignores parameters it does not recognise without raising, so a misspelled variable is silently dropped and the connection then fails for an unrelated-looking reason — a mistyped key-pair variable surfaces as an authentication error, not as a bad-parameter error.
-:::
+For key-pair auth, set `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` to the path of the key file and `..._PRIVATE_KEY_FILE_PWD` to its passphrase, if it has one. `..._PRIVATE_KEY` takes the key itself rather than a path. `..._AUTHENTICATOR` can stay unset: the driver switches to key-pair auth whenever a key is given.
 
 ### Deprecated variables
 

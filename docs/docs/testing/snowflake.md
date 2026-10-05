@@ -1,5 +1,5 @@
 ---
-sidebar_position: 21
+sidebar_position: 23
 title: "Snowflake"
 description: "Create a data contract from your Snowflake tables and test the actual data against it — in about 5 minutes."
 ---
@@ -52,15 +52,16 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: workspace (type=snowflake, account=..., database=ORDER_DB, schema=PUBLIC)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 5.2 seconds.
+Server: workspace (type=snowflake, host=..., port=443, database=ORDER_DB, schema=PUBLIC, account=...)
+╭────────┬─────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                               │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                     │          │         │
+│ passed │ Check that field 'order_id' is present              │ order_id │         │
+│ passed │ Check that field order_id has physical type VARCHAR │ order_id │         │
+│  ...   │                                                     │          │         │
+╰────────┴─────────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 5.2 seconds.
 ```
 
 ## 5. Let it catch a violation

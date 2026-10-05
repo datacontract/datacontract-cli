@@ -39,9 +39,10 @@ models:
     description: The orders model
     data_tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - order_id
-            - order_status
+          arguments:
+            combination_of_columns:
+              - order_id
+              - order_status
     columns:
       - name: order_id
         data_type: VARCHAR
@@ -50,10 +51,12 @@ models:
           - type: unique
         data_tests:
           - dbt_expectations.expect_column_value_lengths_to_be_between:
-              min_value: 8
-              max_value: 10
+              arguments:
+                min_value: 8
+                max_value: 10
           - dbt_expectations.expect_column_values_to_match_regex:
-              regex: ^B[0-9]+$
+              arguments:
+                regex: ^B[0-9]+$
         config:
           meta:
             classification: sensitive
@@ -66,18 +69,20 @@ models:
         description: The order_total field
         data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
-               min_value: 0
-               max_value: 1000000
+              arguments:
+                min_value: 0
+                max_value: 1000000
       - name: order_status
         data_type: TEXT
         constraints:
           - type: not_null
         data_tests:
           - accepted_values:
-              values:
-                - 'pending'
-                - 'shipped'
-                - 'delivered'
+              arguments:
+                values:
+                  - 'pending'
+                  - 'shipped'
+                  - 'delivered'
 """
 
     result = yaml.safe_load(to_dbt_models_yaml(data_contract))
@@ -101,9 +106,10 @@ models:
     description: The orders model
     data_tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - order_id
-            - order_status
+          arguments:
+            combination_of_columns:
+              - order_id
+              - order_status
     columns:
       - name: order_id
         data_type: STRING
@@ -112,10 +118,12 @@ models:
           - type: unique
         data_tests:
           - dbt_expectations.expect_column_value_lengths_to_be_between:
-              min_value: 8
-              max_value: 10
+              arguments:
+                min_value: 8
+                max_value: 10
           - dbt_expectations.expect_column_values_to_match_regex:
-              regex: ^B[0-9]+$
+              arguments:
+                regex: ^B[0-9]+$
         config:
           meta:
             classification: sensitive
@@ -128,18 +136,20 @@ models:
         description: The order_total field
         data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
-               min_value: 0
-               max_value: 1000000
+              arguments:
+                min_value: 0
+                max_value: 1000000
       - name: order_status
         data_type: STRING
         constraints:
           - type: not_null
         data_tests:
           - accepted_values:
-              values:
-                - 'pending'
-                - 'shipped'
-                - 'delivered'
+              arguments:
+                values:
+                  - 'pending'
+                  - 'shipped'
+                  - 'delivered'
 """
 
     result = yaml.safe_load(to_dbt_models_yaml(odcs, server="bigquery"))
@@ -183,9 +193,10 @@ models:
         enforced: true
     data_tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - order_id
-            - user_id
+          arguments:
+            combination_of_columns:
+              - order_id
+              - user_id
     columns:
       - name: order_id
         data_type: STRING

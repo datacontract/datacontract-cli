@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 21
 title: "Postgres"
 description: "Create a data contract from your Postgres tables and test the actual data against it — in about 5 minutes."
 ---
@@ -54,14 +54,15 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: postgres (type=postgres, host=localhost, port=5432, database=postgres, schema=public)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 2.3 seconds.
+╭────────┬───────────────────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                                             │ Field    │ Details │
+├────────┼───────────────────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                                   │          │         │
+│ passed │ Check that field 'order_id' is present                            │ order_id │         │
+│ passed │ Check that field order_id has physical type character varying(20) │ order_id │         │
+│  ...   │                                                                   │          │         │
+╰────────┴───────────────────────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 2.3 seconds.
 ```
 
 :::tip[No database at hand?]

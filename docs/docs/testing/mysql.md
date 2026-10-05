@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 19
 title: "MySQL"
 description: "Create a data contract from your MySQL tables and test the actual data against it."
 ---
@@ -51,14 +51,15 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: mysql (type=mysql, host=localhost, port=3306, database=mydb)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 2.1 seconds.
+╭────────┬───────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                     │ Field    │ Details │
+├────────┼───────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                           │          │         │
+│ passed │ Check that field 'order_id' is present    │ order_id │         │
+│ passed │ Check that field order_id has type string │ order_id │         │
+│  ...   │                                           │          │         │
+╰────────┴───────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 2.1 seconds.
 ```
 
 ## 5. Let it catch a violation
@@ -75,6 +76,8 @@ schema:
         query: SELECT COUNT(*) FROM orders WHERE order_total < 0
         mustBe: 0
 ```
+
+The tables are copied into DuckDB before the checks run, so write the query in [DuckDB SQL](../quality-rules/sql.md#sql-dialect), not MySQL.
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 

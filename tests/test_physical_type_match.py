@@ -1,3 +1,5 @@
+import pytest
+
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.ibis.native_type import (
     _rows,
@@ -374,3 +376,104 @@ class _SparkLikeConnection:
 
 def test_rows_collects_spark_dataframe():
     assert _rows(_SparkLikeConnection(), "select 1") == [("postal_code", "string", None, None, None)]
+
+
+class _ClickHouseLikeQueryResult:
+    """clickhouse-connect's QueryResult is neither a DB-API cursor nor iterable."""
+
+    result_rows = [("order_id", "String")]
+
+    def close(self):
+        pass
+
+
+class _ClickHouseLikeConnection:
+    def raw_sql(self, query):
+        return _ClickHouseLikeQueryResult()
+
+
+def test_rows_reads_a_clickhouse_query_result():
+    assert _rows(_ClickHouseLikeConnection(), "select 1") == [("order_id", "String")]
+
+
+@pytest.mark.parametrize(
+    "declared, actual",
+    [
+        ("varchar", "String"),
+        ("VARCHAR(255)", "String"),
+        ("text", "String"),
+        ("Nullable(varchar(10))", "Nullable(String)"),
+        ("Array(varchar)", "Array(String)"),
+        ("Map(varchar, Int32)", "Map(String, Int32)"),
+        ("timestamp", "DateTime"),
+        ("int", "Int32"),
+        ("bigint", "Int64"),
+        ("double", "Float64"),
+        ("boolean", "Bool"),
+    ],
+)
+def test_clickhouse_sql_spellings_match_the_type_clickhouse_stores(declared, actual):
+    assert physical_type_matches(declared, actual, "clickhouse")[0] is True
+
+
+@pytest.mark.parametrize(
+    "declared, actual, expected",
+    [
+        ("DateTime64(3)", "DateTime64(3, 'UTC')", True),
+        ("DateTime", "DateTime('UTC')", True),
+        ("DateTime64(6)", "DateTime64(3, 'UTC')", False),
+        ("DateTime64(3, 'Europe/Berlin')", "DateTime64(3, 'UTC')", False),
+        ("DateTime('UTC')", "DateTime", False),
+    ],
+)
+def test_clickhouse_time_zone_is_only_checked_when_declared(declared, actual, expected):
+    assert physical_type_matches(declared, actual, "clickhouse")[0] is expected
+
+
+@pytest.mark.parametrize(
+    "declared, actual",
+    [
+        ("Int32", "Int64"),
+        ("UInt32", "Int32"),
+        ("String", "FixedString(3)"),
+        ("String", "LowCardinality(String)"),
+        ("LowCardinality(String)", "String"),
+        ("Decimal(12, 2)", "Decimal(10, 2)"),
+        ("Array(String)", "Array(Int32)"),
+        ("Date", "Date32"),
+        ("varchar", "Int32"),
+    ],
+)
+def test_clickhouse_distinct_types_do_not_match(declared, actual):
+    assert physical_type_matches(declared, actual, "clickhouse")[0] is False
+
+
+def test_clickhouse_types_are_read_in_the_dialect_ibis_compiles_to():
+    """At runtime the dialect is ibis's ClickHouse subclass, not sqlglot's name."""
+    from ibis.backends.sql.compilers.clickhouse import compiler
+
+    assert physical_type_matches("VARCHAR(255)", "String", compiler.dialect)[0] is True
+    assert physical_type_matches("DateTime64(3)", "DateTime64(3, 'UTC')", compiler.dialect)[0] is True
+
+
+@pytest.mark.parametrize(
+    "declared, actual, expected",
+    [
+        ("string", "string", True),
+        ("STRING", "string", True),
+        ("varchar(10)", "varchar(10)", True),
+        ("varchar(20)", "varchar(10)", False),
+        ("int", "bigint", False),
+        ("decimal(10,2)", "decimal(10,2)", True),
+        ("array<string>", "array<string>", True),
+        ("array<int>", "array<string>", False),
+        ("struct<city:string,zip:string>", "struct<city:string,zip:string>", True),
+        ("struct<city:string,postcode:string>", "struct<city:string,zip:string>", False),
+        ("map<string,bigint>", "map<string,bigint>", True),
+    ],
+)
+def test_hive_types_in_the_dialect_ibis_compiles_hive_queries_to(declared, actual, expected):
+    """Hive is reached through ibis's Impala backend, so its types are read as Impala's."""
+    from ibis.backends.sql.compilers.impala import compiler
+
+    assert physical_type_matches(declared, actual, compiler.dialect)[0] is expected

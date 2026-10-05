@@ -279,6 +279,146 @@ def test_test_resolves_definitions_against_the_environment_host_not_the_header_h
 
 
 @responses.activate
+def test_test_resolves_a_definition_with_the_request_api_key(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(responses.GET, "https://entropy.example.com/definitions/c", json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "request-key"}
+    )
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+@responses.activate
+def test_test_does_not_reuse_a_definition_fetched_with_another_request_api_key(clean_platform_env):
+    url = "https://api.entropy-data.com/definitions/c"
+    responses.add(responses.GET, url, json={"name": "c"}, status=200)
+    client.post(url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "key-a"})
+    responses.replace(responses.GET, url, status=401)
+
+    response = client.post(
+        url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "key-b"}
+    )
+
+    assert [call.request.headers["x-api-key"] for call in responses.calls] == ["key-a", "key-b"]
+    assert response.status_code == 422
+
+
+@responses.activate
+def test_test_sends_the_request_api_key_for_a_platform_domain_to_the_environment_host(clean_platform_env):
+    responses.add(responses.GET, "https://api.entropy-data.com/definitions/c", json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing("/definitions/c"),
+        headers={"entropy-data-host": "https://app.entropy-data.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+@responses.activate
+def test_test_does_not_send_the_request_api_key_meant_for_another_host(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(responses.GET, "https://entropy.example.com/definitions/c", json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing("/definitions/c"),
+        headers={"entropy-data-host": "https://entropy.other.example", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert len(responses.calls) == 1
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_test_resolves_a_definition_on_the_platform_host_the_request_names(clean_platform_env):
+    definition_url = "https://app.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing(definition_url),
+        headers={"entropy-data-host": "https://app.entropy-data.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+@responses.activate
+def test_lint_does_not_send_a_self_hosted_api_key_to_the_platform_domains(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "server-key")
+    definition_url = "https://app.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(url="/lint", json=_contract_referencing(definition_url))
+
+    assert response.status_code == 200
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_lint_sends_the_environment_api_key_only_to_the_environment_host(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "server-key")
+    definition_url = "https://other.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(url="/lint", json=_contract_referencing(definition_url))
+
+    assert response.status_code == 200
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_test_does_not_send_a_self_hosted_request_api_key_to_the_platform_domains(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    definition_url = "https://app.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing(definition_url),
+        headers={"entropy-data-host": "https://entropy.example.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_test_resolves_an_iri_with_the_request_api_key(clean_platform_env):
+    responses.add(responses.GET, "https://api.entropy-data.com/api/semantics", json={"name": "c"}, status=200)
+    contract = _contract_referencing("https://w3id.org/example/shipment_id").replace(
+        "type: definition", "type: semantics"
+    )
+
+    response = client.post(url="/test", json=contract, headers={"entropy-data-api-key": "request-key"})
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+def test_test_explains_that_an_iri_lookup_needs_the_request_host_on_the_server(clean_platform_env, caplog):
+    contract = _contract_referencing("urn:acme:customer-id").replace("type: definition", "type: semantics")
+
+    response = client.post(
+        url="/test",
+        json=contract,
+        headers={"entropy-data-host": "https://entropy.example.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 422
+    assert "set ENTROPY_DATA_HOST to that host on the server running the API" in caplog.text
+
+
+@responses.activate
 def test_test_does_not_echo_the_configured_host():
     internal_url = "http://internal.example.com:8080/admin/definitions/c"
     responses.add(responses.GET, internal_url, status=200, body="<html>internal admin page</html>")

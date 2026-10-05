@@ -16,12 +16,12 @@ name: CI
 jobs:
   lint:
     name: "Linting & Formatting (fix with: uv run ruff check --fix && uv run ruff format)"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: '3.11'
           prune-cache: true
@@ -42,7 +42,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - 'ubuntu-latest'
+          - 'ubuntu-24.04'
         python-version:
           - '3.10'
           - '3.11'
@@ -68,7 +68,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y msodbcsql18
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: ${{ matrix.python-version }}
           prune-cache: true
@@ -79,7 +79,7 @@ jobs:
 
   slow-tests:
     name: "Slow tests (testcontainers)"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -88,7 +88,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y msodbcsql18
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: '3.11'
           prune-cache: true
@@ -99,7 +99,7 @@ jobs:
 
   coverage:
     name: "Coverage (reported, not gated)"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -108,7 +108,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y msodbcsql18
       - name: Install uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: '3.11'
           prune-cache: true
@@ -129,7 +129,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - 'ubuntu-latest'
+          - 'ubuntu-24.04'
         python-version:
           - '3.11'
       fail-fast: false
@@ -164,7 +164,7 @@ jobs:
         run: cd tests && datacontract test fixtures/local-delta/datacontract.yaml
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The multi-arch build+push runs ~9.5 min and had been getting cancelled
     # right at a 10 min limit; 20 gives headroom.
     timeout-minutes: 20

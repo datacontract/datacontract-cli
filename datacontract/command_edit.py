@@ -336,7 +336,7 @@ def edit(
     The server also acts as the editor's test runner: "Run test" in the editor executes
     the data contract tests locally against the servers defined in the data contract.
     Credentials for the data sources must be provided as environment variables, see
-    https://cli.datacontract.com/#test
+    https://docs.datacontract.com/testing
     """
     enable_debug_logging(debug)
 

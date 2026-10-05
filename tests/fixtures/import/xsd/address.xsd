@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:addr="urn:example:address"
+            targetNamespace="urn:example:address">
+
+  <xsd:complexType name="Address">
+    <xsd:sequence>
+      <xsd:element name="name" type="xsd:string"/>
+      <xsd:element name="street" type="xsd:string" minOccurs="0" maxOccurs="3"/>
+      <xsd:element name="city" type="xsd:string"/>
+    </xsd:sequence>
+    <xsd:attributeGroup ref="addr:geo"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="USAddress">
+    <xsd:complexContent>
+      <xsd:extension base="addr:Address">
+        <xsd:sequence>
+          <xsd:element name="state" type="addr:USState"/>
+          <xsd:element name="zip" type="xsd:decimal"/>
+        </xsd:sequence>
+        <xsd:attribute name="country" type="xsd:NMTOKEN" fixed="US"/>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <xsd:complexType name="PostalAddress">
+    <xsd:annotation><xsd:documentation>A restriction keeps only its own content.</xsd:documentation></xsd:annotation>
+    <xsd:complexContent>
+      <xsd:restriction base="addr:Address">
+        <xsd:sequence>
+          <xsd:element name="name" type="xsd:string"/>
+          <xsd:element name="city" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:restriction>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <xsd:attributeGroup name="geo">
+    <xsd:attribute name="latitude">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:double">
+          <xsd:minInclusive value="-90"/>
+          <xsd:maxInclusive value="90"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+    <xsd:attribute name="longitude">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:double">
+          <xsd:minInclusive value="-180"/>
+          <xsd:maxInclusive value="180"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+  </xsd:attributeGroup>
+
+  <xsd:simpleType name="USState">
+    <xsd:restriction base="xsd:string">
+      <xsd:length value="2"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+</xsd:schema>

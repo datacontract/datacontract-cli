@@ -6,12 +6,16 @@ Two independent controls, tested here:
   2. duckdb is confined to the contract's own data locations
 """
 
+import duckdb
 import pytest
 from fastapi.testclient import TestClient
+from open_data_contract_standard.model import DataQuality, Server
 
 from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
 from datacontract.data_contract import DataContract
-from datacontract.engines.checks.sql_guard import dialect_for_server_type, is_read_only_query
+from datacontract.engines.checks.create_checks import prepare_query
+from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason
+from datacontract.engines.ibis.connections.connect import _materialize_attached_table
 from datacontract.engines.ibis.connections.duckdb_connection import restrict_to_paths
 from datacontract.model.run import ResultEnum
 
@@ -75,7 +79,7 @@ def secret_file(tmp_path):
     ],
 )
 def test_a_query_is_read_only(query):
-    assert is_read_only_query(query)
+    assert refusal_reason(query) is None
 
 
 @pytest.mark.parametrize(
@@ -101,7 +105,7 @@ def test_a_query_is_read_only(query):
     ],
 )
 def test_a_statement_that_is_not_a_query_is_refused(statement):
-    assert not is_read_only_query(statement)
+    assert refusal_reason(statement) is not None
 
 
 @pytest.mark.parametrize(
@@ -123,18 +127,49 @@ def test_dialect_specific_syntax_is_read_as_the_server_dialect(server_type, quer
     asserting it fails the build on a routine dependency bump. That the fixtures
     still exercise dialect-specific syntax is checked in aggregate by
     tests/test_quality_sql_dialects.py instead."""
-    assert is_read_only_query(query, dialect_for_server_type(server_type))
+    assert refusal_reason(query, dialect_for_server_type(server_type)) is None
 
 
 def test_the_server_dialect_still_refuses_what_is_not_a_query():
     for server_type in ("snowflake", "bigquery", "postgres", "local"):
-        assert not is_read_only_query("DROP TABLE orders", dialect_for_server_type(server_type))
+        assert refusal_reason("DROP TABLE orders", dialect_for_server_type(server_type)) is not None
 
 
-def test_file_server_types_are_read_as_duckdb():
-    """local/s3/gcs/azure are read through duckdb, so a rule on them is duckdb SQL."""
-    for server_type in ("local", "s3", "gcs", "azure"):
+def test_server_types_run_in_duckdb_are_read_as_duckdb():
+    """local/s3/gcs/azure/iceberg are read through duckdb and mysql tables are copied
+    into it, so a rule on them is duckdb SQL."""
+    for server_type in ("local", "s3", "gcs", "azure", "iceberg", "mysql"):
         assert dialect_for_server_type(server_type) == "duckdb"
+
+
+def test_a_backslash_escape_cannot_hide_a_second_statement_on_mysql():
+    """Read as MySQL, `\\'` is an escaped quote and this is one SELECT; duckdb, which
+    runs it, ends the string there and runs the DROP."""
+    query = "SELECT 1 AS x, 'a\\'; DROP TABLE orders; SELECT 1 AS y -- ' AS z"
+
+    assert refusal_reason(query, dialect_for_server_type("mysql")) is not None
+
+
+def test_a_backslash_in_a_name_cannot_hide_a_second_statement_on_mysql():
+    quality = DataQuality(
+        type="sql", query='SELECT COUNT(*) AS {field} FROM {model}; CREATE TABLE pwn AS SELECT 1; --"'
+    )
+    query = prepare_query(quality, "orders", "a\\", Server(server="production", type="mysql"))
+
+    assert refusal_reason(query, dialect_for_server_type("mysql")) is not None
+
+
+def test_a_quote_in_a_table_name_cannot_start_a_second_statement_on_mysql():
+    """The table name comes from the contract and runs while MySQL is still attached."""
+    model = 'orders" AS SELECT 1; CREATE TABLE pwned AS SELECT 1; --'
+    con = duckdb.connect()
+    con.execute("ATTACH ':memory:' AS mysqldb")
+    con.execute('CREATE TABLE mysqldb."orders"" AS SELECT 1; CREATE TABLE pwned AS SELECT 1; --" AS SELECT 1 AS id')
+
+    _materialize_attached_table(con, "mysqldb", None, model)
+
+    tables = con.execute("SELECT table_name FROM duckdb_tables() WHERE database_name = 'memory'").fetchall()
+    assert tables == [(model,)]
 
 
 def test_the_documented_dialect_mapping_matches_the_code():
@@ -174,7 +209,7 @@ def test_exasol_syntax_is_read_as_exasol_even_after_ibis_registered_its_own_dial
     except sqlglot.errors.ParseError:
         pytest.skip("this sqlglot version does not read the REGEXP_LIKE predicate")
 
-    assert is_read_only_query(query, "exasol")
+    assert refusal_reason(query, "exasol") is None
 
 
 def test_an_unmapped_server_type_has_no_dialect():
@@ -195,10 +230,27 @@ def test_a_refused_query_names_the_dialect_it_was_read_as(data_file):
     assert "duckdb SQL" in check.reason
 
 
+def test_a_query_that_does_not_parse_is_refused_with_the_parse_error():
+    reason = refusal_reason("SELECT count(*) FROM orders WHERE A B IS NULL", "duckdb")
+
+    assert reason.startswith("The query could not be read as duckdb SQL: ")
+    assert 'line 1, near "B"' in reason
+    assert "\x1b" not in reason
+
+
+def test_an_incomplete_query_is_refused_without_parser_internals():
+    reason = refusal_reason("SELECT count(*) FROM orders WHERE", "duckdb")
+
+    assert reason == (
+        'The query could not be read as duckdb SQL: Incomplete expression at line 1, near "WHERE", '
+        "so it was not executed."
+    )
+
+
 def test_an_unmapped_dialect_does_not_reject_a_valid_query():
     """A dialect name sqlglot does not know is about the parser, not the query."""
-    assert is_read_only_query("SELECT count(*) FROM orders", dialect="no-such-dialect")
-    assert not is_read_only_query("DROP TABLE orders", dialect="no-such-dialect")
+    assert refusal_reason("SELECT count(*) FROM orders", dialect="no-such-dialect") is None
+    assert refusal_reason("DROP TABLE orders", dialect="no-such-dialect") is not None
 
 
 def test_a_quality_rule_that_is_not_a_query_fails_without_running(data_file, tmp_path):
@@ -222,7 +274,7 @@ def test_an_untrusted_contract_cannot_read_another_file(data_file, secret_file):
     """`read_text` is a read-only query, so it passes the first control and has
     to be stopped by the second one."""
     query = f"SELECT content FROM read_text('{secret_file}')"
-    assert is_read_only_query(query), "the point of this test is a query the first control lets through"
+    assert refusal_reason(query) is None, "the point of this test is a query the first control lets through"
 
     run = DataContract(
         data_contract_str=_contract(data_file, query),

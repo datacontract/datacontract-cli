@@ -1,0 +1,48 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-quality-hive
+name: Orders quality rules (hive)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a hive server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: hive
+    host: localhost
+    port: 10000
+    database: sales
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: string
+      - name: order_total
+        logicalType: number
+        physicalType: decimal(10,2)
+      - name: order_status
+        logicalType: string
+        physicalType: string
+      - name: order_timestamp
+        logicalType: timestamp
+        physicalType: timestamp
+    quality:
+      - type: sql
+        description: "Every order has a known status"
+        query: |
+          SELECT COUNT(*) FROM ${model} WHERE NOT order_status RLIKE '^(open|shipped)$'
+        mustBe: 0
+      - type: sql
+        description: "95th percentile of the order total"
+        query: |
+          SELECT percentile_approx(CAST(order_total AS DOUBLE), 0.95) FROM ${model}
+        mustBeLessThan: 100000
+      - type: sql
+        description: "No order is older than a year"
+        query: |
+          SELECT COUNT(*) FROM ${model} WHERE order_timestamp < date_sub(current_date(), 365)
+        mustBe: 0

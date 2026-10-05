@@ -49,11 +49,9 @@ Running this against the [example `orders` contract](https://github.com/datacont
       },
       {
         "name": "order_total",
-        "type": "NUMERIC",
+        "type": "INTEGER",
         "mode": "REQUIRED",
-        "description": "Total amount of the order in cents.",
-        "precision": null,
-        "scale": null
+        "description": "Total amount of the order in cents."
       },
       {
         "name": "status",

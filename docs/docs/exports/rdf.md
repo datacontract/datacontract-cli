@@ -20,7 +20,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <urn:datacontract:checkout:orders> a odcs:DataContract ;
-    odcs:apiVersion "v3.1.0" ;
+    odcs:apiVersion "v3.2.0" ;
     odcs:id "urn:datacontract:checkout:orders" ;
     odcs:info [ a odcs:Info ;
             odcs:description "Tracks customer orders and their line items for analytics and reporting." ;

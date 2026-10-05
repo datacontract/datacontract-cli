@@ -1,5 +1,5 @@
 ---
-sidebar_position: 27
+sidebar_position: 31
 title: "Import: SQL DDL"
 description: "Create a data contract from a SQL DDL file."
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: "Apache Impala"
 description: "Create a data contract from your Impala tables and test the actual data against it."
 ---
@@ -44,7 +44,7 @@ servers:
     type: impala
     host: my-impala-host
     port: 21050 # 443 for a Cloudera Virtual Warehouse
-    database: my_database # optional default database
+    database: my_database
 ```
 
 ## 4. Test the actual data
@@ -55,15 +55,16 @@ datacontract test datacontract.yaml
 
 ```
 Testing datacontract.yaml
-Server: production (type=impala, host=my-impala-host, port=443, database=my_database)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 2.8 seconds.
+Server: impala (type=impala, host=my-impala-host, port=21050, database=my_database)
+╭────────┬───────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                     │ Field    │ Details │
+├────────┼───────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                           │          │         │
+│ passed │ Check that field 'order_id' is present    │ order_id │         │
+│ passed │ Check that field order_id has type string │ order_id │         │
+│  ...   │                                           │          │         │
+╰────────┴───────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 2.8 seconds.
 ```
 
 ## 5. Let it catch a violation

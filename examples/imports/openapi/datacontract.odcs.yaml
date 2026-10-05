@@ -1,0 +1,51 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: my-data-contract
+name: Orders API
+status: draft
+servers:
+- server: production
+  type: api
+  description: Production
+  location: https://api.example.com/v1/orders
+- server: staging
+  type: api
+  description: Staging
+  location: https://staging.api.example.com/v1/orders
+schema:
+- name: listOrders
+  physicalType: object
+  description: All orders of the last 30 days.
+  logicalType: object
+  physicalName: listOrders
+  properties:
+  - name: order_id
+    physicalType: string
+    description: Unique identifier of the order.
+    logicalType: string
+    logicalTypeOptions:
+      pattern: ^ORD-[0-9]+$
+    required: true
+  - name: order_timestamp
+    physicalType: string
+    logicalType: string
+    logicalTypeOptions:
+      format: date-time
+    required: true
+  - name: customer_id
+    physicalType: string
+    logicalType: string
+  - name: order_total
+    physicalType: integer
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 0
+  - name: status
+    physicalType: string
+    logicalType: string
+    required: true
+    enum:
+    - value: placed
+    - value: shipped
+    - value: delivered

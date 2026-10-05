@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12
+sidebar_position: 14
 title: "Kafka Reference"
 sidebar_label: "Kafka"
 description: "All Kafka authentication options and data type mappings."
@@ -16,7 +16,6 @@ servers:
   - server: production
     type: kafka
     host: abc-12345.eu-central-1.aws.confluent.cloud:9092
-    topic: orders
     format: json # or avro
 ```
 
@@ -28,7 +27,7 @@ servers:
 | `DATACONTRACT_KAFKA_SASL_PASSWORD` | `xxx` | The SASL password (secret) |
 | `DATACONTRACT_KAFKA_SASL_MECHANISM` | `PLAIN` | Default `PLAIN`; also `SCRAM-SHA-256`, `SCRAM-SHA-512` |
 
-If no username/password is set, the CLI connects without authentication (e.g. a local broker). `host`, `topic`, and `format` come from the contract's `servers` block. A username and password switch the connection to `SASL_SSL`.
+If no username/password is set, the CLI connects without authentication (e.g. a local broker). `host` and `format` come from the contract's `servers` block; the topic is the first schema's `physicalName`, or its `name` if unset. A username and password switch the connection to `SASL_SSL`.
 
 ## Reading the topic
 

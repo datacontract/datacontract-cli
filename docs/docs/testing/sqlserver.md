@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 18
 title: "Microsoft SQL Server"
 description: "Create a data contract from your SQL Server tables and test the actual data against it."
 ---
@@ -55,14 +55,15 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=sqlserver, host=localhost, port=1433, database=mydb, schema=dbo)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 3.7 seconds.
+╭────────┬─────────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                                   │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                         │          │         │
+│ passed │ Check that field 'order_id' is present                  │ order_id │         │
+│ passed │ Check that field order_id has physical type varchar(36) │ order_id │         │
+│  ...   │                                                         │          │         │
+╰────────┴─────────────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 3.7 seconds.
 ```
 
 ## 5. Let it catch a violation

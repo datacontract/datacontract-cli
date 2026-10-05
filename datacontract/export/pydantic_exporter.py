@@ -74,6 +74,38 @@ def product_of(nodes: list[typing.Any]) -> ast.Subscript:
 type_annotation_type = typing.Union[ast.Name, ast.Attribute, ast.Constant, ast.Subscript]
 
 
+def field_value(prop: SchemaProperty) -> ast.expr | None:
+    """None means a bare annotation with no assignment."""
+    match prop.logicalType:
+        case "string":
+            constraints = (("pattern", "pattern"), ("minLength", "min_length"), ("maxLength", "max_length"))
+        case "integer" | "number" | "date" | "timestamp" | "time":
+            constraints = (
+                ("minimum", "ge"),
+                ("maximum", "le"),
+                ("exclusiveMinimum", "gt"),
+                ("exclusiveMaximum", "lt"),
+            )
+        case _:
+            constraints = ()
+    options = prop.logicalTypeOptions or {}
+    keywords = []
+    for option, keyword in constraints:
+        value = options.get(option)
+        # Draft-04 JSON Schema had boolean exclusive bounds, and an empty pattern does not import back.
+        if isinstance(value, (int, float, str)) and not isinstance(value, bool) and value != "":
+            keywords.append(ast.keyword(arg=keyword, value=ast.Constant(value)))
+    if not keywords:
+        return None if prop.required else ast.Constant(None)
+    if not prop.required:
+        keywords.insert(0, ast.keyword(arg="default", value=ast.Constant(None)))
+    return ast.Call(
+        func=ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()), attr="Field", ctx=ast.Load()),
+        args=[],
+        keywords=keywords,
+    )
+
+
 def _get_type(prop: SchemaProperty) -> Optional[str]:
     """Get the logical type from a schema property."""
     return prop.logicalType
@@ -198,7 +230,11 @@ def field_definitions(properties: list[SchemaProperty]) -> tuple[list[ast.Expr],
     classes = []
     for prop in properties:
         (ann, new_class) = type_annotation(prop.name, prop)
-        annotations.append(ast.AnnAssign(target=ast.Name(id=prop.name, ctx=ast.Store()), annotation=ann, simple=1))
+        annotations.append(
+            ast.AnnAssign(
+                target=ast.Name(id=prop.name, ctx=ast.Store()), annotation=ann, value=field_value(prop), simple=1
+            )
+        )
         if prop.description and is_simple_field(prop):
             annotations.append(ast.Expr(ast.Constant(prop.description)))
         if new_class:

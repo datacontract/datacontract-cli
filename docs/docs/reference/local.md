@@ -1,8 +1,8 @@
 ---
-sidebar_position: 13
+sidebar_position: 15
 title: "Local Files Reference"
 sidebar_label: "Local files"
-description: "Data type handling for local CSV, JSON, Parquet, and Delta files."
+description: "Data type handling for local CSV, JSON, XML, Parquet, and Delta files."
 ---
 
 # <img className="page-icon" src="/img/icons/local.svg" alt="" /> Local Files Reference
@@ -16,7 +16,7 @@ servers:
   - server: local
     type: local
     path: ./*.parquet # glob patterns and a {model} placeholder are supported
-    format: parquet   # parquet, json, csv, or delta
+    format: parquet   # parquet, json, csv, xml, or delta
 ```
 
 ## Data types
@@ -46,8 +46,11 @@ Type handling depends on the `format` in the `servers` block:
 |---|---|
 | `csv` | The file is read **as the contract's types** — no type checks are generated; a value that can't be coerced surfaces as a read error. |
 | `json` | Same as CSV, plus every record is validated against a JSON Schema derived from the contract's `logicalType`s (with `format` options like `date-time`, `uuid`). |
+| `xml` | Like CSV: the documents are read **as the contract's types**, with nested elements as structs and repeated elements as lists. |
 | `parquet` | The file is read **as the contract's types**, like CSV, so checking its types is not supported yet, and a value that can't be cast surfaces as a read error. |
 | `delta` | Column types come from the Delta table; the contract's `logicalType` is checked by category. |
+
+**Presence.** For `json` and `xml`, only the required top-level properties are checked for presence: a document may leave out a property that is not required, even in every record. For the other formats, every column of the contract must exist in the file.
 
 `physicalType` is never checked against file sources — declare `logicalType` (and `logicalTypeOptions` for value constraints). The `path` supports glob patterns and a `{model}` placeholder.
 

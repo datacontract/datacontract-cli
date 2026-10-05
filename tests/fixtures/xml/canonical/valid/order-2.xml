@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Only what is required -->
+<order xmlns="urn:example:canonical" version="2">
+  <order_id>ORD-1002</order_id>
+  <code>SHOP</code>
+  <placed_at>2026-09-02T08:00:00</placed_at>
+  <total>12.00</total>
+  <items_count>0</items_count>
+  <status>pending</status>
+  <customer id="C-2">
+    <display_name>Alan Turing</display_name>
+  </customer>
+  <line_item>
+    <sku>DEF-7</sku>
+    <quantity>999</quantity>
+    <price currency="GBP">12.00</price>
+  </line_item>
+</order>

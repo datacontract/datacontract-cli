@@ -1,0 +1,32 @@
+{
+  "$Version": "4.01",
+  "$EntityContainer": "Catalog.Service.Store",
+  "Catalog.Model": {
+    "$Alias": "Catalog",
+    "Product": {
+      "$Kind": "EntityType",
+      "$Key": ["Revision", "Sku"],
+      "Sku": {"$MaxLength": 32},
+      "Revision": {"$Type": "Edm.Int32"},
+      "Price": {"$Type": "Edm.Decimal", "$Nullable": true, "$Precision": 10, "$Scale": 2},
+      "PublishedAt": {"$Type": "Edm.DateTimeOffset", "$Nullable": true, "$Precision": 3},
+      "Active": {"$Type": "Edm.Boolean"},
+      "TrackingId": {"$Type": "Edm.Guid", "$Nullable": true},
+      "Description": {"$Kind": "Property", "$Nullable": true, "$MaxLength": "max"}
+    },
+    "Order": {
+      "$Kind": "EntityType",
+      "$Key": ["OrderId"],
+      "OrderId": {"$Type": "Edm.Guid"},
+      "Total": {"$Type": "Edm.Decimal", "$Precision": 12, "$Scale": 2}
+    }
+  },
+  "Catalog.Service": {
+    "Store": {
+      "$Kind": "EntityContainer",
+      "Products": {"$Collection": true, "$Type": "Catalog.Product"},
+      "Orders": {"$Collection": true, "$Type": "Catalog.Order"},
+      "ArchivedProducts": {"$Collection": true, "$Type": "Catalog.Product", "$IncludeInServiceDocument": false}
+    }
+  }
+}

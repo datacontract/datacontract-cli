@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 19
 title: "Postgres Reference"
 sidebar_label: "Postgres"
 description: "All Postgres authentication options and data type mappings."

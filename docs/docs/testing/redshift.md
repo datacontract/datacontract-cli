@@ -60,14 +60,15 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: redshift (type=redshift, host=my-workgroup..., database=dev, schema=analytics)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 4.9 seconds.
+╭────────┬───────────────────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                                             │ Field    │ Details │
+├────────┼───────────────────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                                   │          │         │
+│ passed │ Check that field 'order_id' is present                            │ order_id │         │
+│ passed │ Check that field order_id has physical type character varying(36) │ order_id │         │
+│  ...   │                                                                   │          │         │
+╰────────┴───────────────────────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Run 24 checks. Took 4.9 seconds.
 ```
 
 ## 5. Let it catch a violation

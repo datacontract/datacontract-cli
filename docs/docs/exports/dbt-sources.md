@@ -66,4 +66,6 @@ As with [`dbt-models`](./dbt-models.md), selecting a server maps logical types t
 
 A property's `classification` and its `meta` custom property are written to the column's `config.meta`, its tags to `config.tags`.
 
+The generated tests need dbt 1.10 or later.
+
 All options: **[`datacontract export dbt-sources`](../commands/export/dbt-sources.md)**.

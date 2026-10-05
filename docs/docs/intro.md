@@ -39,7 +39,7 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 24 checks. Took 5.2 seconds.
+🟢 Data contract is valid. Run 24 checks. Took 5.2 seconds.
 ```
 
 The same flow works for [BigQuery](./testing/bigquery.md), [Databricks](./testing/databricks.md), [Postgres](./testing/postgres.md), and [15+ other sources](./testing/index.md) — or [try it on a local CSV file](./testing/local.md) without any credentials.
@@ -90,7 +90,7 @@ Run `pip install 'datacontract-cli[postgres]'` (or the extra matching your data 
 
 ### Which data sources can the Data Contract CLI test?
 
-Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Test your Data](./testing/index.md).
+Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, ClickHouse, Apache Hive, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Test your Data](./testing/index.md).
 
 ### Is the Data Contract CLI free to use?
 

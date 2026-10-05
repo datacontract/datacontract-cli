@@ -1,0 +1,10 @@
+{
+  "@odata.context": "$metadata",
+  "value": [
+    {"name": "Products", "kind": "EntitySet", "url": "products"},
+    {"name": "Orders", "url": "https://example.com/fulfilment/orders"},
+    {"name": "FeaturedProduct", "kind": "Singleton", "url": "FeaturedProduct"},
+    {"name": "Search", "kind": "FunctionImport", "url": "Search"},
+    {"name": "RelatedService", "kind": "ServiceDocument", "url": "https://example.com/other/"}
+  ]
+}
