@@ -48,10 +48,11 @@ models:
               max_value: 10
           - dbt_expectations.expect_column_values_to_match_regex:
               regex: ^B[0-9]+$
-        meta:
-          classification: sensitive
-        tags:
-          - order_id
+        config:
+          meta:
+            classification: sensitive
+          tags:
+            - order_id
       - name: order_total
         data_type: NUMBER
         constraints:
@@ -109,10 +110,11 @@ models:
               max_value: 10
           - dbt_expectations.expect_column_values_to_match_regex:
               regex: ^B[0-9]+$
-        meta:
-          classification: sensitive
-        tags:
-          - order_id
+        config:
+          meta:
+            classification: sensitive
+          tags:
+            - order_id
       - name: order_total
         data_type: INT64
         constraints:

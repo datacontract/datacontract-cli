@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - a `${X:-local}` server type no longer slips past the checks for local files and environment-held credentials
 
 ### Fixed
+- `datacontract export dbt-models` and `dbt-sources` write column `meta` and `tags` under `config`, so dbt Fusion accepts the output
 - `datacontract import dbt` maps column `meta.classification` to ODCS `classification` instead of silently dropping it (#1655)
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
