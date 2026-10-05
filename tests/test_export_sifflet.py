@@ -14,7 +14,7 @@ from datacontract.export.sifflet_exporter import (
     map_threshold,
     select_schemas,
     select_server,
-    snake,
+    to_snake_case,
 )
 
 FIXTURE = "fixtures/sifflet/datacontract.yaml"
@@ -85,12 +85,12 @@ def _export_model(text: str, server: str | None = None, schema_name: str = "all"
     return result, documents
 
 
-def test_snake_normalizes_camel_case_spaces_and_unicode():
-    assert snake("nullValues") == "null_values"
-    assert snake("Max order age") == "max_order_age"
-    assert snake("allowed statuses") == "allowed_statuses"
-    assert snake("café") == "caf"
-    assert snake("__Row-Count__") == "row_count"
+def test_to_snake_case_normalizes_camel_case_spaces_and_unicode():
+    assert to_snake_case("nullValues") == "null_values"
+    assert to_snake_case("Max order age") == "max_order_age"
+    assert to_snake_case("allowed statuses") == "allowed_statuses"
+    assert to_snake_case("café") == "caf"
+    assert to_snake_case("__Row-Count__") == "row_count"
 
 
 def test_threshold_operators():
@@ -456,6 +456,36 @@ def test_object_placeholder_is_the_fully_qualified_table_name(server, expected):
     assert documents[0]["parameters"]["sql"] == f"SELECT COUNT(*) FROM {expected}"
 
 
+def test_sifflet_enabled_false_skips_the_rule_and_implicit_monitors():
+    schema = """
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        primaryKey: true
+        quality:
+          - type: library
+            metric: nullValues
+            mustBe: 0
+            customProperties:
+              - property: sifflet.enabled
+                value: false
+    quality:
+      - type: library
+        metric: rowCount
+        mustBeGreaterThan: 1
+"""
+    disabled = "customProperties:\n  - property: sifflet.enabled\n    value: false\n"
+    _, documents = _export(_contract(schema, props=disabled))
+    assert documents == []
+
+    kept = "customProperties:\n  - property: sifflet.implicitMonitors\n    value: false\n"
+    _, documents = _export(_contract(schema, props=kept))
+    assert [doc["friendlyId"] for doc in documents] == ["orders_library_row_count_gt_1"]
+    assert documents[0]["name"] == "orders – row count > 1"
+
+
 def test_custom_rules_are_ignored(caplog):
     schema = """
   - name: orders
@@ -506,6 +536,8 @@ def test_implicit_monitors_composite_keys_and_dedup(caplog):
           format: date
 """
     _, documents = _export(_contract(schema))
+    assert documents[0]["name"] == "orders – schema change"
+    assert documents[0]["description"] == "Source: data contract orders-contract v1.0.0"
     ids = [doc["friendlyId"] for doc in documents]
     assert ids == [
         "orders_schema_change",
@@ -607,6 +639,31 @@ customProperties:
     assert "cannot change kind" in caplog.text
 
 
+def test_server_only_reads_datasource_properties(caplog):
+    schema = """
+  - name: orders
+    properties:
+      - name: id
+        logicalType: string
+"""
+    servers = """
+  - server: production
+    type: snowflake
+    account: xyz12345
+    database: SALES
+    schema: PUBLIC
+    customProperties:
+      - property: sifflet.datasource
+        value: warehouse
+      - property: sifflet.severity
+        value: High
+"""
+    _, documents = _export(_contract(schema, servers=servers))
+    assert documents[0]["datasets"][0]["datasource"] == {"name": "warehouse"}
+    assert documents[0]["incident"]["severity"] == "Moderate"
+    assert "sifflet.severity is not read on a server; ignored." in caplog.text
+
+
 def test_schema_name_server_and_missing_server():
     schema = """
   - name: orders
@@ -684,7 +741,7 @@ def test_fixture_exports_the_example_monitors(caplog):
     assert all("id" not in doc for doc in documents)
     assert documents[1]["schedule"] == "0 6 * * *"
     assert documents[1]["incident"]["severity"] == "Critical"
-    assert documents[1]["name"] == "[orders-contract] orders – row count > 1000"
+    assert documents[1]["name"] == "orders – row count > 1000"
     assert documents[1]["parameters"]["threshold"] == {"kind": "Static", "min": 1000, "isMinInclusive": False}
     assert documents[2]["parameters"]["threshold"] == {"kind": "Static", "max": 5000, "isMaxInclusive": False}
     sql = documents[3]

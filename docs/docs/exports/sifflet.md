@@ -8,6 +8,14 @@ description: "Export a data contract to Sifflet monitors as code."
 
 Converts the contract's [quality rules](../quality-rules/index.md) into [Sifflet monitors as code](https://docs.siffletdata.com/docs/monitors-as-code). Each monitor is one YAML document. Apply the file with the Sifflet CLI. This command does not call the Sifflet API.
 
+Set the boolean custom property `sifflet.enabled` to `false` to leave part of the contract out of the export. It defaults to `true`. The most specific value wins: a quality rule overrides its property, which overrides its schema, which overrides the contract. `false` on a quality rule skips that rule only. `false` on a property, a schema, or the contract also skips the implicit monitors under it — schema change, primary key, and the monitors implied by `required`, `unique`, `primaryKey`, and string formats — and the quality rules under it, unless a more specific level sets `sifflet.enabled` back to `true`.
+
+```yaml
+customProperties:
+  - property: sifflet.enabled
+    value: false
+```
+
 A SQL quality rule needs an `id` or a `name`. Without one it is skipped. In its query, `${object}` becomes the fully qualified table name, built from the server's catalog, database, or project and its schema or dataset, for example `"SALES"."PUBLIC"."ORDERS"` on Snowflake. `${table}` and `${model}` stay the bare table name.
 
 A monitor's `friendlyId` comes from the first of these that is set on the quality rule:
@@ -35,7 +43,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 kind: Monitor
 version: 2
 friendlyId: orders_schema_change
-name: '[urn:datacontract:checkout:orders] orders – schema change'
+name: orders – schema change
 description: 'Source: data contract urn:datacontract:checkout:orders v1.0.0'
 incident:
   severity: Moderate
@@ -49,7 +57,7 @@ parameters:
 kind: Monitor
 version: 2
 friendlyId: orders_order_id_required
-name: '[urn:datacontract:checkout:orders] orders.order_id – not null'
+name: orders.order_id – not null
 description: 'Source: data contract urn:datacontract:checkout:orders v1.0.0'
 incident:
   severity: Moderate
@@ -65,7 +73,7 @@ parameters:
 kind: Monitor
 version: 2
 friendlyId: orders_order_id_unique
-name: '[urn:datacontract:checkout:orders] orders.order_id – unique'
+name: orders.order_id – unique
 description: 'Source: data contract urn:datacontract:checkout:orders v1.0.0'
 incident:
   severity: Moderate
