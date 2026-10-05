@@ -53,15 +53,15 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: clickhouse (type=clickhouse, host=localhost, port=8123, database=sales)
-╭────────┬──────────────────────────────────────────────────────────┬──────────┬─────────╮
-│ Result │ Check                                                    │ Field    │ Details │
-├────────┼──────────────────────────────────────────────────────────┼──────────┼─────────┤
-│  ...   │                                                          │          │         │
-│ passed │ Check that field 'order_id' is present                   │ order_id │         │
-│ passed │ Check that field order_id has physical type String       │ order_id │         │
-│ passed │ Check that field order_id has no missing values          │ order_id │         │
-│  ...   │                                                          │          │         │
-╰────────┴──────────────────────────────────────────────────────────┴──────────┴─────────╯
+╭────────┬────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                              │ Field    │ Details │
+├────────┼────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                    │          │         │
+│ passed │ Check that field 'order_id' is present             │ order_id │         │
+│ passed │ Check that field order_id has physical type String │ order_id │         │
+│ passed │ Check that field order_id has no missing values    │ order_id │         │
+│  ...   │                                                    │          │         │
+╰────────┴────────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Run 33 checks. Took 0.5 seconds.
 ```
 

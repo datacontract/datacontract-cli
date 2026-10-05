@@ -40,11 +40,6 @@ Running this against the [example `orders` contract](https://github.com/datacont
 
 <line_items> a odcs:Schema ;
     odcs:description "One row per line item within an order." ;
-    odcs:property [ a odcs:Property ;
-            odcs:description "Unique identifier of the line item." ;
-            odcsx:primaryKey true ;
-            odcs:logicalType "string" ;
-            odcs:name "line_item_id" ;
 # …
 ```
 

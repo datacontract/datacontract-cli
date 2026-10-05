@@ -83,19 +83,18 @@ datacontract test orders.odcs.yaml
 ```
 
 ```
+Testing orders.odcs.yaml
 Server: local (type=local, format=xml, path=orders/*.xml)
-╭────────┬──────────────────────────────────────────────────┬────────────────────────────┬─────────╮
-│ Result │ Check                                            │ Field                      │ Details │
-├────────┼──────────────────────────────────────────────────┼────────────────────────────┼─────────┤
-│ passed │ Check that the documents have order elements     │                            │         │
-│ passed │ Check that field 'line_item' is present          │ line_item                  │         │
-│ passed │ Check that field line_item[].price.currency has  │ line_item[].price.currency │         │
-│        │ no missing values                                │                            │         │
-│  ...   │                                                  │                            │         │
-│ passed │ Check that field status only contains enum       │ status                     │         │
-│        │ values ['pending', 'shipped']                    │                            │         │
-│ passed │ Check that field version has no missing values   │ version                    │         │
-╰────────┴──────────────────────────────────────────────────┴────────────────────────────┴─────────╯
+╭────────┬──────────────────────────────────────────────────┬───────────┬─────────╮
+│ Result │ Check                                            │ Field     │ Details │
+├────────┼──────────────────────────────────────────────────┼───────────┼─────────┤
+│ passed │ Check that the documents have order elements     │           │         │
+│ passed │ Check that field 'line_item' is present          │ line_item │         │
+│ passed │ Check that field line_item has no missing values │ line_item │         │
+│  ...   │                                                  │           │         │
+│ passed │ Check that field version has no missing values   │ version   │         │
+│ passed │ Check that field version has a minimum of 1      │ version   │         │
+╰────────┴──────────────────────────────────────────────────┴───────────┴─────────╯
 🟢 Data contract is valid. Run 16 checks. Took 0.35 seconds.
 ```
 

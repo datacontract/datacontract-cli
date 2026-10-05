@@ -54,14 +54,14 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: hive (type=hive, host=localhost, port=10000, database=sales)
-╭────────┬──────────────────────────────────────────────────────────┬──────────┬─────────╮
-│ Result │ Check                                                    │ Field    │ Details │
-├────────┼──────────────────────────────────────────────────────────┼──────────┼─────────┤
-│  ...   │                                                          │          │         │
-│ passed │ Check that field 'order_id' is present                   │ order_id │         │
-│ passed │ Check that field order_id has physical type string       │ order_id │         │
-│  ...   │                                                          │          │         │
-╰────────┴──────────────────────────────────────────────────────────┴──────────┴─────────╯
+╭────────┬────────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                              │ Field    │ Details │
+├────────┼────────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                    │          │         │
+│ passed │ Check that field 'order_id' is present             │ order_id │         │
+│ passed │ Check that field order_id has physical type string │ order_id │         │
+│  ...   │                                                    │          │         │
+╰────────┴────────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Run 41 checks. Took 4.4 seconds.
 ```
 

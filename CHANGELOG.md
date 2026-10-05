@@ -7,45 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-10-05
+
 ### Added
-- `datacontract import xsd`: import a data contract from an XML Schema (XSD) file (new `xml` extra)
-- `datacontract export xsd`: export a data contract to an XML Schema (XSD)
-- `datacontract test`: test XML files (`format: xml`)
+- ClickHouse and Hive:
+  - `datacontract test`: test ClickHouse and Hive servers (new `clickhouse` and `hive` extras) (#1687)
+  - `datacontract import clickhouse` and `datacontract import hive`: import a data contract from a live ClickHouse or Hive database (#1687)
+  - `datacontract import sql`: support the `clickhouse` and `hive` dialects (#1687)
+- XML:
+  - `datacontract import xsd`: import a data contract from an XML Schema (XSD) file (new `xml` extra) (#1684)
+  - `datacontract export xsd`: export a data contract to an XML Schema (XSD) (#1684)
+  - `datacontract test`: test XML files (`format: xml`) (#1684)
 - `datacontract import openapi`: import a data contract from the response of a GET operation in an OpenAPI 3.x document
 - `datacontract test`: test YAML responses of API servers
-- `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1679)
-- `datacontract test`: test ClickHouse and Hive servers (new `clickhouse` and `hive` extras)
-- `datacontract import clickhouse` and `datacontract import hive`: import a data contract from a live ClickHouse or Hive database
-- `datacontract import sql`: support the `clickhouse` and `hive` dialects
+- `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1678,#1679 @amassoudi)
+- `datacontract export dbt-models` and `dbt-sources` write a property's `meta` custom property to the column's `config.meta` (#1655,#1661 @lguyaux)
 
 ### Changed
-- `datacontract test`: warns when the column types cannot be read from the catalog, as the physical type checks then compare only the logicalType
-- `datacontract test`: `glue`, `kinesis` and `sftp` servers report that they are valid ODCS but cannot be tested yet, like the other untestable server types
-- `datacontract export dbt-models`, `datacontract export dbt-sources` and `datacontract dbt sync` nest generic-test parameters under `arguments:` **(we now require dbt 1.10+)** (#1680)
-- `datacontract export pydantic-model`: optional fields default to `None` (#1679)
-- `datacontract test`: an optional field that no record of a JSON, YAML or XML document has is no longer reported as missing
+- `datacontract export dbt-models`, `datacontract export dbt-sources` and `datacontract dbt sync` nest generic-test parameters under `arguments:` **(we now require dbt 1.10+)** (#1680,#1682 @opencode13241-eng @benvdh)
+- `datacontract export pydantic-model`: optional fields default to `None` (#1678,#1679 @amassoudi)
+- `datacontract test`:
+  - an optional field that no record of a JSON, YAML or XML document has is no longer reported as missing
+  - warns when the column types cannot be read from the catalog, as the physical type checks then compare only the logicalType (#1688)
+  - `glue`, `kinesis` and `sftp` servers report that they are valid ODCS but cannot be tested yet, like the other untestable server types (#1688)
 
 ### Fixed
-- `datacontract import sql`: the fields of a `STRUCT` column are no longer imported as columns of the table
-- `datacontract test`: a duplicate check on a composite primary key no longer breaks the JSON output and `run.pretty()`
-- `datacontract test`: a JSON value of the wrong type fails the JSON Schema check, not every check on its column
-- `datacontract test`: the JSON Schema check reads `.jsonl` and `.ndjson` files, and files without a `delimiter` the way DuckDB does
-- `datacontract import jsonschema`: imports `const`, `additionalProperties` as a map, `minItems`, `maxItems`, `uniqueItems`, `multipleOf` and `examples`, and warns about the keywords it leaves out
-- `datacontract import jsonschema`: resolves local `$ref`s and merges `allOf`, which imported as strings or not at all
-- `datacontract test`: a JSON record that breaks the JSON Schema no longer stops the other checks, and every such record is reported
-- `datacontract test`: JSON files that are not found are reported instead of failing with a TypeError
-- `datacontract import jsonschema`: boolean schemas (`true`, `false`) no longer fail the import
-- `datacontract import jsonschema` and `datacontract export jsonschema`: infinite bounds are left out instead of failing `datacontract test`
-- `datacontract test`: constraints on the items of an array of plain values (`pattern`, `enum`, `minimum`, …) are checked
-- `datacontract test`: required fields of an absent optional object are no longer reported as missing
-- `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1677 @dmaresma)
-- `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662)
-- `datacontract test`: JSON schema validation on S3 checks every file matched by the location, not only the last one (#1511)
-- `datacontract test`: JSON schema validation on S3 uses the AWS credential chain
-- `datacontract test` and `datacontract import s3`: public S3 buckets are read at the server's `endpointUrl`
-- `datacontract test` reports "no checks were executed" instead of failing when nothing was tested (#1504)
-- `datacontract api`: authoritative definitions are looked up with the Entropy Data API key sent with the request again (since v1.2.1, the API was unable to resolve authoritative definitions if ENTROPY_DATA_API_KEY was unset)
-- `datacontract api` caches authoritative definitions for only 60s, previously until the next restart
+- `datacontract export dbt-models` and `dbt-sources` write column `meta` and `tags` under `config`, so dbt Fusion accepts the output (#1661)
+- `datacontract test`:
+  - reports "no checks were executed" instead of failing when nothing was tested (#1504,#1675)
+  - a JSON record that breaks the JSON Schema no longer stops the other checks, and every such record is reported
+  - JSON schema validation on S3 checks every file matched by the location, not only the last one (#1511,#1673 @AdamoElProfesor)
+  - JSON schema validation on S3 uses the AWS credential chain (#1683)
+  - a JSON value of the wrong type fails the JSON Schema check, not every check on its column
+  - the JSON Schema check reads `.jsonl` and `.ndjson` files, and files without a `delimiter` the way DuckDB does
+  - constraints on the items of an array of plain values (`pattern`, `enum`, `minimum`, …) are checked
+  - required fields of an absent optional object are no longer reported as missing (#1684)
+  - JSON files that are not found are reported instead of failing with a TypeError
+  - a duplicate check on a composite primary key no longer breaks the JSON output and `run.pretty()` (#1687)
+  - a `DATACONTRACT_MAX_ERRORS` below 1 is reported as a configuration error (#1673 @AdamoElProfesor)
+- `datacontract import jsonschema`:
+  - resolves local `$ref`s and merges `allOf`, which imported as strings or not at all
+  - imports `const`, `additionalProperties` as a map, `minItems`, `maxItems`, `uniqueItems`, `multipleOf` and `examples`, and warns about the keywords it leaves out
+  - boolean schemas (`true`, `false`) no longer fail the import
+- `datacontract import dbt` keeps column `meta` instead of silently dropping it: `classification` maps to ODCS `classification`, the other entries to a `meta` custom property (#1655,#1661 @lguyaux)
+- `datacontract import sql`: the fields of a `STRUCT` column are no longer imported as columns of the table (#1688)
+- `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1676,#1677 @dmaresma)
+- `datacontract api`: authoritative definitions are looked up with the Entropy Data API key sent with the request again (since v1.2.1, the API was unable to resolve authoritative definitions if ENTROPY_DATA_API_KEY was unset) (#1681)
+- `datacontract api` caches authoritative definitions for only 60s, previously until the next restart (#1681)
+- `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662,#1665 @AdamoElProfesor @parvin-97)
+- `datacontract test` and `datacontract import s3`: public S3 buckets are read at the server's `endpointUrl` (#1683)
 
 ## [1.2.2] - 2026-09-25
 
@@ -54,7 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import odata` creates a datacontract from OData 4 metadata at a URL or from a local file (#1649 @jahlen)
 - `datacontract export` writes SQL Server `VECTOR(n)` and `VECTOR(n, float16)` vector types
 - `datacontract test` checks constraints and quality rules of nested properties on servers read through DuckDB (#1278)
-- `datacontract export dbt-models` and `dbt-sources` write a property's `meta` custom property to the column's `config.meta` (#1655)
 
 ### Changed
 - `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
@@ -69,8 +78,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: a SQL quality rule on a `mysql` server can no longer reach the MySQL server or its credentials; rules on `mysql` and `iceberg` servers are read as DuckDB SQL
 
 ### Fixed
-- `datacontract export dbt-models` and `dbt-sources` write column `meta` and `tags` under `config`, so dbt Fusion accepts the output
-- `datacontract import dbt` keeps column `meta` instead of silently dropping it: `classification` maps to ODCS `classification`, the other entries to a `meta` custom property (#1655 @lguyaux)
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)
