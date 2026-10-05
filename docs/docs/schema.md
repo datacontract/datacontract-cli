@@ -24,6 +24,7 @@ datacontract test --checks properties datacontract.yaml
 | `required` | property | No missing values |
 | `unique` | property | No duplicate values |
 | `primaryKey` | property | No missing values **and** no duplicates |
+| `relationships` (`type: foreignKey`) | property, schema | Every non-null key exists in the referenced schema |
 | `logicalTypeOptions.minLength` / `maxLength` | property | Value length within bounds |
 | `logicalTypeOptions.minimum` / `maximum` | property | Value within bounds (inclusive) |
 | `logicalTypeOptions.exclusiveMinimum` / `exclusiveMaximum` | property | Value within bounds (exclusive) |
@@ -138,6 +139,27 @@ properties:
 ```
 
 > Produces: `order_id` not null, `line_number` not null, and `(order_id, line_number)` unique.
+
+## Foreign keys
+
+A `relationships` entry of `type: foreignKey` checks that every non-null value of the referencing column exists in the referenced one. Declare it on the property, with `to`, or on the schema, with `from` and `to` lists for a composite key:
+
+```yaml
+schema:
+  - name: line_items
+    properties:
+      - name: order_id
+        relationships:
+          - type: foreignKey
+            to: orders.order_id
+  - name: shipments
+    relationships:
+      - type: foreignKey
+        from: [shipments.order_id, shipments.line_no]
+        to: [order_lines.order_id, order_lines.line_no]
+```
+
+The referenced schema must be read in the same run. When `--schema-name` selects only the referencing schema of a file server, the check is reported as a warning.
 
 ## Value constraints
 
