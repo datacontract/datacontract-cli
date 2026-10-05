@@ -44,6 +44,8 @@ DEFAULT_DIMENSIONS: dict[str, str] = {
     "field_max_items": "conformity",
     # the JSON Schema validation checks, which all share the type "schema"
     "schema": "conformity",
+    # consistency — a foreign key points at a row the referenced model does not have
+    "field_relationship": "consistency",
     # the dataset does not conform to the retention period it promises
     "servicelevel_retention": "conformity",
     # timeliness — the data is not current

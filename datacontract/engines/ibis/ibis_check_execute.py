@@ -330,6 +330,8 @@ def _run_model(
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
                 _run_duplicate(run, t, unfiltered_t, columns, spec, model_row_count())
+            elif spec.metric == MetricType.MISSING_REFERENCE_COUNT:
+                _run_missing_reference(run, con, server, t, columns, spec)
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, schema, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
@@ -804,6 +806,31 @@ def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_coun
     if len(cols) > 1:
         extra["columns"] = spec.columns
     _update_diagnostics(run, spec.key, extra)
+
+
+def _run_missing_reference(run: Run, con, server, t, columns, spec: CheckSpec):
+    """Count the rows whose foreign key is not null and has no matching row in the referenced model."""
+    try:
+        referenced = _resolve_table(con, spec.referenced_model, _table_database(con, server)).view()
+    except Exception as e:
+        # With --schema-name, file sources only load the tested model, so the referenced one may be absent.
+        set_result(
+            run,
+            spec.key,
+            ResultEnum.warning,
+            f"Could not read the referenced model '{spec.referenced_model}': {_first_line(str(e))}",
+        )
+        return
+    referenced_columns = {c.lower(): c for c in referenced.columns}
+    keys = [_resolve_col(columns, c) for c in spec.columns]
+    rows = t.filter([t[k].notnull() for k in keys])
+    predicates = [
+        rows[k] == referenced[_resolve_col(referenced_columns, r)] for k, r in zip(keys, spec.referenced_columns)
+    ]
+    expr = rows.anti_join(referenced, predicates).count()
+    _record_sql(run, spec, expr)
+    value = expr.execute()
+    _evaluate(run, spec, 0 if value is None else int(value))
 
 
 def _is_item_duplicate(spec: CheckSpec) -> bool:

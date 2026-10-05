@@ -245,6 +245,7 @@ def create_checks(
             # File-metadata checks are emitted by check_azure_blob_file
             continue
         checks.extend(_to_schema_checks(schema_obj, server, variables))
+        checks.extend(_relationship_checks(schema_obj, data_contract.schema_, server))
     checks.extend(_to_servicelevel_checks(data_contract, server))
     checks = [c for c in checks if c is not None]
     # Schema and service level checks cannot declare an ODCS dimension, so fill
@@ -615,6 +616,94 @@ def _to_schema_checks(
     if schema_object.quality:
         checks.extend(_quality_checks(model, None, schema_object.quality, server, variables))
 
+    return checks
+
+
+def _relationship_checks(
+    schema_object: SchemaObject, schemas: List[SchemaObject], server: Optional[Server]
+) -> List[CheckSpec]:
+    """A foreign key holds when every non-null key in this model exists in the referenced model.
+
+    Declared on a property (`to` only) or on the schema (`from` and `to`, lists for a composite key),
+    both as `schema.property`. A relationship that names no existing schema or property is reported
+    as a warning rather than dropped, so a typo never reads as a passing check.
+    """
+    server_type = get_server_type(server) if server is not None else None
+    model = to_schema_name(schema_object, server_type)
+    properties = schema_object.properties or []
+    declared = [(prop.name, rel) for prop in properties for rel in prop.relationships or []]
+    declared += [(None, rel) for rel in schema_object.relationships or []]
+
+    checks: List[CheckSpec] = []
+    for source, rel in declared:
+        if (rel.type or "foreignKey") != "foreignKey":
+            continue
+        sources = [source] if source is not None else rel.from_ if isinstance(rel.from_, list) else [rel.from_]
+        targets = rel.to if isinstance(rel.to, list) else [rel.to]
+        # `from` may be qualified with this schema's name; only the property part is needed.
+        source_names = [str(s).rsplit(".", 1)[-1] for s in sources if s]
+        parts = [str(t).rsplit(".", 1) for t in targets if t]
+        target_schema = next((s for s in schemas if parts and len(parts[0]) == 2 and s.name == parts[0][0]), None)
+
+        def physical(props, name):
+            prop = next((p for p in props or [] if p.name == name), None)
+            return None if prop is None else prop.physicalName or prop.name
+
+        columns = [physical(properties, name) for name in source_names]
+        referenced = (
+            [physical(target_schema.properties, part[-1]) for part in parts if part[0] == target_schema.name]
+            if target_schema is not None
+            else []
+        )
+        label = ", ".join(source_names) or "?"
+        key = f"{model}__{'__'.join(source_names)}__field_relationship"
+        if (
+            not columns
+            or None in columns
+            or len(referenced) != len(columns)
+            or None in referenced
+            or len(parts) != len(columns)
+        ):
+            target_label = ", ".join(str(t) for t in targets)
+            checks.append(
+                CheckSpec(
+                    key=key,
+                    category="schema",
+                    type="field_relationship",
+                    name=f"Check that {label} has no values missing from {target_label}",
+                    model=model,
+                    field=source_names[0] if len(source_names) == 1 else None,
+                    metric=MetricType.UNSUPPORTED,
+                    preset_result="warning",
+                    preset_reason=f"The relationship from {label} to {target_label} names a schema or property "
+                    "that the contract does not define, or its from and to lists differ in length.",
+                )
+            )
+            continue
+
+        referenced_model = to_schema_name(target_schema, server_type)
+        if len(columns) == 1:
+            name = f"Check that field {columns[0]} has no values missing from {referenced_model}.{referenced[0]}"
+        else:
+            name = (
+                f"Check that ({', '.join(columns)}) has no values missing from "
+                f"{referenced_model} ({', '.join(referenced)})"
+            )
+        checks.append(
+            CheckSpec(
+                key=key,
+                category="schema",
+                type="field_relationship",
+                name=name,
+                model=model,
+                field=columns[0] if len(columns) == 1 else None,
+                metric=MetricType.MISSING_REFERENCE_COUNT,
+                threshold=Threshold(Op.EQ, 0),
+                columns=columns,
+                referenced_model=referenced_model,
+                referenced_columns=referenced,
+            )
+        )
     return checks
 
 
