@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import odata` creates a datacontract from OData 4 metadata at a URL or from a local file (#1649 @jahlen)
 - `datacontract export` writes SQL Server `VECTOR(n)` and `VECTOR(n, float16)` vector types
 - `datacontract test` checks constraints and quality rules of nested properties on servers read through DuckDB (#1278)
+- `datacontract export dbt-models` and `dbt-sources` write a property's `meta` custom property to the column's `config.meta` (#1655)
 
 ### Changed
 - `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
@@ -68,6 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: a SQL quality rule on a `mysql` server can no longer reach the MySQL server or its credentials; rules on `mysql` and `iceberg` servers are read as DuckDB SQL
 
 ### Fixed
+- `datacontract export dbt-models` and `dbt-sources` write column `meta` and `tags` under `config`, so dbt Fusion accepts the output
+- `datacontract import dbt` keeps column `meta` instead of silently dropping it: `classification` maps to ODCS `classification`, the other entries to a `meta` custom property (#1655 @lguyaux)
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)

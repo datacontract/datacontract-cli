@@ -100,6 +100,74 @@ def test_import_dbt_manifest_with_filter():
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
 
 
+def test_import_dbt_manifest_maps_column_meta():
+    manifest = {
+        "metadata": {
+            "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+            "dbt_version": "1.8.0",
+            "project_name": "test_project",
+            "adapter_type": "databricks",
+        },
+        "nodes": {
+            "model.test_project.fact_workers": {
+                "resource_type": "model",
+                "unique_id": "model.test_project.fact_workers",
+                "name": "fact_workers",
+                "description": "Test model",
+                "config": {"materialized": "table"},
+                "tags": [],
+                "columns": {
+                    "employee_id": {
+                        "name": "employee_id",
+                        "data_type": "string",
+                        "description": "Employee identifier",
+                        "constraints": [{"type": "not_null"}, {"type": "unique"}],
+                        "meta": {
+                            "classification": "C2",
+                            "is_pii": True,
+                            "masking": {"policy": "hash", "roles": ["hr_admin"]},
+                            "datacontract_cli": {"generated": True},
+                        },
+                        "tags": [],
+                    },
+                    "nationality": {
+                        "name": "nationality",
+                        "data_type": "string",
+                        "description": "Nationality of the worker",
+                        "constraints": [],
+                        "meta": {"classification": 2},
+                        "tags": [],
+                    },
+                    "salary": {
+                        "name": "salary",
+                        "data_type": "decimal",
+                        "constraints": [],
+                        "meta": {"classification": {"level": "high"}},
+                        "tags": [],
+                    },
+                },
+            }
+        },
+        "child_map": {"model.test_project.fact_workers": []},
+    }
+
+    contract = import_dbt_manifest(manifest, [], ["model"])
+    employee_id = contract.schema_[0].properties[0]
+    nationality = contract.schema_[0].properties[1]
+    salary = contract.schema_[0].properties[2]
+
+    assert employee_id.classification == "C2"
+    assert [(cp.property, cp.value) for cp in employee_id.customProperties] == [
+        ("meta", {"is_pii": True, "masking": {"policy": "hash", "roles": ["hr_admin"]}})
+    ]
+    assert nationality.classification == "2"
+    assert nationality.customProperties is None
+    assert salary.classification is None
+    assert [(cp.property, cp.value) for cp in salary.customProperties] == [
+        ("meta", {"classification": {"level": "high"}})
+    ]
+
+
 # --- Versioned model filter tests ---
 
 

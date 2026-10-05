@@ -55,10 +55,11 @@ sources:
               - dbt_expectations.expect_column_values_to_match_regex:
                   arguments:
                     regex: ^B[0-9]+$
-            meta:
-              classification: sensitive
-            tags:
-              - order_id
+            config:
+              meta:
+                classification: sensitive
+              tags:
+                - order_id
           - name: order_total
             description: The order_total field
             data_type: NUMBER
@@ -112,10 +113,11 @@ sources:
               - dbt_expectations.expect_column_values_to_match_regex:
                   arguments:
                     regex: ^B[0-9]+$
-            meta:
-              classification: sensitive
-            tags:
-              - order_id
+            config:
+              meta:
+                classification: sensitive
+              tags:
+                - order_id
           - name: order_total
             description: The order_total field
             data_type: INT64

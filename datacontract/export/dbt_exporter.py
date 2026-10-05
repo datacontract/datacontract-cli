@@ -246,10 +246,15 @@ def _to_column(
         if prop.unique or (is_primary_key and is_single_pk):
             column.setdefault("constraints", []).append({"type": "unique"})
 
+    # Under `config`, not top-level: dbt Fusion rejects a column's top-level `meta` and `tags`.
+    meta = next((cp.value for cp in prop.customProperties or [] if cp.property == "meta"), None)
+    meta = dict(meta) if isinstance(meta, dict) else {}
     if prop.classification is not None:
-        column.setdefault("meta", {})["classification"] = prop.classification
-    if prop.tags is not None and len(prop.tags) > 0:
-        column.setdefault("tags", []).extend(prop.tags)
+        meta["classification"] = prop.classification
+    if meta:
+        column.setdefault("config", {})["meta"] = meta
+    if prop.tags:
+        column.setdefault("config", {})["tags"] = list(prop.tags)
 
     column["data_tests"].extend(
         field_to_data_tests(

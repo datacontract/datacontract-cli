@@ -64,6 +64,8 @@ models:
 
 If a server is selected via `--server` (based on its `type`), the dbt column `data_types` match the expected data types of that server. If no server is selected, it defaults to `snowflake`.
 
+A property's `classification` and its `meta` custom property are written to the column's `config.meta`, its tags to `config.tags`.
+
 The generated tests need dbt 1.10 or later.
 
 See the [dbt Integration](../dbt.md) guide for the full picture, including `datacontract dbt sync`.
