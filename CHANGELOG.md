@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract export dbt-models` and `dbt-sources` write column `meta` and `tags` under `config`, so dbt Fusion accepts the output
-- `datacontract import dbt` maps column `meta.classification` to ODCS `classification` instead of silently dropping it (#1655)
+- `datacontract import dbt` keeps column `meta` instead of silently dropping it: `classification` maps to ODCS `classification`, the other entries to a `meta` custom property (#1655 @lguyaux)
 - Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
 - `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
 - Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)
