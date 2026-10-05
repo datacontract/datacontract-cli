@@ -243,8 +243,12 @@ def _to_column(
             column.setdefault("constraints", []).append({"type": "unique"})
 
     # Under `config`, not top-level: dbt Fusion rejects a column's top-level `meta` and `tags`.
+    meta = next((cp.value for cp in prop.customProperties or [] if cp.property == "meta"), None)
+    meta = dict(meta) if isinstance(meta, dict) else {}
     if prop.classification is not None:
-        column.setdefault("config", {})["meta"] = {"classification": prop.classification}
+        meta["classification"] = prop.classification
+    if meta:
+        column.setdefault("config", {})["meta"] = meta
     if prop.tags:
         column.setdefault("config", {})["tags"] = list(prop.tags)
 

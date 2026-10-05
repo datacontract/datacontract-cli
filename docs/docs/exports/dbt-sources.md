@@ -64,4 +64,6 @@ sources:
 
 As with [`dbt-models`](./dbt-models.md), selecting a server maps logical types to that server's data types; otherwise `snowflake` is used.
 
+A property's `classification` and its `meta` custom property are written to the column's `config.meta`, its tags to `config.tags`.
+
 All options: **[`datacontract export dbt-sources`](../commands/export/dbt-sources.md)**.

@@ -2,7 +2,13 @@ import os
 import sys
 
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
+from open_data_contract_standard.model import (
+    CustomProperty,
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
+    Server,
+)
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -253,6 +259,40 @@ models:
     expected = yaml.safe_load(expected_dbt_model)
 
     assert result == expected
+
+
+def test_to_dbt_models_writes_meta_custom_property_to_column_meta():
+    data_contract = OpenDataContractStandard(
+        apiVersion="v3.1.0",
+        kind="DataContract",
+        id="hr",
+        schema=[
+            SchemaObject(
+                name="fact_workers",
+                properties=[
+                    SchemaProperty(
+                        name="employee_id",
+                        logicalType="string",
+                        classification="restricted",
+                        customProperties=[
+                            CustomProperty(property="meta", value={"classification": "C2", "is_pii": True})
+                        ],
+                    ),
+                    SchemaProperty(
+                        name="department_id",
+                        logicalType="string",
+                        customProperties=[CustomProperty(property="meta", value="not a mapping")],
+                    ),
+                ],
+            )
+        ],
+    )
+
+    columns = yaml.safe_load(to_dbt_models_yaml(data_contract))["models"][0]["columns"]
+
+    assert columns[0]["config"]["meta"] == {"is_pii": True, "classification": "restricted"}
+    assert "meta" not in columns[0]
+    assert "config" not in columns[1]
 
 
 def read_file(file):
