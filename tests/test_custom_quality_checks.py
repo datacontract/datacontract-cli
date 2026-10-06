@@ -135,14 +135,15 @@ def test_value_arguments_become_literals_and_cannot_change_the_query():
     assert spec.query.endswith("WHERE amount IN ('O''Brien', '0) OR (1=1')")
 
 
-def test_a_variable_holding_a_plain_number_becomes_a_number_literal(monkeypatch):
-    monkeypatch.setenv("MAX_AMOUNT", "1000")
-    monkeypatch.setenv("MIN_AMOUNT", "007")
-    rule = BETWEEN.replace("max: 100", "max: ${MAX_AMOUNT}").replace("min: 0", "min: ${MIN_AMOUNT}")
+def test_a_variable_in_an_argument_is_text_even_when_it_holds_a_number(monkeypatch):
+    monkeypatch.setenv("MAX_AMOUNT", "100")
+    rule = BETWEEN.replace("max: 100", "max: ${MAX_AMOUNT}")
     run = _test(_contract(property_quality=_amount_rule(rule)))
 
     check = next(c for c in run.checks if c.type == "field_quality_custom")
-    assert "amount < '007' OR amount > 1000" in check.implementation
+    assert "amount > '100'" in check.implementation
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["value"] == 2
 
 
 def test_a_contract_variable_in_an_argument_is_resolved_into_a_literal(monkeypatch):

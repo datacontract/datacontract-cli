@@ -260,9 +260,7 @@ def resolve_runtime_variables(
                 and isinstance(original, dict)
                 and "arguments" in original
             ):
-                arguments = resolve_runtime_variables(
-                    original["arguments"], f"{field_source}.arguments", variables, typed=True
-                )
+                arguments = resolve_runtime_variables(original["arguments"], f"{field_source}.arguments", variables)
                 updates[field] = {**original, "arguments": arguments}
                 continue
             if field in _DEFERRED_FIELDS:

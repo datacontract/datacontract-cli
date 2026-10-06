@@ -76,7 +76,7 @@ queries:
 mustBeGreaterThan: 0
 ```
 
-Arguments are always inserted as escaped literals or identifiers, never as raw SQL, so a contract can't alter a check's query. Argument values may use [variables](../configuration.md#variables-in-the-data-contract): `max: ${MAX_AMOUNT}` compares with the number `1000`. A check file can't reference variables itself; pass them in through an argument.
+Arguments are always inserted as escaped literals or identifiers, never as raw SQL, so a contract can't alter a check's query. Argument values may use [variables](../configuration.md#variables-in-the-data-contract), which always resolve to text: `max: ${MAX_AMOUNT}` becomes `'1000'`. Most databases compare that with a number column as the number; on BigQuery and Trino, the check needs a `CAST`. A check file can't reference variables itself; pass them in through an argument.
 
 ## Placeholders
 
