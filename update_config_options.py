@@ -23,6 +23,7 @@ GROUPS = {
     "datamesh_manager": "Entropy Data (publishing, remote contracts)",
     "datacontract_manager": "Entropy Data (publishing, remote contracts)",
     "api_header": "General",
+    "custom_quality_checks": "General",
     "max_errors": "General",
     "athena": "Athena",
     "azure": "Azure",

@@ -143,7 +143,13 @@ def execute_data_contract_test(
         )
         return
 
-    specs = create_checks(data_contract, server, schema_name=schema_name, variables=variables)
+    specs = create_checks(
+        data_contract,
+        server,
+        schema_name=schema_name,
+        variables=variables,
+        custom_quality_checks=config.get_custom_quality_checks(),
+    )
     if check_categories is not None:
         specs = [s for s in specs if s.category in check_categories]
         if not specs:

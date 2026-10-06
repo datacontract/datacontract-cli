@@ -154,7 +154,7 @@ def test_a_backslash_in_a_name_cannot_hide_a_second_statement_on_mysql():
     quality = DataQuality(
         type="sql", query='SELECT COUNT(*) AS {field} FROM {model}; CREATE TABLE pwn AS SELECT 1; --"'
     )
-    query = prepare_query(quality, "orders", "a\\", Server(server="production", type="mysql"))
+    query = prepare_query(quality.query, "orders", "a\\", Server(server="production", type="mysql"))
 
     assert refusal_reason(query, dialect_for_server_type("mysql")) is not None
 

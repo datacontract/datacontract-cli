@@ -124,7 +124,7 @@ def print_test_results_table(run, console):
     for check in sorted(run.checks, key=lambda c: (c.result or "", c.model or "", c.field or "")):
         table.add_row(
             with_markup(check.result),
-            check.name,
+            escape(str(check.name)),
             to_field(run, check),
             escape(str(check.reason)) if check.reason else None,
         )

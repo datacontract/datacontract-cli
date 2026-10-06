@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test`: check that foreign keys declared under `relationships` have no values missing from the referenced schema (#1691)
+- `datacontract test`: custom quality checks, SQL checks defined once in a folder (`--custom-quality-checks`) and used by name from a contract's quality rules
+
+### Fixed
+- `datacontract test`: `mustBe` and `mustNotBe` holding a `${VAR}` reference to a number compare with the number, not its text
 
 ### Fixed
 - Redact secrets in the MySQL connection string of error messages (#1706)
