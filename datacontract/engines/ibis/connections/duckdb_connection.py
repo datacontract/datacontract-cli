@@ -513,11 +513,11 @@ def _attach_mysql(con, host: str, port: int, user: str, password: str, database:
     if database:
         parts.append(f"database={database}")
     conn_str = " ".join(parts).replace("'", "''")
-    con.execute("CREATE SECRET mysqldb_password (TYPE mysql, PASSWORD ?)", [password])
+    con.execute("CREATE TEMPORARY SECRET mysqldb_password (TYPE mysql, PASSWORD ?)", [password])
     try:
         con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql, SECRET mysqldb_password)")
     finally:
-        con.execute("DROP SECRET mysqldb_password")
+        con.execute("DROP TEMPORARY SECRET mysqldb_password")
 
 
 def _sql_literal(value) -> str:
