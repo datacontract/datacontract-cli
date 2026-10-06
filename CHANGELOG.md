@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract test`: check that foreign keys declared under `relationships` have no values missing from the referenced schema (#1691)
 - `datacontract test`: custom quality checks, SQL checks defined once in a folder (`--custom-quality-checks`) and used by name from a contract's quality rules
 
 ### Fixed

@@ -27,6 +27,7 @@ class MetricType(str, Enum):
     MISSING_COUNT = "missing_count"
     DUPLICATE_COUNT = "duplicate_count"
     INVALID_COUNT = "invalid_count"
+    MISSING_REFERENCE_COUNT = "missing_reference_count"
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"
     FIELD_PHYSICAL_TYPE = "field_physical_type"
@@ -158,7 +159,10 @@ class CheckSpec:
     expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
     expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
-    columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns
+    columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys
+
+    referenced_model: Optional[str] = None  # MISSING_REFERENCE_COUNT
+    referenced_columns: Optional[List[str]] = None  # MISSING_REFERENCE_COUNT, pairwise with `columns`
 
     query: Optional[str] = None  # CUSTOM_SQL (placeholders already substituted)
     dialect: Optional[str] = None  # CUSTOM_SQL input SQL dialect

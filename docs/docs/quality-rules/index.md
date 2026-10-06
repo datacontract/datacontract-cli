@@ -149,6 +149,7 @@ Both select quality rules only — no schema or service level checks run alongsi
 | `completeness` | `required` fields, primary key not-null |
 | `uniqueness` | `unique` fields, primary key uniqueness (including composite keys) |
 | `conformity` | field presence, logical and physical types, nested types, `pattern`, `enum`, length and value bounds, JSON Schema validation, `slaProperties` retention |
+| `consistency` | `relationships` foreign keys |
 | `timeliness` | `slaProperties` freshness |
 
 ## Where quality rules are used
