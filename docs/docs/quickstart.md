@@ -50,7 +50,7 @@ Server: production (type=postgres, host=..., port=6543, database=postgres, schem
 │ passed │ Check that field order_id has physical type UUID │ orders.order_id │         │
 │  ...   │                                                  │                 │         │
 ╰────────┴──────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 Data contract is valid. Ran 30 checks. Took 2.436205 seconds.
+🟢 Data contract is valid. Ran 31 checks. Took 2.436205 seconds.
 ```
 
 The CLI verified that the YAML itself is valid, that all records comply with the schema, and that all quality attributes are met.

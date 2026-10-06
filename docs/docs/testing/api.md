@@ -94,7 +94,7 @@ Server: production (type=api, location=https://api.example.com/v1/orders?limit=$
 │ passed │ Check that field 'order_id' is present    │ order_id │                             │
 │  ...   │                                           │          │                             │
 ╰────────┴───────────────────────────────────────────┴──────────┴─────────────────────────────╯
-🟢 Data contract is valid. Ran 6 checks. Took 1.2 seconds.
+🟢 Data contract is valid. Ran 10 checks. Took 1.2 seconds.
 ```
 
 The request asks for JSON or YAML (`Accept: application/json, application/yaml`). How the response is read depends on its `Content-Type`:
