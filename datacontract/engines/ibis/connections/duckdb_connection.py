@@ -507,6 +507,19 @@ def _load_extension(con, name: str, extra: str) -> None:
         ) from e
 
 
+def _attach_mysql(con, host: str, port: int, user: str, password: str, database: str | None) -> None:
+    """ATTACH MySQL as ``mysqldb``; the password goes in a secret, as DuckDB echoes the ATTACH string in its errors."""
+    parts = [f"host={host}", f"port={port}", f"user={user}"]
+    if database:
+        parts.append(f"database={database}")
+    conn_str = " ".join(parts).replace("'", "''")
+    con.execute("CREATE SECRET mysqldb_password (TYPE mysql, PASSWORD ?)", [password])
+    try:
+        con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql, SECRET mysqldb_password)")
+    finally:
+        con.execute("DROP SECRET mysqldb_password")
+
+
 def _sql_literal(value) -> str:
     """Escape a value for a single-quoted duckdb string literal.
 

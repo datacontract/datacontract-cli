@@ -32,7 +32,7 @@ def captured_statements(monkeypatch):
     statements = []
 
     class FakeConnection:
-        def execute(self, sql):
+        def execute(self, sql, parameters=None):
             statements.append(sql)
 
     monkeypatch.setattr(duckdb, "connect", lambda: FakeConnection())
@@ -86,6 +86,4 @@ def test_a_failed_attach_does_not_show_the_password(env):
     with pytest.raises(duckdb.Error) as exc_info:
         _connect()
 
-    output = "".join(traceback.format_exception(exc_info.value))
-    assert "password=***" in output
-    assert "s3cret-pw" not in output
+    assert "s3cret-pw" not in "".join(traceback.format_exception(exc_info.value))

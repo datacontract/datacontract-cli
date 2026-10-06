@@ -121,8 +121,7 @@ def _attach(host: str, port: int, database: str, config: Optional[Config] = None
             original_exception=e,
         )
 
-    from datacontract.engines.ibis.connections.connect import _attach_mysql
-    from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
+    from datacontract.engines.ibis.connections.duckdb_connection import _attach_mysql, _load_extension
 
     user = config.get_mysql_username(required=True)
     password = config.get_mysql_password(required=True)

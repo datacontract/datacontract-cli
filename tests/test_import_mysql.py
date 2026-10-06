@@ -160,7 +160,6 @@ def test_a_failed_connection_does_not_show_the_password(monkeypatch):
     with pytest.raises(DataContractException) as exc_info:
         _import(port=1)
 
-    assert "password=***" in exc_info.value.reason
     assert "s3cret-pw" not in exc_info.value.reason
     assert "s3cret-pw" not in "".join(traceback.format_exception(exc_info.value.original_exception))
 
