@@ -109,6 +109,43 @@ def test_composite_key_declared_on_the_schema(tmp_path):
     assert "was 1" in check.reason
 
 
+def test_one_column_referencing_two_schemas(tmp_path):
+    _write(
+        tmp_path,
+        orders=["order_id", "o1"],
+        invoices=["order_id", "o1", "o2"],
+        line_items=["line_item_id,order_id", "l1,o1", "l2,o2"],
+    )
+    schema = """schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+  - name: invoices
+    properties:
+      - name: order_id
+        logicalType: string
+  - name: line_items
+    properties:
+      - name: line_item_id
+        logicalType: string
+      - name: order_id
+        logicalType: string
+        relationships:
+          - type: foreignKey
+            to: orders.order_id
+          - type: foreignKey
+            to: invoices.order_id
+"""
+
+    checks = _relationship_checks(tmp_path, schema)
+
+    assert {c.key: c.result for c in checks} == {
+        "line_items__order_id__orders__order_id__field_relationship": ResultEnum.failed,
+        "line_items__order_id__invoices__order_id__field_relationship": ResultEnum.passed,
+    }
+
+
 def test_self_reference(tmp_path):
     _write(tmp_path, employees=["employee_id,manager_id", "e1,", "e2,e1", "e3,e9"])
     schema = """schema:
