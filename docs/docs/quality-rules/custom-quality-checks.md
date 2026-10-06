@@ -80,7 +80,7 @@ Arguments are always inserted as escaped literals or identifiers, never as raw S
 
 ## Placeholders
 
-The queries use the same placeholders as [SQL rules](./sql.md#placeholders) — `${table}`, `${column}`, `${schema}`, and so on. A check whose queries use `${column}` (or `${field}`, `${property}`) can only be declared on a property.
+The queries use the same placeholders as [SQL rules](./sql.md#placeholders) — `${table}`, `${column}`, `${schema}`, and so on. A check whose queries use `${column}` (or `${field}`, `${property}`) can only be declared on a property. As in placeholders, the `$` in an argument reference is optional: `{arguments.min}` works the same as `${arguments.min}`.
 
 ## Dialects
 
@@ -120,7 +120,7 @@ A custom quality check is reported in the `quality` category with the type `fiel
 | Situation | Result |
 |---|---|
 | No folder configured, no check by that name, or an invalid check file | `error` |
-| An argument that is missing, undeclared or of the wrong kind, a column check on a schema, no expected result | `warning` |
+| An argument that is missing, undeclared, an empty list or of the wrong kind, a column check on a schema, no expected result | `warning` |
 | No query for the server's dialect and no `ansi` query | `warning` |
 | A query that is not a single read-only statement | `failed` |
 

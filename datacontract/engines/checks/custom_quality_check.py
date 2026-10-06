@@ -38,9 +38,11 @@ _KEYS = ("description", "owner", "dimension", "arguments", "queries", *COMPARATO
 _DIMENSIONS = _ENUM_VALUES[("DataQuality", "dimension")]
 _DIALECTS = ("ansi", *sorted(set(_DIALECT_BY_SERVER_TYPE.values())))
 _ARGUMENT_NAME = re.compile(r"[A-Za-z_]\w*")
-_REFERENCE = re.compile(r"\$\{([^}]*)\}")
+_REFERENCE = re.compile(r"\$\{([^}]*)\}|\{(arguments\.[^}]*)\}")
 _CALL_DELIMITERS = (",", "(", ")", "=", "'", '"')
 _MARKER = re.compile(r"__datacontract_reference_(\d+)__")
+# the prefix and quote a string token starts with: E'...', N'...', r'...', U&'...', "...", $$...$$, $tag$...$tag$
+_STRING_OPENING = re.compile(r"(\w*&?)(\$\w*\$|'''|\"\"\"|['\"])")
 
 
 def placeholder_pattern(names: tuple[str, ...] | list[str]) -> re.Pattern:
@@ -49,8 +51,8 @@ def placeholder_pattern(names: tuple[str, ...] | list[str]) -> re.Pattern:
 
 
 def reference_pattern(names: tuple[str, ...] | list[str]) -> re.Pattern:
-    """`{name}` / `${name}` placeholders and `${arguments.x}` references, without the quotes around them."""
-    return re.compile(rf"\$?\{{({'|'.join(names)})\}}|\$\{{arguments\.(\w+)\}}")
+    """`{name}` / `${name}` placeholders and `{arguments.x}` / `${arguments.x}` references, without quotes."""
+    return re.compile(rf"\$?\{{({'|'.join(names)})\}}|\$?\{{arguments\.(\w+)\}}")
 
 
 class CustomQualityCheckError(Exception):
@@ -78,14 +80,18 @@ class CustomQualityCheck:
 def load(directory: str, name: str) -> CustomQualityCheck:
     folder = Path(directory)
     if not folder.is_dir():
-        raise CustomQualityCheckError(f"The custom quality checks folder {directory} does not exist.")
+        problem = "is a file, not a folder" if folder.exists() else "does not exist"
+        raise CustomQualityCheckError(f"The custom quality checks folder {directory} {problem}.")
     # The name comes from the contract, so it is looked up among the files, never joined into a path.
     files: dict[str, list[Path]] = {}
     for path in sorted(folder.iterdir()):
         if path.is_file() and path.suffix in (".yaml", ".yml"):
             files.setdefault(path.stem, []).append(path)
     if name not in files:
-        available = ", ".join(sorted(files)) or "none"
+        names = sorted(files)
+        available = ", ".join(names[:10]) or "none"
+        if len(names) > 10:
+            available += f" ... and {len(names) - 10} more"
         raise CustomQualityCheckError(f"There is no custom quality check named '{name}'. Available: {available}.")
     if len(files[name]) > 1:
         raise CustomQualityCheckError(
@@ -138,13 +144,14 @@ def _parse(name: str, document) -> CustomQualityCheck:
             raise invalid(f"queries.{dialect} must be a non-empty SQL query.")
 
     for text in [description or "", *queries.values()]:
-        for reference in _REFERENCE.findall(text):
+        for match in _REFERENCE.finditer(text):
+            reference = match.group(1) if match.group(1) is not None else match.group(2)
             if reference in TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS:
                 continue
             if reference.startswith("arguments.") and reference.removeprefix("arguments.") in arguments:
                 continue
             raise invalid(
-                f"${{{reference}}} is neither a placeholder nor a declared argument. "
+                f"{match.group(0)} is neither a placeholder nor a declared argument. "
                 f"Contract variables are not resolved in custom quality checks."
             )
 
@@ -220,39 +227,90 @@ class Instance:
         def unusable(result: str, reason: str) -> CustomQualityCheckUnusable:
             return CustomQualityCheckUnusable(result, reason, self.name, self.quality.dimension)
 
-        def misplaced(index: int) -> CustomQualityCheckUnusable:
+        def misplaced(index: int, token=None) -> CustomQualityCheckUnusable:
+            """``token`` is the one the reference sits in, None for a comment."""
             written, is_value, _ = references[index]
-            where = f"{written} in queries.{self.diagnostics['query']}"
-            rule = (
-                f"{where} must stand on its own or inside a '...' string."
-                if is_value
-                else f"{where} names a column or table, so it must stand on its own."
-            )
+            if token is None:
+                problem = "is in a comment. Remove it from the comment."
+            elif is_value and token.token_type == TokenType.IDENTIFIER:
+                problem = (
+                    f"is in double quotes, which SQL reads as a name. Use single quotes for a string: '{written}'."
+                )
+            elif is_value and token.token_type.name.endswith("STRING"):
+                prefix, quote = _STRING_OPENING.match(marked[token.start : token.end + 1]).groups()
+                problem = f"is inside a string written as {prefix}{quote}...{quote}. Only plain '...' strings can hold a value."
+            elif is_value:
+                problem = "is joined to other text. Let it stand alone, or put it inside a '...' string."
+            elif token.token_type.name.endswith("STRING"):
+                problem = "is a column or table name, so it must stand alone, not inside a string."
+                if "arguments." in written:
+                    problem += " To use it as text, declare the argument without type: identifier."
+            else:
+                problem = (
+                    "is a column or table name, so it must stand alone, not joined to other text. "
+                    "To build a name, pass the whole name as an identifier argument."
+                )
             check = self.diagnostics["custom_quality_check"]
-            return unusable("error", f"The custom quality check '{check}' is invalid: {rule}")
+            where = f"{written} in queries.{self.diagnostics['query']}"
+            return unusable("error", f"The custom quality check '{check}' is invalid: {where} {problem}")
 
         def in_string(match: re.Match) -> str:
-            written, is_value, value = references[int(match.group(1))]
-            if not is_value:
-                raise misplaced(int(match.group(1)))
+            written, _, value = references[int(match.group(1))]
             if isinstance(value, bool):
                 value = "true" if value else "false"
+            where = f"queries.{self.diagnostics['query']}"
+            if isinstance(value, list):
+                raise unusable(
+                    "warning", f"{written} is a list, but {where} uses it inside a string. Pass a single value."
+                )
             if not isinstance(value, (str, int, float)):
-                raise unusable("warning", f"{written} is inside a string, so it must be a single value.")
+                raise unusable("warning", f"{written} is null, but {where} uses it inside a string. Give it a value.")
             # the literal's quotes dropped, its escaping kept
             return exp.convert(str(value)).sql(dialect=dialect)[1:-1]
 
-        def substitute(token, span: str, indexes: list[int]) -> str:
-            _, is_value, value = references[indexes[0]]
+        def substitute(at: int, span: str, indexes: list[int]) -> str:
+            token = tokens[at]
+            written, is_value, value = references[indexes[0]]
             alone = len(indexes) == 1 and _MARKER.fullmatch(span)
             if alone:
+                if is_value and isinstance(value, list):
+                    before = tokens[at - 1].token_type if at > 0 else None
+                    after = tokens[at + 1].token_type if at + 1 < len(tokens) else None
+                    if before not in (TokenType.L_PAREN, TokenType.L_BRACKET, TokenType.COMMA) or after not in (
+                        TokenType.R_PAREN,
+                        TokenType.R_BRACKET,
+                        TokenType.COMMA,
+                    ):
+                        raise unusable(
+                            "warning",
+                            f"{written} is a list, but queries.{self.diagnostics['query']} uses it where one value "
+                            f"goes. Pass a single value.",
+                        )
                 return sql_literal(value, dialect) if is_value else identifier(value, False)
             quoted = len(indexes) == 1 and len(span) > 2 and span[0] == span[-1] and span[0] in "'\"`"
             if quoted and not is_value and _MARKER.fullmatch(span[1:-1]):
                 return identifier(value, span[0] == "`")
             if token.token_type == TokenType.STRING and span.startswith("'"):
-                return _MARKER.sub(in_string, span)
-            raise misplaced(indexes[0])
+                for index in indexes:
+                    if not references[index][1]:
+                        raise misplaced(index, token)
+                string = _MARKER.sub(in_string, span)
+                # a backslash the author wrote right before a reference can turn the value's escaping into an end quote
+                try:
+                    string_tokens = Dialect.get_or_raise(dialect).tokenize(string)
+                except sqlglot.errors.SqlglotError:
+                    string_tokens = []
+                if len(string_tokens) != 1 or string_tokens[0].token_type != TokenType.STRING:
+                    written = references[indexes[0]][0]
+                    check = self.diagnostics["custom_quality_check"]
+                    raise unusable(
+                        "error",
+                        f"The custom quality check '{check}' is invalid: the value of {written} in "
+                        f"queries.{self.diagnostics['query']} would end its '...' string. "
+                        f"Remove the backslash in front of it.",
+                    )
+                return string
+            raise misplaced(indexes[0], token)
 
         # one pass, so a substituted name or value is not searched for placeholders again
         marked = reference_pattern(list(names)).sub(mark, self.query)
@@ -262,11 +320,11 @@ class Instance:
             raise unusable("failed", f"The query could not be read as SQL: {e}")
 
         rendered, position, placed = [], 0, set()
-        for token in tokens:
+        for at, token in enumerate(tokens):
             span = marked[token.start : token.end + 1]
             indexes = [int(index) for index in _MARKER.findall(span)]
             if indexes:
-                rendered += [marked[position : token.start], substitute(token, span, indexes)]
+                rendered += [marked[position : token.start], substitute(at, span, indexes)]
                 position = token.end + 1
                 placed.update(indexes)
         # a reference in a comment is in no token
@@ -325,23 +383,71 @@ def instantiate(
     missing = [argument for argument, spec in check.arguments.items() if spec.required and argument not in given]
     if missing:
         raise unusable(
-            "warning", f"The custom quality check '{check.name}' needs the argument {', '.join(missing)}.", check
+            "warning",
+            f"The custom quality check '{check.name}' needs the argument{'s' if len(missing) > 1 else ''} "
+            f"{', '.join(missing)}.",
+            check,
         )
     arguments = {
         argument: (spec.identifier, given[argument] if argument in given else spec.default)
         for argument, spec in check.arguments.items()
     }
-    name = quality.description or _description(check, arguments, model, field_name) or _call_form(check, arguments)
+    if quality.description:
+        name = quality.description
+    elif check.description:
+        names = dict.fromkeys(TABLE_PLACEHOLDERS, model)
+        if field_name is not None:
+            names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
+
+        def fill(match: re.Match) -> str:
+            if match.group(2) is not None:
+                value = arguments[match.group(2)][1]
+                return ", ".join(map(str, value)) if isinstance(value, list) else str(value)
+            return names.get(match.group(1), match.group(0))
+
+        name = reference_pattern(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS).sub(fill, check.description)
+    else:
+
+        def value_text(value) -> str:
+            if isinstance(value, list):
+                return f"[{', '.join(value_text(item) for item in value)}]"
+            if not isinstance(value, str):
+                return yaml.safe_dump(value, default_flow_style=True).strip().removesuffix("...").strip()
+            try:
+                reads_back = yaml.safe_load(value) == value
+            except yaml.YAMLError:
+                reads_back = False
+            if reads_back and value and value == value.strip() and not any(c in value for c in _CALL_DELIMITERS):
+                return value
+            return "'" + value.replace("'", "''") + "'"
+
+        name = f"{check.name}({', '.join(f'{name}={value_text(value)}' for name, (_, value) in arguments.items())})"
 
     for argument, (identifier, value) in arguments.items():
         if identifier and (not isinstance(value, str) or not value):
+            if isinstance(value, list):
+                given_as = "a list"
+            elif value == "":
+                given_as = "an empty value"
+            elif value is None:
+                given_as = "no value"
+            else:
+                given_as = str(value).lower() if isinstance(value, bool) else str(value)
             raise unusable(
-                "warning", f"The argument {argument} names a column or table, so it must be a string.", check, name
+                "warning",
+                f"${{arguments.{argument}}} must be the name of one column or table, such as {field_name or model}, "
+                f"but got {given_as}.",
+                check,
+                name,
             )
         scalars = value if isinstance(value, list) else [value]
         if not identifier and not all(item is None or isinstance(item, (str, int, float, bool)) for item in scalars):
             raise unusable(
-                "warning", f"The argument {argument} must be a single value or a list of values.", check, name
+                "warning", f"${{arguments.{argument}}} must be a single value or a list of values.", check, name
+            )
+        if value == []:
+            raise unusable(
+                "warning", f"${{arguments.{argument}}} is an empty list. Give it at least one value.", check, name
             )
     column = placeholder_pattern(COLUMN_PLACEHOLDERS)
     if field_name is None and any(column.search(query) for query in check.queries.values()):
@@ -364,7 +470,8 @@ def instantiate(
     if query_dialect not in check.queries:
         raise unusable(
             "warning",
-            f"The custom quality check '{check.name}' has no query for {dialect or 'this server'} and no ansi query.",
+            f"The custom quality check '{check.name}' has no query for {dialect or 'this server'} and no ansi query. "
+            f"It has queries for {', '.join(check.queries)}.",
             check,
             name,
         )
@@ -389,42 +496,9 @@ def sql_literal(value, dialect=None) -> str:
     """A value argument as a SQL literal; a list as comma-separated literals."""
     if isinstance(value, list):
         return ", ".join(sql_literal(item, dialect) for item in value)
+    if isinstance(value, bool) and dialect == "tsql":
+        # T-SQL has no boolean literals; sqlglot's `(1 = 1)` is a condition, not a value
+        return "1" if value else "0"
     literal = exp.convert(value).sql(dialect=dialect)
     # `- -1` must not become `--1`, a comment
     return f"({literal})" if literal.startswith("-") else literal
-
-
-def _description(
-    check: CustomQualityCheck, arguments: dict[str, tuple[bool, Any]], model: str, field_name: Optional[str]
-) -> Optional[str]:
-    if check.description is None:
-        return None
-    names = dict.fromkeys(TABLE_PLACEHOLDERS, model)
-    if field_name is not None:
-        names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
-
-    def fill(match: re.Match) -> str:
-        if match.group(2) is not None:
-            value = arguments[match.group(2)][1]
-            return ", ".join(map(str, value)) if isinstance(value, list) else str(value)
-        return names.get(match.group(1), match.group(0))
-
-    return reference_pattern(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS).sub(fill, check.description)
-
-
-def _call_form(check: CustomQualityCheck, arguments: dict[str, tuple[bool, Any]]) -> str:
-
-    def value_text(value) -> str:
-        if isinstance(value, list):
-            return f"[{', '.join(value_text(item) for item in value)}]"
-        if not isinstance(value, str):
-            return yaml.safe_dump(value, default_flow_style=True).strip().removesuffix("...").strip()
-        try:
-            reads_back = yaml.safe_load(value) == value
-        except yaml.YAMLError:
-            reads_back = False
-        if reads_back and value and value == value.strip() and not any(c in value for c in _CALL_DELIMITERS):
-            return value
-        return "'" + value.replace("'", "''") + "'"
-
-    return f"{check.name}({', '.join(f'{name}={value_text(value)}' for name, (_, value) in arguments.items())})"
