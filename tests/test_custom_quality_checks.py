@@ -246,7 +246,12 @@ def test_a_check_defined_twice_is_an_error(tmp_path):
         ),
         (
             "queries: {ansi: 'SELECT TOP 1 x FROM ${table}'}\nmustBe: 0\n",
-            "queries.ansi is not portable SQL: Invalid expression / Unexpected token in line 1.",
+            "queries.ansi is not portable SQL near '1' in line 1. Put SQL that only some databases understand under "
+            "their dialect, such as queries.tsql.",
+        ),
+        (
+            "queries: {ansi: 'SELECT COUNT(*) FROM ${table} WHERE'}\nmustBe: 0\n",
+            "queries.ansi is not portable SQL near 'WHERE' in line 1.",
         ),
         ("mustBe: 0\n", "needs queries"),
     ],

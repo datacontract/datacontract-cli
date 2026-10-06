@@ -174,8 +174,11 @@ def _parse(name: str, document) -> CustomQualityCheck:
         try:
             sqlglot.parse(portable)
         except sqlglot.errors.ParseError as e:
-            detail = f"{e.errors[0]['description']} in line {e.errors[0]['line']}" if e.errors else str(e)
-            raise invalid(f"queries.ansi is not portable SQL: {detail}.")
+            where = f" near '{e.errors[0]['highlight']}' in line {e.errors[0]['line']}" if e.errors else ""
+            raise invalid(
+                f"queries.ansi is not portable SQL{where}. "
+                f"Put SQL that only some databases understand under their dialect, such as queries.tsql."
+            )
         except sqlglot.errors.TokenError:
             raise invalid("queries.ansi is not portable SQL: it could not be tokenized.")
 
