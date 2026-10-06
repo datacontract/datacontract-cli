@@ -162,6 +162,7 @@ class _FieldInfo:
     def __init__(self) -> None:
         self.description: Optional[str] = None
         self.has_default: bool = False
+        self.default: Any = None
         self.examples: Optional[List[Any]] = None
         self.constraints: Dict[str, Any] = {}
 
@@ -186,6 +187,7 @@ def _parse_field_call(call: ast.Call, info: _FieldInfo) -> None:
         elif keyword.arg == "default":
             if not (isinstance(keyword.value, ast.Constant) and keyword.value.value is Ellipsis):
                 info.has_default = True
+                info.default = _literal_value(keyword.value)
         elif keyword.arg == "default_factory":
             info.has_default = True
         elif keyword.arg in _CONSTRAINT_KEYWORDS:
@@ -211,6 +213,7 @@ def _field_info(assign: ast.AnnAssign, metadata: List[ast.expr]) -> _FieldInfo:
             _parse_field_call(assign.value, info)
         elif not (isinstance(assign.value, ast.Constant) and assign.value.value is Ellipsis):
             info.has_default = True
+            info.default = _literal_value(assign.value)
 
     return info
 
@@ -328,11 +331,15 @@ def _to_property(
     resolved = _resolved_kwargs(annotation, index, depth)
     resolved.update(info.constraints)
 
+    # A scalar default is kept as a `default` custom property, which the exporter writes back as the field default.
+    custom_properties = {"default": info.default} if isinstance(info.default, (bool, int, float, str)) else None
+
     return create_property(
         name=name,
         description=info.description or docstring,
         required=not optional and not info.has_default,
         examples=info.examples,
+        custom_properties=custom_properties,
         **resolved,
     )
 

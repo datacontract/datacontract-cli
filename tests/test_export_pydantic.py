@@ -3,7 +3,13 @@ from textwrap import dedent
 
 import pydantic
 import pytest
-from open_data_contract_standard.model import Description, OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import (
+    CustomProperty,
+    Description,
+    OpenDataContractStandard,
+    SchemaObject,
+    SchemaProperty,
+)
 
 import datacontract.export.pydantic_exporter as conv
 
@@ -359,3 +365,59 @@ def test_generated_model_enforces_the_constraints():
         orders(total=1, label="a,,b")
     with pytest.raises(pydantic.ValidationError):
         orders(total=-1)
+
+
+def test_default_custom_property_becomes_the_field_default():
+    schema = SchemaObject(
+        name="Test",
+        properties=[
+            SchemaProperty(
+                name="f",
+                logicalType="string",
+                logicalTypeOptions={"pattern": "^(OUI|NON)$"},
+                customProperties=[CustomProperty(property="default", value="NON")],
+            ),
+            SchemaProperty(
+                name="g", logicalType="boolean", customProperties=[CustomProperty(property="default", value=False)]
+            ),
+        ],
+    )
+    ast_class = conv.generate_model_class("Test", schema)
+    assert (
+        ast.unparse(ast_class)
+        == dedent(
+            """
+    class Test(pydantic.BaseModel):
+        f: typing.Optional[str] = pydantic.Field(default='NON', pattern='^(OUI|NON)$')
+        g: typing.Optional[bool] = False
+    """
+        ).strip()
+    )
+
+
+def test_default_is_ignored_on_a_required_field_or_when_not_a_scalar():
+    schema = SchemaObject(
+        name="Test",
+        properties=[
+            SchemaProperty(
+                name="f",
+                logicalType="string",
+                required=True,
+                customProperties=[CustomProperty(property="default", value="x")],
+            ),
+            SchemaProperty(
+                name="g", logicalType="string", customProperties=[CustomProperty(property="default", value=["a", "b"])]
+            ),
+        ],
+    )
+    ast_class = conv.generate_model_class("Test", schema)
+    assert (
+        ast.unparse(ast_class)
+        == dedent(
+            """
+    class Test(pydantic.BaseModel):
+        f: str
+        g: typing.Optional[str] = None
+    """
+        ).strip()
+    )

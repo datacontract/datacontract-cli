@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract export pydantic-model`: a `default` custom property on an optional property becomes the field default (#1700)
+- `datacontract import pydantic-model`: a scalar field default becomes a `default` custom property (#1700)
+
 ## [1.2.3] - 2026-10-05
 
 ### Added

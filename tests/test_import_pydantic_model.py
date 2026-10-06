@@ -157,3 +157,12 @@ def test_an_unknown_annotation_is_imported_as_string_with_a_warning(tmp_path, ca
 
     assert result.schema_[0].properties[0].logicalType == "string"
     assert "will be imported as string:\npayload (SomeCustomType)\n" in caplog.text
+
+
+def test_a_scalar_default_becomes_a_default_custom_property():
+    result = DataContract.import_from_source("pydantic-model", models_file_path)
+    properties = properties_of(result.schema_[0])
+
+    assert [(cp.property, cp.value) for cp in properties["is_gift"].customProperties] == [("default", False)]
+    assert properties["note"].customProperties is None  # str | None = None
+    assert properties["tags"].customProperties is None  # list[str] = []

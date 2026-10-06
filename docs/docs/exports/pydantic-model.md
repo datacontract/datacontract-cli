@@ -49,7 +49,20 @@ class Line_items(pydantic.BaseModel):
 
 ## Defaults and constraints
 
-Fields that are not `required` are typed `typing.Optional[...]` and default to `None`.
+Fields that are not `required` are typed `typing.Optional[...]` and default to `None`, or to the value of a `default` custom property on the property:
+
+```yaml
+- name: tarif_dynamique
+  logicalType: string
+  required: false
+  customProperties:
+    - property: default
+      value: NON
+```
+
+```python
+tarif_dynamique: typing.Optional[str] = 'NON'
+```
 
 `logicalTypeOptions` become `pydantic.Field` constraints, so the generated model rejects what `datacontract test` would flag:
 

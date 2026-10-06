@@ -134,6 +134,9 @@ schema:
     physicalType: bool
     logicalType: boolean
     required: false
+    customProperties:
+    - property: default
+      value: false
   - name: payload
     physicalType: bytes
     logicalType: array

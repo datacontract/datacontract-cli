@@ -34,6 +34,7 @@ def shape(properties):
             bool(prop.required),
             prop.description,
             {key: value for key, value in (prop.logicalTypeOptions or {}).items() if key in CONSTRAINTS},
+            [cp.value for cp in prop.customProperties or [] if cp.property == "default"],
             shape(prop.properties or []),
             shape([prop.items] if prop.items else []),
         )

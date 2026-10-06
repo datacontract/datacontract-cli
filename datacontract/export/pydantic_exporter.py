@@ -95,10 +95,14 @@ def field_value(prop: SchemaProperty) -> ast.expr | None:
         # Draft-04 JSON Schema had boolean exclusive bounds, and an empty pattern does not import back.
         if isinstance(value, (int, float, str)) and not isinstance(value, bool) and value != "":
             keywords.append(ast.keyword(arg=keyword, value=ast.Constant(value)))
+    # A `default` custom property becomes the field default; only optional fields have one.
+    default = next((cp.value for cp in prop.customProperties or [] if cp.property == "default"), None)
+    if not isinstance(default, (bool, int, float, str)):
+        default = None
     if not keywords:
-        return None if prop.required else ast.Constant(None)
+        return None if prop.required else ast.Constant(default)
     if not prop.required:
-        keywords.insert(0, ast.keyword(arg="default", value=ast.Constant(None)))
+        keywords.insert(0, ast.keyword(arg="default", value=ast.Constant(default)))
     return ast.Call(
         func=ast.Attribute(value=ast.Name(id="pydantic", ctx=ast.Load()), attr="Field", ctx=ast.Load()),
         args=[],
