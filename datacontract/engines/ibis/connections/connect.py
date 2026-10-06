@@ -612,12 +612,8 @@ def _connect_mysql_via_duckdb(
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")
 
-    parts = [f"host={host}", f"port={port}", f"user={user}", f"password={password}"]
-    if database:
-        parts.append(f"database={database}")
-    conn_str = " ".join(parts).replace("'", "''")
     run.log_info(f"Attaching MySQL {host}:{port} via the duckdb mysql extension")
-    con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql)")
+    _attach_mysql(con, host, port, user, password, database)
 
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
@@ -632,6 +628,18 @@ def _connect_mysql_via_duckdb(
         restrict_to_paths(con, [])
 
     return ibis.duckdb.from_connection(con)
+
+
+def _attach_mysql(con, host: str, port: int, user: str, password: str, database: str | None) -> None:
+    """ATTACH MySQL as ``mysqldb``, masking the password DuckDB spells out in its connection errors."""
+    parts = [f"host={host}", f"port={port}", f"user={user}", f"password={password}"]
+    if database:
+        parts.append(f"database={database}")
+    conn_str = " ".join(parts).replace("'", "''")
+    try:
+        con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql)")
+    except Exception as e:
+        raise type(e)(str(e).replace(f"password={password}", "password=***")) from None
 
 
 def _materialize_attached_table(con, catalog: str, database: str | None, model: str):

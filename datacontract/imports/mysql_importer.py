@@ -121,6 +121,7 @@ def _attach(host: str, port: int, database: str, config: Optional[Config] = None
             original_exception=e,
         )
 
+    from datacontract.engines.ibis.connections.connect import _attach_mysql
     from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
 
     user = config.get_mysql_username(required=True)
@@ -128,9 +129,8 @@ def _attach(host: str, port: int, database: str, config: Optional[Config] = None
 
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")
-    connection_string = _escape(f"host={host} port={port} user={user} password={password} database={database}")
     try:
-        con.execute(f"ATTACH '{connection_string}' AS mysqldb (TYPE mysql)")
+        _attach_mysql(con, host, port, user, password, database)
     except Exception as e:
         con.close()
         raise DataContractException(

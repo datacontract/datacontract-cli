@@ -1,5 +1,7 @@
 """Tests for the MySQL importer, run against a real MySQL container."""
 
+import traceback
+
 import pytest
 import yaml
 from testcontainers.mysql import MySqlContainer
@@ -150,6 +152,17 @@ def test_import_mysql_fails_on_an_unknown_table():
         _import(mysql_table=["does_not_exist"])
 
     assert "No tables found" in exc_info.value.reason
+
+
+def test_a_failed_connection_does_not_show_the_password(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", "s3cret-pw")
+
+    with pytest.raises(DataContractException) as exc_info:
+        _import(port=1)
+
+    assert "password=***" in exc_info.value.reason
+    assert "s3cret-pw" not in exc_info.value.reason
+    assert "s3cret-pw" not in "".join(traceback.format_exception(exc_info.value.original_exception))
 
 
 def test_import_mysql_requires_a_database():

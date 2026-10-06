@@ -1,11 +1,11 @@
 """Unit tests for how connect_ibis attaches MySQL through DuckDB.
 
-These do not hit MySQL: ``duckdb.connect``, the extension loader, and the ibis
-wrapper are patched, and we only assert the ATTACH connection string built for
-a given set of env vars.
+These do not hit MySQL: most patch ``duckdb.connect`` and assert the ATTACH
+connection string; the failed-attach test points the real extension at a closed port.
 """
 
 import os
+import traceback
 
 import duckdb
 import ibis
@@ -76,3 +76,16 @@ def test_env_variables_override_the_contract_server_details(env, captured_statem
     assert "host=env-host" in attach
     assert "port=3308" in attach
     assert "database=env_db" in attach
+
+
+def test_a_failed_attach_does_not_show_the_password(env):
+    env.setenv("DATACONTRACT_MYSQL_PASSWORD", "s3cret-pw")
+    env.setenv("DATACONTRACT_MYSQL_HOST", "127.0.0.1")
+    env.setenv("DATACONTRACT_MYSQL_PORT", "1")
+
+    with pytest.raises(duckdb.Error) as exc_info:
+        _connect()
+
+    output = "".join(traceback.format_exception(exc_info.value))
+    assert "password=***" in output
+    assert "s3cret-pw" not in output
