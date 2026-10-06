@@ -71,7 +71,7 @@ def write_test_result(
         skipped = sum(1 for check in run.checks if check.result == "skipped")
         skipped_info = f" ({skipped} skipped)" if skipped else ""
         console.print(
-            f"🟢 Data contract is valid. Run {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
+            f"🟢 Data contract is valid. Ran {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
     elif run.result in ("skipped", "unknown"):
         if run.result == "skipped" and run.dryRun:

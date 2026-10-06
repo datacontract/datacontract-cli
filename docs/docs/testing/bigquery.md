@@ -57,7 +57,7 @@ Server: bigquery (type=bigquery, dataset=my_dataset, project=my-project)
 │ passed │ Check that field order_id has physical type INTEGER │ order_id │         │
 │  ...   │                                                     │          │         │
 ╰────────┴─────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 6.1 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 6.1 seconds.
 ```
 
 ## 5. Let it catch a violation

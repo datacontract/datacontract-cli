@@ -62,7 +62,7 @@ Server: hive (type=hive, host=localhost, port=10000, database=sales)
 │ passed │ Check that field order_id has physical type string │ order_id │         │
 │  ...   │                                                    │          │         │
 ╰────────┴────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 41 checks. Took 4.4 seconds.
+🟢 Data contract is valid. Ran 41 checks. Took 4.4 seconds.
 ```
 
 Each check is a Hive query, so a test run takes as long as your cluster needs to answer a few dozen aggregations.

@@ -68,7 +68,7 @@ Server: redshift (type=redshift, host=my-workgroup..., database=dev, schema=anal
 │ passed │ Check that field order_id has physical type character varying(36) │ order_id │         │
 │  ...   │                                                                   │          │         │
 ╰────────┴───────────────────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 4.9 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 4.9 seconds.
 ```
 
 ## 5. Let it catch a violation
