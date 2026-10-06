@@ -635,8 +635,8 @@ def _relationship_checks(
             continue
         sources = [source] if source is not None else rel.from_ if isinstance(rel.from_, list) else [rel.from_]
         targets = rel.to if isinstance(rel.to, list) else [rel.to]
-        # `from` may be qualified with this schema's name; only the property part is needed.
-        source_names = [str(s).rsplit(".", 1)[-1] for s in sources if s]
+        # `from` may repeat this schema's name; any other prefix is kept, so it matches no property.
+        source_names = [str(s).removeprefix(f"{schema_object.name}.") for s in sources if s]
         parts = [str(t).rsplit(".", 1) for t in targets if t]
         target_schema = next((s for s in schemas if parts and len(parts[0]) == 2 and s.name == parts[0][0]), None)
 

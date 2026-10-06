@@ -227,6 +227,35 @@ def test_unresolvable_target_is_a_warning_naming_the_cause(tmp_path, to, cause):
     assert check.reason == f"The relationship from order_id to {to} is not checked: {cause}."
 
 
+def test_from_naming_another_schema_is_a_warning(tmp_path):
+    _write(
+        tmp_path,
+        orders=["order_id", "o1"],
+        line_items=["line_item_id,order_id", "l1,o1", "l2,o9"],
+    )
+    schema = """schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+    relationships:
+      - type: foreignKey
+        from: line_items.order_id
+        to: orders.order_id
+  - name: line_items
+    properties:
+      - name: line_item_id
+        logicalType: string
+      - name: order_id
+        logicalType: string
+"""
+
+    [check] = _relationship_checks(tmp_path, schema)
+
+    assert check.result == ResultEnum.warning
+    assert check.reason.endswith("is not checked: orders has no property line_items.order_id.")
+
+
 def test_referenced_schema_outside_the_tested_one_is_a_warning(tmp_path):
     _write(
         tmp_path,
