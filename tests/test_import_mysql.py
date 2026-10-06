@@ -2,7 +2,6 @@
 
 import subprocess
 import sys
-import traceback
 
 import pytest
 import yaml
@@ -163,7 +162,6 @@ def test_a_failed_connection_does_not_show_the_password(monkeypatch):
         _import(port=1)
 
     assert "s3cret-pw" not in exc_info.value.reason
-    assert "s3cret-pw" not in "".join(traceback.format_exception(exc_info.value.original_exception))
 
 
 def test_the_debug_traceback_of_a_failed_connection_does_not_show_the_password(monkeypatch):
