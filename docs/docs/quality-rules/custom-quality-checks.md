@@ -56,19 +56,19 @@ mustBe: 0
 | `description` | What the check verifies. Becomes the check's name in the results, with the placeholders and arguments filled in, unless the rule has a `description` of its own. |
 | `owner` | Who maintains the check. Documentation only. |
 | `dimension` | The [quality dimension](./index.md#quality-dimensions) the check measures. A `dimension` on the rule takes precedence. |
-| `arguments` | The arguments the check takes, each with an optional `type` (`value`, the default, or `identifier`) and `default`. An argument without a `default` is required. |
+| `arguments` | The arguments the check takes, each with an optional `type` (`value`, the default, `number` or `identifier`) and `default`. An argument without a `default` is required. |
 | `queries` | At least one query, keyed by SQL dialect. |
 | `mustBe`, `mustBeGreaterThan`, … | The default expected result, one of the [SQL rule comparators](./sql.md#comparators). |
 
 ## Arguments
 
-A **value** argument stands for data the query compares against and becomes a SQL literal: `0`, `'EUR'`, a list becomes `'A', 'B'`. An **identifier** argument names a column or table and becomes a name, quoted like the [placeholders](./sql.md#placeholders):
+A **value** argument stands for data the query compares against and becomes a SQL literal: `0`, `'EUR'`, a list becomes `'A', 'B'`. A **number** argument becomes a number literal even when its value is text, such as a variable; declare one for arithmetic and date math like `- ${arguments.days}`. An **identifier** argument names a column or table and becomes a name, quoted like the [placeholders](./sql.md#placeholders):
 
 ```yaml
 # custom-quality-checks/recent_rows.yaml
 arguments:
   timestamp_column: {type: identifier}
-  days: {default: 1}
+  days: {type: number, default: 1}
 queries:
   ansi: |
     SELECT COUNT(*) FROM ${table}
@@ -76,7 +76,7 @@ queries:
 mustBeGreaterThan: 0
 ```
 
-Arguments are always inserted as escaped literals or identifiers, never as raw SQL, so a contract can't alter a check's query. Argument values may use [variables](../configuration.md#variables-in-the-data-contract), which always resolve to text: `max: ${MAX_AMOUNT}` becomes `'1000'`. Most databases compare that with a number column as the number; on BigQuery and Trino, the check needs a `CAST`. A check file can't reference variables itself; pass them in through an argument.
+Arguments are always inserted as escaped literals or identifiers, never as raw SQL, so a contract can't alter a check's query. Argument values may use [variables](../configuration.md#variables-in-the-data-contract), which resolve to text: `max: ${MAX_AMOUNT}` becomes `'1000'`, or `1000` if `max` is a number argument. A check file can't reference variables itself; pass them in through an argument.
 
 ## Placeholders
 

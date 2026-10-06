@@ -146,6 +146,34 @@ def test_a_variable_in_an_argument_is_text_even_when_it_holds_a_number(monkeypat
     assert check.diagnostics["value"] == 2
 
 
+def test_a_variable_in_a_number_argument_becomes_a_number(tmp_path, monkeypatch):
+    monkeypatch.setenv("MAX_AMOUNT", "100")
+    checks = _check_file(
+        tmp_path,
+        "above",
+        "  max:\n    type: number\n",
+        "SELECT COUNT(*) FROM ${table} WHERE -${column} < -${arguments.max}",
+    )
+    rule = _rule("above", "max: ${MAX_AMOUNT}", "mustBe: 1")
+    run = _test(_contract(property_quality=_amount_rule(rule)), checks)
+
+    check = next(c for c in run.checks if c.type == "field_quality_custom")
+    assert check.implementation.endswith("WHERE -amount < -100")
+    assert check.result == ResultEnum.passed, check.reason
+
+
+@pytest.mark.parametrize("value, given_as", [("abc", "'abc'"), (".inf", "inf")])
+def test_a_number_argument_that_is_no_number_is_a_warning(tmp_path, value, given_as):
+    checks = _check_file(
+        tmp_path,
+        "above",
+        "  max:\n    type: number\n",
+        "SELECT COUNT(*) FROM ${table} WHERE ${column} > ${arguments.max}",
+    )
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("above", f"max: {value}"))), checks)
+    _unexecuted(spec, "warning", f"${{arguments.max}} must be a number, but got {given_as}.")
+
+
 def test_a_contract_variable_in_an_argument_is_resolved_into_a_literal(monkeypatch):
     monkeypatch.setenv("MAX_AMOUNT", "1000) OR (1=1")
     rule = BETWEEN.replace("max: 100", "max: ${MAX_AMOUNT}")
@@ -180,14 +208,22 @@ def test_a_rule_without_a_configured_folder_is_an_error():
 def test_an_unknown_check_is_an_error_naming_the_available_ones():
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("betwen"))))
     _unexecuted(spec, "error", "no custom quality check named 'betwen'. Available: between, distinct_values")
+    assert spec.name == "betwen()"
 
 
-def test_the_available_checks_are_listed_up_to_ten(tmp_path):
-    for index in range(12):
-        (tmp_path / f"check_{index:02}.yaml").write_text("queries: {ansi: SELECT 1}\nmustBe: 1\n")
-    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("betwen"))), checks=str(tmp_path))
-    _unexecuted(spec, "error", "Available: check_00, check_01, check_02, check_03, check_04, check_05, check_06, ")
-    assert spec.preset_reason.endswith("check_08, check_09 ... and 2 more.")
+@pytest.mark.parametrize(
+    "check, reason",
+    [
+        ("rows_recnet", "There is no custom quality check named 'rows_recnet'. Did you mean rows_recent?"),
+        ("unrelated", "There is no custom quality check named 'unrelated'."),
+    ],
+)
+def test_more_than_seven_checks_are_not_listed_but_similar_ones_are_suggested(tmp_path, check, reason):
+    for name in [f"check_{index}" for index in range(7)] + ["rows_recent"]:
+        (tmp_path / f"{name}.yaml").write_text("queries: {ansi: SELECT 1}\nmustBe: 1\n")
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule(check))), checks=str(tmp_path))
+    _unexecuted(spec, "error", reason)
+    assert spec.preset_reason == reason
 
 
 def test_a_check_defined_twice_is_an_error(tmp_path):
@@ -208,7 +244,10 @@ def test_a_check_defined_twice_is_an_error(tmp_path):
             "queries: {ansi: 'SELECT COUNT(*) FROM {table} WHERE a > {arguments.y}'}\nmustBe: 0\n",
             "{arguments.y} is neither",
         ),
-        ("queries: {ansi: 'SELECT TOP 1 x FROM ${table}'}\nmustBe: 0\n", "is not portable SQL"),
+        (
+            "queries: {ansi: 'SELECT TOP 1 x FROM ${table}'}\nmustBe: 0\n",
+            "queries.ansi is not portable SQL: Invalid expression / Unexpected token in line 1.",
+        ),
         ("mustBe: 0\n", "needs queries"),
     ],
 )
@@ -408,6 +447,11 @@ def test_a_negative_number_after_a_minus_does_not_start_a_comment(tmp_path):
         ),
         ("  x:\n", "SELECT COUNT(*) FROM t_${arguments.x}", "${arguments.x} in queries.ansi is joined to other text"),
         (
+            "  x:\n",
+            "SELECT COUNT(*) FROM ${table} WHERE a = `${arguments.x}`",
+            "${arguments.x} in queries.ansi is in backticks, which SQL reads as a name",
+        ),
+        (
             "",
             "SELECT COUNT(*) FROM ${table}_archive",
             "${table} in queries.ansi is a column or table name, so it must stand alone, not joined to other text",
@@ -430,6 +474,14 @@ def test_a_reference_that_does_not_stand_on_its_own_makes_the_check_invalid(tmp_
     [spec] = _specs(_contract(property_quality=_amount_rule(rule)), checks)
 
     _unexecuted(spec, "error", reason)
+
+
+def test_backticks_around_a_name_quote_it_on_any_server(tmp_path):
+    checks = _check_file(tmp_path, "check", "", "SELECT COUNT(*) FROM ${table} WHERE `${column}` IS NULL")
+    contract = _contract(property_quality=_amount_rule(_rule("check")))
+    [spec] = _specs(contract, checks, server=Server(server="production", type="postgres"))
+
+    assert spec.query == 'SELECT COUNT(*) FROM orders WHERE "amount" IS NULL'
 
 
 def test_a_value_cannot_end_its_string_through_a_backslash_in_front_of_it(tmp_path):
