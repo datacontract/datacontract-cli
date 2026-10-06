@@ -1,5 +1,7 @@
 """Custom quality checks: SQL checks defined once in a folder and used by name from a contract."""
 
+import json
+
 import pytest
 from open_data_contract_standard.model import Server
 
@@ -294,3 +296,66 @@ def test_ci_reads_the_folder_from_the_option(tmp_path):
     result = CliRunner().invoke(app, ["ci", str(contract), "--custom-quality-checks", CHECKS, "--json"])
 
     assert "amount between 0 and 100." in result.stdout
+
+
+def _check_file(tmp_path, name: str, arguments: str, query: str) -> str:
+    (tmp_path / f"{name}.yaml").write_text(f'arguments:\n{arguments}queries:\n  ansi: "{query}"\nmustBe: 0\n')
+    return str(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "text, count",
+    [("@test", 2), ("x%' OR 1=1 OR email LIKE '", 0), ("O'Brien", 0)],
+)
+def test_a_value_inside_a_string_is_escaped_into_it(tmp_path, text, count):
+    checks = _check_file(
+        tmp_path, "contains", "  text:\n", "SELECT COUNT(*) FROM ${table} WHERE email LIKE '%${arguments.text}%'"
+    )
+    rule = _rule("contains", f"text: {json.dumps(text)}", f"mustBe: {count}")
+    run = _test(_contract(schema_quality=_schema_rule(rule)), checks)
+
+    check = next(c for c in run.checks if c.type == "model_quality_custom")
+    assert check.result == ResultEnum.passed, check.reason
+
+
+@pytest.mark.parametrize(
+    "query, value, rendered",
+    [
+        ("WHERE ${column} > now() - INTERVAL '${arguments.x} days'", 7, "INTERVAL '7 days'"),
+        ("WHERE ${column} = '${arguments.x}'", 10115, "amount = '10115'"),
+        ("WHERE ${column} = '${arguments.x}'", True, "amount = 'true'"),
+        ("WHERE ${column} < 5 -${arguments.x} AND 1 = 1", -1, "amount < 5 -(-1) AND 1 = 1"),
+    ],
+)
+def test_quotes_around_a_value_make_it_a_string_and_a_negative_number_is_no_comment(tmp_path, query, value, rendered):
+    checks = _check_file(tmp_path, "check", "  x:\n", f"SELECT COUNT(*) FROM ${{table}} {query}")
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("check", f"x: {json.dumps(value)}"))), checks)
+
+    assert rendered in spec.query
+
+
+@pytest.mark.parametrize(
+    "arguments, query, reason",
+    [
+        ("  x:\n", "SELECT COUNT(*) FROM ${table} -- ${arguments.x}", "${arguments.x} in queries.ansi must stand on"),
+        ("  x:\n", 'SELECT COUNT(*) FROM ${table} WHERE a = \\"${arguments.x}\\"', "${arguments.x} in queries.ansi"),
+        ("  x:\n", "SELECT COUNT(*) FROM t_${arguments.x}", "${arguments.x} in queries.ansi must stand on"),
+        ("", "SELECT COUNT(*) FROM ${table} WHERE note LIKE '%${column}%'", "${column} in queries.ansi names a column"),
+        ("  x: {type: identifier}\n", "SELECT COUNT(*) FROM ${table} WHERE a LIKE '${arguments.x}%'", "names a column"),
+    ],
+)
+def test_a_reference_that_does_not_stand_on_its_own_makes_the_check_invalid(tmp_path, arguments, query, reason):
+    checks = _check_file(tmp_path, "check", arguments, query)
+    rule = _rule("check", "x: amount" if arguments else "")
+    [spec] = _specs(_contract(property_quality=_amount_rule(rule)), checks)
+
+    _unexecuted(spec, "error", reason)
+
+
+def test_a_list_inside_a_string_warns(tmp_path):
+    checks = _check_file(
+        tmp_path, "check", "  x:\n", "SELECT COUNT(*) FROM ${table} WHERE ${column} LIKE '%${arguments.x}%'"
+    )
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("check", "x: [a, b]"))), checks)
+
+    _unexecuted(spec, "warning", "${arguments.x} is inside a string, so it must be a single value")

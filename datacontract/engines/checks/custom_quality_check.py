@@ -5,13 +5,15 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Mapping, Optional
 
 import sqlglot
 import yaml
 from open_data_contract_standard.model import DataQuality
 from pydantic import ValidationError
 from sqlglot import exp
+from sqlglot.dialects.dialect import Dialect
+from sqlglot.tokens import TokenType
 
 from datacontract.config.variables import _ENUM_VALUES
 from datacontract.engines.checks.sql_guard import _DIALECT_BY_SERVER_TYPE
@@ -38,14 +40,17 @@ _DIALECTS = ("ansi", *sorted(set(_DIALECT_BY_SERVER_TYPE.values())))
 _ARGUMENT_NAME = re.compile(r"[A-Za-z_]\w*")
 _REFERENCE = re.compile(r"\$\{([^}]*)\}")
 _CALL_DELIMITERS = (",", "(", ")", "=", "'", '"')
+_MARKER = re.compile(r"__datacontract_reference_(\d+)__")
 
 
-def placeholder_pattern(names: tuple[str, ...] | list[str], with_arguments: bool) -> re.Pattern:
-    """`{name}` / `${name}` placeholders and `${arguments.x}` references, with the quotes around them."""
-    pattern = rf"[\"'`]?\$?\{{({'|'.join(names)})\}}[\"'`]?"
-    if with_arguments:
-        pattern += r"|[\"'`]?\$\{arguments\.(\w+)\}[\"'`]?"
-    return re.compile(pattern)
+def placeholder_pattern(names: tuple[str, ...] | list[str]) -> re.Pattern:
+    """`{name}` / `${name}` placeholders, with the quotes around them."""
+    return re.compile(rf"[\"'`]?\$?\{{({'|'.join(names)})\}}[\"'`]?")
+
+
+def reference_pattern(names: tuple[str, ...] | list[str]) -> re.Pattern:
+    """`{name}` / `${name}` placeholders and `${arguments.x}` references, without the quotes around them."""
+    return re.compile(rf"\$?\{{({'|'.join(names)})\}}|\$\{{arguments\.(\w+)\}}")
 
 
 class CustomQualityCheckError(Exception):
@@ -145,8 +150,7 @@ def _parse(name: str, document) -> CustomQualityCheck:
 
     if "ansi" in queries:
         # Parsed with names and values standing in for the placeholders and arguments.
-        pattern = placeholder_pattern(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS, with_arguments=True)
-        portable = pattern.sub(
+        portable = reference_pattern(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS).sub(
             lambda m: "x" if m.group(1) is not None or arguments[m.group(2)].identifier else "0", queries["ansi"]
         )
         try:
@@ -195,6 +199,81 @@ class Instance:
     quality: DataQuality
     name: str
     diagnostics: dict
+
+    def render(self, dialect, names: Mapping[str, str], identifier: Callable[[str, bool], str]) -> str:
+        """The query with each placeholder and argument substituted by where it stands in the query.
+
+        ``names`` maps the placeholders to the names they stand for, and ``identifier(name, forced)``
+        renders a name, ``forced`` when the author wrote backticks around it.
+        """
+        # (as written, is a value argument, the name or value it stands for)
+        references: list[tuple[str, bool, Any]] = []
+
+        def mark(match: re.Match) -> str:
+            if match.group(1) is not None:
+                references.append((match.group(0), False, names[match.group(1)]))
+            else:
+                is_identifier, value = self.arguments[match.group(2)]
+                references.append((match.group(0), not is_identifier, value))
+            return f"__datacontract_reference_{len(references) - 1}__"
+
+        def unusable(result: str, reason: str) -> CustomQualityCheckUnusable:
+            return CustomQualityCheckUnusable(result, reason, self.name, self.quality.dimension)
+
+        def misplaced(index: int) -> CustomQualityCheckUnusable:
+            written, is_value, _ = references[index]
+            where = f"{written} in queries.{self.diagnostics['query']}"
+            rule = (
+                f"{where} must stand on its own or inside a '...' string."
+                if is_value
+                else f"{where} names a column or table, so it must stand on its own."
+            )
+            check = self.diagnostics["custom_quality_check"]
+            return unusable("error", f"The custom quality check '{check}' is invalid: {rule}")
+
+        def in_string(match: re.Match) -> str:
+            written, is_value, value = references[int(match.group(1))]
+            if not is_value:
+                raise misplaced(int(match.group(1)))
+            if isinstance(value, bool):
+                value = "true" if value else "false"
+            if not isinstance(value, (str, int, float)):
+                raise unusable("warning", f"{written} is inside a string, so it must be a single value.")
+            # the literal's quotes dropped, its escaping kept
+            return exp.convert(str(value)).sql(dialect=dialect)[1:-1]
+
+        def substitute(token, span: str, indexes: list[int]) -> str:
+            _, is_value, value = references[indexes[0]]
+            alone = len(indexes) == 1 and _MARKER.fullmatch(span)
+            if alone:
+                return sql_literal(value, dialect) if is_value else identifier(value, False)
+            quoted = len(indexes) == 1 and len(span) > 2 and span[0] == span[-1] and span[0] in "'\"`"
+            if quoted and not is_value and _MARKER.fullmatch(span[1:-1]):
+                return identifier(value, span[0] == "`")
+            if token.token_type == TokenType.STRING and span.startswith("'"):
+                return _MARKER.sub(in_string, span)
+            raise misplaced(indexes[0])
+
+        # one pass, so a substituted name or value is not searched for placeholders again
+        marked = reference_pattern(list(names)).sub(mark, self.query)
+        try:
+            tokens = Dialect.get_or_raise(dialect).tokenize(marked)
+        except sqlglot.errors.SqlglotError as e:
+            raise unusable("failed", f"The query could not be read as SQL: {e}")
+
+        rendered, position, placed = [], 0, set()
+        for token in tokens:
+            span = marked[token.start : token.end + 1]
+            indexes = [int(index) for index in _MARKER.findall(span)]
+            if indexes:
+                rendered += [marked[position : token.start], substitute(token, span, indexes)]
+                position = token.end + 1
+                placed.update(indexes)
+        # a reference in a comment is in no token
+        unplaced = sorted(set(range(len(references))) - placed)
+        if unplaced:
+            raise misplaced(unplaced[0])
+        return "".join(rendered) + marked[position:]
 
 
 def instantiate(
@@ -264,7 +343,7 @@ def instantiate(
             raise unusable(
                 "warning", f"The argument {argument} must be a single value or a list of values.", check, name
             )
-    column = placeholder_pattern(COLUMN_PLACEHOLDERS, with_arguments=False)
+    column = placeholder_pattern(COLUMN_PLACEHOLDERS)
     if field_name is None and any(column.search(query) for query in check.queries.values()):
         raise unusable(
             "warning",
@@ -310,7 +389,9 @@ def sql_literal(value, dialect=None) -> str:
     """A value argument as a SQL literal; a list as comma-separated literals."""
     if isinstance(value, list):
         return ", ".join(sql_literal(item, dialect) for item in value)
-    return exp.convert(value).sql(dialect=dialect)
+    literal = exp.convert(value).sql(dialect=dialect)
+    # `- -1` must not become `--1`, a comment
+    return f"({literal})" if literal.startswith("-") else literal
 
 
 def _description(
@@ -328,11 +409,7 @@ def _description(
             return ", ".join(map(str, value)) if isinstance(value, list) else str(value)
         return names.get(match.group(1), match.group(0))
 
-    return re.sub(
-        rf"\$?\{{({'|'.join(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS)})\}}|\$\{{arguments\.(\w+)\}}",
-        fill,
-        check.description,
-    )
+    return reference_pattern(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS).sub(fill, check.description)
 
 
 def _call_form(check: CustomQualityCheck, arguments: dict[str, tuple[bool, Any]]) -> str:

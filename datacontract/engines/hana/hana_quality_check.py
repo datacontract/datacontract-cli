@@ -1,5 +1,4 @@
 import logging
-import re
 import uuid
 from typing import Any
 
@@ -18,9 +17,9 @@ from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
     CustomQualityCheckUnusable,
+    Instance,
     instantiate,
     placeholder_pattern,
-    sql_literal,
 )
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.severity import failure_result
@@ -152,10 +151,18 @@ def prepare_hana_query(
     schema_name: str,
     model_name: str,
     field_name: str | None = None,
-    arguments: dict[str, tuple[bool, Any]] | None = None,
+    instance: Instance | None = None,
 ) -> str | None:
     if query is None or query == "":
         return None
+
+    if instance is not None:
+        names = dict.fromkeys(("model", "table", "object"), f"{schema_name}.{model_name}")
+        names["schema"] = schema_name
+        names |= dict.fromkeys(("dataset", "project", "catalog", "database"), model_name)
+        if field_name is not None:
+            names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
+        return instance.render(None, names, lambda name, _: ".".join(map(quote_identifier, name.split("."))))
 
     names = dict.fromkeys(("model", "table", "object"), qualified_table_name(schema_name, model_name))
     names["schema"] = quote_identifier(schema_name)
@@ -164,14 +171,8 @@ def prepare_hana_query(
     if field_name is not None:
         names |= dict.fromkeys(COLUMN_PLACEHOLDERS, quote_identifier(field_name))
 
-    def substitute(match: re.Match) -> str:
-        if match.group(1) is not None:
-            return names[match.group(1)]
-        is_identifier, value = arguments[match.group(2)]
-        return ".".join(quote_identifier(part) for part in value.split(".")) if is_identifier else sql_literal(value)
-
-    # one pass, so a substituted name or value is not searched for placeholders again
-    return placeholder_pattern(list(names), with_arguments=arguments is not None).sub(substitute, query)
+    # one pass, so a substituted name is not searched for placeholders again
+    return placeholder_pattern(list(names)).sub(lambda match: names[match.group(1)], query)
 
 
 def selects(selection: CheckSelection, quality: DataQuality, check_type: str) -> bool:
@@ -461,6 +462,7 @@ def _custom_quality_check(
     try:
         # HANA has no dialect of its own among the queries, so only the ansi query runs here.
         instance = instantiate(quality, table_name, field_name, None, custom_quality_checks)
+        query = prepare_hana_query(instance.query, schema_name, table_name, field_name, instance)
     except CustomQualityCheckUnusable as e:
         rule = quality.model_copy(update={"dimension": e.dimension})
         if not selects(selection, rule, check_type):
@@ -479,7 +481,6 @@ def _custom_quality_check(
     else:
         # Measured like a SQL rule: the query's own number, never a percentage of rows.
         rule = instance.quality.model_copy(update={"type": "sql"})
-        query = prepare_hana_query(instance.query, schema_name, table_name, field_name, instance.arguments)
         refusal = refusal_reason(query)
         if refusal is not None:
             if not selects(selection, rule, check_type):

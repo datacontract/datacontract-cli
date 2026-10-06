@@ -29,9 +29,9 @@ from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
     CustomQualityCheckUnusable,
+    Instance,
     instantiate,
     placeholder_pattern,
-    sql_literal,
 )
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect_by_name
@@ -203,7 +203,7 @@ def prepare_query(
     model_name: str,
     field_name: Optional[str],
     server: Optional[Server],
-    arguments: Optional[Mapping[str, tuple[bool, object]]] = None,
+    instance: Optional[Instance] = None,
 ) -> Optional[str]:
     """Substitute placeholders in a user SQL query.
 
@@ -211,8 +211,7 @@ def prepare_query(
     cannot read it bare, so a plain name keeps the backend's case-insensitive
     resolution. Quotes the author wrote around a placeholder are dropped, except
     that backticks force the name to be quoted (e.g. a reserved word on Spark).
-    ``arguments`` maps a custom quality check's arguments to (is identifier, value):
-    an identifier becomes a name like a placeholder, any other value a SQL literal.
+    For a custom quality check ``instance``, its arguments are substituted too.
     """
     if not query:
         return None
@@ -235,15 +234,13 @@ def prepare_query(
             for part in name.split(".")
         )
 
-    def substitute(match: re.Match) -> str:
-        forced = "`" in match.group(0)
-        if match.group(1) is not None:
-            return identifier(names[match.group(1)], forced)
-        is_identifier, value = arguments[match.group(2)]
-        return identifier(value, forced) if is_identifier else sql_literal(value, dialect)
+    if instance is not None:
+        return instance.render(dialect, names, identifier)
 
-    # one pass, so a substituted name or value is not searched for placeholders again
-    return placeholder_pattern(list(names), with_arguments=arguments is not None).sub(substitute, query)
+    # one pass, so a substituted name is not searched for placeholders again
+    return placeholder_pattern(list(names)).sub(
+        lambda match: identifier(names[match.group(1)], "`" in match.group(0)), query
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -876,12 +873,12 @@ def _quality_rule_checks(
         dialect = dialect_for_server_type(get_server_type(server))
         try:
             instance = instantiate(quality, model, field, dialect, custom_quality_checks)
+            query = prepare_query(instance.query, model, field, server, instance)
         except CustomQualityCheckUnusable as e:
             return _unexecuted_check(
                 check_key, check_type, model, field, quality, e.reason, e.result, e.name, e.dimension
             )
         rule = instance.quality
-        query = prepare_query(instance.query, model, field, server, instance.arguments)
         refusal = refusal_reason(query, dialect)
         if refusal is not None:
             return _unexecuted_check(
