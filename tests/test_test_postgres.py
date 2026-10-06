@@ -72,6 +72,19 @@ def test_test_postgres_odcs_postgresql_server_type(postgres_container, monkeypat
     assert all(check.result == "passed" for check in run.checks)
 
 
+def test_test_postgres_odcs_filter(postgres_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    _init_sql("fixtures/postgres/data/data.sql")
+
+    data_contract_str = _setup_datacontract("fixtures/postgres/odcs.yaml")
+    run = DataContract(data_contract_str=data_contract_str, filter="field_two > 40").test()
+
+    print(run.pretty())
+    assert run.result == "passed"
+    assert all(check.result == "passed" for check in run.checks)
+
+
 def test_test_postgres_case_sensitive_table_name(postgres_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
