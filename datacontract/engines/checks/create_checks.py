@@ -654,6 +654,18 @@ def _relationship_checks(
         label = ", ".join(source_names) or "?"
         if not columns or None in columns + referenced or len(referenced) != len(columns):
             target_label = ", ".join(str(t) for t in targets)
+            if not columns or len(parts) != len(columns):
+                cause = "its from and to lists differ in length"
+            elif None in columns:
+                cause = f"{schema_object.name} has no property {source_names[columns.index(None)]}"
+            elif any(len(part) == 1 for part in parts):
+                cause = f"{next(part[0] for part in parts if len(part) == 1)} is not a schema.property reference"
+            elif target_schema is None:
+                cause = f"the contract has no schema {parts[0][0]}"
+            elif any(part[0] != target_schema.name for part in parts):
+                cause = "a composite key must reference a single schema"
+            else:
+                cause = f"{target_schema.name} has no property {parts[referenced.index(None)][-1]}"
             checks.append(
                 CheckSpec(
                     key=f"{model}__{'__'.join(source_names)}__{'__'.join('__'.join(p) for p in parts)}"
@@ -665,8 +677,7 @@ def _relationship_checks(
                     field=source_names[0] if len(source_names) == 1 else None,
                     metric=MetricType.UNSUPPORTED,
                     preset_result="warning",
-                    preset_reason=f"The relationship from {label} to {target_label} names a schema or property "
-                    "that the contract does not define, or its from and to lists differ in length.",
+                    preset_reason=f"The relationship from {label} to {target_label} is not checked: {cause}.",
                 )
             )
             continue

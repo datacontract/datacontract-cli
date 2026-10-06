@@ -1,5 +1,7 @@
 """`relationships` with type foreignKey: every non-null key must exist in the referenced schema."""
 
+import pytest
+
 from datacontract.data_contract import DataContract
 from datacontract.model.run import ResultEnum
 
@@ -197,9 +199,17 @@ def test_self_reference(tmp_path):
     assert "was 1" in check.reason
 
 
-def test_unknown_target_is_a_warning(tmp_path):
+@pytest.mark.parametrize(
+    "to, cause",
+    [
+        ("order.order_id", "the contract has no schema order"),
+        ("line_items.order_idd", "line_items has no property order_idd"),
+        ("schema/orders/properties/order_id", "schema/orders/properties/order_id is not a schema.property reference"),
+    ],
+)
+def test_unresolvable_target_is_a_warning_naming_the_cause(tmp_path, to, cause):
     _write(tmp_path, line_items=["line_item_id,order_id", "l1,o1"])
-    schema = """schema:
+    schema = f"""schema:
   - name: line_items
     properties:
       - name: line_item_id
@@ -208,13 +218,13 @@ def test_unknown_target_is_a_warning(tmp_path):
         logicalType: string
         relationships:
           - type: foreignKey
-            to: order.order_id
+            to: {to}
 """
 
     [check] = _relationship_checks(tmp_path, schema)
 
     assert check.result == ResultEnum.warning
-    assert "order.order_id" in check.reason
+    assert check.reason == f"The relationship from order_id to {to} is not checked: {cause}."
 
 
 def test_referenced_schema_outside_the_tested_one_is_a_warning(tmp_path):
