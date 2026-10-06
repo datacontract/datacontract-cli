@@ -146,6 +146,37 @@ def test_one_column_referencing_two_schemas(tmp_path):
     }
 
 
+def test_physical_names_on_both_sides(tmp_path):
+    _write(
+        tmp_path,
+        orders=["oid", "o1"],
+        line_items=["line_item_id,ord", "l1,o1", "l2,o9"],
+    )
+    schema = """schema:
+  - name: orders
+    properties:
+      - name: order_id
+        physicalName: oid
+        logicalType: string
+  - name: line_items
+    properties:
+      - name: line_item_id
+        logicalType: string
+      - name: order_id
+        physicalName: ord
+        logicalType: string
+        relationships:
+          - type: foreignKey
+            to: orders.order_id
+"""
+
+    [check] = _relationship_checks(tmp_path, schema)
+
+    assert check.key == "line_items__ord__orders__oid__field_relationships"
+    assert check.result == ResultEnum.failed
+    assert "was 1" in check.reason
+
+
 def test_self_reference(tmp_path):
     _write(tmp_path, employees=["employee_id,manager_id", "e1,", "e2,e1", "e3,e9"])
     schema = """schema:
