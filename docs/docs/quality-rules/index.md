@@ -45,7 +45,7 @@ ODCS defines four `type`s of quality rule. Each has its own page:
   </a>
   <a className="doc-card" href="/quality-rules/custom">
     <img src="/img/icons/database.svg" alt="" />
-    <span><span className="doc-card-title">Custom</span><span className="doc-card-desc">Engine-specific checks (e.g. DQX, SodaCL, Great Expectations).</span></span>
+    <span><span className="doc-card-title">Custom</span><span className="doc-card-desc">Engine-specific checks (e.g. DQX, SodaCL) and reusable custom quality checks.</span></span>
   </a>
 </div>
 

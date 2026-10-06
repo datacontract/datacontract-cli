@@ -146,6 +146,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | Environment variable | `Config` field | Type | Notes |
 |---|---|---|---|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `api_header_authorization` | string (secret) |  |
+| `DATACONTRACT_CUSTOM_QUALITY_CHECKS` | `custom_quality_checks` | string |  |
 | `DATACONTRACT_MAX_ERRORS` | `max_errors` | integer |  |
 
 ### Athena

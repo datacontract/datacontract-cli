@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test`: custom quality checks, SQL checks defined once in a folder (`--custom-quality-checks`) and used by name from a contract's quality rules
+
+### Fixed
+- `datacontract test`: `mustBe` and `mustNotBe` holding a `${VAR}` reference to a number compare with the number, not its text
+
 ## [1.2.3] - 2026-10-05
 
 ### Added

@@ -1120,6 +1120,8 @@ def _run_custom_sql(run: Run, con, spec: CheckSpec):
     _set_impl(run, spec.key, spec.query, "sql")
     value = _run_scalar(con, spec.query, spec.dialect)
     _evaluate(run, spec, value)
+    if spec.diagnostics:
+        _update_diagnostics(run, spec.key, spec.diagnostics)
 
 
 def _run_scalar(con, query: str, dialect: Optional[str]):

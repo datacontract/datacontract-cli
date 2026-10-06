@@ -25,6 +25,14 @@ from sqlglot import Dialect, exp
 
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
 from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.custom_quality_check import (
+    COLUMN_PLACEHOLDERS,
+    ENGINE,
+    CustomQualityCheckUnusable,
+    instantiate,
+    placeholder_pattern,
+    sql_literal,
+)
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect_by_name
 from datacontract.engines.checks.type_normalize import normalize_type_name
@@ -191,7 +199,11 @@ def to_threshold(quality: DataQuality) -> Optional[Threshold]:
 
 
 def prepare_query(
-    quality: DataQuality, model_name: str, field_name: Optional[str], server: Optional[Server]
+    query: Optional[str],
+    model_name: str,
+    field_name: Optional[str],
+    server: Optional[Server],
+    arguments: Optional[Mapping[str, tuple[bool, object]]] = None,
 ) -> Optional[str]:
     """Substitute placeholders in a user SQL query.
 
@@ -199,8 +211,10 @@ def prepare_query(
     cannot read it bare, so a plain name keeps the backend's case-insensitive
     resolution. Quotes the author wrote around a placeholder are dropped, except
     that backticks force the name to be quoted (e.g. a reserved word on Spark).
+    ``arguments`` maps a custom quality check's arguments to (is identifier, value):
+    an identifier becomes a name like a placeholder, any other value a SQL literal.
     """
-    if not quality.query:
+    if not query:
         return None
 
     dialect = sqlglot_dialect_by_name(dialect_for_server_type(get_server_type(server)))
@@ -213,17 +227,23 @@ def prepare_query(
     for placeholder in ("dataset", "project", "catalog", "database"):
         names[placeholder] = (getattr(server, placeholder, None) if server else None) or model_name
     if field_name is not None:
-        names |= dict.fromkeys(("field", "column", "property"), field_name)
+        names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
 
-    def identifier(match: re.Match) -> str:
-        forced = "`" in match.group(0)
+    def identifier(name: str, forced: bool) -> str:
         return ".".join(
             exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
-            for part in names[match.group(1)].split(".")
+            for part in name.split(".")
         )
 
-    # one pass, so a substituted name is not searched for placeholders again
-    return re.sub(rf"[\"'`]?\$?\{{({'|'.join(names)})}}[\"'`]?", identifier, quality.query)
+    def substitute(match: re.Match) -> str:
+        forced = "`" in match.group(0)
+        if match.group(1) is not None:
+            return identifier(names[match.group(1)], forced)
+        is_identifier, value = arguments[match.group(2)]
+        return identifier(value, forced) if is_identifier else sql_literal(value, dialect)
+
+    # one pass, so a substituted name or value is not searched for placeholders again
+    return placeholder_pattern(list(names), with_arguments=arguments is not None).sub(substitute, query)
 
 
 # ---------------------------------------------------------------------------
@@ -234,6 +254,7 @@ def create_checks(
     server: Optional[Server],
     schema_name: str = "all",
     variables: Optional[Mapping[str, str]] = None,
+    custom_quality_checks: Optional[str] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     if data_contract.schema_ is None:
@@ -244,7 +265,7 @@ def create_checks(
         if _is_azure_blob_schema(schema_obj, server):
             # File-metadata checks are emitted by check_azure_blob_file
             continue
-        checks.extend(_to_schema_checks(schema_obj, server, variables))
+        checks.extend(_to_schema_checks(schema_obj, server, variables, custom_quality_checks))
     checks.extend(_to_servicelevel_checks(data_contract, server))
     checks = [c for c in checks if c is not None]
     # Schema and service level checks cannot declare an ODCS dimension, so fill
@@ -260,7 +281,10 @@ def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server])
 
 
 def _to_schema_checks(
-    schema_object: SchemaObject, server: Optional[Server], variables: Optional[Mapping[str, str]] = None
+    schema_object: SchemaObject,
+    server: Optional[Server],
+    variables: Optional[Mapping[str, str]] = None,
+    custom_quality_checks: Optional[str] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     server_type = get_server_type(server) if server is not None else None
@@ -575,7 +599,7 @@ def _to_schema_checks(
             )
 
         if prop.quality:
-            checks.extend(_quality_checks(model, field, prop.quality, server, variables))
+            checks.extend(_quality_checks(model, field, prop.quality, server, variables, custom_quality_checks))
 
         # A check the server cannot run is reported, not dropped.
         unenforced = []
@@ -613,7 +637,7 @@ def _to_schema_checks(
         )
 
     if schema_object.quality:
-        checks.extend(_quality_checks(model, None, schema_object.quality, server, variables))
+        checks.extend(_quality_checks(model, None, schema_object.quality, server, variables, custom_quality_checks))
 
     return checks
 
@@ -719,10 +743,11 @@ def _quality_checks(
     quality_list: List[DataQuality],
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
+    custom_quality_checks: Optional[str] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
-        rule_checks = _quality_rule_checks(model, field, quality, count, server, variables)
+        rule_checks = _quality_rule_checks(model, field, quality, count, server, variables, custom_quality_checks)
         # Every check keeps a link back to the rule that declared it, so that
         # `test --quality-id` / `test --tag` can select it.
         for check in rule_checks:
@@ -782,6 +807,8 @@ def _unexecuted_check(
     quality: DataQuality,
     reason: str,
     result: str = "warning",
+    name: Optional[str] = None,
+    dimension: Optional[str] = None,
 ) -> List[CheckSpec]:
     """A rule the engine cannot run, reported rather than dropped."""
     return [
@@ -789,16 +816,24 @@ def _unexecuted_check(
             key=check_key,
             category="quality",
             type=check_type,
-            name=quality.description or unexecuted_check_name(model, field),
+            name=name or quality.description or unexecuted_check_name(model, field),
             model=model,
             field=field,
             metric=MetricType.UNSUPPORTED,
-            dimension=quality.dimension,
+            dimension=dimension or quality.dimension,
             severity=quality.severity,
             preset_result=result,
             preset_reason=reason,
         )
     ]
+
+
+def _array_item_reason(field: str) -> str:
+    return (
+        f"'{field}' is an array item, not a column, so it cannot be substituted into a query. "
+        f"Declare the rule on '{field.split('[]')[0]}' instead and match the elements with array "
+        f"functions, for example size(filter(...)) > 0."
+    )
 
 
 def _quality_rule_checks(
@@ -808,6 +843,7 @@ def _quality_rule_checks(
     count: int,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
+    custom_quality_checks: Optional[str] = None,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -828,6 +864,45 @@ def _quality_rule_checks(
                 ),
             )
         ]
+    if quality.type == "custom" and quality.engine == ENGINE:
+        if field is None:
+            check_key = f"{model}__quality_custom_check_{count}"
+            check_type = "model_quality_custom"
+        else:
+            check_key = f"{model}__{field}__quality_custom_check_{count}"
+            check_type = "field_quality_custom"
+        if field is not None and "[]" in field:
+            return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field))
+        dialect = dialect_for_server_type(get_server_type(server))
+        try:
+            instance = instantiate(quality, model, field, dialect, custom_quality_checks)
+        except CustomQualityCheckUnusable as e:
+            return _unexecuted_check(
+                check_key, check_type, model, field, quality, e.reason, e.result, e.name, e.dimension
+            )
+        rule = instance.quality
+        query = prepare_query(instance.query, model, field, server, instance.arguments)
+        refusal = refusal_reason(query, dialect)
+        if refusal is not None:
+            return _unexecuted_check(
+                check_key, check_type, model, field, rule, refusal, "failed", instance.name, rule.dimension
+            )
+        return [
+            CheckSpec(
+                key=check_key,
+                category="quality",
+                type=check_type,
+                name=instance.name,
+                model=model,
+                field=field,
+                metric=MetricType.CUSTOM_SQL,
+                threshold=to_threshold(rule),
+                query=query,
+                severity=rule.severity,
+                dimension=rule.dimension,
+                diagnostics=instance.diagnostics,
+            )
+        ]
     if quality.type == "sql":
         if field is None:
             check_key = f"{model}__quality_sql_{count}"
@@ -836,8 +911,6 @@ def _quality_rule_checks(
             check_key = f"{model}__{field}__quality_sql_{count}"
             check_type = "field_quality_sql"
         if field is not None and "[]" in field:
-            # An array item is not a column, so substituting it into the query
-            # would produce SQL no backend can parse.
             return [
                 CheckSpec(
                     key=check_key,
@@ -850,15 +923,11 @@ def _quality_rule_checks(
                     dimension=quality.dimension,
                     severity=quality.severity,
                     preset_result="warning",
-                    preset_reason=(
-                        f"'{field}' is an array item, not a column, so it cannot be substituted into a query. "
-                        f"Declare the rule on '{field.split('[]')[0]}' instead and match the elements with array "
-                        f"functions, for example size(filter(...)) > 0."
-                    ),
+                    preset_reason=_array_item_reason(field),
                 )
             ]
         threshold = to_threshold(quality)
-        query = prepare_query(quality, model, field, server)
+        query = prepare_query(quality.query, model, field, server)
         if query is None:
             return _unexecuted_check(check_key, check_type, model, field, quality, "The rule has no query.")
         if threshold is None:

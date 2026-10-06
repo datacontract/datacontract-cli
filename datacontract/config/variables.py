@@ -231,26 +231,58 @@ _DEFERRED_FIELDS = {
 }
 
 
-def resolve_runtime_variables(value, source: str = "contract", variables: Optional[Mapping[str, str]] = None):
+# Compared with the value a query returns, so a whole reference keeps the type it reads as.
+_TYPED_FIELDS = {("DataQuality", "mustBe"), ("DataQuality", "mustNotBe")}
+_PLAIN_NUMBER = re.compile(r"-?(0|[1-9][0-9]*)(\.[0-9]+)?")
+
+
+def resolve_runtime_variables(
+    value, source: str = "contract", variables: Optional[Mapping[str, str]] = None, typed: bool = False
+):
     """Copy test inputs with variables resolved, recursively, without altering the contract.
 
     Handles property names/types, enum values, logical type options, library
     quality arguments, SLA values, and nested array/map definitions. Dictionary
-    keys are structural identifiers and are never interpolated.
+    keys are structural identifiers and are never interpolated. With ``typed``, a
+    value that is one whole reference becomes a number or boolean if its resolved
+    text is a plain one (``1000``, ``-2.5``, ``true``); ``007`` stays a string.
     """
     if isinstance(value, BaseModel):
         owner = type(value).__name__
         updates = {}
         for field in type(value).model_fields:
-            if field in _DEFERRED_FIELDS:
-                continue
             original = getattr(value, field)
             field_source = f"{source}.{_field_name(field)}"
-            resolved = resolve_runtime_variables(original, field_source, variables)
+            # A custom quality check's arguments are test inputs, like a library metric's.
+            if (
+                field == "implementation"
+                and getattr(value, "engine", None) == "datacontract-cli"
+                and isinstance(original, dict)
+                and "arguments" in original
+            ):
+                arguments = resolve_runtime_variables(
+                    original["arguments"], f"{field_source}.arguments", variables, typed=True
+                )
+                updates[field] = {**original, "arguments": arguments}
+                continue
+            if field in _DEFERRED_FIELDS:
+                continue
+            resolved = resolve_runtime_variables(original, field_source, variables, (owner, field) in _TYPED_FIELDS)
             updates[field] = _checked(original, resolved, owner, field, field_source)
         return value.model_copy(update=updates)
     if isinstance(value, dict):
-        return {key: resolve_runtime_variables(item, f"{source}.{key}", variables) for key, item in value.items()}
+        return {
+            key: resolve_runtime_variables(item, f"{source}.{key}", variables, typed) for key, item in value.items()
+        }
     if isinstance(value, list):
-        return [resolve_runtime_variables(item, f"{source}[{index}]", variables) for index, item in enumerate(value)]
-    return resolve_variables(value, source=source, variables=variables)
+        return [
+            resolve_runtime_variables(item, f"{source}[{index}]", variables, typed) for index, item in enumerate(value)
+        ]
+    resolved = resolve_variables(value, source=source, variables=variables)
+    if not typed or not isinstance(value, str) or not _VARIABLE.fullmatch(value):
+        return resolved
+    if _PLAIN_NUMBER.fullmatch(resolved):
+        return float(resolved) if "." in resolved else int(resolved)
+    if resolved in ("true", "false"):
+        return resolved == "true"
+    return resolved

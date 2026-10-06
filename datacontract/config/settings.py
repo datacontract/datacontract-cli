@@ -110,6 +110,7 @@ class Config(BaseSettings):
 
     # general
     api_header_authorization: SecretStr | None = None
+    custom_quality_checks: str | None = None
     max_errors: int | None = None
 
     # athena (credentials come from the s3_* options)
@@ -520,6 +521,10 @@ class Config(BaseSettings):
     # --- api ---
     def get_api_header_authorization(self, required: bool = False) -> str | None:
         return self._str_option("api_header_authorization", required)
+
+    # --- custom quality checks ---
+    def get_custom_quality_checks(self) -> str | None:
+        return self._str_option("custom_quality_checks")
 
     # --- max ---
     def get_max_errors(self) -> int | None:
