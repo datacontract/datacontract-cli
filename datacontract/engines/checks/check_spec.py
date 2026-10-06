@@ -27,7 +27,6 @@ class MetricType(str, Enum):
     MISSING_COUNT = "missing_count"
     DUPLICATE_COUNT = "duplicate_count"
     INVALID_COUNT = "invalid_count"
-    # Rows whose (non-null) foreign key has no matching row in the referenced model.
     MISSING_REFERENCE_COUNT = "missing_reference_count"
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"

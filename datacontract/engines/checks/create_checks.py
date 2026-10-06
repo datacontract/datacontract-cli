@@ -622,12 +622,7 @@ def _to_schema_checks(
 def _relationship_checks(
     schema_object: SchemaObject, schemas: List[SchemaObject], server: Optional[Server]
 ) -> List[CheckSpec]:
-    """A foreign key holds when every non-null key in this model exists in the referenced model.
-
-    Declared on a property (`to` only) or on the schema (`from` and `to`, lists for a composite key),
-    both as `schema.property`. A relationship that names no existing schema or property is reported
-    as a warning rather than dropped, so a typo never reads as a passing check.
-    """
+    """A foreign key holds when every non-null key in this model exists in the referenced model."""
     server_type = get_server_type(server) if server is not None else None
     model = to_schema_name(schema_object, server_type)
     properties = schema_object.properties or []
@@ -650,19 +645,14 @@ def _relationship_checks(
             return None if prop is None else prop.physicalName or prop.name
 
         columns = [physical(properties, name) for name in source_names]
-        referenced = (
-            [physical(target_schema.properties, part[-1]) for part in parts if part[0] == target_schema.name]
-            if target_schema is not None
-            else []
-        )
+        referenced = [
+            physical(target_schema.properties, part[-1])
+            if target_schema is not None and part[0] == target_schema.name
+            else None
+            for part in parts
+        ]
         label = ", ".join(source_names) or "?"
-        if (
-            not columns
-            or None in columns
-            or len(referenced) != len(columns)
-            or None in referenced
-            or len(parts) != len(columns)
-        ):
+        if not columns or None in columns + referenced or len(referenced) != len(columns):
             target_label = ", ".join(str(t) for t in targets)
             checks.append(
                 CheckSpec(
