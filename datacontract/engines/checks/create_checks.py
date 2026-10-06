@@ -667,9 +667,9 @@ def _relationship_checks(
             checks.append(
                 CheckSpec(
                     key=f"{model}__{'__'.join(source_names)}__{'__'.join('__'.join(p) for p in parts)}"
-                    "__field_relationship",
+                    "__field_relationships",
                     category="schema",
-                    type="field_relationship",
+                    type="field_relationships",
                     name=f"Check that {label} has no values missing from {target_label}",
                     model=model,
                     field=source_names[0] if len(source_names) == 1 else None,
@@ -691,9 +691,9 @@ def _relationship_checks(
             )
         checks.append(
             CheckSpec(
-                key=f"{model}__{'__'.join(columns)}__{referenced_model}__{'__'.join(referenced)}__field_relationship",
+                key=f"{model}__{'__'.join(columns)}__{referenced_model}__{'__'.join(referenced)}__field_relationships",
                 category="schema",
-                type="field_relationship",
+                type="field_relationships",
                 name=name,
                 model=model,
                 field=columns[0] if len(columns) == 1 else None,

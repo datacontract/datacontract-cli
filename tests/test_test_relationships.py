@@ -43,7 +43,7 @@ def _write(tmp_path, **tables):
 def _relationship_checks(tmp_path, schema, schema_name="all"):
     contract = SERVER.format(path=tmp_path) + schema
     run = DataContract(data_contract_str=contract, schema_name=schema_name).test()
-    return [c for c in run.checks if c.type == "field_relationship"]
+    return [c for c in run.checks if c.type == "field_relationships"]
 
 
 def test_orphaned_key_fails(tmp_path):
@@ -141,8 +141,8 @@ def test_one_column_referencing_two_schemas(tmp_path):
     checks = _relationship_checks(tmp_path, schema)
 
     assert {c.key: c.result for c in checks} == {
-        "line_items__order_id__orders__order_id__field_relationship": ResultEnum.failed,
-        "line_items__order_id__invoices__order_id__field_relationship": ResultEnum.passed,
+        "line_items__order_id__orders__order_id__field_relationships": ResultEnum.failed,
+        "line_items__order_id__invoices__order_id__field_relationships": ResultEnum.passed,
     }
 
 
