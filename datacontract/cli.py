@@ -130,6 +130,8 @@ app = typer.Typer(
     cls=OrderedCommandsWithMigrationHints,
     no_args_is_help=True,
     add_completion=False,
+    # the locals of a --debug traceback can hold credentials
+    pretty_exceptions_show_locals=False,
     help="CLI to manage data contracts. Documentation: https://docs.datacontract.com",
     epilog="Read the full documentation at https://docs.datacontract.com",
 )

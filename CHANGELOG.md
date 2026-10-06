@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract test`: check that foreign keys declared under `relationships` have no values missing from the referenced schema (#1691)
 
+### Fixed
+- Redact secrets in the MySQL connection string of error messages (#1706)
+- `--debug` tracebacks no longer print local variables, which could hold credentials
+
 ## [1.2.3] - 2026-10-05
 
 ### Added
