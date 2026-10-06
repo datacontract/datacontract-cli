@@ -237,4 +237,5 @@ def test_referenced_schema_outside_the_tested_one_is_a_warning(tmp_path):
     [check] = _relationship_checks(tmp_path, ORDERS, schema_name="line_items")
 
     assert check.result == ResultEnum.warning
-    assert "orders" in check.reason
+    assert check.reason.startswith("Could not read the referenced model 'orders'")
+    assert "--schema-name line_items reads only that schema from files" in check.reason
