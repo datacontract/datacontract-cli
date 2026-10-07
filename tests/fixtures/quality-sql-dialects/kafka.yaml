@@ -13,7 +13,6 @@ servers:
   - server: production
     type: kafka
     host: broker.acme.internal:9092
-    topic: orders
     format: json
 schema:
   - name: orders
