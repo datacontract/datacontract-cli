@@ -9,6 +9,7 @@ from urllib.parse import quote, urljoin, urlparse
 import requests
 import yaml
 from jsonschema import validators
+from jsonschema.exceptions import best_match
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 from pydantic import BaseModel, ConfigDict
 
@@ -939,18 +940,29 @@ def _validate_json_schema(
     if errors:
         logger.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
         # A failing subschema also leaves its fields unevaluated, so unknown fields are only reported once it passes.
-        raise DataContractValidationErrors(
-            [
+        exceptions = []
+        for error in errors:
+            message = error.message
+            if error.validator in ("oneOf", "anyOf"):
+                # A branch whose type the value lacks explains nothing.
+                same_type = [c for c in error.context if not (c.validator == "type" and not c.relative_path)]
+                if same_type:
+                    error = best_match(same_type)
+                    message = error.message
+                elif error.context:
+                    message = "must be of type " + " or ".join(repr(c.validator_value) for c in error.context)
+                else:
+                    message = f"must match exactly one of {len(error.validator_value)} definitions, but matches several"
+            exceptions.append(
                 _validation_error_to_exception(
                     _resolve_jsonschema_compliance_error_message_path(
-                        yaml_str, f"data{error.json_path[1:]}: {error.message}"
+                        yaml_str, f"data{error.json_path[1:]}: {message}"
                     ),
                     original_exception=error,
                     schema_version=schema_version,
                 )
-                for error in errors
-            ]
-        )
+            )
+        raise DataContractValidationErrors(exceptions)
     logger.debug("YAML data is valid.")
     warnings = []
     for error in unknown_fields:
