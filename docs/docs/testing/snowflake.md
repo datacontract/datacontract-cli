@@ -61,7 +61,7 @@ Server: workspace (type=snowflake, host=..., port=443, database=ORDER_DB, schema
 │ passed │ Check that field order_id has physical type VARCHAR │ order_id │         │
 │  ...   │                                                     │          │         │
 ╰────────┴─────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 5.2 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 5.2 seconds.
 ```
 
 ## 5. Let it catch a violation

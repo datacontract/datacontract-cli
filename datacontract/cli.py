@@ -15,7 +15,7 @@ from rich.markup import escape
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
-from datacontract.config import Config, set_cli_config
+from datacontract.config import Config, cli_config, set_cli_config
 from datacontract.output.output_format import OutputFormat
 
 console = Console()
@@ -30,6 +30,23 @@ inline_references_option = Annotated[
         "references are read from disk. See https://docs.datacontract.com/semantics"
     ),
 ]
+
+custom_quality_checks_option = Annotated[
+    Optional[Path],
+    typer.Option(
+        metavar="DIR",
+        help="Folder with the custom quality checks the contract's quality rules use, one YAML file per check. "
+        "Defaults to DATACONTRACT_CUSTOM_QUALITY_CHECKS.",
+    ),
+]
+
+
+def config_with_custom_quality_checks(custom_quality_checks: Optional[Path]) -> Config | None:
+    """The --config-file config, with the --custom-quality-checks folder if one was given."""
+    config = cli_config()
+    if custom_quality_checks is None:
+        return config
+    return Config.resolve(config).model_copy(update={"custom_quality_checks": str(custom_quality_checks)})
 
 
 # Order in which top-level commands appear in `datacontract --help` (cf. README.md)
@@ -130,6 +147,8 @@ app = typer.Typer(
     cls=OrderedCommandsWithMigrationHints,
     no_args_is_help=True,
     add_completion=False,
+    # the locals of a --debug traceback can hold credentials
+    pretty_exceptions_show_locals=False,
     help="CLI to manage data contracts. Documentation: https://docs.datacontract.com",
     epilog="Read the full documentation at https://docs.datacontract.com",
 )

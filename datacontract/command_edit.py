@@ -74,7 +74,29 @@ def _cli_version() -> str:
         return "unknown"
 
 
-def _generate_index_html(filename: str) -> str:
+# The editor's AI assistant is configured via these environment variables (e.g., in .env).
+# It is enabled when DATACONTRACT_EDITOR_AI_ENDPOINT is set.
+EDITOR_AI_ENV_VARS = {
+    "provider": "DATACONTRACT_EDITOR_AI_PROVIDER",
+    "endpoint": "DATACONTRACT_EDITOR_AI_ENDPOINT",
+    "apiKey": "DATACONTRACT_EDITOR_AI_API_KEY",
+    "model": "DATACONTRACT_EDITOR_AI_MODEL",
+    "authHeader": "DATACONTRACT_EDITOR_AI_AUTH_HEADER",
+}
+
+
+def editor_ai_config() -> dict | None:
+    """Return the editor's AI assistant config from the environment, or None if no endpoint is set."""
+    if not os.getenv(EDITOR_AI_ENV_VARS["endpoint"]):
+        return None
+    ai = {"enabled": True}
+    for key, env_var in EDITOR_AI_ENV_VARS.items():
+        if os.getenv(env_var):
+            ai[key] = os.getenv(env_var)
+    return ai
+
+
+def _generate_index_html(filename: str, ai_config: dict | None = None) -> str:
     """
     Generate the editor page: load the YAML from the local file API, write it back on
     save, and point the editor's test runner at this server's own /test endpoint.
@@ -82,8 +104,10 @@ def _generate_index_html(filename: str) -> str:
     The editor runs in EMBEDDED mode, since the file menu (New, Load Example, Open)
     makes no sense when the editor is bound to a single local file. The filename is
     shown in the header via titlePrefix, and Cancel reverts to the file on disk.
+    The AI assistant is configured if ai_config is given.
     """
     filename_js = json.dumps(filename)
+    ai_option = f"ai: {json.dumps(ai_config)}," if ai_config else ""
     file_api_path = f"/api/files/{quote(filename)}"
     return f"""<!doctype html>
 <html lang="en">
@@ -136,6 +160,7 @@ def _generate_index_html(filename: str) -> str:
               enabled: true,
               dataContractCliApiServerUrl: window.location.origin,
             }},
+            {ai_option}
             onCancel: async () => {{
               try {{
                 const response = await fetch('{file_api_path}');
@@ -213,7 +238,7 @@ def create_app(
 
     @edit_app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def index():
-        return _generate_index_html(filename)
+        return _generate_index_html(filename, editor_ai_config())
 
     @edit_app.get(EDITOR_ASSETS_PATH + "/{asset_path:path}", include_in_schema=False)
     def editor_asset(asset_path: str):
@@ -337,6 +362,9 @@ def edit(
     the data contract tests locally against the servers defined in the data contract.
     Credentials for the data sources must be provided as environment variables, see
     https://docs.datacontract.com/testing
+    The editor's AI assistant is enabled by setting DATACONTRACT_EDITOR_AI_ENDPOINT, together with
+    DATACONTRACT_EDITOR_AI_API_KEY, DATACONTRACT_EDITOR_AI_MODEL, DATACONTRACT_EDITOR_AI_PROVIDER
+    (openai or anthropic), and DATACONTRACT_EDITOR_AI_AUTH_HEADER (bearer, api-key, or x-api-key).
     """
     enable_debug_logging(debug)
 

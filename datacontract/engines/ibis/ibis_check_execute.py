@@ -190,6 +190,7 @@ def execute_ibis_checks(
                 server,
                 include_failed_samples,
                 row_filter=(model_filters or {}).get(model),
+                schema_name=schema_name,
             )
     finally:
         _maybe_disconnect(con, spark, duckdb_connection)
@@ -224,6 +225,7 @@ def _run_model(
     server: Optional[Server] = None,
     include_failed_samples: bool = False,
     row_filter: Optional[str] = None,
+    schema_name: str = "all",
 ):
     try:
         t = _resolve_table(con, model, _table_database(con, server))
@@ -330,6 +332,8 @@ def _run_model(
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
                 _run_duplicate(run, t, unfiltered_t, columns, spec, model_row_count())
+            elif spec.metric == MetricType.MISSING_REFERENCE_COUNT:
+                _run_missing_reference(run, con, server, t, columns, spec, schema_name)
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, schema, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
@@ -806,6 +810,32 @@ def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_coun
     _update_diagnostics(run, spec.key, extra)
 
 
+def _run_missing_reference(run: Run, con, server, t, columns, spec: CheckSpec, schema_name: str):
+    """Count the rows whose foreign key is not null and has no matching row in the referenced model."""
+    try:
+        referenced = _resolve_table(con, spec.referenced_model, _table_database(con, server)).view()
+    except Exception as e:
+        # With --schema-name, file sources only load the tested model, so the referenced one may be absent.
+        reason = f"Could not read the referenced model '{spec.referenced_model}': {_first_line(str(e))}"
+        if schema_name != "all":
+            reason += (
+                f". --schema-name {schema_name} reads only that schema from files; "
+                "test without --schema-name to check this relationship."
+            )
+        set_result(run, spec.key, ResultEnum.warning, reason)
+        return
+    referenced_columns = {c.lower(): c for c in referenced.columns}
+    keys = [_resolve_col(columns, c) for c in spec.columns]
+    rows = t.filter([t[k].notnull() for k in keys])
+    predicates = [
+        rows[k] == referenced[_resolve_col(referenced_columns, r)] for k, r in zip(keys, spec.referenced_columns)
+    ]
+    expr = rows.anti_join(referenced, predicates).count()
+    _record_sql(run, spec, expr)
+    value = expr.execute()
+    _evaluate(run, spec, 0 if value is None else int(value))
+
+
 def _is_item_duplicate(spec: CheckSpec) -> bool:
     return any("[]" in c for c in (spec.columns or [spec.field]) if c)
 
@@ -1120,6 +1150,8 @@ def _run_custom_sql(run: Run, con, spec: CheckSpec):
     _set_impl(run, spec.key, spec.query, "sql")
     value = _run_scalar(con, spec.query, spec.dialect)
     _evaluate(run, spec, value)
+    if spec.diagnostics:
+        _update_diagnostics(run, spec.key, spec.diagnostics)
 
 
 def _run_scalar(con, query: str, dialect: Optional[str]):

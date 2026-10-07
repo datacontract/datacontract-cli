@@ -95,7 +95,7 @@ Server: production (type=hana, host=..., port=443, schema=SALES)
 │ passed │ Check that field ORDER_ID has type NVARCHAR │ ORDER_ID │         │
 │  ...   │                                             │          │         │
 ╰────────┴─────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 7 checks. Took 1.4 seconds.
+🟢 Data contract is valid. Ran 7 checks. Took 1.4 seconds.
 ```
 
 The engine reads the declared types from `SYS.TABLE_COLUMNS` and `SYS.VIEW_COLUMNS`, and runs every

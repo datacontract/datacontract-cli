@@ -60,7 +60,7 @@ Server: oracle (type=oracle, host=localhost, port=1521, schema=ADMIN)
 │ passed │ Check that field ORDER_ID has physical type VARCHAR2(36) │ ORDER_ID │         │
 │  ...   │                                                          │          │         │
 ╰────────┴──────────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 3.4 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 3.4 seconds.
 ```
 
 ## 5. Let it catch a violation

@@ -62,7 +62,7 @@ Server: clickhouse (type=clickhouse, host=localhost, port=8123, database=sales)
 │ passed │ Check that field order_id has no missing values    │ order_id │         │
 │  ...   │                                                    │          │         │
 ╰────────┴────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 33 checks. Took 0.5 seconds.
+🟢 Data contract is valid. Ran 33 checks. Took 0.5 seconds.
 ```
 
 ## 5. Let it catch a violation

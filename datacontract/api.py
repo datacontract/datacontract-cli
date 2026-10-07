@@ -449,7 +449,8 @@ def config_from_headers(headers) -> "Config | None":
     → ``DATACONTRACT_SNOWFLAKE_PASSWORD``, ``entropy-data-api-key`` →
     ``ENTROPY_DATA_API_KEY``. Returns None when no config headers are present,
     so env-var-configured deployments behave exactly as before. Unknown
-    ``datacontract-*`` option names are rejected with a 400.
+    ``datacontract-*`` option names are rejected with a 400, and so is the
+    custom quality checks folder.
     """
     known = known_env_names()
     values = {}
@@ -457,6 +458,12 @@ def config_from_headers(headers) -> "Config | None":
         lowered = name.lower()
         env = lowered.upper().replace("-", "_")
         if lowered.startswith(_CONFIG_HEADER_PREFIX) or env in known:
+            if env == "DATACONTRACT_CUSTOM_QUALITY_CHECKS":
+                # A folder on the server's disk is the operator's to choose, never the caller's.
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The custom quality checks folder is configured by the API server, not per request.",
+                )
             values[env] = value
     if not values:
         return None

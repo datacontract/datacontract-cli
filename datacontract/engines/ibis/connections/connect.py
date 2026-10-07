@@ -601,7 +601,11 @@ def _connect_mysql_via_duckdb(
     """
     import duckdb
 
-    from datacontract.engines.ibis.connections.duckdb_connection import _load_extension, restrict_to_paths
+    from datacontract.engines.ibis.connections.duckdb_connection import (
+        _attach_mysql,
+        _load_extension,
+        restrict_to_paths,
+    )
 
     user = config.get_mysql_username(required=True)
     password = config.get_mysql_password(required=True)
@@ -612,12 +616,8 @@ def _connect_mysql_via_duckdb(
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")
 
-    parts = [f"host={host}", f"port={port}", f"user={user}", f"password={password}"]
-    if database:
-        parts.append(f"database={database}")
-    conn_str = " ".join(parts).replace("'", "''")
     run.log_info(f"Attaching MySQL {host}:{port} via the duckdb mysql extension")
-    con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql)")
+    _attach_mysql(con, host, port, user, password, database)
 
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:

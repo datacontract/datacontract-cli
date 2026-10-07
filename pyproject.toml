@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.2.3"
+version = "1.2.4"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -60,8 +60,7 @@ dependencies = [
   "pytz>=2024.1",
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<16.0",
-  # below 30.18 until an issue in ibis is fixed - see https://github.com/datacontract/datacontract-cli/issues/1592
-  "sqlglot>=26.6.0,<30.18",
+  "sqlglot>=26.6.0,<31.0.0",
   "python-dotenv>=1.0.0,<2.0.0",
   "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",

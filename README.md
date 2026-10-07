@@ -85,7 +85,7 @@ Server: production (type=postgres, host=aws-1-eu-central-2.pooler.supabase.com, 
 │ passed │ Check that field order_total has physical type INTEGER            │ orders.order_total      │         │
 │ passed │ Check that field order_total has no missing values                │ orders.order_total      │         │
 ╰────────┴───────────────────────────────────────────────────────────────────┴─────────────────────────┴─────────╯
-🟢 Data contract is valid. Run 30 checks. Took 2.504495 seconds.
+🟢 Data contract is valid. Ran 30 checks. Took 2.504495 seconds.
 ```
 
 Voilà, the CLI tested that the YAML itself is valid, all records comply with the schema, and all quality attributes are met.
