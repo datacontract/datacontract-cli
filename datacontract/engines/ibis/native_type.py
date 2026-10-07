@@ -281,7 +281,7 @@ def _read_information_schema(con, server: Server, model: str) -> Optional[dict[s
     query = (
         "SELECT column_name, data_type, character_maximum_length, "
         "numeric_precision, numeric_scale, datetime_precision "
-        f"FROM information_schema.columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"FROM INFORMATION_SCHEMA.COLUMNS WHERE upper(table_name) = upper('{_quote(model)}')"
         f"{_schema_filter(server)}"
     )
     return _map_reconstructed(con, query)
