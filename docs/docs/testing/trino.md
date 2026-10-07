@@ -63,7 +63,7 @@ Server: trino (type=trino, host=localhost, port=8443, schema=my_schema, catalog=
 │ passed │ Check that field order_id has physical type varchar │ order_id │         │
 │  ...   │                                                     │          │         │
 ╰────────┴─────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 1.9 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 1.9 seconds.
 ```
 
 ## 5. Let it catch a violation

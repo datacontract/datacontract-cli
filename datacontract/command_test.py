@@ -10,7 +10,9 @@ from datacontract.cli import (
     _print_logs,
     _print_publish_failure,
     app,
+    config_with_custom_quality_checks,
     console,
+    custom_quality_checks_option,
     debug_option,
     enable_debug_logging,
     inline_references_option,
@@ -200,6 +202,7 @@ def test(
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
+    custom_quality_checks: custom_quality_checks_option = None,
     inline_references: inline_references_option = True,
     debug: debug_option = None,
 ):
@@ -231,7 +234,7 @@ def test(
     if server == "all":
         server = None
     run = DataContract(
-        config=cli_config(),
+        config=config_with_custom_quality_checks(custom_quality_checks),
         data_contract_file=location,
         schema_location=schema,
         publish_test_results=publish_test_results,

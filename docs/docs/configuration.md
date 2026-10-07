@@ -36,7 +36,7 @@ The `.env` values are exported into the process environment, so they also reach 
 
 ## Variables in the data contract
 
-Since ODCS v3.2.0, any string value in a data contract may contain a `${VAR_NAME}` reference, optionally with an inline default: `${VAR_NAME:-default}`. This keeps hostnames, bucket paths, and other environment-specific values out of the contract, so the same file works in every environment.
+Since ODCS v3.2.0, any string value in a data contract may reference an environment variable as `${VAR_NAME}`, with an optional default: `${VAR_NAME:-default}`. This keeps environment-specific values such as hostnames and bucket paths out of the contract.
 
 ```yaml
 servers:
@@ -53,17 +53,15 @@ schema:
         mustBe: 0
 ```
 
-The CLI resolves references in test inputs: server fields, schema and property names, enum values, nested type options, library quality arguments, and service levels. Where ODCS closes a field to a fixed set of values — `quality.type`, `quality.metric`, `quality.dimension`, `logicalType` and `servers[].type` — a reference must resolve into one of them; anything else fails the run naming the reference and the accepted values, never the value it produced. SQL quality queries resolve when their checks are prepared; the CLI's own placeholders such as `${model}` and `${schema}` are substituted first. Values come from the environment, including a loaded `.env` file. A reference to an unset or empty variable without a default fails the run with the variable's name and field path; an empty string is never substituted silently. Unselected schemas and documentation fields such as descriptions and context do not need their variables set. The contract itself is never changed: `lint` accepts unresolved references, and `export` and `publish` write them back exactly as written.
+Values come from the environment, including a loaded `.env` file. If a variable is unset or empty and has no default, the run fails. References are resolved only when testing: `lint`, `export` and `publish` leave them as written. [Per-source override options](#all-options) such as `DATACONTRACT_POSTGRES_HOST` take precedence over the contract.
 
-The [per-source override options](#all-options) such as `DATACONTRACT_POSTGRES_HOST` take precedence over the contract, so an override replaces a reference in the same field without resolving it.
-
-On the [API server](./api.md) the environment belongs to the operator, not to whoever posted the contract, so a posted contract resolves nothing from it by default. Name the variables it may read with `DATACONTRACT_CLI_API_CONTRACT_VARIABLES`, or `datacontract api --contract-variables`, as comma-separated [fnmatch](https://docs.python.org/3/library/fnmatch.html) globs matched case-sensitively against variable names:
+On the [API server](./api.md), a posted contract can't read the operator's environment unless you allow it. Pass a comma-separated list of glob patterns with `--contract-variables` (or `DATACONTRACT_CLI_API_CONTRACT_VARIABLES`):
 
 ```bash
 datacontract api --contract-variables 'TABLE_*,CUTOFF_DATE'
 ```
 
-A name outside the list behaves exactly like an unset one, so `${VAR:-default}` still takes its default and a bare `${VAR}` fails the run. `*` exposes every variable to every posted contract, credentials included.
+Variables not on the list are treated as unset. `*` exposes every variable, credentials included.
 
 ## Config file (YAML)
 
@@ -146,6 +144,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | Environment variable | `Config` field | Type | Notes |
 |---|---|---|---|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `api_header_authorization` | string (secret) |  |
+| `DATACONTRACT_CUSTOM_QUALITY_CHECKS` | `custom_quality_checks` | string |  |
 | `DATACONTRACT_MAX_ERRORS` | `max_errors` | integer |  |
 
 ### Athena

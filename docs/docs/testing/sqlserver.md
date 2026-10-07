@@ -63,7 +63,7 @@ Server: production (type=sqlserver, host=localhost, port=1433, database=mydb, sc
 │ passed │ Check that field order_id has physical type varchar(36) │ order_id │         │
 │  ...   │                                                         │          │         │
 ╰────────┴─────────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 3.7 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 3.7 seconds.
 ```
 
 ## 5. Let it catch a violation

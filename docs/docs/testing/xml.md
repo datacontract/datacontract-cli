@@ -95,7 +95,7 @@ Server: local (type=local, format=xml, path=orders/*.xml)
 │ passed │ Check that field version has no missing values   │ version   │         │
 │ passed │ Check that field version has a minimum of 1      │ version   │         │
 ╰────────┴──────────────────────────────────────────────────┴───────────┴─────────╯
-🟢 Data contract is valid. Run 16 checks. Took 0.35 seconds.
+🟢 Data contract is valid. Ran 16 checks. Took 0.35 seconds.
 ```
 
 ## 4. Let it catch a violation

@@ -8,8 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `datacontract test`: check that foreign keys declared under `relationships` have no values missing from the referenced schema (#1691)
+- `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
 - Data contracts can now be pulled from Fabric Warehouses (#1705) 
+
+## [1.2.4] - 2026-10-06
+
+### Added
+- `datacontract test`: custom quality checks, SQL checks defined once in a folder (`--custom-quality-checks`) and used by name from a contract's quality rules (#1703)
+- `datacontract test`: check that foreign keys declared under `relationships` have no values missing from the referenced schema (#1691,#1698 @jarichb)
+
+### Security
+- Redact secrets in the MySQL connection string of error messages (#1706,#1708 @SabineGl)
+- `--debug` tracebacks no longer print local variables, which could hold credentials (#1708)
+
+### Fixed
+- `datacontract test`: `mustBe` and `mustNotBe` holding a `${VAR}` reference to a number compare with the number, not its text (#1703)
+- `datacontract test`: SQL quality queries on Athena are read as Trino SQL, so a backslash in a string no longer gets the query refused (#1703)
 
 ## [1.2.3] - 2026-10-05
 

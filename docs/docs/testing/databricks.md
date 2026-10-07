@@ -58,7 +58,7 @@ Server: databricks (type=databricks, schema=my_schema, catalog=my_catalog)
 │ passed │ Check that field order_id has physical type string │ order_id │         │
 │  ...   │                                                    │          │         │
 ╰────────┴────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 8.4 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 8.4 seconds.
 ```
 
 ## 5. Let it catch a violation

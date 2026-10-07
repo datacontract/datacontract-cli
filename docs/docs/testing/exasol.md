@@ -77,7 +77,7 @@ Server: production (type=exasol, host=exasol.acme.com, port=8563, schema=sales)
 │ passed │ Check that field order_id has physical type DECIMAL(18,0) │ order_id │         │
 │  ...   │                                                           │          │         │
 ╰────────┴───────────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 6 checks. Took 1.4 seconds.
+🟢 Data contract is valid. Ran 6 checks. Took 1.4 seconds.
 ```
 
 ## 5. Let it catch a violation

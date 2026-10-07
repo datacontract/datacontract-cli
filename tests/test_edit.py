@@ -10,6 +10,7 @@ from datacontract.cli import app
 from datacontract.command_edit import (
     BUNDLED_EDITOR_ASSETS_DIR,
     create_app,
+    editor_ai_config,
     local_copy_filename,
     resolve_editor_assets_url,
 )
@@ -139,6 +140,41 @@ def test_index_serves_editor_page(client, contract_file):
     assert "addNotification" in response.text
     assert "type: 'success'" in response.text
     assert "type: 'error'" in response.text
+
+
+def test_index_without_ai_config(client, monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_EDITOR_AI_ENDPOINT", raising=False)
+    assert "ai: " not in client.get("/").text
+
+
+def test_index_with_ai_config_from_env(client, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_EDITOR_AI_PROVIDER", "anthropic")
+    monkeypatch.setenv("DATACONTRACT_EDITOR_AI_ENDPOINT", "https://example.com/v1/messages")
+    monkeypatch.setenv("DATACONTRACT_EDITOR_AI_API_KEY", "secret")
+    monkeypatch.setenv("DATACONTRACT_EDITOR_AI_MODEL", "claude-haiku-4-5")
+    monkeypatch.setenv("DATACONTRACT_EDITOR_AI_AUTH_HEADER", "x-api-key")
+    expected = {
+        "enabled": True,
+        "provider": "anthropic",
+        "endpoint": "https://example.com/v1/messages",
+        "apiKey": "secret",
+        "model": "claude-haiku-4-5",
+        "authHeader": "x-api-key",
+    }
+    assert editor_ai_config() == expected
+    assert f"ai: {json.dumps(expected)}," in client.get("/").text
+
+
+def test_editor_ai_config_requires_endpoint(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_EDITOR_AI_ENDPOINT", raising=False)
+    monkeypatch.setenv("DATACONTRACT_EDITOR_AI_API_KEY", "secret")
+    assert editor_ai_config() is None
+    monkeypatch.setenv("DATACONTRACT_EDITOR_AI_ENDPOINT", "https://example.com/v1/chat/completions")
+    assert editor_ai_config() == {
+        "enabled": True,
+        "endpoint": "https://example.com/v1/chat/completions",
+        "apiKey": "secret",
+    }
 
 
 def test_health(client):

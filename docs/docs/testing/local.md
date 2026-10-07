@@ -50,7 +50,7 @@ Server: production (type=local, format=csv, path=orders.csv)
 │ passed │ Check that field order_total has a maximum of 4999.0 │ order_total │         │
 │  ...   │                                                      │             │         │
 ╰────────┴──────────────────────────────────────────────────────┴─────────────┴─────────╯
-🟢 Data contract is valid. Run 17 checks. Took 1.2 seconds.
+🟢 Data contract is valid. Ran 17 checks. Took 1.2 seconds.
 ```
 
 ## 4. Let it catch a violation
