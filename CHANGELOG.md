@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them
+
 ## [1.2.3] - 2026-10-05
 
 ### Added

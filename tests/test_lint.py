@@ -81,12 +81,44 @@ def test_lint_invalid_odcs_schema():
     assert run.result == "failed"
 
 
+def test_lint_warns_about_a_misspelled_property_key():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "warning"
+    assert [check.reason for check in run.checks if check.result == "warning"] == [
+        "data.schema.orders.properties.email: unknown fields are ignored: 'qualiti'. "
+        "This will become an error in the next major version."
+    ]
+
+
+def test_lint_warns_about_a_misspelled_property_key_once_with_all_errors():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file, all_errors=True)
+
+    run = data_contract.lint()
+
+    assert [check.result for check in run.checks] == ["passed", "warning"]
+
+
+def test_test_warns_about_a_misspelled_property_key():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.test()
+
+    assert run.result == "warning"
+    assert "'qualiti'" in next(check.reason for check in run.checks if check.result == "warning")
+
+
 def test_lint_invalid_odcs_schema_multiple_errors():
     data_contract_file = "fixtures/lint/invalid_multiple_schema_errors.odcs.yaml"
     result = runner.invoke(app, ["lint", data_contract_file])
 
     assert result.exit_code == 1
-    assert "data.schema.no_description_schema.description must be " in result.stdout
+    assert "data.schema.no_description_schema.description: None is not of type" in result.stdout
 
 
 def test_lint_invalid_odcs_schema_all_errors_api():
