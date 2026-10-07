@@ -32,6 +32,13 @@ from datacontract.model.run import Check, ResultEnum, Run
 logger = logging.getLogger(__name__)
 
 
+def _warning_checks(warnings: list[DataContractException]) -> list[Check]:
+    return [
+        Check(type=warning.type, result=warning.result, name=warning.name, reason=warning.reason, engine=warning.engine)
+        for warning in warnings
+    ]
+
+
 def _unrunnable_rule_checks(data_contract: OpenDataContractStandard) -> list[Check]:
     """Warnings for quality rules `datacontract test` would not be able to run."""
     checks = []
@@ -150,7 +157,7 @@ class DataContract:
         run = Run.create_run()
         try:
             run.log_info("Linting data contract")
-            data_contract, schema_version = resolve.resolve_data_contract_with_schema_version(
+            data_contract, schema_version, warnings = resolve.resolve_data_contract_with_lint_info(
                 self._data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
@@ -171,6 +178,7 @@ class DataContract:
                     engine="datacontract-cli",
                 )
             )
+            run.checks.extend(_warning_checks(warnings))
             run.checks.extend(_unrunnable_rule_checks(data_contract))
             run.dataContractId = data_contract.id
             run.dataContractVersion = data_contract.version
@@ -221,7 +229,7 @@ class DataContract:
         try:
             run.log_info("Testing data contract")
             run.log_info(self._runtime_info())
-            data_contract = resolve.resolve_data_contract(
+            data_contract, _, warnings = resolve.resolve_data_contract_with_lint_info(
                 self._data_contract_file,
                 self._data_contract_str,
                 self._data_contract,
@@ -230,6 +238,7 @@ class DataContract:
                 config=self._config,
                 configured_host_only=self._untrusted_contract,
             )
+            run.checks.extend(_warning_checks(warnings))
 
             execute_data_contract_test(
                 data_contract,

@@ -63,6 +63,17 @@ def test_lint_extra_top_level_field_allowed_with_custom_schema():
     assert run.result == "passed"
 
 
+def test_lint_custom_schema_rejects_the_fields_it_does_not_define():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    schema_file = "fixtures/lint/strict_property_keys.schema.json"
+    data_contract = DataContract(data_contract_file=data_contract_file, schema_location=schema_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "failed"
+    assert "'qualiti' was unexpected" in run.checks[0].reason
+
+
 def test_lint_valid_odcs_schema():
     data_contract_file = "fixtures/lint/valid.odcs.yaml"
     data_contract = DataContract(data_contract_file=data_contract_file)
@@ -81,12 +92,82 @@ def test_lint_invalid_odcs_schema():
     assert run.result == "failed"
 
 
+def test_lint_warns_about_a_misspelled_property_key():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "warning"
+    assert [check.reason for check in run.checks if check.result == "warning"] == [
+        "data.schema.orders.properties.email: unknown fields are ignored: 'qualiti'. "
+        "This will become an error in the next major version."
+    ]
+
+
+def test_lint_warns_about_a_misspelled_property_key_once_with_all_errors():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file, all_errors=True)
+
+    run = data_contract.lint()
+
+    assert [check.result for check in run.checks] == ["passed", "warning"]
+
+
+def test_test_warns_about_a_misspelled_property_key():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    data_contract = DataContract(data_contract_file=data_contract_file)
+
+    run = data_contract.test()
+
+    assert run.result == "warning"
+    assert "'qualiti'" in next(check.reason for check in run.checks if check.result == "warning")
+
+
 def test_lint_invalid_odcs_schema_multiple_errors():
     data_contract_file = "fixtures/lint/invalid_multiple_schema_errors.odcs.yaml"
     result = runner.invoke(app, ["lint", data_contract_file])
 
     assert result.exit_code == 1
-    assert "data.schema.no_description_schema.description must be " in result.stdout
+    assert "data.schema.no_description_schema.description: None is not of type" in result.stdout
+
+
+def test_lint_points_into_the_matching_one_of_branch():
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: team-typo
+version: "1"
+status: active
+team:
+  - username: alice
+    rol: owner
+"""
+    run = DataContract(data_contract_str=contract).lint()
+
+    assert run.checks[0].reason == "data.team[0]: Additional properties are not allowed ('rol' was unexpected)"
+
+
+def test_lint_says_when_several_one_of_branches_match():
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: two-operators
+version: "1"
+status: active
+schema:
+  - name: orders
+    quality:
+      - type: library
+        metric: rowCount
+        mustBe: 0
+        mustBeGreaterThan: 1
+"""
+    run = DataContract(data_contract_str=contract).lint()
+
+    assert run.checks[0].reason == (
+        "data.schema.orders.quality[0]: must match exactly one of 8 definitions, but matches several"
+    )
 
 
 def test_lint_invalid_odcs_schema_all_errors_api():
