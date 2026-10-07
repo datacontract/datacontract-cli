@@ -64,7 +64,7 @@ Server: impala (type=impala, host=my-impala-host, port=21050, database=my_databa
 │ passed │ Check that field order_id has type string │ order_id │         │
 │  ...   │                                           │          │         │
 ╰────────┴───────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 2.8 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 2.8 seconds.
 ```
 
 ## 5. Let it catch a violation

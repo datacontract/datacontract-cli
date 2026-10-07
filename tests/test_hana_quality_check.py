@@ -69,6 +69,45 @@ def test_sql_quality_fail():
     assert check_by_type(checks, "model_quality_sql").result == ResultEnum.failed
 
 
+def test_custom_quality_check_runs_its_ansi_query():
+    connection = FakeConnection((2,))
+    rule = DataQuality(
+        type="custom",
+        engine="datacontract-cli",
+        implementation={"check": "between", "arguments": {"min": 0, "max": "1'0"}},
+    )
+    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="AMOUNT", quality=[rule])])
+
+    checks = run_quality_checks(
+        connection, "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+    )
+
+    check = check_by_type(checks, "field_quality_custom")
+    assert check.result == ResultEnum.failed
+    assert check.dimension == "conformity"
+    assert check.diagnostics["custom_quality_check"] == "between"
+    assert connection.executed[0][0] == (
+        'SELECT COUNT(*) FROM "SALES"."ORDERS"\nWHERE "AMOUNT" < 0 OR "AMOUNT" > \'1\'\'0\'\n'
+    )
+
+
+def test_placeholders_hana_has_no_value_for_fall_back_to_the_table():
+    assert prepare_hana_query("SELECT COUNT(*) FROM {catalog}", "SALES", "ORDERS") == 'SELECT COUNT(*) FROM "ORDERS"'
+
+
+def test_custom_quality_check_without_an_ansi_query_warns_on_hana():
+    rule = DataQuality(type="custom", engine="datacontract-cli", implementation={"check": "tsql_only"})
+    schema = SchemaObject(name="ORDERS", quality=[rule])
+
+    checks = run_quality_checks(
+        FakeConnection(), "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+    )
+
+    check = check_by_type(checks, "model_quality_custom")
+    assert check.result == ResultEnum.warning
+    assert "no query for this server and no ansi query" in check.reason
+
+
 @pytest.mark.parametrize("query", ["DELETE FROM {model}", "SELECT 1 FROM {model}; DROP TABLE ORDERS"])
 def test_sql_quality_refuses_writes_and_multiple_statements(query):
     connection = FakeConnection((0,))

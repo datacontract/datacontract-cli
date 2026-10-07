@@ -130,3 +130,7 @@ def test_building_the_checks_logs_no_warning(contract_path, caplog):
         _sql_checks(contract_path)
 
     assert [record.getMessage() for record in caplog.records] == []
+
+
+def test_an_athena_query_is_read_as_trino_where_a_backslash_is_just_a_character():
+    assert refusal_reason(r"SELECT COUNT(*) FROM orders WHERE note = 'a\'", dialect_for_server_type("athena")) is None

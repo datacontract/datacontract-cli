@@ -48,6 +48,12 @@ def test_a_reason_of_its_own_keeps_its_check_line():
     assert "1) amount Check d: was 1" in printed
 
 
+def test_brackets_in_a_check_name_are_printed_in_the_table():
+    printed = _printed([Check(type="field_quality_custom", name="in_list(x=[a, b])", result=ResultEnum.passed)])
+
+    assert "in_list(x=[a, b])" in printed
+
+
 def test_a_selection_that_matches_nothing_is_not_a_failure():
     result = runner.invoke(app, ["test", "--tag", "nightly", "./fixtures/quality-id/datacontract.yaml"])
     assert result.exit_code == 0

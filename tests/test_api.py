@@ -509,6 +509,20 @@ def test_unknown_config_header_is_rejected():
     assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
 
 
+def test_custom_quality_checks_folder_header_is_rejected():
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
+        data_contract_str = f.read()
+
+    response = client.post(
+        url="/test",
+        content=data_contract_str,
+        headers={"Content-Type": "application/yaml", "datacontract-custom-quality-checks": "/etc"},
+    )
+
+    assert response.status_code == 400
+    assert "configured by the API server" in response.json()["detail"]
+
+
 def test_test_endpoint_uses_config_from_headers(allow_local_files):
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()

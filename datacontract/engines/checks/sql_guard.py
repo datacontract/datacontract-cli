@@ -74,6 +74,10 @@ def sqlglot_dialect_by_name(dialect: Optional[str]):
         from sqlglot.dialects.exasol import Exasol
 
         return Exasol
+    if dialect == "athena":
+        # Athena runs queries on Trino. sqlglot's Athena tokenizer also reads Hive's backslash escapes,
+        # so it misreads a Trino string such as 'a\'.
+        return "trino"
     return dialect
 
 

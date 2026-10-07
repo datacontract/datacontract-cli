@@ -155,3 +155,22 @@ def test_runtime_resolution_covers_nested_maps_arrays_and_options(monkeypatch):
     assert resolved.map.value.items.logicalTypeOptions["pattern"] == "^ready$"
     assert prop.map.value.items.enum[0].value == "${STATUS}"
     assert resolved.description == prop.description
+
+
+@pytest.mark.parametrize(
+    "text, value", [("0", 0), ("-2.5", -2.5), ("true", True), ("007", "007"), ("1e3", "1e3"), ("active", "active")]
+)
+def test_a_whole_reference_in_mustbe_reads_as_a_plain_number_or_boolean(monkeypatch, text, value):
+    from open_data_contract_standard.model import DataQuality
+
+    monkeypatch.setenv("EXPECTED", text)
+
+    assert resolve_runtime_variables(DataQuality(type="sql", query="SELECT 1", mustBe="${EXPECTED}")).mustBe == value
+
+
+def test_a_reference_inside_text_stays_text(monkeypatch):
+    from open_data_contract_standard.model import DataQuality
+
+    monkeypatch.setenv("COUNT", "5")
+
+    assert resolve_runtime_variables(DataQuality(type="sql", query="SELECT 1", mustBe="n=${COUNT}")).mustBe == "n=5"

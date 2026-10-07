@@ -1,5 +1,8 @@
 """Tests for the MySQL importer, run against a real MySQL container."""
 
+import subprocess
+import sys
+
 import pytest
 import yaml
 from testcontainers.mysql import MySqlContainer
@@ -150,6 +153,33 @@ def test_import_mysql_fails_on_an_unknown_table():
         _import(mysql_table=["does_not_exist"])
 
     assert "No tables found" in exc_info.value.reason
+
+
+def test_a_failed_connection_does_not_show_the_password(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", "s3cret-pw")
+
+    with pytest.raises(DataContractException) as exc_info:
+        _import(port=1)
+
+    assert "s3cret-pw" not in exc_info.value.reason
+
+
+def test_the_debug_traceback_of_a_failed_connection_does_not_show_the_password(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", "s3cret-pw")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "datacontract.cli",
+            *"import mysql --source 127.0.0.1 --port 1 --database db --debug".split(),
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Could not connect to MySQL" in result.stderr
+    assert "s3cret-pw" not in result.stdout + result.stderr
 
 
 def test_import_mysql_requires_a_database():

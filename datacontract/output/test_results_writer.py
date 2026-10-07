@@ -71,7 +71,7 @@ def write_test_result(
         skipped = sum(1 for check in run.checks if check.result == "skipped")
         skipped_info = f" ({skipped} skipped)" if skipped else ""
         console.print(
-            f"🟢 Data contract is valid. Run {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
+            f"🟢 Data contract is valid. Ran {len(run.checks)} checks{skipped_info}. Took {(run.timestampEnd - run.timestampStart).total_seconds()} seconds."
         )
     elif run.result in ("skipped", "unknown"):
         if run.result == "skipped" and run.dryRun:
@@ -124,7 +124,7 @@ def print_test_results_table(run, console):
     for check in sorted(run.checks, key=lambda c: (c.result or "", c.model or "", c.field or "")):
         table.add_row(
             with_markup(check.result),
-            check.name,
+            escape(str(check.name)),
             to_field(run, check),
             escape(str(check.reason)) if check.reason else None,
         )

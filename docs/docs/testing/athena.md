@@ -69,7 +69,7 @@ Server: athena (type=athena, schema=my_database, catalog=awsdatacatalog)
 │ passed │ Check that field order_id has physical type bigint │ order_id │         │
 │  ...   │                                                    │          │         │
 ╰────────┴────────────────────────────────────────────────────┴──────────┴─────────╯
-🟢 Data contract is valid. Run 24 checks. Took 7.8 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 7.8 seconds.
 ```
 
 ## 5. Let it catch a violation
