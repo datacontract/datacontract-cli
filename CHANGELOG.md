@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `datacontract lint --all-errors`: unknown fields are warnings instead of errors, unless a custom `--schema` rejects them
+
 ### Fixed
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them
 

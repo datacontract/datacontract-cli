@@ -794,7 +794,7 @@ def _resolve_data_contract_from_str(
                 yaml_dict,
                 schema_location,
                 schema_version=schema_version,
-                model=_LaxOpenDataContractStandard if custom_schema else OpenDataContractStandard,
+                custom_schema=custom_schema,
             )
         except DataContractValidationErrors as e:
             errors.extend(e.errors)
@@ -885,8 +885,9 @@ def _validation_error_to_exception(
     )
 
 
-def _ignored_fields(model: type[BaseModel], path, fields: list[str]) -> list[str]:
-    """The fields the model at path drops when the contract is parsed."""
+def _ignored_fields(path, fields: list[str]) -> list[str]:
+    """The fields the ODCS model at path drops when the contract is parsed."""
+    model = OpenDataContractStandard
     for segment in path:
         if isinstance(segment, int):
             continue
@@ -911,7 +912,7 @@ def _validate_json_schema(
     yaml_str,
     schema_location: str | Path = None,
     schema_version: str | None = None,
-    model: type[BaseModel] = OpenDataContractStandard,
+    custom_schema: bool = False,
 ) -> list[DataContractException]:
     """Raise the schema violations, and return the fields the model would silently drop as warnings.
 
@@ -935,7 +936,8 @@ def _validate_json_schema(
         if error not in deferred
         and not (error.validator == "unevaluatedProperties" and tuple(error.path) in deferred_objects)
     ]
-    unknown_fields = [error for error in errors if error.validator == "unevaluatedProperties"]
+    # A custom schema is the source of truth, so the fields it rejects stay errors.
+    unknown_fields = [] if custom_schema else [error for error in errors if error.validator == "unevaluatedProperties"]
     errors = [error for error in errors if error not in unknown_fields]
     if errors:
         logger.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
@@ -968,7 +970,7 @@ def _validate_json_schema(
     for error in unknown_fields:
         # jsonschema says "('a', 'b' were unexpected)".
         fields = re.findall(r"'([^']*)'", error.message.rpartition("(")[2])
-        ignored = _ignored_fields(model, error.path, fields)
+        ignored = _ignored_fields(error.path, fields)
         if not ignored:
             continue
         warnings.append(

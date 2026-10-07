@@ -63,6 +63,17 @@ def test_lint_extra_top_level_field_allowed_with_custom_schema():
     assert run.result == "passed"
 
 
+def test_lint_custom_schema_rejects_the_fields_it_does_not_define():
+    data_contract_file = "fixtures/lint/misspelled_property_key.odcs.yaml"
+    schema_file = "fixtures/lint/strict_property_keys.schema.json"
+    data_contract = DataContract(data_contract_file=data_contract_file, schema_location=schema_file)
+
+    run = data_contract.lint()
+
+    assert run.result == "failed"
+    assert "'qualiti' was unexpected" in run.checks[0].reason
+
+
 def test_lint_valid_odcs_schema():
     data_contract_file = "fixtures/lint/valid.odcs.yaml"
     data_contract = DataContract(data_contract_file=data_contract_file)
