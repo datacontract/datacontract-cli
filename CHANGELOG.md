@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
-- Data contracts can now be pulled from Fabric Warehouses (#1705) 
+
+### Fixed
+- `datacontract import sqlserver` and the physical type checks of `datacontract test` work on case-sensitive SQL Server databases such as Microsoft Fabric warehouses (#1705 @Octacon100)
 
 ## [1.2.4] - 2026-10-06
 
