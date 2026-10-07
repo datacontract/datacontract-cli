@@ -1,4 +1,5 @@
 import importlib.resources as resources
+import json
 import logging
 import re
 import time
@@ -885,27 +886,29 @@ def _validation_error_to_exception(
     )
 
 
-def _ignored_fields(path, fields: list[str]) -> list[str]:
-    """The fields the ODCS model at path drops when the contract is parsed."""
-    model = OpenDataContractStandard
-    for segment in path:
-        if isinstance(segment, int):
-            continue
-        field = next((f for name, f in model.model_fields.items() if (f.alias or name) == segment), None)
-        if field is None:
-            return []
-        types, model = [field.annotation], None
-        while types and model is None:
-            t = types.pop()
-            if isinstance(t, type) and issubclass(t, BaseModel):
-                model = t
-            types.extend(typing.get_args(t))
-        if model is None:
-            return []
-    if model.model_config.get("extra") == "allow":
+def _ignored_fields(value, model: type[BaseModel], path: str) -> list[tuple[str, list[str]]]:
+    """The keys of value, by path, that parsing it as model drops."""
+    if isinstance(value, list):
+        return [ignored for i, item in enumerate(value) for ignored in _ignored_fields(item, model, f"{path}[{i}]")]
+    if not isinstance(value, dict):
         return []
-    known = {f.alias or name for name, f in model.model_fields.items()}
-    return [field for field in fields if field not in known]
+    fields = {field.alias or name: field for name, field in model.model_fields.items()}
+    unknown = [key for key in value if key not in fields]
+    ignored = [(path, unknown)] if unknown else []
+    for key, item in value.items():
+        if key not in fields:
+            continue
+        candidates, types = [], [(fields[key].annotation, False)]
+        while types:
+            t, in_list = types.pop()
+            if isinstance(t, type) and issubclass(t, BaseModel):
+                candidates.append((t, in_list))
+            types.extend((arg, in_list or typing.get_origin(t) is list) for arg in typing.get_args(t))
+        # team is either a Team or a list of TeamMember.
+        submodel = next((m for m, in_list in candidates if in_list == isinstance(item, list)), None)
+        if submodel is not None:
+            ignored.extend(_ignored_fields(item, submodel, f"{path}.{key}"))
+    return ignored
 
 
 def _validate_json_schema(
@@ -914,13 +917,14 @@ def _validate_json_schema(
     schema_version: str | None = None,
     custom_schema: bool = False,
 ) -> list[DataContractException]:
-    """Raise the schema violations, and return the fields the model would silently drop as warnings.
-
-    The schema rejects every field it does not define for an object. Fields the model knows, such as a
-    server's delimiter on a type that does not define it, are still read, so they pass.
-    """
+    """Raise the schema violations, and return as warnings the fields the ODCS model drops."""
     logger.debug(f"Linting data contract with schema at {schema_location}")
     schema = fetch_schema(schema_location)
+    if not custom_schema:
+        # unevaluatedProperties slows jsonschema down exponentially with nesting; _ignored_fields covers it.
+        schema = json.loads(
+            json.dumps(schema), object_hook=lambda o: {k: v for k, v in o.items() if k != "unevaluatedProperties"}
+        )
     validator_cls = validators.validator_for(schema)
     validator_cls.check_schema(schema)
     validator = validator_cls(schema=schema)
@@ -936,12 +940,8 @@ def _validate_json_schema(
         if error not in deferred
         and not (error.validator == "unevaluatedProperties" and tuple(error.path) in deferred_objects)
     ]
-    # A custom schema is the source of truth, so the fields it rejects stay errors.
-    unknown_fields = [] if custom_schema else [error for error in errors if error.validator == "unevaluatedProperties"]
-    errors = [error for error in errors if error not in unknown_fields]
     if errors:
         logger.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
-        # A failing subschema also leaves its fields unevaluated, so unknown fields are only reported once it passes.
         exceptions = []
         for error in errors:
             message = error.message
@@ -966,25 +966,18 @@ def _validate_json_schema(
             )
         raise DataContractValidationErrors(exceptions)
     logger.debug("YAML data is valid.")
-    warnings = []
-    for error in unknown_fields:
-        # jsonschema says "('a', 'b' were unexpected)".
-        fields = re.findall(r"'([^']*)'", error.message.rpartition("(")[2])
-        ignored = _ignored_fields(error.path, fields)
-        if not ignored:
-            continue
-        warnings.append(
-            DataContractException(
-                type="lint",
-                result=ResultEnum.warning,
-                name="Check that data contract has no unknown fields",
-                reason=_resolve_jsonschema_compliance_error_message_path(
-                    yaml_str,
-                    f"data{error.json_path[1:]}: unknown fields are ignored: "
-                    f"{', '.join(repr(field) for field in ignored)}. "
-                    "This will become an error in the next major version.",
-                ),
-                original_exception=error,
-            )
+    if custom_schema:
+        return []
+    return [
+        DataContractException(
+            type="lint",
+            result=ResultEnum.warning,
+            name="Check that data contract has no unknown fields",
+            reason=_resolve_jsonschema_compliance_error_message_path(
+                yaml_str,
+                f"{path}: unknown fields are ignored: {', '.join(repr(field) for field in fields)}. "
+                "This will become an error in the next major version.",
+            ),
         )
-    return warnings
+        for path, fields in _ignored_fields(yaml_str, OpenDataContractStandard, "data")
+    ]
