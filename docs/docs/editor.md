@@ -35,6 +35,27 @@ The editor assets (JS/CSS) are bundled with the CLI and work offline by default.
 - `--editor-version` — load a specific version of the `datacontract-editor` npm package from the CDN, e.g. `0.1.9` or `latest`.
 - `--editor-assets-url` — load assets from a self-hosted editor build. Takes precedence over `--editor-version`.
 
+## AI Assistant
+
+The editor's AI assistant is enabled when `DATACONTRACT_EDITOR_AI_ENDPOINT` is set. Like data source credentials, these variables can be set in a `.env` file.
+
+| Environment variable | Description |
+|---|---|
+| `DATACONTRACT_EDITOR_AI_ENDPOINT` | Chat completions URL (OpenAI-compatible) or Messages URL (Anthropic). |
+| `DATACONTRACT_EDITOR_AI_API_KEY` | API key. The key is passed to the browser, which calls the endpoint directly. |
+| `DATACONTRACT_EDITOR_AI_MODEL` | Model name, e.g. `gpt-4o` or `claude-sonnet-4-5`. |
+| `DATACONTRACT_EDITOR_AI_PROVIDER` | `openai` (default) or `anthropic`. |
+| `DATACONTRACT_EDITOR_AI_AUTH_HEADER` | `bearer` (default), `api-key` (Azure OpenAI), or `x-api-key` (Anthropic). |
+
+```bash
+export DATACONTRACT_EDITOR_AI_PROVIDER=anthropic
+export DATACONTRACT_EDITOR_AI_ENDPOINT=https://api.anthropic.com/v1/messages
+export DATACONTRACT_EDITOR_AI_API_KEY=sk-ant-...
+export DATACONTRACT_EDITOR_AI_MODEL=claude-sonnet-4-5
+export DATACONTRACT_EDITOR_AI_AUTH_HEADER=x-api-key
+datacontract edit datacontract.yaml
+```
+
 ## Options
 
 | Option | Default | Description |
