@@ -976,7 +976,7 @@ def _validate_json_schema(
             reason=_resolve_jsonschema_compliance_error_message_path(
                 yaml_str,
                 f"{path}: unknown fields are ignored: {', '.join(repr(field) for field in fields)}. "
-                "This will become an error in the next major version.",
+                "This will become an error in the next major version (January 2027).",
             ),
         )
         for path, fields in _ignored_fields(yaml_str, OpenDataContractStandard, "data")

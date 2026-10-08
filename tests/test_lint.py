@@ -101,7 +101,7 @@ def test_lint_warns_about_a_misspelled_property_key():
     assert run.result == "warning"
     assert [check.reason for check in run.checks if check.result == "warning"] == [
         "data.schema.orders.properties.email: unknown fields are ignored: 'qualiti'. "
-        "This will become an error in the next major version."
+        "This will become an error in the next major version (January 2027)."
     ]
 
 
