@@ -747,7 +747,7 @@ def _composite_pk_singular_test(
     pk_cols: list[str], contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> SingularTest:
     """Dep-free singular SQL asserting a composite primary key is unique (no `dbt_utils`)."""
-    col_list = ", ".join(_quote_identifier(c) for c in pk_cols)
+    col_list = ", ".join(pk_cols)
     description = f"Check that model {model} has a unique combination of columns {', '.join(pk_cols)}"
     label = "unique_combination"
     sql = (
@@ -797,10 +797,6 @@ def _describe_row_count_quality(quality: DataQuality, model: str) -> Optional[st
 # ---------------------------------------------------------------------------
 
 
-def _quote_identifier(name: str) -> str:
-    return '"' + name.replace('"', '""') + '"'
-
-
 def _regex_violation_jinja(column: str, pattern: str) -> str:
     """Adapter-portable 'col does NOT match pattern' fragment.
 
@@ -844,7 +840,7 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     fires when the value does not match. NULLs are filtered upstream with
     `WHERE col IS NOT NULL`.
     """
-    column = _quote_identifier(prop.name)
+    column = prop.name
     pairs: list[tuple[str, str]] = []
 
     min_length = get_logical_type_option(prop, "minLength")
@@ -909,7 +905,6 @@ def _field_singular_tests(
     prop: SchemaProperty, contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> list[SingularTest]:
     """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
-    column = _quote_identifier(prop.name)
     out: list[SingularTest] = []
     for kind, predicate in _field_bound_predicates(prop):
         label = f"{prop.name}__{kind}"
@@ -920,7 +915,7 @@ def _field_singular_tests(
                 sql=_build_row_violation_sql(
                     model=model,
                     field=prop.name,
-                    column_null_filter=column,
+                    column_null_filter=prop.name,
                     violation_predicate=predicate,
                     contract_id=contract_id,
                     contract_version=contract_version,
