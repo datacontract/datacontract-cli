@@ -162,8 +162,8 @@ The `maxLength` bound becomes a self-contained singular SQL test (no `dbt_utils`
 {{ config(meta={"datacontract_cli": {"check": "orders__customer_email__field_length", "contract_versions": ["1.0.0"], "generated": true, "include_in_tests": true, "model": "orders", "field": "customer_email", "description": "Check that field customer_email has a length of at most 320"}}) }}
 SELECT *
 FROM {{ ref('orders') }}
-WHERE "customer_email" IS NOT NULL
-  AND (LENGTH("customer_email") > 320)
+WHERE customer_email IS NOT NULL
+  AND (LENGTH(customer_email) > 320)
 ```
 
 ### Versioned models

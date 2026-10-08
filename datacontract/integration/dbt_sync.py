@@ -747,7 +747,7 @@ def _composite_pk_singular_test(
     pk_cols: list[str], contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> SingularTest:
     """Dep-free singular SQL asserting a composite primary key is unique (no `dbt_utils`)."""
-    col_list = ", ".join(_quote_identifier(c) for c in pk_cols)
+    col_list = ", ".join(pk_cols)
     description = f"Check that model {model} has a unique combination of columns {', '.join(pk_cols)}"
     label = "unique_combination"
     sql = (
@@ -797,10 +797,6 @@ def _describe_row_count_quality(quality: DataQuality, model: str) -> Optional[st
 # ---------------------------------------------------------------------------
 
 
-def _quote_identifier(name: str) -> str:
-    return '"' + name.replace('"', '""') + '"'
-
-
 def _regex_violation_jinja(column: str, pattern: str) -> str:
     """Adapter-portable 'col does NOT match pattern' fragment.
 
@@ -826,8 +822,8 @@ def _regex_violation_jinja(column: str, pattern: str) -> str:
         f"REGEXP_SIMILAR(CAST({column} AS VARCHAR(32000)), '{escaped}') = 0"
         "{% elif target.type in ['sqlserver', 'fabric', 'synapse'] %}"
         "{{ exceptions.warn("
-        f"'datacontract: regex pattern test on column {column} skipped "
-        "— adapter ' ~ target.type ~ ' has no regex predicate') }}"
+        f"'datacontract: pattern of column {column} not checked, "
+        "' ~ target.type ~ ' has no regex support.') }}"
         "1 = 0"
         "{% else %}"
         f"CAST({column} AS VARCHAR) !~ '{escaped}'"
@@ -844,7 +840,6 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     fires when the value does not match. NULLs are filtered upstream with
     `WHERE col IS NOT NULL`.
     """
-    column = _quote_identifier(prop.name)
     pairs: list[tuple[str, str]] = []
 
     min_length = get_logical_type_option(prop, "minLength")
@@ -852,14 +847,14 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     if min_length is not None or max_length is not None:
         parts: list[str] = []
         if min_length is not None:
-            parts.append(f"LENGTH({column}) < {min_length}")
+            parts.append(f"LENGTH({prop.name}) < {min_length}")
         if max_length is not None:
-            parts.append(f"LENGTH({column}) > {max_length}")
+            parts.append(f"LENGTH({prop.name}) > {max_length}")
         pairs.append(("length", " OR ".join(parts)))
 
     pattern = get_logical_type_option(prop, "pattern")
     if pattern is not None:
-        pairs.append(("pattern", _regex_violation_jinja(column, pattern)))
+        pairs.append(("pattern", _regex_violation_jinja(prop.name, pattern)))
 
     minimum = get_logical_type_option(prop, "minimum")
     maximum = get_logical_type_option(prop, "maximum")
@@ -867,13 +862,13 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     exclusive_maximum = get_logical_type_option(prop, "exclusiveMaximum")
     range_parts: list[str] = []
     if minimum is not None:
-        range_parts.append(f"{column} < {_sql_literal(minimum)}")
+        range_parts.append(f"{prop.name} < {_sql_literal(minimum)}")
     if maximum is not None:
-        range_parts.append(f"{column} > {_sql_literal(maximum)}")
+        range_parts.append(f"{prop.name} > {_sql_literal(maximum)}")
     if exclusive_minimum is not None:
-        range_parts.append(f"{column} <= {_sql_literal(exclusive_minimum)}")
+        range_parts.append(f"{prop.name} <= {_sql_literal(exclusive_minimum)}")
     if exclusive_maximum is not None:
-        range_parts.append(f"{column} >= {_sql_literal(exclusive_maximum)}")
+        range_parts.append(f"{prop.name} >= {_sql_literal(exclusive_maximum)}")
     if range_parts:
         pairs.append(("range", " OR ".join(range_parts)))
 
@@ -884,7 +879,6 @@ def _build_row_violation_sql(
     *,
     model: str,
     field: str,
-    column_null_filter: str,
     violation_predicate: str,
     severity: Optional[str] = None,
     contract_id: str,
@@ -900,7 +894,7 @@ def _build_row_violation_sql(
         + f"{{{{ config({severity_arg}{_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
         f"SELECT *\n"
         f"FROM {_model_ref(model, model_version)}\n"
-        f"WHERE {column_null_filter} IS NOT NULL\n"
+        f"WHERE {field} IS NOT NULL\n"
         f"  AND ({violation_predicate})\n"
     )
 
@@ -909,7 +903,6 @@ def _field_singular_tests(
     prop: SchemaProperty, contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> list[SingularTest]:
     """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
-    column = _quote_identifier(prop.name)
     out: list[SingularTest] = []
     for kind, predicate in _field_bound_predicates(prop):
         label = f"{prop.name}__{kind}"
@@ -920,7 +913,6 @@ def _field_singular_tests(
                 sql=_build_row_violation_sql(
                     model=model,
                     field=prop.name,
-                    column_null_filter=column,
                     violation_predicate=predicate,
                     contract_id=contract_id,
                     contract_version=contract_version,
