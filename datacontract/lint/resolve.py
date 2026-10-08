@@ -1,17 +1,18 @@
 import importlib.resources as resources
+import json
 import logging
 import re
 import time
+import typing
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlparse
 
-import fastjsonschema
 import requests
 import yaml
-from fastjsonschema import JsonSchemaValueException
 from jsonschema import validators
+from jsonschema.exceptions import best_match
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict
 
 from datacontract.config import Config
 from datacontract.config.variables import contains_variables
@@ -127,7 +128,7 @@ def resolve_data_contract(
     configured_host_only: bool = False,
 ) -> OpenDataContractStandard:
     """Resolve and parse a data contract from various sources."""
-    return resolve_data_contract_with_schema_version(
+    return resolve_data_contract_with_lint_info(
         data_contract_location,
         data_contract_str,
         data_contract,
@@ -139,7 +140,7 @@ def resolve_data_contract(
     )[0]
 
 
-def resolve_data_contract_with_schema_version(
+def resolve_data_contract_with_lint_info(
     data_contract_location: str = None,
     data_contract_str: str = None,
     data_contract: OpenDataContractStandard = None,
@@ -149,8 +150,9 @@ def resolve_data_contract_with_schema_version(
     config: "Config | None" = None,
     use_declared_api_version: bool = False,
     configured_host_only: bool = False,
-) -> tuple[OpenDataContractStandard, str | None]:
-    """Resolve a data contract and report the ODCS version it was validated against.
+) -> tuple[OpenDataContractStandard, str | None, list[DataContractException]]:
+    """Resolve a data contract and report the ODCS version it was validated against,
+    along with the lint warnings that did not fail validation.
 
     With use_declared_api_version, the schema is the one for the contract's own
     apiVersion. The reported version is None when no bundled ODCS schema was used: a
@@ -181,7 +183,7 @@ def resolve_data_contract_with_schema_version(
             configured_host_only=configured_host_only,
         )
     elif data_contract is not None:
-        return data_contract, None
+        return data_contract, None, []
     else:
         raise DataContractException(
             type="lint",
@@ -418,7 +420,7 @@ def _load_local_contract(
         raise _local_resolution_error(url, f"the file '{key}' does not exist")
 
     try:
-        contract, _ = _resolve_data_contract_from_str(read_resource(key, config))
+        contract = _resolve_data_contract_from_str(read_resource(key, config))[0]
     except DataContractException as e:
         raise _local_resolution_error(url, f"'{key}' is not a valid data contract: {e.reason}", original_exception=e)
 
@@ -751,7 +753,7 @@ def _resolve_data_contract_from_str(
     base_location: str | None = None,
     use_declared_api_version: bool = False,
     configured_host_only: bool = False,
-) -> tuple[OpenDataContractStandard, str | None]:
+) -> tuple[OpenDataContractStandard, str | None, list[DataContractException]]:
     yaml_dict = _to_yaml(data_contract_str, base_location)
 
     if not isinstance(yaml_dict, dict):
@@ -787,8 +789,14 @@ def _resolve_data_contract_from_str(
                 "schemas", f"odcs-{schema_version or DEFAULT_ODCS_SCHEMA_VERSION}.schema.json"
             )
         errors = []
+        warnings = []
         try:
-            _validate_json_schema(yaml_dict, schema_location, all_errors=all_errors, schema_version=schema_version)
+            warnings = _validate_json_schema(
+                yaml_dict,
+                schema_location,
+                schema_version=schema_version,
+                custom_schema=custom_schema,
+            )
         except DataContractValidationErrors as e:
             errors.extend(e.errors)
         if not custom_schema:
@@ -807,10 +815,13 @@ def _resolve_data_contract_from_str(
                 visited=_initial_visited(base_location),
                 configured_host_only=configured_host_only,
             )
-        return odcs, schema_version
+        return odcs, schema_version, warnings
 
-    # For DCS format, we need to convert it to ODCS
-    logger.info("Importing DCS format - converting to ODCS")
+    dcs_deprecation = (
+        "Data Contract Specification (DCS) contracts are auto-converted to the new ODCS format. Support will be removed in "
+        "the next major version (January 2027). Convert the contract to ODCS with `datacontract export odcs`."
+    )
+    logger.warning(dcs_deprecation)
     from datacontract.imports.dcs_importer import convert_dcs_to_odcs, parse_dcs_from_dict
 
     dcs = parse_dcs_from_dict(yaml_dict)
@@ -823,7 +834,18 @@ def _resolve_data_contract_from_str(
             visited=_initial_visited(base_location),
             configured_host_only=configured_host_only,
         )
-    return odcs, None
+    return (
+        odcs,
+        None,
+        [
+            DataContractException(
+                type="lint",
+                result=ResultEnum.warning,
+                name="Check that data contract is an ODCS contract",
+                reason=dcs_deprecation,
+            )
+        ],
+    )
 
 
 def _initial_visited(base_location: str | None) -> frozenset[str]:
@@ -878,31 +900,51 @@ def _validation_error_to_exception(
     )
 
 
+def _ignored_fields(value, model: type[BaseModel], path: str) -> list[tuple[str, list[str]]]:
+    """The keys of value, by path, that parsing it as model drops."""
+    if isinstance(value, list):
+        return [ignored for i, item in enumerate(value) for ignored in _ignored_fields(item, model, f"{path}[{i}]")]
+    if not isinstance(value, dict):
+        return []
+    fields = {field.alias or name: field for name, field in model.model_fields.items()}
+    unknown = [key for key in value if key not in fields]
+    ignored = [(path, unknown)] if unknown else []
+    for key, item in value.items():
+        if key not in fields:
+            continue
+        candidates, types = [], [(fields[key].annotation, False)]
+        while types:
+            t, in_list = types.pop()
+            if isinstance(t, type) and issubclass(t, BaseModel):
+                candidates.append((t, in_list))
+            types.extend((arg, in_list or typing.get_origin(t) is list) for arg in typing.get_args(t))
+        # team is either a Team or a list of TeamMember.
+        submodel = next((m for m, in_list in candidates if in_list == isinstance(item, list)), None)
+        if submodel is not None:
+            ignored.extend(_ignored_fields(item, submodel, f"{path}.{key}"))
+    return ignored
+
+
 def _validate_json_schema(
-    yaml_str, schema_location: str | Path = None, all_errors: bool = False, schema_version: str | None = None
-):
+    yaml_str,
+    schema_location: str | Path = None,
+    schema_version: str | None = None,
+    custom_schema: bool = False,
+) -> list[DataContractException]:
+    """Raise the schema violations, and return as warnings the fields the ODCS model drops."""
     logger.debug(f"Linting data contract with schema at {schema_location}")
     schema = fetch_schema(schema_location)
-    if not all_errors:
-        try:
-            fastjsonschema.validate(schema, yaml_str, use_default=False)
-            logger.debug("YAML data is valid.")
-            return
-        except JsonSchemaValueException as e:
-            # A ${VAR} reference in an enum field is left to the full pass below.
-            if not (e.rule == "enum" and contains_variables(e.value)):
-                except_message = _resolve_jsonschema_compliance_error_message_path(yaml_str, e.message)
-                logger.warning(f"Data Contract YAML is invalid. Validation error: {except_message}")
-                raise _validation_error_to_exception(
-                    except_message, original_exception=e, schema_version=schema_version
-                )
-        except Exception as e:
-            logger.warning(f"Data Contract YAML is invalid. Validation error: {str(e)}")
-            raise _validation_error_to_exception(str(e), original_exception=e, schema_version=schema_version)
+    if not custom_schema:
+        # unevaluatedProperties slows jsonschema down exponentially with nesting; _ignored_fields covers it.
+        schema = json.loads(
+            json.dumps(schema), object_hook=lambda o: {k: v for k, v in o.items() if k != "unevaluatedProperties"}
+        )
     validator_cls = validators.validator_for(schema)
     validator_cls.check_schema(schema)
     validator = validator_cls(schema=schema)
-    errors = sorted(validator.iter_errors(yaml_str), key=lambda error: list(error.path))
+    # jsonschema can report the same error once per schema branch; keep one.
+    errors = {(error.json_path, error.message): error for error in validator.iter_errors(yaml_str)}.values()
+    errors = sorted(errors, key=lambda error: list(error.path))
     # A ${VAR} in an enum field is checked once it resolves; so is the object whose schema branch it selects.
     deferred = [error for error in errors if error.validator == "enum" and contains_variables(error.instance)]
     deferred_objects = {tuple(error.path)[:-1] for error in deferred}
@@ -914,19 +956,42 @@ def _validate_json_schema(
     ]
     if errors:
         logger.warning(f"Data Contract YAML is invalid. Validation errors: {len(errors)}")
-        raise DataContractValidationErrors(
-            [
+        exceptions = []
+        for error in errors:
+            message = error.message
+            if error.validator in ("oneOf", "anyOf"):
+                # A branch whose type the value lacks explains nothing.
+                same_type = [c for c in error.context if not (c.validator == "type" and not c.relative_path)]
+                if same_type:
+                    error = best_match(same_type)
+                    message = error.message
+                elif error.context:
+                    message = "must be of type " + " or ".join(repr(c.validator_value) for c in error.context)
+                else:
+                    message = f"must match exactly one of {len(error.validator_value)} definitions, but matches several"
+            exceptions.append(
                 _validation_error_to_exception(
-                    error.message
-                    if all_errors
-                    # Located like the fastjsonschema message it stands in for.
-                    else _resolve_jsonschema_compliance_error_message_path(
-                        yaml_str, f"data{error.json_path[1:]}: {error.message}"
+                    _resolve_jsonschema_compliance_error_message_path(
+                        yaml_str, f"data{error.json_path[1:]}: {message}"
                     ),
                     original_exception=error,
                     schema_version=schema_version,
                 )
-                for error in errors
-            ]
-        )
+            )
+        raise DataContractValidationErrors(exceptions)
     logger.debug("YAML data is valid.")
+    if custom_schema:
+        return []
+    return [
+        DataContractException(
+            type="lint",
+            result=ResultEnum.warning,
+            name="Check that data contract has no unknown fields",
+            reason=_resolve_jsonschema_compliance_error_message_path(
+                yaml_str,
+                f"{path}: unknown fields are ignored: {', '.join(repr(field) for field in fields)}. "
+                "This will become an error in the next major version (January 2027).",
+            ),
+        )
+        for path, fields in _ignored_fields(yaml_str, OpenDataContractStandard, "data")
+    ]

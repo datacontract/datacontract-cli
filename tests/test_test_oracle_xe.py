@@ -19,6 +19,7 @@ from oracledb import DatabaseError
 from testcontainers.oracle import OracleDbContainer
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 # XE 21c: pre-23ai (no SQL boolean type), and freely available unlike 19c.
 oracleContainer = OracleDbContainer("gvenzl/oracle-xe:21-slim-faststart")
@@ -51,8 +52,8 @@ def test_test_oracle_xe_contract_dcs(oracle_container, monkeypatch):
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))
 
 
 @pytest.mark.slow

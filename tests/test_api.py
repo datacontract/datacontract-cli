@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
 from datacontract.lint.resolve import clear_definition_cache
 from datacontract.model.exceptions import DataContractException
+from tests.dcs_deprecation import DCS_DEPRECATION
 
 
 @pytest.fixture(autouse=True)
@@ -31,9 +32,11 @@ def test_lint():
     )
     assert response.status_code == 200
     print(response.json())
-    assert response.json()["result"] == "passed"
-    assert len(response.json()["checks"]) == 1
-    assert all([check["result"] == "passed" for check in response.json()["checks"]])
+    assert response.json()["result"] == "warning"
+    assert [(check["name"], check["result"]) for check in response.json()["checks"]] == [
+        ("Data contract is syntactically valid", "passed"),
+        (DCS_DEPRECATION, "warning"),
+    ]
 
 
 def test_export_jsonschema_dcs():

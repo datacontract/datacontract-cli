@@ -12,6 +12,7 @@ if sys.version_info >= (3, 12, 1):
 from dotenv import load_dotenv
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning
 
 # logging.basicConfig(level=logging.INFO, force=True)
 
@@ -29,7 +30,7 @@ def _test_test_kafka_json_remote():
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 @pytest.mark.skipif(
@@ -45,4 +46,4 @@ def _test_test_kafka_avro_remote():
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)

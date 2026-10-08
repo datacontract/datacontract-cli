@@ -4,6 +4,7 @@ import pytest
 from dotenv import load_dotenv
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning
 
 # logging.basicConfig(level=logging.INFO, force=True)
 
@@ -22,7 +23,7 @@ def test_test_azure_parquet_remote():
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 @pytest.mark.skipif(
@@ -37,7 +38,7 @@ def test_test_azure_delta_remote():
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 @pytest.mark.skipif(
@@ -52,4 +53,4 @@ def test_test_azure_json_remote():
     run = data_contract.test()
 
     print(run.pretty())
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)

@@ -14,15 +14,11 @@ schema:
   - name: field_one
     logicalType: string
     physicalType: varchar
-    isNullable: false
-    isUnique: true
     logicalTypeOptions:
       pattern: '[A-Za-z]{2}-\d{3}-[A-Za-z]{2}$'
   - name: field_two
     logicalType: integer
     physicalType: integer
-    isNullable: true
-    isUnique: false
     logicalTypeOptions:
       minimum: 10
     quality:
@@ -35,8 +31,6 @@ schema:
   - name: field_three
     logicalType: timestamp
     physicalType: timestamptz
-    isNullable: true
-    isUnique: false
   quality:
     - type: sql
       query: |
