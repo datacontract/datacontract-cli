@@ -7,6 +7,7 @@ from datacontract.cli import app
 from datacontract.config import Config
 from datacontract.data_contract import DataContract
 from datacontract.lint.resolve import resolve_data_contract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning
 
 # logging.basicConfig(level=logging.INFO, force=True)
 
@@ -18,17 +19,20 @@ def test_lint_valid_data_contract():
     data_contract = DataContract(data_contract_file=data_contract_file)
 
     run = data_contract.lint()
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert [check.reason for check in run.checks if check.result == "warning"] == [
+        "Data Contract Specification (DCS) contracts are auto-converted to the new ODCS format. Support will be "
+        "removed in the next major version (January 2027). Convert the contract to ODCS with `datacontract export odcs`."
+    ]
 
 
 def test_lint_cli_valid():
     data_contract_file = "fixtures/lint/valid_datacontract.yaml"
-    expected_output = "🟢 Data contract is valid. Ran 1 checks."
-
     result = runner.invoke(app, ["lint", data_contract_file])
 
     assert result.exit_code == 0
-    assert expected_output in result.stdout
+    assert "🟠 Data contract has warnings." in result.stdout
+    assert "1) Check that data contract is an ODCS contract: " in result.stdout
 
 
 def test_lint_custom_schema():
@@ -38,7 +42,7 @@ def test_lint_custom_schema():
 
     run = data_contract.lint()
 
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 def test_lint_extra_top_level_field_rejected_without_custom_schema():
@@ -217,7 +221,7 @@ def test_lint_with_ref():
     run = data_contract.lint()
     OpenDataContractStandard.model_validate(data_contract.get_data_contract())
 
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 def test_lint_with_references():
@@ -225,7 +229,7 @@ def test_lint_with_references():
 
     run = data_contract.lint()
 
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 def _mock_s3_client_returning(yaml_bytes: bytes) -> MagicMock:
@@ -245,7 +249,7 @@ def test_lint_reads_data_contract_from_s3():
         data_contract = DataContract(data_contract_file="s3://my-bucket/contracts/datacontract.yaml")
         run = data_contract.lint()
 
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
     mock_s3.get_object.assert_called_once_with(Bucket="my-bucket", Key="contracts/datacontract.yaml")
 
 
@@ -263,7 +267,7 @@ def test_lint_reads_data_contract_from_s3_with_configured_credentials():
         data_contract = DataContract(data_contract_file="s3://my-bucket/contracts/datacontract.yaml", config=config)
         run = data_contract.lint()
 
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
     mock_client.assert_called_once_with(
         "s3",
         region_name="eu-central-1",

@@ -21,7 +21,7 @@ def test_cli():
         ],
     )
     assert result.exit_code == 0
-    assert result.output.startswith("# urn:datacontract:checkout:orders-latest")
+    assert result.stdout.startswith("# urn:datacontract:checkout:orders-latest")
 
 
 def test_to_markdown():

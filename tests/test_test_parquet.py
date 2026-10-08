@@ -4,6 +4,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 runner = CliRunner()
 
@@ -11,7 +12,9 @@ runner = CliRunner()
 def _assert_passed_except_types(run):
     # parquet is read as the contract's types, so its type checks warn
     assert run.result == "warning"
-    assert all(c.result == "passed" or (c.type == "field_type" and c.result == "warning") for c in run.checks)
+    assert all(
+        c.result == "passed" or (c.type == "field_type" and c.result == "warning") for c in without_dcs_deprecation(run)
+    )
 
 
 def test_valid_cli():
@@ -30,7 +33,7 @@ def test_valid():
     )
     run = data_contract.test()
     print(run.pretty())
-    assert len(run.checks) == 29
+    assert len(without_dcs_deprecation(run)) == 29
     _assert_passed_except_types(run)
 
 
@@ -67,7 +70,8 @@ def test_number_without_precision():
     )
     run = data_contract.test()
     print(run.pretty())
-    _assert_passed_except_types(run)
+    assert run.result == "warning"
+    assert all(c.result == "passed" or (c.type == "field_type" and c.result == "warning") for c in run.checks)
 
 
 def test_array():
@@ -94,7 +98,7 @@ def test_blob():
     )
     run = data_contract.test()
     print(run.pretty())
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 def test_boolean():

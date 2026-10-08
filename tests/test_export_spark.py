@@ -21,7 +21,7 @@ def test_cli():
         ["export", "spark", "./fixtures/spark/export/datacontract.yaml"],
     )
     assert result.exit_code == 0
-    assert result.output == expected_str
+    assert result.stdout == expected_str
 
 
 def test_export_does_not_need_pyspark():
@@ -45,7 +45,7 @@ def test_export_does_not_need_pyspark():
         result = CliRunner().invoke(app, ["export", "spark", "./fixtures/spark/export/datacontract.yaml"])
         if result.exit_code != 0:
             raise SystemExit(result.output)
-        sys.stdout.write(result.output)
+        sys.stdout.write(result.stdout)
     """)
 
     result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True)

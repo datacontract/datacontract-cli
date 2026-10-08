@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import without_dcs_deprecation
 
 runner = CliRunner()
 
@@ -47,7 +48,7 @@ def test_checks_schema_only():
     print(run.pretty())
     # the fixture's nested types cannot be verified on parquet
     assert run.result == "warning"
-    assert all(check.category == "schema" for check in run.checks)
+    assert all(check.category == "schema" for check in without_dcs_deprecation(run))
     assert len(run.checks) > 0
 
 
@@ -59,7 +60,7 @@ def test_checks_quality_only_no_quality_checks_defined():
     run = data_contract.test()
     print(run.pretty())
     # No quality checks defined in parquet fixture, so no checks should run
-    assert len(run.checks) == 0
+    assert without_dcs_deprecation(run) == []
 
 
 def test_checks_all_categories_same_as_default():

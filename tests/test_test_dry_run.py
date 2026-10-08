@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.model.run import ResultEnum
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 local_json = "fixtures/local-json/datacontract.yaml"
 postgres = "fixtures/postgres-export/datacontract.yaml"
@@ -72,14 +73,14 @@ def test_every_planned_check_is_skipped():
     run = plan(local_json)
 
     assert run.checks != []
-    assert {check.result for check in run.checks} == {ResultEnum.skipped}
+    assert {check.result for check in without_dcs_deprecation(run)} == {ResultEnum.skipped}
 
 
 def test_a_plan_is_not_a_failure():
     """Nothing ran, but nothing went wrong: a dry run must not fail a build."""
     run = plan(local_json)
 
-    assert run.result == ResultEnum.skipped
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 def test_the_plan_says_what_each_check_asserts():
@@ -90,7 +91,7 @@ def test_the_plan_says_what_each_check_asserts():
     """
     run = plan(local_json)
 
-    described = [check for check in run.checks if check.engine != "jsonschema"]
+    described = [check for check in without_dcs_deprecation(run) if check.engine != "jsonschema"]
     assert described != []
     assert all(check.implementation for check in described)
 
@@ -171,7 +172,7 @@ def test_a_dry_run_does_not_publish(monkeypatch):
 
     assert published == []
     assert run.publish_succeeded is None
-    assert run.result == ResultEnum.skipped
+    assert_dcs_deprecation_is_the_only_warning(run)
     assert any("Publishing skipped" in log.message for log in run.logs)
 
 
