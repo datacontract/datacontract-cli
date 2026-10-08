@@ -200,3 +200,9 @@ def test_import_sql_maps_temporal_types_inside_map_and_struct(tmp_path):
     nested = {p.name: p for p in properties["s"].map.value.properties}
     assert nested["x"].logicalType == "timestamp"
     assert nested["raw"].logicalType == "string"
+
+
+def test_map_type_from_sql_uuid():
+    from datacontract.imports.sql_importer import map_type_from_sql
+
+    assert map_type_from_sql("uuid") == ("string", "uuid")
