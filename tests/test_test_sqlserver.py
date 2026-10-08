@@ -4,6 +4,7 @@ import pytest
 from testcontainers.mssql import SqlServerContainer
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -52,8 +53,8 @@ def test_test_sqlserver(mssql_container, monkeypatch):
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))
 
 
 @pytest.mark.skipif(not os.getenv("CI"), reason="Skipping test outside CI/CD environment")

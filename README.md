@@ -12,6 +12,7 @@
   <a href="https://datacontract.com/slack" rel="nofollow"><img src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" alt="Slack Status" data-canonical-src="https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&amp;style=social" style="max-width: 100%;"></a>
 </p>
 
+**Turn your schemas into data contracts and test your data against them, on Snowflake, Databricks, BigQuery, Kafka, Postgres & 15 more. Open source, built on the Open Data Contract Standard.**
 The `datacontract` CLI is an open-source command-line tool for working with [data contracts](https://datacontract.com).
 It natively supports the [Open Data Contract Standard](https://bitol-io.github.io/open-data-contract-standard/latest/) to lint data contracts, connect to data sources and execute schema and quality tests, and export to different formats. 
 The tool is written in Python. 

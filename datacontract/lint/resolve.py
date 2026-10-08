@@ -817,8 +817,11 @@ def _resolve_data_contract_from_str(
             )
         return odcs, schema_version, warnings
 
-    # For DCS format, we need to convert it to ODCS
-    logger.info("Importing DCS format - converting to ODCS")
+    dcs_deprecation = (
+        "Data Contract Specification (DCS) contracts are auto-converted to the new ODCS format. Support will be removed in "
+        "the next major version (January 2027). Convert the contract to ODCS with `datacontract export odcs`."
+    )
+    logger.warning(dcs_deprecation)
     from datacontract.imports.dcs_importer import convert_dcs_to_odcs, parse_dcs_from_dict
 
     dcs = parse_dcs_from_dict(yaml_dict)
@@ -831,7 +834,18 @@ def _resolve_data_contract_from_str(
             visited=_initial_visited(base_location),
             configured_host_only=configured_host_only,
         )
-    return odcs, None, []
+    return (
+        odcs,
+        None,
+        [
+            DataContractException(
+                type="lint",
+                result=ResultEnum.warning,
+                name="Check that data contract is an ODCS contract",
+                reason=dcs_deprecation,
+            )
+        ],
+    )
 
 
 def _initial_visited(base_location: str | None) -> frozenset[str]:
@@ -976,7 +990,7 @@ def _validate_json_schema(
             reason=_resolve_jsonschema_compliance_error_message_path(
                 yaml_str,
                 f"{path}: unknown fields are ignored: {', '.join(repr(field) for field in fields)}. "
-                "This will become an error in the next major version.",
+                "This will become an error in the next major version (January 2027).",
             ),
         )
         for path, fields in _ignored_fields(yaml_str, OpenDataContractStandard, "data")

@@ -4,6 +4,7 @@ import pytest
 from testcontainers.minio import MinioContainer
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning
 
 datacontract = "./fixtures/s3-json-multiple-models/datacontract.yaml"
 data_directory = "./fixtures/s3-json-multiple-models/data/"
@@ -31,7 +32,7 @@ def test_test_s3_json(minio_container, monkeypatch):
     run = data_contract.test()
 
     print(run.pretty())
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 def _prepare_s3_files(minio_container):

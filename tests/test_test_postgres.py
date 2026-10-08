@@ -4,6 +4,7 @@ from testcontainers.postgres import PostgresContainer
 from datacontract.data_contract import DataContract
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -33,8 +34,8 @@ def test_test_postgres(postgres_container, monkeypatch):
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
-    assert all(check.result == ResultEnum.passed for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == ResultEnum.passed for check in without_dcs_deprecation(run))
 
 
 def test_test_postgres_odcs(postgres_container, monkeypatch):
@@ -97,8 +98,8 @@ def test_test_postgres_case_sensitive_table_name(postgres_container, monkeypatch
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))
 
 
 def test_test_postgres_case_sensitive_table_name_odcs(postgres_container, monkeypatch):

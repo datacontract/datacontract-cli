@@ -4,6 +4,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 runner = CliRunner()
 
@@ -24,6 +25,6 @@ def test_valid():
     )
     run = data_contract.test()
     print(run.pretty())
-    assert run.result == "passed"
-    assert len(run.checks) == 9
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert len(without_dcs_deprecation(run)) == 9
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))

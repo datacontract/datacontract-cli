@@ -4,6 +4,7 @@ from oracledb import DatabaseError
 from testcontainers.oracle import OracleDbContainer
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 oracleContainer = OracleDbContainer("gvenzl/oracle-free:slim-faststart")
 ORACLE_SERVER_PORT: int = 1521
@@ -31,8 +32,8 @@ def test_test_oracle_contract_dcs(oracle_container, monkeypatch):
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))
 
 
 def test_test_oracle_contract_odcs(oracle_container, monkeypatch):

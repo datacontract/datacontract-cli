@@ -490,7 +490,7 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("timestamp", None)
     elif sql_type_normed.startswith("datetime"):  # tsql datetime2, datetimeoffset
         return ("timestamp", None)
-    elif sql_type_normed == "uniqueidentifier":  # tsql
+    elif sql_type_normed in ("uniqueidentifier", "uuid"):  # tsql, postgres
         return ("string", "uuid")
     elif sql_type_normed in ("json", "jsonb", "variant", "object", "super"):  # postgres, snowflake, redshift
         return ("object", None)
