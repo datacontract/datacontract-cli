@@ -24,6 +24,39 @@ INSERT INTO public.orders (order_id, customer_id, order_total, line_count, order
 CREATE VIEW public.open_orders AS
     SELECT order_id FROM public.orders WHERE line_count > 1;
 
+CREATE SCHEMA partitioned_foreign_keys;
+
+CREATE TABLE partitioned_foreign_keys.partitioned_target (
+    target_id INT PRIMARY KEY
+) PARTITION BY RANGE (target_id);
+
+CREATE TABLE partitioned_foreign_keys.partitioned_target_low
+    PARTITION OF partitioned_foreign_keys.partitioned_target
+    FOR VALUES FROM (0) TO (100);
+
+CREATE TABLE partitioned_foreign_keys.partitioned_target_high
+    PARTITION OF partitioned_foreign_keys.partitioned_target
+    FOR VALUES FROM (100) TO (200);
+
+CREATE TABLE partitioned_foreign_keys.partitioned_source (
+    source_id INT PRIMARY KEY,
+    target_id INT NOT NULL REFERENCES partitioned_foreign_keys.partitioned_target(target_id)
+);
+
+CREATE TABLE partitioned_foreign_keys.partitioned_source_parent (
+    source_id INT NOT NULL,
+    target_id INT NOT NULL REFERENCES partitioned_foreign_keys.partitioned_target(target_id),
+    PRIMARY KEY (source_id, target_id)
+) PARTITION BY RANGE (source_id);
+
+CREATE TABLE partitioned_foreign_keys.partitioned_source_low
+    PARTITION OF partitioned_foreign_keys.partitioned_source_parent
+    FOR VALUES FROM (0) TO (100);
+
+CREATE TABLE partitioned_foreign_keys.partitioned_source_high
+    PARTITION OF partitioned_foreign_keys.partitioned_source_parent
+    FOR VALUES FROM (100) TO (200);
+
 CREATE SCHEMA select_only_keys;
 
 CREATE TABLE select_only_keys.simple_target (

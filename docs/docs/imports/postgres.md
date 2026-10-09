@@ -6,7 +6,7 @@ description: "Create a data contract from a Postgres schema."
 
 # <img className="page-icon" src="/img/icons/postgres.svg" alt="" /> Import: Postgres
 
-Creates a data contract from a Postgres schema by reading table metadata from `information_schema` — including column types with length and precision, nullability, primary keys, and the comments stored in `pg_description`. Works with Postgres and Postgres-compatible databases (e.g. RisingWave).
+Creates a data contract from a Postgres schema. Tables and columns are read from `information_schema`, comments from `pg_description`, and key metadata from `pg_catalog`. Works with Postgres and Postgres-compatible databases (e.g. RisingWave).
 
 ```bash
 datacontract import postgres \
@@ -24,9 +24,7 @@ Credentials are provided as environment variables and are the same ones `datacon
 
 ## Key metadata and privileges
 
-When permitted, the importer reads PostgreSQL catalog metadata to enrich the contract with declared primary keys and foreign-key relationships. If catalog access is unavailable because the role lacks permission, the table and column import still succeeds: primary keys fall back to `information_schema` when available, and otherwise no key metadata is included.
-
-The supported read-only case is a role with full-table `SELECT`, schema `USAGE`, and ordinary read access to the PostgreSQL catalogs. Column-only grants can produce an incomplete contract, particularly when primary keys use the `information_schema` fallback. Import only the tables that belong together: a foreign-key relationship is included only when both endpoint tables and their properties are present in the selected schema. A declared `NOT VALID` foreign key is imported as a relationship, but its historical validation state is not preserved or reported.
+Primary keys and foreign keys are read from the Postgres catalog, so a role with `SELECT` on the tables and `USAGE` on the schema is enough. A foreign key is included only when both of its tables are imported from the same schema.
 
 Working from a DDL file instead of a live database? Use [`datacontract import sql --dialect postgres`](./sql.md).
 

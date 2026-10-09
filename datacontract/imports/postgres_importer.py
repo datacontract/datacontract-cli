@@ -15,6 +15,7 @@ with its own introspection quirks would buy nothing.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable, Dict, List, Optional
 
 from open_data_contract_standard.model import (
@@ -39,6 +40,8 @@ from datacontract.model.exceptions import DataContractException
 
 DEFAULT_PORT = 5432
 DEFAULT_SCHEMA = "public"
+
+logger = logging.getLogger(__name__)
 
 # to_regclass() yields NULL instead of raising for objects the user cannot see,
 # so a missing comment never fails the whole import.
@@ -92,7 +95,6 @@ _CATALOG_PRIMARY_KEYS_QUERY = """
     SELECT relation.relname AS table_name,
            attribute.attname AS column_name,
            con.oid AS constraint_oid,
-           cardinality(con.conkey) AS expected_column_count,
            key_column.ordinality AS ordinal_position
     FROM pg_catalog.pg_constraint AS con
     JOIN pg_catalog.pg_class AS relation
@@ -119,7 +121,6 @@ _FOREIGN_KEYS_QUERY = """
            target_namespace.nspname AS foreign_table_schema,
            target_attribute.attname AS foreign_column_name,
            con.oid AS constraint_oid,
-           cardinality(con.conkey) AS expected_column_count,
            key_column.ordinality AS ordinal_position
     FROM pg_catalog.pg_constraint AS con
     JOIN pg_catalog.pg_class AS source_relation
@@ -142,6 +143,13 @@ _FOREIGN_KEYS_QUERY = """
      AND NOT target_attribute.attisdropped
     WHERE con.contype = 'f'
       AND source_namespace.nspname = %s
+      -- Skip the per-partition clones Postgres adds for a foreign key that references a partitioned table.
+      AND NOT EXISTS (
+          SELECT 1
+          FROM pg_catalog.pg_constraint AS parent_constraint
+          WHERE parent_constraint.oid = con.conparentid
+            AND parent_constraint.conrelid = con.conrelid
+      )
     ORDER BY source_relation.relname, con.oid, key_column.ordinality
 """
 
@@ -227,19 +235,34 @@ def import_postgres_from_connector(
         for table_name in selected_table_names
     }
     if catalog_primary_key_rows is not None:
-        primary_key_rows = _complete_catalog_constraint_rows(
+        primary_key_rows = _visible_constraint_rows(
             primary_key_rows,
             lambda row: row["column_name"] in selected_column_names.get(row["table_name"], set()),
         )
+    foreign_key_rows_from_selected_tables = [
+        row for row in foreign_key_rows or [] if row["table_name"] in selected_table_names
+    ]
+    omitted_foreign_keys = {}
+    for row in foreign_key_rows_from_selected_tables:
+        if row["foreign_table_schema"] != schema or row["foreign_table_name"] not in selected_table_names:
+            omitted_foreign_keys.setdefault(row["constraint_oid"], row)
+    for row in omitted_foreign_keys.values():
+        logger.warning(
+            "Omitting foreign key from %s.%s to %s.%s because the target table is not included in the imported contract.",
+            schema,
+            row["table_name"],
+            row["foreign_table_schema"],
+            row["foreign_table_name"],
+        )
+
     selected_foreign_key_rows = [
         row
-        for row in foreign_key_rows or []
-        if row["table_name"] in selected_table_names
-        and row["foreign_table_schema"] == schema
+        for row in foreign_key_rows_from_selected_tables
+        if row["foreign_table_schema"] == schema
         and row["foreign_table_name"] in selected_table_names
     ]
     if foreign_key_rows is not None:
-        selected_foreign_key_rows = _complete_catalog_constraint_rows(
+        selected_foreign_key_rows = _visible_constraint_rows(
             selected_foreign_key_rows,
             lambda row: (
                 row["column_name"] in selected_column_names.get(row["table_name"], set())
@@ -286,7 +309,7 @@ def _fetch(connection, query: str, params: tuple, optional: bool = False) -> Opt
             columns = [description[0] for description in cursor.description]
             return [dict(zip(columns, row)) for row in cursor.fetchall()]
         except Exception as e:
-            if optional and getattr(e, "sqlstate", None) == "42501":
+            if optional:
                 # Roll back so the failed statement doesn't poison the transaction.
                 connection.rollback()
                 return None
@@ -307,26 +330,12 @@ def _select_tables(table_rows: List[Dict[str, Any]], tables: Optional[List[str]]
     return [row for row in table_rows if row["table_name"].lower() in wanted]
 
 
-def _complete_catalog_constraint_rows(
+def _visible_constraint_rows(
     rows: List[Dict[str, Any]], row_is_visible: Callable[[Dict[str, Any]], bool]
 ) -> List[Dict[str, Any]]:
-    """Return only complete, ordinally valid catalog constraints with visible columns."""
-    rows_by_constraint = {}
-    for row in rows:
-        rows_by_constraint.setdefault(row["constraint_oid"], []).append(row)
-
-    complete_rows = []
-    for constraint_rows in rows_by_constraint.values():
-        expected_column_count = constraint_rows[0]["expected_column_count"]
-        ordinals = {row["ordinal_position"] for row in constraint_rows}
-        if (
-            len(constraint_rows) == expected_column_count
-            and ordinals == set(range(1, expected_column_count + 1))
-            and all(row["expected_column_count"] == expected_column_count for row in constraint_rows)
-            and all(row_is_visible(row) for row in constraint_rows)
-        ):
-            complete_rows.extend(sorted(constraint_rows, key=lambda row: row["ordinal_position"]))
-    return complete_rows
+    """Drop constraints with a column the role can't read, so its name stays out of the contract."""
+    hidden = {row["constraint_oid"] for row in rows if not row_is_visible(row)}
+    return [row for row in rows if row["constraint_oid"] not in hidden]
 
 
 def _create_schema(
