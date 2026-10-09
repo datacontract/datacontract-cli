@@ -9,16 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `datacontract lint --all-errors`: unknown fields are warnings instead of errors, unless a custom `--schema` rejects them
+- `datacontract test`: every nested property and array item gets its own presence and type check, replacing the one nested type check per column, and a nested `physicalType` is checked on Athena, Trino, Databricks, BigQuery, ClickHouse and Hive
+- `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays and structs get their base type as `physicalType`, their items and fields keep their own
 
 ### Added
 - `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
 - `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
 
 ### Fixed
+- `datacontract test`: rules on the key or value of a map are reported as warnings instead of being ignored
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)
 - `datacontract import sqlserver` and the physical type checks of `datacontract test` work on case-sensitive SQL Server databases such as Microsoft Fabric warehouses (#1705 @Octacon100)
 - `datacontract import`: Postgres and DuckDB `uuid` columns import as `string` with format `uuid` instead of without a logicalType
-- `datacontract dbt sync`: generated composite primary key, length, pattern and range tests work on Databricks, BigQuery and Snowflake (#1713)
+- `datacontract dbt sync`: generated composite primary key, length, pattern and range tests work on Databricks, BigQuery and Snowflake (#1713 @Pezhman-Mazaheri)
 
 ## [1.2.4] - 2026-10-06
 

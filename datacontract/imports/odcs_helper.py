@@ -344,6 +344,18 @@ def split_type_arguments(arguments: str) -> List[str]:
     return [part.strip() for part in parts if part.strip()]
 
 
+def declare_nested_types_per_level(prop: SchemaProperty) -> SchemaProperty:
+    """Reduce an array's or struct's physicalType to its base type, so that each nested type is
+    declared once, by its own items or property. A map keeps its full type."""
+    if prop.physicalType and (prop.items is not None or prop.properties) and not prop.map:
+        prop.physicalType = re.split(r"\s*[<(]", prop.physicalType.strip(), maxsplit=1)[0]
+    for child in prop.properties or []:
+        declare_nested_types_per_level(child)
+    if prop.items is not None:
+        declare_nested_types_per_level(prop.items)
+    return prop
+
+
 def property_from_type_string(name: str, type_string: str) -> SchemaProperty:
     """A property for a native type string such as ``map<string,array<int>>`` or ``STRUCT<a: INT>``.
 

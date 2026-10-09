@@ -33,7 +33,7 @@ def test_valid():
     )
     run = data_contract.test()
     print(run.pretty())
-    assert len(without_dcs_deprecation(run)) == 29
+    assert len(without_dcs_deprecation(run)) == 30
     _assert_passed_except_types(run)
 
 

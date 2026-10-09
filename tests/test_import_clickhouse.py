@@ -81,11 +81,14 @@ def test_import_clickhouse_takes_the_declared_type_verbatim(clickhouse_server, c
         "ordered_at": ("DateTime64(3, 'UTC')", "timestamp"),
         "order_day": ("Date32", "date"),
         "id": ("UUID", "string"),
-        "tags": ("Array(Nullable(String))", "array"),
+        "tags": ("Array", "array"),
         "attributes": ("Map(String, Int32)", "map"),
         "kind": ("Enum8('retail' = 1, 'wholesale' = 2)", "string"),
     }
-    assert (properties["tags"].items.physicalType, properties["tags"].items.logicalType) == ("String", "string")
+    assert (properties["tags"].items.physicalType, properties["tags"].items.logicalType) == (
+        "Nullable(String)",
+        "string",
+    )
     assert properties["attributes"].map.value.logicalType == "integer"
 
 
@@ -130,6 +133,8 @@ def test_imported_contract_passes_test_without_editing(clickhouse_server, creden
     print(run.pretty())
     assert run.result == ResultEnum.passed
     assert all(check.result == ResultEnum.passed for check in run.checks)
+    # nested native types are read from the column's full type
+    assert any(c.field == "tags[]" and c.type == "field_physical_type" for c in run.checks)
 
 
 def test_import_clickhouse_produces_a_valid_contract(clickhouse_server, credentials):

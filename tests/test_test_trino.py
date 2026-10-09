@@ -185,3 +185,62 @@ def test_nested_rules_fail_on_the_parent_rows_that_violate_them(trino_container,
         ("customer.email", "field_required"),
     }
     assert all(c.result == ResultEnum.failed and c.diagnostics["value"] == 1 for c in failed)
+
+
+TYPED_CONTRACT = """apiVersion: v3.1.0
+kind: DataContract
+id: trino-nested-types
+version: 1.0.0
+status: active
+servers:
+  - server: trino
+    type: trino
+    host: localhost
+    port: __PORT__
+    catalog: memory
+    schema: my_schema
+schema:
+  - name: shipments
+    properties:
+      - name: items
+        physicalType: array
+        logicalType: array
+        items:
+          physicalType: row
+          logicalType: object
+          properties:
+            - name: sku
+              physicalType: varchar(10)
+            - name: qty
+              physicalType: integer
+      - name: carrier
+        physicalType: row(name varchar, code varchar(3))
+        logicalType: object
+"""
+
+
+def test_nested_physical_types_are_checked_on_their_own_lines(trino_container, monkeypatch):
+    conn = connect(host="localhost", port=trino.get_exposed_port(8080), user="my_user", catalog="memory")
+    cursor = conn.cursor()
+    cursor.execute("CREATE SCHEMA IF NOT EXISTS my_schema")
+    cursor.execute(
+        "CREATE TABLE my_schema.shipments "
+        "(items array(row(sku varchar(20), qty integer)), carrier row(name varchar, code varchar(3)))"
+    )
+    monkeypatch.setenv("DATACONTRACT_TRINO_USERNAME", "my_user")
+    monkeypatch.setenv("DATACONTRACT_TRINO_PASSWORD", "")
+
+    contract = TYPED_CONTRACT.replace("__PORT__", str(trino.get_exposed_port(8080)))
+    run = DataContract(data_contract_str=contract).test()
+
+    print(run.pretty())
+    failed = [c for c in run.checks if c.result != ResultEnum.passed]
+    assert [(c.field, c.type, c.result) for c in failed] == [("items[].sku", "field_physical_type", ResultEnum.failed)]
+    assert failed[0].reason == "expected physical type 'varchar(10)' but the column is 'varchar(20)'"
+    assert {(c.field, c.type) for c in run.checks if c.type == "field_physical_type"} == {
+        ("items", "field_physical_type"),
+        ("items[]", "field_physical_type"),
+        ("items[].sku", "field_physical_type"),
+        ("items[].qty", "field_physical_type"),
+        ("carrier", "field_physical_type"),
+    }

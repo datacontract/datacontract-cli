@@ -164,7 +164,7 @@ def test_test_checks_map_key_and_value_types(orders_db):
 
     print(run.pretty())
     assert run.result == ResultEnum.passed
-    nested = [c for c in run.checks if c.type in ("field_nested_type", "field_type", "field_physical_type")]
+    nested = [c for c in run.checks if c.type in ("field_type", "field_physical_type")]
     assert nested, [c.type for c in run.checks]
 
 

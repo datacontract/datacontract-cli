@@ -98,7 +98,7 @@ A property can declare a portable `logicalType`, a native `physicalType`, or bot
 - **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the nine backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, and Athena. It takes precedence over `logicalType`.
 - **`logicalType`** is used everywhere else, and as the fallback when the native type cannot be read. Both the declared and the actual type are normalized to an ODCS category before comparison, so `integer` and `number` are mutually compatible.
 
-On every backend except `csv`, `json`, `parquet` and `xml` files, a property with a complex `logicalType` (`object`, `array` or `map`) gets a **nested type check** covering the full declared structure.
+Nested properties are checked like top-level ones: each property under `properties`, and the `items` of an array, gets its own type check at its path, such as `customer.email` or `items[].sku`. A nested `physicalType` is compared against the native type the catalog reports for it on Athena, Trino, Databricks, BigQuery, ClickHouse, Hive and Snowflake, and reported as a warning on the other backends with catalog introspection. A map has a single type check, which also compares its `key` and `value`.
 
 ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
 

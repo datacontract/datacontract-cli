@@ -62,8 +62,8 @@ def test_import_hive_takes_the_declared_type_verbatim(hive_server):
         "order_total": ("decimal(10,2)", "number"),
         "line_count": ("int", "integer"),
         "ordered_at": ("timestamp", "timestamp"),
-        "tags": ("array<string>", "array"),
-        "shipping": ("struct<city:string,zip:string>", "object"),
+        "tags": ("array", "array"),
+        "shipping": ("struct", "object"),
         "attributes": ("map<string,bigint>", "map"),
         # the partition column, which Hive lists in its own section
         "order_day": ("date", "date"),
@@ -99,6 +99,8 @@ def test_imported_contract_passes_test_without_editing(hive_server):
     print(run.pretty())
     assert run.result == ResultEnum.passed
     assert all(check.result == ResultEnum.passed for check in run.checks)
+    # nested native types are read from the column's full type
+    assert any(c.field == "shipping.city" and c.type == "field_physical_type" for c in run.checks)
 
 
 def test_import_hive_produces_a_valid_contract(hive_server):
