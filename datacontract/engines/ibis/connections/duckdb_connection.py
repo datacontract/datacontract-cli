@@ -6,6 +6,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.config import Config
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
+from datacontract.engines.ibis.csv_values import csv_format, csv_type, csv_value
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.run import Run
@@ -113,9 +114,7 @@ def get_duckdb_connection(
             elif server.format == "parquet":
                 create_view_with_schema_union(con, schema_obj, model_path, "read_parquet", to_parquet_types)
             elif server.format == "csv":
-                create_view_with_schema_union(
-                    con, schema_obj, model_path, "read_csv", to_csv_types, read_options=_csv_encoding_options(server)
-                )
+                create_csv_views(con, schema_obj, model_path, read_options=_csv_encoding_options(server))
             elif server.format == "delta":
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
             elif server.format == "xml":
@@ -254,6 +253,51 @@ def create_view_with_schema_union(
         con.sql(
             f"""CREATE VIEW "{model_name}" AS SELECT * FROM {read_function}('{model_path}', union_by_name=true, hive_partitioning=1{read_options});"""
         )
+
+
+def create_csv_views(con, schema_obj: SchemaObject, model_path: str, read_options: str = ""):
+    """The CSV files as text in a raw view, and as the contract's types in a table built from it.
+
+    A value that does not convert to its column's type is NULL in the table, so the other checks on its column
+    treat it as missing; the type check on the raw view reports it (see csv_values).
+    """
+    import ibis
+
+    model_name = schema_obj.name
+    raw_name = f"{model_name}__raw__"
+    # Raw view to check for absent columns (check_property_is_present) and the type of each value
+    con.sql(
+        f"""CREATE VIEW {_quote(raw_name)} AS
+            SELECT * FROM read_csv('{model_path}', union_by_name=true, hive_partitioning=1, all_varchar=true{read_options});"""
+    )
+
+    converted_types = to_csv_types(schema_obj)
+    if not converted_types:
+        # Fallback: no columns declared, so DuckDB infers the types
+        con.sql(
+            f"""CREATE VIEW {_quote(model_name)} AS
+                SELECT * FROM read_csv('{model_path}', union_by_name=true, hive_partitioning=1{read_options});"""
+        )
+        return
+
+    # Create empty table with contract schema
+    columns_def = [f"{_quote(col_name)} {col_type}" for col_name, col_type in converted_types.items()]
+    con.sql(f"CREATE TABLE {_quote(model_name)} ({', '.join(columns_def)});")
+
+    # Insert the columns existing in both the contract and the data, converted to the contract's types
+    present = con.sql(f"SELECT * FROM {_quote(raw_name)}").columns
+    properties = [p for p in schema_obj.properties if (p.physicalName or p.name) in present]
+    if not properties:
+        return
+    raw = ibis.table({column: "string" for column in present}, name=raw_name)
+    values = {}
+    for prop in properties:
+        column = raw[prop.physicalName or prop.name]
+        duckdb_type = csv_type(prop)
+        values[column.get_name()] = (
+            csv_value(column, duckdb_type, csv_format(prop, duckdb_type)) if duckdb_type else column
+        )
+    con.sql(f"INSERT INTO {_quote(model_name)} BY NAME ({ibis.to_sql(raw.select(**values), dialect='duckdb')});")
 
 
 # read_xml refuses files above 16 MB by default, with a SAX parsing error; a file is read whole either way

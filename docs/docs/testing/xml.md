@@ -150,7 +150,7 @@ The command exits with code `1`, so the same call works as a gate in [CI/CD pipe
 - **Presence.** An element or attribute that is not required may be absent from every document, so only the required properties of the record element are checked for presence. Required values further down are checked for missing values.
 - **Attributes named like an element.** The import names such an attribute with an `@` prefix (`@id`), and the test reads it under that name. When an element and an attribute of the same element share a name, DuckDB's XML reader reads only the attribute, so the element's checks cannot run, with a warning.
 - **Large files.** Files of any size are read, each one whole, so a file needs about its size in memory.
-- **Types.** The documents are read as the contract's `logicalType`s, like [CSV files](../reference/local.md#data-types); `physicalType` is not checked.
+- **Types.** The documents are read as the contract's `logicalType`s (see [Data types](../reference/local.md#data-types)); `physicalType` is not checked.
 
 ## Reference
 

@@ -44,10 +44,10 @@ Type handling depends on the `format` in the `servers` block:
 
 | `format` | How types are handled |
 |---|---|
-| `csv` | The file is read **as the contract's types** — no type checks are generated; a value that can't be coerced surfaces as a read error. |
-| `json` | Same as CSV, plus every record is validated against a JSON Schema derived from the contract's `logicalType`s (with `format` options like `date-time`, `uuid`). |
-| `xml` | Like CSV: the documents are read **as the contract's types**, with nested elements as structs and repeated elements as lists. |
-| `parquet` | The file is read **as the contract's types**, like CSV, so checking its types is not supported yet, and a value that can't be cast surfaces as a read error. |
+| `csv` | The file is read as text, and every `integer`, `number`, `boolean`, `date`, `timestamp`, and `time` column gets a type check: each value must convert to its type, or the check fails with the number of bad values (`--include-failed-samples` shows them). An `integer` is a whole number (`2.50` and `2.00` are not); a `date`, `timestamp`, or `time` is in its `logicalTypeOptions.format` (a Java `DateTimeFormatter` pattern such as `dd/MM/yyyy`) or, without one, in ISO 8601. A bad value is missing for the other checks of its column. |
+| `json` | The file is read **as the contract's types**; a value of the wrong type reads as missing, and every record is validated against a JSON Schema derived from the contract's `logicalType`s (with `format` options like `date-time`, `uuid`). |
+| `xml` | The documents are read **as the contract's types**, with nested elements as structs and repeated elements as lists. |
+| `parquet` | The file is read **as the contract's types**, so checking its types is not supported yet, and a value that can't be cast surfaces as a read error. |
 | `delta` | Column types come from the Delta table; the contract's `logicalType` is checked by category. |
 
 **Presence.** For `json` and `xml`, only the required top-level properties are checked for presence: a document may leave out a property that is not required, even in every record. For the other formats, every column of the contract must exist in the file.
