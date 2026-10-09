@@ -45,14 +45,14 @@ schema:
       physicalType: boolean
       logicalType: boolean
   - name: field_six
-    physicalType: array<string>
+    physicalType: array
     logicalType: array
     items:
       name: items
       physicalType: string
       logicalType: string
   - name: field_seven
-    physicalType: array<struct<sub_field_three:string,sub_field_four:int>>
+    physicalType: array
     logicalType: array
     items:
       name: items

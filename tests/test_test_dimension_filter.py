@@ -158,8 +158,6 @@ def test_builtin_dimension_mapping():
         "field_is_present",
         "field_type",
         "field_physical_type",
-        "field_nested_type",
-        "field_nested_physical_type",
         "field_regex",
         "field_enum",
         "field_min_length",

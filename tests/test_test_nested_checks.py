@@ -148,6 +148,7 @@ def test_types_warn_on_parquet(tmp_path):
         "customer.address",
         "customer.address.city",
         "items",
+        "items[]",
         "items[].sku",
     }
     assert all(c.type == "field_type" for c in warnings)

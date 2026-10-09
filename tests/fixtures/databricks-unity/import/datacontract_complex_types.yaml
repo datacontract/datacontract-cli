@@ -20,25 +20,25 @@ schema:
     physicalType: bigint
     logicalType: integer
   - name: id_list
-    physicalType: array<bigint>
+    physicalType: array
     logicalType: array
     items:
       name: items
       physicalType: bigint
       logicalType: integer
   - name: id_struct
-    physicalType: struct<value:bigint>
+    physicalType: struct
     logicalType: object
     properties:
     - name: value
       physicalType: bigint
       logicalType: integer
   - name: struct_list
-    physicalType: array<struct<key:string,value:bigint>>
+    physicalType: array
     logicalType: array
     items:
       name: items
-      physicalType: struct<key:string,value:bigint>
+      physicalType: struct
       logicalType: object
       properties:
       - name: key

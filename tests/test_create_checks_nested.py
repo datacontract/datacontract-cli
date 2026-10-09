@@ -93,14 +93,23 @@ def test_create_checks_reports_nested_checks_as_warnings_on_unverified_backends(
     checks = _checks("postgres")
 
     nested = [c for c in checks if c.field in ("user.email", "user.status", "line_items[].sku")]
-    assert {(c.field, c.type) for c in nested} == {
+    warned = [c for c in nested if c.preset_result == "warning"]
+    assert {(c.field, c.type) for c in warned} == {
         ("user.email", "field_required"),
         ("user.email", "field_regex"),
         ("user.status", "field_quality_sql"),
         ("line_items[].sku", "field_required"),
     }
-    assert all(c.metric == MetricType.UNSUPPORTED and c.preset_result == "warning" for c in nested)
-    assert all(c.preset_reason == "Checks on nested properties are not supported on postgres servers." for c in nested)
+    assert all(c.metric == MetricType.UNSUPPORTED for c in warned)
+    assert all(c.preset_reason == "Checks on nested properties are not supported on postgres servers." for c in warned)
+
+
+def test_nested_presence_and_types_are_checked_on_every_server():
+    checks = _checks("postgres")
+
+    structure = {(c.field, c.type) for c in checks if c.preset_result is None}
+    assert {("user.email", "field_is_present"), ("user.email", "field_type")} <= structure
+    assert {("line_items[].sku", "field_is_present"), ("line_items[].sku", "field_type")} <= structure
 
 
 def test_create_checks_marks_array_hops_in_the_field_path():

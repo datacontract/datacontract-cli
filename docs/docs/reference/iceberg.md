@@ -90,7 +90,7 @@ The Iceberg type is kept as `physicalType`, and the field id as the `icebergFiel
 
 ### Testing
 
-The table is scanned to Arrow and registered in DuckDB, so the type checks compare the declared `logicalType` against the DuckDB type of the Arrow column: structs become `STRUCT`, lists `LIST`, and maps `MAP`, which the nested type checks walk. `physicalType` checks against the catalog's declared type are not run for Iceberg; the logical type check runs instead. Binary fields still get presence and applicable quality checks, but no logical type check.
+The table is scanned to Arrow and registered in DuckDB, so the type checks compare the declared `logicalType` against the DuckDB type of the Arrow column: structs become `STRUCT`, lists `LIST`, and maps `MAP`, so nested properties are type-checked too. `physicalType` checks against the catalog's declared type are not run for Iceberg; the logical type check runs instead. Binary fields still get presence and applicable quality checks, but no logical type check.
 
 SQL quality queries address the schema object's logical `name`, even when `physicalName` points to a different or qualified catalog table. The CLI reads the full selected tables into memory before checking them; use tables that fit in available memory. SQL rules and `--filters` do not reduce the Iceberg scan.
 

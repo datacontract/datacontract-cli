@@ -38,6 +38,7 @@ from datacontract.engines.checks.sql_guard import dialect_for_server_type, refus
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 from datacontract.model.enum_values import get_enum_values
+from datacontract.model.map_type import get_map_key, get_map_value
 from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
@@ -81,51 +82,6 @@ def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> s
     return schema_object.name
 
 
-def _scalar_element_type(prop: SchemaProperty, physical: bool) -> Optional[str]:
-    """The declared element type of an array of scalars, or None for anything else."""
-    if normalize_type_name(prop.logicalType or prop.physicalType) != "array" or prop.items is None:
-        return None
-    items = prop.items
-    if items.properties or items.items is not None:
-        return None
-    label = (items.physicalType or items.logicalType) if physical else (items.logicalType or items.physicalType)
-    if normalize_type_name(label) in ("object", "array", "map"):
-        return None
-    return label
-
-
-def _declared_type_label(prop: SchemaProperty, physical: bool) -> Optional[str]:
-    """Render the declared type with its children, e.g. ``OBJECT(code VARCHAR(10), description VARCHAR)``."""
-    label = (prop.physicalType or prop.logicalType) if physical else (prop.logicalType or prop.physicalType)
-    base = normalize_type_name(label)
-    if base == "array" and prop.items is not None:
-        return f"{label}({_declared_type_label(prop.items, physical)})"
-    if base == "object" and prop.properties:
-        children = ", ".join(f"{child.name} {_declared_type_label(child, physical)}" for child in prop.properties)
-        return f"{label}({children})"
-    return label
-
-
-def _nested_type_check(model: str, field: str, prop: SchemaProperty, physical: bool) -> CheckSpec:
-    check_type = "field_nested_physical_type" if physical else "field_nested_type"
-    element = _scalar_element_type(prop, physical)
-    if element is not None:
-        name = f"Check that items of array {field} have {'physical type' if physical else 'type'} {element}"
-    else:
-        name = f"Check that nested {'physical types' if physical else 'types'} of {field} are correct"
-    return CheckSpec(
-        key=f"{model}__{field}__{check_type}",
-        category="schema",
-        type=check_type,
-        name=name,
-        model=model,
-        field=field,
-        metric=MetricType.FIELD_NESTED_TYPE,
-        expected_type_label=_declared_type_label(prop, physical),
-        expected_schema_property=prop,
-    )
-
-
 def quality_definition_yaml(quality: DataQuality) -> str:
     """The quality rule as YAML, as the CLI parsed it: ODCS keys the model does not
     know are dropped, and comments with them."""
@@ -140,7 +96,7 @@ def _iter_property_paths(
     properties: list[SchemaProperty] | None,
     prefix: str | None = None,
 ):
-    """Yield ``(path, property, nested)`` for every property, descending into objects and array items."""
+    """Yield ``(path, property, nested)`` for every property, descending into objects, array items and maps."""
     for prop in properties or []:
         field = prop.physicalName or prop.name
         field_path = f"{prefix}.{field}" if prefix else field
@@ -149,13 +105,21 @@ def _iter_property_paths(
         prop_type = _property_type(prop)
         if prop_type == "object" and prop.properties:
             yield from _iter_property_paths(prop.properties, field_path)
-        elif prop_type == "array" and prop.items and prop.items.properties:
+        elif prop_type == "array" and prop.items is not None:
             # `[]` marks the array hop; the executor turns it into a predicate
             # over the elements instead of a column lookup.
-            yield from _iter_property_paths(prop.items.properties, f"{field_path}[]")
-        elif prop_type == "array" and prop.items and _constrains_values(prop.items):
-            # The items of an array of plain values, such as a pattern on every tag
-            yield f"{field_path}[]", prop.items, True
+            items = prop.items
+            if items.logicalType or items.physicalType or items.properties or _constrains_values(items):
+                yield f"{field_path}[]", items, True
+            if items.properties:
+                yield from _iter_property_paths(items.properties, f"{field_path}[]")
+        elif prop_type == "map":
+            for side, definition in (("key", get_map_key(prop)), ("value", get_map_value(prop))):
+                if definition is None:
+                    continue
+                yield f"{field_path}[{side}]", definition, True
+                if _property_type(definition) == "object" and definition.properties:
+                    yield from _iter_property_paths(definition.properties, f"{field_path}[{side}]")
 
 
 def _constrains_values(prop: SchemaProperty) -> bool:
@@ -333,7 +297,10 @@ def _to_schema_checks(
         first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
-        if not documents or (prop.required and not nested):
+        # The map's own type line covers the types of its key and value, and an array's own
+        # presence covers that of its items.
+        in_map = "[key]" in field or "[value]" in field
+        if not in_map and not field.endswith("[]") and (not documents or (prop.required and not nested)):
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_is_present",
@@ -347,25 +314,24 @@ def _to_schema_checks(
                 )
             )
 
-        # The raw view cannot provide nested type checks
-        declared_base = normalize_type_name(prop.logicalType or prop.physicalType)
-        nested_checks_possible = (
-            check_types
-            and not uses_raw_view
-            and declared_base in ("object", "array", "map")
-            and (bool(prop.properties) or prop.items is not None or prop.map is not None)
-        )
-        base_prop = (
-            SchemaProperty(name=prop.name, logicalType=prop.logicalType, physicalType=prop.physicalType)
-            if nested_checks_possible
-            else prop
-        )
+        # Properties and array items get type lines of their own, so this one leaves them out.
+        # The items of an array's items have no path of their own and stay in.
+        own_type = prop
+        if _property_type(prop) == "object" and prop.properties:
+            own_type = prop.model_copy(update={"properties": None})
+        elif _property_type(prop) == "array" and prop.items is not None and not field.endswith("[]"):
+            own_type = prop.model_copy(update={"items": None})
 
         # A declared physicalType is checked against the column's real native
         # type in the platform catalog and takes precedence over logicalType,
         # but only on backends that expose a meaningful native type. Elsewhere
         # (file sources, etc.) fall through to the logicalType category check.
-        if check_types and prop.physicalType is not None and supports_native_type_introspection(server_type):
+        if (
+            not in_map
+            and check_types
+            and prop.physicalType is not None
+            and supports_native_type_introspection(server_type)
+        ):
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_physical_type",
@@ -378,14 +344,10 @@ def _to_schema_checks(
                     expected_category=prop.physicalType,
                     expected_type_label=prop.physicalType,
                     expected_physical_type=prop.physicalType,
-                    # Carried for the logicalType fallback when the native type
-                    # cannot be read or the physicalType is cross-dialect.
-                    expected_schema_property=base_prop if prop.logicalType is not None else None,
+                    expected_schema_property=own_type,
                 )
             )
-            if nested_checks_possible:
-                checks.append(_nested_type_check(model, field, prop, physical=True))
-        elif check_types and prop.logicalType is not None:
+        elif not in_map and check_types and prop.logicalType is not None:
             label = prop.logicalType or ""
             checks.append(
                 CheckSpec(
@@ -398,13 +360,12 @@ def _to_schema_checks(
                     metric=MetricType.FIELD_TYPE,
                     expected_category=label,
                     expected_type_label=label,
-                    expected_schema_property=base_prop,
+                    expected_schema_property=own_type,
                 )
             )
-            if nested_checks_possible:
-                checks.append(_nested_type_check(model, field, prop, physical=False))
 
-        if prop.required:
+        # A map key is never null, so a required key holds by definition
+        if prop.required and not field.endswith("[key]"):
             checks.append(
                 _missing_count_check(
                     model,
@@ -608,11 +569,12 @@ def _to_schema_checks(
 
         # A check the server cannot run is reported, not dropped.
         unenforced = []
-        if nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
-            # The parent's nested type check already covers presence and types.
-            if check_types:
-                checks[first_check:] = [c for c in checks[first_check:] if c.metric not in METADATA_METRICS]
+        if in_map:
             unenforced = checks[first_check:]
+            reason = "Checks on the key or value of a map are not supported yet."
+        elif nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
+            # Presence and types are read from the schema, which every server reports.
+            unenforced = [c for c in checks[first_check:] if c.metric not in METADATA_METRICS]
             reason = nested_not_run_reason(server_type)
         elif uses_raw_view:
             # The file is cast into the contract's types, so a type check would compare the contract with itself.

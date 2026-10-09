@@ -164,7 +164,7 @@ def create_typed_property(name: str, dtype: str) -> SchemaProperty:
         return create_property(
             name=name,
             logical_type="array",
-            physical_type=dtype,
+            physical_type="array",
             items=items_prop,
         )
     elif dtype.startswith("struct"):

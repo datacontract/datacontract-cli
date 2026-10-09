@@ -104,7 +104,7 @@ schema:
         physicalType: timestamp
       - name: tags
         logicalType: array
-        physicalType: array<string>
+        physicalType: array
         items:
           name: items
           logicalType: string
