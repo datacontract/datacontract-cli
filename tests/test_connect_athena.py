@@ -1,16 +1,18 @@
 """Unit tests for how connect_ibis builds the Athena connection.
 
-These do not hit Athena or AWS: ``ibis.athena.connect`` is patched, and we only
+These do not hit Athena or AWS: ``ibis.athena.connect`` is patched, and we
 assert which connection kwargs the dispatch passes for a given server block and
-set of env vars.
+set of env vars, and what the connection's compiler can compile.
 """
 
 from unittest.mock import patch
 
+import ibis
 import pytest
 from open_data_contract_standard.model import Server
 
 from datacontract.engines.ibis.connections.connect import connect_ibis
+from datacontract.engines.ibis.ibis_check_execute import _item_duplicate_predicate, _row_predicate
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
@@ -120,3 +122,16 @@ def test_env_variables_override_the_contract_server_details(env, monkeypatch):
     assert kwargs["catalog_name"] == "env_catalog"
     assert kwargs["schema_name"] == "env_schema"
     assert kwargs["s3_staging_dir"] == "s3://env-bucket/results/"
+
+
+def test_checks_on_array_items_compile_for_athena(env):
+    with patch("ibis.athena.connect"):
+        con = connect_ibis(Run.create_run(), None, _server())
+    t = ibis.table({"items": "array<struct<sku: string>>"}, name="orders")
+    columns = {"items": "items"}
+
+    missing = t.filter(_row_predicate(t, columns, "items[].sku", lambda sku: sku.isnull())).count()
+    duplicated = t.filter(_item_duplicate_predicate(t, columns, "items[].sku")).count()
+
+    assert "FILTER(" in con.compiler.to_sqlglot(missing).sql("athena")
+    assert "TRANSFORM(" in con.compiler.to_sqlglot(duplicated).sql("athena")
