@@ -4,7 +4,7 @@ version 3 runs the ``filter()`` / ``transform()`` its Trino compiler emits; chec
 from __future__ import annotations
 
 
-def _athena_compiler():
+def apply_athena_compatibility_patch(con) -> None:
     import ibis.expr.operations as ops
     from ibis.backends.sql.compilers.athena import AthenaCompiler
     from ibis.backends.sql.compilers.trino import TrinoCompiler
@@ -17,8 +17,4 @@ def _athena_compiler():
         visit_ArrayFilter = TrinoCompiler.visit_ArrayFilter
         visit_ArrayMap = TrinoCompiler.visit_ArrayMap
 
-    return ArrayLambdaAthenaCompiler()
-
-
-def apply_athena_compatibility_patch(con) -> None:
-    con.compiler = _athena_compiler()
+    con.compiler = ArrayLambdaAthenaCompiler()
