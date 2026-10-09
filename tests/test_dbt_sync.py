@@ -868,7 +868,7 @@ def test_generate_outputs_composite_pk_emits_dep_free_singular_unique():
     by_name = {s.filename: s for s in singulars}
     pk = by_name["orders_sync_test__1_0_0__orders__unique_combination.sql"]
     assert "dbt_utils" not in pk.sql
-    assert 'GROUP BY "order_id", "order_status"' in pk.sql
+    assert "GROUP BY order_id, order_status" in pk.sql
     assert "HAVING COUNT(*) > 1" in pk.sql
     assert pk.description == "Check that model orders has a unique combination of columns order_id, order_status"
 
@@ -882,9 +882,9 @@ def test_field_singular_tests_emit_portable_violation_predicates():
     by_name = {s.filename: s for s in singulars}
 
     length = by_name["orders_sync_test__1_0_0__orders__order_id__length.sql"]
-    assert 'LENGTH("order_id") < 8' in length.sql
-    assert 'LENGTH("order_id") > 10' in length.sql
-    assert '"order_id" IS NOT NULL' in length.sql
+    assert "LENGTH(order_id) < 8" in length.sql
+    assert "LENGTH(order_id) > 10" in length.sql
+    assert "order_id IS NOT NULL" in length.sql
     assert "dbt_expectations" not in length.sql
 
     pattern = by_name["orders_sync_test__1_0_0__orders__order_id__pattern.sql"]
@@ -902,8 +902,8 @@ def test_field_singular_tests_emit_portable_violation_predicates():
     assert "^B[0-9]+$" in pattern.sql
 
     rng = by_name["orders_sync_test__1_0_0__orders__order_total__range.sql"]
-    assert '"order_total" < 0' in rng.sql
-    assert '"order_total" > 1000000' in rng.sql
+    assert "order_total < 0" in rng.sql
+    assert "order_total > 1000000" in rng.sql
 
 
 def test_row_count_singular_test_wraps_count_with_bound_predicate():
