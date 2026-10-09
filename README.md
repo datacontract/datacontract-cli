@@ -283,6 +283,7 @@ A list of available extras:
 | DuckDB (local file, CSV import and API response testing) | `pip install datacontract-cli[duckdb]` |
 | Exasol | `pip install datacontract-cli[exasol]` |
 | Excel | `pip install datacontract-cli[excel]` |
+| Excel workbooks (testing) | `pip install datacontract-cli[xlsx]` |
 | GCS | `pip install datacontract-cli[gcs]` |
 | SAP HANA / Datasphere | `pip install datacontract-cli[hana]` (not part of `all`: `hdbcli` is proprietary) |
 | Apache Iceberg (schema import and export, REST catalog testing) | `pip install datacontract-cli[iceberg]` |

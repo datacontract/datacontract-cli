@@ -1,12 +1,12 @@
 ---
 sidebar_position: 17
 title: "Local files"
-description: "Test local files in Parquet, JSON, CSV, XML, or Delta format — the fastest way to try the CLI, no credentials needed."
+description: "Test local files in Parquet, JSON, CSV, XML, Excel, or Delta format — the fastest way to try the CLI, no credentials needed."
 ---
 
 # <img className="page-icon" src="/img/icons/local.svg" alt="" /> Local files
 
-Test local files in Parquet, JSON, CSV, XML, or Delta format. This is the fastest way to see the CLI in action — no warehouse, no credentials.
+Test local files in Parquet, JSON, CSV, XML, Excel, or Delta format. This is the fastest way to see the CLI in action — no warehouse, no credentials.
 
 ## 1. Install
 
@@ -74,6 +74,25 @@ duplicate_count(status) was 1, expected = 0
 
 The command exits with code `1`, so the same call works as a gate in [CI/CD pipelines](../scheduling/index.md).
 
+## Excel workbooks
+
+Excel workbooks (`format: xlsx`) need `pip install 'datacontract-cli[xlsx]'`. Each schema is one sheet: its `physicalName` is the sheet's name, matched case-sensitively, and a contract with a single schema may leave it out to read the first sheet. The first row of a sheet holds the column names.
+
+```yaml
+servers:
+  - server: local
+    type: local
+    path: ./delivery.xlsx
+    format: xlsx
+schema:
+  - name: orders
+    physicalName: Orders
+  - name: country_codes
+    physicalName: Country Codes
+```
+
+The `path` names a single workbook, without a glob. When several schemas share it, each needs its `physicalName`. Formulas are read as the values Excel last stored for them, and the older `.xls` format is not supported.
+
 ## XML files
 
 XML documents (`format: xml`) have a guide of their own, from importing their XML Schema to testing nested elements and attributes: **[XML files](./xml.md)**.
@@ -89,7 +108,7 @@ JSON files (`.json`, `.jsonl`, `.ndjson`) are also validated against a JSON Sche
 ## Troubleshooting
 
 - **`No files found that match the pattern`** — the `path` is a glob over file paths, not a directory, and it is resolved relative to the working directory rather than to the contract.
-- **No checks run at all** — the `format` in the `servers` block must be one of `csv`, `json`, `parquet`, `xml`, or `delta`. It is never guessed at test time (only `datacontract import` infers it from the file suffix), so a missing or misspelled `format` leaves the table unreadable.
+- **No checks run at all** — the `format` in the `servers` block must be one of `csv`, `json`, `parquet`, `xml`, `xlsx`, or `delta`. It is never guessed at test time (only `datacontract import` infers it from the file suffix), so a missing or misspelled `format` leaves the table unreadable.
 - **Every schema reads the same files** — with more than one schema in the contract, put the `{model}` placeholder in the `path` (e.g. `./data/{model}/*.parquet`); it is substituted with each schema's name.
 - **A CSV or XML value fails as a read error instead of a type check** — CSV and XML files are read *as* the contract's types, so a value that cannot be coerced surfaces while reading. See [Data types](../reference/local.md#data-types).
 

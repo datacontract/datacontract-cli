@@ -32,11 +32,13 @@ from datacontract.engines.checks.custom_quality_check import (
     Instance,
     instantiate,
     placeholder_pattern,
+    sql_literal,
 )
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect_by_name
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
+from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.server import get_server_type
 
@@ -67,7 +69,7 @@ def is_check_types(server: Optional[Server]) -> bool:
     """Type checks only make sense where the data source carries real types."""
     if server is None:
         return True
-    return server.format not in ("json", "csv", "avro", "xml")
+    return server.format not in ("json", "csv", "avro", "xml", "xlsx")
 
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
@@ -297,7 +299,9 @@ def _to_schema_checks(
     properties = schema_object.properties or []
     check_types = is_check_types(server)
     uses_raw_view = (
-        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json", "xml")
+        server is not None
+        and server_type in _FILE_SERVER_TYPES
+        and server.format in ("csv", "parquet", "json", "xml", "xlsx")
     )
 
     # A primary key is both not-null and unique. A composite key is unique as a
@@ -314,6 +318,7 @@ def _to_schema_checks(
     # of nested elements with children. The required top-level properties are still checked for presence.
     xml = server is not None and server.format == "xml"
     documents = server is not None and server.format in ("json", "xml")
+    xlsx = server is not None and server.format == "xlsx"
     if xml:
         # A record element that matches nothing would pass every other check
         checks.append(
@@ -344,6 +349,23 @@ def _to_schema_checks(
                     field=field,
                     metric=MetricType.FIELD_PRESENT,
                     uses_raw_view=uses_raw_view,
+                )
+            )
+
+        # A cell of the wrong type reads as NULL, so the checks of its column would miss it
+        if xlsx and not nested and convert_to_duckdb_csv_type(prop) != "VARCHAR":
+            type_errors = exp.to_identifier(f"{model}__type_errors__", quoted=True).sql(dialect="duckdb")
+            checks.append(
+                CheckSpec(
+                    key=f"{model}__{field}__field_type",
+                    category="schema",
+                    type="field_type",
+                    name=f"Check that field {field} has type {prop.logicalType or prop.physicalType}",
+                    model=model,
+                    field=field,
+                    metric=MetricType.CUSTOM_SQL,
+                    query=f"SELECT count(*) FROM {type_errors} WHERE field = {sql_literal(field, 'duckdb')}",
+                    threshold=Threshold(Op.EQ, 0),
                 )
             )
 

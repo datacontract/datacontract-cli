@@ -16,7 +16,7 @@ servers:
   - server: local
     type: local
     path: ./*.parquet # glob patterns and a {model} placeholder are supported
-    format: parquet   # parquet, json, csv, xml, or delta
+    format: parquet   # parquet, json, csv, xml, xlsx, or delta
 ```
 
 ## Data types
@@ -47,6 +47,7 @@ Type handling depends on the `format` in the `servers` block:
 | `csv` | The file is read **as the contract's types** — no type checks are generated; a value that can't be coerced surfaces as a read error. |
 | `json` | Same as CSV, plus every record is validated against a JSON Schema derived from the contract's `logicalType`s (with `format` options like `date-time`, `uuid`). |
 | `xml` | Like CSV: the documents are read **as the contract's types**, with nested elements as structs and repeated elements as lists. |
+| `xlsx` | Each cell is read as the contract's type of its column, including Excel dates stored as numbers. A cell that has a value of another type fails the type check of its column. |
 | `parquet` | The file is read **as the contract's types**, like CSV, so checking its types is not supported yet, and a value that can't be cast surfaces as a read error. |
 | `delta` | Column types come from the Delta table; the contract's `logicalType` is checked by category. |
 

@@ -8,6 +8,7 @@ from datacontract.config import Config
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
 if TYPE_CHECKING:
@@ -66,6 +67,9 @@ def get_duckdb_connection(
             con.load_extension("webbed")
         except Exception as e:
             raise RuntimeError("Failed to install the 'webbed' DuckDB community extension to read XML files.") from e
+    if server.format == "xlsx":
+        check_xlsx_locations(data_contract, path)
+        _load_extension(con, "excel", "xlsx")
 
     model_paths = _model_paths(data_contract, path, schema_name)
     if untrusted_contract and own_connection:
@@ -120,6 +124,8 @@ def get_duckdb_connection(
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
             elif server.format == "xml":
                 create_xml_views(con, schema_obj, model_path)
+            elif server.format == "xlsx":
+                create_xlsx_views(con, schema_obj, model_path)
             table_info = con.sql(f"PRAGMA table_info({_quote(model_name)});").fetchall()
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
@@ -395,6 +401,115 @@ def _is_xml_attribute(prop: SchemaProperty) -> bool:
 
 def _xml_name(prop: SchemaProperty) -> str:
     return prop.physicalName or prop.name
+
+
+# Day 0 of Excel's 1900 date system; not 1899-12-31, because Excel counts a 29 February 1900 that never was
+_EXCEL_EPOCH = "1899-12-30"
+_TEMPORAL_TYPES = ("DATE", "TIMESTAMP", "TIME")
+_MILLISECONDS_PER_DAY = 86_400_000
+
+
+def check_xlsx_locations(data_contract: OpenDataContractStandard, path: str) -> None:
+    """Refuse locations read_xlsx would read silently wrong.
+
+    read_xlsx reads the first file a glob matches and nothing else, and a model without a physicalName
+    reads the first sheet, so in a workbook shared by several models that sheet would be tested for each.
+    """
+    if _is_glob(path):
+        raise DataContractException(
+            type="xlsx-connection",
+            name="glob_path",
+            reason=f"The xlsx path '{path}' is a glob, but Excel workbooks are read one file at a time.",
+        )
+    by_workbook: dict[str, list[SchemaObject]] = {}
+    for schema_obj in data_contract.schema_ or []:
+        by_workbook.setdefault(_model_path(path, schema_obj.name), []).append(schema_obj)
+    for workbook, schema_objs in by_workbook.items():
+        unnamed = [s.name for s in schema_objs if not s.physicalName]
+        if len(schema_objs) > 1 and unnamed:
+            raise DataContractException(
+                type="xlsx-connection",
+                name="sheet_not_named",
+                reason=(
+                    f"The models {', '.join(unnamed)} share the workbook '{workbook}' with other models, "
+                    "so each needs the name of its sheet as physicalName."
+                ),
+            )
+
+
+def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
+    """Views over one sheet: the model with the contract's types, its raw text, and its cells of the wrong type.
+
+    The sheet is read twice, lined up row by row: typed, for the dates that only the cell format tells
+    apart from numbers, and as text, for the values that the type read_xlsx infers from the first row
+    turns into NULL. The checks address a schema by its physical name, quality SQL often by its name,
+    so both name the model view.
+    """
+    sheet = schema_obj.physicalName
+    view = sheet or schema_obj.name
+    options = f"'{_sql_literal(model_path)}', header=true"
+    if sheet:
+        options += f", sheet='{_sql_literal(sheet)}'"
+    typed = f"read_xlsx({options}, ignore_errors=true)"
+    text = f"read_xlsx({options}, all_varchar=true)"
+    cells = f"(SELECT * FROM {typed}) AS t POSITIONAL JOIN (SELECT * FROM {text}) AS r"
+
+    # Raw view without the contract's columns to check for absent columns (check_property_is_present)
+    con.sql(f"CREATE VIEW {_quote(view + '__raw__')} AS SELECT * FROM {text};")
+
+    # Like DuckDB's own identifiers, a header answers to its name in any case
+    headers = {row[0].lower(): row for row in con.sql(f"DESCRIBE SELECT * FROM {typed}").fetchall()}
+    columns, errors = [], []
+    for name, sql_type in (to_csv_types(schema_obj) or {}).items():
+        sql_type = sql_type or "VARCHAR"
+        if name.lower() not in headers:
+            columns.append(f"NULL::{sql_type} AS {_quote(name)}")
+            continue
+        header, inferred_type = headers[name.lower()][:2]
+        value = _cell_value(_quote(header), sql_type, inferred_type)
+        columns.append(f"{value} AS {_quote(name)}")
+        if sql_type != "VARCHAR":
+            errors.append(
+                f"SELECT '{_sql_literal(name)}' AS field, r.{_quote(header)} AS value FROM {cells} "
+                f"WHERE r.{_quote(header)} IS NOT NULL AND {value} IS NULL"
+            )
+    if columns:
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT {', '.join(columns)} FROM {cells};")
+    else:
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT * FROM {typed};")
+    if not errors:
+        errors.append("SELECT NULL::VARCHAR AS field, NULL::VARCHAR AS value WHERE false")
+    con.sql(f"CREATE VIEW {_quote(view + '__type_errors__')} AS {' UNION ALL '.join(errors)};")
+    # DuckDB identifiers are case-insensitive, so sheet Orders already answers to orders
+    if schema_obj.name.lower() != view.lower():
+        con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(view)};")
+
+
+def _cell_value(column: str, sql_type: str, inferred_type: str) -> str:
+    """The value of a cell as `sql_type`, NULL if it has none of that type.
+
+    A date read as a number is the Excel serial number of its days, with the time of day as fraction.
+    """
+    typed, text = f"t.{column}", f"r.{column}"
+    read_as_temporal = inferred_type in _TEMPORAL_TYPES
+    if sql_type == "VARCHAR":
+        return f"COALESCE(CAST({typed} AS VARCHAR), {text})" if read_as_temporal else text
+    if sql_type == "BIGINT":
+        # TRY_CAST rounds '1.5' to 2, which would hide a fraction in an integer column
+        number = f"TRY_CAST({text} AS DOUBLE)"
+        return f"CASE WHEN {number} = floor({number}) THEN TRY_CAST({number} AS BIGINT) END"
+    if sql_type not in _TEMPORAL_TYPES:
+        return f"TRY_CAST({text} AS {sql_type})"
+    serial = f"TRY_CAST({text} AS DOUBLE)"
+    since_epoch = f"to_milliseconds(CAST(round({serial} * {_MILLISECONDS_PER_DAY}) AS BIGINT))"
+    from_serial = {
+        "DATE": f"CAST(DATE '{_EXCEL_EPOCH}' + CAST(floor({serial}) AS INTEGER) AS DATE)",
+        "TIMESTAMP": f"TIMESTAMP '{_EXCEL_EPOCH}' + {since_epoch}",
+        "TIME": f"CAST(TIMESTAMP '{_EXCEL_EPOCH}' + {since_epoch} AS TIME)",
+    }[sql_type]
+    candidates = [f"TRY_CAST({typed} AS {sql_type})"] if read_as_temporal else []
+    candidates += [f"TRY_CAST({text} AS {sql_type})", from_serial]
+    return f"COALESCE({', '.join(candidates)})"
 
 
 def _quote(name: str) -> str:
