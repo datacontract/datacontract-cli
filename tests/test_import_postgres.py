@@ -148,7 +148,9 @@ def test_import_postgres_keeps_partitioned_source_foreign_key_clones():
     )
 
     relationships = {
-        schema.name: [relationship.to for property in schema.properties for relationship in property.relationships or []]
+        schema.name: [
+            relationship.to for property in schema.properties for relationship in property.relationships or []
+        ]
         for schema in result.schema_
         if schema.name.startswith("partitioned_source")
     }

@@ -258,8 +258,7 @@ def import_postgres_from_connector(
     selected_foreign_key_rows = [
         row
         for row in foreign_key_rows_from_selected_tables
-        if row["foreign_table_schema"] == schema
-        and row["foreign_table_name"] in selected_table_names
+        if row["foreign_table_schema"] == schema and row["foreign_table_name"] in selected_table_names
     ]
     if foreign_key_rows is not None:
         selected_foreign_key_rows = _visible_constraint_rows(
