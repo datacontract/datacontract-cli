@@ -97,6 +97,12 @@ excel = [
   "openpyxl>=3.1.5,<4.0.0",
 ]
 
+# Tests Excel workbooks (`format: xlsx`)
+xlsx = [
+  "datacontract-cli[duckdb]",
+  "duckdb-extension-excel>=1.5.0,<1.6.0",
+]
+
 
 # The dataframe server type runs against a Spark session the caller passes to
 # `DataContract(spark=...)`, so pyspark is necessarily importable in that process
@@ -266,7 +272,7 @@ dbml = [
 ]
 
 # duckdb must stay in lockstep with the bundled duckdb-extension-* wheels
-# (httpfs/aws/azure) used for air-gapped installs, since those extensions are
+# (httpfs/aws/azure/excel) used for air-gapped installs, since those extensions are
 # built per duckdb version. Both are pinned to the 1.5.x line.
 duckdb = [
   "duckdb>=1.5.0,<1.6.0",
@@ -302,7 +308,7 @@ xml = [
 # the `all` meta-extra would pull a proprietary package into a default-ish
 # install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
-  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,clickhouse,hive,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle,xml]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,clickhouse,hive,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle,xml,xlsx]"
 ]
 
 # for development, we pin all libraries to an exact version
