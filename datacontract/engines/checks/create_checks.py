@@ -36,6 +36,7 @@ from datacontract.engines.checks.custom_quality_check import (
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect_by_name
 from datacontract.engines.checks.type_normalize import normalize_type_name
+from datacontract.engines.ibis.csv_values import csv_format, csv_type
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.server import get_server_type
@@ -403,6 +404,25 @@ def _to_schema_checks(
             )
             if nested_checks_possible:
                 checks.append(_nested_type_check(model, field, prop, physical=False))
+        elif uses_raw_view and server.format == "csv" and not nested and csv_type(prop) is not None:
+            # A CSV file holds text: each value must convert to the declared type, or this check fails, and the
+            # value is NULL for the other checks (see csv_values)
+            duckdb_type = csv_type(prop)
+            pattern = _get_logical_type_option(prop, "format") if duckdb_type in ("DATE", "TIMESTAMP", "TIME") else None
+            type_check = _invalid_count_check(
+                model,
+                field,
+                "field_type",
+                name=f"Check that field {field} has type {prop.logicalType or prop.physicalType}",
+                valid_type=duckdb_type,
+                valid_type_format=csv_format(prop, duckdb_type),
+                uses_raw_view=True,
+            )
+            if pattern and type_check.valid_type_format is None:
+                type_check.metric = MetricType.UNSUPPORTED
+                type_check.preset_result = "warning"
+                type_check.preset_reason = f"The format '{pattern}' cannot be checked; values are read as ISO 8601."
+            checks.append(type_check)
 
         if prop.required:
             checks.append(

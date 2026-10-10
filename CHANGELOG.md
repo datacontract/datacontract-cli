@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
 
 ### Fixed
+- `datacontract test`: a CSV value that does not match its column's type fails a type check of that column, instead of stopping the run with a conversion error; integers must be whole numbers, and dates, timestamps and times must be in their declared `format`
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)
 - `datacontract import sqlserver` and the physical type checks of `datacontract test` work on case-sensitive SQL Server databases such as Microsoft Fabric warehouses (#1705 @Octacon100)
 - `datacontract import`: Postgres and DuckDB `uuid` columns import as `string` with format `uuid` instead of without a logicalType

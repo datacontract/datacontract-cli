@@ -29,6 +29,7 @@ from datacontract.engines.checks.type_normalize import (
     schema_property_mismatch_reasons,
 )
 from datacontract.engines.ibis.connections.connect import connect_ibis
+from datacontract.engines.ibis.csv_values import csv_value
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
 from datacontract.engines.ibis.native_type import (
     fetch_native_types,
@@ -175,12 +176,13 @@ def execute_ibis_checks(
         # Unsupported server type/format already logged a warning check.
         return
 
-    by_model: dict[str, List[CheckSpec]] = defaultdict(list)
+    # The checks on the values of a file as text (a CSV value of the wrong type) read the {model}__raw__ view
+    by_model: dict[tuple[str, bool], List[CheckSpec]] = defaultdict(list)
     for spec in executable:
-        by_model[spec.model].append(spec)
+        by_model[(spec.model, spec.uses_raw_view and spec.metric == MetricType.INVALID_COUNT)].append(spec)
 
     try:
-        for model, model_specs in by_model.items():
+        for (model, raw), model_specs in by_model.items():
             _run_model(
                 run,
                 con,
@@ -189,8 +191,10 @@ def execute_ibis_checks(
                 data_contract,
                 server,
                 include_failed_samples,
-                row_filter=(model_filters or {}).get(model),
+                # The filter is written against the typed columns, not their text
+                row_filter=None if raw else (model_filters or {}).get(model),
                 schema_name=schema_name,
+                table=f"{model}__raw__" if raw else None,
             )
     finally:
         _maybe_disconnect(con, spark, duckdb_connection)
@@ -226,9 +230,10 @@ def _run_model(
     include_failed_samples: bool = False,
     row_filter: Optional[str] = None,
     schema_name: str = "all",
+    table: Optional[str] = None,
 ):
     try:
-        t = _resolve_table(con, model, _table_database(con, server))
+        t = _resolve_table(con, table or model, _table_database(con, server))
     except Exception as e:
         logger.warning("Could not read model '%s': %s", model, e)
         _fail_all(run, specs, ResultEnum.failed, f"Could not read model '{model}': {e}")
@@ -676,6 +681,8 @@ def _has_array_constraints(spec: CheckSpec) -> bool:
 def _valid_expr(t, col, dtype, spec: CheckSpec):
     """Boolean: a non-missing value satisfies all configured validity constraints."""
     conds = []
+    if spec.valid_type is not None:
+        conds.append(csv_value(col, spec.valid_type, spec.valid_type_format).notnull())
     if spec.valid_values is not None:
         conds.append(col.isin(spec.valid_values))
     if spec.valid_regex is not None:
@@ -732,6 +739,10 @@ def _constraint_info(spec: CheckSpec) -> dict:
     single entry; several are still handled for forward-compatibility.
     """
     info: dict = {}
+    if spec.valid_type is not None:
+        info["type"] = spec.valid_type
+    if spec.valid_type_format is not None:
+        info["format"] = spec.valid_type_format
     if spec.valid_values is not None:
         info["valid_values"] = spec.valid_values
     if spec.invalid_values:
