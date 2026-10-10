@@ -30,6 +30,7 @@ DEFAULT_DIMENSIONS: dict[str, str] = {
     "model_exists": "conformity",
     "field_is_present": "conformity",
     "model_no_additional_fields": "conformity",
+    "model_property_order": "conformity",
     "field_type": "conformity",
     "field_physical_type": "conformity",
     "field_nested_type": "conformity",

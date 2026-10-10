@@ -34,6 +34,7 @@ datacontract test --checks properties datacontract.yaml
 | `logicalTypeOptions.uniqueItems` | array property | Elements of the array are distinct |
 | `quality` | schema, property | See [Define your Quality Rules](./quality-rules/index.md) |
 | `customProperties` `additionalProperties: false` | schema | The data has no columns the schema does not declare |
+| `customProperties` `propertyOrder: strict` | schema | The declared columns are in the order of `properties` |
 
 A contract that uses all of them:
 
@@ -104,6 +105,8 @@ schema:
       - name: order_id
       - name: total
 ```
+
+The order of the columns is free too. For a file read by position, declare `propertyOrder: strict`: the columns the data has are then checked to be in the order of `properties`. A missing column is reported by its presence check, and a column the contract does not declare is skipped, so declare both custom properties for a file that has exactly the declared columns, in order.
 
 ## Types
 
@@ -232,7 +235,7 @@ These are common sources of confusion. They are valid ODCS and appear in exports
 
 - **`isNullable`** — the CLI reads `required`, not `isNullable`. Write `required: true` to assert that a column has no nulls.
 - **`logicalTypeOptions.format`** — never enforced, on any property. On a `string` property (`email`, `uuid`, `uri`, …) use `pattern` for an enforceable equivalent. On a `date`, `timestamp` or `time` property `format` holds a date pattern such as `yyyy-MM-dd`, and `pattern` is *not* an equivalent there: by the time a check runs, the column has already been parsed as a date, so there is no string left to match. Such a column is validated as a date, in whatever format the server stores it.
-- **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties` (except `additionalProperties` on a schema). `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
+- **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties` (except `additionalProperties` and `propertyOrder` on a schema). `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
 - **Schema-level attributes** other than `name`, `physicalName`, `properties`, and `quality`.
 - **Constraints and quality rules on nested properties, on some servers** — `required`, `unique`, `pattern`, `enum`, the other `logicalTypeOptions` and `quality` rules below the top level are checked on the `dataframe`, `databricks`, `trino` and `athena` servers and on every server read through DuckDB (`local`, `s3`, `gcs`, `azure`, `duckdb`, `iceberg`, `kafka`). On every other server, nested properties are only type-checked, and each of their constraints and quality rules is reported as a warning. On SAP HANA, only their quality rules are reported as warnings; their constraints are not checked.
 
