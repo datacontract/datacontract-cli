@@ -538,6 +538,24 @@ def export_spark(
 
 
 @export_app.command(
+    name="polars",
+    epilog="Example: datacontract export polars datacontract.yaml --output schema.py",
+)
+def export_polars(
+    location: location_arg = "datacontract.yaml",
+    output: output_option = None,
+    server: server_option = None,
+    schema_name: schema_name_option = "all",
+    schema: schema_option = None,
+    inline_references: inline_references_option = True,
+    debug: debug_option = None,
+):
+    """Export a data contract to Polars schemas."""
+    enable_debug_logging(debug)
+    _export(ExportFormat.polars, location, output, server, schema_name, schema, inline_references=inline_references)
+
+
+@export_app.command(
     name="sqlalchemy",
     epilog="Example: datacontract export sqlalchemy datacontract.yaml --output models.py",
 )

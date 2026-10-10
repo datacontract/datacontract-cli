@@ -174,6 +174,12 @@ exporter_factory.register_lazy_exporter(
 )
 
 exporter_factory.register_lazy_exporter(
+    name=ExportFormat.polars,
+    module_path="datacontract.export.polars_exporter",
+    class_name="PolarsExporter",
+)
+
+exporter_factory.register_lazy_exporter(
     name=ExportFormat.sqlalchemy,
     module_path="datacontract.export.sqlalchemy_exporter",
     class_name="SQLAlchemyExporter",
