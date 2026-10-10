@@ -109,6 +109,10 @@ Download a file and run the commands below against it to reproduce the output.
     <img src="/img/icons/odcs.svg" alt="" />
     <span><span className="doc-card-title">odcs</span><span className="doc-card-desc">ODCS format.</span></span>
   </a>
+  <a className="doc-card" href="/exports/polars">
+    <img src="/img/icons/custom.svg" alt="" />
+    <span><span className="doc-card-title">polars</span><span className="doc-card-desc">Polars schema.</span></span>
+  </a>
   <a className="doc-card" href="/exports/protobuf">
     <img src="/img/icons/custom.svg" alt="" />
     <span><span className="doc-card-title">protobuf</span><span className="doc-card-desc">Protobuf schema.</span></span>

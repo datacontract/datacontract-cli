@@ -1,0 +1,85 @@
+kind: DataContract
+apiVersion: v3.2.0
+id: polars-export
+name: Polars export
+version: 1.0.0
+status: active
+schema:
+- name: orders
+  physicalType: table
+  properties:
+  - name: order_id
+    physicalType: varchar(36)
+    logicalType: string
+    required: true
+  - name: order_timestamp
+    physicalType: timestamp_tz
+    logicalType: timestamp
+  - name: delivery_timestamp
+    physicalType: timestamp_ntz(9)
+    logicalType: timestamp
+  - name: order_total
+    physicalType: decimal(10,2)
+    logicalType: number
+  - name: quantity
+    physicalType: int32
+    logicalType: integer
+  - name: weight_kg
+    physicalType: float32
+    logicalType: number
+  - name: discount_rate
+    logicalType: number
+    logicalTypeOptions:
+      format: f32
+  - name: item_count
+    logicalType: integer
+    logicalTypeOptions:
+      format: u16
+  - name: tags
+    logicalType: array
+    items:
+      name: tag
+      logicalType: string
+  - name: line_items
+    logicalType: array
+    items:
+      name: line_item
+      logicalType: object
+      properties:
+      - name: sku
+        logicalType: string
+      - name: units
+        physicalType: smallint
+        logicalType: integer
+  - name: address
+    logicalType: object
+    properties:
+    - name: city
+      logicalType: string
+    - name: zipcode
+      physicalType: bigint
+      logicalType: integer
+- name: customers
+  physicalType: table
+  properties:
+  - name: id
+    physicalType: bigint unsigned
+    logicalType: integer
+  - name: attributes
+    physicalType: map<string,bigint>
+    logicalType: map
+    map:
+      key:
+        name: key
+        logicalType: string
+      value:
+        name: value
+        physicalType: bigint
+        logicalType: integer
+  - name: embedding
+    logicalType: vector
+    logicalTypeOptions:
+      dimensions: 3
+      elementType: float32
+  - name: signed_up_on
+    logicalType: date

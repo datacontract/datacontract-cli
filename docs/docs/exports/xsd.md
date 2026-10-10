@@ -1,5 +1,5 @@
 ---
-sidebar_position: 29
+sidebar_position: 30
 title: "Export: XML Schema"
 description: "Export a data contract to an XML Schema (XSD) for validating XML documents."
 ---
