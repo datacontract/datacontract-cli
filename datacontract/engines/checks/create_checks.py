@@ -63,6 +63,15 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _no_additional_properties(schema_object: SchemaObject) -> bool:
+    """Whether the schema declares, as in JSON Schema, that the data has no fields beyond its properties.
+
+    ODCS has no field for this, so it is the schema's custom property `additionalProperties: false`.
+    """
+    value = next((c.value for c in schema_object.customProperties or [] if c.property == "additionalProperties"), None)
+    return value is False or str(value).strip().lower() == "false"
+
+
 def is_check_types(server: Optional[Server]) -> bool:
     """Type checks only make sense where the data source carries real types."""
     if server is None:
@@ -624,6 +633,20 @@ def _to_schema_checks(
                 check.metric = MetricType.UNSUPPORTED
                 check.preset_result = "warning"
                 check.preset_reason = reason
+
+    if _no_additional_properties(schema_object):
+        checks.append(
+            CheckSpec(
+                key=f"{model}__no_additional_fields",
+                category="schema",
+                type="model_no_additional_fields",
+                name=f"Check that {model} has no fields the contract does not declare",
+                model=model,
+                metric=MetricType.FIELD_NAMES,
+                columns=[prop.physicalName or prop.name for prop in properties],
+                uses_raw_view=uses_raw_view,
+            )
+        )
 
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]

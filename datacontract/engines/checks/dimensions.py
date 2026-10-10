@@ -29,6 +29,7 @@ DEFAULT_DIMENSIONS: dict[str, str] = {
     # (the SAP HANA engine reports the missing table as a check of its own)
     "model_exists": "conformity",
     "field_is_present": "conformity",
+    "model_no_additional_fields": "conformity",
     "field_type": "conformity",
     "field_physical_type": "conformity",
     "field_nested_type": "conformity",
