@@ -63,6 +63,28 @@ def _get_logical_type_option(prop: SchemaProperty, key: str):
     return prop.logicalTypeOptions.get(key)
 
 
+def _schema_custom_property(schema_object: SchemaObject, name: str) -> str:
+    """The value of a custom property of the schema, as lowercase text; empty if it is not declared."""
+    value = next((c.value for c in schema_object.customProperties or [] if c.property == name), None)
+    return "" if value is None else str(value).strip().lower()
+
+
+def _no_additional_properties(schema_object: SchemaObject) -> bool:
+    """Whether the schema declares, as in JSON Schema, that the data has no fields beyond its properties.
+
+    ODCS has no field for this, so it is the schema's custom property `additionalProperties: false`.
+    """
+    return _schema_custom_property(schema_object, "additionalProperties") == "false"
+
+
+def _strict_property_order(schema_object: SchemaObject) -> bool:
+    """Whether the schema declares that the data has its fields in the order of its properties.
+
+    ODCS has no field for this, so it is the schema's custom property `propertyOrder: strict`.
+    """
+    return _schema_custom_property(schema_object, "propertyOrder") == "strict"
+
+
 def is_check_types(server: Optional[Server]) -> bool:
     """Type checks only make sense where the data source carries real types."""
     if server is None:
@@ -624,6 +646,34 @@ def _to_schema_checks(
                 check.metric = MetricType.UNSUPPORTED
                 check.preset_result = "warning"
                 check.preset_reason = reason
+
+    if _no_additional_properties(schema_object):
+        checks.append(
+            CheckSpec(
+                key=f"{model}__no_additional_fields",
+                category="schema",
+                type="model_no_additional_fields",
+                name=f"Check that {model} has no fields the contract does not declare",
+                model=model,
+                metric=MetricType.FIELD_NAMES,
+                columns=[prop.physicalName or prop.name for prop in properties],
+                uses_raw_view=uses_raw_view,
+            )
+        )
+
+    if _strict_property_order(schema_object):
+        checks.append(
+            CheckSpec(
+                key=f"{model}__property_order",
+                category="schema",
+                type="model_property_order",
+                name=f"Check that the fields of {model} are in the order of the contract",
+                model=model,
+                metric=MetricType.FIELD_NAMES,
+                columns=[prop.physicalName or prop.name for prop in properties],
+                uses_raw_view=uses_raw_view,
+            )
+        )
 
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]

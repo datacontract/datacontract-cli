@@ -32,6 +32,7 @@ class MetricType(str, Enum):
     FIELD_TYPE = "field_type"
     FIELD_PHYSICAL_TYPE = "field_physical_type"
     FIELD_NESTED_TYPE = "field_nested_type"
+    FIELD_NAMES = "field_names"
     FRESHNESS = "freshness"
     RETENTION = "retention"
     CUSTOM_SQL = "custom_sql"
@@ -46,6 +47,7 @@ METADATA_METRICS = {
     MetricType.FIELD_TYPE,
     MetricType.FIELD_PHYSICAL_TYPE,
     MetricType.FIELD_NESTED_TYPE,
+    MetricType.FIELD_NAMES,
 }
 
 
@@ -159,7 +161,8 @@ class CheckSpec:
     expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
     expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
-    columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys
+    # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys; FIELD_NAMES the declared fields
+    columns: Optional[List[str]] = None
 
     referenced_model: Optional[str] = None  # MISSING_REFERENCE_COUNT
     referenced_columns: Optional[List[str]] = None  # MISSING_REFERENCE_COUNT, pairwise with `columns`
@@ -170,7 +173,7 @@ class CheckSpec:
 
     seconds: Optional[int] = None  # FRESHNESS / RETENTION threshold in seconds
 
-    uses_raw_view: bool = False  # FIELD_PRESENT against the duckdb {model}__raw__ view
+    uses_raw_view: bool = False  # FIELD_PRESENT / FIELD_NAMES against the duckdb {model}__raw__ view
 
     # Preset result/reason for checks that are not executed (UNSUPPORTED).
     preset_result: Optional[str] = None

@@ -94,6 +94,9 @@ def _describe(spec: CheckSpec) -> str:
         return f"nested_types({spec.field}) match the contract"
     if spec.metric == MetricType.FIELD_PRESENT:
         return f"present({spec.field})"
+    if spec.metric == MetricType.FIELD_NAMES:
+        relation = "in the order" if spec.type == "model_property_order" else "in"
+        return f"fields({spec.model}) {relation} ({', '.join(spec.columns or [])})"
     if spec.threshold is not None:
         target = spec.field or spec.model
         return f"{spec.metric.value}({target}) {spec.threshold.describe()}"
@@ -336,6 +339,8 @@ def _run_model(
                 _run_missing_reference(run, con, server, t, columns, spec, schema_name)
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, columns, schema, spec)
+            elif spec.metric == MetricType.FIELD_NAMES:
+                _run_field_names(run, con, model, t, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
                 _run_type(run, schema, columns, spec, structured_types, native_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
@@ -889,6 +894,35 @@ def _run_present(run: Run, con, model: str, columns, schema, spec: CheckSpec):
         ResultEnum.passed if ok else ResultEnum.failed,
         None if ok else f"Required column '{spec.field}' is missing",
     )
+
+
+def _run_field_names(run: Run, con, model: str, t, spec: CheckSpec):
+    """The fields of the data against those the contract declares; names compare case-insensitively.
+
+    `model_no_additional_fields` fails on a field the contract does not declare; `model_property_order` on the
+    declared fields of the data being in another order than in the contract. A missing field is the presence
+    check's to report, an additional one the former's.
+    """
+    table = t
+    if spec.uses_raw_view:
+        try:
+            table = _resolve_table(con, f"{model}__raw__")
+        except Exception:
+            pass
+    _set_impl(run, spec.key, _describe(spec), "introspection")
+    declared = [name.lower() for name in spec.columns or []]
+    if spec.type == "model_property_order":
+        found = [name for name in table.columns if name.lower() in declared]
+        expected = sorted(found, key=lambda name: declared.index(name.lower()))
+        ok = found == expected
+        _set_diagnostics(run, spec.key, _diag(metric="field_names", expected_order=expected, actual_order=found))
+        reason = f"Fields in another order: expected {', '.join(expected)}; found {', '.join(found)}"
+    else:
+        additional = [name for name in table.columns if name.lower() not in declared]
+        ok = not additional
+        _set_diagnostics(run, spec.key, _diag(metric="field_names", additional_fields=additional))
+        reason = f"Fields not in the contract: {', '.join(additional)}"
+    set_result(run, spec.key, ResultEnum.passed if ok else ResultEnum.failed, None if ok else reason)
 
 
 def _run_type(
