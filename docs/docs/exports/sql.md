@@ -52,6 +52,31 @@ spark.conf.set("spark.databricks.delta.schema.typeCheck.enabled", "false")
 ```
 :::
 
+## Views
+
+A schema with `physicalType: view` is exported as a `CREATE OR REPLACE VIEW` (`CREATE OR ALTER VIEW` on SQL Server) that selects its properties from the tables listed in their `transformSourceObjects`. Snowflake and Databricks views keep the column and view descriptions as comments.
+
+```yaml
+schema:
+  - name: orders_enriched
+    physicalType: view
+    properties:
+      - name: order_id
+        transformSourceObjects: [bronze.orders]
+      - name: customer_name
+        transformSourceObjects: [bronze.customers]
+```
+
+```sql
+CREATE OR REPLACE VIEW orders_enriched AS
+SELECT
+  order_id,
+  customer_name
+FROM bronze.orders, bronze.customers;
+```
+
+Several source objects are listed in one `FROM` clause; add the join condition by hand. A view without any `transformSourceObjects` is exported as a table.
+
 ## ClickHouse
 
 ```bash

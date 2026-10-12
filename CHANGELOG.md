@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import postgres` imports primary and foreign keys from the Postgres catalog, also for SELECT-only roles (#1709 @vtulus)
 - `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
 - `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
+- `datacontract export sql`: export a schema with `physicalType: view` as a view that selects from its `transformSourceObjects` (#1031)
 
 ### Fixed
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)
