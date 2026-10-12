@@ -248,11 +248,12 @@ def import_postgres_from_connector(
             omitted_foreign_keys.setdefault(row["constraint_oid"], row)
     for row in omitted_foreign_keys.values():
         logger.warning(
-            "Omitting foreign key from %s.%s to %s.%s because the target table is not included in the imported contract.",
+            "Omitting foreign key from %s.%s to %s.%s because the target table is %s.",
             schema,
             row["table_name"],
             row["foreign_table_schema"],
             row["foreign_table_name"],
+            "in another schema" if row["foreign_table_schema"] != schema else "not included in the imported contract",
         )
 
     selected_foreign_key_rows = [
