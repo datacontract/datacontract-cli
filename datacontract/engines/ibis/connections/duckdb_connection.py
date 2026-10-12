@@ -1,10 +1,12 @@
 import logging
 import re
+import socket
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.config import Config
+from datacontract.config.settings import DEFAULT_CONNECT_TIMEOUT
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
@@ -507,8 +509,17 @@ def _load_extension(con, name: str, extra: str) -> None:
         ) from e
 
 
-def _attach_mysql(con, host: str, port: int, user: str, password: str, database: str | None) -> None:
+def _attach_mysql(
+    con,
+    host: str,
+    port: int,
+    user: str,
+    password: str,
+    database: str | None,
+    connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
+) -> None:
     """ATTACH MySQL as ``mysqldb``; the password goes in a secret, as DuckDB echoes the ATTACH string in its errors."""
+    _wait_for_mysql_greeting(host, port, connect_timeout)
     parts = [f"host={host}", f"port={port}", f"user={user}"]
     if database:
         parts.append(f"database={database}")
@@ -518,6 +529,38 @@ def _attach_mysql(con, host: str, port: int, user: str, password: str, database:
         con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql, SECRET mysqldb_password)")
     finally:
         con.execute("DROP TEMPORARY SECRET mysqldb_password")
+
+
+def _wait_for_mysql_greeting(host: str, port: int, timeout: int) -> None:
+    """Fail fast on a MySQL server that does not answer.
+
+    DuckDB's mysql extension has no connect timeout and waits forever for a server that
+    accepts the connection but never answers, e.g. on a wrong port. A MySQL server sends
+    its handshake as soon as the connection is open, so waiting for the first byte tells
+    the two apart. ``localhost`` is skipped: the MySQL client connects there over the
+    Unix socket, not TCP.
+    """
+    from datacontract.model.exceptions import DataContractException
+    from datacontract.model.run import ResultEnum
+
+    if host == "localhost":
+        return
+    try:
+        with socket.create_connection((host, port), timeout=timeout) as sock:
+            if sock.recv(1):
+                return
+            reason = f"MySQL server {host}:{port} closed the connection without a handshake."
+    except TimeoutError:
+        reason = f"MySQL server {host}:{port} did not answer within {timeout} seconds."
+    except OSError as e:
+        reason = f"Could not connect to MySQL server {host}:{port}: {e}"
+    raise DataContractException(
+        type="connection",
+        name="Connect to mysql",
+        result=ResultEnum.error,
+        reason=reason,
+        engine="datacontract-cli",
+    )
 
 
 def _sql_literal(value) -> str:
