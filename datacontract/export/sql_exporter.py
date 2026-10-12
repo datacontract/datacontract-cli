@@ -1,3 +1,5 @@
+import logging
+
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
@@ -113,6 +115,15 @@ def _to_sql_table(
     server_type: str = "snowflake",
     **kwargs,
 ) -> str:
+    if (model.physicalType or "").lower() == "view":
+        sources = list(dict.fromkeys(s for p in model.properties or [] for s in p.transformSourceObjects or []))
+        if sources:
+            return _to_sql_view(model_name, model, sources, server_type)
+        logging.getLogger(__name__).warning(
+            "Schema '%s' is a view without transformSourceObjects on its properties; exporting it as a table.",
+            model.name,
+        )
+
     if server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
@@ -181,6 +192,33 @@ def _to_sql_table(
     elif server_type == "snowflake" and model.description is not None:
         result += f" COMMENT='{_escape(model.description)}'"
     result += ";\n"
+    return result
+
+
+def _to_sql_view(model_name: str, model: SchemaObject, sources: list[str], server_type: str) -> str:
+    column_names = [prop.physicalName or prop.name for prop in model.properties]
+    if server_type == "sqlserver":
+        result = f"CREATE OR ALTER VIEW {model_name}"
+    elif server_type == "clickhouse":
+        result = f"CREATE OR REPLACE VIEW `{model_name}`"
+    else:
+        result = f"CREATE OR REPLACE VIEW {model_name}"
+
+    # Snowflake and Databricks take column comments in the view's column list
+    if server_type in ("snowflake", "databricks"):
+        quote = '"' if server_type == "databricks" else "'"
+        columns = []
+        for prop, column_name in zip(model.properties, column_names):
+            if prop.description is not None:
+                column_name += f" COMMENT {quote}{_escape(prop.description)}{quote}"
+            columns.append(f"  {column_name}")
+        result += " (\n" + ",\n".join(columns) + "\n)"
+        if model.description is not None:
+            separator = "=" if server_type == "snowflake" else " "
+            result += f" COMMENT{separator}{quote}{_escape(model.description)}{quote}"
+
+    result += " AS\nSELECT\n" + ",\n".join(f"  {c}" for c in column_names)
+    result += "\nFROM " + ", ".join(sources) + ";\n"
     return result
 
 

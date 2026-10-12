@@ -144,3 +144,68 @@ CREATE OR REPLACE TABLE datacontract_staging.orders_latest.line_items (
 ) COMMENT "A single article that is part of an order.";
 """.strip()
     assert actual == expected
+
+
+VIEW_CONTRACT = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-view
+name: orders-view
+version: 1.0.0
+status: active
+schema:
+  - name: orders_enriched
+    physicalType: view
+    description: One row per order with its customer.
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        primaryKey: true
+        description: Unique identifier of the order.
+        transformSourceObjects:
+          - bronze.orders
+      - name: customer_name
+        logicalType: string
+        transformSourceObjects:
+          - bronze.customers
+"""
+
+
+def test_to_sql_ddl_view_postgres():
+    actual = DataContract(data_contract_str=VIEW_CONTRACT).export("sql", sql_server_type="postgres")
+    expected = """
+-- Data Contract: orders-view
+-- SQL Dialect: postgres
+CREATE OR REPLACE VIEW orders_enriched AS
+SELECT
+  order_id,
+  customer_name
+FROM bronze.orders, bronze.customers;
+""".strip()
+    assert actual == expected
+
+
+def test_to_sql_ddl_view_snowflake():
+    actual = DataContract(data_contract_str=VIEW_CONTRACT).export("sql", sql_server_type="snowflake")
+    expected = """
+-- Data Contract: orders-view
+-- SQL Dialect: snowflake
+CREATE OR REPLACE VIEW orders_enriched (
+  order_id COMMENT 'Unique identifier of the order.',
+  customer_name
+) COMMENT='One row per order with its customer.' AS
+SELECT
+  order_id,
+  customer_name
+FROM bronze.orders, bronze.customers;
+""".strip()
+    assert actual == expected
+
+
+def test_to_sql_ddl_view_without_source_objects_is_a_table():
+    contract = VIEW_CONTRACT.replace("        transformSourceObjects:\n          - bronze.orders\n", "").replace(
+        "        transformSourceObjects:\n          - bronze.customers\n", ""
+    )
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
+    assert "CREATE TABLE orders_enriched (" in actual
