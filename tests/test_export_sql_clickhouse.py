@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from datacontract.data_contract import DataContract
 
 
@@ -32,6 +34,15 @@ ENGINE = MergeTree()
 COMMENT 'Event tracking data.';
 """.strip()
     assert actual == expected
+
+
+def test_to_sql_ddl_clickhouse_escapes_comment_literals():
+    fixture = Path("fixtures/clickhouse/datacontract.yaml").read_text()
+    fixture = fixture.replace("Total amount in cents.", "The extractor's \\ amount.")
+
+    actual = DataContract(data_contract_str=fixture).export("sql", sql_server_type="clickhouse")
+
+    assert "COMMENT 'The extractor\\'s \\\\ amount.'" in actual
 
 
 def test_to_sql_ddl_clickhouse_with_custom_engine():

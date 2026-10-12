@@ -142,7 +142,7 @@ def _to_sql_table(
             else:
                 col += f"Nullable({type_str})"
             if prop.description is not None:
-                col += f" COMMENT '{_escape(prop.description)}'"
+                col += f" COMMENT '{_escape_clickhouse(prop.description)}'"
         else:
             col = f"  {column_name} {type_str}"
             if prop.required:
@@ -175,7 +175,7 @@ def _to_sql_table(
         if order_by:
             result += f"\nORDER BY ({order_by})"
         if model.description is not None:
-            result += f"\nCOMMENT '{_escape(model.description)}'"
+            result += f"\nCOMMENT '{_escape_clickhouse(model.description)}'"
     elif server_type == "databricks" and model.description is not None:
         result += f' COMMENT "{_escape(model.description)}"'
     elif server_type == "snowflake" and model.description is not None:
@@ -190,6 +190,12 @@ def _get_clickhouse_order_by(pk_props: list) -> str | None:
         return None
     sorted_pk = sorted(pk_props, key=lambda p: (p.primaryKeyPosition is None, p.primaryKeyPosition))
     return ", ".join(p.physicalName or p.name for p in sorted_pk)
+
+
+def _escape_clickhouse(text: str | None) -> str | None:
+    if text is None:
+        return None
+    return text.replace("\\", "\\\\").replace("'", "\\'")
 
 
 def _escape(text: str | None) -> str | None:
