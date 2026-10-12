@@ -43,8 +43,15 @@ from datacontract.model.server import get_server_type
 logger = logging.getLogger(__name__)
 
 _FILE_SERVER_TYPES = {"local", "s3", "gcs", "azure"}
-# Spark and every server read through DuckDB
-_NESTED_CHECK_SERVER_TYPES = {"dataframe", "databricks", "duckdb", "iceberg", "kafka"} | _FILE_SERVER_TYPES
+_NESTED_CHECK_SERVER_TYPES = {
+    "dataframe",
+    "databricks",
+    "duckdb",
+    "iceberg",
+    "kafka",
+    "trino",
+    "athena",
+} | _FILE_SERVER_TYPES
 
 
 # ---------------------------------------------------------------------------

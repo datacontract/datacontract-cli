@@ -803,6 +803,8 @@ def _azure_cli_access_token() -> bytes:
 
 
 def _connect_athena(ibis, server: Server, config: Config):
+    from datacontract.engines.ibis.connections.athena_patch import apply_athena_compatibility_patch
+
     # regionName is a contract value, so the variable still wins over it
     credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName, config), config)
     schema = config.get_athena_schema() or server.schema_
@@ -839,7 +841,9 @@ def _connect_athena(ibis, server: Server, config: Config):
     # Optional data source / catalog; pyathena defaults it to `awsdatacatalog`.
     if catalog:
         kwargs["catalog_name"] = catalog
-    return ibis.athena.connect(**kwargs)
+    con = ibis.athena.connect(**kwargs)
+    apply_athena_compatibility_patch(con)
+    return con
 
 
 def _connect_trino(ibis, server: Server, config: Config):
