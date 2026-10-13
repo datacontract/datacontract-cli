@@ -389,7 +389,11 @@ def property_from_type_string(name: str, type_string: str) -> SchemaProperty:
             for argument in arguments:
                 field_name, _, field_type = argument.partition(":")
                 if not field_type:
-                    field_name, _, field_type = argument.partition(" ")
+                    # Trino reports a name with spaces unquoted: `row(first name varchar(20))`
+                    match = re.fullmatch(
+                        r"(.+?)\s+((?:\w+\s*[(<].*[)>]|\w+)(?:\s+with(?:out)?\s+time\s+zone)?)", argument, re.S
+                    )
+                    field_name, field_type = match.groups() if match else (argument, "")
                 properties.append(property_from_type_string(field_name.strip().strip('`"'), field_type.strip()))
             return create_property(name=name, logical_type="object", physical_type=text, properties=properties)
     return create_property(name=name, logical_type=map_sql_type_to_logical(text), physical_type=text)

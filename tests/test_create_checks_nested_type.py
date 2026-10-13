@@ -25,6 +25,7 @@ from datacontract.engines.ibis.ibis_check_execute import (
     build_check_stubs,
 )
 from datacontract.engines.ibis.snowflake_structured_types import _to_property
+from datacontract.imports.odcs_helper import property_from_type_string
 from datacontract.model.run import ResultEnum, Run
 
 
@@ -325,6 +326,39 @@ def test_a_logical_keyword_in_the_physical_type_resolves_to_the_native_type():
     # decides what it names: 'string' is Snowflake's VARCHAR, 'boolean' is not.
     assert _run_snowflake(_sic_code(code="string"), "primary_sic_code.code").result == ResultEnum.passed
     assert _run_snowflake(_sic_code(code="boolean"), "primary_sic_code.code").result == ResultEnum.failed
+
+
+def test_a_nested_name_with_spaces_resolves_in_a_full_type_string():
+    # Trino reports such names unquoted
+    native = "row(first name varchar(20), ts timestamp(3) with time zone)"
+    prop = SchemaProperty(
+        name="p",
+        physicalType="row",
+        properties=[
+            SchemaProperty(name="first name", physicalType="varchar(20)"),
+            SchemaProperty(name="ts", physicalType="timestamp(3) with time zone"),
+        ],
+    )
+    specs = _checks(prop, "trino")
+    run = Run.create_run()
+    run.checks = build_check_stubs(specs)
+    con = SimpleNamespace(compiler=SimpleNamespace(dialect="trino"))
+    for field in ("p.first name", "p.ts"):
+        spec = _type_check(specs, field)
+        _run_physical_type(
+            run,
+            con,
+            Server(server="s", type="trino"),
+            None,
+            {"p": native},
+            spec,
+            {"p": property_from_type_string("p", native)},
+        )
+
+    assert {c.field: c.result for c in run.checks if c.type == "field_physical_type" and c.field != "p"} == {
+        "p.first name": ResultEnum.passed,
+        "p.ts": ResultEnum.passed,
+    }
 
 
 def test_a_nested_number_does_not_match_a_float_column():
