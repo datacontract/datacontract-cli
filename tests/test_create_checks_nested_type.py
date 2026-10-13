@@ -4,8 +4,10 @@ A property's own type line leaves out its properties, array items and map key
 and value, which get lines of their own.
 """
 
+import textwrap
 from types import SimpleNamespace
 
+import duckdb
 import ibis
 from open_data_contract_standard.model import (
     MapDefinition,
@@ -15,6 +17,7 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.data_contract import DataContract
 from datacontract.engines.checks.check_spec import MetricType
 from datacontract.engines.checks.create_checks import create_checks
 from datacontract.engines.ibis.ibis_check_execute import (
@@ -195,6 +198,27 @@ def test_no_lines_for_the_items_of_a_scalar():
     assert _lines(_checks(prop, "local", fmt="delta")) == {("weird", "field_is_present"), ("weird", "field_type")}
 
 
+_UNTYPED_CUSTOMER = SchemaProperty(name="customer", properties=[SchemaProperty(name="email", logicalType="string")])
+
+
+def test_properties_imply_an_object_type_line():
+    checks = _checks(_UNTYPED_CUSTOMER, "local", fmt="delta")
+
+    assert ("customer.email", "field_type") in _lines(checks)
+    implied = _type_check(checks, "customer")
+    assert (implied.name, implied.implied_type) == ("Check that field customer has type object", True)
+
+
+def test_items_and_a_map_block_imply_their_types():
+    tags = SchemaProperty(name="tags", items=SchemaProperty(logicalType="string"))
+    attrs = SchemaProperty(name="attrs", map=MapDefinition(value=SchemaProperty(logicalType="integer")))
+
+    assert _type_check(_checks(tags, "local", fmt="delta"), "tags").expected_type_label == "array"
+    assert ("tags[]", "field_type") in _lines(_checks(tags, "local", fmt="delta"))
+    assert _type_check(_checks(attrs, "local", fmt="delta"), "attrs").expected_type_label == "map"
+    assert ("attrs[value]", "field_type") in _lines(_checks(attrs, "local", fmt="delta"))
+
+
 # ---------------------------------------------------------------------------
 # execution against the types ibis reflects
 # ---------------------------------------------------------------------------
@@ -321,6 +345,24 @@ def test_the_properties_of_a_column_that_is_not_an_object_warn():
     code = checks[("primary_sic_code.code", "field_type")]
     assert code.result == ResultEnum.warning
     assert code.reason == "'primary_sic_code' is not an object; skipping the check"
+
+
+def test_an_implied_object_fails_on_a_scalar():
+    assert _run(_UNTYPED_CUSTOMER, "string")[("customer", "field_type")].result == ResultEnum.failed
+
+
+def test_json_holds_an_implied_type():
+    checks = _run(_UNTYPED_CUSTOMER, "json")
+
+    assert checks[("customer", "field_type")].result == ResultEnum.passed
+    assert checks[("customer.email", "field_type")].result == ResultEnum.warning
+
+
+def test_nested_lines_inside_an_unknown_type_warn_as_untyped():
+    # e.g. a Trino row whose field names ibis cannot parse
+    checks = _run(_SIC_CODE, ibis.expr.datatypes.unknown)
+
+    assert checks[("primary_sic_code.code", "field_type")].reason.startswith("'primary_sic_code' holds untyped data")
 
 
 def test_a_maps_key_and_value_types_are_checked_on_their_own_lines():
@@ -552,3 +594,87 @@ def test_a_nested_physical_type_falls_back_to_the_logical_type_when_the_catalog_
     _run_physical_type(run, athena, Server(server="s", type="athena"), schema, None, spec, None)
 
     assert next(c for c in run.checks if c.key == spec.key).result == ResultEnum.passed
+
+
+# ---------------------------------------------------------------------------
+# a structure the parent cannot hold fails the parent
+# ---------------------------------------------------------------------------
+def _test_duckdb(tmp_path, ddl: str, properties: str):
+    database = str(tmp_path / "db.duckdb")
+    con = duckdb.connect(database)
+    con.execute(ddl)
+    con.close()
+    contract = f"""
+apiVersion: v3.1.0
+kind: DataContract
+id: x
+version: 1.0.0
+status: active
+servers:
+  - server: d
+    type: duckdb
+    database: {database}
+schema:
+  - name: t
+    properties:
+{textwrap.indent(textwrap.dedent(properties).strip(), "      ")}
+"""
+    run = DataContract(data_contract_str=contract).test()
+    return {(c.field, c.type): c for c in run.checks}
+
+
+def test_a_map_declared_as_an_object_fails_its_own_type_line(tmp_path):
+    checks = _test_duckdb(
+        tmp_path,
+        "CREATE TABLE t AS SELECT MAP {'a': 1} AS attrs",
+        """
+        - name: attrs
+          logicalType: object
+          properties:
+            - name: a
+              logicalType: integer
+              required: true
+        """,
+    )
+
+    assert (checks[("attrs", "field_type")].result, checks[("attrs", "field_type")].reason) == (
+        ResultEnum.failed,
+        "'attrs' is a map, not an object. Declare 'attrs' as a map to check its key and value.",
+    )
+    for check_type in ("field_is_present", "field_type", "field_required"):
+        assert checks[("attrs.a", check_type)].result == ResultEnum.warning
+
+
+def test_a_parent_that_fails_on_its_own_keeps_its_reason(tmp_path):
+    checks = _test_duckdb(
+        tmp_path,
+        "CREATE TABLE t AS SELECT 'x' AS tags",
+        """
+        - name: tags
+          logicalType: array
+          items:
+            logicalType: string
+            logicalTypeOptions:
+              maxLength: 5
+        """,
+    )
+
+    assert checks[("tags", "field_type")].reason == "column: expected type 'array' but got 'string'"
+    assert checks[("tags[]", "field_max_length")].reason == "'tags' is not an array; skipping the check"
+
+
+def test_data_rules_inside_json_still_run(tmp_path):
+    checks = _test_duckdb(
+        tmp_path,
+        """CREATE TABLE t AS SELECT '{"other": 1}'::JSON AS payload""",
+        """
+        - name: payload
+          properties:
+            - name: code
+              logicalType: string
+              required: true
+        """,
+    )
+
+    assert checks[("payload", "field_type")].result == ResultEnum.passed
+    assert checks[("payload.code", "field_required")].result == ResultEnum.failed

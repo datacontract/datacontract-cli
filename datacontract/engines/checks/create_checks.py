@@ -89,7 +89,17 @@ def quality_definition_yaml(quality: DataQuality) -> str:
 
 
 def _property_type(prop: SchemaProperty) -> str:
-    return normalize_type_name(prop.physicalType or prop.logicalType)
+    return normalize_type_name(prop.physicalType or prop.logicalType or _implied_type(prop))
+
+
+def _implied_type(prop: SchemaProperty) -> str | None:
+    """The type a property that declares none implies by its ``properties``, ``items`` or ``map`` block."""
+    if prop.logicalType or prop.physicalType:
+        return None
+    implied = [
+        kind for kind, declared in (("object", prop.properties), ("array", prop.items), ("map", prop.map)) if declared
+    ]
+    return implied[0] if len(implied) == 1 else None
 
 
 def _iter_property_paths(
@@ -312,8 +322,8 @@ def _to_schema_checks(
                 )
             )
 
-        # Properties, array items and a map's key and value get type lines of their own
         prop_type = _property_type(prop)
+        implied_type = _implied_type(prop)
         own_type = prop
         if prop_type == "array":
             own_type = prop.model_copy(update={"items": None})
@@ -343,8 +353,8 @@ def _to_schema_checks(
                     expected_schema_property=own_type,
                 )
             )
-        elif check_types and prop.logicalType is not None:
-            label = prop.logicalType or ""
+        elif check_types and (prop.logicalType is not None or implied_type):
+            label = prop.logicalType or implied_type or ""
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_type",
@@ -356,7 +366,8 @@ def _to_schema_checks(
                     metric=MetricType.FIELD_TYPE,
                     expected_category=label,
                     expected_type_label=label,
-                    expected_schema_property=own_type,
+                    expected_schema_property=own_type.model_copy(update={"logicalType": label}),
+                    implied_type=implied_type is not None,
                 )
             )
 

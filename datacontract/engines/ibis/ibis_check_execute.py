@@ -22,6 +22,7 @@ from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.type_normalize import (
+    UNKNOWN_LOGICAL_TYPE,
     normalize_type_name,
     schema_property_matches,
     schema_property_mismatch_reason,
@@ -298,6 +299,11 @@ def _run_model(
     for spec in specs:
         try:
             named = None  # set for count-style metrics that get batched
+            if spec.metric in (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT, MetricType.DUPLICATE_COUNT):
+                dtype = _walk_dtype(schema, spec.field)
+                if isinstance(dtype, _Unchecked) and dtype.mismatched:
+                    set_result(run, spec.key, ResultEnum.warning, dtype)
+                    continue
             if spec.metric == MetricType.ROW_COUNT:
                 named = t.count().name(spec.key)
             elif spec.metric == MetricType.MISSING_COUNT:
@@ -362,6 +368,18 @@ def _run_model(
 
     if agg_exprs:
         _run_aggregation(run, t, agg_exprs)
+
+    # The fix for a structure the parent cannot hold starts at the parent's type, so its line fails
+    type_lines = {
+        spec.field: spec.key for spec in specs if spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE)
+    }
+    keys = {spec.key for spec in specs}
+    for check in run.checks:
+        mismatched = getattr(check.reason, "mismatched", None)
+        if check.key in keys and mismatched in type_lines:
+            parent = next(c for c in run.checks if c.key == type_lines[mismatched])
+            if parent.result != ResultEnum.failed:
+                set_result(run, parent.key, ResultEnum.failed, check.reason.mismatch)
 
     if include_failed_samples:
         _collect_failed_samples(run, t, unfiltered_t, columns, schema, model, specs, data_contract, server)
@@ -939,7 +957,11 @@ def _run_type(
             actual=actual_label,
         ),
     )
-    if schema_property_matches(spec.expected_schema_property, actual_prop):
+    # The contract claims a structure, not a type, which json or a variant may hold
+    dynamic = (
+        actual_prop.logicalType == UNKNOWN_LOGICAL_TYPE and normalize_type_name(actual_prop.physicalType) == "object"
+    )
+    if schema_property_matches(spec.expected_schema_property, actual_prop) or (spec.implied_type and dynamic):
         set_result(run, spec.key, ResultEnum.passed, None)
     else:
         reason = schema_property_mismatch_reason(spec.expected_schema_property, actual_prop)
@@ -1342,6 +1364,11 @@ def _struct_field_name(value, name: str) -> str:
 class _Unchecked(str):
     """Why the type at a path cannot be checked, which the check reports as a warning."""
 
+    # The path whose real type cannot hold the structure the contract declares below it,
+    # and the reason its type line fails with
+    mismatched: Optional[str] = None
+    mismatch: Optional[str] = None
+
 
 def _resolve_dtype(schema, field: str):
     dtype = _walk_dtype(schema, field)
@@ -1350,8 +1377,8 @@ def _resolve_dtype(schema, field: str):
 
 def _walk_dtype(schema, field: str):
     """The ibis dtype at ``field``; ``None`` when it does not exist, ``_Unchecked`` when it is
-    inside untyped data (json, or a map standing in for an untyped object) or under a parent
-    that is not the object, array or map the path steps through."""
+    inside untyped data (json, an unknown type, or a map standing in for an untyped object) or
+    under a parent that is not the object, array or map the path steps through."""
     if field is None:
         return None
     dtype = None
@@ -1362,12 +1389,12 @@ def _walk_dtype(schema, field: str):
             fields = schema
         elif dtype.is_struct():
             fields = dtype.fields
-        elif dtype.is_json() or (dtype.is_map() and dtype.value_type.is_json()):
+        elif dtype.is_json() or dtype.is_unknown() or (dtype.is_map() and dtype.value_type.is_json()):
             return _untyped_data(path)
         elif dtype.is_map():
             return _map_declared_as_object(path)
         else:
-            return _not_a(path, "an object")
+            return _structure_mismatch(path, "is not an object")
         # Backends that report uppercase names (Snowflake, Oracle, Databricks)
         # must still match a contract that spells the field in lower case.
         actual = name if name in fields else next((k for k in fields.keys() if k.lower() == name.lower()), None)
@@ -1377,15 +1404,15 @@ def _walk_dtype(schema, field: str):
         path = f"{path}.{name}" if path else name
         # `items[]` names the element type, `attrs[key]` the key type, not the array's or map's own type.
         for hop in _HOP.findall(part):
-            if dtype.is_json():
+            if dtype.is_json() or dtype.is_unknown():
                 return _untyped_data(path)
             if hop:
                 if not dtype.is_map():
-                    return _not_a(path, "a map")
+                    return _structure_mismatch(path, "is not a map")
                 dtype = dtype.key_type if hop == "key" else dtype.value_type
             else:
                 if not dtype.is_array():
-                    return _not_a(path, "an array")
+                    return _structure_mismatch(path, "is not an array")
                 dtype = dtype.value_type
             path = f"{path}[{hop}]"
     return dtype
@@ -1413,7 +1440,7 @@ def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: s
                     return _untyped_data(path)
                 if normalize_type_name(node.logicalType) == "map":
                     return _map_declared_as_object(path)
-                return _not_a(path, "an object")
+                return _structure_mismatch(path, "is not an object")
             node = next((child for child in node.properties if (child.name or "").lower() == name.lower()), None)
             if node is None:
                 return None
@@ -1424,7 +1451,11 @@ def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: s
             else:
                 child = node.items
             if child is None:
-                return _untyped_data(path) if _untyped(node) else _not_a(path, "a map" if hop else "an array")
+                return (
+                    _untyped_data(path)
+                    if _untyped(node)
+                    else _structure_mismatch(path, "is not a map" if hop else "is not an array")
+                )
             node = child
             path = f"{path}[{hop}]"
     return node, node.physicalType
@@ -1450,13 +1481,16 @@ def _untyped_data(path: str) -> _Unchecked:
 
 
 def _map_declared_as_object(path: str) -> _Unchecked:
-    return _Unchecked(
-        f"'{path}' is a map, not an object; skipping the check. Declare '{path}' as a map to check its key and value."
+    return _structure_mismatch(
+        path, "is a map, not an object", f". Declare '{path}' as a map to check its key and value."
     )
 
 
-def _not_a(path: str, kind: str) -> _Unchecked:
-    return _Unchecked(f"'{path}' is not {kind}; skipping the check")
+def _structure_mismatch(path: str, mismatch: str, advice: str = "") -> _Unchecked:
+    reason = _Unchecked(f"'{path}' {mismatch}; skipping the check{advice}")
+    reason.mismatched = path
+    reason.mismatch = f"'{path}' {mismatch}{advice}"
+    return reason
 
 
 def _table_database(con, server: Optional[Server]) -> Optional[str]:
