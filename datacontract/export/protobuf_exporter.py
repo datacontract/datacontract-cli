@@ -121,7 +121,7 @@ def _is_enum_field(prop: SchemaProperty) -> bool:
     Returns True if the field declares allowed values: an ODCS ``enum`` or a non-empty
     "enumValues" custom property (name -> number).
     """
-    return bool(prop.enum) or bool(_get_config_value(prop, "enumValues"))
+    return any(entry.value is not None for entry in prop.enum or []) or bool(_get_config_value(prop, "enumValues"))
 
 
 def _get_enum_name(prop: SchemaProperty) -> str:
@@ -148,6 +148,8 @@ def _get_enum_values(prop: SchemaProperty) -> dict:
     if prop.enum:
         result = {}
         for position, entry in enumerate(prop.enum):
+            if entry.value is None:
+                continue
             number = int(entry.id) if entry.id is not None and str(entry.id).lstrip("-").isdigit() else position
             result[str(entry.value)] = number
         return result
