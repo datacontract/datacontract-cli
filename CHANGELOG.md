@@ -12,10 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: a property with `properties`, `items` or a `map` block but no type is checked as an object, array or map
 - `datacontract test`: a property whose data cannot hold the structure declared inside it fails its own type check
 - `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays, structs and maps get their base type as `physicalType`, their items, fields, keys and values keep their own
+- A `null` in the `enum` of a required property is a validation error
 
 ### Fixed
 - `datacontract test`: a declared `physicalType: json`, `jsonb` or `variant` matches a json column on servers whose native types are not read
 - `datacontract test`: rules on the key or value of a map are reported as warnings instead of being ignored
+- `datacontract export jsonschema` and `datacontract test` on JSON files allow `null` for an optional property with an `enum`
+- `datacontract test`: a `null` among an `enum` or `validValues` no longer lets every other value pass
 
 ## [1.2.5] - 2026-10-12
 

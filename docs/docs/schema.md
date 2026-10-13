@@ -104,6 +104,8 @@ ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be
 
 Property-level `enum` entries must have distinct values, even if their labels, IDs, or descriptions differ. Lint checks this throughout properties, array items, and map keys and values. JSON numbers compare by value (`1` equals `1.0`); strings and booleans remain distinct from numbers.
 
+An `enum` constrains only values that are present, whether a value may be missing is up to `required`. Therefore, `null` should not be part of an `enum`.
+
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
 :::note

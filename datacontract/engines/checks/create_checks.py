@@ -560,7 +560,7 @@ def _to_schema_checks(
             )
 
         enum_values = get_enum_values(prop, include_quality_rule=False)
-        if enum_values:
+        if enum_values is not None:
             checks.append(
                 _invalid_count_check(
                     model,
@@ -1101,6 +1101,8 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
     if metric == "invalidValues":
         args = quality.arguments or {}
         valid_values = args.get("validValues")
+        if valid_values is not None:
+            valid_values = [value for value in valid_values if value is not None]
         pattern = args.get("pattern")
         return [
             _invalid_count_check(

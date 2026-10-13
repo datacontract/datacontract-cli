@@ -308,14 +308,11 @@ def _logical_type_option_checks(
             )
 
     enum_values = get_enum_values(prop, include_quality_rule=False)
-    if enum_values is not None and len(enum_values) > 0 and selects(selection, "field_enum"):
-        # NULL inside NOT IN would make even non-enum values evaluate to UNKNOWN.
-        # Required checks handle missing values independently of the allowed set.
-        non_null_values = [value for value in enum_values if value is not None]
-        placeholders = ", ".join("?" for _ in non_null_values)
+    if enum_values is not None and selects(selection, "field_enum"):
+        placeholders = ", ".join("?" for _ in enum_values)
         predicate = (
             f"{quote_identifier(field_name)} NOT IN ({placeholders})"
-            if non_null_values
+            if enum_values
             else f"{quote_identifier(field_name)} IS NOT NULL"
         )
         checks.append(
@@ -326,7 +323,7 @@ def _logical_type_option_checks(
                 table_name=table_name,
                 field_name=field_name,
                 sql=(f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} WHERE {predicate}"),
-                params=non_null_values,
+                params=enum_values,
                 name=f"Check that field {field_name} only contains enum values {enum_values}",
                 failure_reason="Found {value} values outside the enum.",
                 skip_reason=skip_reason,
