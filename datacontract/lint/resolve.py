@@ -54,7 +54,28 @@ class _LaxOpenDataContractStandard(OpenDataContractStandard):
 class _SafeLoaderNoTimestamp(yaml.SafeLoader):
     """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
 
-    pass
+    def construct_mapping(self, node, deep=False):
+        # Check only explicit keys before SafeLoader expands YAML merge keys.
+        # An explicit override of an inherited anchor value is valid YAML.
+        seen = set()
+        for key_node, _ in node.value:
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                continue
+            key = self.construct_object(key_node, deep=deep)
+            try:
+                duplicate = key in seen
+                seen.add(key)
+            except TypeError:
+                # Let SafeLoader report its usual unhashable-key error.
+                return super().construct_mapping(node, deep=deep)
+            if duplicate:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+        return super().construct_mapping(node, deep=deep)
 
 
 # Remove the timestamp implicit resolver so dates like 2022-01-15 stay as strings

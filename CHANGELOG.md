@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Reject duplicate YAML mapping keys instead of silently overwriting contract fields.
+
 ## [1.2.5] - 2026-10-12
 
 ### Changed
