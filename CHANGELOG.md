@@ -8,23 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- `datacontract lint --all-errors`: unknown fields are warnings instead of errors, unless a custom `--schema` rejects them
 - `datacontract test`: every nested property, array item and map key and value gets its own type check, with a nested `physicalType` checked on Athena, Trino, Databricks, BigQuery, Snowflake, ClickHouse and Hive
 - `datacontract test`: a property with `properties`, `items` or a `map` block but no type is checked as an object, array or map
 - `datacontract test`: a property whose data cannot hold the structure declared inside it fails its own type check
 - `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays, structs and maps get their base type as `physicalType`, their items, fields, keys and values keep their own
 
-### Added
-- `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
-- `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
-
 ### Fixed
 - `datacontract test`: a declared `physicalType: json`, `jsonb` or `variant` matches a json column on servers whose native types are not read
 - `datacontract test`: rules on the key or value of a map are reported as warnings instead of being ignored
+
+## [1.2.5] - 2026-10-12
+
+### Changed
+- `datacontract lint --all-errors`: unknown fields are warnings instead of errors, unless a custom `--schema` rejects them
+
+### Added
+- `datacontract import postgres` imports primary and foreign keys from the Postgres catalog, also for SELECT-only roles (#1709 @vtulus)
+- `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
+- `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
+- `DATACONTRACT_CONNECT_TIMEOUT` (default 30 seconds): `datacontract test` on Postgres, Redshift, MySQL and SQL Server fails with a connection error instead of waiting forever for a server that does not answer, e.g. on a wrong port
+
+### Fixed
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)
 - `datacontract import sqlserver` and the physical type checks of `datacontract test` work on case-sensitive SQL Server databases such as Microsoft Fabric warehouses (#1705 @Octacon100)
 - `datacontract import`: Postgres and DuckDB `uuid` columns import as `string` with format `uuid` instead of without a logicalType
-- `datacontract dbt sync`: generated composite primary key, length, pattern and range tests work on Databricks, BigQuery and Snowflake (#1713 @Pezhman-Mazaheri)
+- `datacontract dbt sync`: generated composite primary key, length, pattern and range tests work on Databricks, BigQuery and Snowflake (#1713)
+- `datacontract api`: the endpoints run in a thread pool, so a slow or hanging `POST /test` no longer blocks every other request to the server
 
 ## [1.2.4] - 2026-10-06
 

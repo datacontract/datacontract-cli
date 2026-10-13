@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.2.4"
+version = "1.2.5"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -49,7 +49,7 @@ requires-python = ">=3.10,<3.15"
 dependencies = [
   "typer>=0.18.0,<0.28",
   "click>=8.1.0,<9.0.0",
-  "pydantic>=2.8.2,<2.14.0",
+  "pydantic>=2.8.2,<2.15.0",
   "pydantic-settings>=2.5.0,<3.0.0",
   "pyyaml~=6.0.1",
   "ruamel.yaml>=0.17,<0.20",
@@ -126,7 +126,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.7.0",
-  "databricks-sdk<0.143.0",
+  "databricks-sdk<0.152.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -200,7 +200,7 @@ gcs = [
 azure = [
   "datacontract-cli[duckdb]",
   "duckdb-extension-azure>=1.5.0,<1.6.0",
-  "azure-identity>=1.17.1,<1.26",
+  "azure-identity>=1.17.1,<1.27",
   "azure-storage-blob>=12.24,<12.31",
 ]
 
@@ -318,7 +318,7 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-xdist",
-  "pymssql==2.4.2",
+  "pymssql==2.4.4",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
   # test fixtures to load seed SQL (the engine connects via ibis-postgres'
   # psycopg v3 and DuckDB's mysql extension respectively).
@@ -326,7 +326,7 @@ dev = [
   "mysql-connector-python>=8.0.30,<26.8.0",
   "ruff==0.16.10",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
-  "trino==0.339.0",
+  "trino==0.340.0",
 ]
 
 # PyPI special-cases these exact names (icon + prominent placement in the

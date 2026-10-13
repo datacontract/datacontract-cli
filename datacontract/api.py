@@ -275,6 +275,8 @@ tenants. Send them over HTTPS only.
 See [Configuration](https://docs.datacontract.com/configuration) for the full list of options.
 """
 
+# The endpoints are plain `def`, not `async def`: they block on data sources, and FastAPI runs
+# plain functions in a thread pool, so one slow test does not stall every other request.
 app = FastAPI(
     docs_url="/",
     title="Data Contract CLI API",
@@ -763,7 +765,7 @@ handled. A contract that cannot be parsed is reported the same way, as a failed 
     response_model_exclude_none=True,
     response_model_exclude_unset=True,
 )
-async def test(
+def test(
     request: Request,
     body: Annotated[
         str,
@@ -870,7 +872,7 @@ violation — not as an error status. A `schema` that is not an `http(s)` URL is
         },
     },
 )
-async def lint(
+def lint(
     body: Annotated[
         str,
         Body(
@@ -968,7 +970,7 @@ parsed is answered with `422`.
         },
     },
 )
-async def changelog_endpoint(
+def changelog_endpoint(
     body: ChangelogRequest,
     api_key: Annotated[str | None, Depends(api_key_header)] = None,
 ) -> ChangelogResponse:

@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 _ENV_PREFIX = "DATACONTRACT_"
 
+# Used by the drivers that would otherwise wait forever for an unresponsive data source.
+DEFAULT_CONNECT_TIMEOUT = 30
+
 # Deprecated option (field name) -> replacement (field name). Single source for
 # the accessor warnings, the Snowflake connect synonyms, and the generated docs.
 DEPRECATED_OPTIONS = {
@@ -112,6 +115,7 @@ class Config(BaseSettings):
     api_header_authorization: SecretStr | None = None
     custom_quality_checks: str | None = None
     max_errors: int | None = None
+    connect_timeout: int | None = None
 
     # athena (credentials come from the s3_* options)
     # overrides for the contract's servers block
@@ -529,6 +533,11 @@ class Config(BaseSettings):
     # --- max ---
     def get_max_errors(self) -> int | None:
         return self._int_option("max_errors")
+
+    # --- connect timeout ---
+    def get_connect_timeout(self) -> int:
+        """Seconds to wait for a data source to accept a connection, for drivers that wait forever by default."""
+        return self._int_option("connect_timeout") or DEFAULT_CONNECT_TIMEOUT
 
     # --- athena ---
     def get_athena_catalog(self, required: bool = False) -> str | None:
