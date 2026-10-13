@@ -29,6 +29,7 @@ class SnowflakeImporter(Importer):
                 database=import_args.get("database"),
                 schema=import_args.get("schema"),
                 config=config,
+                lineage=bool(import_args.get("lineage", False)),
             )
         else:
             raise DataContractException(
@@ -215,26 +216,74 @@ def local_data_quality_monitoring_results_query() -> str:
 
 
 def account_usage_lineage_query() -> str:
+    # GET_LINEAGE only accepts constant arguments, so it is called once per column through dynamic SQL
+    # and the results are accumulated in an ARRAY (no DDL, works with a read-only role).
     return """
-        SELECT
-            cols.TABLE_NAME,
-            cols.COLUMN_NAME,
-            ARRAY_AGG(lin.SOURCE_OBJECT_NAME) as UPSTREAM_SOURCES
-        FROM (
-            SELECT TABLE_NAME, COLUMN_NAME, TABLE_SCHEMA
-            FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_CATALOG = CURRENT_DATABASE()
-            AND TABLE_SCHEMA = CURRENT_SCHEMA()
-        ) AS cols,
-        LATERAL TABLE(GET_LINEAGE(
-            OBJECT_NAME => CURRENT_DATABASE() || '.' || cols.TABLE_SCHEMA || '.' || cols.TABLE_NAME || '.' || cols.COLUMN_NAME,
-            OBJECT_DOMAIN => 'Column',
-            DIRECTION => 'upstream',
-            DISTANCE => 1
-        )) AS lin
-        WHERE lin.DISTANCE = 1
-        AND lin.SOURCE_OBJECT_DOMAIN = 'Column'
-        GROUP BY cols.TABLE_NAME, cols.COLUMN_NAME
+        EXECUTE IMMEDIATE $$
+        DECLARE
+            v_table       STRING;
+            v_column      STRING;
+            v_object_name STRING;
+            v_stmt        STRING;
+            v_all_lineage ARRAY DEFAULT ARRAY_CONSTRUCT();
+            rs_final      RESULTSET;
+
+            c_columns CURSOR FOR
+                SELECT IS_C.TABLE_CATALOG, IS_C.TABLE_SCHEMA, IS_C.TABLE_NAME, IS_C.COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS AS IS_C
+                WHERE IS_C.TABLE_CATALOG = CURRENT_DATABASE()
+                AND IS_C.TABLE_SCHEMA = CURRENT_SCHEMA()
+                ORDER BY IS_C.TABLE_NAME, IS_C.ORDINAL_POSITION;
+        BEGIN
+            FOR rec IN c_columns DO
+                v_table := rec.TABLE_NAME;
+                v_column := rec.COLUMN_NAME;
+
+                v_object_name := '"' || REPLACE(rec.TABLE_CATALOG, '"', '""') || '"."'
+                                     || REPLACE(rec.TABLE_SCHEMA, '"', '""') || '"."'
+                                     || REPLACE(v_table, '"', '""') || '"."'
+                                     || REPLACE(v_column, '"', '""') || '"';
+
+                v_stmt := 'SELECT * FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE('
+                       || '''' || REPLACE(v_object_name, '''', '''''') || ''', '
+                       || '''COLUMN'', ''UPSTREAM'', 1))';
+
+                BEGIN
+                    EXECUTE IMMEDIATE :v_stmt;
+
+                    SELECT ARRAY_CAT(
+                               :v_all_lineage,
+                               COALESCE(ARRAY_AGG(
+                                   OBJECT_INSERT(
+                                       OBJECT_INSERT(OBJECT_CONSTRUCT_KEEP_NULL(*), 'INSPECTED_TABLE', :v_table),
+                                       'INSPECTED_COLUMN', :v_column)
+                               ), ARRAY_CONSTRUCT()))
+                      INTO :v_all_lineage
+                      FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+                EXCEPTION
+                    -- skip columns whose lineage is unavailable (unsupported object, missing privileges)
+                    WHEN OTHER THEN
+                        NULL;
+                END;
+            END FOR;
+
+            rs_final := (
+                SELECT
+                    f.value:INSPECTED_TABLE::STRING AS TABLE_NAME,
+                    f.value:INSPECTED_COLUMN::STRING AS COLUMN_NAME,
+                    ARRAY_AGG(DISTINCT CONCAT_WS('.',
+                        f.value:SOURCE_OBJECT_DATABASE::STRING,
+                        f.value:SOURCE_OBJECT_SCHEMA::STRING,
+                        f.value:SOURCE_OBJECT_NAME::STRING,
+                        f.value:SOURCE_COLUMN_NAME::STRING)) AS UPSTREAM_SOURCES
+                FROM TABLE(FLATTEN(INPUT => :v_all_lineage)) AS f
+                WHERE f.value:DISTANCE::INTEGER = 1
+                AND UPPER(f.value:SOURCE_OBJECT_DOMAIN::STRING) = 'COLUMN'
+                GROUP BY 1, 2
+            );
+            RETURN TABLE(rs_final);
+        END;
+        $$
     """
 
 
@@ -243,7 +292,7 @@ def _quote_identifier(identifier: str) -> str:
     return '"' + identifier.replace('"', '""') + '"'
 
 
-def import_information_schema(conn) -> Dict[str, List[Dict]]:
+def import_information_schema(conn, lineage: bool = False) -> Dict[str, List[Dict]]:
     from snowflake.connector import DictCursor
     from snowflake.connector.constants import QueryStatus
 
@@ -265,8 +314,10 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
         cur.execute_async(local_data_quality_monitoring_results_query())
         query_pool["quality"] = str(cur.sfqid)
 
-        cur.execute_async(account_usage_lineage_query())
-        query_pool["lineage"] = str(cur.sfqid)
+        # one GET_LINEAGE call per column is slow on large schemas, so lineage is opt-in
+        if lineage:
+            cur.execute_async(account_usage_lineage_query())
+            query_pool["lineage"] = str(cur.sfqid)
 
     # optional queries that may fail due to insufficient privileges or non-Enterprise edition — return empty list instead of crashing
     optional_queries = {"tags", "quality", "lineage"}
@@ -389,7 +440,7 @@ def property_customs_ordinal_position_sort(col: SchemaProperty) -> Any:
 
 
 def import_snowflake_from_connector(
-    account: str, database: str, schema: str, config: "Config | None" = None
+    account: str, database: str, schema: str, config: "Config | None" = None, lineage: bool = False
 ) -> OpenDataContractStandard:
     config = Config.resolve(config)
 
@@ -415,7 +466,7 @@ def import_snowflake_from_connector(
             cur.execute(f"USE SCHEMA {_quote_identifier(database)}.{schema_identifier}")
 
         # get all information from information_schema in parallel to optimize performance
-        result_sets = import_information_schema(cnx)
+        result_sets = import_information_schema(cnx, lineage=lineage)
         # connection can be closed after fetching all resultsets as they are stored in memory and we don't need to fetch anything else from snowflake
     finally:
         cnx.close()

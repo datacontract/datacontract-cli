@@ -6,7 +6,11 @@ from snowflake.connector.constants import QueryStatus
 from typer.testing import CliRunner
 
 from datacontract.cli import app
-from datacontract.imports.snowflake_importer import import_snowflake_from_connector
+from datacontract.imports.snowflake_importer import (
+    account_usage_lineage_query,
+    import_information_schema,
+    import_snowflake_from_connector,
+)
 
 # logging.basicConfig(level=logging.INFO, force=True)
 load_dotenv(override=True)
@@ -211,7 +215,8 @@ def test_import_snowflake_lineage_enterprise():
                 "lineage": mock_lineage,
             }
 
-            result = import_snowflake_from_connector(account, database, schema)
+            result = import_snowflake_from_connector(account, database, schema, lineage=True)
+            mock_import_info_schema.assert_called_once_with(mock_conn, lineage=True)
 
             table = result.schema_[0]
             col1 = next(p for p in table.properties if p.name == "COL1")
@@ -276,3 +281,18 @@ def test_import_snowflake_lineage_non_enterprise():
             table = result.schema_[0]
             col1 = next(p for p in table.properties if p.name == "COL1")
             assert col1.transformSourceObjects is None
+
+
+def test_import_information_schema_lineage_is_opt_in():
+    """The GET_LINEAGE query only runs when lineage is requested."""
+    for lineage in (False, True):
+        mock_conn = MagicMock()
+        mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+        mock_cur.fetchall.return_value = []
+        mock_conn.get_query_status.return_value = QueryStatus.SUCCESS
+
+        result_sets = import_information_schema(mock_conn, lineage=lineage)
+
+        executed = [c.args[0] for c in mock_cur.execute_async.call_args_list]
+        assert (account_usage_lineage_query() in executed) is lineage
+        assert ("lineage" in result_sets) is lineage
