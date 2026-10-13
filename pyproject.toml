@@ -326,7 +326,7 @@ dev = [
   "mysql-connector-python>=8.0.30,<26.8.0",
   "ruff==0.16.10",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
-  "trino==0.339.0",
+  "trino==0.340.0",
 ]
 
 # PyPI special-cases these exact names (icon + prominent placement in the
