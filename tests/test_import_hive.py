@@ -64,7 +64,7 @@ def test_import_hive_takes_the_declared_type_verbatim(hive_server):
         "ordered_at": ("timestamp", "timestamp"),
         "tags": ("array", "array"),
         "shipping": ("struct", "object"),
-        "attributes": ("map<string,bigint>", "map"),
+        "attributes": ("map", "map"),
         # the partition column, which Hive lists in its own section
         "order_day": ("date", "date"),
     }

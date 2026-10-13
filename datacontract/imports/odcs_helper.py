@@ -345,14 +345,14 @@ def split_type_arguments(arguments: str) -> List[str]:
 
 
 def declare_nested_types_per_level(prop: SchemaProperty) -> SchemaProperty:
-    """Reduce an array's or struct's physicalType to its base type, so that each nested type is
-    declared once, by its own items or property. A map keeps its full type."""
-    if prop.physicalType and (prop.items is not None or prop.properties) and not prop.map:
+    """Reduce an array's, struct's or map's physicalType to its base type, so that each nested type
+    is declared once, by its own items, property, key or value."""
+    children = [*(prop.properties or []), prop.items, *((prop.map.key, prop.map.value) if prop.map else ())]
+    children = [child for child in children if child is not None]
+    if prop.physicalType and children:
         prop.physicalType = re.split(r"\s*[<(]", prop.physicalType.strip(), maxsplit=1)[0]
-    for child in prop.properties or []:
+    for child in children:
         declare_nested_types_per_level(child)
-    if prop.items is not None:
-        declare_nested_types_per_level(prop.items)
     return prop
 
 

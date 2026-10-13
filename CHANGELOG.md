@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `datacontract lint --all-errors`: unknown fields are warnings instead of errors, unless a custom `--schema` rejects them
-- `datacontract test`: every nested property and array item gets its own presence and type check, replacing the one nested type check per column, and a nested `physicalType` is checked on Athena, Trino, Databricks, BigQuery, ClickHouse and Hive
-- `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays and structs get their base type as `physicalType`, their items and fields keep their own
+- `datacontract test`: every nested property, array item and map key and value gets its own type check, with a nested `physicalType` checked on Athena, Trino, Databricks, BigQuery, Snowflake, ClickHouse and Hive
+- `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays, structs and maps get their base type as `physicalType`, their items, fields, keys and values keep their own
 
 ### Added
 - `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)

@@ -22,11 +22,9 @@ from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.type_normalize import (
-    format_mismatch_reason,
     normalize_type_name,
     schema_property_matches,
     schema_property_mismatch_reason,
-    schema_property_mismatch_reasons,
 )
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
@@ -259,8 +257,7 @@ def _run_model(
         for spec in specs
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
-    # The other catalogs report a nested column's whole native type in one string, e.g.
-    # array(row(sku varchar)), which the nested physical type checks read their types from.
+    # The other catalogs report a nested column's whole type in one string, e.g. array(row(sku varchar))
     native_trees = structured_types
     if native_types and get_server_type(server) in _FULL_TYPE_STRING_SERVERS:
         parsed = {column: property_from_type_string(column, native) for column, native in native_types.items()}
@@ -886,8 +883,8 @@ def _run_present(run: Run, con, model: str, schema, spec: CheckSpec, structured_
         # Reuse the already-resolved model schema to avoid an extra lookup that
         # can fail on case-sensitive backends (for example Oracle).
         located = _locate(schema, structured_types, spec.field)
-    if located is _UNREADABLE:
-        set_result(run, spec.key, ResultEnum.warning, _unreadable_reason(spec.field))
+    if isinstance(located, _Unchecked):
+        set_result(run, spec.key, ResultEnum.warning, located)
         return
     ok = located is not None
     _set_diagnostics(run, spec.key, _diag(metric="field_present", field=spec.field, present=ok))
@@ -914,8 +911,8 @@ def _run_type(
         "introspection",
     )
     located = _locate(schema, structured_types, spec.field)
-    if located is _UNREADABLE:
-        set_result(run, spec.key, ResultEnum.warning, _unreadable_reason(spec.field))
+    if isinstance(located, _Unchecked):
+        set_result(run, spec.key, ResultEnum.warning, located)
         return
     if located is None:
         _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label))
@@ -939,9 +936,7 @@ def _run_type(
     if schema_property_matches(spec.expected_schema_property, actual_prop):
         set_result(run, spec.key, ResultEnum.passed, None)
     else:
-        # a line that covers a map's key and value names the part that differs
-        path = spec.field if has_nesting(spec.expected_schema_property) else ""
-        reason = schema_property_mismatch_reason(spec.expected_schema_property, actual_prop, path)
+        reason = schema_property_mismatch_reason(spec.expected_schema_property, actual_prop)
         set_result(
             run,
             spec.key,
@@ -973,8 +968,8 @@ def _run_physical_type(
         "introspection",
     )
     located = _locate(schema, native_trees, spec.field)
-    if located is _UNREADABLE:
-        set_result(run, spec.key, ResultEnum.warning, _unreadable_reason(spec.field))
+    if isinstance(located, _Unchecked):
+        set_result(run, spec.key, ResultEnum.warning, located)
         return
     if located is None:
         _set_diagnostics(
@@ -1011,20 +1006,6 @@ def _run_physical_type(
     else:
         reason = f"Could not read the native type of '{spec.field}' from the {get_server_type(server)} catalog"
 
-    expected = spec.expected_schema_property
-    if result is True and expected is not None and has_nesting(expected):
-        # A map's key and value, and the items of an array's items, have no line of their own
-        errors = schema_property_mismatch_reasons(expected, actual_prop, spec.field, sqlglot_dialect(con))
-        if errors:
-            _update_diagnostics(run, spec.key, {"errors": [error.message for error in errors]})
-            verified = any(error.verifiable for error in errors)
-            set_result(
-                run,
-                spec.key,
-                ResultEnum.failed if verified else ResultEnum.warning,
-                format_mismatch_reason(errors),
-            )
-            return
     if result is True:
         set_result(run, spec.key, ResultEnum.passed, None)
         return
@@ -1032,9 +1013,8 @@ def _run_physical_type(
         set_result(run, spec.key, ResultEnum.failed, reason)
         return
 
-    # Only the catalogs that report a nested column's whole type have a native type for a nested path.
-    # The logicalType fallback would report `passed` for a physical type nothing
-    # compared, so skip instead. An unreadable catalog falls back like the top level, which the run logs.
+    # The logicalType fallback would report `passed` for a nested physical type nothing compared, so skip
+    # instead; an unreadable catalog falls back like the top level.
     if actual_native is None and nested_path and native_types is not None:
         set_result(
             run,
@@ -1353,80 +1333,124 @@ def _struct_field_name(value, name: str) -> str:
     return match
 
 
-_UNREADABLE = "unreadable"
+class _Unchecked(str):
+    """Why the type at a path cannot be checked, which the check reports as a warning."""
 
 
 def _resolve_dtype(schema, field: str):
     dtype = _walk_dtype(schema, field)
-    return None if dtype is _UNREADABLE else dtype
+    return None if isinstance(dtype, _Unchecked) else dtype
 
 
 def _walk_dtype(schema, field: str):
-    """The ibis dtype at ``field``; ``None`` when it does not exist, ``_UNREADABLE`` when it lies
-    inside untyped data (json, or a map standing in for an untyped object)."""
+    """The ibis dtype at ``field``; ``None`` when it does not exist, ``_Unchecked`` when it is
+    inside untyped data (json, or a map standing in for an untyped object) or under a parent
+    that is not the object, array or map the path steps through."""
     if field is None:
         return None
     dtype = None
+    path = ""
     for index, part in enumerate(field.split(".")):
-        name, hop, _ = part.partition("[]")
+        name = part.split("[", 1)[0]
         if index == 0:
             fields = schema
         elif dtype.is_struct():
             fields = dtype.fields
+        elif dtype.is_json() or (dtype.is_map() and dtype.value_type.is_json()):
+            return _untyped_data(path)
+        elif dtype.is_map():
+            return _map_declared_as_object(path)
         else:
-            return _UNREADABLE if dtype.is_json() or dtype.is_map() else None
+            return _not_a(path, "an object")
         # Backends that report uppercase names (Snowflake, Oracle, Databricks)
         # must still match a contract that spells the field in lower case.
         actual = name if name in fields else next((k for k in fields.keys() if k.lower() == name.lower()), None)
         if actual is None:
             return None
         dtype = fields[actual]
-        if hop:
-            # `items[]` names the element type, not the array's own type.
-            if not dtype.is_array():
-                return _UNREADABLE if dtype.is_json() else None
-            dtype = dtype.value_type
+        path = f"{path}.{name}" if path else name
+        # `items[]` names the element type, `attrs[key]` the key type, not the array's or map's own type.
+        for hop in _HOP.findall(part):
+            if dtype.is_json():
+                return _untyped_data(path)
+            if hop:
+                if not dtype.is_map():
+                    return _not_a(path, "a map")
+                dtype = dtype.key_type if hop == "key" else dtype.value_type
+            else:
+                if not dtype.is_array():
+                    return _not_a(path, "an array")
+                dtype = dtype.value_type
+            path = f"{path}[{hop}]"
     return dtype
 
 
 def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: str):
     """The real type at ``field`` as ``(property, label)``, from the catalog's nested native types
-    where there are some, else from ibis; ``None`` or ``_UNREADABLE`` as for ``_walk_dtype``."""
+    where there are some, else from ibis; ``None`` or ``_Unchecked`` as for ``_walk_dtype``."""
     parts = field.split(".")
-    node = structured_types.get(parts[0].partition("[]")[0].lower()) if structured_types else None
+    node = structured_types.get(parts[0].split("[", 1)[0].lower()) if structured_types else None
     if node is None:
         dtype = _walk_dtype(schema, field)
-        if dtype is None or dtype is _UNREADABLE:
+        if dtype is None or isinstance(dtype, _Unchecked):
             return dtype
-        if field.endswith("[]") and dtype.is_json():
+        if field.endswith("]") and dtype.is_json():
             # an array whose element type the backend does not report, e.g. Snowflake's ARRAY
-            return _UNREADABLE
+            return _untyped_data(field[: field.rindex("[")])
         return ibis_dtype_to_schema_property(dtype), str(dtype)
+    path = ""
     for index, part in enumerate(parts):
-        name, hop, _ = part.partition("[]")
+        name = part.split("[", 1)[0]
         if index:
             if not node.properties:
-                return _UNREADABLE if _untyped(node) else None
+                if _untyped(node):
+                    return _untyped_data(path)
+                if normalize_type_name(node.logicalType) == "map":
+                    return _map_declared_as_object(path)
+                return _not_a(path, "an object")
             node = next((child for child in node.properties if (child.name or "").lower() == name.lower()), None)
             if node is None:
                 return None
-        if hop:
-            if node.items is None:
-                return _UNREADABLE if _untyped(node) else None
-            node = node.items
+        path = f"{path}.{name}" if path else name
+        for hop in _HOP.findall(part):
+            if hop:
+                child = (node.map.key if hop == "key" else node.map.value) if node.map else None
+            else:
+                child = node.items
+            if child is None:
+                return _untyped_data(path) if _untyped(node) else _not_a(path, "a map" if hop else "an array")
+            node = child
+            path = f"{path}[{hop}]"
     return node, node.physicalType
 
 
+# The hops of a path segment: `[]` into an array's items, `[key]` and `[value]` into a map's
+_HOP = re.compile(r"\[(\w*)\]")
+
+
 def _is_nested_path(field: Optional[str]) -> bool:
-    return bool(field) and ("." in field or "[]" in field)
+    return bool(field) and ("." in field or "[" in field)
 
 
 def _untyped(prop: SchemaProperty) -> bool:
     return normalize_type_name(prop.logicalType) in ("object", "array", None)
 
 
-def _unreadable_reason(field: str) -> str:
-    return f"'{field}' lies inside untyped data whose structure cannot be read; skipping the check"
+def _untyped_data(path: str) -> _Unchecked:
+    return _Unchecked(
+        f"'{path}' holds untyped data, such as json, whose structure cannot be read; skipping the check. "
+        f"Use a structured type for '{path}' to check what it contains."
+    )
+
+
+def _map_declared_as_object(path: str) -> _Unchecked:
+    return _Unchecked(
+        f"'{path}' is a map, not an object; skipping the check. Declare '{path}' as a map to check its key and value."
+    )
+
+
+def _not_a(path: str, kind: str) -> _Unchecked:
+    return _Unchecked(f"'{path}' is not {kind}; skipping the check")
 
 
 def _table_database(con, server: Optional[Server]) -> Optional[str]:

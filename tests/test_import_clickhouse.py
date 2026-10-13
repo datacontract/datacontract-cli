@@ -82,7 +82,7 @@ def test_import_clickhouse_takes_the_declared_type_verbatim(clickhouse_server, c
         "order_day": ("Date32", "date"),
         "id": ("UUID", "string"),
         "tags": ("Array", "array"),
-        "attributes": ("Map(String, Int32)", "map"),
+        "attributes": ("Map", "map"),
         "kind": ("Enum8('retail' = 1, 'wholesale' = 2)", "string"),
     }
     assert (properties["tags"].items.physicalType, properties["tags"].items.logicalType) == (

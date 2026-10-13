@@ -48,7 +48,7 @@ schema:
         physicalType: bigint
         logicalType: integer
   - name: attributes
-    physicalType: map<string,bigint>
+    physicalType: map
     logicalType: map
     map:
       key:

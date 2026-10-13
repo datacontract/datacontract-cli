@@ -183,7 +183,7 @@ def create_typed_property(name: str, dtype: str) -> SchemaProperty:
         return create_property(
             name=name,
             logical_type="map",
-            physical_type=dtype,
+            physical_type="map",
             map_key=create_typed_property("key", key_type) if key_type else None,
             map_value=create_typed_property("value", value_type) if value_type else None,
         )

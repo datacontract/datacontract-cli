@@ -1,8 +1,7 @@
-"""Type checks mirror the contract: every declared nested property gets its own lines.
+"""Type checks mirror the contract: every declared type gets its own line.
 
-A property's own type line leaves out the properties and array items that get
-lines of their own, and keeps what has no path of its own: a map's key and
-value, and the items of an array's items.
+A property's own type line leaves out its properties, array items and map key
+and value, which get lines of their own.
 """
 
 from types import SimpleNamespace
@@ -132,7 +131,7 @@ def test_nested_types_warn_on_parquet():
     assert nested.preset_result == "warning"
 
 
-def test_a_map_has_one_type_line_that_keeps_its_key_and_value():
+def test_a_maps_key_and_value_get_their_own_type_lines():
     prop = SchemaProperty(
         name="attrs",
         logicalType="map",
@@ -144,8 +143,15 @@ def test_a_map_has_one_type_line_that_keeps_its_key_and_value():
     )
     checks = _checks(prop, "snowflake")
 
-    assert _lines(checks) == {("attrs", "field_is_present"), ("attrs", "field_physical_type")}
-    assert _type_check(checks, "attrs").expected_schema_property.map is not None
+    assert _lines(checks) == {
+        ("attrs", "field_is_present"),
+        ("attrs", "field_physical_type"),
+        ("attrs[key]", "field_type"),
+        ("attrs[value]", "field_type"),
+        ("attrs[value].a", "field_is_present"),
+        ("attrs[value].a", "field_type"),
+    }
+    assert _type_check(checks, "attrs").expected_schema_property.map is None
 
 
 def test_value_rules_inside_a_map_warn():
@@ -162,22 +168,25 @@ def test_value_rules_inside_a_map_warn():
     checks = _checks(prop, "duckdb")
 
     # a map key is never null, so its `required` holds by definition
-    inside = [c for c in checks if c.field.startswith("attrs[")]
-    assert [(c.field, c.type) for c in inside] == [("attrs[value].a", "field_required")]
-    assert inside[0].preset_result == "warning"
-    assert inside[0].preset_reason == "Checks on the key or value of a map are not supported yet."
+    warned = [c for c in checks if c.preset_result == "warning"]
+    assert [(c.field, c.type) for c in warned] == [("attrs[value].a", "field_required")]
+    assert warned[0].preset_reason == "Checks on the key or value of a map are not supported yet."
 
 
-def test_the_items_of_an_arrays_items_stay_in_its_items_line():
-    prop = SchemaProperty(
-        name="matrix",
-        logicalType="array",
-        items=SchemaProperty(logicalType="array", items=SchemaProperty(logicalType="integer")),
-    )
-    checks = _checks(prop, "duckdb")
+_MATRIX = SchemaProperty(
+    name="matrix",
+    logicalType="array",
+    items=SchemaProperty(logicalType="array", items=SchemaProperty(logicalType="integer", required=True)),
+)
 
-    assert ("matrix[]", "field_type") in _lines(checks)
-    assert _type_check(checks, "matrix[]").expected_schema_property.items.logicalType == "integer"
+
+def test_the_items_of_an_arrays_items_get_their_own_type_line():
+    checks = _checks(_MATRIX, "duckdb")
+
+    assert {("matrix[]", "field_type"), ("matrix[][]", "field_type")} <= _lines(checks)
+    assert _type_check(checks, "matrix[]").expected_schema_property.items is None
+    rule = next(c for c in checks if c.field == "matrix[][]" and c.type != "field_type")
+    assert rule.preset_reason == "Checks on the items of an array's items are not supported yet."
 
 
 def test_no_lines_for_the_items_of_a_scalar():
@@ -235,7 +244,10 @@ def test_nested_lines_warn_inside_a_dynamically_typed_column():
 
     code = checks[("primary_sic_code.code", "field_is_present")]
     assert code.result == ResultEnum.warning
-    assert "cannot be read" in code.reason
+    assert code.reason == (
+        "'primary_sic_code' holds untyped data, such as json, whose structure cannot be read; skipping the check. "
+        "Use a structured type for 'primary_sic_code' to check what it contains."
+    )
 
 
 def test_nested_lines_warn_inside_an_untyped_object():
@@ -245,21 +257,72 @@ def test_nested_lines_warn_inside_an_untyped_object():
     assert checks[("primary_sic_code.code", "field_type")].result == ResultEnum.warning
 
 
+def test_nested_lines_point_to_a_map_declared_as_an_object():
+    checks = _run(_SIC_CODE, "map<string, string>")
+
+    code = checks[("primary_sic_code.code", "field_type")]
+    assert code.result == ResultEnum.warning
+    assert code.reason == (
+        "'primary_sic_code' is a map, not an object; skipping the check. "
+        "Declare 'primary_sic_code' as a map to check its key and value."
+    )
+
+
 def test_the_items_of_an_untyped_array_warn():
     checks = _run(_SIC_CODES, "array<json>")
 
     assert checks[("sic_codes[]", "field_type")].result == ResultEnum.warning
 
 
-def test_a_map_line_checks_the_key_and_value_types():
+def test_the_items_of_a_column_that_is_not_an_array_warn():
+    # the column's own line already fails, so its items are skipped rather than reported missing
+    checks = _run(_SIC_CODES, "int64")
+
+    assert checks[("sic_codes", "field_type")].result == ResultEnum.failed
+    items = checks[("sic_codes[]", "field_type")]
+    assert items.result == ResultEnum.warning
+    assert items.reason == "'sic_codes' is not an array; skipping the check"
+
+
+def test_the_properties_of_items_whose_column_is_not_an_array_warn():
+    prop = SchemaProperty(
+        name="lines",
+        logicalType="array",
+        items=SchemaProperty(logicalType="object", properties=[SchemaProperty(name="sku", logicalType="string")]),
+    )
+    checks = _run(prop, "struct<sku: string>")
+
+    sku = checks[("lines[].sku", "field_is_present")]
+    assert sku.result == ResultEnum.warning
+    assert sku.reason == "'lines' is not an array; skipping the check"
+
+
+def test_the_properties_of_a_column_that_is_not_an_object_warn():
+    checks = _run(_SIC_CODE, "string")
+
+    code = checks[("primary_sic_code.code", "field_type")]
+    assert code.result == ResultEnum.warning
+    assert code.reason == "'primary_sic_code' is not an object; skipping the check"
+
+
+def test_a_maps_key_and_value_types_are_checked_on_their_own_lines():
     prop = SchemaProperty(
         name="attrs",
         logicalType="map",
         map=MapDefinition(key=SchemaProperty(logicalType="string"), value=SchemaProperty(logicalType="integer")),
     )
 
-    assert _run(prop, "map<string, int64>")[("attrs", "field_type")].result == ResultEnum.passed
-    assert _run(prop, "map<string, string>")[("attrs", "field_type")].result == ResultEnum.failed
+    assert all(c.result == ResultEnum.passed for c in _run(prop, "map<string, int64>").values())
+    checks = _run(prop, "map<string, string>")
+    assert checks[("attrs", "field_type")].result == ResultEnum.passed
+    assert checks[("attrs[value]", "field_type")].result == ResultEnum.failed
+
+
+def test_the_items_of_an_arrays_items_are_checked_on_their_own_line():
+    checks = _run(_MATRIX, "array<array<string>>")
+
+    assert checks[("matrix[]", "field_type")].result == ResultEnum.passed
+    assert checks[("matrix[][]", "field_type")].result == ResultEnum.failed
 
 
 def test_nested_lines_resolve_a_dotted_struct_path():
@@ -326,6 +389,15 @@ def test_a_logical_keyword_in_the_physical_type_resolves_to_the_native_type():
     # decides what it names: 'string' is Snowflake's VARCHAR, 'boolean' is not.
     assert _run_snowflake(_sic_code(code="string"), "primary_sic_code.code").result == ResultEnum.passed
     assert _run_snowflake(_sic_code(code="boolean"), "primary_sic_code.code").result == ResultEnum.failed
+
+
+def test_the_properties_of_a_structured_column_that_is_not_an_object_warn():
+    check = _run_snowflake(
+        _sic_code(code="VARCHAR(10)"), "primary_sic_code.code", data_type={"type": "TEXT", "length": 10}
+    )
+
+    assert check.result == ResultEnum.warning
+    assert check.reason == "'primary_sic_code' is not an object; skipping the check"
 
 
 def test_a_nested_name_with_spaces_resolves_in_a_full_type_string():
@@ -429,7 +501,7 @@ def test_a_foreign_nested_physical_type_falls_back_to_the_logical_type():
     assert _run_snowflake(prop, "primary_sic_code.code").result == ResultEnum.passed
 
 
-def test_a_map_line_compares_the_map_block_against_the_native_types():
+def test_a_maps_value_is_compared_against_its_native_type():
     prop = SchemaProperty(
         name="attrs",
         logicalType="map",
@@ -437,10 +509,10 @@ def test_a_map_line_compares_the_map_block_against_the_native_types():
         map=MapDefinition(key=SchemaProperty(physicalType="VARCHAR"), value=SchemaProperty(physicalType="VARCHAR(5)")),
     )
     data_type = {"type": "MAP", "keyType": {"type": "TEXT"}, "valueType": {"type": "TEXT", "length": 10}}
-    check = _run_snowflake(prop, "attrs", data_type, dtype="map<string, string>")
-
+    assert _run_snowflake(prop, "attrs", data_type, dtype="map<string, string>").result == ResultEnum.passed
+    check = _run_snowflake(prop, "attrs[value]", data_type, dtype="map<string, string>")
     assert check.result == ResultEnum.failed
-    assert "attrs[value]" in check.reason
+    assert check.reason == "expected physical type 'VARCHAR(5)' but the column is 'VARCHAR(10)'"
 
 
 def test_a_nested_physical_type_falls_back_to_the_logical_type_when_the_catalog_cannot_be_read():

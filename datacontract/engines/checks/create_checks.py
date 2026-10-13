@@ -101,25 +101,25 @@ def _iter_property_paths(
         field = prop.physicalName or prop.name
         field_path = f"{prefix}.{field}" if prefix else field
         yield field_path, prop, prefix is not None
+        yield from _iter_nested_paths(prop, field_path)
 
-        prop_type = _property_type(prop)
-        if prop_type == "object" and prop.properties:
-            yield from _iter_property_paths(prop.properties, field_path)
-        elif prop_type == "array" and prop.items is not None:
-            # `[]` marks the array hop; the executor turns it into a predicate
-            # over the elements instead of a column lookup.
-            items = prop.items
-            if items.logicalType or items.physicalType or items.properties or _constrains_values(items):
-                yield f"{field_path}[]", items, True
-            if items.properties:
-                yield from _iter_property_paths(items.properties, f"{field_path}[]")
-        elif prop_type == "map":
-            for side, definition in (("key", get_map_key(prop)), ("value", get_map_value(prop))):
-                if definition is None:
-                    continue
+
+def _iter_nested_paths(prop: SchemaProperty, field_path: str):
+    prop_type = _property_type(prop)
+    if prop_type == "array" and prop.items is not None:
+        # `[]` marks the array hop; the executor turns it into a predicate
+        # over the elements instead of a column lookup.
+        items = prop.items
+        if items.logicalType or items.physicalType or items.properties or _constrains_values(items):
+            yield f"{field_path}[]", items, True
+        yield from _iter_nested_paths(items, f"{field_path}[]")
+    elif prop_type == "map":
+        for side, definition in (("key", get_map_key(prop)), ("value", get_map_value(prop))):
+            if definition is not None:
                 yield f"{field_path}[{side}]", definition, True
-                if _property_type(definition) == "object" and definition.properties:
-                    yield from _iter_property_paths(definition.properties, f"{field_path}[{side}]")
+                yield from _iter_nested_paths(definition, f"{field_path}[{side}]")
+    elif prop.properties and prop_type in ("object", None):
+        yield from _iter_property_paths(prop.properties, field_path)
 
 
 def _constrains_values(prop: SchemaProperty) -> bool:
@@ -297,10 +297,8 @@ def _to_schema_checks(
         first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
-        # The map's own type line covers the types of its key and value, and an array's own
-        # presence covers that of its items.
-        in_map = "[key]" in field or "[value]" in field
-        if not in_map and not field.endswith("[]") and (not documents or (prop.required and not nested)):
+        # An array's or map's own presence covers that of its items, key and value
+        if not field.endswith("]") and (not documents or (prop.required and not nested)):
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_is_present",
@@ -314,24 +312,22 @@ def _to_schema_checks(
                 )
             )
 
-        # Properties and array items get type lines of their own, so this one leaves them out.
-        # The items of an array's items have no path of their own and stay in.
+        # Properties, array items and a map's key and value get type lines of their own
+        prop_type = _property_type(prop)
         own_type = prop
-        if _property_type(prop) == "object" and prop.properties:
-            own_type = prop.model_copy(update={"properties": None})
-        elif _property_type(prop) == "array" and prop.items is not None and not field.endswith("[]"):
+        if prop_type == "array":
             own_type = prop.model_copy(update={"items": None})
+        elif prop_type == "map":
+            # the key and value may also sit in the pre-3.2.0 custom properties or properties
+            own_type = prop.model_copy(update={"map": None, "properties": None, "customProperties": None})
+        elif prop.properties and prop_type in ("object", None):
+            own_type = prop.model_copy(update={"properties": None})
 
         # A declared physicalType is checked against the column's real native
         # type in the platform catalog and takes precedence over logicalType,
         # but only on backends that expose a meaningful native type. Elsewhere
         # (file sources, etc.) fall through to the logicalType category check.
-        if (
-            not in_map
-            and check_types
-            and prop.physicalType is not None
-            and supports_native_type_introspection(server_type)
-        ):
+        if check_types and prop.physicalType is not None and supports_native_type_introspection(server_type):
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_physical_type",
@@ -347,7 +343,7 @@ def _to_schema_checks(
                     expected_schema_property=own_type,
                 )
             )
-        elif not in_map and check_types and prop.logicalType is not None:
+        elif check_types and prop.logicalType is not None:
             label = prop.logicalType or ""
             checks.append(
                 CheckSpec(
@@ -568,24 +564,27 @@ def _to_schema_checks(
             checks.extend(_quality_checks(model, field, prop.quality, server, variables, custom_quality_checks))
 
         # A check the server cannot run is reported, not dropped.
-        unenforced = []
-        if in_map:
-            unenforced = checks[first_check:]
-            reason = "Checks on the key or value of a map are not supported yet."
-        elif nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
-            # Presence and types are read from the schema, which every server reports.
-            unenforced = [c for c in checks[first_check:] if c.metric not in METADATA_METRICS]
-            reason = nested_not_run_reason(server_type)
-        elif uses_raw_view:
-            # The file is cast into the contract's types, so a type check would compare the contract with itself.
-            unenforced = [c for c in checks[first_check:] if c.metric in METADATA_METRICS - {MetricType.FIELD_PRESENT}]
-            reason = f"Checking types in {server.format} files is not supported yet."
-        for check in unenforced:
-            # An unrunnable rule keeps its own, more specific reason.
-            if check.preset_result != "warning":
-                check.metric = MetricType.UNSUPPORTED
-                check.preset_result = "warning"
-                check.preset_reason = reason
+        for check in checks[first_check:]:
+            if check.preset_result == "warning":
+                # An unrunnable rule keeps its own, more specific reason.
+                continue
+            if check.metric in METADATA_METRICS:
+                if not uses_raw_view or check.metric == MetricType.FIELD_PRESENT:
+                    # Presence and types are read from the schema, which every server reports.
+                    continue
+                # The file is cast into the contract's types, so a type check would compare the contract with itself.
+                reason = f"Checking types in {server.format} files is not supported yet."
+            elif "[key]" in field or "[value]" in field:
+                reason = "Checks on the key or value of a map are not supported yet."
+            elif "[][]" in field:
+                reason = "Checks on the items of an array's items are not supported yet."
+            elif nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
+                reason = nested_not_run_reason(server_type)
+            else:
+                continue
+            check.metric = MetricType.UNSUPPORTED
+            check.preset_result = "warning"
+            check.preset_reason = reason
 
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]

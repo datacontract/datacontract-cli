@@ -95,10 +95,10 @@ schema:
 
 A property can declare a portable `logicalType`, a native `physicalType`, or both. Which one is checked depends on the backend:
 
-- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the nine backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, and Athena. It takes precedence over `logicalType`.
+- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, Athena, Exasol, ClickHouse, and Hive. It takes precedence over `logicalType`.
 - **`logicalType`** is used everywhere else, and as the fallback when the native type cannot be read. Both the declared and the actual type are normalized to an ODCS category before comparison, so `integer` and `number` are mutually compatible.
 
-Nested properties are checked like top-level ones: each property under `properties`, and the `items` of an array, gets its own type check at its path, such as `customer.email` or `items[].sku`. A nested `physicalType` is compared against the native type the catalog reports for it on Athena, Trino, Databricks, BigQuery, ClickHouse, Hive and Snowflake, and reported as a warning on the other backends with catalog introspection. A map has a single type check, which also compares its `key` and `value`.
+Nested properties are checked like top-level ones: each property under `properties`, the `items` of an array, and the `key` and `value` of a map get their own type check at their path, such as `customer.email`, `items[].sku`, `matrix[][]` or `attributes[value]`. A nested `physicalType` is compared against the native type the catalog reports for it on Athena, Trino, Databricks, BigQuery, ClickHouse (except inside a `Tuple`), Hive and Snowflake, and reported as a warning on the other backends with catalog introspection.
 
 ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
 

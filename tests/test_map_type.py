@@ -178,7 +178,7 @@ def test_test_fails_on_a_wrong_map_value_type(orders_db):
     print(run.pretty())
     assert run.result == ResultEnum.failed
     failed = [c for c in run.checks if c.result == ResultEnum.failed]
-    assert any("[value]" in (c.reason or "") for c in failed), [c.reason for c in failed]
+    assert [c.field for c in failed] == ["attributes[value]"], [(c.field, c.reason) for c in failed]
 
 
 # --- exporters ---------------------------------------------------------------------------------
