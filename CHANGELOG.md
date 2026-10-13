@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
 
 ### Fixed
+- `datacontract test`: a declared `physicalType: json`, `jsonb` or `variant` matches a json column on servers whose native types are not read
 - `datacontract test`: rules on the key or value of a map are reported as warnings instead of being ignored
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)
 - `datacontract import sqlserver` and the physical type checks of `datacontract test` work on case-sensitive SQL Server databases such as Microsoft Fabric warehouses (#1705 @Octacon100)

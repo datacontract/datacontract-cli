@@ -268,6 +268,24 @@ def test_nested_lines_point_to_a_map_declared_as_an_object():
     )
 
 
+def test_a_declared_json_matches_json_where_native_types_are_not_read():
+    payload = SchemaProperty(name="payload", logicalType="object", physicalType="json")
+    tags = SchemaProperty(
+        name="tags", logicalType="array", items=SchemaProperty(logicalType="object", physicalType="json")
+    )
+    attrs = SchemaProperty(
+        name="attrs",
+        logicalType="map",
+        map=MapDefinition(
+            key=SchemaProperty(logicalType="string"), value=SchemaProperty(logicalType="object", physicalType="JSON")
+        ),
+    )
+
+    assert _run(payload, "json")[("payload", "field_type")].result == ResultEnum.passed
+    assert _run(tags, "array<json>")[("tags[]", "field_type")].result == ResultEnum.passed
+    assert _run(attrs, "map<string, json>")[("attrs[value]", "field_type")].result == ResultEnum.passed
+
+
 def test_the_items_of_an_untyped_array_warn():
     checks = _run(_SIC_CODES, "array<json>")
 

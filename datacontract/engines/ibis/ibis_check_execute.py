@@ -910,6 +910,12 @@ def _run_type(
         f"type of '{spec.field}' is compatible with '{spec.expected_type_label}'",
         "introspection",
     )
+    # Here the catalog's native types are not read, but a declared json is still what ibis reports
+    if (spec.expected_schema_property.physicalType or "").lower() in ("json", "jsonb", "variant"):
+        dtype = _walk_dtype(schema, spec.field)
+        if dtype is not None and not isinstance(dtype, _Unchecked) and dtype.is_json():
+            set_result(run, spec.key, ResultEnum.passed, None)
+            return
     located = _locate(schema, structured_types, spec.field)
     if isinstance(located, _Unchecked):
         set_result(run, spec.key, ResultEnum.warning, located)
