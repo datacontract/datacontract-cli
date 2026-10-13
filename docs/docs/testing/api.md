@@ -43,17 +43,17 @@ The contract gets one schema for the operation's response, and an `api` server f
 
 ```yaml
 servers:
-  - server: production
-    type: api
-    description: Production
-    location: https://api.example.com/v1/orders?limit=${limit:-100}
-  - server: staging
-    type: api
-    description: Staging
-    location: https://staging.api.example.com/v1/orders?limit=${limit:-100}
+- server: production
+  type: api
+  description: Production
+  location: https://api.example.com/v1/orders?limit=${limit:-100}
+- server: staging
+  type: api
+  description: Staging
+  location: https://staging.api.example.com/v1/orders?limit=${limit:-100}
 schema:
-  - name: listOrders
-    # ...
+- name: listOrders
+  # ...
 ```
 
 Path parameters and required query parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location`, defaulting to the parameter's `example` or `default`. Set them in the environment to call the endpoint with other values, for example `limit=10 datacontract test datacontract.yaml`. See [Import: OpenAPI](../imports/openapi.md) for what is imported.

@@ -13,6 +13,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    declare_nested_types_per_level,
     report_unmapped_types,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
@@ -169,7 +170,7 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
     required = column.nullable is None or not column.nullable
     nested_properties, items, map_key, map_value = _to_nested_types(column)
 
-    return create_property(
+    prop = create_property(
         name=column.name,
         logical_type=logical_type,
         physical_type=sql_type,
@@ -181,6 +182,7 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
         map_key=map_key,
         map_value=map_value,
     )
+    return declare_nested_types_per_level(prop)
 
 
 def _to_nested_types(

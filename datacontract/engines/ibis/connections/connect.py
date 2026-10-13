@@ -125,6 +125,8 @@ def connect_ibis(
             password=config.get_postgres_password(required=True),
             database=config.get_postgres_database() or server.database,
             schema=config.get_postgres_schema() or server.schema_,
+            # libpq waits forever for a server that accepts the connection but never answers
+            connect_timeout=config.get_connect_timeout(),
         )
 
     if server_type == "redshift":
@@ -141,6 +143,7 @@ def connect_ibis(
             database=database,
             schema=config.get_redshift_schema() or server.schema_,
             client_encoding=CLIENT_ENCODING,
+            connect_timeout=config.get_connect_timeout(),
         )
         if login.password:
             kwargs["password"] = login.password
@@ -617,7 +620,7 @@ def _connect_mysql_via_duckdb(
     _load_extension(con, "mysql", "mysql")
 
     run.log_info(f"Attaching MySQL {host}:{port} via the duckdb mysql extension")
-    _attach_mysql(con, host, port, user, password, database)
+    _attach_mysql(con, host, port, user, password, database, config.get_connect_timeout())
 
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
@@ -677,7 +680,8 @@ def _connect_sqlserver(ibis, server: Server, config: Config):
             del kwargs[key]  # pyodbc would send a literal DATABASE=None
         else:
             kwargs[key] = "{" + kwargs[key].replace("}", "}}") + "}"
-    con = pyodbc.connect(**kwargs)
+    # the login timeout, so an unreachable server fails instead of blocking the run
+    con = pyodbc.connect(timeout=config.get_connect_timeout(), **kwargs)
     return ibis.mssql.from_connection(con)
 
 

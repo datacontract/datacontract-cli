@@ -984,6 +984,7 @@ def check_quality_list(
             elif quality.metric == "invalidValues":
                 if property_name is not None:
                     valid_values = quality.arguments.get("validValues") if quality.arguments else None
+                    valid_values = [value for value in valid_values or [] if value is not None] or None
                     checks.append(
                         check_property_invalid_values(
                             schema_name, property_name, threshold, valid_values, quoting_config

@@ -95,14 +95,16 @@ schema:
 
 A property can declare a portable `logicalType`, a native `physicalType`, or both. Which one is checked depends on the backend:
 
-- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the nine backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, and Athena. It takes precedence over `logicalType`.
+- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, Athena, Exasol, ClickHouse, and Hive. It takes precedence over `logicalType`.
 - **`logicalType`** is used everywhere else, and as the fallback when the native type cannot be read. Both the declared and the actual type are normalized to an ODCS category before comparison, so `integer` and `number` are mutually compatible.
 
-On every backend except `csv`, `json`, `parquet`, `xml` and `xlsx` files, a property with a complex `logicalType` (`object`, `array` or `map`) gets a **nested type check** covering the full declared structure.
+Nested properties are checked like top-level ones: each property under `properties`, the `items` of an array, and the `key` and `value` of a map get their own type check at their path, such as `customer.email`, `items[].sku`, `matrix[][]` or `attributes[value]`. A nested `physicalType` is compared against the native type the catalog reports for it on Athena, Trino, Databricks, BigQuery, ClickHouse (except inside a `Tuple`), Hive and Snowflake, and reported as a warning on the other backends with catalog introspection.
 
 ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
 
 Property-level `enum` entries must have distinct values, even if their labels, IDs, or descriptions differ. Lint checks this throughout properties, array items, and map keys and values. JSON numbers compare by value (`1` equals `1.0`); strings and booleans remain distinct from numbers.
+
+An `enum` constrains only values that are present, whether a value may be missing is up to `required`. Therefore, `null` should not be part of an `enum`.
 
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 

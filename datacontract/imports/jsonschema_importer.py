@@ -351,7 +351,7 @@ def schema_to_property(name: str, prop_schema: Dict[str, Any], is_required: bool
         properties=nested_properties,
         items=items_prop,
         custom_properties=custom_props if custom_props else None,
-        enum=prop_schema.get("enum"),
+        enum=[value for value in prop_schema.get("enum") or [] if value is not None],
         examples=prop_schema.get("examples"),
         map_value=schema_to_property("value", additional) if is_map else None,
     )
