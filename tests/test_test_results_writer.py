@@ -54,6 +54,12 @@ def test_brackets_in_a_check_name_are_printed_in_the_table():
     assert "in_list(x=[a, b])" in printed
 
 
+def test_a_map_path_is_printed_in_the_table():
+    printed = _printed([Check(type="field_type", name="Check a", field="attrs[value].a", result=ResultEnum.passed)])
+
+    assert "attrs[value].a" in printed
+
+
 def test_a_selection_that_matches_nothing_is_not_a_failure():
     result = runner.invoke(app, ["test", "--tag", "nightly", "./fixtures/quality-id/datacontract.yaml"])
     assert result.exit_code == 0
