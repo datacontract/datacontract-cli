@@ -54,7 +54,9 @@ spark.conf.set("spark.databricks.delta.schema.typeCheck.enabled", "false")
 
 ## Views
 
-A schema with `physicalType: view` is exported as a `CREATE OR REPLACE VIEW` (`CREATE OR ALTER VIEW` on SQL Server) that selects its properties from the tables listed in their `transformSourceObjects`. Snowflake and Databricks views keep the column and view descriptions as comments.
+A schema with `physicalType: view` is exported as a `CREATE OR REPLACE VIEW` (`CREATE OR ALTER VIEW` on SQL Server) that selects each property from the object in its `transformSourceObjects`. An entry whose last part is the property's name, such as `bronze.orders.order_id`, is read as that column of the object. Snowflake and Databricks views keep the column and view descriptions as comments.
+
+When the properties come from several source objects, they are joined with `LEFT JOIN`, starting from the first object, on the `foreignKey` relationships of the view. A `customers.id` reference points to the source object `customers` or `<schema>.customers`.
 
 ```yaml
 schema:
@@ -63,6 +65,10 @@ schema:
     properties:
       - name: order_id
         transformSourceObjects: [bronze.orders]
+      - name: customer_id
+        transformSourceObjects: [bronze.orders]
+        relationships:
+          - to: customers.id
       - name: customer_name
         transformSourceObjects: [bronze.customers]
 ```
@@ -70,12 +76,14 @@ schema:
 ```sql
 CREATE OR REPLACE VIEW orders_enriched AS
 SELECT
-  order_id,
-  customer_name
-FROM bronze.orders, bronze.customers;
+  orders.order_id,
+  orders.customer_id,
+  customers.customer_name
+FROM bronze.orders orders
+LEFT JOIN bronze.customers customers ON orders.customer_id = customers.id;
 ```
 
-Several source objects are listed in one `FROM` clause; add the join condition by hand. A view without any `transformSourceObjects` is exported as a table.
+A view is exported as a table, with a warning, when its properties have no `transformSourceObjects` or when a source object is not joined to the others by a relationship.
 
 ## ClickHouse
 

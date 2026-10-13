@@ -1,3 +1,6 @@
+import re
+
+import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -164,7 +167,13 @@ schema:
         primaryKey: true
         description: Unique identifier of the order.
         transformSourceObjects:
+          - bronze.orders.order_id
+      - name: customer_id
+        logicalType: string
+        transformSourceObjects:
           - bronze.orders
+        relationships:
+          - to: customers.id
       - name: customer_name
         logicalType: string
         transformSourceObjects:
@@ -179,9 +188,11 @@ def test_to_sql_ddl_view_postgres():
 -- SQL Dialect: postgres
 CREATE OR REPLACE VIEW orders_enriched AS
 SELECT
-  order_id,
-  customer_name
-FROM bronze.orders, bronze.customers;
+  orders.order_id,
+  orders.customer_id,
+  customers.customer_name
+FROM bronze.orders orders
+LEFT JOIN bronze.customers customers ON orders.customer_id = customers.id;
 """.strip()
     assert actual == expected
 
@@ -193,19 +204,39 @@ def test_to_sql_ddl_view_snowflake():
 -- SQL Dialect: snowflake
 CREATE OR REPLACE VIEW orders_enriched (
   order_id COMMENT 'Unique identifier of the order.',
+  customer_id,
   customer_name
 ) COMMENT='One row per order with its customer.' AS
 SELECT
-  order_id,
-  customer_name
-FROM bronze.orders, bronze.customers;
+  orders.order_id,
+  orders.customer_id,
+  customers.customer_name
+FROM bronze.orders orders
+LEFT JOIN bronze.customers customers ON orders.customer_id = customers.id;
 """.strip()
     assert actual == expected
 
 
-def test_to_sql_ddl_view_without_source_objects_is_a_table():
-    contract = VIEW_CONTRACT.replace("        transformSourceObjects:\n          - bronze.orders\n", "").replace(
-        "        transformSourceObjects:\n          - bronze.customers\n", ""
+def test_to_sql_ddl_view_schema_level_relationship():
+    contract = VIEW_CONTRACT.replace("        relationships:\n          - to: customers.id\n", "") + (
+        "    relationships:\n      - from: orders.customer_id\n        to: customers.id\n"
     )
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
+    assert "LEFT JOIN bronze.customers customers ON orders.customer_id = customers.id;" in actual
+
+
+def test_to_sql_ddl_view_single_source():
+    contract = VIEW_CONTRACT.replace("          - bronze.customers\n", "          - bronze.orders\n")
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
+    assert actual.endswith("SELECT\n  order_id,\n  customer_id,\n  customer_name\nFROM bronze.orders;")
+
+
+@pytest.mark.parametrize(
+    "removed",
+    [r" +relationships:\n +- to: .*\n", r" +transformSourceObjects:\n( +- .*\n)+"],
+    ids=["sources not joined", "no sources"],
+)
+def test_to_sql_ddl_view_that_cannot_be_written_is_a_table(removed):
+    contract = re.sub(removed, "", VIEW_CONTRACT)
     actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
     assert "CREATE TABLE orders_enriched (" in actual

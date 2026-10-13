@@ -116,13 +116,9 @@ def _to_sql_table(
     **kwargs,
 ) -> str:
     if (model.physicalType or "").lower() == "view":
-        sources = list(dict.fromkeys(s for p in model.properties or [] for s in p.transformSourceObjects or []))
-        if sources:
-            return _to_sql_view(model_name, model, sources, server_type)
-        logging.getLogger(__name__).warning(
-            "Schema '%s' is a view without transformSourceObjects on its properties; exporting it as a table.",
-            model.name,
-        )
+        view = _to_sql_view(model_name, model, server_type)
+        if view is not None:
+            return view
 
     if server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
@@ -195,8 +191,90 @@ def _to_sql_table(
     return result
 
 
-def _to_sql_view(model_name: str, model: SchemaObject, sources: list[str], server_type: str) -> str:
-    column_names = [prop.physicalName or prop.name for prop in model.properties]
+def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str | None:
+    """Select the properties from their transformSourceObjects, joined on the view's foreignKey relationships.
+
+    Returns None, after a warning, when the view cannot be written: no source objects, or a source object
+    that no relationship joins to the others.
+    """
+    properties = model.properties or []
+    column_names = [prop.physicalName or prop.name for prop in properties]
+
+    # Per property, its (source object, source column). An entry of transformSourceObjects whose last part is
+    # the property's name is a column of the object before it; any other entry is an object.
+    property_sources = []
+    all_sources = []
+    for prop, column_name in zip(properties, column_names):
+        names = {n.lower() for n in (prop.name, prop.physicalName) if n}
+        refs = []
+        for entry in prop.transformSourceObjects or []:
+            obj, _, col = entry.rpartition(".")
+            refs.append((obj, col) if obj and col.lower() in names else (entry, None))
+        objects = list(dict.fromkeys(obj for obj, _ in refs))
+        all_sources += objects
+        column = next((col for _, col in refs if col), column_name)
+        property_sources.append((objects[0] if len(objects) == 1 else None, column))
+    sources = list(dict.fromkeys(all_sources))
+    if not sources:
+        logging.getLogger(__name__).warning(
+            "Schema '%s' is a view without transformSourceObjects on its properties; exporting it as a table.",
+            model.name,
+        )
+        return None
+
+    def resolve(ref):
+        # A `table.column` reference points to the source object that is, or ends with, that table
+        table, _, column = str(ref).rpartition(".")
+        matches = [s for s in sources if table and (s == table or s.endswith(f".{table}"))]
+        return (matches[0], column) if len(matches) == 1 else None
+
+    def as_list(refs):
+        return refs if isinstance(refs, list) else [refs]
+
+    edges = []
+    for rel in model.relationships or []:
+        if (rel.type or "foreignKey") == "foreignKey" and len(as_list(rel.from_)) == len(as_list(rel.to)):
+            edges += [(resolve(f), resolve(t)) for f, t in zip(as_list(rel.from_), as_list(rel.to))]
+    for prop, (source, column) in zip(properties, property_sources):
+        for rel in prop.relationships or []:
+            if (rel.type or "foreignKey") == "foreignKey" and source is not None and len(as_list(rel.to)) == 1:
+                edges.append(((source, column), resolve(as_list(rel.to)[0])))
+    edges = [(a, b) for a, b in edges if a and b and a[0] != b[0]]
+
+    # Join each further source object to the ones already joined, on every relationship between them
+    joined, joins = [sources[0]], []
+    while len(joined) < len(sources):
+        for source in (s for s in sources if s not in joined):
+            conditions = [
+                (b, a) if a[0] == source else (a, b) for a, b in edges if {a[0], b[0]} - {*joined} == {source}
+            ]
+            if conditions:
+                joined.append(source)
+                joins.append((source, conditions))
+                break
+        else:
+            logging.getLogger(__name__).warning(
+                "Schema '%s' is a view whose source objects %s are not all joined by foreignKey relationships; "
+                "exporting it as a table.",
+                model.name,
+                ", ".join(sources),
+            )
+            return None
+
+    # With several source objects, columns are qualified by an alias: the object's last part, made unique
+    aliases = {}
+    for source in sources:
+        alias = source.rpartition(".")[2]
+        aliases[source] = alias if alias not in aliases.values() else f"{alias}_{len(aliases) + 1}"
+    select = []
+    for column_name, (source, column) in zip(column_names, property_sources):
+        expression = f"{aliases[source]}.{column}" if source is not None and len(sources) > 1 else column
+        select.append(expression if column == column_name else f"{expression} AS {column_name}")
+    from_clause = sources[0] if len(sources) == 1 else f"{sources[0]} {aliases[sources[0]]}"
+    for source, conditions in joins:
+        on = " AND ".join(f"{aliases[a[0]]}.{a[1]} = {aliases[b[0]]}.{b[1]}" for a, b in conditions)
+        from_clause += f"\nLEFT JOIN {source} {aliases[source]} ON {on}"
+
     if server_type == "sqlserver":
         result = f"CREATE OR ALTER VIEW {model_name}"
     elif server_type == "clickhouse":
@@ -208,7 +286,7 @@ def _to_sql_view(model_name: str, model: SchemaObject, sources: list[str], serve
     if server_type in ("snowflake", "databricks"):
         quote = '"' if server_type == "databricks" else "'"
         columns = []
-        for prop, column_name in zip(model.properties, column_names):
+        for prop, column_name in zip(properties, column_names):
             if prop.description is not None:
                 column_name += f" COMMENT {quote}{_escape(prop.description)}{quote}"
             columns.append(f"  {column_name}")
@@ -217,8 +295,8 @@ def _to_sql_view(model_name: str, model: SchemaObject, sources: list[str], serve
             separator = "=" if server_type == "snowflake" else " "
             result += f" COMMENT{separator}{quote}{_escape(model.description)}{quote}"
 
-    result += " AS\nSELECT\n" + ",\n".join(f"  {c}" for c in column_names)
-    result += "\nFROM " + ", ".join(sources) + ";\n"
+    result += " AS\nSELECT\n" + ",\n".join(f"  {c}" for c in select)
+    result += f"\nFROM {from_clause};\n"
     return result
 
 
