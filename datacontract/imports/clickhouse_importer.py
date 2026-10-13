@@ -22,6 +22,7 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_schema_object,
     create_server,
+    declare_nested_types_per_level,
     property_from_type_string,
     report_unmapped_types,
 )
@@ -209,6 +210,7 @@ def _create_property(row: Dict[str, Any], primary_keys: List[str]) -> SchemaProp
     prop = property_from_type_string(name, unwrap_clickhouse_type(physical_type))
     _apply_logical_types(prop)
     prop.physicalType = physical_type
+    declare_nested_types_per_level(prop)
     prop.required = is_clickhouse_required(physical_type) or None
     if name in primary_keys:
         prop.primaryKey = True
@@ -246,7 +248,6 @@ def map_clickhouse_type(type_string: str) -> Optional[str]:
 def _apply_logical_types(prop: SchemaProperty) -> None:
     """Map the property and its nested items, fields, keys and values."""
     if prop.physicalType:
-        prop.physicalType = unwrap_clickhouse_type(prop.physicalType)
         prop.logicalType = map_clickhouse_type(prop.physicalType) or prop.logicalType
     for child in prop.properties or []:
         _apply_logical_types(child)

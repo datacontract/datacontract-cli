@@ -125,7 +125,7 @@ def print_test_results_table(run, console):
         table.add_row(
             with_markup(check.result),
             escape(str(check.name)),
-            to_field(run, check),
+            escape(to_field(run, check) or ""),
             escape(str(check.reason)) if check.reason else None,
         )
     console.print(table)
