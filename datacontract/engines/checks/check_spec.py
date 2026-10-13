@@ -153,6 +153,8 @@ class CheckSpec:
     valid_min_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_max_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_unique_items: Optional[bool] = None  # INVALID_COUNT, array columns
+    valid_type: Optional[str] = None  # INVALID_COUNT: the logicalType a text value must convert to
+    valid_type_format: Optional[str] = None  # INVALID_COUNT: its logicalTypeOptions.format (JDK DateTimeFormatter)
 
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
@@ -170,7 +172,7 @@ class CheckSpec:
 
     seconds: Optional[int] = None  # FRESHNESS / RETENTION threshold in seconds
 
-    uses_raw_view: bool = False  # FIELD_PRESENT against the duckdb {model}__raw__ view
+    uses_raw_view: bool = False  # FIELD_PRESENT / INVALID_COUNT against the duckdb {model}__raw__ view
 
     # Preset result/reason for checks that are not executed (UNSUPPORTED).
     preset_result: Optional[str] = None
@@ -195,5 +197,6 @@ class CheckSpec:
                 self.valid_min_items,
                 self.valid_max_items,
                 self.valid_unique_items,
+                self.valid_type,
             )
         )

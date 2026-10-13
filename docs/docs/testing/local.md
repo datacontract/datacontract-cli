@@ -50,7 +50,7 @@ Server: production (type=local, format=csv, path=orders.csv)
 │ passed │ Check that field order_total has a maximum of 4999.0 │ order_total │         │
 │  ...   │                                                      │             │         │
 ╰────────┴──────────────────────────────────────────────────────┴─────────────┴─────────╯
-🟢 Data contract is valid. Ran 17 checks. Took 1.2 seconds.
+🟢 Data contract is valid. Ran 19 checks. Took 1.2 seconds.
 ```
 
 ## 4. Let it catch a violation
@@ -91,6 +91,6 @@ JSON files (`.json`, `.jsonl`, `.ndjson`) are also validated against a JSON Sche
 - **`No files found that match the pattern`** — the `path` is a glob over file paths, not a directory, and it is resolved relative to the working directory rather than to the contract.
 - **No checks run at all** — the `format` in the `servers` block must be one of `csv`, `json`, `parquet`, `xml`, or `delta`. It is never guessed at test time (only `datacontract import` infers it from the file suffix), so a missing or misspelled `format` leaves the table unreadable.
 - **Every schema reads the same files** — with more than one schema in the contract, put the `{model}` placeholder in the `path` (e.g. `./data/{model}/*.parquet`); it is substituted with each schema's name.
-- **A CSV or XML value fails as a read error instead of a type check** — CSV and XML files are read *as* the contract's types, so a value that cannot be coerced surfaces while reading. See [Data types](../reference/local.md#data-types).
+- **An XML value fails as a read error instead of a type check** — XML files are read *as* the contract's types, so a value that cannot be coerced surfaces while reading. CSV files are read as text, and a value of the wrong type fails the type check of its column. See [Data types](../reference/local.md#data-types).
 
 Ready for your real data? Do the same against [Snowflake](./snowflake.md), [BigQuery](./bigquery.md), or [Databricks](./databricks.md).

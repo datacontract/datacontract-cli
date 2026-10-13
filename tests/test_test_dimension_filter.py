@@ -138,10 +138,10 @@ def test_builtin_unique_check_maps_to_uniqueness():
 
 
 def test_builtin_presence_check_maps_to_conformity():
-    """A CSV source emits no type checks, so presence is the conformity schema check here."""
+    """On a CSV source, presence and the type of the values are the conformity schema checks."""
     run = DataContract(data_contract_str=BUILTIN_CONTRACT, dimensions={"conformity"}).test()
     print(run.pretty())
-    assert {check.type for check in run.checks} == {"field_is_present", "servicelevel_retention"}
+    assert {check.type for check in run.checks} == {"field_is_present", "field_type", "servicelevel_retention"}
 
 
 def test_builtin_dimension_mapping():

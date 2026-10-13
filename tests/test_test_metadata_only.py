@@ -44,7 +44,7 @@ schema:
 
 VALUE_CHECK_TYPES = {"field_required", "field_unique", "field_regex", "field_minimum"}
 
-# Delta carries real types, so field_type checks run (CSV skips them, parquet warns).
+# Delta carries real types, so field_type checks read the schema (CSV reads the values, parquet warns).
 DELTA_CONTRACT = """
 apiVersion: v3.0.2
 kind: DataContract
@@ -110,11 +110,12 @@ def test_metadata_only_junit_output(tmp_path):
     output_path = tmp_path / "TEST-datacontract.xml"
     write_junit_test_results(run, output_path)
     testsuite = ET.parse(output_path).getroot()
-    assert int(testsuite.get("skipped")) == 5
+    # The 5 value checks and the type checks of the 2 integer columns, which read the CSV values
+    assert int(testsuite.get("skipped")) == 7
     skipped_messages = [
         skipped.get("message") for testcase in testsuite.iter("testcase") for skipped in testcase.iter("skipped")
     ]
-    assert len(skipped_messages) == 5
+    assert len(skipped_messages) == 7
     assert all(message == SKIP_REASON for message in skipped_messages)
 
 
@@ -127,7 +128,7 @@ def test_metadata_only_cli_option(tmp_path):
     )
     assert result.exit_code == 0
     assert "skipped" in result.stdout
-    assert "(5 skipped)" in result.stdout
+    assert "(7 skipped)" in result.stdout
 
 
 # Every check here reads row values (rowCount, custom SQL, freshness, retention),
@@ -174,6 +175,7 @@ def test_metadata_only_skips_servicelevel_and_custom_sql():
     assert run.result == "passed"
     skipped = {check.type: check.reason for check in run.checks if check.result == "skipped"}
     assert set(skipped) == {
+        "field_type",
         "row_count",
         "model_quality_sql",
         "servicelevel_freshness",
