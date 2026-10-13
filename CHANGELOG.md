@@ -7,18 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-10-13
+
 ### Changed
-- `datacontract test`: every nested property, array item and map key and value gets its own type check, with a nested `physicalType` checked on Athena, Trino, Databricks, BigQuery, Snowflake, ClickHouse and Hive
-- `datacontract test`: a property with `properties`, `items` or a `map` block but no type is checked as an object, array or map
-- `datacontract test`: a property whose data cannot hold the structure declared inside it fails its own type check
-- `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays, structs and maps get their base type as `physicalType`, their items, fields, keys and values keep their own
-- A `null` in the `enum` of a required property is a validation error
+- A `null` in the `enum` of a required property is a validation error (#1742)
+- `datacontract test`:
+  - every nested property, array item and map key and value gets its own type check, with a nested `physicalType` checked on Athena, Trino, Databricks, BigQuery, Snowflake, ClickHouse and Hive (#1719)
+  - a property whose data cannot hold the structure declared inside it fails its own type check, and the checks inside it are reported as warnings (#1719)
+  - a property with `properties`, `items` or a `map` block but no type is checked as an object, array or map (#1719)
+- `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays, structs and maps get their base type as `physicalType`, their items, fields, keys and values keep their own (#1719)
 
 ### Fixed
-- `datacontract test`: a declared `physicalType: json`, `jsonb` or `variant` matches a json column on servers whose native types are not read
-- `datacontract test`: rules on the key or value of a map are reported as warnings instead of being ignored
-- `datacontract export jsonschema` and `datacontract test` on JSON files allow `null` for an optional property with an `enum`
-- `datacontract test`: a `null` among an `enum` or `validValues` no longer lets every other value pass
+- `datacontract test`:
+  - a `null` among an `enum` or `validValues` no longer lets every other value pass (#1742)
+  - a declared `physicalType: json`, `jsonb` or `variant` matches a json column on servers whose native types are not read (#1719)
+  - rules on the key or value of a map are reported as warnings instead of being ignored (#1719)
+- `datacontract export jsonschema` and `datacontract test` on JSON files allow `null` for an optional property with an `enum` (#1742)
 
 ## [1.2.5] - 2026-10-12
 
