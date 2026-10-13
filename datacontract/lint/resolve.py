@@ -54,7 +54,7 @@ class _LaxOpenDataContractStandard(OpenDataContractStandard):
 class _SafeLoaderNoTimestamp(yaml.SafeLoader):
     """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
 
-    def construct_mapping(self, node, deep=False):
+    def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict[object, object]:
         # Check only explicit keys before SafeLoader expands YAML merge keys.
         # An explicit override of an inherited anchor value is valid YAML.
         seen = set()
