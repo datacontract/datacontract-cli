@@ -391,7 +391,9 @@ def property_from_type_string(name: str, type_string: str) -> SchemaProperty:
                 if not field_type:
                     # Trino reports a name with spaces unquoted: `row(first name varchar(20))`
                     match = re.fullmatch(
-                        r"(.+?)\s+((?:\w+\s*[(<].*[)>]|\w+)(?:\s+with(?:out)?\s+time\s+zone)?)", argument, re.S
+                        r"(.+?)\s+((?:\w+\s*[(<].*[)>]|interval\s+\w+\s+to\s+\w+|\w+)(?:\s+with(?:out)?\s+time\s+zone)?)",
+                        argument,
+                        re.S,
                     )
                     field_name, field_type = match.groups() if match else (argument, "")
                 properties.append(property_from_type_string(field_name.strip().strip('`"'), field_type.strip()))

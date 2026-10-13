@@ -402,20 +402,21 @@ def test_the_properties_of_a_structured_column_that_is_not_an_object_warn():
 
 def test_a_nested_name_with_spaces_resolves_in_a_full_type_string():
     # Trino reports such names unquoted
-    native = "row(first name varchar(20), ts timestamp(3) with time zone)"
+    native = 'row(first name varchar(20), ts timestamp(3) with time zone, "d" interval day to second)'
     prop = SchemaProperty(
         name="p",
         physicalType="row",
         properties=[
             SchemaProperty(name="first name", physicalType="varchar(20)"),
             SchemaProperty(name="ts", physicalType="timestamp(3) with time zone"),
+            SchemaProperty(name="d", physicalType="interval day to second"),
         ],
     )
     specs = _checks(prop, "trino")
     run = Run.create_run()
     run.checks = build_check_stubs(specs)
     con = SimpleNamespace(compiler=SimpleNamespace(dialect="trino"))
-    for field in ("p.first name", "p.ts"):
+    for field in ("p.first name", "p.ts", "p.d"):
         spec = _type_check(specs, field)
         _run_physical_type(
             run,
@@ -430,6 +431,7 @@ def test_a_nested_name_with_spaces_resolves_in_a_full_type_string():
     assert {c.field: c.result for c in run.checks if c.type == "field_physical_type" and c.field != "p"} == {
         "p.first name": ResultEnum.passed,
         "p.ts": ResultEnum.passed,
+        "p.d": ResultEnum.passed,
     }
 
 
