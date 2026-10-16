@@ -60,7 +60,7 @@ def test_select_operation_by_id_or_path(operation):
     ]
 
 
-@pytest.mark.parametrize("operation", ["searchOrders", "POST /orders/search"])
+@pytest.mark.parametrize("operation", ["searchOrders", "POST /orders/search", "post /orders/search"])
 def test_post_operation(operation):
     result = import_openapi(ORDERS, operation)
 

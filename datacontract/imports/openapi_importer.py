@@ -91,10 +91,13 @@ def _select_operation(spec: dict, operation: str | None) -> tuple[str, dict, str
     ]
     gets = [o for o in operations if o[2] == "GET"]
     if operation is not None:
+        method, _, path = operation.partition(" ")
         matches = [
             o
             for o in operations
-            if operation in (o[3].get("operationId"), f"{o[2]} {o[0]}") or (o[2] == "GET" and operation == o[0])
+            if operation == o[3].get("operationId")
+            or (method.upper(), path) == (o[2], o[0])
+            or (o[2] == "GET" and operation == o[0])
         ]
     else:
         matches = gets if len(gets) == 1 else []
