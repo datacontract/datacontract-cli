@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import openapi` imports POST operations, and writes required query parameters to the `params` custom property (#1747)
 
 ### Security
-- `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` is set on the server (#1747)
+- `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` or `DATACONTRACT_API_HEADER_X_API_KEY` is set on the server (#1747)
 
 ### Fixed
 - `datacontract breaking` grades from the consumer's perspective by default (previously inconsistent mix of consumer and producer perspective)

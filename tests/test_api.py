@@ -866,7 +866,7 @@ def test_guard_blocks_env_api_header(monkeypatch, variable):
         "/test", content=_api_contract("https://attacker.example/orders"), headers={"Content-Type": "application/yaml"}
     )
     assert response.status_code == 422
-    assert "api credential" in response.json()["detail"]
+    assert f"credential for api servers in its environment ({variable})" in response.json()["detail"]
 
 
 @pytest.fixture
