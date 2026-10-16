@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, ValidationError
 from datacontract.config import Config, known_env_names
 from datacontract.config.variables import CONTRACT_VARIABLES_ENV, allowed_environment, resolve_variables
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.model.breaking import BreakingChangeEntry
+from datacontract.model.breaking import BreakingChangeEntry, Perspective
 from datacontract.model.changelog import ChangelogEntry
 from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 from datacontract.model.run import Check, ResultEnum, Run
@@ -943,6 +943,9 @@ class BreakingChangesResponse(BaseModel):
     entries: list[BreakingChangeEntry] = Field(
         description="Every single change with its grade and the old and new value.",
     )
+    perspective: Perspective = Field(
+        description="Whose expectations the changes were graded against: `consumer` or `producer`.",
+    )
     is_breaking: bool = Field(
         description="Whether any detected change is classified as an error-level breaking change.",
     )
@@ -1006,13 +1009,22 @@ parsed is answered with `422`.
 def breaking_endpoint(
     body: ChangelogRequest,
     api_key: Annotated[str | None, Depends(api_key_header)] = None,
+    perspective: Annotated[
+        Perspective,
+        Query(
+            description="Whose expectations a change must not break: `consumer` flags changes that let v2 deliver "
+            "data v1 ruled out, `producer` flags changes that data which passed v1 may fail.",
+        ),
+    ] = Perspective.CONSUMER,
 ) -> BreakingChangesResponse:
     check_api_key(api_key)
 
     result = DataContract(data_contract_str=body.v1, untrusted_contract=True).breaking(
-        DataContract(data_contract_str=body.v2, untrusted_contract=True)
+        DataContract(data_contract_str=body.v2, untrusted_contract=True), perspective
     )
-    return BreakingChangesResponse(summary=result.summary, entries=result.entries, is_breaking=result.is_breaking)
+    return BreakingChangesResponse(
+        summary=result.summary, entries=result.entries, perspective=result.perspective, is_breaking=result.is_breaking
+    )
 
 
 @app.post(

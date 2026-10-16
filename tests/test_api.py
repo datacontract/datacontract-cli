@@ -93,10 +93,23 @@ def test_breaking():
     assert "v1" not in data
     assert "v2" not in data
     assert data["is_breaking"] is True
+    assert data["perspective"] == "consumer"
     assert "summary" in data
     assert "entries" in data
     assert data["entries"][0]["level"] in ("info", "warning", "error")
     assert "message" in data["entries"][0]
+
+
+def test_breaking_from_the_producer_perspective():
+    with open("fixtures/changelog/breaking/warning_only_v1.yaml", "r") as f:
+        v1 = f.read()
+    with open("fixtures/changelog/breaking/warning_only_v2.yaml", "r") as f:
+        v2 = f.read()
+    assert client.post(url="/breaking", json={"v1": v1, "v2": v2}).json()["is_breaking"] is False
+    response = client.post(url="/breaking", params={"perspective": "producer"}, json={"v1": v1, "v2": v2})
+    assert response.status_code == 200
+    assert response.json()["perspective"] == "producer"
+    assert response.json()["is_breaking"] is True
 
 
 def test_breaking_invalid_yaml():

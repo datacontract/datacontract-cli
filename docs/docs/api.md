@@ -81,7 +81,7 @@ curl -X POST "http://localhost:4242/changelog" \
   }'
 ```
 
-`POST /breaking` grades those same changes for compatibility impact. It adds a `level` (`info`, `warning` or `error`) and a `rule_id` to every entry, plus a top-level `is_breaking` flag that is `true` when any entry is an `error`:
+`POST /breaking` grades those same changes for compatibility impact. It adds a `direction` (`tightens`, `loosens`, `both`, `undetermined` or `untested`), a `level` (`info`, `warning` or `error`) and a `rule_id` to every entry, plus the `perspective` it graded from and a top-level `is_breaking` flag that is `true` when any entry is an `error`. Pass `?perspective=producer` to grade whether data that passed v1 may fail v2 instead of whether v2 still keeps v1's guarantees to consumers:
 
 ```bash
 curl -X POST "http://localhost:4242/breaking" \
@@ -100,12 +100,14 @@ curl -X POST "http://localhost:4242/breaking" \
       "path": "schema.orders.properties.order_id.logicalTypeOptions.pattern",
       "change_type": "updated",
       "level": "warning",
+      "direction": "undetermined",
       "message": "Changed validation constraint at schema.orders.properties.order_id.logicalTypeOptions.pattern from '^ORD-[0-9]+$' to '^ORD-[0-9]{4}$'",
       "rule_id": "validation-constraint-changed",
       "old_value": "^ORD-[0-9]+$",
       "new_value": "^ORD-[0-9]{4}$"
     }
   ],
+  "perspective": "consumer",
   "is_breaking": false
 }
 ```

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract breaking --perspective producer` (and `perspective` on `POST /breaking` and `DataContract.breaking()`) flags changes that data which passed v1 may fail
+- `datacontract breaking` grades relationships, `physicalName`, `minItems`, `maxItems`, `uniqueItems`, `mustBeBetween`, quality rule `severity`, and the `freshness` service level, and shows each change's direction
+
+### Changed
+- `datacontract breaking` grades from the consumer's perspective by default
+
 ## [1.2.6] - 2026-10-13
 
 ### Changed
