@@ -105,7 +105,7 @@ servers:
         value:
           query:
             customer_id: ${customer_id:-C-1}
-          size: ${size:-100}
+          size: 100
 ```
 
 This sends a POST request with the query parameters `limit=100`, `status=placed` and `status=shipped`, and the body `{"query": {"customer_id": "C-1"}, "size": 100}`. See the [reference](../reference/api.md#request) for the rules.
