@@ -175,8 +175,8 @@ def resolve_server_variables(server: Server, variables: Optional[Mapping[str, st
 
     ``port`` may hold a reference (the schema allows a string there for that
     reason); a resolved all-digit port becomes an int again. Custom property
-    values are resolved too, nested ones like an API request body with their
-    whole references typed. The contract's server is not mutated.
+    values are resolved too, nested ones like an API request body included.
+    The contract's server is not mutated.
     """
     updates = {}
     for field in Server.model_fields:
@@ -201,9 +201,7 @@ def resolve_server_variables(server: Server, variables: Optional[Mapping[str, st
                 )
             elif isinstance(prop.value, (dict, list)):
                 changed = True
-                prop = prop.model_copy(
-                    update={"value": resolve_runtime_variables(prop.value, source, variables, typed=True)}
-                )
+                prop = prop.model_copy(update={"value": resolve_runtime_variables(prop.value, source, variables)})
             custom_properties.append(prop)
         if changed:
             updates["customProperties"] = custom_properties

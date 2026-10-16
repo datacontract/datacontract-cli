@@ -130,8 +130,8 @@ def test_post_request(api, monkeypatch):
     assert api.methods == ["POST"]
     assert api.paths == ["/orders/search?tenant=eu&limit=100&status=placed&status=shipped&archived=false"]
     assert api.headers[0]["Content-Type"] == "application/json"
-    # a whole reference keeps the type it reads as
-    assert json.loads(api.request_bodies[0]) == {"query": {"customer": "C-1"}, "size": 5}
+    # a variable stays a string, such as a numeric customer or zip code
+    assert json.loads(api.request_bodies[0]) == {"query": {"customer": "C-1"}, "size": "5"}
 
 
 def test_credential_headers(api):
