@@ -3,7 +3,13 @@ import logging
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+import yaml
+from urllib3.exceptions import NewConnectionError
+
+from datacontract.config import Config
 from datacontract.data_contract import DataContract
+from datacontract.engines.http_api import _PublicHTTPSConnection
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -44,7 +50,7 @@ def mock_get(*args, **kwargs):
     return mock_response
 
 
-@patch("datacontract.engines.data_contract_test.requests.get", side_effect=mock_get)
+@patch("datacontract.engines.http_api.ApiSession.request", side_effect=mock_get)
 def test_test_api(_mock_get):
     with open(datacontract) as data_contract_file:
         data_contract_str = data_contract_file.read()
@@ -70,7 +76,7 @@ def mock_get_array(*args, **kwargs):
     return mock_response
 
 
-@patch("datacontract.engines.data_contract_test.requests.get", side_effect=mock_get_array)
+@patch("datacontract.engines.http_api.ApiSession.request", side_effect=mock_get_array)
 def test_test_api_array_delimiter(_mock_get):
     with open(datacontract_array) as data_contract_file:
         data_contract_str = data_contract_file.read()
@@ -81,3 +87,112 @@ def test_test_api_array_delimiter(_mock_get):
     print(run)
     assert run.result == "passed"
     assert all(check.result == "passed" for check in run.checks)
+
+
+def search_contract(api, custom_properties: dict, location_query: str = "", **kwargs) -> DataContract:
+    """A contract for the local API's search endpoint, its request shaped by the custom properties."""
+    contract = {
+        "apiVersion": "v3.2.0",
+        "kind": "DataContract",
+        "id": "orders",
+        "version": "1.0.0",
+        "status": "active",
+        "servers": [
+            {
+                "server": "search",
+                "type": "api",
+                "location": f"{api.url}/orders/search{location_query}",
+                "customProperties": [{"property": k, "value": v} for k, v in custom_properties.items()],
+            }
+        ],
+        "schema": [{"name": "orders", "properties": [{"name": "order_id", "logicalType": "string", "required": True}]}],
+    }
+    return DataContract(data_contract_str=yaml.safe_dump(contract, sort_keys=False), **kwargs)
+
+
+def test_post_request(api, monkeypatch):
+    api.body = json.dumps([{"order_id": "ORD-1"}])
+    monkeypatch.setenv("SIZE", "5")
+    contract = search_contract(
+        api,
+        {
+            "method": "post",
+            "params": {"limit": "${LIMIT:-100}", "status": ["placed", "shipped"], "archived": False},
+            "body": {"query": {"customer": "${CUSTOMER:-C-1}"}, "size": "${SIZE}"},
+        },
+        location_query="?tenant=eu",
+    )
+
+    run = contract.test()
+
+    assert run.result == "passed", run.pretty()
+    assert api.methods == ["POST"]
+    assert api.paths == ["/orders/search?tenant=eu&limit=100&status=placed&status=shipped&archived=false"]
+    assert api.headers[0]["Content-Type"] == "application/json"
+    # a whole reference keeps the type it reads as
+    assert json.loads(api.request_bodies[0]) == {"query": {"customer": "C-1"}, "size": 5}
+
+
+def test_credential_headers(api):
+    api.body = json.dumps([{"order_id": "ORD-1"}])
+    config = Config(api_header_authorization="Bearer token", api_header_x_api_key="key")
+
+    run = search_contract(api, {}, config=config).test()
+
+    assert run.result == "passed", run.pretty()
+    assert api.methods == ["GET"]
+    assert (api.headers[0]["Authorization"], api.headers[0]["X-API-Key"]) == ("Bearer token", "key")
+
+
+def test_error_response_is_explained(api):
+    api.status = 400
+    api.body = '{"error": "unknown field size"}'
+
+    run = search_contract(api, {}).test()
+
+    assert run.result == "error"
+    assert any("400" in c.reason and "unknown field size" in c.reason for c in run.checks), run.pretty()
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+@pytest.mark.parametrize(
+    "custom_properties, location_query, reason",
+    [
+        ({"method": "PUT"}, "", "Method 'PUT' is not supported; use GET or POST."),
+        ({"body": {"q": "a"}}, "", "A body requires method POST."),
+        ({"method": "GET", "body": {"q": "a"}}, "", "A body requires method POST."),
+        ({"params": ["limit"]}, "", "The params custom property must map each query parameter name to its value."),
+        ({"params": {"filter": {"status": "a"}}}, "", "Query parameter 'filter' must be a string, number, or boolean"),
+        (
+            {"params": {"limit": 10}},
+            "?limit=100",
+            "Query parameter 'limit' is set both in the location and in the params custom property.",
+        ),
+    ],
+)
+def test_invalid_request(api, dry_run, custom_properties, location_query, reason):
+    run = search_contract(api, custom_properties, location_query, dry_run=dry_run).test()
+
+    assert run.result == "failed"
+    assert any(c.name == "Build the API request" and c.reason.startswith(reason) for c in run.checks), run.pretty()
+    assert api.paths == []
+
+
+def test_untrusted_contract_stays_off_private_networks(api):
+    api.body = json.dumps([{"order_id": "ORD-1"}])
+    run = search_contract(api, {"method": "POST", "body": {"q": "a"}}, untrusted_contract=True).test()
+
+    assert run.result == "error"
+    assert any("Refused to connect to 127.0.0.1" in c.reason for c in run.checks), run.pretty()
+    assert api.paths == []
+
+    run = search_contract(api, {}, untrusted_contract=True, allow_private_network=True).test()
+    assert run.result == "passed", run.pretty()
+
+
+def test_https_connection_stays_off_private_networks(api):
+    """The address is checked before the TLS handshake, so a plain HTTP server stands in for an HTTPS one."""
+    port = int(api.url.rsplit(":", 1)[1])
+
+    with pytest.raises(NewConnectionError, match="Refused to connect to 127.0.0.1"):
+        _PublicHTTPSConnection("127.0.0.1", port)._new_conn()

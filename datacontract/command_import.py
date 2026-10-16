@@ -1053,8 +1053,9 @@ def import_openapi(
     operation: Annotated[
         Optional[str],
         typer.Option(
-            help="The GET operation to import, by operationId or path (e.g. listOrders or /orders). "
-            "Required when the document has more than one GET operation."
+            help="The GET or POST operation to import, by operationId, method and path, or a GET operation's path "
+            "(e.g. listOrders, 'POST /orders/search', or /orders). Required unless the document has exactly one GET "
+            "operation."
         ),
     ] = None,
     output: output_option = None,
@@ -1062,7 +1063,7 @@ def import_openapi(
     id: id_option = None,
     debug: debug_option = None,
 ):
-    """Import a data contract from the response of a GET operation in an OpenAPI 3.x document."""
+    """Import a data contract from the response of a GET or POST operation in an OpenAPI 3.x document."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
         config=cli_config(), format="openapi", source=source, openapi_operation=operation, owner=owner, id=id

@@ -259,9 +259,10 @@ A posted contract carries SQL and names the hosts to connect to, so the server t
 untrusted input: a `quality.type: sql` rule must be a read-only query, a credential held in the
 server's environment is never sent to a host the contract names, a `publish_url` may only point at
 the Entropy Data platform or the host configured via `ENTROPY_DATA_HOST`, and `servers[].type: local`
-is refused so a caller cannot read the server's own files. Set
-`DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment serves its own files on purpose;
-the contract is then still confined to the paths it declares.
+is refused so a caller cannot read the server's own files, and an `api` server's requests may not
+reach a private network address. Set `DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment
+serves its own files on purpose; the contract is then still confined to the paths it declares. Set
+`DATACONTRACT_CLI_API_ALLOW_PRIVATE_NETWORK=true` to test APIs in the server's own network.
 
 ## Connecting to data sources
 
@@ -525,6 +526,8 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     # option pins it), so an environment-held SASL password can never be paired
     # with a posted contract safely -- host_field is None, so it is always rejected.
     "kafka": ("broker host", None, ("kafka_sasl_password",)),
+    # Nothing pins an API server's location either.
+    "api": ("location", None, ("api_header_authorization", "api_header_x_api_key")),
 }
 
 
@@ -552,6 +555,7 @@ def _selected_server(body: str, server_name: str | None, config):
 _LOCAL_SERVER_TYPES = frozenset({"local", "duckdb"})
 
 ALLOW_LOCAL_FILES_ENV = "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES"
+ALLOW_PRIVATE_NETWORK_ENV = "DATACONTRACT_CLI_API_ALLOW_PRIVATE_NETWORK"
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
@@ -568,6 +572,11 @@ def _local_files_allowed() -> bool:
     picks the path.
     """
     return (os.getenv(ALLOW_LOCAL_FILES_ENV) or "").strip().lower() in _TRUTHY
+
+
+def _private_network_allowed() -> bool:
+    """Whether the operator lets a posted contract's API requests reach private network addresses."""
+    return (os.getenv(ALLOW_PRIVATE_NETWORK_ENV) or "").strip().lower() in _TRUTHY
 
 
 def _reject_local_server_type(body: str, server_name: str | None, config) -> None:
@@ -835,6 +844,7 @@ def test(
         filters=parsed_filters,
         untrusted_contract=untrusted_contract,
         allowed_variables=_allowed_contract_variables(),
+        allow_private_network=_private_network_allowed(),
     ).test()
 
 

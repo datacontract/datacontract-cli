@@ -114,6 +114,7 @@ class DataContract:
         dry_run: bool = False,
         untrusted_contract: bool = False,
         allowed_variables: list[str] | None = None,
+        allow_private_network: bool = False,
         config: "Config | dict[str, str] | None" = None,
     ):
         self._data_contract_file = data_contract_file
@@ -145,6 +146,8 @@ class DataContract:
         self._untrusted_contract = untrusted_contract
         # fnmatch globs of the environment variables an untrusted contract may read.
         self._allowed_variables = allowed_variables
+        # Whether an untrusted contract's API requests may reach private network addresses.
+        self._allow_private_network = allow_private_network
         self._config = Config.resolve(config)
 
     @classmethod
@@ -259,6 +262,7 @@ class DataContract:
                 config=self._config,
                 untrusted_contract=self._untrusted_contract,
                 allowed_variables=self._allowed_variables,
+                allow_private_network=self._allow_private_network,
             )
 
         except DataContractException as e:
