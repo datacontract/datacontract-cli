@@ -867,6 +867,7 @@ def test_guard_blocks_env_api_header(monkeypatch, variable):
     )
     assert response.status_code == 422
     assert f"credential for api servers in its environment ({variable})" in response.json()["detail"]
+    assert f"as request headers instead ({variable.lower().replace('_', '-')})" in response.json()["detail"]
 
 
 @pytest.fixture

@@ -632,22 +632,23 @@ def _reject_environment_credentials_to_untrusted_host(body: str, server_name: st
         return  # no environment-held secret for this server type; nothing to protect
     if host_field is not None and resolved.option_source(host_field) == "env":
         return  # the operator pinned the target host; the contract's host is ignored
-    held = ", ".join(
+    held = [
         env_name(field, Config.model_fields[field]) for field in secret_fields if resolved.option_source(field) == "env"
-    )
+    ]
     if host_field is not None:
         env_var = env_name(host_field, Config.model_fields[host_field])
         detail = (
-            f"This server holds a credential for {server.type} servers in its environment ({held}), so the "
+            f"This server holds a credential for {server.type} servers in its environment ({', '.join(held)}), so the "
             f"connection {target_attr} must also come from the server's environment ({env_var}); it will not "
             f"be taken from the posted data contract. Set {env_var}, or send the full set of credentials with "
             f"the request instead of relying on the server's environment."
         )
     else:
         detail = (
-            f"This server holds a credential for {server.type} servers in its environment ({held}), but their "
-            f"{target_attr} can only come from the posted data contract, so the credential cannot be pinned to a "
-            f"trusted target. Send the credentials with the request instead of relying on the server's environment."
+            f"This server holds a credential for {server.type} servers in its environment ({', '.join(held)}), but "
+            f"their {target_attr} can only come from the posted data contract, so the credential cannot be pinned to "
+            f"a trusted target. Send the credentials as request headers instead "
+            f"({', '.join(name.lower().replace('_', '-') for name in held)})."
         )
     raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
 
