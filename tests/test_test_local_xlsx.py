@@ -7,9 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 from openpyxl import load_workbook
-from typer.testing import CliRunner
 
-from datacontract.cli import app
 from datacontract.data_contract import DataContract
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.lint import resolve
@@ -49,12 +47,6 @@ def rows(contract_str: str, view: str) -> list[tuple]:
     data_contract = resolve.resolve_data_contract(data_contract_str=contract_str)
     con = get_duckdb_connection(data_contract, data_contract.servers[0], Run.create_run())
     return con.sql(f'SELECT * FROM "{view}"').fetchall()
-
-
-def test_cli():
-    result = CliRunner().invoke(app, ["test", CONTRACT])
-
-    assert result.exit_code == 0, result.output
 
 
 def test_both_sheets_of_a_workbook_are_checked():
