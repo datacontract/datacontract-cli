@@ -29,7 +29,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
     check_that_datacontract_contains_valid_server_configuration,
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
-from datacontract.engines.http_api import ApiSession, PublicAddressAdapter, api_headers
+from datacontract.engines.http_api import ApiSession, PrivateAddressRefused, PublicAddressAdapter, api_headers
 from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
 from datacontract.lint.resolve import _SafeLoaderNoTimestamp
 from datacontract.model.exceptions import DataContractException
@@ -487,17 +487,21 @@ def process_api_response(
                 server.location,
                 params=params,
                 headers=headers,
+                timeout=(config.get_connect_timeout(), None),
                 **({"json": custom_properties["body"]} if "body" in custom_properties else {}),
             )
             response.raise_for_status()
     except requests.exceptions.RequestException as e:
+        # urllib3 wraps the refusal in its retry error
+        refusal = getattr(e.args[0], "reason", None) if e.args else None
+        error = refusal.message if isinstance(refusal, PrivateAddressRefused) else e
         # the API's own explanation, such as which part of the body it rejected
         answer = f" {e.response.text[:500]}" if e.response is not None and e.response.text else ""
         raise DataContractException(
             type="connection",
             name="API server connection error",
             result=ResultEnum.error,
-            reason=f"Failed to fetch API response from {server.location}: {e}{answer}",
+            reason=f"Failed to fetch API response from {server.location}: {error}{answer}",
             engine="datacontract-cli",
         )
     content = response.text

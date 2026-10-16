@@ -1,5 +1,6 @@
 import json
 import logging
+import socket
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -9,7 +10,7 @@ from urllib3.exceptions import NewConnectionError
 
 from datacontract.config import Config
 from datacontract.data_contract import DataContract
-from datacontract.engines.http_api import _PublicHTTPSConnection
+from datacontract.engines.http_api import _is_public, _PublicHTTPSConnection
 
 logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -183,7 +184,12 @@ def test_untrusted_contract_stays_off_private_networks(api):
     run = search_contract(api, {"method": "POST", "body": {"q": "a"}}, untrusted_contract=True).test()
 
     assert run.result == "error"
-    assert any("Refused to connect to 127.0.0.1" in c.reason for c in run.checks), run.pretty()
+    assert any(
+        c.reason.startswith(
+            f"Failed to fetch API response from {api.url}/orders/search: Refused to connect to 127.0.0.1:"
+        )
+        for c in run.checks
+    ), run.pretty()
     assert api.paths == []
 
     run = search_contract(api, {}, untrusted_contract=True, allow_private_network=True).test()
@@ -196,3 +202,30 @@ def test_https_connection_stays_off_private_networks(api):
 
     with pytest.raises(NewConnectionError, match="Refused to connect to 127.0.0.1"):
         _PublicHTTPSConnection("127.0.0.1", port)._new_conn()
+
+
+def test_private_address_refused_before_connecting():
+    """A closed port answers like an open one, and a hostname's private address is not disclosed."""
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        closed_port = probe.getsockname()[1]
+
+    with pytest.raises(NewConnectionError, match="Refused to connect to localhost:"):
+        _PublicHTTPSConnection("localhost", closed_port)._new_conn()
+
+
+@pytest.mark.parametrize(
+    "address, public",
+    [
+        ("93.184.215.14", True),
+        ("2606:2800:21f:cb07:6820:80da:af6b:8b2c", True),
+        ("::ffff:127.0.0.1", False),
+        ("64:ff9b::a9fe:a9fe", False),
+        ("64:ff9b::5db8:d70e", True),
+        ("::127.0.0.1", False),
+        ("::ffff:0:7f00:1", False),
+        ("::1", False),
+    ],
+)
+def test_embedded_ipv4_address_is_checked(address, public):
+    assert _is_public(address) is public

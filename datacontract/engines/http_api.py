@@ -1,6 +1,7 @@
 """Requests to the HTTP APIs that `api` servers and OData services name."""
 
 import ipaddress
+import socket
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -31,18 +32,40 @@ class ApiSession(requests.Session):
             prepared_request.headers.pop("X-API-Key", None)
 
 
+class PrivateAddressRefused(NewConnectionError):
+    def __init__(self, conn, host: str):
+        self.message = (
+            f"Refused to connect to {host}: a posted data contract may not reach a private network address. "
+            f"Start the API server with --allow-private-network to allow it."
+        )
+        super().__init__(conn, self.message)
+
+
+def _is_public(address: str) -> bool:
+    address = ipaddress.ip_address(address)
+    # IPv4-mapped, NAT64, IPv4-compatible and IPv4-translated addresses reach the IPv4 address in their low 32 bits.
+    if address.version == 6 and any(
+        address in ipaddress.ip_network(prefix)
+        for prefix in ("::ffff:0:0/96", "64:ff9b::/96", "::/96", "::ffff:0:0:0/96")
+    ):
+        address = ipaddress.IPv4Address(int(address) & 0xFFFFFFFF)
+    return address.is_global
+
+
 class _PublicPeerOnly:
-    # Checks the address actually connected to, before anything is sent, so DNS rebinding cannot get around it.
+    # Refuses a private address before connecting, so a refusal tells nothing about the private network's ports or
+    # addresses, and checks the address actually connected to, so DNS rebinding cannot get around it.
     def _new_conn(self):
+        try:
+            resolved = [info[4][0] for info in socket.getaddrinfo(self.host, self.port, type=socket.SOCK_STREAM)]
+        except OSError:
+            resolved = []  # urllib3 reports the resolution failure
+        if not all(_is_public(address) for address in resolved):
+            raise PrivateAddressRefused(self, self.host)
         sock = super()._new_conn()
-        address = ipaddress.ip_address(sock.getpeername()[0])
-        if not (getattr(address, "ipv4_mapped", None) or address).is_global:
+        if not _is_public(sock.getpeername()[0]):
             sock.close()
-            raise NewConnectionError(
-                self,
-                f"Refused to connect to {address}: a posted data contract may not reach a private network address. "
-                f"Start the API server with --allow-private-network to allow it.",
-            )
+            raise PrivateAddressRefused(self, self.host)
         return sock
 
 
