@@ -897,12 +897,7 @@ def _run_present(run: Run, con, model: str, columns, schema, spec: CheckSpec):
 
 def _run_field_names(run: Run, con, model: str, t, spec: CheckSpec):
     """The fields of the data that the contract does not declare; names compare case-insensitively."""
-    table = t
-    if spec.uses_raw_view:
-        try:
-            table = _resolve_table(con, f"{model}__raw__")
-        except Exception:
-            pass
+    table = _resolve_table(con, f"{model}__raw__") if spec.uses_raw_view else t
     _set_impl(run, spec.key, _describe(spec), "introspection")
     declared = {name.lower() for name in spec.columns or []}
     additional = [name for name in table.columns if name.lower() not in declared]
