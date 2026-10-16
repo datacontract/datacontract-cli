@@ -433,7 +433,7 @@ def check_xlsx_locations(data_contract: OpenDataContractStandard, path: str) -> 
                 type="xlsx-connection",
                 name="sheet_not_named",
                 reason=(
-                    f"The models {', '.join(unnamed)} share the workbook '{workbook}' with other models, "
+                    f"The model(s) {', '.join(unnamed)} share the workbook '{workbook}' with other models, "
                     "so each needs the name of its sheet as physicalName."
                 ),
             )
