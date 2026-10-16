@@ -1,8 +1,4 @@
-"""The values of a CSV file, read as text, converted to the types the contract declares.
-
-One definition serves both the table the checks read and the type check on the text, so a value the type check
-reports is the same value the table holds as NULL: the other checks on its column treat it as missing.
-"""
+"""CSV text converted to the contract's types: one definition for the typed table and the type check on the text."""
 
 import datetime
 from typing import Optional
@@ -83,10 +79,7 @@ def csv_type(prop: SchemaProperty) -> Optional[str]:
 
 
 def csv_format(prop: SchemaProperty, duckdb_type: Optional[str]) -> Optional[str]:
-    """The declared format of a date, timestamp or time column (Java DateTimeFormatter), or None.
-
-    A format strptime cannot express is None too, so the column is read as ISO 8601; the type check says so.
-    """
+    """The declared format of a date, timestamp or time column, or None if strptime cannot express it (ISO 8601 then)."""
     if duckdb_type not in _DATE_TIME_TYPES or not prop.logicalTypeOptions:
         return None
     pattern = prop.logicalTypeOptions.get("format")
@@ -94,15 +87,12 @@ def csv_format(prop: SchemaProperty, duckdb_type: Optional[str]) -> Optional[str
 
 
 def csv_value(text, duckdb_type: str, pattern: Optional[str] = None):
-    """The ibis expression converting `text` to `duckdb_type`: NULL for a value that does not convert.
-
-    An integer is a whole number, not 2.50 or 2.00, which a cast would round. A date, timestamp or time in a
-    declared format must be in that format and exist; without one, it is ISO 8601.
-    """
+    """The ibis expression converting `text` to `duckdb_type`: NULL for a value that does not convert."""
     import ibis
 
     target = CSV_TYPES[duckdb_type]
     if duckdb_type == "BIGINT":
+        # A cast would round 2.50
         return text.strip().re_search(r"^[+-]?[0-9]+$").ifelse(text.strip().try_cast(target), ibis.null(target))
     if pattern is not None and duckdb_type in _DATE_TIME_TYPES:
 

@@ -256,11 +256,7 @@ def create_view_with_schema_union(
 
 
 def create_csv_views(con, schema_obj: SchemaObject, model_path: str, read_options: str = ""):
-    """The CSV files as text in a raw view, and as the contract's types in a table built from it.
-
-    A value that does not convert to its column's type is NULL in the table, so the other checks on its column
-    treat it as missing; the type check on the raw view reports it (see csv_values).
-    """
+    """The CSV files as text in a raw view, and in the contract's types in a table, NULL where a value doesn't convert."""
     import ibis
 
     model_name = schema_obj.name
@@ -280,11 +276,9 @@ def create_csv_views(con, schema_obj: SchemaObject, model_path: str, read_option
         )
         return
 
-    # Create empty table with contract schema
     columns_def = [f"{_quote(col_name)} {col_type}" for col_name, col_type in converted_types.items()]
     con.sql(f"CREATE TABLE {_quote(model_name)} ({', '.join(columns_def)});")
 
-    # Insert the columns existing in both the contract and the data, converted to the contract's types
     present = con.sql(f"SELECT * FROM {_quote(raw_name)}").columns
     properties = [p for p in schema_obj.properties if (p.physicalName or p.name) in present]
     if not properties:

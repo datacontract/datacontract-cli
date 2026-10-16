@@ -165,14 +165,10 @@ def test_a_text_column_keeps_its_value(tmp_path):
 
 def test_a_date_without_a_format_is_iso_8601(tmp_path):
     rows = [_with("order_date", "2026-02-0" + str(i + 1), row=i)[i] for i in range(len(GOOD_ROWS))]
+    rows[1] = GOOD_ROWS[1]
     run = _test(tmp_path, rows, order_date_options="")
     print(run.pretty())
-    assert _type_check(run, "order_date").result == ResultEnum.passed
-
-
-def test_a_date_in_another_format_without_a_declared_format_fails(tmp_path):
-    run = _test(tmp_path, GOOD_ROWS, order_date_options="")
-    assert _type_check(run, "order_date").result == ResultEnum.failed
+    assert _type_check(run, "order_date").reason == "Actual invalid_count(order_date) was 1, expected = 0"
 
 
 def test_a_format_that_cannot_be_checked_is_a_warning(tmp_path):
