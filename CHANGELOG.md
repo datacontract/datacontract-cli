@@ -7,16 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.7] - 2026-10-16
+
+### Changed
+- `datacontract breaking` consistently grades changes from the consumer's perspective by default (previously an inconsistent mix of consumer and producer perspective) (#1746)
+
 ### Added
-- `datacontract breaking` now allows to select a `--perspective` (either `consumer` or `producer`)
 - `datacontract test`: API servers send POST requests with query parameters and a JSON body, set by the `method`, `params` and `body` custom properties, and an `X-API-Key` header from `DATACONTRACT_API_HEADER_X_API_KEY` (also used by `datacontract import odata`) (#1747)
+- `datacontract breaking --perspective consumer|producer` (and `perspective` on `POST /breaking`) selects whose expectations changes are graded against, and the output shows whether each change tightens or loosens the contract (#1746)
 - `datacontract import openapi` imports POST operations, and writes required query parameters to the `params` custom property (#1747)
 
 ### Security
 - `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` or `DATACONTRACT_API_HEADER_X_API_KEY` is set on the server (#1747)
-
-### Fixed
-- `datacontract breaking` grades from the consumer's perspective by default (previously inconsistent mix of consumer and producer perspective)
 
 ## [1.2.6] - 2026-10-13
 

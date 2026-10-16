@@ -121,13 +121,14 @@ The first server is tested unless you select one with `--server`, e.g. `--server
 ```
 Testing datacontract.yaml
 Server: production (type=api, location=https://api.example.com/v1/orders)
-╭────────┬───────────────────────────────────────────┬──────────┬─────────────────────────────╮
-│ Result │ Check                                     │ Field    │ Details                     │
-├────────┼───────────────────────────────────────────┼──────────┼─────────────────────────────┤
-│ passed │ Check that JSON has valid schema          │          │ All JSON entries are valid. │
-│ passed │ Check that field 'order_id' is present    │ order_id │                             │
-│  ...   │                                           │          │                             │
-╰────────┴───────────────────────────────────────────┴──────────┴─────────────────────────────╯
+╭────────┬─────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                           │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                 │          │         │
+│ passed │ Check that field 'order_id' is present          │ order_id │         │
+│ passed │ Check that field order_id has no missing values │ order_id │         │
+│  ...   │                                                 │          │         │
+╰────────┴─────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Ran 10 checks. Took 1.2 seconds.
 ```
 
