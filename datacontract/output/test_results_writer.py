@@ -54,6 +54,9 @@ def write_test_result(
                 details.append(f"project={server.project}")
             if server.account:
                 details.append(f"account={server.account}")
+            method = next((p.value for p in server.customProperties or [] if p.property == "method"), None)
+            if server.type == "api" and method:
+                details.append(f"method={method}")
             if server.location:
                 details.append(f"location={server.location}")
             if server.path:
