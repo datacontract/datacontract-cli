@@ -297,7 +297,7 @@ def _quality(**rule):
 
 
 def _freshness(value, unit="h", element="orders.created_at"):
-    return [{"property": "freshness", "value": value, "unit": unit, "element": element}]
+    return [{"property": "freshness", "value": value, "unit": unit, **({"element": element} if element else {})}]
 
 
 def _retention(value):
@@ -318,6 +318,12 @@ def _keyed(*names):
     [
         pytest.param(_contract(), _contract(_orders(physicalName="order_id")), {Direction.BOTH}, id="rename-column"),
         pytest.param(_contract(), _contract(_orders(physicalName="id")), set(), id="spell-out-name"),
+        pytest.param(
+            _contract([{"name": "sales.orders"}]),
+            _contract([{"name": "sales.orders", "physicalName": "orders"}]),
+            {Direction.BOTH},
+            id="rename-dotted-table",
+        ),
         pytest.param(
             _contract(
                 _orders(logicalType="array", items={"logicalType": "string"}, logicalTypeOptions={"minItems": 1})
@@ -369,6 +375,19 @@ def _keyed(*names):
         ),
         pytest.param(_contract(sla=_retention("P2Y")), _contract(sla=_retention("P1Y")), set(), id="retention"),
         pytest.param(_contract(), _contract(sla=_freshness(1)), {Direction.TIGHTENS}, id="freshness-added"),
+        pytest.param(_contract(), _contract(sla=_freshness(1, element=None)), set(), id="freshness-added-unchecked"),
+        pytest.param(
+            _contract(sla=_freshness(24, element=None)),
+            _contract(sla=_freshness(1, element=None)),
+            set(),
+            id="freshness-shorter-unchecked",
+        ),
+        pytest.param(
+            _contract(sla=_freshness(24, element="other.created_at")),
+            _contract(sla=_freshness(24)),
+            {Direction.TIGHTENS},
+            id="freshness-element-resolved",
+        ),
         pytest.param(
             _contract(sla=[{"property": "latency", "value": "1s"}]),
             _contract(sla=[{"property": "latency", "value": "5s"}]),
@@ -400,6 +419,18 @@ def _keyed(*names):
             id="threshold-replaced",
         ),
         pytest.param(_contract(), _contract(_quality(mustBe=5, severity="warning")), set(), id="warning-rule"),
+        pytest.param(
+            _contract(_quality(mustBeLessThan=10, severity="warning")),
+            _contract(_quality(mustBeLessThan=5, severity="warning")),
+            set(),
+            id="warning-rule-threshold",
+        ),
+        pytest.param(
+            _contract(_quality(mustBeLessThan=10, severity="warning")),
+            _contract(_quality(mustBeLessThan=5)),
+            {Direction.TIGHTENS},
+            id="warning-rule-made-blocking",
+        ),
         pytest.param(_contract(_keyed()), _contract(_keyed("a")), {Direction.TIGHTENS}, id="key-added"),
         pytest.param(_contract(_keyed("a", "b")), _contract(_keyed("a", "b", "c")), {Direction.BOTH}, id="key-widened"),
         pytest.param(_contract(_keyed("a")), _contract(_keyed("a", "b")), {Direction.BOTH}, id="key-made-composite"),

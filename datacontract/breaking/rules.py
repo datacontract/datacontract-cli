@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date
 
-from datacontract.engines.checks.create_checks import _freshness_value_to_seconds
+from datacontract.engines.checks.create_checks import freshness_value_to_seconds
 from datacontract.engines.checks.severity import failure_result
 from datacontract.model.breaking import Direction
 from datacontract.model.changelog import ChangelogEntry, ChangelogType
@@ -21,10 +21,7 @@ class BreakingChangeRule(ABC):
 
     @abstractmethod
     def evaluate(self, entry: ChangelogEntry, before: dict, after: dict) -> RuleEvaluation | None:
-        """Return the direction of ``entry`` when this rule applies to it.
-
-        ``before`` and ``after`` are the two normalized contracts the changelog was built from.
-        """
+        """The direction of ``entry`` when this rule applies; ``before`` and ``after`` are the normalized contracts."""
 
 
 class SchemaAddedOrRemovedRule(BreakingChangeRule):
@@ -61,7 +58,9 @@ class PhysicalNameChangedRule(BreakingChangeRule):
     def evaluate(self, entry: ChangelogEntry, before: dict, after: dict) -> RuleEvaluation | None:
         if not entry.path.startswith("schema.") or not entry.path.endswith(".physicalName"):
             return None
-        name = entry.path.removesuffix(".physicalName").rsplit(".", 1)[1]
+        owner = entry.path.removesuffix(".physicalName")
+        # Schema and property names may contain dots (sales.orders).
+        name = owner.rsplit(".properties.", 1)[1] if ".properties." in owner else owner.removeprefix("schema.")
         direction = Direction.UNTESTED if (entry.old_value or name) == (entry.new_value or name) else Direction.BOTH
         return RuleEvaluation(self.rule_id, direction, _change_message("physical name", entry))
 
@@ -236,31 +235,29 @@ class FreshnessChangedRule(BreakingChangeRule):
             return None
         sla_path = ".".join(segments[:2])
         old_sla, new_sla = _lookup(before, sla_path) or {}, _lookup(after, sla_path) or {}
+        # datacontract test checks freshness only with a value and an element naming a model.field of the contract.
+        was_checked, is_checked = (
+            sla.get("value") is not None
+            and str(sla.get("element") or "").count(".") == 1
+            and str(sla["element"]).split(".")[0] in (tree.get("schema") or {})
+            for sla, tree in ((old_sla, before), (new_sla, after))
+        )
         field = segments[2] if len(segments) > 2 else None
-        if field is None:
-            direction = Direction.TIGHTENS if entry.type == ChangelogType.added else Direction.LOOSENS
+        if not was_checked and not is_checked:
+            direction = Direction.UNTESTED
+        elif was_checked != is_checked:
+            direction = Direction.TIGHTENS if is_checked else Direction.LOOSENS
         elif field == "element":
-            direction = {
-                ChangelogType.added: Direction.TIGHTENS,
-                ChangelogType.removed: Direction.LOOSENS,
-            }.get(entry.type, Direction.BOTH)
+            direction = Direction.BOTH
         elif field in ("value", "unit"):
-            old_value, new_value = old_sla.get("value"), new_sla.get("value")
-            if old_value is None and new_value is None:
+            old_seconds = freshness_value_to_seconds(old_sla["value"], old_sla.get("unit"))
+            new_seconds = freshness_value_to_seconds(new_sla["value"], new_sla.get("unit"))
+            if old_seconds is None or new_seconds is None:
+                direction = Direction.UNDETERMINED
+            elif old_seconds == new_seconds:
                 direction = Direction.UNTESTED
-            elif old_value is None:
-                direction = Direction.TIGHTENS
-            elif new_value is None:
-                direction = Direction.LOOSENS
             else:
-                old_seconds = _freshness_value_to_seconds(old_value, old_sla.get("unit"))
-                new_seconds = _freshness_value_to_seconds(new_value, new_sla.get("unit"))
-                if old_seconds is None or new_seconds is None:
-                    direction = Direction.UNDETERMINED
-                elif old_seconds == new_seconds:
-                    direction = Direction.UNTESTED
-                else:
-                    direction = Direction.TIGHTENS if new_seconds < old_seconds else Direction.LOOSENS
+                direction = Direction.TIGHTENS if new_seconds < old_seconds else Direction.LOOSENS
         else:
             direction = Direction.UNTESTED
         return RuleEvaluation(self.rule_id, direction, _change_message("freshness", entry))
@@ -278,8 +275,21 @@ class QualityConstraintRule(BreakingChangeRule):
     def evaluate(self, entry: ChangelogEntry, before: dict, after: dict) -> RuleEvaluation | None:
         if not entry.path.startswith("schema.") or ".quality." not in entry.path:
             return None
-        rule_path = entry.path.rsplit(".quality.", 1)[1]
-        if rule_path.endswith(".arguments.validValues"):
+        quality_path, rule_path = entry.path.rsplit(".quality.", 1)
+        name, _, field = rule_path.partition(".")
+        rule_versions = [
+            rule
+            for rule in (_lookup(tree, f"{quality_path}.quality.{name}") for tree in (before, after))
+            if isinstance(rule, dict)
+        ]
+        if (
+            field
+            and rule_versions
+            and all(failure_result(rule.get("severity")) != ResultEnum.failed for rule in rule_versions)
+        ):
+            # A rule that can only warn guarantees nothing.
+            direction = Direction.UNTESTED
+        elif rule_path.endswith(".arguments.validValues"):
             # The diff emits one entry per list element.
             direction = {
                 ChangelogType.added: Direction.LOOSENS,
@@ -341,9 +351,8 @@ class QualityConstraintRule(BreakingChangeRule):
                 direction = Direction.UNTESTED
             else:
                 direction = Direction.TIGHTENS if is_blocking else Direction.LOOSENS
-        elif "." not in rule_path:
+        elif not field:
             rule = _lookup(after if entry.type == ChangelogType.added else before, entry.path)
-            # A rule that can only warn guarantees nothing.
             if failure_result(rule.get("severity") if isinstance(rule, dict) else None) != ResultEnum.failed:
                 direction = Direction.UNTESTED
             else:
@@ -355,7 +364,6 @@ class QualityConstraintRule(BreakingChangeRule):
         else:
             # What the rule checks changed (type, metric, query, other arguments, thresholds we cannot order).
             direction = Direction.UNDETERMINED
-        name, _, field = rule_path.partition(".")
         subject = f"{field} of quality rule '{name}'" if field else "quality rule"
         return RuleEvaluation(self.rule_id, direction, _change_message(subject, entry))
 
