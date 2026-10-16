@@ -378,14 +378,11 @@ class DataContract:
     def breaking(
         self,
         other: "DataContract",
-        perspective: Perspective = Perspective.CONSUMER,
         detector: BreakingChangeDetector | None = None,
+        *,
+        perspective: Perspective | str = Perspective.CONSUMER,
     ) -> BreakingChangeResult:
-        """Classify the changelog between this contract and another for compatibility impact.
-
-        The consumer perspective flags changes that break a guarantee v1 gave its consumers; the producer
-        perspective flags changes that data which passed v1 may fail.
-        """
+        """Classify the changelog between this contract and another for compatibility impact from ``perspective``."""
         from datacontract.changelog.normalize import normalize
 
         source, target = self.get_data_contract(), other.get_data_contract()

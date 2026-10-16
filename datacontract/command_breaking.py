@@ -23,7 +23,9 @@ def breaking(
     ],
     perspective: Annotated[
         Perspective,
-        typer.Option(help="Grade for consumers relying on v1 (default) or for producer data that passed v1."),
+        typer.Option(
+            help="`consumer` flags changes that lead to unexpected data for consumers, `producer` flags changes that can make data contract tests fail."
+        ),
     ] = Perspective.CONSUMER,
     inline_references: inline_references_option = True,
     debug: debug_option = None,
@@ -31,7 +33,8 @@ def breaking(
     """Show compatibility impact between two data contracts."""
     enable_debug_logging(debug)
     result = DataContract(config=cli_config(), data_contract_file=v1, inline_references=inline_references).breaking(
-        DataContract(config=cli_config(), data_contract_file=v2, inline_references=inline_references), perspective
+        DataContract(config=cli_config(), data_contract_file=v2, inline_references=inline_references),
+        perspective=perspective,
     )
     write_text_breaking_results(result, console)
     if result.is_breaking:

@@ -1012,15 +1012,14 @@ def breaking_endpoint(
     perspective: Annotated[
         Perspective,
         Query(
-            description="Whose expectations a change must not break: `consumer` flags changes that let v2 deliver "
-            "data v1 ruled out, `producer` flags changes that data which passed v1 may fail.",
+            description="`consumer` flags changes that lead to unexpected data for consumers, `producer` flags changes that can make data contract tests fail.",
         ),
     ] = Perspective.CONSUMER,
 ) -> BreakingChangesResponse:
     check_api_key(api_key)
 
     result = DataContract(data_contract_str=body.v1, untrusted_contract=True).breaking(
-        DataContract(data_contract_str=body.v2, untrusted_contract=True), perspective
+        DataContract(data_contract_str=body.v2, untrusted_contract=True), perspective=perspective
     )
     return BreakingChangesResponse(
         summary=result.summary, entries=result.entries, perspective=result.perspective, is_breaking=result.is_breaking

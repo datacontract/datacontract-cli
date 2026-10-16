@@ -135,16 +135,16 @@ result = v1.changelog(v2)
 print(result)
 ```
 
-`breaking()` grades those same changes for compatibility impact. Every entry carries a `direction` (`tightens`, `loosens`, `both`, `undetermined` or `untested`) and a `level` (`info`, `warning` or `error`), and `is_breaking` is `True` when any entry is an error. By default it grades from the consumer's perspective; pass `perspective="producer"` to grade whether data that passed v1 may fail v2:
+`breaking()` grades those same changes for compatibility impact. Every entry carries a `direction` (`tightens`, `loosens`, `both`, `undetermined` or `untested`) and a `level` (`info`, `warning` or `error`), and `is_breaking` is `True` when any entry is an error.
 
 ```python
-result = v1.breaking(v2, perspective="producer")
+result = v1.breaking(v2, perspective="consumer")
 
 for entry in result.entries:
     print(entry.level.value, entry.path, entry.message)
 ```
 
-See [Compare contract versions](./compare-contract-versions.md) for the perspectives, directions and severity levels.
+See [Compare contract versions](./compare-contract-versions.md) for the perspectives and severity levels.
 
 ## Spark DataFrames and Databricks
 

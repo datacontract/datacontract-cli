@@ -32,32 +32,12 @@ See the generated [breaking command reference](./commands/breaking.md) for all o
 
 Whether a change breaks depends on whose expectations it must keep. `--perspective` selects one of two:
 
-- **`consumer`** (default) - a change is breaking when v2 permits data that v1 ruled out, so a guarantee consumers relied on no longer holds. Removing a property and loosening a constraint break; adding a property and tightening a constraint do not.
-- **`producer`** - a change is breaking when v2 rules out data that v1 permitted, so data that passed [`datacontract test`](./commands/test.md) against v1 may fail against v2. Adding a property and tightening a constraint break; removing a property and loosening a constraint do not.
+- **`consumer`** (default) - "If we change the data in this way, will the expectations of data users break?"
+- **`producer`** - "If we change the contract in this way, will the next contract test fail?"
 
 ```bash
 datacontract breaking --perspective producer v1.odcs.yaml v2.odcs.yaml
 ```
-
-### Directions
-
-Every change has a direction, independent of the perspective, which the perspective turns into a severity:
-
-| Direction | Meaning | `consumer` | `producer` |
-|---|---|---|---|
-| `tightens` | v2 rules out more data | INFO | ERROR |
-| `loosens` | v2 permits more data | ERROR | INFO |
-| `both` | v2 rules out some data v1 permitted and permits some v1 ruled out | ERROR | ERROR |
-| `undetermined` | depends on content the CLI cannot compare | WARNING | WARNING |
-| `untested` | changes nothing `datacontract test` checks | INFO | INFO |
-
-- **Tightens** - adding a schema or property, a type where there was none, `required`, `unique`, `uniqueItems`, a primary key, an enum, a foreign key relationship, a blocking quality rule, or a `freshness` service level; raising a minimum or lowering a maximum (`minLength`, `maxLength`, `minimum`, `maximum`, `minItems`, `maxItems`, quality thresholds); narrowing `mustBeBetween` or widening `mustNotBeBetween`; removing an enum value or a `validValues` value; adding an `invalidValues` value; shortening a `freshness` duration; making a quality rule blocking.
-- **Loosens** - the reverse of each of these.
-- **Both** - changing a `logicalType` or `physicalType`, a `physicalName`, a relationship's target, the column of a `freshness` service level, a vector's `dimensions` or `elementType`, or a column joining or leaving a composite primary key.
-- **Undetermined** - changing a `pattern`, a quality rule's query, metric or implementation, or a value the CLI cannot parse.
-- **Untested** - descriptions, tags, servers, team, and other metadata; quality rules whose `severity` only warns (`info`, `warning`, `warn`, `low`, `minor`, `trivial`); service levels other than `freshness`, including `retention`.
-
-A change inside an added or removed element has no direction of its own: the element carries the grade.
 
 ### Severity levels
 

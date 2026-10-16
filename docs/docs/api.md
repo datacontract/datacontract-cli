@@ -81,7 +81,7 @@ curl -X POST "http://localhost:4242/changelog" \
   }'
 ```
 
-`POST /breaking` grades those same changes for compatibility impact. It adds a `direction` (`tightens`, `loosens`, `both`, `undetermined` or `untested`), a `level` (`info`, `warning` or `error`) and a `rule_id` to every entry, plus the `perspective` it graded from and a top-level `is_breaking` flag that is `true` when any entry is an `error`. Pass `?perspective=producer` to grade whether data that passed v1 may fail v2 instead of whether v2 still keeps v1's guarantees to consumers:
+`POST /breaking` grades those same changes for compatibility impact. It adds a `level` (`info`, `warning` or `error`) and a `rule_id` to every entry, plus a top-level `is_breaking` flag that is `true` when any entry is an `error`:
 
 ```bash
 curl -X POST "http://localhost:4242/breaking" \
