@@ -476,6 +476,10 @@ def process_api_response(
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract_cli_api_")
     atexit.register(tmp_dir.cleanup)
     headers = {"Accept": "application/json, application/yaml;q=0.9, */*;q=0.8", **api_headers(config)}
+    body = custom_properties.get("body")
+    # a string is the JSON text as written, anything else is converted to JSON
+    if isinstance(body, str):
+        headers["Content-Type"] = "application/json"
     try:
         with ApiSession() as session:
             if public_addresses_only:
@@ -488,7 +492,8 @@ def process_api_response(
                 params=params,
                 headers=headers,
                 timeout=(config.get_connect_timeout(), None),
-                **({"json": custom_properties["body"]} if "body" in custom_properties else {}),
+                data=body.encode() if isinstance(body, str) else None,
+                json=None if isinstance(body, str) else body,
             )
             response.raise_for_status()
     except requests.exceptions.RequestException as e:

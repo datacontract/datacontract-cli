@@ -134,6 +134,18 @@ def test_post_request(api, monkeypatch):
     assert json.loads(api.request_bodies[0]) == {"query": {"customer": "C-1"}, "size": "5"}
 
 
+def test_post_request_with_string_body(api, monkeypatch):
+    api.body = json.dumps([{"order_id": "ORD-1"}])
+    monkeypatch.setenv("SIZE", "5")
+    body = '{"customer": "Müller €", "size": ${SIZE}}'
+
+    run = search_contract(api, {"method": "POST", "body": body}).test()
+
+    assert run.result == "passed", run.pretty()
+    assert api.headers[0]["Content-Type"] == "application/json"
+    assert json.loads(api.request_bodies[0]) == {"customer": "Müller €", "size": 5}
+
+
 def test_credential_headers(api):
     api.body = json.dumps([{"order_id": "ORD-1"}])
     config = Config(api_header_authorization="Bearer token", api_header_x_api_key="key")

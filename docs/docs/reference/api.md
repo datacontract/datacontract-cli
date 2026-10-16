@@ -36,9 +36,9 @@ Custom properties of the server shape the request:
 |---|---|---|
 | `method` | `POST` | `GET` (default) or `POST`. |
 | `params` | `{limit: 100, status: [placed, shipped]}` | The query parameters, each a string, number or boolean, or a list of them for a repeated parameter. |
-| `body` | `{query: {status: shipped}}` | The request body, sent as JSON. Requires `method: POST`. |
+| `body` | `{query: {status: shipped}}` | The request body. A mapping or list is sent as JSON, a string as the JSON text it holds. Requires `method: POST`. |
 
-A `${VAR}` [variable](../configuration.md#variables-in-the-data-contract) may appear in any string of `params` and `body`; it resolves to a string, so write a number the API requires as a literal.
+A `${VAR}` [variable](../configuration.md#variables-in-the-data-contract) may appear in any string of `params` and `body`; it resolves to a string, so write a number the API requires as a literal, or put the reference into a string `body` without quotes: `'{"size": ${SIZE:-100}}'`.
 
 ## Data types
 
