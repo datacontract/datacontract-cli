@@ -20,7 +20,7 @@ from datacontract.imports.importer_factory import importer_factory
 from datacontract.init.init_template import get_init_template
 from datacontract.integration.entropy_data import publish_test_results_to_entropy_data
 from datacontract.lint import resolve
-from datacontract.model.breaking import BreakingChangeResult
+from datacontract.model.breaking import BreakingChangeResult, Perspective
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 from datacontract.model.exceptions import (
     DataContractException,
@@ -340,12 +340,17 @@ class DataContract:
 
     def changelog(self, other: "DataContract") -> ChangelogResult:
         """Generate a changelog between this data contract and another, returning a ChangelogResult."""
+        return self._changelog(self.get_data_contract(), other, other.get_data_contract())
+
+    def _changelog(
+        self, source: OpenDataContractStandard, other: "DataContract", target: OpenDataContractStandard
+    ) -> ChangelogResult:
         from datacontract.changelog.changelog import build_changelog
 
         changelog = build_changelog(
-            self.get_data_contract(),
+            source,
             self.get_data_contract_file(),
-            other.get_data_contract(),
+            target,
             other.get_data_contract_file(),
         )
 
@@ -370,10 +375,23 @@ class DataContract:
             )
         return result
 
-    def breaking(self, other: "DataContract", detector: BreakingChangeDetector | None = None) -> BreakingChangeResult:
-        """Classify the changelog between this contract and another for compatibility impact."""
-        changelog = self.changelog(other)
-        return (detector or BreakingChangeDetector()).detect(changelog)
+    def breaking(
+        self,
+        other: "DataContract",
+        detector: BreakingChangeDetector | None = None,
+        *,
+        perspective: Perspective | str = Perspective.CONSUMER,
+    ) -> BreakingChangeResult:
+        """Classify the changelog between this contract and another for compatibility impact from ``perspective``."""
+        from datacontract.changelog.normalize import normalize
+
+        source, target = self.get_data_contract(), other.get_data_contract()
+        return (detector or BreakingChangeDetector()).detect(
+            self._changelog(source, other, target),
+            Perspective(perspective),
+            normalize(source.model_dump(exclude_none=True, by_alias=True)),
+            normalize(target.model_dump(exclude_none=True, by_alias=True)),
+        )
 
     @classmethod
     def import_from_source(

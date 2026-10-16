@@ -100,12 +100,14 @@ curl -X POST "http://localhost:4242/breaking" \
       "path": "schema.orders.properties.order_id.logicalTypeOptions.pattern",
       "change_type": "updated",
       "level": "warning",
+      "direction": "undetermined",
       "message": "Changed validation constraint at schema.orders.properties.order_id.logicalTypeOptions.pattern from '^ORD-[0-9]+$' to '^ORD-[0-9]{4}$'",
       "rule_id": "validation-constraint-changed",
       "old_value": "^ORD-[0-9]+$",
       "new_value": "^ORD-[0-9]{4}$"
     }
   ],
+  "perspective": "consumer",
   "is_breaking": false
 }
 ```

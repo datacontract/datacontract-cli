@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract breaking` now allows to select a `--perspective` (either `consumer` or `producer`)
+
+### Fixed
+- `datacontract breaking` grades from the consumer's perspective by default (previously inconsistent mix of consumer and producer perspective)
+
 ## [1.2.6] - 2026-10-13
 
 ### Changed
