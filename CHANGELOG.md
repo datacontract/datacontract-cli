@@ -9,17 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract breaking` now allows to select a `--perspective` (either `consumer` or `producer`)
-- `datacontract test`: API servers send POST requests with a JSON body and query parameters, set by the `method`, `body` and `params` custom properties
-- `DATACONTRACT_API_HEADER_X_API_KEY` sends an `X-API-Key` header to API servers and OData services
-- `datacontract import openapi`: import POST operations, with the example of their request body
-
-### Changed
-- `datacontract import openapi` writes required query parameters to the server's `params` custom property instead of its `location`
+- `datacontract test`: API servers send POST requests with query parameters and a JSON body, set by the `method`, `params` and `body` custom properties, and an `X-API-Key` header from `DATACONTRACT_API_HEADER_X_API_KEY` (also used by `datacontract import odata`) (#1747)
+- `datacontract import openapi` imports POST operations, and writes required query parameters to the `params` custom property (#1747)
 
 ### Security
-- `datacontract api`:
-  - requests of a posted contract's `api` server may not reach private network addresses; start the server with `--allow-private-network` to allow them
-  - a posted contract with an `api` server is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` is set on the server; send it with the request instead
+- `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` is set on the server (#1747)
 
 ### Fixed
 - `datacontract breaking` grades from the consumer's perspective by default (previously inconsistent mix of consumer and producer perspective)
