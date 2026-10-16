@@ -358,7 +358,11 @@ def _run_model(
                 _record_sql(run, spec, t.aggregate([named]))
                 agg_exprs.append((spec, named))
         except _ColumnNotFound as e:
-            set_result(run, spec.key, ResultEnum.failed, str(e) or f"Column '{spec.field}' not found")
+            if table:
+                # The presence check already fails a column missing from the file
+                set_result(run, spec.key, ResultEnum.skipped, f"Column '{spec.field}' is missing")
+            else:
+                set_result(run, spec.key, ResultEnum.failed, str(e) or f"Column '{spec.field}' not found")
         except Exception as e:
             logger.warning("Check '%s' errored: %s", spec.key, e)
             set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")

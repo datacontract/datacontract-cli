@@ -135,6 +135,18 @@ def test_a_bad_value_in_a_required_column_is_also_missing(tmp_path):
     assert failed == [("field_type", "quantity"), ("field_required", "quantity")]
 
 
+def test_a_missing_column_fails_only_its_presence_check(tmp_path):
+    paid = HEADER.split("|").index("paid")
+    data = tmp_path / "orders.csv"
+    lines = ["|".join(v for i, v in enumerate(r.split("|")) if i != paid) for r in [HEADER, *GOOD_ROWS]]
+    data.write_text("\n".join(lines) + "\n")
+    run = DataContract(data_contract_str=_contract(data), inline_references=False).test()
+    print(run.pretty())
+    failed = [(c.type, c.field) for c in run.checks if c.result not in (ResultEnum.passed, ResultEnum.skipped)]
+    assert failed == [("field_is_present", "paid")]
+    assert _type_check(run, "paid").result == ResultEnum.skipped
+
+
 def test_the_failed_samples_show_the_bad_value(tmp_path):
     run = _test(tmp_path, _with("quantity", "two"), include_failed_samples=True)
     assert _type_check(run, "quantity").failedSamples == [{"order_id": "A2", "quantity": "two"}]
