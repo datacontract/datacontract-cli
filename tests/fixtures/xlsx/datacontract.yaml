@@ -1,0 +1,50 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: delivery-xlsx
+name: delivery
+status: draft
+servers:
+- server: local
+  type: local
+  path: fixtures/xlsx/delivery.xlsx
+  format: xlsx
+schema:
+- name: orders
+  physicalName: Orders
+  logicalType: object
+  properties:
+  - name: order_id
+    logicalType: string
+    required: true
+    unique: true
+  - name: customer_id
+    logicalType: string
+    logicalTypeOptions:
+      pattern: ^[0-9]{5}$
+  - name: order_date
+    logicalType: date
+    required: true
+  - name: order_timestamp
+    logicalType: timestamp
+  - name: amount
+    logicalType: number
+    logicalTypeOptions:
+      minimum: 0
+  - name: quantity
+    logicalType: integer
+  - name: paid
+    logicalType: boolean
+  - name: note
+    logicalType: string
+- name: country_codes
+  physicalName: Country Codes
+  logicalType: object
+  properties:
+  - name: code
+    logicalType: string
+    required: true
+    logicalTypeOptions:
+      maxLength: 2
+  - name: name
+    logicalType: string

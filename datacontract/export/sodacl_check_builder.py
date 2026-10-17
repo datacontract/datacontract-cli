@@ -318,7 +318,7 @@ def check_property_is_present(
     uses_raw_view = (
         server is not None
         and server.type in ["local", "s3", "gcs", "azure"]
-        and server.format in ["csv", "parquet", "json", "xml"]
+        and server.format in ["csv", "parquet", "json", "xml", "xlsx"]
     )
     target = f"{model_name}__raw__" if uses_raw_view else model_name
     sodacl_check_dict = {

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717)
+
 ## [1.2.7] - 2026-10-16
 
 ### Changed
