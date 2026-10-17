@@ -449,7 +449,8 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
     """
     sheet = schema_obj.physicalName
     view = sheet or schema_obj.name
-    options = f"'{_sql_literal(model_path)}', header=true"
+    # Without stop_at_empty=false, read_xlsx stops at the first empty row and the rows below go unchecked
+    options = f"'{_sql_literal(model_path)}', header=true, stop_at_empty=false"
     if sheet:
         options += f", sheet='{_sql_literal(sheet)}'"
     typed = f"read_xlsx({options}, ignore_errors=true)"
@@ -461,6 +462,8 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
 
     # Like DuckDB's own identifiers, a header answers to its name in any case
     headers = {row[0].lower(): row for row in con.sql(f"DESCRIBE SELECT * FROM {typed}").fetchall()}
+    # A row that is empty in every column is a spacer, not a record
+    not_empty = f"coalesce({', '.join(f'r.{_quote(row[0])}' for row in headers.values())}) IS NOT NULL"
     columns, errors = [], []
     for name, sql_type in (to_csv_types(schema_obj) or {}).items():
         sql_type = sql_type or "VARCHAR"
@@ -476,9 +479,9 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
                 f"WHERE r.{_quote(header)} IS NOT NULL AND {value} IS NULL"
             )
     if columns:
-        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT {', '.join(columns)} FROM {cells};")
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT {', '.join(columns)} FROM {cells} WHERE {not_empty};")
     else:
-        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT * FROM {typed};")
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT t.* FROM {cells} WHERE {not_empty};")
     if not errors:
         errors.append("SELECT NULL::VARCHAR AS field, NULL::VARCHAR AS value WHERE false")
     con.sql(f"CREATE VIEW {_quote(view + '__type_errors__')} AS {' UNION ALL '.join(errors)};")

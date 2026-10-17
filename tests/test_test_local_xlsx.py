@@ -105,6 +105,18 @@ def test_a_value_of_the_wrong_type_fails_only_its_column(tmp_path: Path):
     assert failed(run) == {"Check that field amount has type number": "Actual custom_sql(amount) was 1, expected = 0"}
 
 
+def test_rows_below_an_empty_row_are_checked(tmp_path: Path):
+    workbook = load_workbook(WORKBOOK)
+    workbook["Orders"].insert_rows(3)
+    workbook["Orders"]["E5"] = "n/a"
+    workbook.save(tmp_path / "delivery.xlsx")
+
+    run = DataContract(data_contract_str=contract(str(tmp_path / "delivery.xlsx"), models=["orders"])).test()
+
+    # the empty row itself is skipped, or its order_id and order_date would be missing
+    assert failed(run) == {"Check that field amount has type number": "Actual custom_sql(amount) was 1, expected = 0"}
+
+
 def test_a_fraction_in_an_integer_column_is_not_rounded(tmp_path: Path):
     run = DataContract(data_contract_str=contract(edited(tmp_path, F3=1.5), models=["orders"])).test()
 
