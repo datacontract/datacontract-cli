@@ -74,3 +74,5 @@ datacontract edit datacontract.yaml
 ```
 
 See the [`edit` command reference](./commands/edit.md) for the full signature.
+
+To let a coding agent edit the YAML while you review it in the editor, see [Use with AI Coding Agents](./ai-agents.md).

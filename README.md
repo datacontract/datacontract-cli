@@ -24,7 +24,7 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 >
 > Quick links: [Quickstart](https://docs.datacontract.com/quickstart) · [Commands](https://docs.datacontract.com/commands) · [Best Practices](https://docs.datacontract.com/best-practices) · [Custom Export and Import](https://docs.datacontract.com/extending) · [Release Notes](https://docs.datacontract.com/release-notes) · [Development Setup](#development-setup)
 >
-> For LLMs: [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt)
+> For LLMs: [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt) · [Data Contract Skills](https://github.com/datacontract/datacontract-skills) for coding agents
 
 ## Getting started
 
@@ -147,7 +147,7 @@ $ datacontract lint odcs.yaml
 # show a changelog between two data contracts
 $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 
-# fail when a contract change is backward-incompatible
+# fail when a contract change breaks a guarantee consumers rely on
 $ datacontract breaking v1.odcs.yaml v2.odcs.yaml
 
 # execute schema and quality checks (define credentials as environment variables)
@@ -185,6 +185,7 @@ if not run.has_passed():
 ## How to
 
 - [How to integrate Data Contract CLI in your CI/CD pipeline as a GitHub Action](https://github.com/datacontract/datacontract-action/)
+- [How to let your coding agent (Claude Code, Codex, GitHub Copilot) create and test data contracts with the Data Contract Skills](https://github.com/datacontract/datacontract-skills)
 - [How to run the Data Contract CLI API to test data contracts with POST requests](https://docs.datacontract.com/api)
 - [How to run Data Contract CLI in a Databricks pipeline](https://www.datamesh-architecture.com/howto/build-a-dataproduct-with-databricks#test-the-data-product)
 

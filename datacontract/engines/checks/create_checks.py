@@ -1223,7 +1223,7 @@ def _freshness_check(
     model, field = resolved
 
     unit = (sla.unit or "d").lower() or "d"
-    seconds = _freshness_value_to_seconds(sla.value, unit)
+    seconds = freshness_value_to_seconds(sla.value, unit)
     if seconds is None:
         # A freshness the CLI cannot interpret is a contract error, reported as a failed
         # check. It must not raise: checks are created for the whole contract before any
@@ -1267,7 +1267,7 @@ _FRESHNESS_UNITS = (
 )
 
 
-def _freshness_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
+def freshness_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
     """The freshness threshold in seconds, or ``None`` when it cannot be interpreted.
 
     Accepts the same value forms as retention: a number qualified by ``unit``, or an

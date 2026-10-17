@@ -1,8 +1,14 @@
 from collections import defaultdict
 from collections.abc import Iterable
 
-from datacontract.breaking.rules import DEFAULT_RULES, BreakingChangeRule
-from datacontract.model.breaking import BreakingChangeEntry, BreakingChangeLevel, BreakingChangeResult
+from datacontract.breaking.rules import DEFAULT_RULES, BreakingChangeRule, MetadataFallbackRule
+from datacontract.model.breaking import (
+    BreakingChangeEntry,
+    BreakingChangeLevel,
+    BreakingChangeResult,
+    Direction,
+    Perspective,
+)
 from datacontract.model.changelog import ChangelogEntry, ChangelogResult, ChangelogType
 
 _LEVEL_ORDER = {
@@ -20,43 +26,22 @@ class BreakingChangeDetector:
         if not self._rules:
             raise ValueError("At least one breaking-change rule is required")
 
-    def detect(self, changelog: ChangelogResult) -> BreakingChangeResult:
-        entries = [self._classify(entry) for entry in changelog.entries]
-        # Nothing inside an added element can break a consumer: it did not exist before.
-        # Inside a removed one, the element's own entry carries the grade; its former
-        # constraints are gone, which is a relaxation.
-        added_or_removed = {
+    def detect(
+        self, changelog: ChangelogResult, perspective: Perspective, before: dict, after: dict
+    ) -> BreakingChangeResult:
+        """Grade ``changelog``, built from the normalized contracts ``before`` and ``after``, for ``perspective``."""
+        entries = [self._classify(entry, perspective, before, after) for entry in changelog.entries]
+        # An added or removed element carries the grade for everything inside it.
+        elements = {
             entry.path
             for entry in entries
             if entry.change_type in (ChangelogType.added, ChangelogType.removed)
-            and (
-                entry.path.startswith("schema.")
-                and (len(entry.path.split(".")) == 2 or entry.path.split(".")[-2] in ("properties", "quality"))
-            )
+            and entry.rule_id != MetadataFallbackRule.rule_id
         }
-        removed_enums = {
-            entry.path
-            for entry in entries
-            if entry.change_type == ChangelogType.removed and entry.path.endswith(".enum")
-        }
-        # Stable IDs may change or swap without changing the set of allowed
-        # values. Match removed/updated values against additions in the same enum.
-        added_values = defaultdict(set)
         for entry in entries:
-            if entry.rule_id == "enum-constraint-changed" and entry.path.endswith(".value"):
-                if entry.change_type in (ChangelogType.added, ChangelogType.updated):
-                    added_values[entry.path.rsplit(".enum.", 1)[0]].add(entry.new_value)
-        for entry in entries:
-            segments = entry.path.split(".")
-            if any(".".join(segments[:i]) in added_or_removed for i in range(1, len(segments))):
+            if any(entry.path.startswith(f"{path}.") for path in elements):
+                entry.direction = None
                 entry.level = BreakingChangeLevel.INFO
-            if entry.rule_id == "enum-constraint-changed":
-                if any(entry.path.startswith(path + ".") for path in removed_enums):
-                    entry.level = BreakingChangeLevel.INFO
-                elif entry.path.endswith(".value") and entry.old_value in added_values.get(
-                    entry.path.rsplit(".enum.", 1)[0], set()
-                ):
-                    entry.level = BreakingChangeLevel.INFO
         entries_by_prefix = defaultdict(list)
         for entry in entries:
             prefix = ""
@@ -64,16 +49,33 @@ class BreakingChangeDetector:
                 prefix = f"{prefix}.{segment}" if prefix else segment
                 entries_by_prefix[prefix].append(entry)
         summary = [self._summarize(entry, entries_by_prefix.get(entry.path, [])) for entry in changelog.summary]
-        return BreakingChangeResult(v1=changelog.v1, v2=changelog.v2, summary=summary, entries=entries)
+        return BreakingChangeResult(
+            v1=changelog.v1, v2=changelog.v2, perspective=perspective, summary=summary, entries=entries
+        )
 
-    def _classify(self, entry: ChangelogEntry) -> BreakingChangeEntry:
+    def _classify(
+        self, entry: ChangelogEntry, perspective: Perspective, before: dict, after: dict
+    ) -> BreakingChangeEntry:
         for rule in self._rules:
-            evaluation = rule.evaluate(entry)
+            evaluation = rule.evaluate(entry, before, after)
             if evaluation is not None:
+                direction = evaluation.direction
+                if direction == Direction.BOTH:
+                    level = BreakingChangeLevel.ERROR
+                elif direction == Direction.UNDETERMINED:
+                    level = BreakingChangeLevel.WARNING
+                elif (direction, perspective) in (
+                    (Direction.TIGHTENS, Perspective.PRODUCER),
+                    (Direction.LOOSENS, Perspective.CONSUMER),
+                ):
+                    level = BreakingChangeLevel.ERROR
+                else:
+                    level = BreakingChangeLevel.INFO
                 return BreakingChangeEntry(
                     path=entry.path,
                     change_type=entry.type,
-                    level=evaluation.level,
+                    level=level,
+                    direction=direction,
                     message=evaluation.message,
                     rule_id=evaluation.rule_id,
                     old_value=entry.old_value,
