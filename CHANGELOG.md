@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract edit --language` shows the editor in English, German, Swedish or French
+
 ## [1.2.7] - 2026-10-16
 
 ### Changed

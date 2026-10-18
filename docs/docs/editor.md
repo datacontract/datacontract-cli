@@ -64,6 +64,7 @@ datacontract edit datacontract.yaml
 | `--host` | `127.0.0.1` | Bind to this host. For Docker, set it to `0.0.0.0`. |
 | `--editor-version` | bundled | Version of the `datacontract-editor` npm package to load from the CDN. |
 | `--editor-assets-url` | — | Base URL to load editor assets from (e.g. a self-hosted build). |
+| `--language` | — | UI language of the editor: `en`, `de`, `sv` or `fr`. Without it, the editor starts in English and the language can be switched in the editor. |
 | `--open` / `--no-open` | `--open` | Open the editor in the default browser. |
 | `--debug` / `--no-debug` | `--no-debug` | Enable debug logging. |
 
