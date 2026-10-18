@@ -60,19 +60,21 @@
     </noscript>
     <div id="root"></div>
     <script type="module">
-      import { init, loadRuntimeConfig, buildEditorConfig } from './datacontract-editor.es.js';
+      import { init, loadRuntimeConfig, buildEditorConfig, buildDocumentConfig } from './datacontract-editor.es.js';
 
       // Runtime config: /config.json (generated from env vars by the Docker image, see
-      // CONFIGURATION.md) plus an optional customization.yaml served next to the app.
-      // This is a library build, so src/main.jsx never ships and this file is the only
-      // place the standalone/Docker bootstrap can pick the AI and tests config up.
-      const editorConfig = buildEditorConfig(await loadRuntimeConfig());
+      // CONFIGURATION.md) plus an optional customization.yaml and data-contract.yaml served
+      // next to the app. This is a library build, so src/main.jsx never ships and this file
+      // is the only place the standalone/Docker bootstrap can pick the config up.
+      const runtimeConfig = await loadRuntimeConfig();
+      const editorConfig = buildEditorConfig(runtimeConfig);
 
       init({
         container: '#root',
         mode: 'SERVER',
         persistence: 'localStorage',
         initialView: 'form',
+        ...buildDocumentConfig(runtimeConfig),
         ...editorConfig,
         tests: {
           enabled: true,
