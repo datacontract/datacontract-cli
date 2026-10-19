@@ -174,7 +174,10 @@ def to_polars(contract: OpenDataContractStandard, schema_name: str = "all") -> s
             suffix += 1
         used.add(variable)
 
-        fields = _to_struct(schema_obj.properties or []).fields
+        try:
+            fields = _to_struct(schema_obj.properties or []).fields
+        except RuntimeError as e:
+            raise RuntimeError(f"Schema '{schema_obj.name}': {e}") from e
         if fields:
             blocks.append(f"{variable} = pl.Schema(\n    {_render_fields(fields, '    ')}\n)")
         else:
