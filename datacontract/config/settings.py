@@ -113,6 +113,7 @@ class Config(BaseSettings):
 
     # general
     api_header_authorization: SecretStr | None = None
+    api_header_x_api_key: SecretStr | None = None
     custom_quality_checks: str | None = None
     max_errors: int | None = None
     connect_timeout: int | None = None
@@ -525,6 +526,9 @@ class Config(BaseSettings):
     # --- api ---
     def get_api_header_authorization(self, required: bool = False) -> str | None:
         return self._str_option("api_header_authorization", required)
+
+    def get_api_header_x_api_key(self, required: bool = False) -> str | None:
+        return self._str_option("api_header_x_api_key", required)
 
     # --- custom quality checks ---
     def get_custom_quality_checks(self) -> str | None:

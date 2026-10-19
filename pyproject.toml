@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.2.5"
+version = "1.2.7"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -126,7 +126,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.7.0",
-  "databricks-sdk<0.152.0",
+  "databricks-sdk<0.154.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -201,7 +201,7 @@ azure = [
   "datacontract-cli[duckdb]",
   "duckdb-extension-azure>=1.5.0,<1.6.0",
   "azure-identity>=1.17.1,<1.27",
-  "azure-storage-blob>=12.24,<12.31",
+  "azure-storage-blob>=12.24,<12.32",
 ]
 
 snowflake = [
@@ -282,7 +282,7 @@ rdf = [
 ]
 
 api = [
-  "fastapi>=0.115.0,<0.143.0",
+  "fastapi>=0.115.0,<0.144.0",
   "uvicorn>=0.44.0,<0.55.0",
 ]
 
@@ -311,7 +311,7 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.2.3",
+  "moto==5.2.4",
   "openapi-spec-validator>=0.7,<0.10",  # asserts that `datacontract api` serves a valid OpenAPI document
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
@@ -324,7 +324,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.16.10",
+  "ruff==0.17.1",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.340.0",
 ]
@@ -366,10 +366,7 @@ log_level = "INFO"
 #log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"
 
-# Coverage is measured to make the number visible (the `coverage` CI job prints
-# the least-covered modules to the run summary), not to gate a pull request:
-# there is deliberately no `fail_under`, so nothing here can block a merge.
-# Run it locally with `pytest --cov`.
+# Coverage is for local runs (`pytest --cov`), not a gate: deliberately no `fail_under`.
 [tool.coverage.run]
 source = ["datacontract"]
 omit = [

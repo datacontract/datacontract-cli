@@ -170,6 +170,28 @@ schema:
     assert "package com.example.product;\n" in result
 
 
+def test_null_enum_entry_keeps_the_numbers_of_the_others():
+    odcs_yaml = """
+kind: DataContract
+apiVersion: v3.2.0
+id: test_protobuf
+schema:
+  - name: Product
+    properties:
+      - name: size
+        logicalType: string
+        enum:
+          - value: S
+          - value: null
+          - value: M
+"""
+    data_contract = OpenDataContractStandard(**yaml.safe_load(odcs_yaml))
+
+    result = to_protobuf(data_contract)
+
+    assert "enum Size {\n  S = 0;\n  M = 2;\n}" in result
+
+
 def test_to_protobuf_invalid_package_name():
     odcs_yaml = """
 kind: DataContract

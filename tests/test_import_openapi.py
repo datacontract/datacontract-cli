@@ -60,6 +60,78 @@ def test_select_operation_by_id_or_path(operation):
     ]
 
 
+@pytest.mark.parametrize("operation", ["searchOrders", "POST /orders/search", "post /orders/search"])
+def test_post_operation(operation):
+    result = import_openapi(ORDERS, operation)
+
+    assert result.schema_[0].name == "searchOrders"
+    server = result.servers[0]
+    assert server.location == "https://eu.api.example.com/v1/orders/search"
+    assert [(p.property, p.value) for p in server.customProperties] == [
+        ("method", "POST"),
+        ("params", {"limit": "${limit:-100}"}),
+        ("body", {"status": "shipped"}),
+    ]
+
+
+def test_bare_path_selects_no_post_operation():
+    """A POST operation may change data, so it is only selected by its operationId or method and path."""
+    with pytest.raises(DataContractException) as e:
+        import_openapi(ORDERS, "/orders/search")
+
+    assert "No GET or POST operation '/orders/search'" in e.value.reason
+
+
+@pytest.mark.parametrize(
+    "media_type, body",
+    [
+        pytest.param(
+            {"example": {"q": "a"}, "examples": {"b": {"value": {"q": "b"}}}, "schema": {"example": {"q": "c"}}},
+            {"q": "a"},
+            id="media-type-example",
+        ),
+        pytest.param(
+            {"examples": {"b": {"$ref": "#/components/examples/B"}}, "schema": {"example": {"q": "c"}}},
+            {"q": "b"},
+            id="first-named-example",
+        ),
+        pytest.param({"schema": {"$ref": "#/components/schemas/Query"}}, {"q": "c"}, id="schema-example"),
+    ],
+)
+def test_post_body_from_request_body_example(tmp_path: Path, media_type, body):
+    operation = get({"type": "object", "properties": {"id": {"type": "integer"}}})["get"]
+    operation["requestBody"] = {"content": {"application/json": media_type}}
+    source = write_spec(
+        tmp_path,
+        {
+            "servers": [{"url": "https://api.example.com"}],
+            "paths": {"/search": {"post": operation}},
+            "components": {
+                "examples": {"B": {"value": {"q": "b"}}},
+                "schemas": {"Query": {"type": "object", "example": {"q": "c"}}},
+            },
+        },
+    )
+
+    result = import_openapi(source, "POST /search")
+
+    assert {p.property: p.value for p in result.servers[0].customProperties}["body"] == body
+
+
+def test_post_without_body_example_warns(tmp_path: Path, caplog):
+    operation = get({"type": "object", "properties": {"id": {"type": "integer"}}})["get"]
+    operation["requestBody"] = {"required": True, "content": {"application/json": {"schema": {"type": "object"}}}}
+    source = write_spec(
+        tmp_path, {"servers": [{"url": "https://api.example.com"}], "paths": {"/search": {"post": operation}}}
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = import_openapi(source, "POST /search")
+
+    assert [p.property for p in result.servers[0].customProperties] == ["method"]
+    assert "The request body of POST /search has no JSON example" in caplog.text
+
+
 def test_skips_relative_server(caplog):
     with caplog.at_level(logging.WARNING):
         import_openapi(ORDERS, "listOrders")
@@ -111,14 +183,17 @@ def test_several_get_operations_need_a_selection():
     with pytest.raises(DataContractException) as e:
         import_openapi(ORDERS)
 
-    assert "listOrders (GET /orders), getOrder (GET /orders/{orderId}), /health" in e.value.reason
+    assert (
+        "listOrders (GET /orders), createOrder (POST /orders), searchOrders (POST /orders/search), "
+        "getOrder (GET /orders/{orderId}), GET /health" in e.value.reason
+    )
 
 
 def test_unknown_operation():
     with pytest.raises(DataContractException) as e:
-        import_openapi(ORDERS, "createOrder")
+        import_openapi(ORDERS, "deleteOrder")
 
-    assert "No GET operation 'createOrder'" in e.value.reason
+    assert "No GET or POST operation 'deleteOrder'" in e.value.reason
 
 
 def test_operation_without_json_or_yaml_response():

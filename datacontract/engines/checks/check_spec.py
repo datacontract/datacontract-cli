@@ -31,7 +31,6 @@ class MetricType(str, Enum):
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"
     FIELD_PHYSICAL_TYPE = "field_physical_type"
-    FIELD_NESTED_TYPE = "field_nested_type"
     FRESHNESS = "freshness"
     RETENTION = "retention"
     CUSTOM_SQL = "custom_sql"
@@ -45,7 +44,6 @@ METADATA_METRICS = {
     MetricType.FIELD_PRESENT,
     MetricType.FIELD_TYPE,
     MetricType.FIELD_PHYSICAL_TYPE,
-    MetricType.FIELD_NESTED_TYPE,
 }
 
 
@@ -157,6 +155,7 @@ class CheckSpec:
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
     expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
+    implied_type: bool = False  # FIELD_TYPE: the type is implied by `properties`, `items` or `map`, not declared
     expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
     columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys

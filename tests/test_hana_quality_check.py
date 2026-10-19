@@ -383,6 +383,18 @@ def test_invalid_values():
     assert connection.executed[0][1] == ["OPEN", "PAID"]
 
 
+@pytest.mark.parametrize("valid_values, invalid", [(["OK", None], 1), ([None], 2)])
+def test_a_null_among_the_valid_values_does_not_let_other_values_through(percent_connection, valid_values, invalid):
+    percent_connection.executemany("INSERT INTO SALES.ORDERS VALUES (?)", [("OK",), ("BAD",), (None,)])
+    quality = DataQuality(metric="invalidValues", arguments={"validValues": valid_values}, mustBe=0)
+    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="STATUS", quality=[quality])])
+
+    check = check_by_type(run_quality_checks(percent_connection, "SALES", schema), "field_invalid_values")
+
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["value"] == invalid
+
+
 def test_missing_values():
     connection = FakeConnection((2,))
     quality = DataQuality(metric="missingValues", arguments={"missingValues": ["", "N/A", None]}, mustBe=0)
