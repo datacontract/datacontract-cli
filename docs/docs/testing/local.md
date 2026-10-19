@@ -76,7 +76,7 @@ The command exits with code `1`, so the same call works as a gate in [CI/CD pipe
 
 ## Excel workbooks
 
-Excel workbooks (`format: xlsx`) need `pip install 'datacontract-cli[xlsx]'`. Each schema is one sheet: its `physicalName` is the sheet's name, matched case-sensitively, and a contract with a single schema may leave it out to read the first sheet. The first row of a sheet holds the column names. Note that the table is cropped at the first empty header column. Rows that are empty in every column are skipped.
+Excel workbooks (`format: xlsx`) need `pip install 'datacontract-cli[xlsx]'`. Each schema is one sheet: its `physicalName` is the sheet's name, matched case-sensitively, and a contract with a single schema may leave it out to read the first sheet. The first row of a sheet holds the column names. Columns before the first and after the last header cell are not read, and a column with an empty header cell between them gets a generated name. Rows that are empty in every column are skipped.
 
 ```yaml
 servers:
