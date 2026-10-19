@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, ValidationError
 from datacontract.config import Config, known_env_names
 from datacontract.config.variables import CONTRACT_VARIABLES_ENV, allowed_environment, resolve_variables
 from datacontract.data_contract import DataContract, ExportFormat
-from datacontract.model.breaking import BreakingChangeEntry
+from datacontract.model.breaking import BreakingChangeEntry, Perspective
 from datacontract.model.changelog import ChangelogEntry
 from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 from datacontract.model.run import Check, ResultEnum, Run
@@ -259,9 +259,10 @@ A posted contract carries SQL and names the hosts to connect to, so the server t
 untrusted input: a `quality.type: sql` rule must be a read-only query, a credential held in the
 server's environment is never sent to a host the contract names, a `publish_url` may only point at
 the Entropy Data platform or the host configured via `ENTROPY_DATA_HOST`, and `servers[].type: local`
-is refused so a caller cannot read the server's own files. Set
-`DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment serves its own files on purpose;
-the contract is then still confined to the paths it declares.
+is refused so a caller cannot read the server's own files, and an `api` server's requests may not
+reach a private network address. Set `DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES=true` if the deployment
+serves its own files on purpose; the contract is then still confined to the paths it declares. Set
+`DATACONTRACT_CLI_API_ALLOW_PRIVATE_NETWORK=true` to test APIs in the server's own network.
 
 ## Connecting to data sources
 
@@ -275,6 +276,8 @@ tenants. Send them over HTTPS only.
 See [Configuration](https://docs.datacontract.com/configuration) for the full list of options.
 """
 
+# The endpoints are plain `def`, not `async def`: they block on data sources, and FastAPI runs
+# plain functions in a thread pool, so one slow test does not stall every other request.
 app = FastAPI(
     docs_url="/",
     title="Data Contract CLI API",
@@ -523,6 +526,8 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     # option pins it), so an environment-held SASL password can never be paired
     # with a posted contract safely -- host_field is None, so it is always rejected.
     "kafka": ("broker host", None, ("kafka_sasl_password",)),
+    # Nothing pins an API server's location either.
+    "api": ("location", None, ("api_header_authorization", "api_header_x_api_key")),
 }
 
 
@@ -550,6 +555,7 @@ def _selected_server(body: str, server_name: str | None, config):
 _LOCAL_SERVER_TYPES = frozenset({"local", "duckdb"})
 
 ALLOW_LOCAL_FILES_ENV = "DATACONTRACT_CLI_API_ALLOW_LOCAL_FILES"
+ALLOW_PRIVATE_NETWORK_ENV = "DATACONTRACT_CLI_API_ALLOW_PRIVATE_NETWORK"
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
@@ -566,6 +572,11 @@ def _local_files_allowed() -> bool:
     picks the path.
     """
     return (os.getenv(ALLOW_LOCAL_FILES_ENV) or "").strip().lower() in _TRUTHY
+
+
+def _private_network_allowed() -> bool:
+    """Whether the operator lets a posted contract's API requests reach private network addresses."""
+    return (os.getenv(ALLOW_PRIVATE_NETWORK_ENV) or "").strip().lower() in _TRUTHY
 
 
 def _reject_local_server_type(body: str, server_name: str | None, config) -> None:
@@ -621,20 +632,23 @@ def _reject_environment_credentials_to_untrusted_host(body: str, server_name: st
         return  # no environment-held secret for this server type; nothing to protect
     if host_field is not None and resolved.option_source(host_field) == "env":
         return  # the operator pinned the target host; the contract's host is ignored
+    held = [
+        env_name(field, Config.model_fields[field]) for field in secret_fields if resolved.option_source(field) == "env"
+    ]
     if host_field is not None:
         env_var = env_name(host_field, Config.model_fields[host_field])
         detail = (
-            f"This server holds a {server.type} credential in its environment, so the connection "
-            f"{target_attr} must also come from the server's environment ({env_var}); it will not be "
-            f"taken from the posted data contract. Set {env_var}, or send the full set of credentials "
-            f"with the request instead of relying on the server's environment."
+            f"This server holds a credential for {server.type} servers in its environment ({', '.join(held)}), so the "
+            f"connection {target_attr} must also come from the server's environment ({env_var}); it will not "
+            f"be taken from the posted data contract. Set {env_var}, or send the full set of credentials with "
+            f"the request instead of relying on the server's environment."
         )
     else:
         detail = (
-            f"This server holds a {server.type} credential in its environment, but its {target_attr} "
-            f"can only come from the posted data contract, so the credential cannot be pinned to a "
-            f"trusted target. Send the credentials with the request instead of relying on the server's "
-            f"environment."
+            f"This server holds a credential for {server.type} servers in its environment ({', '.join(held)}), but "
+            f"their {target_attr} can only come from the posted data contract, so the credential cannot be pinned to "
+            f"a trusted target. Send the credentials as request headers instead "
+            f"({', '.join(name.lower().replace('_', '-') for name in held)})."
         )
     raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
 
@@ -763,7 +777,7 @@ handled. A contract that cannot be parsed is reported the same way, as a failed 
     response_model_exclude_none=True,
     response_model_exclude_unset=True,
 )
-async def test(
+def test(
     request: Request,
     body: Annotated[
         str,
@@ -833,6 +847,7 @@ async def test(
         filters=parsed_filters,
         untrusted_contract=untrusted_contract,
         allowed_variables=_allowed_contract_variables(),
+        allow_private_network=_private_network_allowed(),
     ).test()
 
 
@@ -870,7 +885,7 @@ violation — not as an error status. A `schema` that is not an `http(s)` URL is
         },
     },
 )
-async def lint(
+def lint(
     body: Annotated[
         str,
         Body(
@@ -941,6 +956,9 @@ class BreakingChangesResponse(BaseModel):
     entries: list[BreakingChangeEntry] = Field(
         description="Every single change with its grade and the old and new value.",
     )
+    perspective: Perspective = Field(
+        description="Whose expectations the changes were graded against: `consumer` or `producer`.",
+    )
     is_breaking: bool = Field(
         description="Whether any detected change is classified as an error-level breaking change.",
     )
@@ -968,7 +986,7 @@ parsed is answered with `422`.
         },
     },
 )
-async def changelog_endpoint(
+def changelog_endpoint(
     body: ChangelogRequest,
     api_key: Annotated[str | None, Depends(api_key_header)] = None,
 ) -> ChangelogResponse:
@@ -1004,13 +1022,21 @@ parsed is answered with `422`.
 def breaking_endpoint(
     body: ChangelogRequest,
     api_key: Annotated[str | None, Depends(api_key_header)] = None,
+    perspective: Annotated[
+        Perspective,
+        Query(
+            description="`consumer` flags changes that lead to unexpected data for consumers, `producer` flags changes that can make data contract tests fail.",
+        ),
+    ] = Perspective.CONSUMER,
 ) -> BreakingChangesResponse:
     check_api_key(api_key)
 
     result = DataContract(data_contract_str=body.v1, untrusted_contract=True).breaking(
-        DataContract(data_contract_str=body.v2, untrusted_contract=True)
+        DataContract(data_contract_str=body.v2, untrusted_contract=True), perspective=perspective
     )
-    return BreakingChangesResponse(summary=result.summary, entries=result.entries, is_breaking=result.is_breaking)
+    return BreakingChangesResponse(
+        summary=result.summary, entries=result.entries, perspective=result.perspective, is_breaking=result.is_breaking
+    )
 
 
 @app.post(

@@ -30,11 +30,11 @@ The generated contract includes a `servers` entry for a DataFrame. `dataframe` i
 
 ```yaml
 servers:
-  - server: local
-    type: custom
-    customProperties:
-      - property: customType
-        value: dataframe
+- server: local
+  type: custom
+  customProperties:
+  - property: customType
+    value: dataframe
 ```
 
 ## 3. Test the DataFrame

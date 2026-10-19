@@ -5,7 +5,7 @@ import requests
 import responses
 from fastapi.testclient import TestClient
 
-from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
+from datacontract.api import ALLOW_LOCAL_FILES_ENV, ALLOW_PRIVATE_NETWORK_ENV, app
 from datacontract.lint.resolve import clear_definition_cache
 from datacontract.model.exceptions import DataContractException
 from tests.dcs_deprecation import DCS_DEPRECATION
@@ -93,10 +93,23 @@ def test_breaking():
     assert "v1" not in data
     assert "v2" not in data
     assert data["is_breaking"] is True
+    assert data["perspective"] == "consumer"
     assert "summary" in data
     assert "entries" in data
     assert data["entries"][0]["level"] in ("info", "warning", "error")
     assert "message" in data["entries"][0]
+
+
+def test_breaking_from_the_producer_perspective():
+    with open("fixtures/changelog/breaking/warning_only_v1.yaml", "r") as f:
+        v1 = f.read()
+    with open("fixtures/changelog/breaking/warning_only_v2.yaml", "r") as f:
+        v2 = f.read()
+    assert client.post(url="/breaking", json={"v1": v1, "v2": v2}).json()["is_breaking"] is False
+    response = client.post(url="/breaking", params={"perspective": "producer"}, json={"v1": v1, "v2": v2})
+    assert response.status_code == 200
+    assert response.json()["perspective"] == "producer"
+    assert response.json()["is_breaking"] is True
 
 
 def test_breaking_invalid_yaml():
@@ -823,6 +836,66 @@ def test_guard_blocks_env_kafka_password(monkeypatch):
 def test_guard_allows_kafka_without_environment_secret(monkeypatch):
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_PASSWORD", raising=False)
     _reject_environment_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)  # no raise
+
+
+def _api_contract(location: str) -> str:
+    return f"""\
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-api
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: api
+    location: {location}
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+@pytest.mark.parametrize("variable", ["DATACONTRACT_API_HEADER_AUTHORIZATION", "DATACONTRACT_API_HEADER_X_API_KEY"])
+def test_guard_blocks_env_api_header(monkeypatch, variable):
+    """Nothing pins an API server's location, so an environment-held API credential can never be paired with a
+    posted contract."""
+    monkeypatch.setenv(variable, "prod-secret")
+    response = client.post(
+        "/test", content=_api_contract("https://attacker.example/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.status_code == 422
+    assert f"credential for api servers in its environment ({variable})" in response.json()["detail"]
+    assert f"as request headers instead ({variable.lower().replace('_', '-')})" in response.json()["detail"]
+
+
+@pytest.fixture
+def no_api_headers(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_API_HEADER_AUTHORIZATION", raising=False)
+    monkeypatch.delenv("DATACONTRACT_API_HEADER_X_API_KEY", raising=False)
+    monkeypatch.delenv(ALLOW_PRIVATE_NETWORK_ENV, raising=False)
+
+
+def test_api_server_requests_stay_off_private_networks(api, no_api_headers):
+    api.body = '[{"order_id": "ORD-1"}]'
+    response = client.post(
+        "/test", content=_api_contract(f"{api.url}/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.status_code == 200
+    assert response.json()["result"] == "error"
+    assert "a posted data contract may not reach a private network address" in response.text
+    assert api.paths == []
+
+
+def test_api_server_requests_reach_private_networks_when_allowed(api, no_api_headers, monkeypatch):
+    monkeypatch.setenv(ALLOW_PRIVATE_NETWORK_ENV, "true")
+    api.body = '[{"order_id": "ORD-1"}]'
+    response = client.post(
+        "/test", content=_api_contract(f"{api.url}/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.json()["result"] == "passed", response.text
+    assert api.paths == ["/orders"]
 
 
 # --- publish_url is restricted to environment-pinned platform URLs ---

@@ -72,6 +72,13 @@ def test_legacy_representations_are_read_in_order():
     assert get_enum_entries(_property()) is None
 
 
+def test_null_is_not_an_allowed_value():
+    assert get_enum_values(_property(enum=[EnumValue(value="a"), EnumValue(value=None)])) == ["a"]
+    assert get_enum_values(_property(logicalTypeOptions={"enum": [None, "b"]})) == ["b"]
+    # allows nothing, unlike a property without allowed values (None)
+    assert get_enum_values(_property(enum=[EnumValue(value=None)])) == []
+
+
 def test_legacy_values_become_entries():
     entries = get_enum_entries(_property(logicalTypeOptions={"enum": ["a"]}))
 
@@ -110,12 +117,46 @@ def test_test_fails_on_a_value_outside_the_enum(orders_db):
     assert len(failed) == 2
 
 
+@pytest.mark.parametrize("valid_values, invalid_count", [(["placed", None], 1), ([None], 2)])
+def test_a_null_among_the_valid_values_does_not_let_other_values_through(orders_db, valid_values, invalid_count):
+    con = duckdb.connect(orders_db)
+    con.execute("INSERT INTO orders VALUES ('3', NULL, 3)")
+    con.close()
+    contract = f"""apiVersion: v3.2.0
+kind: DataContract
+id: orders-valid-values
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: duckdb
+    database: {orders_db}
+schema:
+  - name: orders
+    properties:
+      - name: status
+        logicalType: string
+        quality:
+          - metric: invalidValues
+            arguments:
+              validValues: {json.dumps(valid_values)}
+            mustBe: 0
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    check = next(c for c in run.checks if c.type == "field_invalid_values")
+    assert check.result == ResultEnum.failed
+    assert check.reason == f"Actual invalid_count(status) was {invalid_count}, expected = 0"
+
+
 def test_exporters_read_enum_entries():
     data_contract = DataContract(data_contract_str=CONTRACT.format(database="orders.duckdb"))
 
     json_schema = json.loads(data_contract.export("jsonschema"))
-    assert json_schema["properties"]["status"]["enum"] == ["placed", "shipped"]
-    assert json_schema["properties"]["priority"]["enum"] == [1, 2]
+    # both properties are optional
+    assert json_schema["properties"]["status"]["enum"] == ["placed", "shipped", None]
+    assert json_schema["properties"]["priority"]["enum"] == [1, 2, None]
 
     pydantic_model = data_contract.export("pydantic-model")
     assert "typing.Literal['placed', 'shipped']" in pydantic_model
@@ -155,6 +196,17 @@ def test_jsonschema_import_writes_enum_entries(tmp_path):
     status = result.schema_[0].properties[0]
     assert [e.value for e in status.enum] == ["placed", "shipped"]
     assert status.quality is None
+
+
+@pytest.mark.parametrize("values, expected", [(["placed", None], ["placed"]), ([None], None)])
+def test_jsonschema_import_drops_null_from_enum(tmp_path, values, expected):
+    schema = {"type": "object", "properties": {"status": {"type": ["string", "null"], "enum": values}}}
+    path = tmp_path / "orders.schema.json"
+    path.write_text(json.dumps(schema))
+
+    status = DataContract.import_from_source("jsonschema", str(path)).schema_[0].properties[0]
+
+    assert (status.enum and [e.value for e in status.enum]) == expected
 
 
 def test_dcs_import_writes_enum_entries():

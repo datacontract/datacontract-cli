@@ -33,10 +33,14 @@ def get_enum_values(prop: SchemaProperty, include_quality_rule: bool = True) -> 
     and the ``invalidValues`` quality rule. Callers that turn the quality rules
     into checks of their own pass ``include_quality_rule=False``, so the rule is
     not checked twice.
+
+    ``None`` is dropped, as ``required`` alone decides whether a value may be
+    missing; a declaration of only ``null`` yields ``[]``, which allows nothing.
     """
-    if prop.enum:
-        return [entry.value for entry in prop.enum]
-    return _legacy_enum_values(prop, include_quality_rule)
+    values = [entry.value for entry in prop.enum] if prop.enum else _legacy_enum_values(prop, include_quality_rule)
+    if values is None:
+        return None
+    return [value for value in values if value is not None]
 
 
 def _legacy_enum_values(prop: SchemaProperty, include_quality_rule: bool) -> Optional[list[Any]]:

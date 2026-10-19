@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract edit --language` shows the editor in English, German, Swedish or French
+
+### Changed
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
+
+### Fixed
+- `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729)
+
+## [1.2.7] - 2026-10-16
+
+### Changed
+- `datacontract breaking` consistently grades changes from the consumer's perspective by default (previously an inconsistent mix of consumer and producer perspective) (#1746)
+
+### Added
+- `datacontract test`: API servers send POST requests with query parameters and a JSON body, set by the `method`, `params` and `body` custom properties, and an `X-API-Key` header from `DATACONTRACT_API_HEADER_X_API_KEY` (also used by `datacontract import odata`) (#1747)
+- `datacontract breaking --perspective consumer|producer` (and `perspective` on `POST /breaking`) selects whose expectations changes are graded against, and the output shows whether each change tightens or loosens the contract (#1746)
+- `datacontract import openapi` imports POST operations, and writes required query parameters to the `params` custom property (#1747)
+
+### Security
+- `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` or `DATACONTRACT_API_HEADER_X_API_KEY` is set on the server (#1747)
+
+## [1.2.6] - 2026-10-13
+
+### Changed
+- A `null` in the `enum` of a required property is a validation error (#1742)
+- `datacontract test`:
+  - every nested property, array item and map key and value gets its own type check, with a nested `physicalType` checked on Athena, Trino, Databricks, BigQuery, Snowflake, ClickHouse and Hive (#1719)
+  - a property whose data cannot hold the structure declared inside it fails its own type check, and the checks inside it are reported as warnings (#1719)
+  - a property with `properties`, `items` or a `map` block but no type is checked as an object, array or map (#1719)
+- `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays, structs and maps get their base type as `physicalType`, their items, fields, keys and values keep their own (#1719)
+
+### Fixed
+- `datacontract test`:
+  - a `null` among an `enum` or `validValues` no longer lets every other value pass (#1742)
+  - a declared `physicalType: json`, `jsonb` or `variant` matches a json column on servers whose native types are not read (#1719)
+  - rules on the key or value of a map are reported as warnings instead of being ignored (#1719)
+- `datacontract export jsonschema` and `datacontract test` on JSON files allow `null` for an optional property with an `enum` (#1742)
+
+## [1.2.5] - 2026-10-12
+
 ### Changed
 - `datacontract lint --all-errors`: unknown fields are warnings instead of errors, unless a custom `--schema` rejects them
 
@@ -14,13 +55,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import postgres` imports primary and foreign keys from the Postgres catalog, also for SELECT-only roles (#1709 @vtulus)
 - `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
 - `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
+- `DATACONTRACT_CONNECT_TIMEOUT` (default 30 seconds): `datacontract test` on Postgres, Redshift, MySQL and SQL Server fails with a connection error instead of waiting forever for a server that does not answer, e.g. on a wrong port
 
 ### Fixed
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)
 - `datacontract import sqlserver` and the physical type checks of `datacontract test` work on case-sensitive SQL Server databases such as Microsoft Fabric warehouses (#1705 @Octacon100)
 - `datacontract import`: Postgres and DuckDB `uuid` columns import as `string` with format `uuid` instead of without a logicalType
 - `datacontract dbt sync`: generated composite primary key, length, pattern and range tests work on Databricks, BigQuery and Snowflake (#1713)
-- `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729)
+- `datacontract api`: the endpoints run in a thread pool, so a slow or hanging `POST /test` no longer blocks every other request to the server
 
 ## [1.2.4] - 2026-10-06
 

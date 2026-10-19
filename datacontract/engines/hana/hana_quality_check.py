@@ -346,11 +346,14 @@ def _quality_check(
                 reason="invalidValues on HANA needs arguments.validValues; pattern is not supported.",
                 quality=quality,
             )
+        valid_values = [value for value in valid_values if value is not None]
         placeholders = ", ".join("?" for _ in valid_values)
-        sql = (
-            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
-            f"WHERE {quote_identifier(field_name)} NOT IN ({placeholders})"
+        predicate = (
+            f"{quote_identifier(field_name)} NOT IN ({placeholders})"
+            if valid_values
+            else f"{quote_identifier(field_name)} IS NOT NULL"
         )
+        sql = f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} WHERE {predicate}"
         return _metric_quality_check(
             connection,
             quality,

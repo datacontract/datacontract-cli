@@ -1,10 +1,10 @@
-"""ODCS constraints that JSON Schema cannot express."""
+"""Contract constraints that the ODCS JSON Schema cannot express."""
 
 from datacontract.model.exceptions import DataContractException
 
 
 def enum_value_errors(contract: dict) -> list[DataContractException]:
-    """Require unique values, independently of labels/IDs, throughout the property tree.
+    """Require unique values, independently of labels/IDs, and no null in a required property's enum.
 
     JSON numbers compare by value (1 equals 1.0), but booleans and strings are
     distinct types. Unlike uniqueItems, metadata does not participate in equality.
@@ -21,6 +21,15 @@ def enum_value_errors(contract: dict) -> list[DataContractException]:
             if not isinstance(entry, dict) or "value" not in entry:
                 continue
             value = entry["value"]
+            if value is None and node.get("required") is True:
+                errors.append(
+                    DataContractException(
+                        type="lint",
+                        name="Check that the enum of a required property has no null",
+                        reason=f"{path}.enum[{index}].value is null, but the property is required: "
+                        "remove the null entry, required already rules out missing values",
+                    )
+                )
             if isinstance(value, (dict, list)):
                 continue
             kind = "number" if type(value) in (int, float) else type(value).__name__
