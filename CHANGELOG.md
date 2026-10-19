@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
 - `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
 - `DATACONTRACT_CONNECT_TIMEOUT` (default 30 seconds): `datacontract test` on Postgres, Redshift, MySQL and SQL Server fails with a connection error instead of waiting forever for a server that does not answer, e.g. on a wrong port
+- `datacontract export sql`: export a schema with `physicalType: view` as a view that selects from its `transformSourceObjects`, or as a draft with TODOs when there are several or none (#1031)
 
 ### Fixed
 - `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)

@@ -1,3 +1,5 @@
+import logging
+
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
@@ -113,6 +115,9 @@ def _to_sql_table(
     server_type: str = "snowflake",
     **kwargs,
 ) -> str:
+    if (model.physicalType or "").lower() == "view":
+        return _to_sql_view(model_name, model, server_type)
+
     if server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
@@ -181,6 +186,68 @@ def _to_sql_table(
     elif server_type == "snowflake" and model.description is not None:
         result += f" COMMENT='{_escape_single_quoted(model.description)}'"
     result += ";\n"
+    return result
+
+
+def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
+    """Select the properties from their transformSourceObjects.
+
+    ODCS does not say how several source objects are joined, so the view is then a draft with a
+    `<TODO: join condition>` that the user has to fill in before it can be created. Without any source object,
+    it is a draft selecting `FROM <TODO: source object>`.
+    """
+    properties = model.properties or []
+    column_names = [prop.physicalName or prop.name for prop in properties]
+
+    # An entry of transformSourceObjects whose last part is the property's name is a column of the object
+    # before it; any other entry is an object.
+    select = []
+    all_sources = []
+    for prop, column_name in zip(properties, column_names):
+        names = {n.lower() for n in (prop.name, prop.physicalName) if n}
+        column = column_name
+        for entry in prop.transformSourceObjects or []:
+            obj, _, col = entry.rpartition(".")
+            if obj and col.lower() in names:
+                all_sources.append(obj)
+                column = col
+            else:
+                all_sources.append(entry)
+        select.append(column if column == column_name else f"{column} AS {column_name}")
+    sources = list(dict.fromkeys(all_sources))
+    if len(sources) != 1:
+        logging.getLogger(__name__).warning(
+            "Schema '%s' is a view with %s source objects; the exported view is a draft with TODOs to fill in.",
+            model.name,
+            len(sources),
+        )
+
+    from_clause = sources[0] if sources else "<TODO: source object>"
+    for source in sources[1:]:
+        from_clause += f"\nJOIN {source} ON <TODO: join condition>"
+
+    if server_type == "sqlserver":
+        result = f"CREATE OR ALTER VIEW {model_name}"
+    elif server_type == "clickhouse":
+        result = f"CREATE OR REPLACE VIEW `{model_name}`"
+    else:
+        result = f"CREATE OR REPLACE VIEW {model_name}"
+
+    # Snowflake and Databricks take column comments in the view's column list
+    if server_type in ("snowflake", "databricks"):
+        quote = '"' if server_type == "databricks" else "'"
+        columns = []
+        for prop, column_name in zip(properties, column_names):
+            if prop.description is not None:
+                column_name += f" COMMENT {quote}{_escape(prop.description)}{quote}"
+            columns.append(f"  {column_name}")
+        result += " (\n" + ",\n".join(columns) + "\n)"
+        if model.description is not None:
+            separator = "=" if server_type == "snowflake" else " "
+            result += f" COMMENT{separator}{quote}{_escape(model.description)}{quote}"
+
+    result += " AS\nSELECT\n" + ",\n".join(f"  {c}" for c in select)
+    result += f"\nFROM {from_clause};\n"
     return result
 
 
