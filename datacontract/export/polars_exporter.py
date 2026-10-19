@@ -1,14 +1,4 @@
-"""Export a data contract as Polars schemas.
-
-`datacontract export polars` emits a Python module that builds one ``pl.Schema``
-per schema of the contract. It only produces text, so polars does not need to be
-installed to run it: the mapping produces the small type tree below, which is
-rendered as the Polars expressions it stands for.
-
-The physical type wins when it names a width or precision that the logical type
-leaves open (``int32``, ``float32``, ``decimal(10,2)``, ``timestamp(9)``), then the
-``format`` of an integer or number (``i16``, ``u32``, ``f32``), then the logical type.
-"""
+"""Export a data contract as a Python module of Polars schemas, as text, so polars need not be installed."""
 
 import json
 import keyword
@@ -148,10 +138,6 @@ class PolarsStruct(PolarsType):
 
 
 class PolarsExporter(Exporter):
-    """
-    Exporter class for exporting data contracts to Polars schemas.
-    """
-
     def export(
         self,
         data_contract: OpenDataContractStandard,
@@ -160,36 +146,10 @@ class PolarsExporter(Exporter):
         sql_server_type,
         export_args,
     ) -> str:
-        """
-        Export the given data contract to Polars schemas.
-
-        Args:
-            data_contract (OpenDataContractStandard): The data contract specification.
-            schema_name: The name of the schema to export, or 'all' for all schemas.
-            server: Not used in this implementation.
-            sql_server_type: Not used in this implementation.
-            export_args: Not used in this implementation.
-
-        Returns:
-            str: A Python module that defines a ``pl.Schema`` for each exported schema.
-        """
         return to_polars(data_contract, schema_name)
 
 
 def to_polars(contract: OpenDataContractStandard, schema_name: str = "all") -> str:
-    """
-    Convert a data contract to a Python module defining its Polars schemas.
-
-    Each schema is assigned to a variable named after it, made a valid Python
-    identifier that is no keyword, unique, and not `pl`.
-
-    Args:
-        contract (OpenDataContractStandard): The data contract specification.
-        schema_name (str): The name of the schema to export, or 'all' for all schemas.
-
-    Returns:
-        str: The source code of the module.
-    """
     schemas = contract.schema_ or []
     if schema_name != "all":
         schemas = [schema_obj for schema_obj in schemas if schema_obj.name == schema_name]
@@ -223,15 +183,6 @@ def to_polars(contract: OpenDataContractStandard, schema_name: str = "all") -> s
 
 
 def to_polars_type(prop: SchemaProperty) -> PolarsType:
-    """
-    Convert a property to a Polars data type.
-
-    Args:
-        prop (SchemaProperty): The property to convert.
-
-    Returns:
-        PolarsType: The corresponding Polars data type.
-    """
     logical_type = prop.logicalType.lower() if prop.logicalType else None
     physical_type = " ".join(prop.physicalType.lower().split()) if prop.physicalType else None
 
@@ -266,6 +217,7 @@ def to_polars_type(prop: SchemaProperty) -> PolarsType:
     if logical_type == "object" or base_type in ["object", "record", "struct"]:
         return _to_struct(prop.properties or [])
 
+    # A physical type naming a width or precision the logical type leaves open wins, then `format`, then the logical type.
     if physical_type:
         parameters = []
         parenthesized = re.search(r"\(([^)]*)\)", physical_type)
@@ -334,11 +286,7 @@ def _decimal_type(prop: SchemaProperty, precision: Optional[int], scale: Optiona
 
 
 def _datetime_type(prop: SchemaProperty, zoned: Optional[bool], parameters: List[int]) -> PolarsType:
-    """A datetime in the time unit of the physical type's precision, microseconds without one.
-
-    `zoned` comes from the physical type; when it does not say, the `timezone`
-    option of the logical type does, and its `defaultTimezone` names the zone.
-    """
+    """`zoned` comes from the physical type; when that doesn't say, the `timezone` option decides."""
     if zoned is None:
         zoned = _logical_type_option(prop, "timezone") is True
     time_unit = "us"
@@ -371,11 +319,7 @@ def _string_literal(value: str) -> str:
 
 
 def _render(data_type: PolarsType, indent: str) -> str:
-    """The expression building `data_type`, on a line indented by `indent`.
-
-    A struct with fields spreads over several lines with a trailing comma after
-    every field, the layout `ruff format` keeps for it.
-    """
+    """The expression building `data_type`; a trailing comma after every struct field keeps `ruff format` from folding it."""
     if isinstance(data_type, PolarsStruct):
         if not data_type.fields:
             return "pl.Struct({})"
