@@ -85,7 +85,7 @@ servers:
     location: "https://api.example.com/orders"
 ```
 
-### Shape the request
+### Testing POST requests
 
 Custom properties of the server set the method, the query parameters and the JSON body of the request. For a search API that only accepts POST:
 

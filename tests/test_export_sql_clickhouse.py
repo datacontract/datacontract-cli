@@ -34,6 +34,43 @@ COMMENT 'Event tracking data.';
     assert actual == expected
 
 
+def test_to_sql_ddl_clickhouse_escapes_quotes_in_comments():
+    """Apostrophes and backslashes in descriptions must not break the single-quoted COMMENT literals."""
+    actual = DataContract(
+        data_contract_str="""
+apiVersion: v3.1.0
+kind: DataContract
+id: clickhouse-escaping
+name: ClickHouse Escaping
+version: 1.0.0
+status: active
+schema:
+- name: extracts
+  description: The extractor's table, stored under C:\\data.
+  properties:
+  - name: id
+    logicalType: string
+    primaryKey: true
+    required: true
+  - name: amount
+    logicalType: number
+    description: The extractor's amount.
+"""
+    ).export("sql", sql_server_type="clickhouse")
+    expected = """
+-- Data Contract: clickhouse-escaping
+-- SQL Dialect: clickhouse
+CREATE TABLE IF NOT EXISTS `extracts` (
+  `id` String,
+  `amount` Nullable(Decimal(38,0)) COMMENT 'The extractor''s amount.'
+)
+ENGINE = MergeTree()
+ORDER BY (id)
+COMMENT 'The extractor''s table, stored under C:\\\\data.';
+""".strip()
+    assert actual == expected
+
+
 def test_to_sql_ddl_clickhouse_with_custom_engine():
     """Custom ENGINE clause via --clickhouse-engine."""
     actual = DataContract(data_contract_file="fixtures/clickhouse/datacontract.yaml").export(

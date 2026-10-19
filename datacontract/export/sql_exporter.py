@@ -142,7 +142,7 @@ def _to_sql_table(
             else:
                 col += f"Nullable({type_str})"
             if prop.description is not None:
-                col += f" COMMENT '{_escape(prop.description)}'"
+                col += f" COMMENT '{_escape_single_quoted(prop.description)}'"
         else:
             col = f"  {column_name} {type_str}"
             if prop.required:
@@ -152,7 +152,7 @@ def _to_sql_table(
             if server_type == "databricks" and prop.description is not None:
                 col += f' COMMENT "{_escape(prop.description)}"'
             if server_type == "snowflake" and prop.description is not None:
-                col += f" COMMENT '{_escape(prop.description)}'"
+                col += f" COMMENT '{_escape_single_quoted(prop.description)}'"
         if current_line < total_lines:
             col += ","
         col += "\n"
@@ -175,11 +175,11 @@ def _to_sql_table(
         if order_by:
             result += f"\nORDER BY ({order_by})"
         if model.description is not None:
-            result += f"\nCOMMENT '{_escape(model.description)}'"
+            result += f"\nCOMMENT '{_escape_single_quoted(model.description)}'"
     elif server_type == "databricks" and model.description is not None:
         result += f' COMMENT "{_escape(model.description)}"'
     elif server_type == "snowflake" and model.description is not None:
-        result += f" COMMENT='{_escape(model.description)}'"
+        result += f" COMMENT='{_escape_single_quoted(model.description)}'"
     result += ";\n"
     return result
 
@@ -196,3 +196,9 @@ def _escape(text: str | None) -> str | None:
     if text is None:
         return None
     return text.replace('"', '\\"')
+
+
+def _escape_single_quoted(text: str | None) -> str | None:
+    if text is None:
+        return None
+    return text.replace("\\", "\\\\").replace("'", "''")

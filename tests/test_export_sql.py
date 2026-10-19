@@ -48,6 +48,35 @@ CREATE TABLE line_items (
     assert actual == expected
 
 
+def test_to_sql_ddl_snowflake_escapes_quotes_in_comments():
+    """Apostrophes and backslashes in descriptions must not break the single-quoted COMMENT literals."""
+    actual = DataContract(
+        data_contract_str="""
+apiVersion: v3.1.0
+kind: DataContract
+id: snowflake-escaping
+name: Snowflake Escaping
+version: 1.0.0
+status: active
+schema:
+- name: extracts
+  description: The extractor's table, stored under C:\\data.
+  properties:
+  - name: amount
+    logicalType: number
+    description: The extractor's amount.
+"""
+    ).export("sql", sql_server_type="snowflake")
+    expected = """
+-- Data Contract: snowflake-escaping
+-- SQL Dialect: snowflake
+CREATE TABLE extracts (
+  amount NUMBER COMMENT 'The extractor''s amount.'
+) COMMENT='The extractor''s table, stored under C:\\\\data.';
+""".strip()
+    assert actual == expected
+
+
 def test_to_sql_ddl_databricks_unity_catalog():
     actual = DataContract(data_contract_file="fixtures/databricks-sql/datacontract.yaml").export("sql")
     expected = """
