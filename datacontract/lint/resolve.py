@@ -57,24 +57,24 @@ class _SafeLoaderNoTimestamp(yaml.SafeLoader):
     def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict[object, object]:
         # Check only explicit keys before SafeLoader expands YAML merge keys.
         # An explicit override of an inherited anchor value is valid YAML.
-        seen = set()
+        first_marks = {}
         for key_node, _ in node.value:
             if key_node.tag == "tag:yaml.org,2002:merge":
                 continue
             key = self.construct_object(key_node, deep=deep)
             try:
-                duplicate = key in seen
-                seen.add(key)
+                first_mark = first_marks.get(key)
             except TypeError:
                 # Let SafeLoader report its usual unhashable-key error.
                 return super().construct_mapping(node, deep=deep)
-            if duplicate:
+            if first_mark is not None:
                 raise yaml.constructor.ConstructorError(
-                    "while constructing a mapping",
-                    node.start_mark,
+                    f"found key {key!r}",
+                    first_mark,
                     f"found duplicate key {key!r}",
                     key_node.start_mark,
                 )
+            first_marks[key] = key_node.start_mark
         return super().construct_mapping(node, deep=deep)
 
 

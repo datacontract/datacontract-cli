@@ -334,9 +334,11 @@ def test_duplicate_mapping_keys_are_rejected(document: str) -> None:
 
 def test_duplicate_key_error_identifies_source_and_line() -> None:
     with pytest.raises(DataContractException) as exc:
-        _to_yaml("version: 1.0.0\nversion: 2.0.0\n", "contracts/orders.yaml")
+        _to_yaml("apiVersion: v3.2.0\nversion: 1.0.0\nversion: 2.0.0\n", "contracts/orders.yaml")
     assert "contracts/orders.yaml" in str(exc.value)
     assert "line 2" in str(exc.value)
+    assert "line 3" in str(exc.value)
+    assert "line 1" not in str(exc.value)
 
 
 def test_yaml_merge_allows_explicit_override() -> None:
