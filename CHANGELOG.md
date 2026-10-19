@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
+- `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744)
 
 ### Changed
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16

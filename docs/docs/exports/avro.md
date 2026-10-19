@@ -58,7 +58,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 
 ## Custom Avro properties
 
-**`customProperties` on property level** may set additional Avro attributes. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and `default` are supported.
+**`customProperties` on property level** may set additional Avro attributes. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types), `default` and [`aliases`](https://avro.apache.org/docs/1.11.0/spec.html#Aliases) are supported.
 
 ```yaml
 schema:
@@ -80,5 +80,6 @@ schema:
 
 - `avroLogicalType` — the Avro logical type of the property (here `local-timestamp-micros`).
 - `avroDefault` — the default value for the property in Avro, as a string; `true`, `false`, `null` and numbers are converted to their Avro type.
+- `avroAliases` — the field's alternate names, as a list. On the schema object, it sets the aliases of the top-level record.
 
 All options: **[`datacontract export avro`](../commands/export/avro.md)**.
