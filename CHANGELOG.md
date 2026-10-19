@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
 
+### Fixed
+- Avro `aliases` on records and fields are kept on import (as the `avroAliases` custom property) and written back on export (#1744)
+
 ## [1.2.7] - 2026-10-16
 
 ### Changed

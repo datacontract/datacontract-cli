@@ -59,11 +59,16 @@ def import_avro(source: str) -> OpenDataContractStandard:
         properties=properties,
     )
 
-    # Add namespace as custom property if present
-    if avro_schema.get_prop("namespace") is not None:
-        from open_data_contract_standard.model import CustomProperty
+    # Add namespace and aliases as custom properties if present
+    from open_data_contract_standard.model import CustomProperty
 
-        schema_obj.customProperties = [CustomProperty(property="namespace", value=avro_schema.get_prop("namespace"))]
+    schema_custom_props = []
+    if avro_schema.get_prop("namespace") is not None:
+        schema_custom_props.append(CustomProperty(property="namespace", value=avro_schema.get_prop("namespace")))
+    if avro_schema.get_prop("aliases"):
+        schema_custom_props.append(CustomProperty(property="avroAliases", value=list(avro_schema.get_prop("aliases"))))
+    if schema_custom_props:
+        schema_obj.customProperties = schema_custom_props
 
     odcs.schema_.append(schema_obj)
 
@@ -91,6 +96,8 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
         custom_props["avroLogicalType"] = field.get_prop("logicalType")
     if field.default is not None:
         custom_props["avroDefault"] = str(field.default)
+    if field.get_prop("aliases"):
+        custom_props["avroAliases"] = list(field.get_prop("aliases"))
 
     # Determine type and nested structures
     if field.type.type == "record":
