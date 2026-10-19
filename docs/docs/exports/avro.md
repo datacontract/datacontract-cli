@@ -58,7 +58,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 
 ## Custom Avro properties
 
-**`customProperties` on property level** may set additional Avro attributes. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types), `default` and [`aliases`](https://avro.apache.org/docs/1.11.0/spec.html#Aliases) are supported.
+**`customProperties`** may set additional Avro attributes. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types), `default` and [`aliases`](https://avro.apache.org/docs/1.11.0/spec.html#Aliases) are supported.
 
 ```yaml
 schema:

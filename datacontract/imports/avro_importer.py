@@ -64,8 +64,7 @@ def import_avro(source: str) -> OpenDataContractStandard:
         schema_custom_props.append(CustomProperty(property="namespace", value=avro_schema.get_prop("namespace")))
     if avro_schema.get_prop("aliases") is not None:
         schema_custom_props.append(CustomProperty(property="avroAliases", value=avro_schema.get_prop("aliases")))
-    if schema_custom_props:
-        schema_obj.customProperties = schema_custom_props
+    schema_obj.customProperties = schema_custom_props or None
 
     odcs.schema_.append(schema_obj)
 

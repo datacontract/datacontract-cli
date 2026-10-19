@@ -1,5 +1,5 @@
 import json
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from open_data_contract_standard.model import SchemaObject, SchemaProperty
 
@@ -20,7 +20,7 @@ def to_avro_schema(model_name: str, model: SchemaObject) -> dict:
     schema = to_avro_record(model_name, model.properties or [], model.description, namespace)
     aliases = _get_config_value(model, "avroAliases")
     if aliases is not None:
-        schema["aliases"] = aliases
+        schema["aliases"] = [aliases] if isinstance(aliases, str) else aliases
     return schema
 
 
@@ -48,7 +48,7 @@ def to_avro_fields(properties: List[SchemaProperty]) -> list:
     return result
 
 
-def _get_config_value(obj: Union[SchemaObject, SchemaProperty], key: str) -> Optional[str]:
+def _get_config_value(obj: Union[SchemaObject, SchemaProperty], key: str) -> Optional[Any]:
     """Get a custom property value."""
     if obj.customProperties is None:
         return None
@@ -120,7 +120,7 @@ def to_avro_field(prop: SchemaProperty) -> dict:
 
     aliases = _get_config_value(prop, "avroAliases")
     if aliases is not None:
-        avro_field["aliases"] = aliases
+        avro_field["aliases"] = [aliases] if isinstance(aliases, str) else aliases
 
     return avro_field
 
