@@ -4,7 +4,7 @@ title: "Export: Polars"
 description: "Export a data contract to Polars schemas."
 ---
 
-# <img className="page-icon" src="/img/icons/custom.svg" alt="" /> Export: Polars
+# <img className="page-icon" src="/img/icons/polars.svg" alt="" /> Export: Polars
 
 Converts the data contract into a Python module that defines a Polars `pl.Schema` for each schema. Polars does not need to be installed to run the export.
 
