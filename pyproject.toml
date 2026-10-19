@@ -366,10 +366,7 @@ log_level = "INFO"
 #log_cli = "true" #  activate live logging, do not use with -n 8 xdist option for parallel test execution: https://github.com/pytest-dev/pytest-xdist/issues/402
 log_cli_level = "INFO"
 
-# Coverage is measured to make the number visible (the `coverage` CI job prints
-# the least-covered modules to the run summary), not to gate a pull request:
-# there is deliberately no `fail_under`, so nothing here can block a merge.
-# Run it locally with `pytest --cov`.
+# Coverage is for local runs (`pytest --cov`), not a gate: deliberately no `fail_under`.
 [tool.coverage.run]
 source = ["datacontract"]
 omit = [
