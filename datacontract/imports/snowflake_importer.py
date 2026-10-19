@@ -278,7 +278,6 @@ def account_usage_lineage_query() -> str:
                         f.value:SOURCE_COLUMN_NAME::STRING)) AS UPSTREAM_SOURCES
                 FROM TABLE(FLATTEN(INPUT => :v_all_lineage)) AS f
                 WHERE f.value:DISTANCE::INTEGER = 1
-                AND UPPER(f.value:SOURCE_OBJECT_DOMAIN::STRING) = 'COLUMN'
                 GROUP BY 1, 2
             );
             RETURN TABLE(rs_final);
