@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order xmlns="urn:example:orders" created_by="import">
+  <order_id>9d2b7c4e-0000-4000-8000-000000000000-too-long</order_id>
+  <order_total>-5.00</order_total>
+  <status>cancelled</status>
+  <notes>Missing timestamp, version and customer name</notes>
+  <customer>
+    <customer_id>C-1003</customer_id>
+    <loyalty_points>5</loyalty_points>
+  </customer>
+  <email>grace@example.com</email>
+  <line_items>
+    <line_item>
+      <sku>abc-1</sku>
+      <quantity>1000</quantity>
+      <price currency="EURO">10.00</price>
+    </line_item>
+    <line_item>
+      <sku>ABC-0002</sku>
+      <quantity>1</quantity>
+      <price currency="EUR">-1.00</price>
+    </line_item>
+  </line_items>
+  <category>
+    <parent><name>Media</name></parent>
+  </category>
+</order>

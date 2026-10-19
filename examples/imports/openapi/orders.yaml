@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info:
+  title: Orders API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+  - url: https://staging.api.example.com/v1
+    description: Staging
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: All orders of the last 30 days.
+      responses:
+        "200":
+          description: The orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          example: ORD-1001
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+components:
+  schemas:
+    Order:
+      type: object
+      required: [order_id, order_timestamp, status]
+      properties:
+        order_id:
+          type: string
+          description: Unique identifier of the order.
+          pattern: "^ORD-[0-9]+$"
+        order_timestamp:
+          type: string
+          format: date-time
+        customer_id:
+          type: string
+        order_total:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum: [placed, shipped, delivered]

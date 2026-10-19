@@ -1,0 +1,3 @@
+queries:
+  tsql: SELECT TOP 1 COUNT(*) FROM ${table}
+mustBeGreaterThan: 0

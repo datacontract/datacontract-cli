@@ -1,5 +1,6 @@
 from datacontract.data_contract import DataContract
 from datacontract.engines.ibis.ibis_check_execute import _run_scalar
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 
 class _FakeRow:
@@ -46,5 +47,5 @@ def test_sql_quality_fallback_does_not_close_connection():
     run = data_contract.test()
 
     print(run.pretty())
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))

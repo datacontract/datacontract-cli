@@ -3,6 +3,7 @@ import os
 import tempfile
 from unittest.mock import patch
 
+import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -197,7 +198,7 @@ def test_step_summary_markdown_structure():
 
         with open(summary_path) as f:
             content = f.read()
-        assert "**Result: 🔴 failed**" in content
+        assert "**Result: 🔴 Failed**" in content
         assert "2 checks" in content
         assert "1 passed" in content
         assert "1 failed" in content
@@ -243,6 +244,25 @@ def test_step_summary_multi_contract():
         os.unlink(summary_path)
 
 
+def test_step_summary_multi_contract_that_tested_nothing():
+    runs = [("orders.yaml", _make_run([])), ("customers.yaml", _make_run([]))]
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+        summary_path = f.name
+
+    try:
+        env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
+        env["GITHUB_STEP_SUMMARY"] = summary_path
+        with patch.dict(os.environ, env, clear=True):
+            write_ci_summary(runs)
+
+        with open(summary_path) as f:
+            content = f.read()
+        assert "**⚪ No checks were executed** — 0/2 contracts passed" in content
+        assert "| ⚪ Unknown | orders.yaml |" in content
+    finally:
+        os.unlink(summary_path)
+
+
 # --- CLI integration tests ---
 
 
@@ -279,15 +299,24 @@ def test_ci_fail_on_never():
     assert result.exit_code == 0
 
 
-def test_ci_fail_on_warning():
-    # valid_datacontract.yaml produces a warning ("Schema block is missing")
-    result = runner.invoke(app, ["ci", "--fail-on", "warning", "fixtures/lint/valid_datacontract.yaml"])
+@pytest.fixture
+def contract_with_warning(tmp_path):
+    """A schema but no servers block: the run reports a warning and nothing worse."""
+    contract = tmp_path / "datacontract.yaml"
+    contract.write_text(
+        "apiVersion: v3.1.0\nkind: DataContract\nid: no-servers\nversion: 1.0.0\nstatus: draft\n"
+        "schema:\n  - name: orders\n"
+    )
+    return str(contract)
+
+
+def test_ci_fail_on_warning(contract_with_warning):
+    result = runner.invoke(app, ["ci", "--fail-on", "warning", contract_with_warning])
     assert result.exit_code == 1
 
 
-def test_ci_fail_on_error_is_default():
-    # valid_datacontract.yaml produces warnings but not errors/failures — should pass
-    result = runner.invoke(app, ["ci", "fixtures/lint/valid_datacontract.yaml"])
+def test_ci_fail_on_error_is_default(contract_with_warning):
+    result = runner.invoke(app, ["ci", contract_with_warning])
     assert result.exit_code == 0
 
 

@@ -10,13 +10,15 @@ from datacontract.cli import (
     _print_logs,
     _print_publish_failure,
     app,
+    config_with_custom_quality_checks,
     console,
+    custom_quality_checks_option,
     debug_option,
     enable_debug_logging,
+    inline_references_option,
     resolve_output_format,
     validate_publish_url,
 )
-from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.output.ci_output import write_ci_output, write_ci_summary, write_json_results
 from datacontract.output.output_format import OutputFormat
@@ -79,13 +81,8 @@ def ci(
         bool,
         typer.Option(help="SSL verification when publishing the data contract."),
     ] = True,
-    inline_references: Annotated[
-        bool,
-        typer.Option(
-            help="Resolve external references (currently: authoritativeDefinitions\\[type in {definition, semantics}]) in the "
-            "contract and inline the fetched content from the configured entropy-data host."
-        ),
-    ] = True,
+    custom_quality_checks: custom_quality_checks_option = None,
+    inline_references: inline_references_option = True,
     debug: debug_option = None,
 ):
     """
@@ -109,6 +106,7 @@ def ci(
     # Plain text output for CI logs; --json sends human output to stderr.
     out = Console(stderr=True, no_color=True) if json_output else Console(no_color=True)
 
+    config = config_with_custom_quality_checks(custom_quality_checks)
     results = []
     fail_results = {
         "warning": {"warning", "failed", "error"},
@@ -120,7 +118,7 @@ def ci(
     for location in locations:
         out.print(f"Testing {location}")
         run = DataContract(
-            config=cli_config(),
+            config=config,
             data_contract_file=location,
             schema_location=schema,
             publish_url=publish,

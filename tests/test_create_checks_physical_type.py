@@ -42,5 +42,5 @@ def test_physicaltype_not_checked_on_file_backend():
     # File sources have no meaningful native platform type, so a declared
     # physicalType falls through to the logicalType category check.
     prop = SchemaProperty(name="user_id", physicalType="uniqueidentifier", logicalType="string")
-    check = _type_check(_contract(prop, "local", fmt="parquet"))
+    check = _type_check(_contract(prop, "local", fmt="delta"))
     assert check.metric == MetricType.FIELD_TYPE

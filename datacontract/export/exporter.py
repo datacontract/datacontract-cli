@@ -61,6 +61,7 @@ class ExportFormat(str, Enum):
     rdf = "rdf"
     avro = "avro"
     protobuf = "protobuf"
+    xsd = "xsd"
     great_expectations = "great-expectations"
     avro_idl = "avro-idl"
     sql = "sql"

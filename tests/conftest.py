@@ -1,8 +1,13 @@
+import builtins
 import functools
+import io
 import re
 import shutil
 import subprocess
 import sys
+import threading
+from dataclasses import dataclass, field
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -13,6 +18,21 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+@pytest.fixture
+def non_utf8_default_encoding(monkeypatch):
+    """Makes text-mode `open()` calls without an explicit encoding behave as on a cp1252 system (e.g. Windows)."""
+    real_open = builtins.open
+
+    def open_defaulting_to_cp1252(file, mode="r", buffering=-1, encoding=None, *args, **kwargs):
+        if encoding in (None, "locale") and "b" not in mode:
+            encoding = "cp1252"
+        return real_open(file, mode, buffering, encoding, *args, **kwargs)
+
+    # io.open backs Path.open and importlib.resources' Traversable.open
+    monkeypatch.setattr(builtins, "open", open_defaulting_to_cp1252)
+    monkeypatch.setattr(io, "open", open_defaulting_to_cp1252)
 
 
 # Whether a test file drives a testcontainers container. Matched on the file's
@@ -91,3 +111,53 @@ def generated_docs():
     if shutil.which("node") is None:
         pytest.skip("node is needed to generate docs/docs/release-notes.md")
     _generate(["node", "docs/scripts/generate-release-notes.mjs"])
+
+
+@dataclass
+class Api:
+    """What the local API answers, and the requests it received.
+
+    Attributes rather than one dict: what a request records must never end up in
+    the headers of a response.
+    """
+
+    url: str = ""
+    body: str = ""
+    content_type: str = "application/json"
+    status: int = 200
+    paths: list = field(default_factory=list)
+    methods: list = field(default_factory=list)
+    headers: list = field(default_factory=list)
+    request_bodies: list = field(default_factory=list)
+
+
+@pytest.fixture
+def api():
+    """A local API that answers every GET and POST with the body and content type set on it, and records the
+    requests."""
+    api = Api()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            api.paths.append(self.path)
+            api.methods.append(self.command)
+            api.headers.append(dict(self.headers))
+            api.request_bodies.append(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
+            body = api.body.encode()
+            self.send_response(api.status)
+            self.send_header("Content-Type", api.content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        do_POST = do_GET
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    api.url = f"http://127.0.0.1:{server.server_port}"
+    yield api
+    server.shutdown()
+    server.server_close()

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Every constraint the contract checks, broken once -->
+<order xmlns="urn:example:canonical">
+  <order_id>ORD-12</order_id>
+  <code>FAR-TOO-LONG</code>
+  <placed_at>2026-09-03T12:00:00</placed_at>
+  <delivery_date>2019-12-31</delivery_date>
+  <total>1000000</total>
+  <items_count>-1</items_count>
+  <priority>5</priority>
+  <status>lost</status>
+  <customer>
+    <email>nobody@example.com</email>
+  </customer>
+  <line_item>
+    <sku>ABC-1</sku>
+    <quantity>1000</quantity>
+    <price currency="EURO">-1.00</price>
+  </line_item>
+</order>

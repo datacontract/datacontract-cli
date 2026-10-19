@@ -39,7 +39,7 @@ datacontract test datacontract.yaml
 ```
 
 ```
-🟢 data contract is valid. Run 24 checks. Took 5.2 seconds.
+🟢 Data contract is valid. Ran 24 checks. Took 5.2 seconds.
 ```
 
 The same flow works for [BigQuery](./testing/bigquery.md), [Databricks](./testing/databricks.md), [Postgres](./testing/postgres.md), and [15+ other sources](./testing/index.md) — or [try it on a local CSV file](./testing/local.md) without any credentials.
@@ -67,6 +67,7 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 - Test your own warehouse in 5 minutes: **[Snowflake](./testing/snowflake.md)**, **[BigQuery](./testing/bigquery.md)**, **[Databricks](./testing/databricks.md)**, **[Amazon Redshift](./testing/redshift.md)**, or **[any other source](./testing/index.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
+- Let your coding agent (Claude Code, Codex, GitHub Copilot) create and test contracts with the **[Data Contract Skills](./ai-agents.md)**.
 - Run checks against real data with **[Test your Data](./testing/index.md)**, then keep them running with **[Scheduling](./scheduling/index.md)**.
 - Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
@@ -90,7 +91,7 @@ Run `pip install 'datacontract-cli[postgres]'` (or the extra matching your data 
 
 ### Which data sources can the Data Contract CLI test?
 
-Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Test your Data](./testing/index.md).
+Snowflake, Databricks, Google BigQuery, Amazon Athena, Amazon Redshift, Amazon S3, Azure Blob Storage and ADLS, Google Cloud Storage, Postgres, MySQL, Microsoft SQL Server, Oracle, Trino, ClickHouse, Apache Hive, Apache Impala, Kafka, Spark DataFrames, JSON HTTP APIs, and local Parquet, JSON, CSV, or Delta files. See [Test your Data](./testing/index.md).
 
 ### Is the Data Contract CLI free to use?
 
@@ -104,3 +105,4 @@ More answers — credentials, check selection, type failures, CI behaviour — a
 - Source code: [github.com/datacontract/datacontract-cli](https://github.com/datacontract/datacontract-cli)
 - Community Slack: [datacontract.com/slack](https://datacontract.com/slack)
 - GitHub Action: [datacontract/datacontract-action](https://github.com/datacontract/datacontract-action/)
+- Agent skills: [datacontract/datacontract-skills](https://github.com/datacontract/datacontract-skills)

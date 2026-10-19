@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:o="urn:example:orders"
+           targetNamespace="urn:example:orders"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="common.xsd"/>
+
+  <xs:element name="order">
+    <xs:annotation>
+      <xs:documentation>An order placed
+        in the webshop.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="order_id" type="o:OrderId">
+          <xs:annotation><xs:documentation>Unique identifier of the order.</xs:documentation></xs:annotation>
+        </xs:element>
+        <xs:element name="order_timestamp" type="xs:dateTime"/>
+        <xs:element name="order_date" type="xs:date" minOccurs="0"/>
+        <xs:element name="order_total" type="o:Amount"/>
+        <xs:element name="status" type="o:OrderStatus"/>
+        <xs:element name="notes" type="xs:string" nillable="true"/>
+        <xs:element ref="o:customer"/>
+        <xs:choice>
+          <xs:element name="email" type="xs:string"/>
+          <xs:element name="phone" type="xs:string"/>
+        </xs:choice>
+        <xs:element name="line_items">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="line_item" type="o:LineItem" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="tags" minOccurs="0">
+          <xs:simpleType>
+            <xs:list itemType="xs:token"/>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="category" type="o:Category" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:positiveInteger" use="required"/>
+      <xs:attributeGroup ref="o:audit"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="customer">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="o:Party">
+          <xs:sequence>
+            <xs:element name="loyalty_points" type="xs:nonNegativeInteger" default="0"/>
+          </xs:sequence>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="LineItem">
+    <xs:sequence>
+      <xs:element name="sku">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="[A-Z]{3}-[0-9]{4}"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="quantity">
+        <xs:simpleType>
+          <xs:restriction base="xs:int">
+            <xs:minInclusive value="1"/>
+            <xs:maxExclusive value="1000"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="price" type="o:Money"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Money">
+    <xs:simpleContent>
+      <xs:extension base="o:Amount">
+        <xs:attribute name="currency" use="required">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:length value="3"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="Category">
+    <xs:sequence>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="parent" type="o:Category" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="OrderStatus">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="pending"/>
+      <xs:enumeration value="shipped"/>
+      <xs:enumeration value="delivered"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:attributeGroup name="audit">
+    <xs:attribute name="created_by" type="xs:string"/>
+  </xs:attributeGroup>
+</xs:schema>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Several orders in one document, with prefixed names -->
+<o:orders xmlns:o="urn:example:orders">
+  <o:order version="1">
+    <o:order_id>A-1</o:order_id>
+    <o:order_total>10.00</o:order_total>
+    <o:status>pending</o:status>
+  </o:order>
+  <o:order version="1">
+    <o:order_id>A-2</o:order_id>
+    <o:order_total>20.50</o:order_total>
+    <o:status>shipped</o:status>
+  </o:order>
+  <o:order version="2">
+    <o:order_id>A-3</o:order_id>
+    <o:order_total>5.25</o:order_total>
+    <o:status>delivered</o:status>
+  </o:order>
+</o:orders>

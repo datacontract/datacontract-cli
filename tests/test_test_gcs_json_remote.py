@@ -4,6 +4,7 @@ import pytest
 from dotenv import load_dotenv
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 datacontract = "fixtures/gcs-json-remote/datacontract.yaml"
 load_dotenv(override=True)
@@ -25,7 +26,7 @@ def test_test_gcs_json_remote_gcs_url():
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
+    assert_dcs_deprecation_is_the_only_warning(run)
 
 
 @pytest.mark.skipif(
@@ -44,5 +45,5 @@ def test_test_gcs_json_remote_s3_style(monkeypatch):
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))

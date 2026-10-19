@@ -9,7 +9,7 @@ domain: media
 description:
   purpose: Physical materialization of the top artists per calendar year.
   usage: see top-artists-by-year.odcs.yaml
-  limitation: see top-artists-by-year.odcs.yaml
+  limitations: see top-artists-by-year.odcs.yaml
 
 servers:
   - server: production

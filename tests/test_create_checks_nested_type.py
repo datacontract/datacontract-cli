@@ -1,9 +1,13 @@
-"""Nested type checks get their own check line.
+"""Type checks mirror the contract: every declared type gets its own line.
 
-A property that declares children via ``properties:`` / ``items:`` gets a second
-check next to the base type check, which verifies the nested structure.
+A property's own type line leaves out its properties, array items and map key
+and value, which get lines of their own.
 """
 
+import textwrap
+from types import SimpleNamespace
+
+import duckdb
 import ibis
 from open_data_contract_standard.model import (
     MapDefinition,
@@ -13,10 +17,17 @@ from open_data_contract_standard.model import (
     Server,
 )
 
+from datacontract.data_contract import DataContract
 from datacontract.engines.checks.check_spec import MetricType
 from datacontract.engines.checks.create_checks import create_checks
-from datacontract.engines.ibis.ibis_check_execute import _run_nested_type, build_check_stubs
+from datacontract.engines.ibis.ibis_check_execute import (
+    _run_physical_type,
+    _run_present,
+    _run_type,
+    build_check_stubs,
+)
 from datacontract.engines.ibis.snowflake_structured_types import _to_property
+from datacontract.imports.odcs_helper import property_from_type_string
 from datacontract.model.run import ResultEnum, Run
 
 
@@ -26,14 +37,13 @@ def _checks(prop: SchemaProperty, server_type: str, fmt: str | None = None):
     return create_checks(dc, Server(server="s", type=server_type, format=fmt))
 
 
-def _nested(checks):
-    return next((c for c in checks if c.metric == MetricType.FIELD_NESTED_TYPE), None)
+def _lines(checks):
+    return {(c.field, c.type) for c in checks}
 
 
-def _base(checks):
+def _type_check(checks, field):
     return next(
-        (c for c in checks if c.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE)),
-        None,
+        c for c in checks if c.field == field and c.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE)
     )
 
 
@@ -58,71 +68,49 @@ _SIC_CODES = SchemaProperty(
 # ---------------------------------------------------------------------------
 # emission
 # ---------------------------------------------------------------------------
-def test_object_with_properties_gets_a_nested_physical_type_check():
-    checks = _checks(_SIC_CODE, "snowflake")
-
-    assert _base(checks).name == "Check that field primary_sic_code has physical type OBJECT"
-    nested = _nested(checks)
-    assert nested.type == "field_nested_physical_type"
-    assert nested.key == "USERS__primary_sic_code__field_nested_physical_type"
-    assert nested.field == "primary_sic_code"
-    assert nested.name == "Check that nested physical types of primary_sic_code are correct"
-
-
-def test_the_expected_label_renders_the_declared_children():
-    # The base check already reports the bare container type; the nested check's
-    # diagnostics are only useful if they show the declared structure.
-    nested = _nested(_checks(_SIC_CODE, "snowflake"))
-
-    assert nested.expected_type_label == "OBJECT(code VARCHAR(10), description VARCHAR)"
+def test_every_declared_property_gets_its_own_lines():
+    assert _lines(_checks(_SIC_CODE, "snowflake")) == {
+        ("primary_sic_code", "field_is_present"),
+        ("primary_sic_code", "field_physical_type"),
+        ("primary_sic_code.code", "field_is_present"),
+        ("primary_sic_code.code", "field_physical_type"),
+        ("primary_sic_code.description", "field_is_present"),
+        ("primary_sic_code.description", "field_physical_type"),
+    }
 
 
-def test_array_of_scalars_names_the_element_type():
-    nested = _nested(_checks(_SIC_CODES, "snowflake"))
+def test_the_own_type_line_leaves_out_the_children():
+    base = _type_check(_checks(_SIC_CODE, "local", fmt="delta"), "primary_sic_code")
 
-    assert nested.name == "Check that items of array sic_codes have physical type STRING"
+    assert base.expected_schema_property.logicalType == "object"
+    assert not base.expected_schema_property.properties
 
 
-def test_array_of_objects_uses_the_generic_wording():
+def test_the_items_of_an_array_get_a_type_line_but_no_presence_line():
+    lines = _lines(_checks(_SIC_CODES, "snowflake"))
+
+    assert ("sic_codes[]", "field_physical_type") in lines
+    assert ("sic_codes[]", "field_is_present") not in lines
+    assert not _type_check(_checks(_SIC_CODES, "snowflake"), "sic_codes").expected_schema_property.items
+
+
+def test_an_array_of_objects_gets_lines_for_its_items_and_their_properties():
     prop = SchemaProperty(
         name="lines",
         physicalType="ARRAY",
         items=SchemaProperty(logicalType="object", properties=[SchemaProperty(name="qty", logicalType="integer")]),
     )
 
-    assert _nested(_checks(prop, "snowflake")).name == "Check that nested physical types of lines are correct"
-
-
-def test_logical_path_gets_a_nested_type_check():
-    checks = _checks(_SIC_CODE, "local", fmt="delta")
-
-    assert _base(checks).metric == MetricType.FIELD_TYPE
-    nested = _nested(checks)
-    assert nested.type == "field_nested_type"
-    assert nested.name == "Check that nested types of primary_sic_code are correct"
-
-
-def test_logical_path_array_of_scalars_names_the_element_type():
-    nested = _nested(_checks(_SIC_CODES, "local", fmt="delta"))
-
-    assert nested.name == "Check that items of array sic_codes have type string"
-
-
-def test_base_check_no_longer_compares_the_children():
-    # The nested check owns the children, so the base check only compares the
-    # column's own type.
-    base = _base(_checks(_SIC_CODE, "local", fmt="delta"))
-
-    assert base.expected_schema_property.logicalType == "object"
-    assert not base.expected_schema_property.properties
+    assert {("lines[]", "field_type"), ("lines[].qty", "field_type")} <= _lines(_checks(prop, "snowflake"))
 
 
 def test_children_declared_inline_only_stay_a_single_check():
     prop = SchemaProperty(name="primary_sic_code", physicalType="OBJECT(code VARCHAR, description VARCHAR)")
-    checks = _checks(prop, "snowflake")
 
-    assert _nested(checks) is None
-    assert _base(checks).expected_physical_type == "OBJECT(code VARCHAR, description VARCHAR)"
+    assert _lines(_checks(prop, "snowflake")) == {
+        ("primary_sic_code", "field_is_present"),
+        ("primary_sic_code", "field_physical_type"),
+    }
 
 
 def test_both_declaration_forms_are_enforced_independently():
@@ -133,31 +121,20 @@ def test_both_declaration_forms_are_enforced_independently():
     )
     checks = _checks(prop, "snowflake")
 
-    assert _base(checks).expected_physical_type == "OBJECT(code VARCHAR)"
-    assert _nested(checks) is not None
+    assert _type_check(checks, "primary_sic_code").expected_physical_type == "OBJECT(code VARCHAR)"
+    assert _type_check(checks, "primary_sic_code.code").expected_physical_type == "VARCHAR"
 
 
-def test_array_without_items_stays_a_single_check():
-    assert _nested(_checks(SchemaProperty(name="tags", logicalType="array"), "snowflake")) is None
-
-
-def test_no_nested_check_on_parquet():
+def test_nested_types_warn_on_parquet():
     # Parquet/CSV are read through a DuckDB view built from the contract's own
-    # types, so the reported nested types are the declared ones.
-    assert _nested(_checks(_SIC_CODE, "local", fmt="parquet")) is None
+    # types, so the reported types are the declared ones.
+    checks = _checks(_SIC_CODE, "local", fmt="parquet")
+    nested = next(c for c in checks if c.field == "primary_sic_code.code" and c.type == "field_type")
+
+    assert nested.preset_result == "warning"
 
 
-def test_no_nested_check_for_a_map_without_a_map_block():
-    # A map that declares neither a map block nor legacy children has no nested
-    # structure to check; the base check still compares it against the catalog.
-    prop = SchemaProperty(name="attrs", physicalType="MAP(VARCHAR, VARCHAR)")
-    checks = _checks(prop, "snowflake")
-
-    assert _nested(checks) is None
-    assert _base(checks).expected_physical_type == "MAP(VARCHAR, VARCHAR)"
-
-
-def test_nested_check_for_a_map_block():
+def test_a_maps_key_and_value_get_their_own_type_lines():
     prop = SchemaProperty(
         name="attrs",
         logicalType="map",
@@ -169,122 +146,258 @@ def test_nested_check_for_a_map_block():
     )
     checks = _checks(prop, "snowflake")
 
-    assert _nested(checks) is not None
+    assert _lines(checks) == {
+        ("attrs", "field_is_present"),
+        ("attrs", "field_physical_type"),
+        ("attrs[key]", "field_type"),
+        ("attrs[value]", "field_type"),
+        ("attrs[value].a", "field_is_present"),
+        ("attrs[value].a", "field_type"),
+    }
+    assert _type_check(checks, "attrs").expected_schema_property.map is None
 
 
-def test_no_nested_check_for_a_scalar_with_items():
+def test_value_rules_inside_a_map_warn():
+    prop = SchemaProperty(
+        name="attrs",
+        logicalType="map",
+        map=MapDefinition(
+            key=SchemaProperty(logicalType="string", required=True),
+            value=SchemaProperty(
+                logicalType="object", properties=[SchemaProperty(name="a", logicalType="string", required=True)]
+            ),
+        ),
+    )
+    checks = _checks(prop, "duckdb")
+
+    # a map key is never null, so its `required` holds by definition
+    warned = [c for c in checks if c.preset_result == "warning"]
+    assert [(c.field, c.type) for c in warned] == [("attrs[value].a", "field_required")]
+    assert warned[0].preset_reason == "Checks on the key or value of a map are not supported yet."
+
+
+_MATRIX = SchemaProperty(
+    name="matrix",
+    logicalType="array",
+    items=SchemaProperty(logicalType="array", items=SchemaProperty(logicalType="integer", required=True)),
+)
+
+
+def test_the_items_of_an_arrays_items_get_their_own_type_line():
+    checks = _checks(_MATRIX, "duckdb")
+
+    assert {("matrix[]", "field_type"), ("matrix[][]", "field_type")} <= _lines(checks)
+    assert _type_check(checks, "matrix[]").expected_schema_property.items is None
+    rule = next(c for c in checks if c.field == "matrix[][]" and c.type != "field_type")
+    assert rule.preset_reason == "Checks on the items of an array's items are not supported yet."
+
+
+def test_no_lines_for_the_items_of_a_scalar():
     prop = SchemaProperty(name="weird", logicalType="string", items=SchemaProperty(logicalType="string"))
 
-    assert _nested(_checks(prop, "local", fmt="delta")) is None
+    assert _lines(_checks(prop, "local", fmt="delta")) == {("weird", "field_is_present"), ("weird", "field_type")}
 
 
-def test_dynamically_typed_column_still_gets_a_nested_check():
-    # variant / json / jsonb are objects; the check is what reports that their
-    # structure cannot be read.
-    prop = SchemaProperty(
-        name="payload",
-        physicalType="VARIANT",
-        logicalType="object",
-        properties=[SchemaProperty(name="code", logicalType="string")],
-    )
+_UNTYPED_CUSTOMER = SchemaProperty(name="customer", properties=[SchemaProperty(name="email", logicalType="string")])
 
-    assert _nested(_checks(prop, "snowflake")) is not None
+
+def test_properties_imply_an_object_type_line():
+    checks = _checks(_UNTYPED_CUSTOMER, "local", fmt="delta")
+
+    assert ("customer.email", "field_type") in _lines(checks)
+    implied = _type_check(checks, "customer")
+    assert (implied.name, implied.implied_type) == ("Check that field customer has type object", True)
+
+
+def test_items_and_a_map_block_imply_their_types():
+    tags = SchemaProperty(name="tags", items=SchemaProperty(logicalType="string"))
+    attrs = SchemaProperty(name="attrs", map=MapDefinition(value=SchemaProperty(logicalType="integer")))
+
+    assert _type_check(_checks(tags, "local", fmt="delta"), "tags").expected_type_label == "array"
+    assert ("tags[]", "field_type") in _lines(_checks(tags, "local", fmt="delta"))
+    assert _type_check(_checks(attrs, "local", fmt="delta"), "attrs").expected_type_label == "map"
+    assert ("attrs[value]", "field_type") in _lines(_checks(attrs, "local", fmt="delta"))
 
 
 # ---------------------------------------------------------------------------
-# execution
+# execution against the types ibis reflects
 # ---------------------------------------------------------------------------
 def _run(prop: SchemaProperty, dtype: str, server_type: str = "local", fmt: str | None = "delta"):
     specs = _checks(prop, server_type, fmt)
     run = Run.create_run()
     run.checks = build_check_stubs(specs)
-    spec = _nested(specs)
-    field = prop.physicalName or prop.name
-    _run_nested_type(run, ibis.schema({field: dtype}), {field.lower(): field}, spec)
-    return next(c for c in run.checks if c.key == spec.key)
+    schema = ibis.schema({prop.name: dtype})
+    for spec in specs:
+        if spec.metric == MetricType.FIELD_PRESENT:
+            _run_present(run, None, "USERS", schema, spec)
+        elif spec.metric == MetricType.FIELD_TYPE:
+            _run_type(run, schema, None, spec)
+    return {(c.field, c.type): c for c in run.checks}
 
 
 def test_matching_nested_types_pass():
-    check = _run(_SIC_CODE, "struct<code: string, description: string>")
+    checks = _run(_SIC_CODE, "struct<code: string, description: string>")
 
-    assert check.result == ResultEnum.passed
-
-
-def test_wrong_nested_type_fails_and_names_the_path():
-    check = _run(_SIC_CODE, "struct<code: int64, description: string>")
-
-    assert check.result == ResultEnum.failed
-    assert "primary_sic_code.code" in check.reason
+    assert all(c.result == ResultEnum.passed for c in checks.values())
 
 
-def test_missing_nested_field_fails():
-    check = _run(_SIC_CODE, "struct<code: string>")
+def test_a_wrong_nested_type_fails_on_its_own_line():
+    checks = _run(_SIC_CODE, "struct<code: int64, description: string>")
 
-    assert check.result == ResultEnum.failed
-    assert "primary_sic_code.description" in check.reason
-
-
-def test_all_nested_errors_are_reported_in_the_diagnostics():
-    check = _run(_SIC_CODE, "struct<code: int64, description: int64>")
-
-    assert "and 1 other error" in check.reason
-    assert len(check.diagnostics["errors"]) == 2
+    assert checks[("primary_sic_code.code", "field_type")].result == ResultEnum.failed
+    assert checks[("primary_sic_code", "field_type")].result == ResultEnum.passed
 
 
-def test_wrong_array_element_type_fails():
-    check = _run(_SIC_CODES, "array<int64>")
+def test_a_missing_nested_field_fails():
+    checks = _run(_SIC_CODE, "struct<code: string>")
 
-    assert check.result == ResultEnum.failed
-    assert "sic_codes[]" in check.reason
+    assert checks[("primary_sic_code.description", "field_is_present")].result == ResultEnum.failed
+    assert checks[("primary_sic_code.description", "field_type")].result == ResultEnum.failed
 
 
-def test_nested_check_warns_for_a_dynamically_typed_column():
+def test_a_wrong_array_element_type_fails():
+    checks = _run(_SIC_CODES, "array<int64>")
+
+    assert checks[("sic_codes[]", "field_type")].result == ResultEnum.failed
+
+
+def test_nested_lines_warn_inside_a_dynamically_typed_column():
     # A json / variant / jsonb column holds a different structure per row, so the
     # declared children can be neither confirmed nor refuted.
-    check = _run(_SIC_CODE, "json")
+    checks = _run(_SIC_CODE, "json")
 
-    assert check.result == ResultEnum.warning
-    assert "cannot be read" in check.reason
-
-
-def test_nested_check_warns_for_an_untyped_object():
-    # Snowflake's untyped OBJECT reads as a map of json: the keys differ per row,
-    # so the declared children are as unverifiable as those of a variant.
-    check = _run(_SIC_CODE, "map<string, json>")
-
-    assert check.result == ResultEnum.warning
-    assert "can't be verified" in check.reason
+    code = checks[("primary_sic_code.code", "field_is_present")]
+    assert code.result == ResultEnum.warning
+    assert code.reason == (
+        "'primary_sic_code' holds untyped data, such as json, whose structure cannot be read; skipping the check. "
+        "Use a structured type for 'primary_sic_code' to check what it contains."
+    )
 
 
-def test_nested_check_warns_for_an_untyped_array():
-    check = _run(_SIC_CODES, "array<json>")
+def test_nested_lines_warn_inside_an_untyped_object():
+    # Snowflake's untyped OBJECT reads as a map of json: the keys differ per row.
+    checks = _run(_SIC_CODE, "map<string, json>")
 
-    assert check.result == ResultEnum.warning
-    assert "no verifiable logical type" in check.reason
+    assert checks[("primary_sic_code.code", "field_type")].result == ResultEnum.warning
 
 
-def test_a_real_mismatch_outranks_an_unverifiable_child():
+def test_nested_lines_point_to_a_map_declared_as_an_object():
+    checks = _run(_SIC_CODE, "map<string, string>")
+
+    code = checks[("primary_sic_code.code", "field_type")]
+    assert code.result == ResultEnum.warning
+    assert code.reason == (
+        "'primary_sic_code' is a map, not an object; skipping the check. "
+        "Declare 'primary_sic_code' as a map to check its key and value."
+    )
+
+
+def test_a_declared_json_matches_json_where_native_types_are_not_read():
+    payload = SchemaProperty(name="payload", logicalType="object", physicalType="json")
+    tags = SchemaProperty(
+        name="tags", logicalType="array", items=SchemaProperty(logicalType="object", physicalType="json")
+    )
+    attrs = SchemaProperty(
+        name="attrs",
+        logicalType="map",
+        map=MapDefinition(
+            key=SchemaProperty(logicalType="string"), value=SchemaProperty(logicalType="object", physicalType="JSON")
+        ),
+    )
+
+    assert _run(payload, "json")[("payload", "field_type")].result == ResultEnum.passed
+    assert _run(tags, "array<json>")[("tags[]", "field_type")].result == ResultEnum.passed
+    assert _run(attrs, "map<string, json>")[("attrs[value]", "field_type")].result == ResultEnum.passed
+
+
+def test_the_items_of_an_untyped_array_warn():
+    checks = _run(_SIC_CODES, "array<json>")
+
+    assert checks[("sic_codes[]", "field_type")].result == ResultEnum.warning
+
+
+def test_the_items_of_a_column_that_is_not_an_array_warn():
+    # the column's own line already fails, so its items are skipped rather than reported missing
+    checks = _run(_SIC_CODES, "int64")
+
+    assert checks[("sic_codes", "field_type")].result == ResultEnum.failed
+    items = checks[("sic_codes[]", "field_type")]
+    assert items.result == ResultEnum.warning
+    assert items.reason == "'sic_codes' is not an array; skipping the check"
+
+
+def test_the_properties_of_items_whose_column_is_not_an_array_warn():
     prop = SchemaProperty(
-        name="primary_sic_code",
+        name="lines",
+        logicalType="array",
+        items=SchemaProperty(logicalType="object", properties=[SchemaProperty(name="sku", logicalType="string")]),
+    )
+    checks = _run(prop, "struct<sku: string>")
+
+    sku = checks[("lines[].sku", "field_is_present")]
+    assert sku.result == ResultEnum.warning
+    assert sku.reason == "'lines' is not an array; skipping the check"
+
+
+def test_the_properties_of_a_column_that_is_not_an_object_warn():
+    checks = _run(_SIC_CODE, "string")
+
+    code = checks[("primary_sic_code.code", "field_type")]
+    assert code.result == ResultEnum.warning
+    assert code.reason == "'primary_sic_code' is not an object; skipping the check"
+
+
+def test_an_implied_object_fails_on_a_scalar():
+    assert _run(_UNTYPED_CUSTOMER, "string")[("customer", "field_type")].result == ResultEnum.failed
+
+
+def test_json_holds_an_implied_type():
+    checks = _run(_UNTYPED_CUSTOMER, "json")
+
+    assert checks[("customer", "field_type")].result == ResultEnum.passed
+    assert checks[("customer.email", "field_type")].result == ResultEnum.warning
+
+
+def test_nested_lines_inside_an_unknown_type_warn_as_untyped():
+    # e.g. a Trino row whose field names ibis cannot parse
+    checks = _run(_SIC_CODE, ibis.expr.datatypes.unknown)
+
+    assert checks[("primary_sic_code.code", "field_type")].reason.startswith("'primary_sic_code' holds untyped data")
+
+
+def test_a_maps_key_and_value_types_are_checked_on_their_own_lines():
+    prop = SchemaProperty(
+        name="attrs",
+        logicalType="map",
+        map=MapDefinition(key=SchemaProperty(logicalType="string"), value=SchemaProperty(logicalType="integer")),
+    )
+
+    assert all(c.result == ResultEnum.passed for c in _run(prop, "map<string, int64>").values())
+    checks = _run(prop, "map<string, string>")
+    assert checks[("attrs", "field_type")].result == ResultEnum.passed
+    assert checks[("attrs[value]", "field_type")].result == ResultEnum.failed
+
+
+def test_the_items_of_an_arrays_items_are_checked_on_their_own_line():
+    checks = _run(_MATRIX, "array<array<string>>")
+
+    assert checks[("matrix[]", "field_type")].result == ResultEnum.passed
+    assert checks[("matrix[][]", "field_type")].result == ResultEnum.failed
+
+
+def test_nested_lines_resolve_a_dotted_struct_path():
+    prop = SchemaProperty(
+        name="customer",
         logicalType="object",
         properties=[
-            SchemaProperty(name="code", logicalType="integer"),
             SchemaProperty(
-                name="description", logicalType="object", properties=[SchemaProperty(name="x", logicalType="string")]
-            ),
+                name="address", logicalType="object", properties=[SchemaProperty(name="city", logicalType="string")]
+            )
         ],
     )
-    check = _run(prop, "struct<code: string, description: json>")
+    checks = _run(prop, "struct<address: struct<city: string>>")
 
-    assert check.result == ResultEnum.failed
-    assert "primary_sic_code.code" in check.reason
-
-
-def test_nested_check_fails_when_the_column_is_not_a_nested_type():
-    check = _run(_SIC_CODE, "int64")
-
-    assert check.result == ResultEnum.failed
-    assert check.reason == "Cannot verify the nested types of 'primary_sic_code': the column is not an object"
+    assert checks[("customer.address.city", "field_type")].result == ResultEnum.passed
 
 
 # ---------------------------------------------------------------------------
@@ -299,15 +412,19 @@ _SHOW_COLUMNS_SIC_CODE = {
     ],
 }
 
+_SNOWFLAKE = SimpleNamespace(compiler=SimpleNamespace(dialect="snowflake"))
 
-def _run_snowflake(prop: SchemaProperty, data_type: dict = _SHOW_COLUMNS_SIC_CODE, dtype: str = "map<string, json>"):
+
+def _run_snowflake(
+    prop: SchemaProperty, field: str, data_type: dict = _SHOW_COLUMNS_SIC_CODE, dtype: str = "map<string, json>"
+):
     specs = _checks(prop, "snowflake")
     run = Run.create_run()
     run.checks = build_check_stubs(specs)
-    spec = _nested(specs)
-    field = prop.physicalName or prop.name
-    structured_types = {field.lower(): _to_property(data_type)}
-    _run_nested_type(run, ibis.schema({field: dtype}), {field.lower(): field}, spec, structured_types, "snowflake")
+    structured_types = {prop.name.lower(): _to_property(data_type)}
+    spec = _type_check(specs, field)
+    server = Server(server="s", type="snowflake")
+    _run_physical_type(run, _SNOWFLAKE, server, ibis.schema({prop.name: dtype}), {}, spec, structured_types)
     return next(c for c in run.checks if c.key == spec.key)
 
 
@@ -320,35 +437,62 @@ def _sic_code(**children: str) -> SchemaProperty:
 
 
 def test_a_declared_nested_physical_type_is_checked_against_the_real_one():
-    assert _run_snowflake(_sic_code(code="VARCHAR(10)")).result == ResultEnum.passed
+    assert _run_snowflake(_sic_code(code="VARCHAR(10)"), "primary_sic_code.code").result == ResultEnum.passed
 
 
 def test_an_unparameterized_nested_physical_type_matches_any_length():
-    assert _run_snowflake(_sic_code(code="VARCHAR")).result == ResultEnum.passed
+    assert _run_snowflake(_sic_code(code="VARCHAR"), "primary_sic_code.code").result == ResultEnum.passed
 
 
 def test_a_logical_keyword_in_the_physical_type_resolves_to_the_native_type():
     # Contracts routinely carry the logical keyword in physicalType. The dialect
     # decides what it names: 'string' is Snowflake's VARCHAR, 'boolean' is not.
-    assert _run_snowflake(_sic_code(code="string")).result == ResultEnum.passed
-    assert _run_snowflake(_sic_code(code="boolean")).result == ResultEnum.failed
+    assert _run_snowflake(_sic_code(code="string"), "primary_sic_code.code").result == ResultEnum.passed
+    assert _run_snowflake(_sic_code(code="boolean"), "primary_sic_code.code").result == ResultEnum.failed
 
 
-def test_a_logical_keyword_in_the_physical_type_is_not_overruled_by_the_logical_type():
-    # A property that contradicts itself is still wrong: the physicalType names a
-    # type too, so the logicalType must not silently win.
+def test_the_properties_of_a_structured_column_that_is_not_an_object_warn():
+    check = _run_snowflake(
+        _sic_code(code="VARCHAR(10)"), "primary_sic_code.code", data_type={"type": "TEXT", "length": 10}
+    )
+
+    assert check.result == ResultEnum.warning
+    assert check.reason == "'primary_sic_code' is not an object; skipping the check"
+
+
+def test_a_nested_name_with_spaces_resolves_in_a_full_type_string():
+    # Trino reports such names unquoted
+    native = 'row(first name varchar(20), ts timestamp(3) with time zone, "d" interval day to second)'
     prop = SchemaProperty(
-        name="primary_sic_code",
-        physicalType="OBJECT",
-        properties=[SchemaProperty(name="code", logicalType="string", physicalType="boolean")],
+        name="p",
+        physicalType="row",
+        properties=[
+            SchemaProperty(name="first name", physicalType="varchar(20)"),
+            SchemaProperty(name="ts", physicalType="timestamp(3) with time zone"),
+            SchemaProperty(name="d", physicalType="interval day to second"),
+        ],
     )
-    check = _run_snowflake(prop)
+    specs = _checks(prop, "trino")
+    run = Run.create_run()
+    run.checks = build_check_stubs(specs)
+    con = SimpleNamespace(compiler=SimpleNamespace(dialect="trino"))
+    for field in ("p.first name", "p.ts", "p.d"):
+        spec = _type_check(specs, field)
+        _run_physical_type(
+            run,
+            con,
+            Server(server="s", type="trino"),
+            None,
+            {"p": native},
+            spec,
+            {"p": property_from_type_string("p", native)},
+        )
 
-    assert check.result == ResultEnum.failed
-    assert (
-        check.reason
-        == "field 'primary_sic_code.code': expected physical type 'boolean' but the column is 'VARCHAR(10)'"
-    )
+    assert {c.field: c.result for c in run.checks if c.type == "field_physical_type" and c.field != "p"} == {
+        "p.first name": ResultEnum.passed,
+        "p.ts": ResultEnum.passed,
+        "p.d": ResultEnum.passed,
+    }
 
 
 def test_a_nested_number_does_not_match_a_float_column():
@@ -360,22 +504,22 @@ def test_a_nested_number_does_not_match_a_float_column():
             physicalType="OBJECT",
             properties=[SchemaProperty(name="lat", logicalType="number", physicalType="NUMBER")],
         ),
+        "geo.lat",
         data_type={"type": "OBJECT", "fields": [{"fieldName": "lat", "fieldType": {"type": "REAL"}}]},
     )
 
     assert check.result == ResultEnum.failed
-    assert check.reason == "field 'geo.lat': expected physical type 'NUMBER' but the column is 'FLOAT'"
+    assert check.reason == "expected physical type 'NUMBER' but the column is 'FLOAT'"
 
 
 def test_an_unparameterized_nested_number_matches_any_precision():
-    # A bare NUMBER declares no precision, so the column's own must not be compared
-    # against the default one sqlglot fills in.
     check = _run_snowflake(
         SchemaProperty(
             name="order",
             physicalType="OBJECT",
             properties=[SchemaProperty(name="price", logicalType="number", physicalType="NUMBER")],
         ),
+        "order.price",
         data_type={
             "type": "OBJECT",
             "fields": [{"fieldName": "price", "fieldType": {"type": "FIXED", "precision": 12, "scale": 2}}],
@@ -386,65 +530,151 @@ def test_an_unparameterized_nested_number_matches_any_precision():
 
 
 def test_a_too_wide_nested_physical_type_fails():
-    check = _run_snowflake(_sic_code(code="VARCHAR(64)"))
+    check = _run_snowflake(_sic_code(code="VARCHAR(64)"), "primary_sic_code.code")
 
     assert check.result == ResultEnum.failed
-    assert (
-        check.reason
-        == "field 'primary_sic_code.code': expected physical type 'VARCHAR(64)' but the column is 'VARCHAR(10)'"
-    )
-
-
-def test_the_nested_physical_type_wins_over_the_logical_one():
-    # Only some children declare a physicalType; the others stay on the coarse
-    # category check.
-    prop = SchemaProperty(
-        name="primary_sic_code",
-        physicalType="OBJECT",
-        properties=[
-            SchemaProperty(name="code", logicalType="string"),
-            SchemaProperty(name="description", logicalType="string", physicalType="VARCHAR(5)"),
-        ],
-    )
-    check = _run_snowflake(prop)
-
-    assert check.result == ResultEnum.failed
-    assert "primary_sic_code.description" in check.reason
+    assert check.reason == "expected physical type 'VARCHAR(64)' but the column is 'VARCHAR(10)'"
 
 
 def test_the_declared_element_physical_type_of_an_array_is_checked():
     prop = SchemaProperty(name="sic_codes", physicalType="ARRAY", items=SchemaProperty(physicalType="VARCHAR(64)"))
-    check = _run_snowflake(prop, {"type": "ARRAY", "elementType": {"type": "TEXT", "length": 10}}, dtype="array<json>")
+    check = _run_snowflake(
+        prop, "sic_codes[]", {"type": "ARRAY", "elementType": {"type": "TEXT", "length": 10}}, dtype="array<json>"
+    )
 
     assert check.result == ResultEnum.failed
-    assert "sic_codes[]" in check.reason
 
 
 def test_a_nested_physical_type_foreign_to_the_dialect_warns():
     # An Oracle NCLOB declared against Snowflake can be neither confirmed nor refuted.
-    check = _run_snowflake(_sic_code(code="NCLOB"))
+    check = _run_snowflake(_sic_code(code="NCLOB"), "primary_sic_code.code")
 
     assert check.result == ResultEnum.warning
     assert "could not be interpreted" in check.reason
 
 
 def test_a_foreign_nested_physical_type_falls_back_to_the_logical_type():
-    # Same as the column itself: an uninterpretable physicalType degrades to the
-    # category check when the property declares a logicalType.
     prop = SchemaProperty(
         name="primary_sic_code",
         physicalType="OBJECT",
         properties=[SchemaProperty(name="code", physicalType="NCLOB", logicalType="string")],
     )
 
-    assert _run_snowflake(prop).result == ResultEnum.passed
+    assert _run_snowflake(prop, "primary_sic_code.code").result == ResultEnum.passed
 
 
-def test_the_mismatch_reason_does_not_repeat_the_columns_own_structure():
-    # The base type check names the actual type; rendering a whole structured
-    # column here would run for lines.
-    check = _run(_SIC_CODE, "array<struct<sku: string, quantity: int64, price: decimal(12, 2)>>")
-
+def test_a_maps_value_is_compared_against_its_native_type():
+    prop = SchemaProperty(
+        name="attrs",
+        logicalType="map",
+        physicalType="MAP",
+        map=MapDefinition(key=SchemaProperty(physicalType="VARCHAR"), value=SchemaProperty(physicalType="VARCHAR(5)")),
+    )
+    data_type = {"type": "MAP", "keyType": {"type": "TEXT"}, "valueType": {"type": "TEXT", "length": 10}}
+    assert _run_snowflake(prop, "attrs", data_type, dtype="map<string, string>").result == ResultEnum.passed
+    check = _run_snowflake(prop, "attrs[value]", data_type, dtype="map<string, string>")
     assert check.result == ResultEnum.failed
-    assert check.reason == "Cannot verify the nested types of 'primary_sic_code': the column is not an object"
-    assert check.diagnostics["actual"] == "array<struct<sku: string, quantity: int64, price: decimal(12, 2)>>"
+    assert check.reason == "expected physical type 'VARCHAR(5)' but the column is 'VARCHAR(10)'"
+
+
+def test_a_nested_physical_type_falls_back_to_the_logical_type_when_the_catalog_cannot_be_read():
+    prop = SchemaProperty(
+        name="customer",
+        physicalType="struct",
+        logicalType="object",
+        properties=[SchemaProperty(name="email", physicalType="varchar", logicalType="string")],
+    )
+    specs = _checks(prop, "athena")
+    run = Run.create_run()
+    run.checks = build_check_stubs(specs)
+    spec = _type_check(specs, "customer.email")
+    athena = SimpleNamespace(compiler=SimpleNamespace(dialect="athena"))
+    schema = ibis.schema({"customer": "struct<email: string>"})
+
+    _run_physical_type(run, athena, Server(server="s", type="athena"), schema, None, spec, None)
+
+    assert next(c for c in run.checks if c.key == spec.key).result == ResultEnum.passed
+
+
+# ---------------------------------------------------------------------------
+# a structure the parent cannot hold fails the parent
+# ---------------------------------------------------------------------------
+def _test_duckdb(tmp_path, ddl: str, properties: str):
+    database = str(tmp_path / "db.duckdb")
+    con = duckdb.connect(database)
+    con.execute(ddl)
+    con.close()
+    contract = f"""
+apiVersion: v3.1.0
+kind: DataContract
+id: x
+version: 1.0.0
+status: active
+servers:
+  - server: d
+    type: duckdb
+    database: {database}
+schema:
+  - name: t
+    properties:
+{textwrap.indent(textwrap.dedent(properties).strip(), "      ")}
+"""
+    run = DataContract(data_contract_str=contract).test()
+    return {(c.field, c.type): c for c in run.checks}
+
+
+def test_a_map_declared_as_an_object_fails_its_own_type_line(tmp_path):
+    checks = _test_duckdb(
+        tmp_path,
+        "CREATE TABLE t AS SELECT MAP {'a': 1} AS attrs",
+        """
+        - name: attrs
+          logicalType: object
+          properties:
+            - name: a
+              logicalType: integer
+              required: true
+        """,
+    )
+
+    assert (checks[("attrs", "field_type")].result, checks[("attrs", "field_type")].reason) == (
+        ResultEnum.failed,
+        "'attrs' is a map, not an object. Declare 'attrs' as a map to check its key and value.",
+    )
+    for check_type in ("field_is_present", "field_type", "field_required"):
+        assert checks[("attrs.a", check_type)].result == ResultEnum.warning
+
+
+def test_a_parent_that_fails_on_its_own_keeps_its_reason(tmp_path):
+    checks = _test_duckdb(
+        tmp_path,
+        "CREATE TABLE t AS SELECT 'x' AS tags",
+        """
+        - name: tags
+          logicalType: array
+          items:
+            logicalType: string
+            logicalTypeOptions:
+              maxLength: 5
+        """,
+    )
+
+    assert checks[("tags", "field_type")].reason == "column: expected type 'array' but got 'string'"
+    assert checks[("tags[]", "field_max_length")].reason == "'tags' is not an array; skipping the check"
+
+
+def test_data_rules_inside_json_still_run(tmp_path):
+    checks = _test_duckdb(
+        tmp_path,
+        """CREATE TABLE t AS SELECT '{"other": 1}'::JSON AS payload""",
+        """
+        - name: payload
+          properties:
+            - name: code
+              logicalType: string
+              required: true
+        """,
+    )
+
+    assert checks[("payload", "field_type")].result == ResultEnum.passed
+    assert checks[("payload.code", "field_required")].result == ResultEnum.failed

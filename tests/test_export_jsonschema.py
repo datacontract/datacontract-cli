@@ -2,12 +2,13 @@ import json
 import os
 import sys
 
-from open_data_contract_standard.model import SchemaObject, SchemaProperty
+import pytest
+from open_data_contract_standard.model import EnumValue, SchemaObject, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
-from datacontract.export.jsonschema_exporter import to_jsonschema, to_jsonschemas
+from datacontract.export.jsonschema_exporter import to_jsonschema, to_jsonschemas, to_property
 from datacontract.lint.resolve import resolve_data_contract
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
@@ -200,3 +201,47 @@ def read_file(data_contract_file):
     with open(data_contract_file, "r") as file:
         file_content = file.read()
     return file_content
+
+
+def test_an_infinite_bound_is_not_exported():
+    contract = DataContract(
+        data_contract_str="""
+apiVersion: v3.2.0
+kind: DataContract
+id: inf
+version: 1.0.0
+status: active
+schema:
+  - name: measure
+    properties:
+      - name: n
+        logicalType: number
+        logicalTypeOptions:
+          minimum: 0
+          maximum: .inf
+"""
+    ).get_data_contract()
+
+    exported = to_jsonschema("measure", contract.schema_[0])
+
+    # JSON has no infinite numbers, and an infinite bound bounds nothing
+    assert exported["properties"]["n"]["minimum"] == 0
+    assert "maximum" not in exported["properties"]["n"]
+
+
+@pytest.mark.parametrize(
+    "prop, expected",
+    [
+        (SchemaProperty(name="c", logicalType="string", enum=[EnumValue(value="a")]), ["a", None]),
+        (SchemaProperty(name="c", logicalType="string", required=True, enum=[EnumValue(value="a")]), ["a"]),
+        (
+            SchemaProperty(name="c", logicalType="string", required=True, logicalTypeOptions={"enum": ["a", None]}),
+            ["a"],
+        ),
+        (SchemaProperty(name="c", enum=[EnumValue(value="a"), EnumValue(value=None)]), ["a", None]),
+        (SchemaProperty(name="c", logicalType="string", enum=[EnumValue(value=None)]), [None]),
+    ],
+    ids=["optional", "required", "required-legacy-null", "untyped-declared-null", "only-null"],
+)
+def test_enum_allows_null_exactly_when_the_property_is_optional(prop, expected):
+    assert to_property(prop)["enum"] == expected

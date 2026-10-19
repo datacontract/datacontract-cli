@@ -20,7 +20,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object
+from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, report_unmapped_types
 from datacontract.model.exceptions import DataContractException
 
 # Python type -> (ODCS logical type, physical type). Keyed by the last segment of
@@ -401,9 +401,8 @@ def _resolve_annotation(annotation: ast.expr, index: _ModuleIndex, depth: int) -
         logical_type, physical_type = _SCALAR_TYPES[segment]
         return {"logical_type": logical_type, "physical_type": physical_type}
 
-    # An unknown annotation is still a column; describe it as a string rather
-    # than dropping the field.
-    return {"logical_type": "string", "physical_type": segment or "str"}
+    # An unknown annotation is still a column; keep it and let report_unmapped_types fill in the type
+    return {"logical_type": None, "physical_type": segment or "str"}
 
 
 def _module_description(tree: ast.Module) -> Optional[str]:
@@ -472,6 +471,7 @@ def import_pydantic(source: str) -> OpenDataContractStandard:
         )
         for name in roots
     ]
+    report_unmapped_types(odcs, fallback="string")
     return odcs
 
 

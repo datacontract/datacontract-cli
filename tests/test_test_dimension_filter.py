@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import without_dcs_deprecation
 
 runner = CliRunner()
 
@@ -157,8 +158,6 @@ def test_builtin_dimension_mapping():
         "field_is_present",
         "field_type",
         "field_physical_type",
-        "field_nested_type",
-        "field_nested_physical_type",
         "field_regex",
         "field_enum",
         "field_min_length",
@@ -225,7 +224,7 @@ def test_quality_rules_without_dimension_are_never_matched():
         dimensions={"accuracy"},
     ).test()
     print(run.pretty())
-    assert len(run.checks) == 0
+    assert without_dcs_deprecation(run) == []
 
 
 def test_dimension_combines_with_checks_filter():

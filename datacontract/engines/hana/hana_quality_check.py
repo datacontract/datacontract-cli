@@ -1,18 +1,29 @@
 import logging
-import re
 import uuid
 from typing import Any
 
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
 from datacontract.engines.checks.create_checks import (
+    _iter_property_paths,
     _retention_value_to_seconds,
     is_percent_unit,
+    nested_not_run_reason,
     quality_definition_yaml,
+    unexecuted_check_name,
+    unrunnable_reason,
+)
+from datacontract.engines.checks.custom_quality_check import (
+    COLUMN_PLACEHOLDERS,
+    ENGINE,
+    CustomQualityCheckUnusable,
+    Instance,
+    instantiate,
+    placeholder_pattern,
 )
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.severity import failure_result
-from datacontract.engines.checks.sql_guard import is_read_only_query
+from datacontract.engines.checks.sql_guard import refusal_reason
 from datacontract.engines.hana.hana_check_selection import SELECT_ALL, CheckSelection
 from datacontract.engines.hana.hana_schema_check import (
     duplicate_count_query,
@@ -23,6 +34,8 @@ from datacontract.engines.hana.hana_schema_check import (
 from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.model.run import Check, ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 def run_quality_checks(
     connection,
@@ -32,13 +45,36 @@ def run_quality_checks(
     skip_reason: str | None = None,
     row_filter: str | None = None,
     selection: CheckSelection = SELECT_ALL,
+    custom_quality_checks: str | None = None,
 ) -> list[Check]:
     table_name = schema_object.physicalName or schema_object.name
     checks: list[Check] = []
 
-    for prop in schema_object.properties or []:
-        field_name = prop.physicalName or prop.name
+    for field_name, prop, nested in _iter_property_paths(schema_object.properties):
         for index, quality in enumerate(prop.quality or []):
+            if nested:
+                if quality.type == "sql":
+                    kind, suffix = "sql", "quality_sql"
+                elif quality.type == "custom" and quality.engine == ENGINE:
+                    kind, suffix = "custom", "quality_custom_check"
+                elif quality.metric is not None:
+                    kind, suffix = "library", "quality_library"
+                else:
+                    continue
+                if not selects(selection, quality, f"field_quality_{kind}"):
+                    continue
+                checks.append(
+                    _warning_check(
+                        check_type=f"field_quality_{kind}",
+                        key=_quality_key(table_name, field_name, f"{suffix}_{index}"),
+                        name=quality.description or unexecuted_check_name(table_name, field_name),
+                        model=table_name,
+                        field=field_name,
+                        reason=nested_not_run_reason("hana"),
+                        quality=quality,
+                    )
+                )
+                continue
             check = _quality_check(
                 connection,
                 schema_name,
@@ -49,6 +85,7 @@ def run_quality_checks(
                 skip_reason,
                 row_filter=row_filter,
                 selection=selection,
+                custom_quality_checks=custom_quality_checks,
             )
             if check is not None:
                 checks.append(check)
@@ -65,6 +102,7 @@ def run_quality_checks(
             property_names={prop.name: prop.physicalName or prop.name for prop in schema_object.properties or []},
             row_filter=row_filter,
             selection=selection,
+            custom_quality_checks=custom_quality_checks,
         )
         if check is not None:
             checks.append(check)
@@ -108,24 +146,33 @@ def run_sla_checks(
     return checks
 
 
-def prepare_hana_query(query: str, schema_name: str, model_name: str, field_name: str | None = None) -> str | None:
+def prepare_hana_query(
+    query: str,
+    schema_name: str,
+    model_name: str,
+    field_name: str | None = None,
+    instance: Instance | None = None,
+) -> str | None:
     if query is None or query == "":
         return None
 
-    qualified_model_name = qualified_table_name(schema_name, model_name)
-    quoted_schema_name = quote_identifier(schema_name)
-    query = re.sub(r'["\']?\$?\{model}["\']?', qualified_model_name, query)
-    query = re.sub(r'["\']?\$?\{table}["\']?', qualified_model_name, query)
-    query = re.sub(r'["\']?\$?\{object}["\']?', qualified_model_name, query)
-    query = re.sub(r'["\']?\$?\{schema}["\']?', quoted_schema_name, query)
+    if instance is not None:
+        names = dict.fromkeys(("model", "table", "object"), f"{schema_name}.{model_name}")
+        names["schema"] = schema_name
+        names |= dict.fromkeys(("dataset", "project", "catalog", "database"), model_name)
+        if field_name is not None:
+            names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
+        return instance.render(None, names, lambda name, _: ".".join(map(quote_identifier, name.split("."))))
 
+    names = dict.fromkeys(("model", "table", "object"), qualified_table_name(schema_name, model_name))
+    names["schema"] = quote_identifier(schema_name)
+    # HANA has none of these, so they fall back to the schema object, as on other servers.
+    names |= dict.fromkeys(("dataset", "project", "catalog", "database"), quote_identifier(model_name))
     if field_name is not None:
-        quoted_field_name = quote_identifier(field_name)
-        query = re.sub(r'["\']?\$?\{field}["\']?', quoted_field_name, query)
-        query = re.sub(r'["\']?\$?\{column}["\']?', quoted_field_name, query)
-        query = re.sub(r'["\']?\$?\{property}["\']?', quoted_field_name, query)
+        names |= dict.fromkeys(COLUMN_PLACEHOLDERS, quote_identifier(field_name))
 
-    return query
+    # one pass, so a substituted name is not searched for placeholders again
+    return placeholder_pattern(list(names)).sub(lambda match: names[match.group(1)], query)
 
 
 def selects(selection: CheckSelection, quality: DataQuality, check_type: str) -> bool:
@@ -149,7 +196,21 @@ def _quality_check(
     *,
     row_filter: str | None = None,
     selection: CheckSelection = SELECT_ALL,
+    custom_quality_checks: str | None = None,
 ) -> Check | None:
+    if quality.type == "custom" and quality.engine == ENGINE:
+        return _custom_quality_check(
+            connection,
+            schema_name,
+            table_name,
+            field_name,
+            quality,
+            index,
+            skip_reason,
+            custom_quality_checks,
+            selection,
+        )
+
     if quality.type == "custom" and quality.engine == "soda":
         if not selects(selection, quality, "quality_custom_soda"):
             return None
@@ -168,6 +229,21 @@ def _quality_check(
     if quality.type == "sql":
         return _sql_quality_check(
             connection, schema_name, table_name, field_name, quality, index, skip_reason, selection=selection
+        )
+
+    reason = unrunnable_reason(quality, field_name)
+    if reason is not None:
+        check_type = "field_quality_library" if field_name is not None else "model_quality_library"
+        if not selects(selection, quality, check_type):
+            return None
+        return _warning_check(
+            check_type=check_type,
+            key=_quality_key(table_name, field_name, f"quality_library_{index}"),
+            name=quality.description or unexecuted_check_name(table_name, field_name),
+            model=table_name,
+            field=field_name,
+            reason=reason,
+            quality=quality,
         )
 
     if quality.metric == "rowCount":
@@ -235,7 +311,7 @@ def _quality_check(
             selection=selection,
         )
 
-    if quality.metric == "nullValues" and field_name is not None:
+    if quality.metric == "nullValues":
         sql = (
             f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
             f"WHERE {quote_identifier(field_name)} IS NULL"
@@ -255,9 +331,10 @@ def _quality_check(
             selection=selection,
         )
 
-    if quality.metric == "invalidValues" and field_name is not None:
+    if quality.metric == "invalidValues":
         valid_values = _arguments(quality).get("validValues")
         if not valid_values:
+            # HANA builds an IN list, so it cannot run a pattern-only rule.
             if not selects(selection, quality, "field_invalid_values"):
                 return None
             return _warning_check(
@@ -266,14 +343,17 @@ def _quality_check(
                 name=f"Check invalid values for field {field_name}",
                 model=table_name,
                 field=field_name,
-                reason="invalidValues requires arguments.validValues at field level.",
+                reason="invalidValues on HANA needs arguments.validValues; pattern is not supported.",
                 quality=quality,
             )
+        valid_values = [value for value in valid_values if value is not None]
         placeholders = ", ".join("?" for _ in valid_values)
-        sql = (
-            f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} "
-            f"WHERE {quote_identifier(field_name)} NOT IN ({placeholders})"
+        predicate = (
+            f"{quote_identifier(field_name)} NOT IN ({placeholders})"
+            if valid_values
+            else f"{quote_identifier(field_name)} IS NOT NULL"
         )
+        sql = f"SELECT COUNT(*) FROM {table_reference(schema_name, table_name, row_filter)} WHERE {predicate}"
         return _metric_quality_check(
             connection,
             quality,
@@ -290,7 +370,7 @@ def _quality_check(
             selection=selection,
         )
 
-    if quality.metric == "missingValues" and field_name is not None:
+    if quality.metric == "missingValues":
         missing_values = [value for value in (_arguments(quality).get("missingValues") or []) if value is not None]
         if missing_values:
             placeholders = ", ".join("?" for _ in missing_values)
@@ -339,7 +419,8 @@ def _sql_quality_check(
         return None
     key = _quality_key(table_name, field_name, f"quality_sql_{index}")
     name = quality.description or "Quality Check"
-    if not is_read_only_query(query):
+    refusal = refusal_reason(query)
+    if refusal is not None:
         return _check(
             check_type=check_type,
             key=key,
@@ -348,7 +429,7 @@ def _sql_quality_check(
             field=field_name,
             implementation=query,
             result=ResultEnum.failed,
-            reason="A quality rule query must be a single read-only query, so it was not executed.",
+            reason=refusal,
             quality=quality,
         )
     # A rule brings its own query, which --filter cannot restrict without
@@ -366,6 +447,78 @@ def _sql_quality_check(
         skip_reason=skip_reason,
         selection=selection,
     )
+
+
+def _custom_quality_check(
+    connection,
+    schema_name: str,
+    table_name: str,
+    field_name: str | None,
+    quality: DataQuality,
+    index: int,
+    skip_reason: str | None,
+    custom_quality_checks: str | None,
+    selection: CheckSelection,
+) -> Check | None:
+    check_type = "field_quality_custom" if field_name is not None else "model_quality_custom"
+    key = _quality_key(table_name, field_name, f"quality_custom_check_{index}")
+    try:
+        # HANA has no dialect of its own among the queries, so only the ansi query runs here.
+        instance = instantiate(quality, table_name, field_name, None, custom_quality_checks)
+        query = prepare_hana_query(instance.query, schema_name, table_name, field_name, instance)
+    except CustomQualityCheckUnusable as e:
+        rule = quality.model_copy(update={"dimension": e.dimension})
+        if not selects(selection, rule, check_type):
+            return None
+        check = _check(
+            check_type=check_type,
+            key=key,
+            name=e.name,
+            model=table_name,
+            field=field_name,
+            implementation=None,
+            result=ResultEnum(e.result),
+            reason=e.reason,
+            quality=rule,
+        )
+    else:
+        # Measured like a SQL rule: the query's own number, never a percentage of rows.
+        rule = instance.quality.model_copy(update={"type": "sql"})
+        refusal = refusal_reason(query)
+        if refusal is not None:
+            if not selects(selection, rule, check_type):
+                return None
+            check = _check(
+                check_type=check_type,
+                key=key,
+                name=instance.name,
+                model=table_name,
+                field=field_name,
+                implementation=query,
+                result=ResultEnum.failed,
+                reason=refusal,
+                quality=rule,
+            )
+        else:
+            check = _metric_quality_check(
+                connection,
+                rule,
+                check_type=check_type,
+                key=key,
+                name=instance.name,
+                model=table_name,
+                field=field_name,
+                sql=query,
+                schema_name=schema_name,
+                skip_reason=skip_reason,
+                selection=selection,
+            )
+            if check is not None and check.result != ResultEnum.skipped:
+                check.diagnostics = {**(check.diagnostics or {}), **instance.diagnostics}
+    if check is not None:
+        # The rule as its author wrote it, not with the check's defaults filled in.
+        check.qualityDefinition = quality_definition_yaml(quality)
+    return check
 
 
 def _metric_quality_check(
@@ -405,9 +558,6 @@ def _metric_quality_check(
         )
 
     is_percent = quality.type != "sql" and is_percent_unit(quality)
-    if is_percent and quality.metric not in ("nullValues", "missingValues", "invalidValues"):
-        logging.warning(f"Quality metric {quality.metric} does not support unit: percent; comparing absolute count")
-        is_percent = False
 
     try:
         value = _fetch_scalar(connection, sql, params or [])

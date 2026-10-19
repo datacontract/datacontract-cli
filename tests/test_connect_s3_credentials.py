@@ -66,11 +66,21 @@ def test_explicit_keys_take_precedence_over_the_session(env):
     assert "ASIA_SSO" not in sql
 
 
-def test_no_secret_is_created_when_nothing_resolves():
-    """Public buckets are read without credentials; a secret would sign the request."""
-    sql = _setup(session=_session(access_key=None))
+def test_a_secret_without_a_key_is_created_when_nothing_resolves():
+    """Public buckets are read unsigned, but still at the server's endpoint."""
+    server = Server(
+        server="production",
+        type="s3",
+        location="s3://bucket/orders/*.csv",
+        format="csv",
+        endpointUrl="http://localhost:9000",
+    )
 
-    assert "CREATE OR REPLACE SECRET" not in sql
+    sql = _setup(server=server, session=_session(access_key=None))
+
+    assert "KEY_ID" not in sql
+    assert "localhost:9000" in sql
+    assert "URL_STYLE 'path'" in sql
 
 
 def test_a_session_without_a_token_omits_the_token_clause():
@@ -78,6 +88,30 @@ def test_a_session_without_a_token_omits_the_token_clause():
 
     assert "SESSION_TOKEN" not in sql
     assert "ASIA_SSO" in sql
+
+
+def _s3_fs(session=None):
+    from datacontract.engines.fastjsonschema.s3.s3_read_files import s3_fs
+
+    with patch("boto3.Session", return_value=session or _session()), patch("s3fs.S3FileSystem") as s3_file_system:
+        s3_fs("http://localhost:9000")
+    return s3_file_system.call_args.kwargs
+
+
+def test_the_json_schema_check_reads_s3_with_an_aws_session():
+    kwargs = _s3_fs()
+
+    assert kwargs["key"] == "ASIA_SSO"
+    assert kwargs["secret"] == "sso-secret"
+    assert kwargs["token"] == "sso-token"
+    assert not kwargs.get("anon")
+
+
+def test_the_json_schema_check_reads_s3_anonymously_when_nothing_resolves():
+    """With anon=False and no credentials, s3fs refuses even a public bucket."""
+    kwargs = _s3_fs(session=_session(access_key=None))
+
+    assert kwargs["anon"] is True
 
 
 def test_a_custom_endpoint_still_uses_path_style(env):

@@ -7,16 +7,203 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Highlights
-- Support for SAP HANA
-
 ### Added
-- `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
-- `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
+- `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717)
+- `datacontract edit --language` shows the editor in English, German, Swedish or French
 - `datacontract import snowflake --lineage` imports upstream column lineage into `transformSourceObjects`, it's slow and experimental
 
+### Changed
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
+- `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
+
 ### Fixed
+- `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
+
+## [1.2.7] - 2026-10-16
+
+### Changed
+- `datacontract breaking` consistently grades changes from the consumer's perspective by default (previously an inconsistent mix of consumer and producer perspective) (#1746)
+
+### Added
+- `datacontract test`: API servers send POST requests with query parameters and a JSON body, set by the `method`, `params` and `body` custom properties, and an `X-API-Key` header from `DATACONTRACT_API_HEADER_X_API_KEY` (also used by `datacontract import odata`) (#1747)
+- `datacontract breaking --perspective consumer|producer` (and `perspective` on `POST /breaking`) selects whose expectations changes are graded against, and the output shows whether each change tightens or loosens the contract (#1746)
+- `datacontract import openapi` imports POST operations, and writes required query parameters to the `params` custom property (#1747)
+
+### Security
+- `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` or `DATACONTRACT_API_HEADER_X_API_KEY` is set on the server (#1747)
+
+## [1.2.6] - 2026-10-13
+
+### Changed
+- A `null` in the `enum` of a required property is a validation error (#1742)
+- `datacontract test`:
+  - every nested property, array item and map key and value gets its own type check, with a nested `physicalType` checked on Athena, Trino, Databricks, BigQuery, Snowflake, ClickHouse and Hive (#1719)
+  - a property whose data cannot hold the structure declared inside it fails its own type check, and the checks inside it are reported as warnings (#1719)
+  - a property with `properties`, `items` or a `map` block but no type is checked as an object, array or map (#1719)
+- `datacontract import glue`, `athena`, `unity`, `hive` and `clickhouse`: arrays, structs and maps get their base type as `physicalType`, their items, fields, keys and values keep their own (#1719)
+
+### Fixed
+- `datacontract test`:
+  - a `null` among an `enum` or `validValues` no longer lets every other value pass (#1742)
+  - a declared `physicalType: json`, `jsonb` or `variant` matches a json column on servers whose native types are not read (#1719)
+  - rules on the key or value of a map are reported as warnings instead of being ignored (#1719)
+- `datacontract export jsonschema` and `datacontract test` on JSON files allow `null` for an optional property with an `enum` (#1742)
+
+## [1.2.5] - 2026-10-12
+
+### Changed
+- `datacontract lint --all-errors`: unknown fields are warnings instead of errors, unless a custom `--schema` rejects them
+
+### Added
+- `datacontract import postgres` imports primary and foreign keys from the Postgres catalog, also for SELECT-only roles (#1709 @vtulus)
+- `datacontract edit`: enable the editor's AI assistant via `DATACONTRACT_EDITOR_AI_*` environment variables (endpoint, API key, model, provider, auth header)
+- `datacontract test`: check constraints and quality rules on nested properties on Athena and Trino servers
+- `DATACONTRACT_CONNECT_TIMEOUT` (default 30 seconds): `datacontract test` on Postgres, Redshift, MySQL and SQL Server fails with a connection error instead of waiting forever for a server that does not answer, e.g. on a wrong port
+
+### Fixed
+- `datacontract lint` and `datacontract test`: warn about unknown fields, such as a misspelled `quality`, instead of silently ignoring them (will be an error in the next major version in January 2027)
+- `datacontract import sqlserver` and the physical type checks of `datacontract test` work on case-sensitive SQL Server databases such as Microsoft Fabric warehouses (#1705 @Octacon100)
+- `datacontract import`: Postgres and DuckDB `uuid` columns import as `string` with format `uuid` instead of without a logicalType
+- `datacontract dbt sync`: generated composite primary key, length, pattern and range tests work on Databricks, BigQuery and Snowflake (#1713)
+- `datacontract api`: the endpoints run in a thread pool, so a slow or hanging `POST /test` no longer blocks every other request to the server
+
+## [1.2.4] - 2026-10-06
+
+### Added
+- `datacontract test`: custom quality checks, SQL checks defined once in a folder (`--custom-quality-checks`) and used by name from a contract's quality rules (#1703)
+- `datacontract test`: check that foreign keys declared under `relationships` have no values missing from the referenced schema (#1691,#1698 @jarichb)
+
+### Security
+- Redact secrets in the MySQL connection string of error messages (#1706,#1708 @SabineGl)
+- `--debug` tracebacks no longer print local variables, which could hold credentials (#1708)
+
+### Fixed
+- `datacontract test`: `mustBe` and `mustNotBe` holding a `${VAR}` reference to a number compare with the number, not its text (#1703)
+- `datacontract test`: SQL quality queries on Athena are read as Trino SQL, so a backslash in a string no longer gets the query refused (#1703)
+
+## [1.2.3] - 2026-10-05
+
+### Added
+- ClickHouse and Hive:
+  - `datacontract test`: test ClickHouse and Hive servers (new `clickhouse` and `hive` extras) (#1687)
+  - `datacontract import clickhouse` and `datacontract import hive`: import a data contract from a live ClickHouse or Hive database (#1687)
+  - `datacontract import sql`: support the `clickhouse` and `hive` dialects (#1687)
+- XML:
+  - `datacontract import xsd`: import a data contract from an XML Schema (XSD) file (new `xml` extra) (#1684)
+  - `datacontract export xsd`: export a data contract to an XML Schema (XSD) (#1684)
+  - `datacontract test`: test XML files (`format: xml`) (#1684)
+- `datacontract import openapi`: import a data contract from the response of a GET operation in an OpenAPI 3.x document
+- `datacontract test`: test YAML responses of API servers
+- `datacontract export pydantic-model`: export `logicalTypeOptions` as `pydantic.Field` constraints (#1678,#1679 @amassoudi)
+- `datacontract export dbt-models` and `dbt-sources` write a property's `meta` custom property to the column's `config.meta` (#1655,#1661 @lguyaux)
+
+### Changed
+- `datacontract export dbt-models`, `datacontract export dbt-sources` and `datacontract dbt sync` nest generic-test parameters under `arguments:` **(we now require dbt 1.10+)** (#1680,#1682 @opencode13241-eng @benvdh)
+- `datacontract export pydantic-model`: optional fields default to `None` (#1678,#1679 @amassoudi)
+- `datacontract test`:
+  - an optional field that no record of a JSON, YAML or XML document has is no longer reported as missing
+  - warns when the column types cannot be read from the catalog, as the physical type checks then compare only the logicalType (#1688)
+  - `glue`, `kinesis` and `sftp` servers report that they are valid ODCS but cannot be tested yet, like the other untestable server types (#1688)
+
+### Fixed
+- `datacontract export dbt-models` and `dbt-sources` write column `meta` and `tags` under `config`, so dbt Fusion accepts the output (#1661)
+- `datacontract test`:
+  - reports "no checks were executed" instead of failing when nothing was tested (#1504,#1675)
+  - a JSON record that breaks the JSON Schema no longer stops the other checks, and every such record is reported
+  - JSON schema validation on S3 checks every file matched by the location, not only the last one (#1511,#1673 @AdamoElProfesor)
+  - JSON schema validation on S3 uses the AWS credential chain (#1683)
+  - a JSON value of the wrong type fails the JSON Schema check, not every check on its column
+  - the JSON Schema check reads `.jsonl` and `.ndjson` files, and files without a `delimiter` the way DuckDB does
+  - constraints on the items of an array of plain values (`pattern`, `enum`, `minimum`, …) are checked
+  - required fields of an absent optional object are no longer reported as missing (#1684)
+  - JSON files that are not found are reported instead of failing with a TypeError
+  - a duplicate check on a composite primary key no longer breaks the JSON output and `run.pretty()` (#1687)
+  - a `DATACONTRACT_MAX_ERRORS` below 1 is reported as a configuration error (#1673 @AdamoElProfesor)
+- `datacontract import jsonschema`:
+  - resolves local `$ref`s and merges `allOf`, which imported as strings or not at all
+  - imports `const`, `additionalProperties` as a map, `minItems`, `maxItems`, `uniqueItems`, `multipleOf` and `examples`, and warns about the keywords it leaves out
+  - boolean schemas (`true`, `false`) no longer fail the import
+- `datacontract import dbt` keeps column `meta` instead of silently dropping it: `classification` maps to ODCS `classification`, the other entries to a `meta` custom property (#1655,#1661 @lguyaux)
+- `datacontract import sql`: the fields of a `STRUCT` column are no longer imported as columns of the table (#1688)
+- `datacontract export html`: add schema and property anchors (`#<schema name>.<property name>`) and nested objects in array `items` back (#1676,#1677 @dmaresma)
+- `datacontract api`: authoritative definitions are looked up with the Entropy Data API key sent with the request again (since v1.2.1, the API was unable to resolve authoritative definitions if ENTROPY_DATA_API_KEY was unset) (#1681)
+- `datacontract api` caches authoritative definitions for only 60s, previously until the next restart (#1681)
+- `datacontract export sodacl`: date and timestamp `minimum`/`maximum` no longer fail in soda-core (#1662,#1665 @AdamoElProfesor @parvin-97)
+- `datacontract test` and `datacontract import s3`: public S3 buckets are read at the server's `endpointUrl` (#1683)
+
+## [1.2.2] - 2026-09-25
+
+### Added
+- `datacontract api`: `--contract-variables` and `--allow-local-files` options, as alternatives to their environment variables
+- `datacontract import odata` creates a datacontract from OData 4 metadata at a URL or from a local file (#1649 @jahlen)
+- `datacontract export` writes SQL Server `VECTOR(n)` and `VECTOR(n, float16)` vector types
+- `datacontract test` checks constraints and quality rules of nested properties on servers read through DuckDB (#1278)
+
+### Changed
+- `datacontract lint` and `datacontract test`: a quality rule the CLI cannot run is reported as a warning instead of being silently dropped
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.14
+- `${VAR}` references are accepted in fields with a fixed set of values (`quality.type`, `quality.metric`, `quality.dimension`, `logicalType`, `servers[].type`); `datacontract test` fails when one resolves into anything else
+- `datacontract test` reports nested checks it cannot run and unsupported type checks on parquet files as warnings (#1278)
+
+### Security
+- `datacontract api`:
+  - a posted data contract resolves `${VAR}` only from the variables allow-listed with `--contract-variables`
+  - a `${X:-local}` server type no longer slips past the checks for local files and environment-held credentials
+- `datacontract test`: a SQL quality rule on a `mysql` server can no longer reach the MySQL server or its credentials; rules on `mysql` and `iceberg` servers are read as DuckDB SQL
+
+### Fixed
+- Loading a DCS contract dropped quality rule `arguments`, so `invalidValues` and `missingValues` rules lost their configuration
+- `datacontract test --dry-run`: a check that could not be planned no longer reports the run as `skipped`
+- Non-ASCII characters in data contract and import source files are now decoded as UTF-8, fixing garbling on Windows (#1650 @ymurong)
+- `datacontract test`: SQL quality rule placeholders are quoted when the name needs it (e.g. a column with a space), and a query that does not parse reports the parse error (#1653)
+- `datacontract import spark` preserves `varchar(...)` and `char(...)` types nested inside `struct`, `array` and `map` columns instead of widening them to `string` (#1634 @IchEssBlumen)
+- `datacontract import jsonschema` keeps the type of nullable `anyOf`/`oneOf` properties and warns about union types (#1278)
+- `datacontract export sodacl` warns about the nested properties it leaves out (#1278)
+
+## [1.2.1] - 2026-09-22
+
+### Highlights
+- Support for SAP HANA and Exasol
+
+### Added
+- `datacontract test`:
+  - supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332 @ToniLippmann)
+  - supports Exasol through the `exasol` extra (#1335)
+  - on Databricks and Spark checks nested array and struct properties (#1278 @rob-h-w)
+- `datacontract export excel` and `datacontract import excel` support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
+- `datacontract import sql` detects table-level PRIMARY KEY and FOREIGN KEY constraints, derives `unique: true` for single-column keys, and emits property-level `relationships` in the ODCS shorthand format (#1618 @dmaresma)
+- `datacontract export great-expectations --checks` restricts the suite to `quality` and/or `properties` expectations (#1617 @julienguilhempartner-spec)
+- `datacontract import` warns once per import about column types that have no mapping to a `logicalType` (#1629 @regdat)
+
+### Changed
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
+- `datacontract-cli[csv]` installs DuckDB, which `datacontract import csv` needs, instead of pandas
+- Internal logging uses named module loggers instead of the root logger (#1605 @sondrfos)
+
+### Security
+- `datacontract test` and `datacontract import sqlserver` escape the host, database and driver in the SQL Server connection string, so a `;` in the contract's `servers` block can no longer inject connection keywords
+- `datacontract api`:
+  - resolves `authoritativeDefinitions` only against the Entropy Data host configured on the server, without following redirects, and answers a failed lookup on every endpoint with `422` and the URL, never with what the host answered
+  - answers a non-ASCII `x-api-key` with `403` instead of `500` and warns on failed API key checks
+  - `/test` no longer logs the submitted contract
+- `datacontract changelog` and `datacontract breaking` no longer interpret contract values as terminal markup
+
+### Fixed
+- `datacontract test`:
+  - `--filter` reports a duplicate key whose other occurrence lies outside the filtered rows (#1593,#1619 @gkhnelbstn)
+  - no longer counts `NULL` values as duplicates of each other in uniqueness checks
+  - SQL Server / Microsoft Fabric `cli` auth works again on macOS/Linux, and `ActiveDirectoryInteractive` fails fast off Windows instead of timing out (#1603 @johannzv)
+  - reports a `freshness` service level it cannot interpret as a single failed check instead of aborting the whole run; freshness now also accepts an ISO-8601 duration as its value, like retention
+- `datacontract import`:
+  - maps timestamp, time, decimal, JSON-like and small integer column types that previously came out as `string` or `date` to the right `logicalType`, including in `avro` and `spark` imports (#1629 @regdat)
+  - `s3`, `gcs` and `adls` accept `--format` again, so Delta tables can be imported (#1628 @regdat)
+  - `sql` warns about statements it cannot parse and therefore skips, such as a `CREATE TABLE` with unquoted hyphens in its name (#686 @dwelden)
+- `datacontract dbt sync` writes the generated-column marker under `config.meta` instead of a top-level `meta` so the model YAML parses under dbt Fusion; files written by an earlier version are migrated on the next sync (#1633 @FredrikBakken)
+- `datacontract dbt sync` removes a column it generated once the property leaves the contract, without `--prune`; a column the user added their own tests or settings to is kept
+- `datacontract changelog` and `datacontract breaking`:
+  - report changes in list items that have no name, url or id, such as unnamed `quality` rules
+  - report a renamed schema correctly
+  - `breaking` recognizes changes to `quality` rules
 
 ## [1.2.0] - 2026-09-08
 

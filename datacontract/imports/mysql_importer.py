@@ -19,7 +19,13 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.config import Config
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+    report_unmapped_types,
+)
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
 
@@ -96,6 +102,7 @@ def import_mysql(
     odcs.schema_ = [
         _create_schema(table, column_rows) for table in sorted(selected, key=lambda row: row["table_name"].lower())
     ]
+    report_unmapped_types(odcs)
     return odcs
 
 
@@ -114,16 +121,15 @@ def _attach(host: str, port: int, database: str, config: Optional[Config] = None
             original_exception=e,
         )
 
-    from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
+    from datacontract.engines.ibis.connections.duckdb_connection import _attach_mysql, _load_extension
 
     user = config.get_mysql_username(required=True)
     password = config.get_mysql_password(required=True)
 
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")
-    connection_string = _escape(f"host={host} port={port} user={user} password={password} database={database}")
     try:
-        con.execute(f"ATTACH '{connection_string}' AS mysqldb (TYPE mysql)")
+        _attach_mysql(con, host, port, user, password, database)
     except Exception as e:
         con.close()
         raise DataContractException(

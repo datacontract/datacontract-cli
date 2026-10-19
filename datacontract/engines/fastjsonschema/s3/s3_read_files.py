@@ -5,13 +5,15 @@ from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import ResultEnum
 
+logger = logging.getLogger(__name__)
+
 
 def yield_s3_files(s3_endpoint_url, s3_location, config: Config | None = None):
     fs = s3_fs(s3_endpoint_url, config)
     files = fs.glob(s3_location)
     for file in files:
         with fs.open(file) as f:
-            logging.info(f"Downloading file {file}")
+            logger.info(f"Downloading file {file}")
             yield f.read()
 
 
@@ -28,14 +30,12 @@ def s3_fs(s3_endpoint_url, config: Config | None = None):
             original_exception=e,
         )
 
-    configured = aws_credentials.client_kwargs(config=config)
-    aws_access_key_id = configured["aws_access_key_id"]
-    aws_secret_access_key = configured["aws_secret_access_key"]
-    aws_session_token = configured["aws_session_token"]
+    credentials = aws_credentials.resolve_aws_credentials(config)
+    if credentials is None:
+        return s3fs.S3FileSystem(anon=True, client_kwargs={"endpoint_url": s3_endpoint_url})
     return s3fs.S3FileSystem(
-        key=aws_access_key_id,
-        secret=aws_secret_access_key,
-        token=aws_session_token,
-        anon=aws_access_key_id is None,
+        key=credentials.access_key_id,
+        secret=credentials.secret_access_key,
+        token=credentials.session_token,
         client_kwargs={"endpoint_url": s3_endpoint_url},
     )

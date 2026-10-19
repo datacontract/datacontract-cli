@@ -1,0 +1,11 @@
+description: ${column} between ${arguments.min} and ${arguments.max}.
+owner: data-platform
+dimension: conformity
+arguments:
+  min:
+  max:
+queries:
+  ansi: |
+    SELECT COUNT(*) FROM ${table}
+    WHERE ${column} < ${arguments.min} OR ${column} > ${arguments.max}
+mustBe: 0

@@ -65,6 +65,7 @@ def _vector(dimensions=1536, **options) -> SchemaProperty:
         ("vector", (None, "float32")),
         ("VECTOR(FLOAT, 1536)", (1536, "float32")),
         ("VECTOR(INT, 8)", (8, "int8")),
+        ("VECTOR(768, float16)", (768, "float16")),
         ("FLOAT[3]", (3, "float32")),
         ("DOUBLE[3]", (3, "float64")),
         ("ARRAY<FLOAT>", None),
@@ -237,6 +238,7 @@ def test_test_fails_on_an_array_of_strings(tmp_path):
         ("snowflake", "VECTOR(FLOAT, 1536)"),
         ("local", "FLOAT[1536]"),
         ("mysql", "vector(1536)"),
+        ("sqlserver", "VECTOR(1536)"),
         ("databricks", "ARRAY<FLOAT>"),
         ("dataframe", "ARRAY<FLOAT>"),
         ("trino", "array(real)"),
@@ -251,6 +253,7 @@ def test_sql_types(server_type, expected):
 def test_sql_types_for_other_element_types():
     assert convert_to_sql_type(_vector(768, elementType="float16"), "postgres") == "halfvec(768)"
     assert convert_to_sql_type(_vector(8, elementType="int8"), "snowflake") == "VECTOR(INT, 8)"
+    assert convert_to_sql_type(_vector(768, elementType="float16"), "sqlserver") == "VECTOR(768, float16)"
     assert convert_to_sql_type(_vector(3, elementType="float64"), "local") == "DOUBLE[3]"
     assert convert_to_sql_type(_vector(3, elementType="float64"), "databricks") == "ARRAY<DOUBLE>"
 

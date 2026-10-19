@@ -1,0 +1,163 @@
+version: 1.0.0
+kind: DataContract
+apiVersion: v3.2.0
+id: my-data-contract
+name: order
+status: draft
+schema:
+- name: order
+  physicalType: object
+  description: 'An order placed
+
+    in the webshop.'
+  customProperties:
+  - property: xmlNamespace
+    value: urn:example:orders
+  logicalType: object
+  physicalName: order
+  properties:
+  - name: order_id
+    physicalType: string
+    description: Unique identifier of the order.
+    logicalType: string
+    logicalTypeOptions:
+      maxLength: 36
+    required: true
+  - name: order_timestamp
+    physicalType: dateTime
+    logicalType: timestamp
+    required: true
+  - name: order_date
+    physicalType: date
+    logicalType: date
+  - name: order_total
+    physicalType: decimal
+    customProperties:
+    - property: precision
+      value: 10
+    - property: scale
+      value: 2
+    logicalType: number
+    logicalTypeOptions:
+      minimum: 0
+    required: true
+  - name: status
+    physicalType: string
+    logicalType: string
+    required: true
+    enum:
+    - value: pending
+    - value: shipped
+    - value: delivered
+  - name: notes
+    physicalType: string
+    logicalType: string
+  - name: customer
+    physicalType: object
+    logicalType: object
+    required: true
+    properties:
+    - name: customer_id
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: name
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: loyalty_points
+      physicalType: nonNegativeInteger
+      logicalType: integer
+      logicalTypeOptions:
+        minimum: 0
+      required: true
+  - name: email
+    physicalType: string
+    logicalType: string
+  - name: phone
+    physicalType: string
+    logicalType: string
+  - name: line_items
+    physicalType: object
+    logicalType: object
+    required: true
+    properties:
+    - name: line_item
+      physicalType: array
+      logicalType: array
+      required: true
+      items:
+        name: items
+        physicalType: object
+        logicalType: object
+        properties:
+        - name: sku
+          physicalType: string
+          logicalType: string
+          logicalTypeOptions:
+            pattern: ^([A-Z]{3}-[0-9]{4})$
+          required: true
+        - name: quantity
+          physicalType: int
+          logicalType: integer
+          logicalTypeOptions:
+            minimum: 1
+            exclusiveMaximum: 1000
+            format: i32
+          required: true
+        - name: price
+          physicalType: object
+          logicalType: object
+          required: true
+          properties:
+          - name: value
+            physicalType: decimal
+            customProperties:
+            - property: xmlNode
+              value: text
+            - property: precision
+              value: 10
+            - property: scale
+              value: 2
+            logicalType: number
+            logicalTypeOptions:
+              minimum: 0
+          - name: currency
+            physicalType: string
+            customProperties:
+            - property: xmlNode
+              value: attribute
+            logicalType: string
+            logicalTypeOptions:
+              minLength: 3
+              maxLength: 3
+            required: true
+  - name: tags
+    physicalType: list
+    logicalType: string
+  - name: category
+    physicalType: object
+    logicalType: object
+    properties:
+    - name: name
+      physicalType: string
+      logicalType: string
+      required: true
+    - name: parent
+      physicalType: object
+      logicalType: object
+  - name: version
+    physicalType: positiveInteger
+    customProperties:
+    - property: xmlNode
+      value: attribute
+    logicalType: integer
+    logicalTypeOptions:
+      minimum: 1
+    required: true
+  - name: created_by
+    physicalType: string
+    customProperties:
+    - property: xmlNode
+      value: attribute
+    logicalType: string

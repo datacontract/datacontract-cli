@@ -27,10 +27,10 @@ class MetricType(str, Enum):
     MISSING_COUNT = "missing_count"
     DUPLICATE_COUNT = "duplicate_count"
     INVALID_COUNT = "invalid_count"
+    MISSING_REFERENCE_COUNT = "missing_reference_count"
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"
     FIELD_PHYSICAL_TYPE = "field_physical_type"
-    FIELD_NESTED_TYPE = "field_nested_type"
     FRESHNESS = "freshness"
     RETENTION = "retention"
     CUSTOM_SQL = "custom_sql"
@@ -40,11 +40,10 @@ class MetricType(str, Enum):
 
 # Metrics answered from schema introspection alone, without reading row values.
 # A positive allowlist: any future metric defaults conservatively to data-reading.
-_METADATA_METRICS = {
+METADATA_METRICS = {
     MetricType.FIELD_PRESENT,
     MetricType.FIELD_TYPE,
     MetricType.FIELD_PHYSICAL_TYPE,
-    MetricType.FIELD_NESTED_TYPE,
 }
 
 
@@ -156,12 +155,17 @@ class CheckSpec:
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
     expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
+    implied_type: bool = False  # FIELD_TYPE: the type is implied by `properties`, `items` or `map`, not declared
     expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
-    columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns
+    columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys
+
+    referenced_model: Optional[str] = None  # MISSING_REFERENCE_COUNT
+    referenced_columns: Optional[List[str]] = None  # MISSING_REFERENCE_COUNT, pairwise with `columns`
 
     query: Optional[str] = None  # CUSTOM_SQL (placeholders already substituted)
     dialect: Optional[str] = None  # CUSTOM_SQL input SQL dialect
+    diagnostics: Optional[dict] = None  # CUSTOM_SQL: reported alongside the measured value
 
     seconds: Optional[int] = None  # FRESHNESS / RETENTION threshold in seconds
 
@@ -175,7 +179,7 @@ class CheckSpec:
     def requires_data_read(self) -> bool:
         if self.metric == MetricType.UNSUPPORTED:
             return False
-        return self.metric not in _METADATA_METRICS
+        return self.metric not in METADATA_METRICS
 
     def has_validity_constraints(self) -> bool:
         return any(

@@ -1,0 +1,20 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: misspelled_property_key
+version: 1.0.0
+status: draft
+servers:
+- server: local
+  type: local
+  path: ./fixtures/diagnostics/data/orders.csv
+  format: csv
+schema:
+- name: orders
+  properties:
+  - name: email
+    logicalType: string
+    qualiti:
+    - type: sql
+      description: Ensure email addresses are valid (contain @ symbol)
+      query: SELECT COUNT(*) FROM orders WHERE email NOT LIKE '%@%'
+      mustBe: 0

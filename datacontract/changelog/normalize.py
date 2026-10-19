@@ -66,11 +66,12 @@ description.customProperties[]           CustomProperty -> .property
 def _normalize_by(items: list[dict], key_field: str) -> dict:
     """Key a list of dicts by a named field, omitting the key field from the value.
 
-    Falls back to the list index if the key field is absent on an item.
+    Falls back to the list index, as `[i]`, if the key field is absent on an item.
+    (Not `__pos_i__`: DeepDiff skips `__*__` keys as private by default.)
     """
     result = {}
     for i, item in enumerate(items):
-        key = item.get(key_field, f"__pos_{i}__")
+        key = item.get(key_field, f"[{i}]")
         result[key] = {k: v for k, v in item.items() if k != key_field}
     return result
 
@@ -84,7 +85,7 @@ def _normalize_auth_defs(items: list[dict]) -> dict:
     """
     result = {}
     for i, item in enumerate(items):
-        key = item.get("url") or item.get("id") or f"__pos_{i}__"
+        key = item.get("url") or item.get("id") or f"[{i}]"
         result[key] = item
     return result
 
@@ -96,7 +97,7 @@ def _normalize_keyed(items: list[dict], *keys: str) -> dict:
     """
     result = {}
     for i, item in enumerate(items):
-        key = next((str(item[k]) for k in keys if item.get(k) is not None), None) or f"__pos_{i}__"
+        key = next((str(item[k]) for k in keys if item.get(k) is not None), None) or f"[{i}]"
         result[key] = item
     return result
 
@@ -126,10 +127,10 @@ def _normalize_relationships(items: list[dict], schema_level: bool = True) -> di
         elif schema_level:
             from_val = str(item.get("from", ""))
             to_val = str(item.get("to", ""))
-            key = f"{from_val}:{to_val}" if (from_val or to_val) else f"__pos_{i}__"
+            key = f"{from_val}:{to_val}" if (from_val or to_val) else f"[{i}]"
         else:
             to_val = item.get("to")
-            key = str(to_val) if to_val else f"__pos_{i}__"
+            key = str(to_val) if to_val else f"[{i}]"
         result[key] = item
     return result
 
@@ -138,7 +139,7 @@ def _normalize_quality(items: list[dict]) -> dict:
     """Key DataQuality items by name (with positional fallback)."""
     result = {}
     for i, item in enumerate(items):
-        key = item.get("name") or f"__pos_{i}__"
+        key = item.get("name") or f"[{i}]"
         entry = {k: v for k, v in item.items() if k != "name"}
         if "customProperties" in entry and isinstance(entry["customProperties"], list):
             entry["customProperties"] = _normalize_by(entry["customProperties"], "property")

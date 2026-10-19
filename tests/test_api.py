@@ -5,8 +5,19 @@ import requests
 import responses
 from fastapi.testclient import TestClient
 
-from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
+from datacontract.api import ALLOW_LOCAL_FILES_ENV, ALLOW_PRIVATE_NETWORK_ENV, app
+from datacontract.lint.resolve import clear_definition_cache
 from datacontract.model.exceptions import DataContractException
+from tests.dcs_deprecation import DCS_DEPRECATION
+
+
+@pytest.fixture(autouse=True)
+def _isolated_cache():
+    # the resolver caches definitions by URL across the process
+    clear_definition_cache()
+    yield
+    clear_definition_cache()
+
 
 client = TestClient(app)
 
@@ -21,9 +32,11 @@ def test_lint():
     )
     assert response.status_code == 200
     print(response.json())
-    assert response.json()["result"] == "passed"
-    assert len(response.json()["checks"]) == 1
-    assert all([check["result"] == "passed" for check in response.json()["checks"]])
+    assert response.json()["result"] == "warning"
+    assert [(check["name"], check["result"]) for check in response.json()["checks"]] == [
+        ("Data contract is syntactically valid", "passed"),
+        (DCS_DEPRECATION, "warning"),
+    ]
 
 
 def test_export_jsonschema_dcs():
@@ -80,10 +93,23 @@ def test_breaking():
     assert "v1" not in data
     assert "v2" not in data
     assert data["is_breaking"] is True
+    assert data["perspective"] == "consumer"
     assert "summary" in data
     assert "entries" in data
     assert data["entries"][0]["level"] in ("info", "warning", "error")
     assert "message" in data["entries"][0]
+
+
+def test_breaking_from_the_producer_perspective():
+    with open("fixtures/changelog/breaking/warning_only_v1.yaml", "r") as f:
+        v1 = f.read()
+    with open("fixtures/changelog/breaking/warning_only_v2.yaml", "r") as f:
+        v2 = f.read()
+    assert client.post(url="/breaking", json={"v1": v1, "v2": v2}).json()["is_breaking"] is False
+    response = client.post(url="/breaking", params={"perspective": "producer"}, json={"v1": v1, "v2": v2})
+    assert response.status_code == 200
+    assert response.json()["perspective"] == "producer"
+    assert response.json()["is_breaking"] is True
 
 
 def test_breaking_invalid_yaml():
@@ -105,18 +131,6 @@ def test_changelog_invalid_data_contract():
 def _valid_contract_yaml():
     with open("fixtures/changelog/integration/changelog_integration_v1.yaml", "r") as f:
         return f.read()
-
-
-def test_changelog_yaml_error_returns_422():
-    import yaml
-
-    with patch("datacontract.api.DataContract") as mock_dc:
-        mock_dc.side_effect = yaml.YAMLError("bad yaml")
-        response = client.post(url="/changelog", json={"v1": _valid_contract_yaml(), "v2": _valid_contract_yaml()})
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert detail.startswith("Invalid YAML:")
-    assert "bad yaml" in detail
 
 
 def test_changelog_pydantic_validation_error_returns_422():
@@ -150,9 +164,11 @@ def test_changelog_data_contract_exception_returns_422():
 
 
 # ---------------------------------------------------------------------------
-# A posted contract may reference an authoritativeDefinition by URL, and the
-# server fetches it. What that fetch answered is an observation of the server's
-# network, so it must not be echoed back to whoever posted the contract.
+# A posted contract may reference an authoritativeDefinition by URL. The server
+# only resolves it against the configured Entropy Data host: any other host is
+# refused without contacting it, and what a lookup answered is an observation of
+# the server's network, so it must not be echoed back to whoever posted the
+# contract.
 # ---------------------------------------------------------------------------
 
 
@@ -174,7 +190,7 @@ schema:
 
 
 @responses.activate
-def test_changelog_definition_resolution_failure_does_not_echo_the_response():
+def test_changelog_does_not_contact_a_host_the_contract_names():
     internal_url = "http://internal.example.com:8080/admin/definitions/c"
     responses.add(responses.GET, internal_url, status=401)
 
@@ -183,10 +199,64 @@ def test_changelog_definition_resolution_failure_does_not_echo_the_response():
 
     assert response.status_code == 422
     assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
 
 
 @responses.activate
-def test_export_definition_resolution_failure_does_not_echo_the_transport_error():
+def test_breaking_does_not_contact_a_host_the_contract_names():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=418, body="I am a teapot on the internal net")
+
+    contract = _contract_referencing(internal_url)
+    response = client.post(url="/breaking", json={"v1": contract, "v2": contract})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_lint_resolves_a_definition_on_the_configured_host(monkeypatch):
+    monkeypatch.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(
+        responses.GET,
+        "https://entropy.example.com/definitions/c",
+        json={"name": "c", "logicalType": "string"},
+        status=200,
+    )
+
+    response = client.post(url="/lint", json=_contract_referencing("/definitions/c"))
+
+    assert response.status_code == 200
+    assert response.json()["result"] == "passed"
+    assert len(responses.calls) == 1
+
+
+def test_export_refuses_a_local_file_reference():
+    response = client.post(url="/export?format=odcs", json=_contract_referencing("../etc/definitions.yaml"))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Could not resolve authoritative definition '../etc/definitions.yaml'."
+
+
+def test_lint_data_contract_exception_returns_422():
+    with patch("datacontract.api.DataContract") as mock_dc:
+        mock_dc.side_effect = DataContractException(type="test", name="test", reason="something went wrong")
+        response = client.post(url="/lint", json=_valid_contract_yaml())
+    assert response.status_code == 422
+    assert response.json()["detail"].startswith("Data Contract Validation Failure:")
+
+
+def test_test_data_contract_exception_returns_422():
+    with patch("datacontract.api.DataContract") as mock_dc:
+        mock_dc.side_effect = DataContractException(type="test", name="test", reason="something went wrong")
+        response = client.post(url="/test", json=_valid_contract_yaml())
+    assert response.status_code == 422
+    assert response.json()["detail"].startswith("Data Contract Validation Failure:")
+
+
+@responses.activate
+def test_export_does_not_contact_a_host_the_contract_names():
     internal_url = "http://internal.example.com:8080/admin/definitions/c"
     responses.add(responses.GET, internal_url, body=requests.exceptions.ConnectionError("connection refused"))
 
@@ -194,6 +264,186 @@ def test_export_definition_resolution_failure_does_not_echo_the_transport_error(
 
     assert response.status_code == 422
     assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_lint_does_not_echo_what_the_configured_host_answered(monkeypatch):
+    monkeypatch.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(responses.GET, "https://entropy.example.com/definitions/c", status=401, body="proxy 10.0.0.5 said no")
+
+    response = client.post(url="/lint", json=_contract_referencing("/definitions/c"))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Could not resolve authoritative definition '/definitions/c'."
+
+
+@responses.activate
+def test_test_resolves_definitions_against_the_environment_host_not_the_header_host(clean_platform_env):
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=200, body="<html>internal admin page</html>")
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing(internal_url),
+        headers={"entropy-data-host": "http://internal.example.com:8080"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
+
+
+@responses.activate
+def test_test_resolves_a_definition_with_the_request_api_key(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(responses.GET, "https://entropy.example.com/definitions/c", json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "request-key"}
+    )
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+@responses.activate
+def test_test_does_not_reuse_a_definition_fetched_with_another_request_api_key(clean_platform_env):
+    url = "https://api.entropy-data.com/definitions/c"
+    responses.add(responses.GET, url, json={"name": "c"}, status=200)
+    client.post(url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "key-a"})
+    responses.replace(responses.GET, url, status=401)
+
+    response = client.post(
+        url="/test", json=_contract_referencing("/definitions/c"), headers={"entropy-data-api-key": "key-b"}
+    )
+
+    assert [call.request.headers["x-api-key"] for call in responses.calls] == ["key-a", "key-b"]
+    assert response.status_code == 422
+
+
+@responses.activate
+def test_test_sends_the_request_api_key_for_a_platform_domain_to_the_environment_host(clean_platform_env):
+    responses.add(responses.GET, "https://api.entropy-data.com/definitions/c", json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing("/definitions/c"),
+        headers={"entropy-data-host": "https://app.entropy-data.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+@responses.activate
+def test_test_does_not_send_the_request_api_key_meant_for_another_host(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    responses.add(responses.GET, "https://entropy.example.com/definitions/c", json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing("/definitions/c"),
+        headers={"entropy-data-host": "https://entropy.other.example", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert len(responses.calls) == 1
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_test_resolves_a_definition_on_the_platform_host_the_request_names(clean_platform_env):
+    definition_url = "https://app.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing(definition_url),
+        headers={"entropy-data-host": "https://app.entropy-data.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+@responses.activate
+def test_lint_does_not_send_a_self_hosted_api_key_to_the_platform_domains(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "server-key")
+    definition_url = "https://app.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(url="/lint", json=_contract_referencing(definition_url))
+
+    assert response.status_code == 200
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_lint_sends_the_environment_api_key_only_to_the_environment_host(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_API_KEY", "server-key")
+    definition_url = "https://other.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(url="/lint", json=_contract_referencing(definition_url))
+
+    assert response.status_code == 200
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_test_does_not_send_a_self_hosted_request_api_key_to_the_platform_domains(clean_platform_env):
+    clean_platform_env.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    definition_url = "https://app.entropy-data.com/acme/definitions/c"
+    responses.add(responses.GET, definition_url, json={"name": "c"}, status=200)
+
+    response = client.post(
+        url="/test",
+        json=_contract_referencing(definition_url),
+        headers={"entropy-data-host": "https://entropy.example.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 200
+    assert "x-api-key" not in responses.calls[0].request.headers
+
+
+@responses.activate
+def test_test_resolves_an_iri_with_the_request_api_key(clean_platform_env):
+    responses.add(responses.GET, "https://api.entropy-data.com/api/semantics", json={"name": "c"}, status=200)
+    contract = _contract_referencing("https://w3id.org/example/shipment_id").replace(
+        "type: definition", "type: semantics"
+    )
+
+    response = client.post(url="/test", json=contract, headers={"entropy-data-api-key": "request-key"})
+
+    assert response.status_code == 200
+    assert responses.calls[0].request.headers["x-api-key"] == "request-key"
+
+
+def test_test_explains_that_an_iri_lookup_needs_the_request_host_on_the_server(clean_platform_env, caplog):
+    contract = _contract_referencing("urn:acme:customer-id").replace("type: definition", "type: semantics")
+
+    response = client.post(
+        url="/test",
+        json=contract,
+        headers={"entropy-data-host": "https://entropy.example.com", "entropy-data-api-key": "request-key"},
+    )
+
+    assert response.status_code == 422
+    assert "set ENTROPY_DATA_HOST to that host on the server running the API" in caplog.text
+
+
+@responses.activate
+def test_test_does_not_echo_the_configured_host():
+    internal_url = "http://internal.example.com:8080/admin/definitions/c"
+    responses.add(responses.GET, internal_url, status=200, body="<html>internal admin page</html>")
+
+    response = client.post(url="/test", json=_contract_referencing(internal_url))
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Could not resolve authoritative definition '{internal_url}'."
+    assert len(responses.calls) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -273,6 +523,20 @@ def test_unknown_config_header_is_rejected():
 
     assert response.status_code == 400
     assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
+
+
+def test_custom_quality_checks_folder_header_is_rejected():
+    with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
+        data_contract_str = f.read()
+
+    response = client.post(
+        url="/test",
+        content=data_contract_str,
+        headers={"Content-Type": "application/yaml", "datacontract-custom-quality-checks": "/etc"},
+    )
+
+    assert response.status_code == 400
+    assert "configured by the API server" in response.json()["detail"]
 
 
 def test_test_endpoint_uses_config_from_headers(allow_local_files):
@@ -395,6 +659,7 @@ def test_every_endpoint_rejects_a_wrong_api_key(monkeypatch):
 
     assert _post("/lint", api_key="not-the-secret").status_code == 403
     assert _post("/export?format=odcs", api_key="not-the-secret").status_code == 403
+    assert _post("/lint", api_key=b"secr\xc3\xa9t").status_code == 403
 
 
 def test_every_endpoint_accepts_the_correct_api_key(monkeypatch):
@@ -571,6 +836,66 @@ def test_guard_blocks_env_kafka_password(monkeypatch):
 def test_guard_allows_kafka_without_environment_secret(monkeypatch):
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_PASSWORD", raising=False)
     _reject_environment_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)  # no raise
+
+
+def _api_contract(location: str) -> str:
+    return f"""\
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-api
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: api
+    location: {location}
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+@pytest.mark.parametrize("variable", ["DATACONTRACT_API_HEADER_AUTHORIZATION", "DATACONTRACT_API_HEADER_X_API_KEY"])
+def test_guard_blocks_env_api_header(monkeypatch, variable):
+    """Nothing pins an API server's location, so an environment-held API credential can never be paired with a
+    posted contract."""
+    monkeypatch.setenv(variable, "prod-secret")
+    response = client.post(
+        "/test", content=_api_contract("https://attacker.example/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.status_code == 422
+    assert f"credential for api servers in its environment ({variable})" in response.json()["detail"]
+    assert f"as request headers instead ({variable.lower().replace('_', '-')})" in response.json()["detail"]
+
+
+@pytest.fixture
+def no_api_headers(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_API_HEADER_AUTHORIZATION", raising=False)
+    monkeypatch.delenv("DATACONTRACT_API_HEADER_X_API_KEY", raising=False)
+    monkeypatch.delenv(ALLOW_PRIVATE_NETWORK_ENV, raising=False)
+
+
+def test_api_server_requests_stay_off_private_networks(api, no_api_headers):
+    api.body = '[{"order_id": "ORD-1"}]'
+    response = client.post(
+        "/test", content=_api_contract(f"{api.url}/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.status_code == 200
+    assert response.json()["result"] == "error"
+    assert "a posted data contract may not reach a private network address" in response.text
+    assert api.paths == []
+
+
+def test_api_server_requests_reach_private_networks_when_allowed(api, no_api_headers, monkeypatch):
+    monkeypatch.setenv(ALLOW_PRIVATE_NETWORK_ENV, "true")
+    api.body = '[{"order_id": "ORD-1"}]'
+    response = client.post(
+        "/test", content=_api_contract(f"{api.url}/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.json()["result"] == "passed", response.text
+    assert api.paths == ["/orders"]
 
 
 # --- publish_url is restricted to environment-pinned platform URLs ---

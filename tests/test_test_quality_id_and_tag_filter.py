@@ -1,3 +1,4 @@
+import pytest
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -100,6 +101,21 @@ def test_unknown_tag_runs_nothing():
     run = DataContract(data_contract_str=CONTRACT, tags={"nightly"}).test()
     print(run.pretty())
     assert len(run.checks) == 0
+
+
+@pytest.mark.parametrize(
+    "selection",
+    [{"tags": {"nightly"}}, {"check_categories": {"quality"}, "metadata_only": True}],
+)
+def test_a_run_that_executes_no_check_is_not_published(monkeypatch, selection):
+    published = []
+    monkeypatch.setattr(
+        "datacontract.data_contract.publish_test_results_to_entropy_data",
+        lambda *args, **kwargs: published.append(args) or True,
+    )
+    run = DataContract(data_contract_str=CONTRACT, publish_url="http://127.0.0.1:9/nope", **selection).test()
+    assert published == []
+    assert any("Publishing skipped" in log.message for log in run.logs)
 
 
 def test_rules_without_id_or_tags_are_never_matched():

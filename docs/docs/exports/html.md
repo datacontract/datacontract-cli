@@ -6,13 +6,13 @@ description: "Export a data contract to a standalone HTML page."
 
 # <img className="page-icon" src="/img/icons/custom.svg" alt="" /> Export: HTML
 
-Generates a standalone, self-contained HTML page documenting the data contract.
+Generates a standalone HTML page documenting the data contract.
 
 ```bash
 datacontract export html orders.odcs.yaml --output orders.html
 ```
 
-Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces a single self-contained `orders.html` file (no external assets) that renders:
+Running this against the [example `orders` contract](https://github.com/datacontract/datacontract-cli/blob/main/examples/orders/orders.odcs.yaml) produces a single `orders.html` file that renders the following (the diagram's scripts load from a CDN):
 
 - the contract metadata (name, version, status, description),
 - each schema (`orders`, `line_items`) as a table of fields with their types, constraints, and descriptions,

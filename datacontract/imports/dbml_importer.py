@@ -9,6 +9,7 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
+    report_unmapped_types,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
@@ -29,7 +30,7 @@ def import_dbml_from_source(
     import_tables: List[str],
 ) -> OpenDataContractStandard:
     try:
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             dbml_schema = PyDBML(file)
     except ParseException as e:
         raise DataContractException(
@@ -83,6 +84,7 @@ def convert_dbml(
 
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs)
     return odcs
 
 

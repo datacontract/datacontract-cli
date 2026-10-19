@@ -26,7 +26,19 @@ def diff(v1: dict, v2: dict) -> dict:
     n1 = normalize(v1)
     n2 = normalize(v2)
     result = DeepDiff(n1, n2, ignore_order=True, verbose_level=2)
-    return json.loads(result.to_json())
+    result = json.loads(result.to_json())
+    # DeepDiff reports two dicts that share no key as one value change of the whole
+    # dict (e.g. the only schema renamed). Split it into per-key removals and additions.
+    for path, change in list(result.get("values_changed", {}).items()):
+        old, new = change.get("old_value"), change.get("new_value")
+        if not (isinstance(old, dict) and isinstance(new, dict)):
+            continue
+        del result["values_changed"][path]
+        for key, value in old.items():
+            result.setdefault("dictionary_item_removed", {})[f"{path}['{key}']"] = value
+        for key, value in new.items():
+            result.setdefault("dictionary_item_added", {})[f"{path}['{key}']"] = value
+    return result
 
 
 _CHANGE_TYPE_MAP = {

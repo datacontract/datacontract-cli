@@ -30,6 +30,7 @@ This page is the entry point for the project's GitHub repository and README. The
 - [PyPI package](https://pypi.org/project/datacontract-cli/): released versions and install instructions.
 - [Docker image](https://hub.docker.com/r/datacontract/cli): `datacontract/cli`.
 - [GitHub Action](https://github.com/datacontract/datacontract-action/): running the CLI in a GitHub workflow.
+- [Data Contract Skills](https://github.com/datacontract/datacontract-skills): agent skills for Claude Code, Codex, and GitHub Copilot to create, test, and evolve data contracts with the CLI.
 - [Community Slack](https://datacontract.com/slack): questions and discussion.
 
 ## Optional

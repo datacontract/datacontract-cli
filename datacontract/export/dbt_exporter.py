@@ -164,7 +164,7 @@ def _to_dbt_model(
     if len(primary_key_columns) > 1:
         # Multiple columns: use dbt_utils.unique_combination_of_columns
         dbt_model["data_tests"] = [
-            {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": primary_key_columns}}
+            {"dbt_utils.unique_combination_of_columns": {"arguments": {"combination_of_columns": primary_key_columns}}}
         ]
 
     columns = _to_columns(
@@ -229,7 +229,11 @@ def _to_column(
         column["data_type"] = dbt_type
     else:
         column["data_tests"].append(
-            {"dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {"column_type": dbt_type}}
+            {
+                "dbt_expectations.dbt_expectations.expect_column_values_to_be_of_type": {
+                    "arguments": {"column_type": dbt_type}
+                }
+            }
         )
     if prop.description is not None:
         column["description"] = prop.description.strip().replace("\n", " ")
@@ -242,10 +246,15 @@ def _to_column(
         if prop.unique or (is_primary_key and is_single_pk):
             column.setdefault("constraints", []).append({"type": "unique"})
 
+    # Under `config`, not top-level: dbt Fusion rejects a column's top-level `meta` and `tags`.
+    meta = next((cp.value for cp in prop.customProperties or [] if cp.property == "meta"), None)
+    meta = dict(meta) if isinstance(meta, dict) else {}
     if prop.classification is not None:
-        column.setdefault("meta", {})["classification"] = prop.classification
-    if prop.tags is not None and len(prop.tags) > 0:
-        column.setdefault("tags", []).extend(prop.tags)
+        meta["classification"] = prop.classification
+    if meta:
+        column.setdefault("config", {})["meta"] = meta
+    if prop.tags:
+        column.setdefault("config", {})["tags"] = list(prop.tags)
 
     column["data_tests"].extend(
         field_to_data_tests(

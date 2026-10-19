@@ -1,0 +1,4 @@
+arguments:
+  of: {type: identifier}
+queries:
+  ansi: SELECT COUNT(DISTINCT ${arguments.of}) FROM ${table}

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 14
 title: "Google Cloud Storage"
 description: "Create a data contract from files on Google Cloud Storage and test them against it."
 ---
@@ -32,11 +32,13 @@ Import the schema straight from the bucket. This also generates a ready-to-test 
 
 ```bash
 datacontract import gcs \
-  --source s3://my-bucket/orders/*.json \
+  --source 's3://my-bucket/orders/*.json' \
   --output datacontract.yaml
 ```
 
 duckdb reads Google Cloud Storage through its S3-compatible endpoint, so the location uses the `s3://` scheme rather than `gs://`; a `gs://` source is rewritten for you. The format is taken from the file suffix; pass `--format` for Delta tables, which have none.
+
+The import reads only the field names and types. Properties like `required` cannot be inferred from the files and need to be adjusted manually.
 
 ## 4. Test the actual data
 
@@ -47,19 +49,20 @@ datacontract test datacontract.yaml
 ```
 Testing datacontract.yaml
 Server: production (type=s3, format=json, location=s3://my-bucket/orders/*.json)
-╭────────┬─────────────────────────────────────────────────┬─────────────────┬─────────╮
-│ Result │ Check                                           │ Field           │ Details │
-├────────┼─────────────────────────────────────────────────┼─────────────────┼─────────┤
-│ passed │ Check that field 'order_id' is present          │ orders.order_id │         │
-│ passed │ Check that field order_id has no missing values │ orders.order_id │         │
-│  ...   │                                                 │                 │         │
-╰────────┴─────────────────────────────────────────────────┴─────────────────┴─────────╯
-🟢 data contract is valid. Run 24 checks. Took 3.1 seconds.
+╭────────┬─────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                           │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                 │          │         │
+│ passed │ Check that field 'order_id' is present          │ order_id │         │
+│ passed │ Check that field order_id has no missing values │ order_id │         │
+│  ...   │                                                 │          │         │
+╰────────┴─────────────────────────────────────────────────┴──────────┴─────────╯
+🟢 Data contract is valid. Ran 11 checks. Took 3.1 seconds.
 ```
 
 ## 5. Let it catch a violation
 
-The contract becomes valuable when it detects drift. Tighten an expectation — for example, mark a field as `required: true` that occasionally arrives empty, or add a quality rule:
+The contract becomes valuable when it detects drift. Tighten an expectation — for example, add a quality rule:
 
 ```yaml
 schema:

@@ -472,6 +472,7 @@ def _describe_dbt_test(test: Any, field_name: Optional[str], model_name: str) ->
             return _describe_dbt_test(name, field_name, model_name)
         if not isinstance(args, dict):
             return None
+        args = _test_args(args)
         if name == "accepted_values":
             values = args.get("values")
             if isinstance(values, list) and len(values) == 1:
@@ -531,10 +532,12 @@ def _rewrite_relationships_to_ref(tests: list) -> list:
     for t in tests:
         if isinstance(t, dict) and "relationships" in t and isinstance(t["relationships"], dict):
             rel = dict(t["relationships"])
-            to_value = rel.get("to") or ""
+            args = dict(rel["arguments"])
+            to_value = args.get("to") or ""
             m = _REL_SOURCE_RE.match(to_value)
             if m:
-                rel["to"] = f"ref('{m.group(1)}')"
+                args["to"] = f"ref('{m.group(1)}')"
+            rel["arguments"] = args
             out.append({"relationships": rel})
         else:
             out.append(t)
@@ -744,7 +747,7 @@ def _composite_pk_singular_test(
     pk_cols: list[str], contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> SingularTest:
     """Dep-free singular SQL asserting a composite primary key is unique (no `dbt_utils`)."""
-    col_list = ", ".join(_quote_identifier(c) for c in pk_cols)
+    col_list = ", ".join(pk_cols)
     description = f"Check that model {model} has a unique combination of columns {', '.join(pk_cols)}"
     label = "unique_combination"
     sql = (
@@ -794,10 +797,6 @@ def _describe_row_count_quality(quality: DataQuality, model: str) -> Optional[st
 # ---------------------------------------------------------------------------
 
 
-def _quote_identifier(name: str) -> str:
-    return '"' + name.replace('"', '""') + '"'
-
-
 def _regex_violation_jinja(column: str, pattern: str) -> str:
     """Adapter-portable 'col does NOT match pattern' fragment.
 
@@ -823,8 +822,8 @@ def _regex_violation_jinja(column: str, pattern: str) -> str:
         f"REGEXP_SIMILAR(CAST({column} AS VARCHAR(32000)), '{escaped}') = 0"
         "{% elif target.type in ['sqlserver', 'fabric', 'synapse'] %}"
         "{{ exceptions.warn("
-        f"'datacontract: regex pattern test on column {column} skipped "
-        "— adapter ' ~ target.type ~ ' has no regex predicate') }}"
+        f"'datacontract: pattern of column {column} not checked, "
+        "' ~ target.type ~ ' has no regex support.') }}"
         "1 = 0"
         "{% else %}"
         f"CAST({column} AS VARCHAR) !~ '{escaped}'"
@@ -841,7 +840,6 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     fires when the value does not match. NULLs are filtered upstream with
     `WHERE col IS NOT NULL`.
     """
-    column = _quote_identifier(prop.name)
     pairs: list[tuple[str, str]] = []
 
     min_length = get_logical_type_option(prop, "minLength")
@@ -849,14 +847,14 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     if min_length is not None or max_length is not None:
         parts: list[str] = []
         if min_length is not None:
-            parts.append(f"LENGTH({column}) < {min_length}")
+            parts.append(f"LENGTH({prop.name}) < {min_length}")
         if max_length is not None:
-            parts.append(f"LENGTH({column}) > {max_length}")
+            parts.append(f"LENGTH({prop.name}) > {max_length}")
         pairs.append(("length", " OR ".join(parts)))
 
     pattern = get_logical_type_option(prop, "pattern")
     if pattern is not None:
-        pairs.append(("pattern", _regex_violation_jinja(column, pattern)))
+        pairs.append(("pattern", _regex_violation_jinja(prop.name, pattern)))
 
     minimum = get_logical_type_option(prop, "minimum")
     maximum = get_logical_type_option(prop, "maximum")
@@ -864,13 +862,13 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     exclusive_maximum = get_logical_type_option(prop, "exclusiveMaximum")
     range_parts: list[str] = []
     if minimum is not None:
-        range_parts.append(f"{column} < {_sql_literal(minimum)}")
+        range_parts.append(f"{prop.name} < {_sql_literal(minimum)}")
     if maximum is not None:
-        range_parts.append(f"{column} > {_sql_literal(maximum)}")
+        range_parts.append(f"{prop.name} > {_sql_literal(maximum)}")
     if exclusive_minimum is not None:
-        range_parts.append(f"{column} <= {_sql_literal(exclusive_minimum)}")
+        range_parts.append(f"{prop.name} <= {_sql_literal(exclusive_minimum)}")
     if exclusive_maximum is not None:
-        range_parts.append(f"{column} >= {_sql_literal(exclusive_maximum)}")
+        range_parts.append(f"{prop.name} >= {_sql_literal(exclusive_maximum)}")
     if range_parts:
         pairs.append(("range", " OR ".join(range_parts)))
 
@@ -881,7 +879,6 @@ def _build_row_violation_sql(
     *,
     model: str,
     field: str,
-    column_null_filter: str,
     violation_predicate: str,
     severity: Optional[str] = None,
     contract_id: str,
@@ -897,7 +894,7 @@ def _build_row_violation_sql(
         + f"{{{{ config({severity_arg}{_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
         f"SELECT *\n"
         f"FROM {_model_ref(model, model_version)}\n"
-        f"WHERE {column_null_filter} IS NOT NULL\n"
+        f"WHERE {field} IS NOT NULL\n"
         f"  AND ({violation_predicate})\n"
     )
 
@@ -906,7 +903,6 @@ def _field_singular_tests(
     prop: SchemaProperty, contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> list[SingularTest]:
     """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
-    column = _quote_identifier(prop.name)
     out: list[SingularTest] = []
     for kind, predicate in _field_bound_predicates(prop):
         label = f"{prop.name}__{kind}"
@@ -917,7 +913,6 @@ def _field_singular_tests(
                 sql=_build_row_violation_sql(
                     model=model,
                     field=prop.name,
-                    column_null_filter=column,
                     violation_predicate=predicate,
                     contract_id=contract_id,
                     contract_version=contract_version,
@@ -1060,7 +1055,7 @@ def _column_dict(
         if data_quality.query:
             continue
         if data_quality.mustBe is not None:
-            entry = {"accepted_values": {"values": [data_quality.mustBe]}}
+            entry = {"accepted_values": {"arguments": {"values": [data_quality.mustBe]}}}
             tests.append(
                 _attach_test_config(
                     entry,
@@ -1180,6 +1175,13 @@ def _test_body(entry: str | dict) -> dict:
         if isinstance(body, dict):
             return body
     return {}
+
+
+def _test_args(body: dict) -> dict:
+    """A test's arguments, whether nested under `arguments:` (dbt 1.10+) or inline (older CLI output)."""
+    if isinstance(body.get("arguments"), dict):
+        return body["arguments"]
+    return {k: v for k, v in body.items() if k not in ("config", "description")}
 
 
 def _meta_block_for_test(entry: str | dict) -> dict:
@@ -1333,22 +1335,54 @@ def _reconcile_data_tests(
 # ---------------------------------------------------------------------------
 
 
-def _is_managed_column(col: dict) -> bool:
+def _legacy_column_meta_block(col: dict) -> Optional[dict]:
+    """Our block under a column's top-level `meta` — the layout older CLI versions wrote."""
     meta = col.get("meta")
     block = meta.get(META_NAMESPACE) if isinstance(meta, dict) else None
+    return block if isinstance(block, dict) else None
+
+
+def _is_managed_column(col: dict) -> bool:
+    meta = (col.get("config") or {}).get("meta")
+    block = meta.get(META_NAMESPACE) if isinstance(meta, dict) else None
+    if not isinstance(block, dict):
+        block = _legacy_column_meta_block(col)
     return isinstance(block, dict) and block.get("generated") is True
 
 
 def _mark_managed_column(col: dict) -> None:
-    meta = col.get("meta")
+    """Stamp `config.meta.datacontract_cli.generated` on a column we created."""
+    config = _ensure_config(col)
+    meta = config.get("meta")
     if not isinstance(meta, dict):
         meta = CommentedMap()
-        col["meta"] = meta
+        config["meta"] = meta
     block = meta.get(META_NAMESPACE)
     if not isinstance(block, dict):
         block = CommentedMap()
         meta[META_NAMESPACE] = block
     block["generated"] = True
+
+
+def _migrate_legacy_column_meta(col: dict) -> None:
+    """Move a legacy top-level `meta.datacontract_cli` block to `config.meta`; user keys stay put."""
+    legacy = _legacy_column_meta_block(col)
+    if legacy is None:
+        return
+    config = _ensure_config(col)
+    meta = config.get("meta")
+    if not isinstance(meta, dict):
+        meta = CommentedMap()
+        config["meta"] = meta
+    block = meta.get(META_NAMESPACE)
+    if isinstance(block, dict):
+        for key, value in legacy.items():
+            block.setdefault(key, value)
+    else:
+        meta[META_NAMESPACE] = legacy
+    col["meta"].pop(META_NAMESPACE)
+    if not col["meta"]:
+        col.pop("meta")
 
 
 def _find_column(entry: dict, name: str) -> Optional[dict]:
@@ -1510,6 +1544,7 @@ class RequiredState:
 
     scope_models: dict[str, str] = field(default_factory=dict)  # lower(model) -> model name
     required_tests: dict[str, set[tuple[Optional[str], str]]] = field(default_factory=dict)
+    required_columns: dict[str, set[str]] = field(default_factory=dict)  # lower(model) -> lower(column) set
 
 
 def _required_test_keys(model_dict: dict) -> set[tuple[Optional[str], str]]:
@@ -1846,7 +1881,7 @@ def _managed_test_args(container: dict) -> dict[str, dict]:
             continue
         name = _test_name(test)
         if name is not None:
-            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+            out[name] = _test_args(_test_body(test))
     return out
 
 
@@ -1855,7 +1890,7 @@ def _desired_test_args(desired_tests: list) -> dict[str, dict]:
     for test in desired_tests or []:
         name = _test_name(test)
         if name is not None:
-            out[name] = {k: v for k, v in _test_body(test).items() if k not in ("config", "description")}
+            out[name] = _test_args(_test_body(test))
     return out
 
 
@@ -2314,12 +2349,14 @@ def _clean_model_entry(
     entry: dict,
     *,
     required_keys: set[tuple[Optional[str], str]],
+    required_columns: set[str],
     model_required: bool,
 ) -> None:
     model_name = str(entry.get("name", ""))
     _clean_tests_in_container(entry, None, required_keys, model_required=model_required, model_name=model_name)
     for col in entry.get("columns") or []:
         if isinstance(col, dict):
+            _migrate_legacy_column_meta(col)
             _clean_tests_in_container(
                 col,
                 str(col.get("name", "")).lower(),
@@ -2333,14 +2370,16 @@ def _clean_model_entry(
         # Edit in place — rebuilding the list would discard its comment table (owners' comments).
         for i in reversed(range(len(cols))):
             col = cols[i]
-            if (
-                isinstance(col, dict)
-                and _is_managed_column(col)
-                and not col.get("data_tests")
-                and not col.get("description")
-                and not (col.get("data_type") and model_required)
-            ):
-                del cols[i]  # drop a managed column that has become empty
+            if not isinstance(col, dict) or not _is_managed_column(col):
+                continue
+            if model_required and str(col.get("name", "")).lower() in required_columns:
+                continue  # still required → merge will refresh it
+            config = col.get("config")
+            if isinstance(config, dict):
+                config.pop("tags", None)
+            _remove_our_meta(col)
+            if set(col.keys()) <= {"name", "description", "data_type"}:
+                del cols[i]  # nothing user-authored left; a column the user built on keeps its type/description
         if not cols:
             entry.pop("columns", None)
 
@@ -2360,8 +2399,8 @@ def _run_yaml_cleanup(
 ) -> None:
     """Walk every loaded file and remove CLI footprint that is no longer required.
 
-    An orphaned entry we generated (the contract no longer declares its model) is stripped and, once
-    nothing but its name remains, removed. A file we emptied this way — no models left and no other
+    A managed column or entry the contract no longer declares is stripped of our footprint and, once
+    nothing user-authored remains, removed. A file we emptied this way — no models left and no other
     content (sources, exposures, ...) — is deleted, whether or not the CLI first created it.
     """
     for path in sorted(session.files):
@@ -2382,6 +2421,7 @@ def _run_yaml_cleanup(
             _clean_model_entry(
                 entry,
                 required_keys=required.required_tests.get(model_lower, set()),
+                required_columns=required.required_columns.get(model_lower, set()),
                 model_required=model_required,
             )
             # An entry stripped down to just its `name` has nothing left to keep.
@@ -2464,6 +2504,15 @@ def run_dbt_test(
     ansi_control_chars = re.compile(r"\x1b\[[0-9;]*[mGKHF]")
     output = ansi_control_chars.sub("", (result.stderr or "") + (result.stdout or ""))
     if result.returncode != 0 and not run_results_path.is_file():
+        dbt_version = re.search(r"Running with dbt=((\d+)\.(\d+)\S*)", output)
+        if dbt_version and (int(dbt_version.group(2)), int(dbt_version.group(3))) < (1, 10):
+            raise DataContractException(
+                type="dbt_sync",
+                name="dbt test",
+                reason=f"dbt {dbt_version.group(1)} is not supported: the generated tests need dbt 1.10 or later. "
+                "Upgrade dbt and run again.",
+                engine="datacontract-cli",
+            )
         raise DataContractException(
             type="dbt_sync",
             name="dbt test",
@@ -2781,6 +2830,9 @@ def generate_dbt_tests(
         required = RequiredState(
             scope_models={p.name.lower(): p.name for p in plans},
             required_tests={p.name.lower(): _required_test_keys(p.model_dict) for p in plans},
+            required_columns={
+                p.name.lower(): {c["name"].lower() for c in p.model_dict.get("columns") or []} for p in plans
+            },
         )
         _run_yaml_cleanup(session, required, scope_contract_id=odcs.id)
 

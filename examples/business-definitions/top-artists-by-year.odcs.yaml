@@ -9,7 +9,7 @@ domain: media
 description:
   purpose: Overview of the top music artists per calendar year.
   usage: Data provided in tabular form to build playlists.
-  limitation: Do not use for management reporting purposes.
+  limitations: Do not use for management reporting purposes.
 
 schema:
   # The business object: what the data means, independent of where it is stored.

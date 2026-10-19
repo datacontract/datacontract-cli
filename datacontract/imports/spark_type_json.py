@@ -37,8 +37,8 @@ _PRIMITIVES = {
     "boolean": ("boolean", "boolean"),
     "binary": ("binary", "array"),
     "date": ("date", "date"),
-    "timestamp": ("timestamp", "date"),
-    "timestamp_ntz": ("timestamp_ntz", "date"),
+    "timestamp": ("timestamp", "timestamp"),
+    "timestamp_ntz": ("timestamp_ntz", "timestamp"),
     "void": ("void", "string"),
     "variant": ("variant", "object"),
 }

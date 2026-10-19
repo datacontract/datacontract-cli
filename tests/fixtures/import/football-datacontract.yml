@@ -11,4 +11,27 @@ schema:
   businessName: FootballSchema
   logicalType: object
   physicalName: FootballSchema
-
+  properties:
+  - name: first_name
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: last_name
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: age
+    physicalType: integer
+    logicalType: integer
+    required: true
+  - name: name
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: league
+    physicalType: string
+    logicalType: string
+    required: true
+  - name: year_founded
+    physicalType: integer
+    logicalType: integer

@@ -141,6 +141,10 @@ Download a file and run the commands below against it to reproduce the output.
     <img src="/img/icons/sqlalchemy.svg" alt="" />
     <span><span className="doc-card-title">sqlalchemy</span><span className="doc-card-desc">SQLAlchemy models.</span></span>
   </a>
+  <a className="doc-card" href="/exports/xsd">
+    <img src="/img/icons/custom.svg" alt="" />
+    <span><span className="doc-card-title">xsd</span><span className="doc-card-desc">An XML Schema (XSD).</span></span>
+  </a>
 </div>
 
 See the [`export` command reference](../commands/export/index.md) for the common signature.

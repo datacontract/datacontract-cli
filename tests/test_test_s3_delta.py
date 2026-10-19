@@ -5,6 +5,7 @@ import pytest
 from testcontainers.minio import MinioContainer
 
 from datacontract.data_contract import DataContract
+from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, without_dcs_deprecation
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
 
@@ -18,7 +19,7 @@ s3_secret_access_key = "test-secret"
 @pytest.fixture(scope="session")
 def minio_container():
     with MinioContainer(
-        image="quay.io/minio/minio",
+        image="cgr.dev/chainguard/minio",
         access_key=s3_access_key,
         secret_key=s3_secret_access_key,
     ) as minio_container:
@@ -41,8 +42,8 @@ def test_test_s3_delta(minio_container, monkeypatch):
     run = data_contract.test()
 
     print(run)
-    assert run.result == "passed"
-    assert all(check.result == "passed" for check in run.checks)
+    assert_dcs_deprecation_is_the_only_warning(run)
+    assert all(check.result == "passed" for check in without_dcs_deprecation(run))
 
 
 def _prepare_s3_files(minio_container):

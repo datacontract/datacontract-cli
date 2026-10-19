@@ -169,6 +169,7 @@ const config: Config = {
           'scheduling/*.md',
           'dbt.md',
           'editor.md',
+          'ai-agents.md',
           'imports/index.md',
           'imports/*.md',
           'exports/index.md',
@@ -287,6 +288,7 @@ const config: Config = {
           items: [
             { label: 'datacontract.com', href: 'https://datacontract.com' },
             { label: 'Data Contract Editor', href: 'https://editor.datacontract.com' },
+            { label: 'Data Contract Skills', href: 'https://github.com/datacontract/datacontract-skills' },
             { label: 'PyPI', href: 'https://pypi.org/project/datacontract-cli/' },
           ],
         },

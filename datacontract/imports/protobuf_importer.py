@@ -68,7 +68,7 @@ def map_type_from_protobuf(field_type: int) -> str:
 def parse_imports_raw(proto_file: str) -> list:
     """Return the raw import paths declared in a `.proto` file."""
     try:
-        with open(proto_file, "r") as f:
+        with open(proto_file, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
         raise DataContractException(
@@ -83,7 +83,7 @@ def parse_imports_raw(proto_file: str) -> list:
 
 def _parse_proto(proto_file: str) -> proto_ast.File:
     try:
-        with open(proto_file, "r") as f:
+        with open(proto_file, "r", encoding="utf-8") as f:
             return Parser().parse(f.read())
     except Exception as e:
         raise DataContractException(

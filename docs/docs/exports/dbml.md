@@ -26,7 +26,7 @@ Table orders {
     order_id string [pk, unique, not null, note: "Unique identifier of the order."]
     order_timestamp timestamp [not null, note: "Timestamp when the order was placed."]
     customer_id string [not null, note: "Reference to the customer who placed the order."]
-    order_total number [not null, note: "Total amount of the order in cents."]
+    order_total integer [not null, note: "Total amount of the order in cents."]
     status string [not null, note: "Current fulfilment status of the order."]
 }
 

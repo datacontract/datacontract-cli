@@ -44,27 +44,27 @@ schema:
 
 VALUE_CHECK_TYPES = {"field_required", "field_unique", "field_regex", "field_minimum"}
 
-# Parquet carries real types, so field_type checks are generated (CSV skips them).
-PARQUET_CONTRACT = """
+# Delta carries real types, so field_type checks run (CSV skips them, parquet warns).
+DELTA_CONTRACT = """
 apiVersion: v3.0.2
 kind: DataContract
-id: metadata_only_parquet_test
+id: metadata_only_delta_test
 version: 1.0.0
 status: active
 servers:
   - server: local
     type: local
-    path: ./fixtures/parquet/data/combined.parquet
-    format: parquet
+    path: ./fixtures/local-delta/data/orders
+    format: delta
 schema:
-  - name: combined
+  - name: orders
     properties:
-      - name: integer_field
-        logicalType: integer
+      - name: order_id
+        logicalType: string
         required: true
         unique: true
-      - name: string_field
-        logicalType: string
+      - name: order_total
+        logicalType: integer
 """
 
 
@@ -95,7 +95,7 @@ def test_metadata_only_skips_value_checks():
 
 
 def test_metadata_only_passes_when_introspection_checks_pass():
-    run = DataContract(data_contract_str=PARQUET_CONTRACT, metadata_only=True).test()
+    run = DataContract(data_contract_str=DELTA_CONTRACT, metadata_only=True).test()
     print(run.pretty())
     assert run.result == "passed"
     type_checks = [check for check in run.checks if check.type == "field_type"]
@@ -182,14 +182,14 @@ def test_metadata_only_skips_servicelevel_and_custom_sql():
     assert all(reason == SKIP_REASON for reason in skipped.values())
 
 
-def test_metadata_only_all_skipped_remains_unknown():
+def test_metadata_only_all_skipped_is_skipped():
     run = DataContract(
         data_contract_str=SLA_AND_SQL_CONTRACT,
         check_categories={"quality"},
         metadata_only=True,
     ).test()
     print(run.pretty())
-    assert run.result == "unknown"
+    assert run.result == "skipped"
     assert {check.type for check in run.checks} == {"row_count", "model_quality_sql"}
     assert all(check.result == "skipped" and check.reason == SKIP_REASON for check in run.checks)
 

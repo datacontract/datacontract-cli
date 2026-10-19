@@ -7,7 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 from unittest import mock
@@ -29,6 +29,7 @@ from datacontract.integration.dbt_sync import (
     _get_test_metadata,
     _guess_indent,
     _hoist_own_line_comments,
+    _is_managed_column,
     _make_yaml,
     _normalize_severity,
     _resolve_contract_paths,
@@ -75,6 +76,7 @@ class _SyncResult:
     written_yaml: List[Path]
     written_sql: List[Path]
     run: Optional[Run]
+    prunable: List[str] = field(default_factory=list)
 
 
 def sync(
@@ -113,6 +115,7 @@ def sync(
         written_yaml=gen.written_yaml,
         written_sql=gen.written_sql,
         run=run,
+        prunable=gen.prunable,
     )
 
 
@@ -437,14 +440,16 @@ def test_resync_preserves_user_opt_out_via_include_in_tests(tmp_path: Path):
 
 
 def test_merge_columns_the_cli_creates_are_marked(tmp_path: Path):
-    """Columns the CLI adds to host tests carry meta.datacontract_cli so cleanup can drop them."""
+    """Columns the CLI adds to host tests carry config.meta.datacontract_cli so cleanup can drop them."""
     project = _copy_dbt_project(tmp_path)
     _orders_model_sql(project)
     schema = _user_orders_schema(project)
     sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
 
     cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
-    assert cols["order_status"]["meta"]["datacontract_cli"]["generated"] is True
+    assert cols["order_status"]["config"]["meta"]["datacontract_cli"]["generated"] is True
+    # Top-level `meta` is rejected by dbt Fusion (v2) — the marker never lands there.
+    assert "meta" not in cols["order_status"]
     assert "meta" not in cols["extra_user_col"]  # user column untouched
     assert "meta" not in cols["order_id"]  # pre-existing user column not marked
 
@@ -469,7 +474,109 @@ def test_sync_creates_model_yaml_when_no_yaml_entry(tmp_path: Path):
     assert not_null_meta["contract_versions"] == ["1.0.0"]
     assert not_null_meta["generated"] is True
     # Columns we create carry the managed marker so a later sync can retire them cleanly.
-    assert order_id["meta"]["datacontract_cli"]["generated"] is True
+    assert order_id["config"]["meta"]["datacontract_cli"]["generated"] is True
+    assert "meta" not in order_id  # not at the top level — dbt Fusion (v2) rejects that
+
+
+def _assert_no_toplevel_column_meta(doc_path: Path) -> None:
+    doc = yaml.safe_load(doc_path.read_text())
+    columns = [c for m in doc["models"] for c in m.get("columns") or []]
+    offenders = [c["name"] for c in columns if isinstance(c, dict) and "meta" in c]
+    assert not offenders, f"top-level `meta` is rejected by dbt Fusion, found on: {offenders}"
+
+
+def test_resync_migrates_legacy_toplevel_column_meta(tmp_path: Path):
+    """A project synced by an older CLI carries the v1-only layout; re-syncing relocates it."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = project / "models" / "schema.yml"
+    schema.write_text(
+        "version: 2\n"
+        "models:\n"
+        "  - name: orders\n"
+        "    columns:\n"
+        "      - name: order_status\n"
+        "        description: authored by the user\n"
+        "        meta:\n"
+        "          datacontract_cli:\n"
+        "            generated: true\n"
+        "          custom_key: keep me\n"
+        "      - name: retired_col\n"
+        "        description: no longer in the contract\n"
+        "        meta:\n"
+        "          datacontract_cli:\n"
+        "            generated: true\n"
+    )
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
+    col = cols["order_status"]
+    assert col["config"]["meta"]["datacontract_cli"]["generated"] is True
+    # Our block moved out of the Fusion-rejected location; the user's sibling key stays put.
+    assert "datacontract_cli" not in col.get("meta", {})
+    assert col["meta"]["custom_key"] == "keep me"
+    # A column that left the contract is recognized through its legacy marker and retired.
+    assert "retired_col" not in cols
+
+
+def test_legacy_toplevel_column_meta_still_recognized_as_managed():
+    """Reading must tolerate the legacy layout, or cleanup orphans columns it used to own."""
+    assert _is_managed_column({"name": "c", "meta": {"datacontract_cli": {"generated": True}}}) is True
+    assert _is_managed_column({"name": "c", "config": {"meta": {"datacontract_cli": {"generated": True}}}}) is True
+    assert _is_managed_column({"name": "c"}) is False
+    assert _is_managed_column({"name": "c", "config": {"meta": {"datacontract_cli": {"generated": False}}}}) is False
+
+
+def test_column_dropped_from_contract_is_still_retired(tmp_path: Path):
+    """A generated column whose property left the contract is retired without --prune."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    col = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_status"]
+    assert _is_managed_column(col) is True  # reader sees the relocated marker
+    assert col["data_type"]  # sync wrote it; it is ours to take back
+
+    trimmed = yaml.safe_load(CONTRACT_PATH.read_text())
+    for obj in trimmed["schema"]:
+        obj["properties"] = [p for p in obj["properties"] if p["name"] != "order_status"]
+    slim = tmp_path / "orders-slim.odcs.yaml"
+    slim.write_text(yaml.safe_dump(trimmed))
+
+    result = sync(contract=str(slim), project_dir=project, skip_tests=True)
+
+    cols = {c["name"] for c in _model_entry(schema)["columns"]}
+    assert "order_status" not in cols  # generated column retired without --prune
+    assert "extra_user_col" in cols  # the user's own column survives
+    assert result.prunable == ["orders: column `extra_user_col`"]  # retired column no longer reported as drift
+
+
+def test_retired_managed_column_with_user_residue_is_handed_over(tmp_path: Path):
+    """A user's test on the column keeps it, unmarked and still typed/described for them."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    schema = _user_orders_schema(project)
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+
+    doc = yaml.safe_load(schema.read_text())
+    entry = next(m for m in doc["models"] if m["name"] == "orders")
+    col = next(c for c in entry["columns"] if c["name"] == "order_status")
+    col["data_tests"].append("unique")
+    col["quote"] = True
+    schema.write_text(yaml.safe_dump(doc))
+
+    trimmed = yaml.safe_load(CONTRACT_PATH.read_text())
+    for obj in trimmed["schema"]:
+        obj["properties"] = [p for p in obj["properties"] if p["name"] != "order_status"]
+    slim = tmp_path / "orders-slim.odcs.yaml"
+    slim.write_text(yaml.safe_dump(trimmed))
+
+    sync(contract=str(slim), project_dir=project, skip_tests=True)
+
+    col = {c["name"]: c for c in _model_entry(schema)["columns"]}["order_status"]
+    assert col == {"name": "order_status", "data_type": "text", "data_tests": ["unique"], "quote": True}
 
 
 def test_sync_skips_model_with_no_sql_or_entry(tmp_path: Path):
@@ -620,11 +727,15 @@ def test_normalize_severity():
 
 def test_attach_config_dict_test():
     result = _attach_test_config(
-        {"accepted_values": {"values": [1, 2]}}, "error", check_type="field_enum", model="orders", field="status"
+        {"accepted_values": {"arguments": {"values": [1, 2]}}},
+        "error",
+        check_type="field_enum",
+        model="orders",
+        field="status",
     )
     assert result == {
         "accepted_values": {
-            "values": [1, 2],
+            "arguments": {"values": [1, 2]},
             "config": {
                 "severity": "error",
                 "meta": {"datacontract_cli": {"check": "orders__status__field_enum"}},
@@ -639,16 +750,24 @@ def test_attach_config_dict_test():
         ("not_null", "Check that field order_id has no missing values"),
         ("unique", "Check that field order_id has no duplicate values"),
         (
+            {"accepted_values": {"arguments": {"values": ["pending", "shipped"]}}},
+            "Check that field order_id only contains enum values ['pending', 'shipped']",
+        ),
+        (
             {"accepted_values": {"values": ["pending", "shipped"]}},
             "Check that field order_id only contains enum values ['pending', 'shipped']",
         ),
-        ({"accepted_values": {"values": ["X"]}}, "Check that field order_id is equal to X"),
+        ({"accepted_values": {"arguments": {"values": ["X"]}}}, "Check that field order_id is equal to X"),
         (
-            {"relationships": {"to": "ref('customers')", "field": "id"}},
+            {"relationships": {"arguments": {"to": "ref('customers')", "field": "id"}}},
             "Check that field order_id references ref('customers').id",
         ),
         (
-            {"dbt_utils.unique_combination_of_columns": {"combination_of_columns": ["order_id", "order_status"]}},
+            {
+                "dbt_utils.unique_combination_of_columns": {
+                    "arguments": {"combination_of_columns": ["order_id", "order_status"]}
+                }
+            },
             "Check that model orders has a unique combination of columns order_id, order_status",
         ),
     ],
@@ -679,11 +798,11 @@ def test_generate_outputs_emits_descriptions_for_typed_field_tests():
 
 def test_rewrite_relationships_to_ref():
     tests = [
-        {"relationships": {"to": 'source("contract-id", "customers")', "field": "id"}},
+        {"relationships": {"arguments": {"to": 'source("contract-id", "customers")', "field": "id"}}},
         "not_null",
     ]
     rewritten = _rewrite_relationships_to_ref(tests)
-    assert rewritten[0] == {"relationships": {"to": "ref('customers')", "field": "id"}}
+    assert rewritten[0] == {"relationships": {"arguments": {"to": "ref('customers')", "field": "id"}}}
     assert rewritten[1] == "not_null"
 
 
@@ -749,7 +868,7 @@ def test_generate_outputs_composite_pk_emits_dep_free_singular_unique():
     by_name = {s.filename: s for s in singulars}
     pk = by_name["orders_sync_test__1_0_0__orders__unique_combination.sql"]
     assert "dbt_utils" not in pk.sql
-    assert 'GROUP BY "order_id", "order_status"' in pk.sql
+    assert "GROUP BY order_id, order_status" in pk.sql
     assert "HAVING COUNT(*) > 1" in pk.sql
     assert pk.description == "Check that model orders has a unique combination of columns order_id, order_status"
 
@@ -763,9 +882,9 @@ def test_field_singular_tests_emit_portable_violation_predicates():
     by_name = {s.filename: s for s in singulars}
 
     length = by_name["orders_sync_test__1_0_0__orders__order_id__length.sql"]
-    assert 'LENGTH("order_id") < 8' in length.sql
-    assert 'LENGTH("order_id") > 10' in length.sql
-    assert '"order_id" IS NOT NULL' in length.sql
+    assert "LENGTH(order_id) < 8" in length.sql
+    assert "LENGTH(order_id) > 10" in length.sql
+    assert "order_id IS NOT NULL" in length.sql
     assert "dbt_expectations" not in length.sql
 
     pattern = by_name["orders_sync_test__1_0_0__orders__order_id__pattern.sql"]
@@ -783,8 +902,8 @@ def test_field_singular_tests_emit_portable_violation_predicates():
     assert "^B[0-9]+$" in pattern.sql
 
     rng = by_name["orders_sync_test__1_0_0__orders__order_total__range.sql"]
-    assert '"order_total" < 0' in rng.sql
-    assert '"order_total" > 1000000' in rng.sql
+    assert "order_total < 0" in rng.sql
+    assert "order_total > 1000000" in rng.sql
 
 
 def test_row_count_singular_test_wraps_count_with_bound_predicate():
@@ -1388,6 +1507,24 @@ def test_run_dbt_test_surfaces_failure_when_no_run_results(tmp_path: Path):
 
     assert "exit code 2" in exc.value.reason
     assert "some unrelated parse failure" in exc.value.reason
+
+
+def test_run_dbt_test_rejects_dbt_before_1_10(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    stdout = (
+        "14:13:33  Running with dbt=1.9.11\n"
+        "Compilation Error in test accepted_values_orders__pending_shipped___status (models/orders.yml)\n"
+        "  macro 'dbt_macro__test_accepted_values' takes no keyword argument 'arguments'\n"
+    )
+
+    def fake_run(args, **kwargs):
+        return subprocess.CompletedProcess(args=args, returncode=2, stdout=stdout, stderr="")
+
+    with mock.patch.object(subprocess, "run", side_effect=fake_run):
+        with pytest.raises(DataContractException) as exc:
+            run_dbt_test(project, target=None, profiles_dir=None)
+
+    assert exc.value.reason.startswith("dbt 1.9.11 is not supported: the generated tests need dbt 1.10 or later")
 
 
 def test_run_dbt_test_does_not_raise_when_run_results_present(tmp_path: Path):
@@ -2621,6 +2758,11 @@ def test_versioned_sync_builds_versions_block(tmp_path: Path):
     assert id_tests["unique"] == ["1.0.0", "2.0.0"]
     assert _cv(_col(entry, "region")["data_tests"][0]) == ["2.0.0"]
 
+    # dbt Fusion (v2) rejects a top-level `meta` on a column; the versioned merge path must
+    # stamp the managed marker under `config` just like the unversioned one.
+    _assert_no_toplevel_column_meta(project / "models" / "customers.yml")
+    assert _col(entry, "id")["config"]["meta"]["datacontract_cli"]["generated"] is True
+
 
 def test_nonversioned_sync_onto_versioned_model_errors(tmp_path: Path):
     """A non-versioned sync onto a versioned model would strip the `versions:` block and strand the
@@ -2650,10 +2792,10 @@ def test_versioned_sync_divergent_column_goes_to_override(tmp_path: Path):
     # so a divergent column must have NO top-level tests — each version carries its full set in its bullet.
     assert "data_tests" not in _col(entry, "status")
     v1_status = _override(entry, 1, "status")["data_tests"][0]
-    assert v1_status["accepted_values"]["values"] == ["a", "b"]
+    assert v1_status["accepted_values"]["arguments"]["values"] == ["a", "b"]
     assert _cv(v1_status) == ["1.0.0"]
     v2_status = _override(entry, 2, "status")["data_tests"][0]
-    assert v2_status["accepted_values"]["values"] == ["a", "b", "c"]
+    assert v2_status["accepted_values"]["arguments"]["values"] == ["a", "b", "c"]
     assert _cv(v2_status) == ["2.0.0"]
 
     # Each override must ride alongside an `include: '*'` element, else dbt reads the version as having only `status`.
@@ -2713,7 +2855,28 @@ def test_versioned_sync_keeps_sibling_version_behavior(tmp_path: Path):
     # v1's effective slice is unchanged by the v2 sync: it still excludes region and still tests
     # `status` against [a,b] (relocated from top level to v1's bullet when v2 made the column diverge).
     assert [e for e in _bullet(entry, 1)["columns"] if "include" in e][0]["exclude"] == ["region"]
-    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["arguments"]["values"] == ["a", "b"]
+
+
+def test_versioned_sync_keeps_old_syntax_shared_test_shared(tmp_path: Path):
+    """A shared test written by an earlier CLI (args inline, no `arguments:`) still agrees with an identical v2."""
+    project = _versioned_project(tmp_path)
+    (project / "customers-v2.odcs.yaml").write_text(_V2_CONTRACT.replace("value: [a, b, c]", "value: [a, b]"))
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    models_yml = project / "models" / "customers.yml"
+    y = yaml.safe_load(models_yml.read_text())
+    status_test = _col(y["models"][0], "status")["data_tests"][0]["accepted_values"]
+    status_test.update(status_test.pop("arguments"))
+    models_yml.write_text(yaml.safe_dump(y, sort_keys=False))
+
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    status_test = _col(entry, "status")["data_tests"][0]
+    assert status_test["accepted_values"]["arguments"]["values"] == ["a", "b"]
+    assert _cv(status_test) == ["1.0.0", "2.0.0"]
+    for v in (1, 2):
+        assert "status" not in {e["name"] for e in _bullet(entry, v).get("columns", []) if "name" in e}
 
 
 _V2_NO_REGION = _V2_CONTRACT.replace("      - name: region\n        logicalType: string\n        required: true\n", "")
@@ -2737,7 +2900,7 @@ def test_versioned_prune_drops_version_only_column(tmp_path: Path):
     assert "region" not in {c["name"] for c in entry.get("columns", [])}
     assert "region" not in [e for e in _bullet(entry, 1)["columns"] if "include" in e][0].get("exclude", [])
     # v1's slice is untouched: still tests `status` against [a, b].
-    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["arguments"]["values"] == ["a", "b"]
 
 
 def test_versioned_prune_leaves_sibling_shared_column(tmp_path: Path):
@@ -2759,7 +2922,7 @@ def test_versioned_prune_leaves_sibling_shared_column(tmp_path: Path):
 
     entry = _versioned_entry(project)
     # status is still referenced by v1 → kept; v2 now excludes it.
-    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["values"] == ["a", "b"]
+    assert _override(entry, 1, "status")["data_tests"][0]["accepted_values"]["arguments"]["values"] == ["a", "b"]
     assert "status" in [e for e in _bullet(entry, 2)["columns"] if "include" in e][0].get("exclude", [])
 
 

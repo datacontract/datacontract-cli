@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 19
 title: "Import: MySQL"
 description: "Create a data contract from a MySQL database."
 ---

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order xmlns="urn:example:orders" version="1" created_by="webshop">
+  <order_id>3f1c1a52-8d7e-4c55-9a43-2f6a1d0e9b01</order_id>
+  <order_timestamp>2026-09-01T10:15:00</order_timestamp>
+  <order_date>2026-09-01</order_date>
+  <order_total>149.90</order_total>
+  <status>shipped</status>
+  <notes>Leave at the door</notes>
+  <customer>
+    <customer_id>C-1001</customer_id>
+    <name>Ada Lovelace</name>
+    <loyalty_points>120</loyalty_points>
+  </customer>
+  <email>ada@example.com</email>
+  <line_items>
+    <line_item>
+      <sku>ABC-0001</sku>
+      <quantity>2</quantity>
+      <price currency="EUR">49.95</price>
+    </line_item>
+    <line_item>
+      <sku>XYZ-0042</sku>
+      <quantity>1</quantity>
+      <price currency="EUR">50.00</price>
+    </line_item>
+  </line_items>
+  <tags>gift express</tags>
+  <category>
+    <name>Books</name>
+    <parent><name>Media</name></parent>
+  </category>
+</order>

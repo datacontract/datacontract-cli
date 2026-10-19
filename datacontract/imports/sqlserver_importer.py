@@ -22,7 +22,13 @@ from open_data_contract_standard.model import (
 from datacontract.config import Config
 from datacontract.engines.ibis.native_type import reconstruct_native_type
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+    report_unmapped_types,
+)
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
 
@@ -32,7 +38,7 @@ DEFAULT_DRIVER = "ODBC Driver 18 for SQL Server"
 
 _TABLES_QUERY = """
     SELECT table_name, table_type
-    FROM information_schema.tables
+    FROM INFORMATION_SCHEMA.TABLES
     WHERE table_schema = '{schema}'
 """
 
@@ -43,15 +49,15 @@ _TABLES_QUERY = """
 _COLUMNS_QUERY = """
     SELECT table_name, column_name, data_type, character_maximum_length,
            numeric_precision, numeric_scale, is_nullable
-    FROM information_schema.columns
+    FROM INFORMATION_SCHEMA.COLUMNS
     WHERE table_schema = '{schema}'
     ORDER BY table_name, ordinal_position
 """
 
 _PRIMARY_KEYS_QUERY = """
     SELECT kcu.table_name, kcu.column_name, kcu.ordinal_position
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu
+    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+    JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
       ON tc.constraint_name = kcu.constraint_name
      AND tc.table_schema = kcu.table_schema
     WHERE tc.constraint_type = 'PRIMARY KEY'
@@ -136,6 +142,7 @@ def import_sqlserver(
         _create_schema(table, column_rows, primary_key_rows)
         for table in sorted(selected, key=lambda row: row["table_name"].lower())
     ]
+    report_unmapped_types(odcs)
     return odcs
 
 

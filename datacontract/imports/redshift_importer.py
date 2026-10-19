@@ -20,7 +20,13 @@ from datacontract.engines.ibis.connections.redshift_credentials import resolve_r
 from datacontract.engines.ibis.connections.redshift_patch import CLIENT_ENCODING
 from datacontract.engines.ibis.native_type import reconstruct_native_type
 from datacontract.imports.importer import Importer
-from datacontract.imports.odcs_helper import create_odcs, create_property, create_schema_object, create_server
+from datacontract.imports.odcs_helper import (
+    create_odcs,
+    create_property,
+    create_schema_object,
+    create_server,
+    report_unmapped_types,
+)
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
 
@@ -145,6 +151,7 @@ def import_redshift_from_connector(
         _create_schema(table, column_rows, primary_key_rows)
         for table in sorted(selected, key=lambda row: row["table_name"].lower())
     ]
+    report_unmapped_types(odcs)
     return odcs
 
 

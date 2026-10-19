@@ -13,6 +13,8 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    declare_nested_types_per_level,
+    report_unmapped_types,
 )
 from datacontract.imports.sql_importer import map_type_from_sql
 from datacontract.model.exceptions import DataContractException
@@ -40,7 +42,7 @@ class UnityImporter(Importer):
 def import_unity_from_json(source: str) -> OpenDataContractStandard:
     """Import data contract specification from a JSON file."""
     try:
-        with open(source, "r") as file:
+        with open(source, "r", encoding="utf-8") as file:
             json_contents = json.loads(file.read())
             unity_schema = TableInfo.from_dict(json_contents)
     except json.JSONDecodeError as e:
@@ -52,8 +54,9 @@ def import_unity_from_json(source: str) -> OpenDataContractStandard:
             original_exception=e,
         )
 
-    odcs = create_odcs()
-    return convert_unity_schema(odcs, unity_schema)
+    odcs = convert_unity_schema(create_odcs(), unity_schema)
+    report_unmapped_types(odcs)
+    return odcs
 
 
 def import_unity_from_api(
@@ -111,6 +114,7 @@ def import_unity_from_api(
             )
         odcs = convert_unity_schema(odcs, unity_schema)
 
+    report_unmapped_types(odcs)
     return odcs
 
 
@@ -166,7 +170,7 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
     required = column.nullable is None or not column.nullable
     nested_properties, items, map_key, map_value = _to_nested_types(column)
 
-    return create_property(
+    prop = create_property(
         name=column.name,
         logical_type=logical_type,
         physical_type=sql_type,
@@ -178,6 +182,7 @@ def _to_property(column: ColumnInfo) -> SchemaProperty:
         map_key=map_key,
         map_value=map_value,
     )
+    return declare_nested_types_per_level(prop)
 
 
 def _to_nested_types(

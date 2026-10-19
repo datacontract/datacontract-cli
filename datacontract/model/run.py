@@ -42,6 +42,9 @@ def _deprecated_alias(old_name: str, new_name: str) -> property:
     return property(getter, setter, doc=message)
 
 
+logger = logging.getLogger(__name__)
+
+
 class ResultEnum(str, Enum):
     """The outcome of a check or of a whole test run."""
 
@@ -242,10 +245,12 @@ class Run(BaseModel):
             # check that could not be planned reports its own result.
             if any(check.result == ResultEnum.error for check in self.checks):
                 self.result = ResultEnum.error
+            elif any(check.result == ResultEnum.failed for check in self.checks):
+                self.result = ResultEnum.failed
             elif any(check.result == ResultEnum.warning for check in self.checks):
                 self.result = ResultEnum.warning
             else:
-                self.result = ResultEnum.skipped
+                self.result = ResultEnum.skipped if self.checks else ResultEnum.unknown
             return
         if any(check.result == ResultEnum.error for check in self.checks):
             self.result = ResultEnum.error
@@ -255,19 +260,21 @@ class Run(BaseModel):
             self.result = ResultEnum.warning
         elif any(check.result == ResultEnum.passed for check in self.checks):
             self.result = ResultEnum.passed
+        elif any(check.result == ResultEnum.skipped for check in self.checks):
+            self.result = ResultEnum.skipped
         else:
             self.result = ResultEnum.unknown
 
     def log_info(self, message: str):
-        logging.info(message)
+        logger.info(message)
         self.logs.append(Log(level="INFO", message=message, timestamp=datetime.now(timezone.utc)))
 
     def log_warn(self, message: str):
-        logging.warning(message)
+        logger.warning(message)
         self.logs.append(Log(level="WARN", message=message, timestamp=datetime.now(timezone.utc)))
 
     def log_error(self, message: str):
-        logging.error(message)
+        logger.error(message)
         self.logs.append(Log(level="ERROR", message=message, timestamp=datetime.now(timezone.utc)))
 
     def pretty(self):

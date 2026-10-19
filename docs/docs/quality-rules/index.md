@@ -45,7 +45,7 @@ ODCS defines four `type`s of quality rule. Each has its own page:
   </a>
   <a className="doc-card" href="/quality-rules/custom">
     <img src="/img/icons/database.svg" alt="" />
-    <span><span className="doc-card-title">Custom</span><span className="doc-card-desc">Engine-specific checks (e.g. DQX, SodaCL, Great Expectations).</span></span>
+    <span><span className="doc-card-title">Custom</span><span className="doc-card-desc">Engine-specific checks (e.g. DQX, SodaCL) and reusable custom quality checks.</span></span>
   </a>
 </div>
 
@@ -149,6 +149,7 @@ Both select quality rules only — no schema or service level checks run alongsi
 | `completeness` | `required` fields, primary key not-null |
 | `uniqueness` | `unique` fields, primary key uniqueness (including composite keys) |
 | `conformity` | field presence, logical and physical types, nested types, `pattern`, `enum`, length and value bounds, JSON Schema validation, `slaProperties` retention |
+| `consistency` | `relationships` foreign keys |
 | `timeliness` | `slaProperties` freshness |
 
 ## Where quality rules are used

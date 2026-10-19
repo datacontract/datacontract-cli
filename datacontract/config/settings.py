@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 _ENV_PREFIX = "DATACONTRACT_"
 
+# Used by the drivers that would otherwise wait forever for an unresponsive data source.
+DEFAULT_CONNECT_TIMEOUT = 30
+
 # Deprecated option (field name) -> replacement (field name). Single source for
 # the accessor warnings, the Snowflake connect synonyms, and the generated docs.
 DEPRECATED_OPTIONS = {
@@ -35,11 +38,20 @@ SERVER_OVERRIDE_OPTIONS = {
     "athena_workgroup": "workgroup",
     "bigquery_project": "project",
     "bigquery_dataset": "dataset",
+    "clickhouse_host": "host",
+    "clickhouse_port": "port",
+    "clickhouse_database": "database",
     "databricks_server_hostname": "host",
     "databricks_catalog": "catalog",
     "databricks_schema": "schema",
     "duckdb_database": "database",
     "duckdb_schema": "schema",
+    "exasol_host": "host",
+    "exasol_port": "port",
+    "exasol_schema": "schema",
+    "hive_host": "host",
+    "hive_port": "port",
+    "hive_database": "database",
     "iceberg_catalog_url": "catalogUrl",
     "iceberg_catalog": "catalog",
     "iceberg_namespace": "namespace",
@@ -101,7 +113,10 @@ class Config(BaseSettings):
 
     # general
     api_header_authorization: SecretStr | None = None
+    api_header_x_api_key: SecretStr | None = None
+    custom_quality_checks: str | None = None
     max_errors: int | None = None
+    connect_timeout: int | None = None
 
     # athena (credentials come from the s3_* options)
     # overrides for the contract's servers block
@@ -124,6 +139,15 @@ class Config(BaseSettings):
     # overrides for the contract's servers block
     bigquery_project: str | None = None
     bigquery_dataset: str | None = None
+
+    # clickhouse
+    clickhouse_username: str | None = None
+    clickhouse_password: SecretStr | None = None
+    clickhouse_secure: bool | None = None
+    # overrides for the contract's servers block
+    clickhouse_host: str | None = None
+    clickhouse_port: int | None = None
+    clickhouse_database: str | None = None
 
     # databricks
     databricks_server_hostname: str | None = None
@@ -152,6 +176,18 @@ class Config(BaseSettings):
     hana_encrypt: bool | None = None
     hana_ssl_validate_certificate: bool | None = None
     hana_ssl_hostname_in_certificate: str | None = None
+
+    # hive
+    hive_username: str | None = None
+    hive_password: SecretStr | None = None
+    hive_auth_mechanism: str | None = None
+    hive_use_ssl: bool | None = None
+    hive_use_http_transport: bool | None = None
+    hive_http_path: str | None = None
+    # overrides for the contract's servers block
+    hive_host: str | None = None
+    hive_port: int | None = None
+    hive_database: str | None = None
 
     # iceberg (REST catalog by default; data files use the s3_* options)
     iceberg_catalog_type: str | None = None
@@ -283,6 +319,16 @@ class Config(BaseSettings):
     sqlserver_port: int | None = None
     sqlserver_database: str | None = None
 
+    # exasol
+    exasol_username: str | None = None
+    exasol_password: SecretStr | None = None
+    exasol_fingerprint: str | None = None
+    exasol_validate_certificate: bool | None = None
+    # overrides for the contract's servers block
+    exasol_host: str | None = None
+    exasol_port: int | None = None
+    exasol_schema: str | None = None
+
     # trino
     trino_authentication: str | None = None
     trino_username: str | None = None
@@ -343,7 +389,7 @@ class Config(BaseSettings):
 
         path = Path(path)
         try:
-            data = yaml.safe_load(path.read_text())
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError as e:
             raise ValueError(f"Config file {path} is not valid YAML: {e}")
         if data is None:
@@ -481,9 +527,21 @@ class Config(BaseSettings):
     def get_api_header_authorization(self, required: bool = False) -> str | None:
         return self._str_option("api_header_authorization", required)
 
+    def get_api_header_x_api_key(self, required: bool = False) -> str | None:
+        return self._str_option("api_header_x_api_key", required)
+
+    # --- custom quality checks ---
+    def get_custom_quality_checks(self) -> str | None:
+        return self._str_option("custom_quality_checks")
+
     # --- max ---
     def get_max_errors(self) -> int | None:
         return self._int_option("max_errors")
+
+    # --- connect timeout ---
+    def get_connect_timeout(self) -> int:
+        """Seconds to wait for a data source to accept a connection, for drivers that wait forever by default."""
+        return self._int_option("connect_timeout") or DEFAULT_CONNECT_TIMEOUT
 
     # --- athena ---
     def get_athena_catalog(self, required: bool = False) -> str | None:
@@ -529,6 +587,25 @@ class Config(BaseSettings):
 
     def get_bigquery_dataset(self, required: bool = False) -> str | None:
         return self._str_option("bigquery_dataset", required)
+
+    # --- clickhouse ---
+    def get_clickhouse_username(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_username", required)
+
+    def get_clickhouse_password(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_password", required)
+
+    def get_clickhouse_secure(self, default: bool = False) -> bool:
+        return self._bool_option("clickhouse_secure", default)
+
+    def get_clickhouse_host(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_host", required)
+
+    def get_clickhouse_port(self) -> int | None:
+        return self._int_option("clickhouse_port")
+
+    def get_clickhouse_database(self, required: bool = False) -> str | None:
+        return self._str_option("clickhouse_database", required)
 
     # --- databricks ---
     def get_databricks_server_hostname(self, required: bool = False) -> str | None:
@@ -580,6 +657,34 @@ class Config(BaseSettings):
 
     def get_hana_ssl_hostname_in_certificate(self, required: bool = False) -> str | None:
         return self._str_option("hana_ssl_hostname_in_certificate", required)
+
+    # --- hive ---
+    def get_hive_username(self, required: bool = False) -> str | None:
+        return self._str_option("hive_username", required)
+
+    def get_hive_password(self, required: bool = False) -> str | None:
+        return self._str_option("hive_password", required)
+
+    def get_hive_auth_mechanism(self, required: bool = False) -> str | None:
+        return self._str_option("hive_auth_mechanism", required)
+
+    def get_hive_use_ssl(self, default: bool = False) -> bool:
+        return self._bool_option("hive_use_ssl", default)
+
+    def get_hive_use_http_transport(self, default: bool = False) -> bool:
+        return self._bool_option("hive_use_http_transport", default)
+
+    def get_hive_http_path(self, required: bool = False) -> str | None:
+        return self._str_option("hive_http_path", required)
+
+    def get_hive_host(self, required: bool = False) -> str | None:
+        return self._str_option("hive_host", required)
+
+    def get_hive_port(self) -> int | None:
+        return self._int_option("hive_port")
+
+    def get_hive_database(self, required: bool = False) -> str | None:
+        return self._str_option("hive_database", required)
 
     # --- iceberg ---
     def get_iceberg_catalog_type(self, required: bool = False) -> str | None:
@@ -899,6 +1004,28 @@ class Config(BaseSettings):
 
     def get_sqlserver_database(self, required: bool = False) -> str | None:
         return self._str_option("sqlserver_database", required)
+
+    # --- exasol ---
+    def get_exasol_username(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_username", required)
+
+    def get_exasol_password(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_password", required)
+
+    def get_exasol_fingerprint(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_fingerprint", required)
+
+    def get_exasol_validate_certificate(self, default: bool = True) -> bool:
+        return self._bool_option("exasol_validate_certificate", default)
+
+    def get_exasol_host(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_host", required)
+
+    def get_exasol_port(self) -> int | None:
+        return self._int_option("exasol_port")
+
+    def get_exasol_schema(self, required: bool = False) -> str | None:
+        return self._str_option("exasol_schema", required)
 
     # --- trino ---
     def get_trino_authentication(self, required: bool = False) -> str | None:

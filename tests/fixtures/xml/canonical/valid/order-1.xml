@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Every optional element and attribute filled in -->
+<order xmlns="urn:example:canonical" version="1" source="webshop">
+  <order_id>ORD-1001</order_id>
+  <code>WEB-7</code>
+  <placed_at>2026-09-01T10:15:00</placed_at>
+  <delivery_date>2026-09-05</delivery_date>
+  <delivery_window>14:00:00</delivery_window>
+  <gift>true</gift>
+  <total>149.90</total>
+  <weight>2.5</weight>
+  <items_count>3</items_count>
+  <priority>2</priority>
+  <status>shipped</status>
+  <reference>4711</reference>
+  <tags>gift express</tags>
+  <customer id="C-1">
+    <display_name>Ada Lovelace</display_name>
+    <email>ada@example.com</email>
+  </customer>
+  <line_item>
+    <sku>ABC-1</sku>
+    <quantity>2</quantity>
+    <price currency="EUR">49.95</price>
+  </line_item>
+  <line_item>
+    <sku>XYZ-42</sku>
+    <quantity>1</quantity>
+    <price currency="EUR">50.00</price>
+  </line_item>
+  <note>Leave at the door</note>
+  <note>Ring twice</note>
+  <extension>
+    <tracking>DHL-123</tracking>
+  </extension>
+</order>

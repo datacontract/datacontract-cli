@@ -15,6 +15,9 @@ The Data Contract CLI integrates with [dbt](https://www.getdbt.com/) in multiple
 - **Export**: Do a one-time export from a data contract into a dbt model schema, a sources YAML, or a staging SQL file (`datacontract export`)
 - **Import**: Create a data contract from a dbt manifest file (`datacontract import dbt`)
 
+The tests that `dbt sync`, `dbt-models` and `dbt-sources` generate need dbt 1.10 or later. `datacontract dbt test`
+and `dbt sync --run-tests` stop with an error on an older dbt.
+
 
 ## `datacontract dbt sync`
 
@@ -90,9 +93,9 @@ schema:
 ```
 
 Let's assume that a minimal model properties file already exists. This is what it looks like after running
-`datacontract dbt sync orders-v1.odcs.yaml` (highlighted lines got added):
+`datacontract dbt sync orders-v1.odcs.yaml`:
 
-```yaml title="models/orders.yml" {5-8,12-35,39-52}
+```yaml title="models/orders.yml"
 version: 2
 models:
   - name: orders
@@ -125,9 +128,10 @@ models:
                       - 1.0.0
                     generated: true
               description: Check that field order_id has no duplicate values
-        meta:
-          datacontract_cli:
-            generated: true
+        config:
+          meta:
+            datacontract_cli:
+              generated: true
       - name: customer_email
         data_type: text
         description: Billing email address
@@ -142,12 +146,13 @@ models:
                       - 1.0.0
                     generated: true
               description: Check that field customer_email has no missing values
-        meta:
-          datacontract_cli:
-            generated: true
+        config:
+          meta:
+            datacontract_cli:
+              generated: true
 ```
 
-The generated `config.meta.datacontract_cli` block is how `dbt sync`/`dbt test` recognize and scope managed tests; the per-column `meta.datacontract_cli.generated` marks a column the CLI added.
+The generated `config.meta.datacontract_cli` block is how `dbt sync`/`dbt test` recognize and scope managed tests; the per-column `config.meta.datacontract_cli.generated` marks a column the CLI added (and is allowed to remove).
 
 The `maxLength` bound becomes a self-contained singular SQL test (no `dbt_utils` needed). Its `config()` header carries the same `datacontract_cli` metadata:
 
@@ -157,8 +162,8 @@ The `maxLength` bound becomes a self-contained singular SQL test (no `dbt_utils`
 {{ config(meta={"datacontract_cli": {"check": "orders__customer_email__field_length", "contract_versions": ["1.0.0"], "generated": true, "include_in_tests": true, "model": "orders", "field": "customer_email", "description": "Check that field customer_email has a length of at most 320"}}) }}
 SELECT *
 FROM {{ ref('orders') }}
-WHERE "customer_email" IS NOT NULL
-  AND (LENGTH("customer_email") > 320)
+WHERE customer_email IS NOT NULL
+  AND (LENGTH(customer_email) > 320)
 ```
 
 ### Versioned models

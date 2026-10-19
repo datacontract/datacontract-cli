@@ -1,14 +1,16 @@
 import logging
 import re
+import socket
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.config import Config
-from datacontract.engines.ibis.connections import aws_credentials
+from datacontract.config.settings import DEFAULT_CONNECT_TIMEOUT
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
 if TYPE_CHECKING:
@@ -61,6 +63,15 @@ def get_duckdb_connection(
         # both of which the sandbox below takes away -- so do it first, and once
         # for the whole connection rather than once per model.
         con.sql("update extensions;")  # Make sure we have the latest delta extension
+    if server.format == "xml":
+        try:
+            con.install_extension("webbed", repository="community")
+            con.load_extension("webbed")
+        except Exception as e:
+            raise RuntimeError("Failed to install the 'webbed' DuckDB community extension to read XML files.") from e
+    if server.format == "xlsx":
+        check_xlsx_locations(data_contract, path)
+        _load_extension(con, "excel", "xlsx")
 
     model_paths = _model_paths(data_contract, path, schema_name)
     if untrusted_contract and own_connection:
@@ -96,7 +107,9 @@ def get_duckdb_connection(
                             """)
                 else:
                     con.sql(
-                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1);"""
+                        # A value of the wrong type reads as NULL, so the other checks on its column still run;
+                        # the JSON Schema check reports the value itself
+                        f"""CREATE VIEW "{model_name}" AS SELECT * FROM read_json_auto('{model_path}', format='{json_format}', columns={columns}, hive_partitioning=1, ignore_errors=true);"""
                     )
                     add_nested_views(con, model_name, schema_obj.properties)
                 # Raw view without the columns= projection to check for absent columns (check_property_is_present)
@@ -111,7 +124,11 @@ def get_duckdb_connection(
                 )
             elif server.format == "delta":
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
-            table_info = con.sql(f'PRAGMA table_info("{model_name}");').fetchall()
+            elif server.format == "xml":
+                create_xml_views(con, schema_obj, model_path)
+            elif server.format == "xlsx":
+                create_xlsx_views(con, schema_obj, model_path)
+            table_info = con.sql(f"PRAGMA table_info({_quote(model_name)});").fetchall()
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
     return con
@@ -247,6 +264,263 @@ def create_view_with_schema_union(
         )
 
 
+# read_xml refuses files above 16 MB by default, with a SAX parsing error; a file is read whole either way
+XML_MAXIMUM_FILE_SIZE = 2**40
+
+
+def create_xml_views(con, schema_obj: SchemaObject, model_path: str):
+    """Views over the records of XML documents: every element named like the schema's physical name is one.
+
+    The checks address a schema by its physical name, quality SQL often by its name, so both name the view.
+    """
+    record_element = schema_obj.physicalName or schema_obj.name
+    read_xml = (
+        f"read_xml('{_sql_literal(model_path)}', record_element='{_sql_literal(record_element)}', "
+        f"union_by_name=true, maximum_file_size={XML_MAXIMUM_FILE_SIZE}"
+    )
+    columns = to_json_types(_as_read_by_read_xml(schema_obj))
+    if columns:
+        struct = ", ".join(f"'{_sql_literal(name)}': '{_sql_literal(sql_type)}'" for name, sql_type in columns.items())
+        typed = f"{read_xml}, columns={{{struct}}})"
+    else:
+        typed = f"{read_xml})"
+    con.sql(f"CREATE VIEW {_quote(record_element)} AS {_xml_as_contract(con, typed, schema_obj)};")
+    if columns:
+        add_nested_views(con, record_element, schema_obj.properties)
+    # Raw view without the columns= projection to check for absent columns (check_property_is_present);
+    # as text, so that a value of the wrong type fails the checks of its column, not the presence of all
+    raw = f"{read_xml}, all_varchar=true)"
+    con.sql(f"CREATE VIEW {_quote(record_element + '__raw__')} AS {_xml_as_contract(con, raw, schema_obj)};")
+    if schema_obj.name != record_element:
+        con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(record_element)};")
+
+
+def _as_read_by_read_xml(schema_obj: SchemaObject) -> SchemaObject:
+    """The schema with the names read_xml gives: #text for the text of an element with attributes, and an
+    attribute named like a child element (@id) under its own name, which read_xml reads instead of the element's."""
+
+    def rename(properties: List[SchemaProperty]) -> List[SchemaProperty]:
+        attributes = {_xml_name(p).removeprefix("@") for p in properties if _is_xml_attribute(p)}
+        renamed = []
+        for prop in properties:
+            if not _is_xml_attribute(prop) and not _is_xml_text(prop) and _xml_name(prop) in attributes:
+                logger.warning(
+                    f"The XML element {_xml_name(prop)} is named like an attribute; read_xml reads only the attribute"
+                )
+                continue
+            physical_name = (
+                "#text"
+                if _is_xml_text(prop)
+                else _xml_name(prop).removeprefix("@")
+                if _is_xml_attribute(prop)
+                else prop.physicalName
+            )
+            renamed.append(
+                prop.model_copy(
+                    update={
+                        "physicalName": physical_name,
+                        "properties": rename(prop.properties) if prop.properties else prop.properties,
+                        "items": rename([prop.items])[0] if prop.items else prop.items,
+                    }
+                )
+            )
+        return renamed
+
+    return schema_obj.model_copy(update={"properties": rename(schema_obj.properties or [])})
+
+
+def _xml_as_contract(con, read_xml: str, schema_obj: SchemaObject) -> str:
+    """A query that names and shapes what read_xml reads as the contract does.
+
+    The text of an element with attributes is read as #text, where read_xml's own text_key option leaves it
+    empty; it gets the name of the contract's xmlNode: text property. An attribute named like a child element
+    gets its @ name.
+    """
+    relation = con.sql(f"SELECT * FROM {read_xml}")
+    properties = schema_obj.properties or []
+    keys = _xml_keys(properties)
+    by_name = {_xml_name(p): p for p in properties}
+    columns = []
+    for name, dtype in zip(relation.columns, relation.types):
+        target = keys.get(name, name)
+        columns.append(f"{_xml_value(_quote(name), dtype, by_name.get(target))} AS {_quote(target)}")
+    return f"SELECT {', '.join(columns)} FROM {read_xml}"
+
+
+def _xml_value(expression: str, dtype, prop: Optional[SchemaProperty], depth: int = 0) -> str:
+    """The expression named and shaped as the contract expects."""
+    children = (prop.properties if prop else None) or []
+    if dtype.id == "list":
+        variable = f"x{depth}"
+        value = _xml_value(variable, dtype.child, prop.items if prop else None, depth + 1)
+        return expression if value == variable else f"list_transform({expression}, lambda {variable}: {value})"
+    if prop is not None and prop.logicalType == "array":
+        # An element that occurs once in every document is inferred as one value, not as a list of one
+        return f"CASE WHEN {expression} IS NULL THEN NULL ELSE [{_xml_value(expression, dtype, prop.items, depth)}] END"
+    if dtype.id != "struct":
+        text = next((child for child in children if _is_xml_text(child)), None)
+        if text is None:
+            return expression
+        # Inferred as plain text where some of the elements carry none of their attributes
+        fields = ", ".join(f"{_quote(_xml_name(c))} := {expression if c is text else 'NULL'}" for c in children)
+        return f"CASE WHEN {expression} IS NULL THEN NULL ELSE struct_pack({fields}) END"
+
+    keys = _xml_keys(children)
+    by_name = {_xml_name(child): child for child in children}
+    fields = []
+    changed = False
+    for name, child_type in dtype.children:
+        target = keys.get(name, name)
+        source = f"struct_extract({expression}, '{_sql_literal(name)}')"
+        value = _xml_value(source, child_type, by_name.get(target), depth)
+        changed = changed or target != name or value != source
+        fields.append(f"{_quote(target)} := {value}")
+    if not changed:
+        return expression
+    # An absent object stays NULL, rather than becoming one whose fields are all NULL
+    return f"CASE WHEN {expression} IS NULL THEN NULL ELSE struct_pack({', '.join(fields)}) END"
+
+
+def _xml_keys(properties: List[SchemaProperty]) -> dict[str, str]:
+    """The contract name of each key read_xml reads; for a name shared with an element, it reads the attribute."""
+    keys = {_xml_name(p): _xml_name(p) for p in properties if not _is_xml_attribute(p) and not _is_xml_text(p)}
+    keys |= {_xml_name(p).removeprefix("@"): _xml_name(p) for p in properties if _is_xml_attribute(p)}
+    keys |= {"#text": _xml_name(p) for p in properties if _is_xml_text(p)}
+    return keys
+
+
+def _xml_node(prop: SchemaProperty) -> Optional[str]:
+    return next((c.value for c in prop.customProperties or [] if c.property == "xmlNode"), None)
+
+
+def _is_xml_text(prop: SchemaProperty) -> bool:
+    return _xml_node(prop) == "text"
+
+
+def _is_xml_attribute(prop: SchemaProperty) -> bool:
+    return _xml_node(prop) == "attribute"
+
+
+def _xml_name(prop: SchemaProperty) -> str:
+    return prop.physicalName or prop.name
+
+
+# Day 0 of Excel's 1900 date system; not 1899-12-31, because Excel counts a 29 February 1900 that never was
+_EXCEL_EPOCH = "1899-12-30"
+_TEMPORAL_TYPES = ("DATE", "TIMESTAMP", "TIME")
+_MILLISECONDS_PER_DAY = 86_400_000
+
+
+def check_xlsx_locations(data_contract: OpenDataContractStandard, path: str) -> None:
+    """Refuse locations read_xlsx would read silently wrong.
+
+    read_xlsx reads the first file a glob matches and nothing else, and a model without a physicalName
+    reads the first sheet, so in a workbook shared by several models that sheet would be tested for each.
+    """
+    if _is_glob(path):
+        raise DataContractException(
+            type="xlsx-connection",
+            name="glob_path",
+            reason=f"The xlsx path '{path}' is a glob, but Excel workbooks are read one file at a time.",
+        )
+    by_workbook: dict[str, list[SchemaObject]] = {}
+    for schema_obj in data_contract.schema_ or []:
+        by_workbook.setdefault(_model_path(path, schema_obj.name), []).append(schema_obj)
+    for workbook, schema_objs in by_workbook.items():
+        unnamed = [s.name for s in schema_objs if not s.physicalName]
+        if len(schema_objs) > 1 and unnamed:
+            raise DataContractException(
+                type="xlsx-connection",
+                name="sheet_not_named",
+                reason=(
+                    f"The model(s) {', '.join(unnamed)} share the workbook '{workbook}' with other models, "
+                    "so each needs the name of its sheet as physicalName."
+                ),
+            )
+
+
+def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
+    """Views over one sheet: the model with the contract's types, its raw text, and its cells of the wrong type.
+
+    The sheet is read twice, lined up row by row: typed, for the dates that only the cell format tells
+    apart from numbers, and as text, for the values that the type read_xlsx infers from the first row
+    turns into NULL. The checks address a schema by its physical name, quality SQL often by its name,
+    so both name the model view.
+    """
+    sheet = schema_obj.physicalName
+    view = sheet or schema_obj.name
+    # Without stop_at_empty=false, read_xlsx stops at the first empty row and the rows below go unchecked
+    options = f"'{_sql_literal(model_path)}', header=true, stop_at_empty=false"
+    if sheet:
+        options += f", sheet='{_sql_literal(sheet)}'"
+    typed = f"read_xlsx({options}, ignore_errors=true)"
+    text = f"read_xlsx({options}, all_varchar=true)"
+    cells = f"(SELECT * FROM {typed}) AS t POSITIONAL JOIN (SELECT * FROM {text}) AS r"
+
+    # Raw view without the contract's columns to check for absent columns (check_property_is_present)
+    con.sql(f"CREATE VIEW {_quote(view + '__raw__')} AS SELECT * FROM {text};")
+
+    # Like DuckDB's own identifiers, a header answers to its name in any case
+    headers = {row[0].lower(): row for row in con.sql(f"DESCRIBE SELECT * FROM {typed}").fetchall()}
+    # A row that is empty in every column is a spacer, not a record
+    not_empty = f"coalesce({', '.join(f'r.{_quote(row[0])}' for row in headers.values())}) IS NOT NULL"
+    columns, errors = [], []
+    for name, sql_type in (to_csv_types(schema_obj) or {}).items():
+        sql_type = sql_type or "VARCHAR"
+        if name.lower() not in headers:
+            columns.append(f"NULL::{sql_type} AS {_quote(name)}")
+            continue
+        header, inferred_type = headers[name.lower()][:2]
+        value = _cell_value(_quote(header), sql_type, inferred_type)
+        columns.append(f"{value} AS {_quote(name)}")
+        if sql_type != "VARCHAR":
+            errors.append(
+                f"SELECT '{_sql_literal(name)}' AS field, r.{_quote(header)} AS value FROM {cells} "
+                f"WHERE r.{_quote(header)} IS NOT NULL AND {value} IS NULL"
+            )
+    if columns:
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT {', '.join(columns)} FROM {cells} WHERE {not_empty};")
+    else:
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT t.* FROM {cells} WHERE {not_empty};")
+    if not errors:
+        errors.append("SELECT NULL::VARCHAR AS field, NULL::VARCHAR AS value WHERE false")
+    con.sql(f"CREATE VIEW {_quote(view + '__type_errors__')} AS {' UNION ALL '.join(errors)};")
+    # DuckDB identifiers are case-insensitive, so sheet Orders already answers to orders
+    if schema_obj.name.lower() != view.lower():
+        con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(view)};")
+
+
+def _cell_value(column: str, sql_type: str, inferred_type: str) -> str:
+    """The value of a cell as `sql_type`, NULL if it has none of that type.
+
+    A date read as a number is the Excel serial number of its days, with the time of day as fraction.
+    """
+    typed, text = f"t.{column}", f"r.{column}"
+    read_as_temporal = inferred_type in _TEMPORAL_TYPES
+    if sql_type == "VARCHAR":
+        return f"COALESCE(CAST({typed} AS VARCHAR), {text})" if read_as_temporal else text
+    if sql_type == "BIGINT":
+        # TRY_CAST rounds '1.5' to 2, which would hide a fraction in an integer column
+        number = f"TRY_CAST({text} AS DOUBLE)"
+        return f"CASE WHEN {number} = floor({number}) THEN TRY_CAST({number} AS BIGINT) END"
+    if sql_type not in _TEMPORAL_TYPES:
+        return f"TRY_CAST({text} AS {sql_type})"
+    serial = f"TRY_CAST({text} AS DOUBLE)"
+    since_epoch = f"to_milliseconds(CAST(round({serial} * {_MILLISECONDS_PER_DAY}) AS BIGINT))"
+    from_serial = {
+        "DATE": f"CAST(DATE '{_EXCEL_EPOCH}' + CAST(floor({serial}) AS INTEGER) AS DATE)",
+        "TIMESTAMP": f"TIMESTAMP '{_EXCEL_EPOCH}' + {since_epoch}",
+        "TIME": f"CAST(TIMESTAMP '{_EXCEL_EPOCH}' + {since_epoch} AS TIME)",
+    }[sql_type]
+    candidates = [f"TRY_CAST({typed} AS {sql_type})"] if read_as_temporal else []
+    candidates += [f"TRY_CAST({text} AS {sql_type})", from_serial]
+    return f"COALESCE({', '.join(candidates)})"
+
+
+def _quote(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
 def to_csv_types(schema_obj: SchemaObject) -> dict[Any, str | None] | None:
     if schema_obj is None:
         return None
@@ -308,10 +582,10 @@ def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properti
         ## if parent field is not required, the nested objects may resolve
         ## to a row of NULLs -- but if the objects themselves have required
         ## fields, this will fail the check.
-        where = "" if prop.required else f" WHERE {field_name} IS NOT NULL"
+        where = "" if prop.required else f" WHERE {_quote(field_name)} IS NOT NULL"
         con.sql(f"""
-            CREATE VIEW IF NOT EXISTS "{nested_model_name}" AS
-            SELECT unnest({field_name}, max_depth := {max_depth}) as {field_name} FROM "{model_name}" {where}
+            CREATE VIEW IF NOT EXISTS {_quote(nested_model_name)} AS
+            SELECT unnest({_quote(field_name)}, max_depth := {max_depth}) as {_quote(field_name)} FROM {_quote(model_name)} {where}
             """)
         if field_type == "array":
             add_nested_views(con, nested_model_name, prop.items.properties if prop.items else None)
@@ -353,6 +627,60 @@ def _load_extension(con, name: str, extra: str) -> None:
         ) from e
 
 
+def _attach_mysql(
+    con,
+    host: str,
+    port: int,
+    user: str,
+    password: str,
+    database: str | None,
+    connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
+) -> None:
+    """ATTACH MySQL as ``mysqldb``; the password goes in a secret, as DuckDB echoes the ATTACH string in its errors."""
+    _wait_for_mysql_greeting(host, port, connect_timeout)
+    parts = [f"host={host}", f"port={port}", f"user={user}"]
+    if database:
+        parts.append(f"database={database}")
+    conn_str = " ".join(parts).replace("'", "''")
+    con.execute("CREATE TEMPORARY SECRET mysqldb_password (TYPE mysql, PASSWORD ?)", [password])
+    try:
+        con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql, SECRET mysqldb_password)")
+    finally:
+        con.execute("DROP TEMPORARY SECRET mysqldb_password")
+
+
+def _wait_for_mysql_greeting(host: str, port: int, timeout: int) -> None:
+    """Fail fast on a MySQL server that does not answer.
+
+    DuckDB's mysql extension has no connect timeout and waits forever for a server that
+    accepts the connection but never answers, e.g. on a wrong port. A MySQL server sends
+    its handshake as soon as the connection is open, so waiting for the first byte tells
+    the two apart. ``localhost`` is skipped: the MySQL client connects there over the
+    Unix socket, not TCP.
+    """
+    from datacontract.model.exceptions import DataContractException
+    from datacontract.model.run import ResultEnum
+
+    if host == "localhost":
+        return
+    try:
+        with socket.create_connection((host, port), timeout=timeout) as sock:
+            if sock.recv(1):
+                return
+            reason = f"MySQL server {host}:{port} closed the connection without a handshake."
+    except TimeoutError:
+        reason = f"MySQL server {host}:{port} did not answer within {timeout} seconds."
+    except OSError as e:
+        reason = f"Could not connect to MySQL server {host}:{port}: {e}"
+    raise DataContractException(
+        type="connection",
+        name="Connect to mysql",
+        result=ResultEnum.error,
+        reason=reason,
+        engine="datacontract-cli",
+    )
+
+
 def _sql_literal(value) -> str:
     """Escape a value for a single-quoted duckdb string literal.
 
@@ -365,13 +693,9 @@ def _sql_literal(value) -> str:
 
 
 def setup_s3_connection(con, server: Server, config: Config | None = None):
+    """boto3 resolves the credentials because duckdb's ``PROVIDER credential_chain`` cannot read an SSO cache."""
     _load_extension(con, "httpfs", "s3")
     _load_extension(con, "aws", "s3")
-    configured = aws_credentials.client_kwargs(config=config)
-    s3_region = configured["region_name"]
-    s3_access_key_id = configured["aws_access_key_id"]
-    s3_secret_access_key = configured["aws_secret_access_key"]
-    s3_session_token = configured["aws_session_token"]
     s3_endpoint = "s3.amazonaws.com"
     use_ssl = "true"
     url_style = "vhost"
@@ -381,66 +705,19 @@ def setup_s3_connection(con, server: Server, config: Config | None = None):
         if server.endpointUrl.startswith("http://"):
             use_ssl = "false"
 
-    if s3_access_key_id is not None:
-        if s3_session_token is not None:
-            # No PROVIDER: defaults to `config`, which accepts the explicit
-            # KEY_ID/SECRET below. (duckdb >=1.5 rejects CREDENTIAL_CHAIN
-            # combined with explicit credentials.)
-            con.sql(f"""
-                CREATE OR REPLACE SECRET s3_secret (
-                    TYPE S3,
-                    REGION '{_sql_literal(s3_region)}',
-                    KEY_ID '{_sql_literal(s3_access_key_id)}',
-                    SECRET '{_sql_literal(s3_secret_access_key)}',
-                    SESSION_TOKEN '{_sql_literal(s3_session_token)}',
-                    ENDPOINT '{_sql_literal(s3_endpoint)}',
-                    USE_SSL '{_sql_literal(use_ssl)}',
-                    URL_STYLE '{_sql_literal(url_style)}'
-                );
-            """)
-        else:
-            con.sql(f"""
-                CREATE OR REPLACE SECRET s3_secret (
-                    TYPE S3,
-                    REGION '{_sql_literal(s3_region)}',
-                    KEY_ID '{_sql_literal(s3_access_key_id)}',
-                    SECRET '{_sql_literal(s3_secret_access_key)}',
-                    ENDPOINT '{_sql_literal(s3_endpoint)}',
-                    USE_SSL '{_sql_literal(use_ssl)}',
-                    URL_STYLE '{_sql_literal(url_style)}'
-                );
-            """)
-    else:
-        _create_s3_secret_from_aws_session(con, s3_region, s3_endpoint, use_ssl, url_style)
-
-
-def _create_s3_secret_from_aws_session(con, region, endpoint, use_ssl, url_style):
-    """Hand duckdb the credentials boto3 resolves, when no explicit key is set.
-
-    duckdb's own ``PROVIDER credential_chain`` cannot read an SSO cache, so an
-    ``aws sso login`` session that works for Athena and Redshift would otherwise
-    fail here with a bare 403. Nothing resolvable leaves the connection without
-    a secret, which is what public buckets need.
-    """
-    credentials = resolve_aws_credentials()
-    if credentials is None:
-        return
-
-    region = region or credentials.region
-    token_clause = f"SESSION_TOKEN '{credentials.session_token}'," if credentials.session_token else ""
-    region_clause = f"REGION '{_sql_literal(region)}'," if region else ""
-    con.sql(f"""
-        CREATE OR REPLACE SECRET s3_secret (
-            TYPE S3,
-            {region_clause}
-            KEY_ID '{credentials.access_key_id}',
-            SECRET '{credentials.secret_access_key}',
-            {token_clause}
-            ENDPOINT '{_sql_literal(endpoint)}',
-            USE_SSL '{_sql_literal(use_ssl)}',
-            URL_STYLE '{_sql_literal(url_style)}'
-        );
-    """)
+    options = {"ENDPOINT": s3_endpoint, "USE_SSL": use_ssl, "URL_STYLE": url_style}
+    credentials = resolve_aws_credentials(config)
+    if credentials is not None:
+        # No PROVIDER: defaults to `config`, which accepts these explicit keys.
+        # (duckdb >=1.5 rejects CREDENTIAL_CHAIN combined with explicit credentials.)
+        options |= {
+            "KEY_ID": credentials.access_key_id,
+            "SECRET": credentials.secret_access_key,
+            "REGION": credentials.region,
+            "SESSION_TOKEN": credentials.session_token,
+        }
+    clauses = ", ".join(f"{name} '{_sql_literal(value)}'" for name, value in options.items() if value)
+    con.sql(f"CREATE OR REPLACE SECRET s3_secret (TYPE S3, {clauses});")
 
 
 def setup_gcs_connection(con, server: Server, config: Config):

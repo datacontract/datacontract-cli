@@ -12,6 +12,8 @@ wrapped with the ibis duckdb backend. Only the Spark-session server types
 from __future__ import annotations
 
 import logging
+import struct
+import sys
 import typing
 
 from open_data_contract_standard.model import OpenDataContractStandard, Server
@@ -30,7 +32,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _FILE_SERVER_TYPES = {"s3", "gcs", "azure", "local"}
-_SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta"}
+_SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta", "xml", "xlsx"}
 
 
 def _import_ibis():
@@ -123,6 +125,8 @@ def connect_ibis(
             password=config.get_postgres_password(required=True),
             database=config.get_postgres_database() or server.database,
             schema=config.get_postgres_schema() or server.schema_,
+            # libpq waits forever for a server that accepts the connection but never answers
+            connect_timeout=config.get_connect_timeout(),
         )
 
     if server_type == "redshift":
@@ -139,6 +143,7 @@ def connect_ibis(
             database=database,
             schema=config.get_redshift_schema() or server.schema_,
             client_encoding=CLIENT_ENCODING,
+            connect_timeout=config.get_connect_timeout(),
         )
         if login.password:
             kwargs["password"] = login.password
@@ -154,7 +159,7 @@ def connect_ibis(
         return con
 
     if server_type == "mysql":
-        return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name, config)
+        return _connect_mysql_via_duckdb(ibis, data_contract, server, run, schema_name, config, untrusted_contract)
 
     if server_type == "snowflake":
         return ibis.snowflake.connect(**_snowflake_connection_kwargs(server, run, config))
@@ -193,6 +198,15 @@ def connect_ibis(
 
     if server_type == "impala":
         return _connect_impala(ibis, server, config)
+
+    if server_type == "exasol":
+        return _connect_exasol(ibis, server, config)
+
+    if server_type == "clickhouse":
+        return _connect_clickhouse(ibis, server, run, config)
+
+    if server_type == "hive":
+        return _connect_hive(ibis, server, config)
 
     if server_type in LINT_ONLY_SERVER_TYPES:
         _unsupported(
@@ -481,8 +495,7 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     for name in unknown_snowflake_env_names():
         run.log_warn(
             f"{name} is not a supported Snowflake option and is ignored. Arbitrary "
-            f"DATACONTRACT_SNOWFLAKE_* variables are no longer forwarded to the connector; "
-            f"use a connections.toml for parameters the CLI does not support directly."
+            f"DATACONTRACT_SNOWFLAKE_* variables are no longer forwarded to the connector."
         )
 
     kwargs = {}
@@ -578,7 +591,9 @@ def _connect_duckdb_database(ibis, server: Server, run: Run, config: Config):
     return con
 
 
-def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, schema_name: str, config: Config):
+def _connect_mysql_via_duckdb(
+    ibis, data_contract, server: Server, run: Run, schema_name: str, config: Config, untrusted_contract: bool
+):
     """Connect to MySQL through DuckDB's ``mysql`` extension.
 
     ibis's native MySQL backend requires ``mysqlclient`` (a C extension with no
@@ -589,7 +604,11 @@ def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, sch
     """
     import duckdb
 
-    from datacontract.engines.ibis.connections.duckdb_connection import _load_extension
+    from datacontract.engines.ibis.connections.duckdb_connection import (
+        _attach_mysql,
+        _load_extension,
+        restrict_to_paths,
+    )
 
     user = config.get_mysql_username(required=True)
     password = config.get_mysql_password(required=True)
@@ -600,12 +619,8 @@ def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, sch
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")
 
-    parts = [f"host={host}", f"port={port}", f"user={user}", f"password={password}"]
-    if database:
-        parts.append(f"database={database}")
-    conn_str = " ".join(parts).replace("'", "''")
     run.log_info(f"Attaching MySQL {host}:{port} via the duckdb mysql extension")
-    con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql)")
+    _attach_mysql(con, host, port, user, password, database, config.get_connect_timeout())
 
     if data_contract.schema_:
         for schema_obj in data_contract.schema_:
@@ -613,6 +628,11 @@ def _connect_mysql_via_duckdb(ibis, data_contract, server: Server, run: Run, sch
                 continue
             model = schema_obj.physicalName or schema_obj.name
             _materialize_attached_table(con, "mysqldb", database, model)
+
+    # the checks read the local copies; contract SQL must not reach MySQL with these credentials
+    con.execute("DETACH mysqldb")
+    if untrusted_contract:
+        restrict_to_paths(con, [])
 
     return ibis.duckdb.from_connection(con)
 
@@ -625,14 +645,17 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
     the DuckDB MySQL scanner can trigger DuckDB binder errors (e.g. on the
     grouped duplicate-count query), so we read the rows once and check locally.
     """
+    # both come from the contract
+    safe_model = model.replace('"', '""')
+    safe_database = database.replace('"', '""') if database else None
     candidates = []
-    if database:
-        candidates.append(f'{catalog}."{database}"."{model}"')
-    candidates.append(f'{catalog}."{model}"')
+    if safe_database:
+        candidates.append(f'{catalog}."{safe_database}"."{safe_model}"')
+    candidates.append(f'{catalog}."{safe_model}"')
     last_error = None
     for src in candidates:
         try:
-            con.execute(f'CREATE OR REPLACE TABLE "{model}" AS SELECT * FROM {src}')
+            con.execute(f'CREATE OR REPLACE TABLE "{safe_model}" AS SELECT * FROM {src}')
             return
         except Exception as e:  # noqa: BLE001 - try the next naming candidate
             last_error = e
@@ -640,12 +663,30 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
         logger.warning("Could not read MySQL table '%s': %s", model, last_error)
 
 
+# pyodbc pre-connect attribute for an Entra ID access token (SQL_COPT_SS_ACCESS_TOKEN).
+SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+
 def _connect_sqlserver(ibis, server: Server, config: Config):
-    return ibis.mssql.connect(**_sqlserver_connection_kwargs(server, config))
+    # Not ibis.mssql.connect: it sends UID/PWD even as None (refused next to an
+    # access token) and brace-escapes only the password, not host/database/driver.
+    import pyodbc
+
+    kwargs = _sqlserver_connection_kwargs(server, config)
+    host, port = kwargs.pop("host"), kwargs.pop("port")
+    kwargs["server"] = f"{host},{port}"
+    for key in ("server", "database", "driver", "user", "password"):
+        if kwargs[key] is None:
+            del kwargs[key]  # pyodbc would send a literal DATABASE=None
+        else:
+            kwargs[key] = "{" + kwargs[key].replace("}", "}}") + "}"
+    # the login timeout, so an unreachable server fails instead of blocking the run
+    con = pyodbc.connect(timeout=config.get_connect_timeout(), **kwargs)
+    return ibis.mssql.from_connection(con)
 
 
 def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
-    """Build the ``ibis.mssql.connect`` kwargs, selecting the auth mode from env vars.
+    """Build the ``pyodbc.connect`` kwargs, selecting the auth mode from env vars.
 
     ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` picks the mode (default ``sql``):
 
@@ -653,15 +694,15 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     - ``windows`` — Windows integrated auth (Kerberos/NTLM), no credentials
     - ``ActiveDirectoryPassword`` — Entra ID with ``USERNAME`` / ``PASSWORD``
     - ``ActiveDirectoryServicePrincipal`` — Entra ID with ``CLIENT_ID`` / ``CLIENT_SECRET``
-    - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint)
-    - ``cli`` — reuse an ``az login`` session via the Azure default credential chain
+    - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint), Windows only
+    - ``cli`` — reuse an ``az login`` session (token passed as a pre-connect attribute)
 
     The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
     ``windows``, and applies only when ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` is
     unset — an explicitly chosen mode always wins. Extra keys (``Authentication``,
-    ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) are forwarded
-    verbatim by ibis to ``pyodbc.connect`` and become connection-string attributes,
-    so they use the ODBC spellings.
+    ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) become
+    connection-string attributes, so they use the ODBC spellings. ``cli`` sets
+    ``attrs_before``, a pre-connect attribute rather than a connection-string keyword.
     """
     driver = _get_custom_property(server, "driver") or config.get_sqlserver_driver()
 
@@ -703,10 +744,9 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     if authentication == "windows":
         kwargs["Trusted_Connection"] = "yes"
     elif authentication == "cli":
-        # DefaultAzureCredential includes the Azure CLI session (requires ODBC
-        # Driver 18.1+). Suppress ibis's no-credentials Trusted_Connection default.
-        kwargs["Authentication"] = "ActiveDirectoryDefault"
-        kwargs["Trusted_Connection"] = "no"
+        # The ODBC driver has no Azure-CLI mode: pass an `az login` token as a
+        # pre-connect attribute (must not be combined with UID/PWD/Trusted_Connection).
+        kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _azure_cli_access_token()}
     elif authentication == "activedirectoryserviceprincipal":
         kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
         kwargs["user"] = config.get_sqlserver_client_id(required=True)
@@ -716,6 +756,17 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
         kwargs["user"] = config.get_sqlserver_username(required=True)
         kwargs["password"] = config.get_sqlserver_password(required=True)
     elif authentication == "activedirectoryinteractive":
+        if sys.platform != "win32":
+            raise DataContractException(
+                type="sqlserver-connection",
+                name="unsupported_authentication",
+                reason=(
+                    "DATACONTRACT_SQLSERVER_AUTHENTICATION=ActiveDirectoryInteractive is only supported by the "
+                    "Microsoft ODBC driver on Windows. On macOS/Linux use cli (az login) or "
+                    "ActiveDirectoryServicePrincipal."
+                ),
+                engine="datacontract-cli",
+            )
         kwargs["Authentication"] = "ActiveDirectoryInteractive"
         kwargs["Trusted_Connection"] = "no"
         username = config.get_sqlserver_username()
@@ -728,7 +779,36 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     return kwargs
 
 
+def _azure_cli_access_token() -> bytes:
+    try:
+        from azure.core.exceptions import ClientAuthenticationError
+        from azure.identity import AzureCliCredential
+    except ImportError as exc:
+        raise DataContractException(
+            type="sqlserver-connection",
+            name="azure_identity_extra_missing",
+            reason="Install the extra datacontract-cli[sqlserver,azure] to use DATACONTRACT_SQLSERVER_AUTHENTICATION=cli",
+            engine="datacontract-cli",
+            original_exception=exc,
+        )
+    try:
+        token = AzureCliCredential().get_token("https://database.windows.net/.default").token
+    except ClientAuthenticationError as exc:
+        raise DataContractException(
+            type="sqlserver-connection",
+            name="azure_cli_login_required",
+            reason=f"DATACONTRACT_SQLSERVER_AUTHENTICATION=cli needs an az login session: {exc.message}",
+            engine="datacontract-cli",
+            original_exception=exc,
+        )
+    # The driver expects UTF-16LE bytes prefixed with their 4-byte little-endian length.
+    raw = token.encode("utf-16-le")
+    return struct.pack("<i", len(raw)) + raw
+
+
 def _connect_athena(ibis, server: Server, config: Config):
+    from datacontract.engines.ibis.connections.athena_patch import apply_athena_compatibility_patch
+
     # regionName is a contract value, so the variable still wins over it
     credentials = aws_credentials.client_kwargs(aws_credentials.configured_region(server.regionName, config), config)
     schema = config.get_athena_schema() or server.schema_
@@ -765,7 +845,9 @@ def _connect_athena(ibis, server: Server, config: Config):
     # Optional data source / catalog; pyathena defaults it to `awsdatacatalog`.
     if catalog:
         kwargs["catalog_name"] = catalog
-    return ibis.athena.connect(**kwargs)
+    con = ibis.athena.connect(**kwargs)
+    apply_athena_compatibility_patch(con)
+    return con
 
 
 def _connect_trino(ibis, server: Server, config: Config):
@@ -812,6 +894,93 @@ def _connect_trino(ibis, server: Server, config: Config):
             ),
             engine="datacontract-cli",
         )
+
+
+def _connect_exasol(ibis, server: Server, config: Config):
+    import ssl
+
+    from datacontract.engines.ibis.connections.exasol_patch import apply_exasol_compatibility_patch
+
+    host = config.get_exasol_host() or server.host
+    # pyexasol takes the certificate policy as a host suffix: `host/<sha256>` pins the
+    # certificate, `host/nocertcheck` skips verification.
+    if fingerprint := config.get_exasol_fingerprint():
+        host = f"{host}/{fingerprint}"
+    elif not config.get_exasol_validate_certificate():
+        host = f"{host}/nocertcheck"
+    # ibis defaults to CERT_NONE; restore pyexasol's own default of verifying the
+    # certificate unless a suffix replaces that check.
+    cert_reqs = ssl.CERT_NONE if host and "/" in host else ssl.CERT_REQUIRED
+    kwargs = dict(
+        host=host,
+        port=config.get_exasol_port() or (int(server.port) if server.port else 8563),
+        user=config.get_exasol_username(required=True),
+        password=config.get_exasol_password(required=True),
+        websocket_sslopt={"cert_reqs": cert_reqs},
+    )
+    schema = config.get_exasol_schema() or server.schema_
+    if schema:
+        kwargs["schema"] = schema
+
+    try:
+        con = ibis.exasol.connect(**kwargs)
+    except Exception as e:
+        # pyexasol renders its errors as a multi-line block; the run reports only the first line.
+        message = getattr(e, "message", None)
+        if isinstance(message, str):
+            raise ConnectionError(message) from e
+        raise
+    apply_exasol_compatibility_patch(con)
+    return con
+
+
+# clickhouse-connect speaks ClickHouse's HTTP interface, but contracts often name
+# the native protocol port that clickhouse-client uses.
+_CLICKHOUSE_NATIVE_TO_HTTP_PORT = {9000: 8123, 9440: 8443}
+
+
+def _connect_clickhouse(ibis, server: Server, run: Run | None, config: Config):
+    secure = config.get_clickhouse_secure(default=False)
+    port = config.get_clickhouse_port() or (int(server.port) if server.port else None)
+    if port in _CLICKHOUSE_NATIVE_TO_HTTP_PORT:
+        http_port = _CLICKHOUSE_NATIVE_TO_HTTP_PORT[port]
+        message = f"Port {port} is ClickHouse's native protocol port; connecting to its HTTP port {http_port}"
+        if run:
+            run.log_info(message)
+        else:
+            logger.info(message)
+        port = http_port
+    return ibis.clickhouse.connect(
+        host=config.get_clickhouse_host() or server.host,
+        port=port or (8443 if secure else 8123),
+        database=config.get_clickhouse_database() or server.database or "default",
+        user=config.get_clickhouse_username() or "default",
+        password=config.get_clickhouse_password() or "",
+        secure=secure,
+    )
+
+
+def _connect_hive(ibis, server: Server, config: Config):
+    """Connect to a HiveServer2 through ibis's Impala backend: impyla speaks both.
+
+    The defaults match a HiveServer2 with ``hive.server2.authentication=NONE``,
+    which still expects a SASL PLAIN handshake with any user name.
+    """
+    from datacontract.engines.ibis.connections.hive_patch import apply_hive_compatibility_patch
+
+    con = ibis.impala.connect(
+        host=config.get_hive_host() or server.host,
+        port=config.get_hive_port() or (int(server.port) if server.port else 10000),
+        user=config.get_hive_username() or "hive",
+        password=config.get_hive_password() or "hive",
+        database=config.get_hive_database() or server.database,
+        use_ssl=config.get_hive_use_ssl(default=False),
+        auth_mechanism=config.get_hive_auth_mechanism() or "PLAIN",
+        use_http_transport=config.get_hive_use_http_transport(default=False),
+        http_path=config.get_hive_http_path() or "",
+    )
+    apply_hive_compatibility_patch(con)
+    return con
 
 
 def _get_custom_property(server: Server, name: str):

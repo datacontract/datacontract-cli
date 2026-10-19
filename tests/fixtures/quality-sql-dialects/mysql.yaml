@@ -6,7 +6,8 @@ version: 1.0.0
 status: active
 description:
   purpose: >-
-    Custom SQL quality rules written in the dialect of a mysql server. Used by
+    Custom SQL quality rules on a mysql server, written in duckdb SQL because
+    the tables are copied into duckdb to run them. Used by
     tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
     refusing SQL that a real data source accepts.
 servers:
@@ -33,12 +34,12 @@ schema:
         physicalType: timestamp
     quality:
       - type: sql
-        description: "Backtick-quoted table name (DIALECT-ONLY: backtick quoting)"
+        description: "Orders were copied from MySQL"
         query: |
-          SELECT count(*) FROM `orders`
+          SELECT count(*) FROM ${model}
         mustBeGreaterThan: 0
       - type: sql
         description: "Orders arrived in the last day"
         query: |
-          SELECT count(*) FROM ${model} WHERE order_timestamp > DATE_SUB(NOW(), INTERVAL 1 DAY)
+          SELECT count(*) FROM ${model} WHERE order_timestamp > now() - INTERVAL 1 DAY
         mustBeGreaterThan: 0

@@ -1,0 +1,95 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: clickhouse-orders-test
+name: ClickHouse orders
+version: 1.0.0
+status: active
+servers:
+  - server: clickhouse
+    type: clickhouse
+    host: localhost
+    port: __PORT__
+    database: __DATABASE__
+schema:
+  - name: orders
+    physicalName: orders
+    physicalType: table
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: String
+        required: true
+        unique: true
+        logicalTypeOptions:
+          pattern: '^ORD-\d{4}$'
+          maxLength: 8
+      - name: customer_id
+        logicalType: string
+        physicalType: Nullable(String)
+        quality:
+          - type: library
+            metric: nullValues
+            mustBeLessThan: 2
+      - name: order_status
+        logicalType: string
+        physicalType: LowCardinality(String)
+        quality:
+          - type: library
+            metric: invalidValues
+            arguments:
+              validValues: ['open', 'shipped', 'cancelled']
+            mustBe: 0
+      - name: order_total
+        logicalType: number
+        physicalType: Decimal(10, 2)
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 10000
+      - name: quantity
+        logicalType: integer
+        physicalType: Int32
+        logicalTypeOptions:
+          minimum: 1
+      - name: discount
+        logicalType: number
+        physicalType: Nullable(Float64)
+      - name: is_gift
+        logicalType: boolean
+        physicalType: Bool
+      - name: order_date
+        logicalType: date
+        physicalType: Date
+      - name: order_timestamp
+        logicalType: timestamp
+        physicalType: DateTime64(3, 'UTC')
+      - name: tags
+        logicalType: array
+        physicalType: Array(String)
+        items:
+          name: tag
+          logicalType: string
+      - name: updated_at
+        logicalType: timestamp
+        physicalType: DateTime
+    quality:
+      - type: library
+        metric: rowCount
+        mustBeGreaterThan: 0
+      - type: library
+        metric: duplicateValues
+        arguments:
+          properties: ['order_id']
+        mustBe: 0
+      - type: sql
+        description: No order has a negative total
+        query: SELECT countIf(order_total < 0) FROM ${model}
+        mustBe: 0
+      - type: sql
+        description: The 95th percentile of order totals stays below 10000
+        query: SELECT quantile(0.95)(order_total) FROM ${model}
+        mustBeLessThan: 10000
+slaProperties:
+  - property: freshness
+    value: 1
+    unit: d
+    element: orders.updated_at

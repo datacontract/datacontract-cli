@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:o="urn:example:orders" targetNamespace="urn:example:orders" elementFormDefault="qualified">
+  <simpleType name="OrderId">
+    <restriction base="string">
+      <maxLength value="36"/>
+    </restriction>
+  </simpleType>
+  <simpleType name="Amount">
+    <restriction base="decimal">
+      <totalDigits value="10"/>
+      <fractionDigits value="2"/>
+      <minInclusive value="0"/>
+    </restriction>
+  </simpleType>
+  <complexType name="Party">
+    <sequence>
+      <element name="customer_id" type="string"/>
+      <element name="name" type="string"/>
+    </sequence>
+  </complexType>
+</schema>

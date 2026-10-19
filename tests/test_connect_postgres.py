@@ -20,6 +20,7 @@ def env(monkeypatch):
     for name in list(os.environ):
         if name.startswith("DATACONTRACT_POSTGRES_"):
             monkeypatch.delenv(name, raising=False)
+    monkeypatch.delenv("DATACONTRACT_CONNECT_TIMEOUT", raising=False)
     monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", "reader")
     monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "secret")
     return monkeypatch
@@ -62,7 +63,16 @@ def test_server_details_come_from_the_contract_by_default(env, captured_connect)
         "password": "secret",
         "database": "contract_db",
         "schema": "contract_schema",
+        "connect_timeout": 30,
     }
+
+
+def test_connect_timeout_is_configurable(env, captured_connect):
+    env.setenv("DATACONTRACT_CONNECT_TIMEOUT", "5")
+
+    _connect()
+
+    assert captured_connect["connect_timeout"] == 5
 
 
 def test_env_variables_override_the_contract_server_details(env, captured_connect):

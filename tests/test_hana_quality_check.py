@@ -69,6 +69,45 @@ def test_sql_quality_fail():
     assert check_by_type(checks, "model_quality_sql").result == ResultEnum.failed
 
 
+def test_custom_quality_check_runs_its_ansi_query():
+    connection = FakeConnection((2,))
+    rule = DataQuality(
+        type="custom",
+        engine="datacontract-cli",
+        implementation={"check": "between", "arguments": {"min": 0, "max": "1'0"}},
+    )
+    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="AMOUNT", quality=[rule])])
+
+    checks = run_quality_checks(
+        connection, "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+    )
+
+    check = check_by_type(checks, "field_quality_custom")
+    assert check.result == ResultEnum.failed
+    assert check.dimension == "conformity"
+    assert check.diagnostics["custom_quality_check"] == "between"
+    assert connection.executed[0][0] == (
+        'SELECT COUNT(*) FROM "SALES"."ORDERS"\nWHERE "AMOUNT" < 0 OR "AMOUNT" > \'1\'\'0\'\n'
+    )
+
+
+def test_placeholders_hana_has_no_value_for_fall_back_to_the_table():
+    assert prepare_hana_query("SELECT COUNT(*) FROM {catalog}", "SALES", "ORDERS") == 'SELECT COUNT(*) FROM "ORDERS"'
+
+
+def test_custom_quality_check_without_an_ansi_query_warns_on_hana():
+    rule = DataQuality(type="custom", engine="datacontract-cli", implementation={"check": "tsql_only"})
+    schema = SchemaObject(name="ORDERS", quality=[rule])
+
+    checks = run_quality_checks(
+        FakeConnection(), "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+    )
+
+    check = check_by_type(checks, "model_quality_custom")
+    assert check.result == ResultEnum.warning
+    assert "no query for this server and no ansi query" in check.reason
+
+
 @pytest.mark.parametrize("query", ["DELETE FROM {model}", "SELECT 1 FROM {model}; DROP TABLE ORDERS"])
 def test_sql_quality_refuses_writes_and_multiple_statements(query):
     connection = FakeConnection((0,))
@@ -300,16 +339,16 @@ def test_percent_unit_aliases(percent_connection, unit):
     assert check.diagnostics["percent"] == 50.0
 
 
-def test_percent_unit_on_row_count_keeps_absolute_count_and_warns(caplog):
+def test_percent_unit_on_row_count_warns_and_reads_nothing():
+    # Comparing the absolute count instead would answer a different question, and pass.
     connection = FakeConnection((10,))
     schema = SchemaObject(name="ORDERS", quality=[DataQuality(metric="rowCount", unit="percent", mustBe=10)])
 
     check = run_quality_checks(connection, "SALES", schema)[0]
 
-    assert check.result == ResultEnum.passed
-    assert "percent" not in check.diagnostics
-    assert "does not support unit: percent" in caplog.text
-    assert len(connection.executed) == 1
+    assert check.result == ResultEnum.warning
+    assert "'unit:percent'" in check.reason
+    assert connection.executed == []
 
 
 def test_sql_percent_result_is_not_normalized_again():
@@ -342,6 +381,18 @@ def test_invalid_values():
 
     assert check_by_type(checks, "field_invalid_values").result == ResultEnum.passed
     assert connection.executed[0][1] == ["OPEN", "PAID"]
+
+
+@pytest.mark.parametrize("valid_values, invalid", [(["OK", None], 1), ([None], 2)])
+def test_a_null_among_the_valid_values_does_not_let_other_values_through(percent_connection, valid_values, invalid):
+    percent_connection.executemany("INSERT INTO SALES.ORDERS VALUES (?)", [("OK",), ("BAD",), (None,)])
+    quality = DataQuality(metric="invalidValues", arguments={"validValues": valid_values}, mustBe=0)
+    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="STATUS", quality=[quality])])
+
+    check = check_by_type(run_quality_checks(percent_connection, "SALES", schema), "field_invalid_values")
+
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["value"] == invalid
 
 
 def test_missing_values():
@@ -420,3 +471,45 @@ def test_identifier_quoting_escapes_quotes():
     query = prepare_hana_query("SELECT {field} FROM {model}", 'S"1', 'T"1', 'C"1')
 
     assert query == 'SELECT "C""1" FROM "S""1"."T""1"'
+
+
+def test_invalid_values_with_only_a_pattern_warns():
+    # HANA builds an IN list, so a pattern-only rule has nothing to run.
+    connection = FakeConnection((0,))
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[
+            SchemaProperty(
+                name="EMAIL",
+                quality=[DataQuality(metric="invalidValues", arguments={"pattern": "^.+@.+$"}, mustBe=0)],
+            )
+        ],
+    )
+
+    check = run_quality_checks(connection, "SALES", schema)[0]
+
+    assert check.result == ResultEnum.warning
+    assert "pattern is not supported" in check.reason
+    assert connection.executed == []
+
+
+def test_rules_on_nested_properties_warn_instead_of_running():
+    connection = FakeConnection()
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[
+            SchemaProperty(
+                name="META",
+                logicalType="object",
+                properties=[
+                    SchemaProperty(name="SOURCE", quality=[DataQuality(type="library", metric="nullValues", mustBe=0)])
+                ],
+            )
+        ],
+    )
+
+    checks = run_quality_checks(connection, "SALES", schema)
+
+    check = check_by_type(checks, "field_quality_library")
+    assert (check.field, check.result) == ("META.SOURCE", ResultEnum.warning)
+    assert connection.executed == []

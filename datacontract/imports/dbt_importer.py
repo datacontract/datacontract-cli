@@ -10,7 +10,9 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_property,
     create_schema_object,
+    report_unmapped_types,
 )
+from datacontract.integration.dbt_sync import META_NAMESPACE
 
 # Minimum supported dbt manifest schema version. v9 corresponds to dbt 1.5
 # (May 2023), which is when column constraints and the current test_metadata
@@ -265,19 +267,20 @@ def import_dbt_manifest(
 
         odcs.schema_.append(schema_obj)
 
+    report_unmapped_types(odcs, fallback="string")
     return odcs
 
 
-def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str:
+def convert_data_type_by_adapter_type(data_type: str, adapter_type: str) -> str | None:
     if adapter_type == "bigquery":
         return map_type_from_bigquery(data_type)
     return map_dbt_type_to_odcs(data_type)
 
 
-def map_dbt_type_to_odcs(data_type: str) -> str:
-    """Map dbt data type to ODCS logical type."""
+def map_dbt_type_to_odcs(data_type: str) -> str | None:
+    """Map dbt data type to ODCS logical type, or None if the type has no mapping."""
     if not data_type:
-        return "string"
+        return None
 
     data_type_lower = data_type.lower()
 
@@ -296,10 +299,10 @@ def map_dbt_type_to_odcs(data_type: str) -> str:
         "numeric": "number",
         "boolean": "boolean",
         "bool": "boolean",
+        "datetime": "timestamp",
         "date": "date",
-        "datetime": "date",
-        "timestamp": "date",
-        "time": "string",
+        "timestamp": "timestamp",
+        "time": "time",
         "array": "array",
         "object": "object",
         "struct": "object",
@@ -310,7 +313,7 @@ def map_dbt_type_to_odcs(data_type: str) -> str:
         if data_type_lower.startswith(key):
             return value
 
-    return "string"
+    return None
 
 
 def create_fields(
@@ -386,6 +389,16 @@ def create_field(
     if column.get("tags"):
         custom_props["tags"] = ",".join(column["tags"])
 
+    meta = dict(column.get("meta") or {})
+    meta.pop(META_NAMESPACE, None)
+    classification = meta.get("classification")
+    if isinstance(classification, (str, int, float, bool)):
+        classification = str(meta.pop("classification"))
+    else:
+        classification = None
+    if meta:
+        custom_props["meta"] = meta
+
     return create_property(
         name=column.get("name"),
         logical_type=column_type,
@@ -395,5 +408,6 @@ def create_field(
         unique=unique if unique else None,
         primary_key=is_primary_key if is_primary_key else None,
         primary_key_position=1 if is_primary_key else None,
+        classification=classification,
         custom_properties=custom_props if custom_props else None,
     )

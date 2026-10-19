@@ -11,7 +11,7 @@ The `schema` block describes the structure of the data: the schemas (tables, vie
 This page covers only those attributes. Everything else in the `schema` block is documentation, carried into exports but never asserted against the data.
 
 ```bash
-datacontract test --checks schema datacontract.yaml
+datacontract test --checks properties datacontract.yaml
 ```
 
 ## What generates a check
@@ -24,6 +24,7 @@ datacontract test --checks schema datacontract.yaml
 | `required` | property | No missing values |
 | `unique` | property | No duplicate values |
 | `primaryKey` | property | No missing values **and** no duplicates |
+| `relationships` (`type: foreignKey`) | property, schema | Every non-null key exists in the referenced schema |
 | `logicalTypeOptions.minLength` / `maxLength` | property | Value length within bounds |
 | `logicalTypeOptions.minimum` / `maximum` | property | Value within bounds (inclusive) |
 | `logicalTypeOptions.exclusiveMinimum` / `exclusiveMaximum` | property | Value within bounds (exclusive) |
@@ -77,7 +78,7 @@ schema:
 
 ## Presence and naming
 
-Every property produces a **presence check** — the column must exist in the data source. This is the one check you always get, even for a property that declares nothing but a name.
+Every property produces a **presence check** — the column must exist in the data source. This is the one check you always get, even for a property that declares nothing but a name. The exception are [XML files](./testing/xml.md#how-documents-become-records), where an element or attribute that is not required may be absent from every document: there only the required properties of the record element are checked for presence.
 
 `physicalName` selects the real object in the data source; `name` is the logical name used in the contract. When `physicalName` is set, the checks run against it:
 
@@ -94,19 +95,21 @@ schema:
 
 A property can declare a portable `logicalType`, a native `physicalType`, or both. Which one is checked depends on the backend:
 
-- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the nine backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, and Athena. It takes precedence over `logicalType`.
+- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, Athena, Exasol, ClickHouse, and Hive. It takes precedence over `logicalType`.
 - **`logicalType`** is used everywhere else, and as the fallback when the native type cannot be read. Both the declared and the actual type are normalized to an ODCS category before comparison, so `integer` and `number` are mutually compatible.
 
-Properties of `logicalType: object`, `array` or `map` that declare `properties`, `items` or a `map` block (`key` and `value`, ODCS v3.2.0) also get a **nested type check** covering the full declared structure.
+Nested properties are checked like top-level ones: each property under `properties`, the `items` of an array, and the `key` and `value` of a map get their own type check at their path, such as `customer.email`, `items[].sku`, `matrix[][]` or `attributes[value]`. A nested `physicalType` is compared against the native type the catalog reports for it on Athena, Trino, Databricks, BigQuery, ClickHouse (except inside a `Tuple`), Hive and Snowflake, and reported as a warning on the other backends with catalog introspection.
 
 ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
 
 Property-level `enum` entries must have distinct values, even if their labels, IDs, or descriptions differ. Lint checks this throughout properties, array items, and map keys and values. JSON numbers compare by value (`1` equals `1.0`); strings and booleans remain distinct from numbers.
 
+An `enum` constrains only values that are present, whether a value may be missing is up to `required`. Therefore, `null` should not be part of an `enum`.
+
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
 :::note
-For file servers with `format: csv`, `json`, or `avro` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
+For file servers with `format: csv`, `json`, `xml`, `avro` or `parquet` **no type check is generated at all** — the file is read *as* the contract's types, so a mismatch surfaces as a read error instead. `format: delta` is read with the table's own types, so its types, nested ones included, are checked. `format: json` is additionally validated against a JSON Schema derived from the contract. See [Data Source Reference](./reference/index.md#how-data-types-work) for the full type-mapping rules.
 :::
 
 ## Required, unique, and primary keys
@@ -122,7 +125,7 @@ properties:
 ```
 
 - **`required: true`** → no missing values.
-- **`unique: true`** → no duplicate values.
+- **`unique: true`** → no duplicate values (`NULL` values are not duplicates of each other).
 - **`primaryKey: true`** → both of the above. Declaring `required` or `unique` alongside it does not duplicate the check.
 
 A **composite primary key** — several properties with `primaryKey: true` — is treated as a key over the tuple, not column by column. Each member gets its own not-null check, and the combination gets a single uniqueness check. Use `primaryKeyPosition` to order the members:
@@ -138,6 +141,27 @@ properties:
 ```
 
 > Produces: `order_id` not null, `line_number` not null, and `(order_id, line_number)` unique.
+
+## Foreign keys
+
+A `relationships` entry of `type: foreignKey` checks that every non-null value of the referencing column exists in the referenced one. Declare it on the property, with `to`, or on the schema, with `from` and `to` lists for a composite key:
+
+```yaml
+schema:
+  - name: line_items
+    properties:
+      - name: order_id
+        relationships:
+          - type: foreignKey
+            to: orders.order_id
+  - name: shipments
+    relationships:
+      - type: foreignKey
+        from: [shipments.order_id, shipments.line_no]
+        to: [order_lines.order_id, order_lines.line_no]
+```
+
+The referenced schema must be read in the same run. When `--schema-name` selects only the referencing schema of a file server, the check is reported as a warning.
 
 ## Value constraints
 
@@ -184,6 +208,8 @@ properties:
 
 `exclusiveMinimum` and `exclusiveMaximum` each produce two checks — a bound check and an inequality check — so a violation of either is reported separately.
 
+The value options also apply to the `items` of an array of plain values, such as a `pattern` on every tag or a `minimum` on every score. The check is named after the items, `tags[]`, and counts the rows with at least one item that breaks it; `unique` on the items fails a row that repeats an item. Items inside an array of objects are reached the same way, as in `orders[].codes[]`.
+
 ## Descriptive metadata
 
 ODCS v3.2.0 adds fields that describe a schema object or property for people and tools without generating a check: `semanticType` (`column`, `measure`, `dimension`), `synonyms`, `deprecated`, and a `context` block with `instructions`, `verifiedStatements` and `constraints` for AI agents and semantic layers. The [HTML](./exports/html.md) and [Markdown](./exports/markdown.md) exports render them, [`changelog`](./commands/changelog.md) reports changes to them by their natural key (a synonym's `synonym` or `id`, an enum entry's `value` or `id`), and `export odcs` keeps them. The DCS export drops them, as the Data Contract Specification has no equivalent.
@@ -196,6 +222,7 @@ These are common sources of confusion. They are valid ODCS and appear in exports
 - **`logicalTypeOptions.format`** — never enforced, on any property. On a `string` property (`email`, `uuid`, `uri`, …) use `pattern` for an enforceable equivalent. On a `date`, `timestamp` or `time` property `format` holds a date pattern such as `yyyy-MM-dd`, and `pattern` is *not* an equivalent there: by the time a check runs, the column has already been parsed as a date, so there is no string left to match. Such a column is validated as a date, in whatever format the server stores it.
 - **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties`. `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
 - **Schema-level attributes** other than `name`, `physicalName`, `properties`, and `quality`.
+- **Constraints and quality rules on nested properties, on some servers** — `required`, `unique`, `pattern`, `enum`, the other `logicalTypeOptions` and `quality` rules below the top level are checked on the `dataframe`, `databricks`, `trino` and `athena` servers and on every server read through DuckDB (`local`, `s3`, `gcs`, `azure`, `duckdb`, `iceberg`, `kafka`). On every other server, nested properties are only type-checked, and each of their constraints and quality rules is reported as a warning. On SAP HANA, only their quality rules are reported as warnings; their constraints are not checked.
 
 Anything beyond this list that you want verified belongs in a [quality rule](./quality-rules/index.md) — a `type: library` metric for the common cases, or `type: sql` for arbitrary expressions.
 

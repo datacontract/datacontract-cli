@@ -1,0 +1,330 @@
+<?xml version="1.0" ?>
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+  <edmx:DataServices>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="refmart">
+      <EntityType Name="COUNTRY_CURRENCY">
+        <Property Name="CODE_ISO_3" Type="Edm.String"/>
+        <Property Name="CODE_ISO_2" Type="Edm.String"/>
+        <Property Name="CODE_ISO_NUMERIC" Type="Edm.Int32"/>
+        <Property Name="CODE_WHO" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_EN" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_EN" Type="Edm.String"/>
+        <Property Name="ADJECTIVE_PEOPLE" Type="Edm.String"/>
+        <Property Name="CAPITAL_CITY" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_AR" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_AR" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_ES" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_ES" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_FR" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_FR" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_RU" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_RU" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_ZH" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_ZH" Type="Edm.String"/>
+        <Property Name="WHO_LEGAL_STATUS" Type="Edm.String"/>
+        <Property Name="WHO_LEGAL_STATUS_TITLE" Type="Edm.String"/>
+        <Property Name="GRP_WHO_REGION" Type="Edm.String"/>
+        <Property Name="GRP_WB_INCOME" Type="Edm.String"/>
+        <Property Name="CURRENCY_ISO_3" Type="Edm.String"/>
+        <Property Name="CURRENCY_TITLE" Type="Edm.String"/>
+        <Property Name="CURRENCY_ISO_NUMERIC" Type="Edm.Int32"/>
+        <Property Name="CURRENCY_DESCRIPTION" Type="Edm.String"/>
+        <Property Name="CURRENCY_SYMBOL" Type="Edm.String"/>
+        <Property Name="CURRENCY_SYMBOL_BEFORE" Type="Edm.Boolean"/>
+        <Property Name="CURRENCY_DEC_PLACES" Type="Edm.Int32"/>
+      </EntityType>
+      <EntityType Name="REF_COUNTRY">
+        <Property Name="GEO_M49_CODE" Type="Edm.String"/>
+        <Property Name="CODE_ISO_2" Type="Edm.String"/>
+        <Property Name="CODE_ISO_3" Type="Edm.String"/>
+        <Property Name="CODE_WHO" Type="Edm.String"/>
+        <Property Name="CODE_ISO_NUMERIC" Type="Edm.Int32"/>
+        <Property Name="NAME_SHORT_EN" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_EN" Type="Edm.String"/>
+        <Property Name="CAPITAL_CITY" Type="Edm.String"/>
+        <Property Name="ADJECTIVE_PEOPLE" Type="Edm.String"/>
+        <Property Name="GEO_SMALL_POP_FLAG" Type="Edm.Boolean"/>
+        <Property Name="GEO_SOVEREIGN" Type="Edm.String"/>
+        <Property Name="SOVEREIGN_ISO_3" Type="Edm.String"/>
+        <Property Name="GRP_WB_INCOME" Type="Edm.String"/>
+        <Property Name="GRP_WHO_REGION" Type="Edm.String"/>
+        <Property Name="WHO_LEGAL_STATUS" Type="Edm.String"/>
+        <Property Name="WHO_LEGAL_STATUS_TITLE" Type="Edm.String"/>
+        <Property Name="DATE_START" Type="Edm.Date"/>
+        <Property Name="NAME_CHANGE" Type="Edm.String"/>
+        <Property Name="ISO_CHANGE" Type="Edm.String"/>
+        <Property Name="CAPITAL_CHANGE" Type="Edm.String"/>
+        <Property Name="STATISTICAL_CHANGE" Type="Edm.String"/>
+        <Property Name="GEO_PRECEDED_BY" Type="Edm.String"/>
+        <Property Name="GEO_SUCCEEDED_BY" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_AR" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_AR" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_ES" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_ES" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_FR" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_FR" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_RU" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_RU" Type="Edm.String"/>
+        <Property Name="NAME_SHORT_ZH" Type="Edm.String"/>
+        <Property Name="NAME_FORMAL_ZH" Type="Edm.String"/>
+      </EntityType>
+      <EntityType Name="REF_COUNTRY_CURRENCY">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="CODE_ISO_3" Type="Edm.String"/>
+        <Property Name="CURRENCY_NAME" Type="Edm.String"/>
+        <Property Name="CURRENCY_CODE" Type="Edm.String"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_COV_MANUFACTURERS">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="TITLE" Type="Edm.String"/>
+        <Property Name="DESCRIPTION" Type="Edm.String"/>
+        <Property Name="CODE" Type="Edm.String"/>
+        <Property Name="MANUF_NAME" Type="Edm.String"/>
+        <Property Name="MANUF_NAMEFR" Type="Edm.String"/>
+        <Property Name="MANUF_NAMESP" Type="Edm.String"/>
+        <Property Name="MANUF_NAMERU" Type="Edm.String"/>
+        <Property Name="MANUF_NAMEAR" Type="Edm.String"/>
+        <Property Name="MANUF_NAMECN" Type="Edm.String"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_COV_VACCINES">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="CODE" Type="Edm.String"/>
+        <Property Name="DISPLAY_NAME" Type="Edm.String"/>
+        <Property Name="TITLE" Type="Edm.String"/>
+        <Property Name="DESCRIPTION" Type="Edm.String"/>
+        <Property Name="TITLEFR" Type="Edm.String"/>
+        <Property Name="DISPLAY_NAMEFR" Type="Edm.String"/>
+        <Property Name="TITLESP" Type="Edm.String"/>
+        <Property Name="DISPLAY_NAMESP" Type="Edm.String"/>
+        <Property Name="TITLERU" Type="Edm.String"/>
+        <Property Name="DISPLAY_NAMERU" Type="Edm.String"/>
+        <Property Name="START_DATE" Type="Edm.Date"/>
+        <Property Name="END_DATE" Type="Edm.Date"/>
+        <Property Name="DEPLOYED" Type="Edm.Boolean"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_CURRENCY">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="CODE_ISO_3" Type="Edm.String"/>
+        <Property Name="TITLE" Type="Edm.String"/>
+        <Property Name="CODE_ISO_NUMERIC" Type="Edm.Int32"/>
+        <Property Name="DESCRIPTION" Type="Edm.String"/>
+        <Property Name="SYMBOL" Type="Edm.String"/>
+        <Property Name="SYMBOL_BEFORE" Type="Edm.Boolean"/>
+        <Property Name="DEC_PLACES" Type="Edm.Int32"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_DATES">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="DATE_DATE" Type="Edm.Date"/>
+        <Property Name="DATE_CODE" Type="Edm.String"/>
+        <Property Name="DATE_DAY" Type="Edm.Int32"/>
+        <Property Name="DATE_WEEKDAY" Type="Edm.Int32"/>
+        <Property Name="DATE_WEEKDAY_NAME" Type="Edm.String"/>
+        <Property Name="DATE_WEEK" Type="Edm.Int32"/>
+        <Property Name="DATE_MONTH" Type="Edm.Byte"/>
+        <Property Name="DATE_QUARTER" Type="Edm.Int32"/>
+        <Property Name="DATE_YEAR" Type="Edm.Int16"/>
+        <Property Name="DATE_YEAR_WEEK" Type="Edm.String"/>
+        <Property Name="DATE_DAYOFYEAR" Type="Edm.Int32"/>
+        <Property Name="DATE_EXCEL_DATEVALUE" Type="Edm.Int32"/>
+        <Property Name="DATE_ISO_WEEK" Type="Edm.Int32"/>
+        <Property Name="DATE_ISO_YEAR" Type="Edm.Int16"/>
+        <Property Name="DATE_ISO_YEAR_WEEK" Type="Edm.String"/>
+        <Property Name="DATE_EPI_WEEK" Type="Edm.Int32"/>
+        <Property Name="DATE_EPI_YEAR" Type="Edm.Int16"/>
+        <Property Name="DATE_EPI_YEAR_WEEK" Type="Edm.String"/>
+        <Property Name="DATE_MMWR_WEEK" Type="Edm.Int32"/>
+        <Property Name="DATE_MMWR_YEAR" Type="Edm.Int16"/>
+        <Property Name="DATE_MMWR_YEAR_WEEK" Type="Edm.String"/>
+        <Property Name="DATE_WEEK_START" Type="Edm.Date"/>
+        <Property Name="DATE_WEEK_END" Type="Edm.Date"/>
+        <Property Name="DATE_ISO_WEEK_START" Type="Edm.Date"/>
+        <Property Name="DATE_ISO_WEEK_END" Type="Edm.Date"/>
+        <Property Name="DATE_EPI_WEEK_START" Type="Edm.Date"/>
+        <Property Name="DATE_EPI_WEEK_END" Type="Edm.Date"/>
+        <Property Name="DATE_MMWR_WEEK_START" Type="Edm.Date"/>
+        <Property Name="DATE_MMWR_WEEK_END" Type="Edm.Date"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_LANGUAGE">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="CODE_ISO_639_1" Type="Edm.String"/>
+        <Property Name="TITLE" Type="Edm.String"/>
+        <Property Name="TITLE_NATIVE" Type="Edm.String"/>
+        <Property Name="LANGUAGE_FAMILY" Type="Edm.String"/>
+        <Property Name="NOTES" Type="Edm.String"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginID" Type="Edm.Guid"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_TIME_DTLS">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="REF_TIME_CODE" Type="Edm.String"/>
+        <Property Name="REF_TIME_NAME" Type="Edm.String"/>
+        <Property Name="REF_TIME_DISCREPTION" Type="Edm.String"/>
+        <Property Name="REF_TIME_MSTR_CODE" Type="Edm.String"/>
+        <Property Name="REF_TIME_MSTR_CODE__Sys_ID" Type="Edm.Guid"/>
+        <Property Name="REF_TIME_MSTR_CODE__REF_TIME_MSTR_CODE" Type="Edm.String"/>
+        <Property Name="REF_TIME_FROM" Type="Edm.DateTimeOffset"/>
+        <Property Name="REF_TIME_TO" Type="Edm.DateTimeOffset"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_TIME_MSTR">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="REF_TIME_MSTR_CODE" Type="Edm.String"/>
+        <Property Name="REF_TIME_MSTR_NAME" Type="Edm.String"/>
+        <Property Name="REF_TIME_MSTR_DESC" Type="Edm.String"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityType Name="REF_UN_LANGUAGES">
+        <Key>
+          <PropertyRef Name="Sys_PK"/>
+        </Key>
+        <Property Name="CODE_ISO_3" Type="Edm.String"/>
+        <Property Name="CODE_LANGUAGE_1" Type="Edm.String"/>
+        <Property Name="CODE_LANGUAGE_2" Type="Edm.String"/>
+        <Property Name="_RecordID" Type="Edm.Guid"/>
+        <Property Name="Sys_PK" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Sys_RowTitle" Type="Edm.String"/>
+        <Property Name="Sys_Version" Type="Edm.Int16"/>
+        <Property Name="Sys_VersionID" Type="Edm.String"/>
+        <Property Name="Sys_OriginID" Type="Edm.Guid"/>
+        <Property Name="Sys_OriginCode" Type="Edm.String"/>
+        <Property Name="Sys_LoadBy" Type="Edm.String"/>
+        <Property Name="Sys_CommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_FirstLoadBy" Type="Edm.String"/>
+        <Property Name="Sys_FirstCommitDateUtc" Type="Edm.DateTimeOffset"/>
+        <Property Name="Sys_ID" Type="Edm.Guid"/>
+        <Property Name="Sys_BatchID" Type="Edm.Int64"/>
+        <Property Name="Sys_FirstBatchID" Type="Edm.Int64"/>
+      </EntityType>
+      <EntityContainer Name="views">
+        <EntitySet Name="COUNTRY_CURRENCY" EntityType="refmart.COUNTRY_CURRENCY"/>
+        <EntitySet Name="REF_COUNTRY" EntityType="refmart.REF_COUNTRY"/>
+        <EntitySet Name="REF_COUNTRY_CURRENCY" EntityType="refmart.REF_COUNTRY_CURRENCY"/>
+        <EntitySet Name="REF_COV_MANUFACTURERS" EntityType="refmart.REF_COV_MANUFACTURERS"/>
+        <EntitySet Name="REF_COV_VACCINES" EntityType="refmart.REF_COV_VACCINES"/>
+        <EntitySet Name="REF_CURRENCY" EntityType="refmart.REF_CURRENCY"/>
+        <EntitySet Name="REF_DATES" EntityType="refmart.REF_DATES"/>
+        <EntitySet Name="REF_LANGUAGE" EntityType="refmart.REF_LANGUAGE"/>
+        <EntitySet Name="REF_TIME_DTLS" EntityType="refmart.REF_TIME_DTLS"/>
+        <EntitySet Name="REF_TIME_MSTR" EntityType="refmart.REF_TIME_MSTR"/>
+        <EntitySet Name="REF_UN_LANGUAGES" EntityType="refmart.REF_UN_LANGUAGES"/>
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

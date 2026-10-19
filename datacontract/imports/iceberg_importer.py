@@ -10,6 +10,7 @@ from datacontract.imports.odcs_helper import (
     create_property,
     create_schema_object,
     create_server,
+    report_unmapped_types,
 )
 from datacontract.model.exceptions import DataContractException
 
@@ -65,7 +66,7 @@ def import_from_catalog(import_args: dict, config: "Config", catalog_url: str) -
 
 
 def load_and_validate_iceberg_schema(source: str) -> Schema:
-    with open(source, "r") as file:
+    with open(source, "r", encoding="utf-8") as file:
         try:
             return Schema.model_validate_json(file.read())
         except ValidationError as e:
@@ -105,6 +106,7 @@ def import_iceberg(schema: Schema, table_name: str) -> OpenDataContractStandard:
     )
 
     odcs.schema_ = [schema_obj]
+    report_unmapped_types(odcs)
     return odcs
 
 

@@ -40,9 +40,9 @@ def datacontract_bin() -> str:
     return str(local) if local.exists() else (shutil.which("datacontract") or "datacontract")
 
 
-def run_cli(args: list[str]) -> str:
+def run_cli(args: list[str], cwd: str | None = None) -> str:
     """Run `datacontract <args>` and return stdout, raising on failure."""
-    result = subprocess.run([datacontract_bin(), *args], capture_output=True, text=True)
+    result = subprocess.run([datacontract_bin(), *args], capture_output=True, text=True, cwd=cwd)
     if result.returncode != 0:
         raise RuntimeError(f"`datacontract {' '.join(args)}` failed:\n{result.stdout}{result.stderr}")
     return result.stdout.strip("\n")

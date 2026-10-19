@@ -34,7 +34,7 @@ orders = StructType([
         {"comment": "Reference to the customer who placed the order."}
     ),
     StructField("order_total",
-        DecimalType(10, 0),
+        IntegerType(),
         False,
         {"comment": "Total amount of the order in cents."}
     ),

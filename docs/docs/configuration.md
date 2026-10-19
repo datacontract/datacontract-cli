@@ -36,7 +36,7 @@ The `.env` values are exported into the process environment, so they also reach 
 
 ## Variables in the data contract
 
-Since ODCS v3.2.0, any string value in a data contract may contain a `${VAR_NAME}` reference, optionally with an inline default: `${VAR_NAME:-default}`. This keeps hostnames, bucket paths, and other environment-specific values out of the contract, so the same file works in every environment.
+Since ODCS v3.2.0, any string value in a data contract may reference an environment variable as `${VAR_NAME}`, with an optional default: `${VAR_NAME:-default}`. This keeps environment-specific values such as hostnames and bucket paths out of the contract.
 
 ```yaml
 servers:
@@ -53,9 +53,15 @@ schema:
         mustBe: 0
 ```
 
-The CLI resolves references in test inputs: server fields, schema and property names, enum values, nested type options, library quality arguments, and service levels. SQL quality queries resolve when their checks are prepared; the CLI's own placeholders such as `${model}` and `${schema}` are substituted first. Values come from the environment, including a loaded `.env` file. A reference to an unset or empty variable without a default fails the run with the variable's name and field path; an empty string is never substituted silently. Unselected schemas and documentation fields such as descriptions and context do not need their variables set. The contract itself is never changed: `lint` accepts unresolved references, and `export` and `publish` write them back exactly as written.
+Values come from the environment, including a loaded `.env` file. If a variable is unset or empty and has no default, the run fails. References are resolved only when testing: `lint`, `export` and `publish` leave them as written. [Per-source override options](#all-options) such as `DATACONTRACT_POSTGRES_HOST` take precedence over the contract.
 
-The [per-source override options](#all-options) such as `DATACONTRACT_POSTGRES_HOST` take precedence over the contract, so an override replaces a reference in the same field without resolving it.
+On the [API server](./api.md), a posted contract can't read the operator's environment unless you allow it. Pass a comma-separated list of glob patterns with `--contract-variables` (or `DATACONTRACT_CLI_API_CONTRACT_VARIABLES`):
+
+```bash
+datacontract api --contract-variables 'TABLE_*,CUTOFF_DATE'
+```
+
+Variables not on the list are treated as unset. `*` exposes every variable, credentials included.
 
 ## Config file (YAML)
 
@@ -138,7 +144,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 | Environment variable | `Config` field | Type | Notes |
 |---|---|---|---|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `api_header_authorization` | string (secret) |  |
+| `DATACONTRACT_API_HEADER_X_API_KEY` | `api_header_x_api_key` | string (secret) |  |
+| `DATACONTRACT_CUSTOM_QUALITY_CHECKS` | `custom_quality_checks` | string |  |
 | `DATACONTRACT_MAX_ERRORS` | `max_errors` | integer |  |
+| `DATACONTRACT_CONNECT_TIMEOUT` | `connect_timeout` | integer |  |
 
 ### Athena
 
@@ -168,6 +177,17 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `bigquery_impersonation_account` | string |  |
 | `DATACONTRACT_BIGQUERY_PROJECT` | `bigquery_project` | string | Overrides `project` from the contract's `servers` block |
 | `DATACONTRACT_BIGQUERY_DATASET` | `bigquery_dataset` | string | Overrides `dataset` from the contract's `servers` block |
+
+### ClickHouse
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_CLICKHOUSE_USERNAME` | `clickhouse_username` | string |  |
+| `DATACONTRACT_CLICKHOUSE_PASSWORD` | `clickhouse_password` | string (secret) |  |
+| `DATACONTRACT_CLICKHOUSE_SECURE` | `clickhouse_secure` | boolean |  |
+| `DATACONTRACT_CLICKHOUSE_HOST` | `clickhouse_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_CLICKHOUSE_PORT` | `clickhouse_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_CLICKHOUSE_DATABASE` | `clickhouse_database` | string | Overrides `database` from the contract's `servers` block |
 
 ### Databricks
 
@@ -206,6 +226,20 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_HANA_ENCRYPT` | `hana_encrypt` | boolean |  |
 | `DATACONTRACT_HANA_SSL_VALIDATE_CERTIFICATE` | `hana_ssl_validate_certificate` | boolean |  |
 | `DATACONTRACT_HANA_SSL_HOSTNAME_IN_CERTIFICATE` | `hana_ssl_hostname_in_certificate` | string |  |
+
+### Hive
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_HIVE_USERNAME` | `hive_username` | string |  |
+| `DATACONTRACT_HIVE_PASSWORD` | `hive_password` | string (secret) |  |
+| `DATACONTRACT_HIVE_AUTH_MECHANISM` | `hive_auth_mechanism` | string |  |
+| `DATACONTRACT_HIVE_USE_SSL` | `hive_use_ssl` | boolean |  |
+| `DATACONTRACT_HIVE_USE_HTTP_TRANSPORT` | `hive_use_http_transport` | boolean |  |
+| `DATACONTRACT_HIVE_HTTP_PATH` | `hive_http_path` | string |  |
+| `DATACONTRACT_HIVE_HOST` | `hive_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_HIVE_PORT` | `hive_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_HIVE_DATABASE` | `hive_database` | string | Overrides `database` from the contract's `servers` block |
 
 ### Iceberg
 
@@ -358,6 +392,18 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_SQLSERVER_PORT` | `sqlserver_port` | integer | Overrides `port` from the contract's `servers` block |
 | `DATACONTRACT_SQLSERVER_DATABASE` | `sqlserver_database` | string | Overrides `database` from the contract's `servers` block |
 
+### Exasol
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_EXASOL_USERNAME` | `exasol_username` | string |  |
+| `DATACONTRACT_EXASOL_PASSWORD` | `exasol_password` | string (secret) |  |
+| `DATACONTRACT_EXASOL_FINGERPRINT` | `exasol_fingerprint` | string |  |
+| `DATACONTRACT_EXASOL_VALIDATE_CERTIFICATE` | `exasol_validate_certificate` | boolean |  |
+| `DATACONTRACT_EXASOL_HOST` | `exasol_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_EXASOL_PORT` | `exasol_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_EXASOL_SCHEMA` | `exasol_schema` | string | Overrides `schema` from the contract's `servers` block |
+
 ### Trino
 
 | Environment variable | `Config` field | Type | Notes |
@@ -387,5 +433,5 @@ So a committed team config file can hold defaults, CI can override single values
 
 ## Notes for specific sources
 
-- **Snowflake**: only the documented `DATACONTRACT_SNOWFLAKE_*` options are passed to the connector. Unknown names are ignored with a warning; use a [connections.toml](./testing/snowflake.md) for connector parameters the CLI does not support directly.
+- **Snowflake**: only the documented `DATACONTRACT_SNOWFLAKE_*` options are passed to the connector. Unknown names are ignored with a warning. `datacontract test` does not read a `connections.toml`; only `datacontract import snowflake` does (see the [Snowflake Reference](./reference/snowflake.md)).
 - **AWS sources (S3, Athena, Redshift IAM, Glue)**: when no `DATACONTRACT_S3_*` options are set, boto3's own credential chain applies (`aws sso login`, `AWS_PROFILE`, instance roles, GitHub OIDC). The same credential set is used to read data contracts from `s3://` locations.

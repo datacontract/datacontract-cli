@@ -43,7 +43,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
     {
       "name": "order_total",
       "doc": "Total amount of the order in cents.",
-      "type": "bytes"
+      "type": "int"
     },
     {
       "name": "status",
@@ -58,7 +58,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
 
 ## Custom Avro properties
 
-A **`config` map on property level** may include additional key-value pairs. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and `default` are supported.
+**`customProperties` on property level** may set additional Avro attributes. At the moment, [`logicalType`](https://avro.apache.org/docs/1.11.0/spec.html#Logical+Types) and `default` are supported.
 
 ```yaml
 schema:
@@ -71,12 +71,14 @@ schema:
         examples:
           - 1672534861000000  # 2023-01-01 01:01:01 in microseconds
         required: true
-        config:
-          avroLogicalType: local-timestamp-micros
-          avroDefault: 1672534861000000
+        customProperties:
+          - property: avroLogicalType
+            value: local-timestamp-micros
+          - property: avroDefault
+            value: "1672534861000000"
 ```
 
 - `avroLogicalType` — the Avro logical type of the property (here `local-timestamp-micros`).
-- `avroDefault` — the default value for the property in Avro.
+- `avroDefault` — the default value for the property in Avro, as a string; `true`, `false`, `null` and numbers are converted to their Avro type.
 
 All options: **[`datacontract export avro`](../commands/export/avro.md)**.

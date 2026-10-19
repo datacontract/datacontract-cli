@@ -87,7 +87,7 @@ def rest_catalog():
     """(catalog_url, s3_endpoint) of a running iceberg-rest server backed by MinIO, with sales.orders in it."""
     with Network() as network:
         minio = (
-            MinioContainer(image="quay.io/minio/minio", access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+            MinioContainer(image="cgr.dev/chainguard/minio", access_key=ACCESS_KEY, secret_key=SECRET_KEY)
             .with_network(network)
             .with_network_aliases("minio")
         )
@@ -157,7 +157,7 @@ def test_test_against_a_rest_catalog(iceberg_env):
 
     print(run.pretty())
     assert run.result == ResultEnum.passed, [c.reason for c in run.checks if c.reason]
-    assert any(c.type == "field_nested_type" and c.result == ResultEnum.passed for c in run.checks)
+    assert any(c.field == "attributes" and c.type == "field_type" and c.result == ResultEnum.passed for c in run.checks)
 
 
 def test_test_catches_a_violation_in_the_rest_catalog(iceberg_env):

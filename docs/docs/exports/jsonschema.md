@@ -37,7 +37,7 @@ Running this against the [example `orders` contract](https://github.com/datacont
       "description": "Reference to the customer who placed the order."
     },
     "order_total": {
-      "type": "number",
+      "type": "integer",
       "description": "Total amount of the order in cents."
     },
     "status": {

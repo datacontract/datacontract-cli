@@ -22,6 +22,8 @@ schema:
     primaryKey: true
     primaryKeyPosition: 1
     logicalType: string
+    required: true
+    unique: true
   - name: order_timestamp
     physicalType: TIMESTAMPTZ
     logicalType: timestamp

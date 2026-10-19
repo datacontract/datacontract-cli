@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: "Apache Impala Reference"
 sidebar_label: "Apache Impala"
 description: "All Impala authentication options and data type handling."
@@ -17,7 +17,7 @@ servers:
     type: impala
     host: my-impala-host
     port: 21050 # 443 for a Cloudera Virtual Warehouse
-    database: my_database # optional default database
+    database: my_database
 ```
 
 ## Authentication
@@ -58,4 +58,4 @@ There is no direct Impala importer. Import a `SHOW CREATE TABLE` DDL with `datac
 
 ### Testing
 
-Impala does **not** support native type introspection — the declared `physicalType` is not compared against the catalog. Instead, the `logicalType` is checked by category (`Check that field x has type y`): the actual column type is normalized to one of the nine ODCS categories and compared, with `integer` and `number` treated as compatible.
+Impala does **not** support native type introspection — the declared `physicalType` is not compared against the catalog. Instead, the `logicalType` is checked by category (`Check that field x has type y`): the actual column type is normalized to one of the ODCS logical types and compared, with `integer` and `number` treated as compatible.

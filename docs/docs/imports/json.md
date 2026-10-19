@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 17
 title: "Import: JSON"
 description: "Create a data contract by inferring a schema from a JSON data file."
 ---

@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from enum import Enum
 from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Optional
@@ -14,12 +15,38 @@ from rich.markup import escape
 from typer.core import TyperGroup
 from typing_extensions import Annotated
 
-from datacontract.config import Config, set_cli_config
+from datacontract.config import Config, cli_config, set_cli_config
 from datacontract.output.output_format import OutputFormat
 
 console = Console()
 
 debug_option = Annotated[bool, typer.Option(help="Enable debug logging")]
+inline_references_option = Annotated[
+    bool,
+    typer.Option(
+        help="Resolve authoritativeDefinitions of type definition, semantics or businessDefinition and inline them "
+        "into the contract. Relative URLs and semantics IRIs are looked up on the ENTROPY_DATA_HOST "
+        "(default https://api.entropy-data.com), other URLs are fetched directly, file "
+        "references are read from disk. See https://docs.datacontract.com/semantics"
+    ),
+]
+
+custom_quality_checks_option = Annotated[
+    Optional[Path],
+    typer.Option(
+        metavar="DIR",
+        help="Folder with the custom quality checks the contract's quality rules use, one YAML file per check. "
+        "Defaults to DATACONTRACT_CUSTOM_QUALITY_CHECKS.",
+    ),
+]
+
+
+def config_with_custom_quality_checks(custom_quality_checks: Optional[Path]) -> Config | None:
+    """The --config-file config, with the --custom-quality-checks folder if one was given."""
+    config = cli_config()
+    if custom_quality_checks is None:
+        return config
+    return Config.resolve(config).model_copy(update={"custom_quality_checks": str(custom_quality_checks)})
 
 
 # Order in which top-level commands appear in `datacontract --help` (cf. README.md)
@@ -54,6 +81,9 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
     # Import formats where `--schema` still means the database schema, so it must
     # not be rewritten to the v0.12.0 `--json-schema`.
     DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver", "oracle", "trino"}
+    # Import formats where `--format` is the file format (json, csv, parquet, delta),
+    # not the removed v0.12.0 importer selector.
+    FILE_FORMAT_IMPORTS = {"s3", "gcs", "adls"}
 
     RENAMED_FLAGS = {
         "--format": None,
@@ -78,6 +108,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
         else:
             import_format = subcommand
         takes_database_schema = import_format in self.DATABASE_SCHEMA_IMPORTS
+        takes_file_format = import_format in self.FILE_FORMAT_IMPORTS
 
         rewritten_args = []
         for arg in args:
@@ -85,11 +116,14 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
                 flag, _, value = arg.partition("=")
                 if flag == "--schema" and not takes_database_schema:
                     typer.secho(
-                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed in v0.13.0.",
+                        "Warning: --schema was replaced with --json-schema in v0.12.0 and will be removed soon.",
                         err=True,
                         fg=typer.colors.YELLOW,
                     )
                     rewritten_args.append(f"--json-schema={value}" if value else "--json-schema")
+                    continue
+                if flag == "--format" and takes_file_format:
+                    rewritten_args.append(arg)
                     continue
                 if flag in self.RENAMED_FLAGS:
                     new_flag = self.RENAMED_FLAGS[flag]
@@ -113,6 +147,8 @@ app = typer.Typer(
     cls=OrderedCommandsWithMigrationHints,
     no_args_is_help=True,
     add_completion=False,
+    # the locals of a --debug traceback can hold credentials
+    pretty_exceptions_show_locals=False,
     help="CLI to manage data contracts. Documentation: https://docs.datacontract.com",
     epilog="Read the full documentation at https://docs.datacontract.com",
 )
@@ -263,6 +299,45 @@ def _print_publish_failure(run, out=None):
             color = "red" if log.level == "ERROR" else "yellow"
             # highlight=False: render as prose, not rich's code-like repr highlighting.
             out.print(f"[{color}]{escape(log.message)}[/{color}]", highlight=False)
+
+
+def _parse_enum_csv(
+    value: str | None,
+    enum_cls: type[Enum],
+    option: str,
+    label: str,
+    aliases: dict[str, Enum] | None = None,
+    available: str | None = None,
+) -> set[str] | None:
+    """Parse a comma-separated option into a set of enum values, or None if unset.
+
+    Matching is case-insensitive; `aliases` maps additional lowercase spellings
+    to their enum value. `available` overrides the choices shown in errors.
+    """
+    if value is None:
+        return None
+    allowed = [e.value for e in enum_cls]
+    raw = [v.strip() for v in value.split(",") if v.strip()]
+    if not raw:
+        console.print(f"[red]Empty {option} specified.[/red]")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    aliases = aliases or {}
+    values = set()
+    invalid = set()
+    for v in raw:
+        key = v.lower()
+        if key in aliases:
+            values.add(aliases[key].value)
+        elif key in allowed:
+            values.add(key)
+        else:
+            invalid.add(v)
+    if invalid:
+        console.print(f"[red]Invalid {option} specified: {', '.join(sorted(invalid))}[/red]")
+        console.print(f"Available {label}: {available or ', '.join(allowed)}")
+        raise typer.Exit(code=1)
+    return values
 
 
 # ---------------------------------------------------------------------------

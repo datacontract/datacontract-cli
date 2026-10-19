@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order xmlns="urn:example:orders" version="2">
+  <order_id>7a9e2b10-1c3d-4e5f-8a6b-0c1d2e3f4a5b</order_id>
+  <order_timestamp>2026-09-02T08:00:00</order_timestamp>
+  <order_total>12.00</order_total>
+  <status>pending</status>
+  <notes/>
+  <customer>
+    <customer_id>C-1002</customer_id>
+    <name>Alan Turing</name>
+    <loyalty_points>0</loyalty_points>
+  </customer>
+  <phone>+44 20 7946 0000</phone>
+  <line_items>
+    <line_item>
+      <sku>DEF-1234</sku>
+      <quantity>3</quantity>
+      <price currency="GBP">4.00</price>
+    </line_item>
+  </line_items>
+</order>

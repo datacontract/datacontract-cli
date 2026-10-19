@@ -56,6 +56,23 @@ def test_test_kafka(monkeypatch):
     assert run.result == "passed"
 
 
+def test_test_kafka_nested(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
+
+    with KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka:
+        send_messages_to_topic(kafka, "fixtures/kafka/data/messages_nested.json", "order-events")
+        data_contract_str = _setup_datacontract(kafka, "fixtures/kafka/datacontract_nested.yaml")
+        run = DataContract(data_contract_str=data_contract_str).test()
+
+    print(run.pretty())
+    # the second message violates every nested rule once
+    assert {(c.field, c.type) for c in run.checks if c.result in ("failed", "error")} == {
+        ("customer.email", "field_required"),
+        ("customer.address.city", "field_quality_sql"),
+        ("items[].sku", "field_required"),
+    }
+
+
 def test_test_kafka_avro_plain(monkeypatch):
     """Plain Avro messages (no Confluent Schema Registry framing) must decode without
     being corrupted by the 5-byte magic-byte/schema-id strip. Regression for #1344,

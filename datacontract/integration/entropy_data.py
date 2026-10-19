@@ -11,10 +11,6 @@ from datacontract.model.run import ResultEnum, Run
 # used to retrieve the HTML location of the published data contract or test results
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
 
-# The domains the platform serves under. `datamesh-manager.com` and
-# `datacontract-manager.com` are the product's former names.
-_PLATFORM_DOMAINS = ("entropy-data.com", "datamesh-manager.com", "datacontract-manager.com")
-
 
 def is_platform_url(url: str, config: "Config | None" = None) -> bool:
     """True when `url` points at the Entropy Data platform.
@@ -27,10 +23,7 @@ def is_platform_url(url: str, config: "Config | None" = None) -> bool:
     so every other host is contacted anonymously rather than handed the key.
     """
     config = Config.resolve(config)
-    hostname, _ = _host_and_port(url)
-    if hostname is None:
-        return False
-    if any(hostname == domain or hostname.endswith(f".{domain}") for domain in _PLATFORM_DOMAINS):
+    if is_entropy_data_domain(url):
         return True
     return any(
         configured is not None and _host_and_port(configured) == _host_and_port(url)
@@ -39,6 +32,15 @@ def is_platform_url(url: str, config: "Config | None" = None) -> bool:
             config.get_datamesh_manager_host(),
             config.get_datacontract_manager_host(),
         )
+    )
+
+
+def is_entropy_data_domain(url: str) -> bool:
+    """True when `url` is on one of the platform's own domains, subdomains included."""
+    hostname, _ = _host_and_port(url)
+    return hostname is not None and any(
+        hostname == domain or hostname.endswith(f".{domain}")
+        for domain in ("entropy-data.com", "datamesh-manager.com", "datacontract-manager.com")
     )
 
 
@@ -181,7 +183,7 @@ def publish_data_contract_to_entropy_data(
             print(f"Error publishing data contract to {display_host}: {response.text}")
             exit(1)
 
-        print("✅ Published data contract successfully")
+        print("✅ Published data contract successfully.")
 
         location_html = response.headers.get(RESPONSE_HEADER_LOCATION_HTML)
         if location_html is not None and len(location_html) > 0:

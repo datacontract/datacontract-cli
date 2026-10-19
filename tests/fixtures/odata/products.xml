@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.01">
+  <edmx:DataServices>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Catalog.Model" Alias="Catalog">
+      <EntityType Name="Product">
+        <Key><PropertyRef Name="Revision"/><PropertyRef Name="Sku"/></Key>
+        <Property Name="Sku" Type="Edm.String" Nullable="false" MaxLength="32"/>
+        <Property Name="Revision" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="Price" Type="Edm.Decimal" Nullable="true" Precision="10" Scale="2"/>
+        <Property Name="PublishedAt" Type="Edm.DateTimeOffset" Nullable="true" Precision="3"/>
+        <Property Name="Active" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="TrackingId" Type="Edm.Guid" Nullable="true"/>
+        <Property Name="Description" Type="Edm.String" Nullable="true" MaxLength="max"/>
+      </EntityType>
+      <EntityType Name="Order">
+        <Key><PropertyRef Name="OrderId"/></Key>
+        <Property Name="OrderId" Type="Edm.Guid" Nullable="false"/>
+        <Property Name="Total" Type="Edm.Decimal" Nullable="false" Precision="12" Scale="2"/>
+      </EntityType>
+    </Schema>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Catalog.Service">
+      <EntityContainer Name="Store">
+        <EntitySet Name="Products" EntityType="Catalog.Product"/>
+        <EntitySet Name="Orders" EntityType="Catalog.Order"/>
+        <EntitySet Name="ArchivedProducts" EntityType="Catalog.Product" IncludeInServiceDocument="false"/>
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

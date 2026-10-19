@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="order">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="order_id" type="xs:string"/>
+        <xs:element name="placed_at" type="xs:dateTime"/>
+        <xs:element name="status">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="pending"/>
+              <xs:enumeration value="shipped"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="line_item" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="sku" type="xs:string"/>
+              <xs:element name="price">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:decimal">
+                      <xs:attribute name="currency" type="xs:string" use="required"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:positiveInteger" use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

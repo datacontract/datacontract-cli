@@ -33,7 +33,7 @@ steps:
   - name: customer_id
     type: string
   - name: order_total
-    type: double
+    type: integer
   - name: status
     type: string
 - name: line_items

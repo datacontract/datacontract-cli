@@ -24,6 +24,7 @@ type check with a warning rather than failing the run.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Optional
 
 from open_data_contract_standard.model import Server
@@ -48,6 +49,9 @@ _CATALOG_STRATEGY = {
     "athena": "full_type",
     "trino": "full_type",
     "bigquery": "bigquery",
+    "exasol": "exasol",
+    "clickhouse": "clickhouse",
+    "hive": "hive",
 }
 
 
@@ -190,6 +194,9 @@ def _rows(con, query: str):
         # returns a DataFrame; iterating it would yield Column objects.
         if hasattr(cursor, "collect"):
             return list(cursor.collect())
+        # clickhouse-connect returns a QueryResult, which is not iterable.
+        if hasattr(cursor, "result_rows"):
+            return list(cursor.result_rows)
         # Some backends (e.g. BigQuery) return an iterable result set
         # (RowIterator) instead of a DBAPI cursor.
         return list(cursor)
@@ -274,7 +281,7 @@ def _read_information_schema(con, server: Server, model: str) -> Optional[dict[s
     query = (
         "SELECT column_name, data_type, character_maximum_length, "
         "numeric_precision, numeric_scale, datetime_precision "
-        f"FROM information_schema.columns WHERE upper(table_name) = upper('{_quote(model)}')"
+        f"FROM INFORMATION_SCHEMA.COLUMNS WHERE upper(table_name) = upper('{_quote(model)}')"
         f"{_schema_filter(server)}"
     )
     return _map_reconstructed(con, query)
@@ -335,12 +342,58 @@ def _read_bigquery(con, server: Server, model: str) -> Optional[dict[str, str]]:
     return _map_full_type(con, query)
 
 
+def _read_exasol(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Exasol reports a complete type string in ``SYS.EXA_ALL_COLUMNS.column_type``,
+    with the character set appended to string types (``VARCHAR(100) UTF8``)."""
+    schema_filter = _schema_filter(server, column="column_schema")
+    query = (
+        "SELECT column_name, column_type FROM SYS.EXA_ALL_COLUMNS "
+        f"WHERE upper(column_table) = upper('{_quote(model)}'){schema_filter}"
+    )
+    native_types = _map_full_type(con, query)
+    if not native_types:
+        return None
+    return {column: strip_exasol_charset(native) for column, native in native_types.items()}
+
+
+def strip_exasol_charset(native_type: str) -> str:
+    return re.sub(r"\s+(UTF8|ASCII)$", "", native_type, flags=re.IGNORECASE)
+
+
+def _read_clickhouse(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """``system.columns.type`` is the complete declared type (``Nullable(String)``,
+    ``Decimal(10, 2)``); ClickHouse table names are case-sensitive."""
+    database = f"'{_quote(server.database)}'" if server.database else "currentDatabase()"
+    query = f"SELECT name, type FROM system.columns WHERE database = {database} AND table = '{_quote(model)}'"
+    return _map_full_type(con, query)
+
+
+def _read_hive(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Hive has no ``information_schema`` unless the ``sys`` database is set up, but
+    ``DESCRIBE`` reports the complete declared type (``varchar(10)``,
+    ``array<string>``), followed by a partition section that repeats its columns."""
+    table = ".".join(f"`{part.replace('`', '``')}`" for part in (server.database, model) if part)
+    rows = _rows(con, f"DESCRIBE {table}")
+    if not rows:
+        return None
+    result: dict[str, str] = {}
+    for row in rows:
+        column_name = (row[0] or "").strip()
+        if not column_name or column_name.startswith("#"):
+            break
+        result[column_name.lower()] = str(row[1]).strip()
+    return result or None
+
+
 _READERS = {
     "information_schema": _read_information_schema,
     "oracle": _read_oracle,
     "databricks": _read_databricks,
     "full_type": _read_full_type_information_schema,
     "bigquery": _read_bigquery,
+    "exasol": _read_exasol,
+    "clickhouse": _read_clickhouse,
+    "hive": _read_hive,
 }
 
 
