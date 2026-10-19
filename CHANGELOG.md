@@ -12,10 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
+- `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
 
 ### Fixed
-- `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729)
-- Reject duplicate YAML mapping keys instead of silently overwriting contract fields.
+- `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
 
 ## [1.2.7] - 2026-10-16
 
