@@ -29,6 +29,8 @@ Authentication uses a Service Account Key or Application Default Credentials (AD
 | `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `my-compute-project` | Optional. Project to bill query jobs to. Requires `bigquery.jobUser`, `bigquery.readSessionUser` on the billing project and `bigquery.dataViewer` on the data project. |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `runner@my-project.iam.gserviceaccount.com` | Optional. Service account to impersonate, using the key file above (or ADC) as the source principal. Requires `roles/iam.serviceAccountTokenCreator` on the target. |
 
+`project` and `dataset` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_BIGQUERY_PROJECT` and `DATACONTRACT_BIGQUERY_DATASET`. `datacontract import bigquery` always uses ADC — set `GOOGLE_APPLICATION_CREDENTIALS` to point it at a key file.
+
 ### Query location and encryption key
 
 By default, query jobs run in the location BigQuery chooses (`US` when none can be inferred) and carry no encryption key. Projects that enforce the org policy `constraints/gcp.restrictNonCmekServices` reject such jobs:
@@ -45,6 +47,7 @@ Set the query location and a Cloud KMS key with these variables, or as `customPr
 | `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` | `kmsKeyName` | `projects/my-kms-project/locations/europe-west3/keyRings/my-ring/cryptoKeys/my-key` | Optional. Cloud KMS key that encrypts the query results. The caller's service account needs `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key. |
 
 The variable wins over the custom property.
+A location that doesn't match the datasets' fails with `403 Access Denied: … User does not have permission to query table …, or perhaps it does not exist`.
 
 ```yaml
 servers:
@@ -58,8 +61,6 @@ servers:
       - property: kmsKeyName
         value: projects/my-kms-project/locations/europe-west3/keyRings/my-ring/cryptoKeys/my-key
 ```
-
-`project` and `dataset` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_BIGQUERY_PROJECT` and `DATACONTRACT_BIGQUERY_DATASET`. `datacontract import bigquery` always uses ADC — set `GOOGLE_APPLICATION_CREDENTIALS` to point it at a key file.
 
 ## Data types
 
