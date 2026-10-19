@@ -136,6 +136,8 @@ class Config(BaseSettings):
     bigquery_account_info_json_path: str | None = None
     bigquery_billing_project: str | None = None
     bigquery_impersonation_account: str | None = None
+    bigquery_location: str | None = None
+    bigquery_kms_key_name: str | None = None
     # overrides for the contract's servers block
     bigquery_project: str | None = None
     bigquery_dataset: str | None = None
@@ -581,6 +583,12 @@ class Config(BaseSettings):
 
     def get_bigquery_impersonation_account(self, required: bool = False) -> str | None:
         return self._str_option("bigquery_impersonation_account", required)
+
+    def get_bigquery_location(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_location", required)
+
+    def get_bigquery_kms_key_name(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_kms_key_name", required)
 
     def get_bigquery_project(self, required: bool = False) -> str | None:
         return self._str_option("bigquery_project", required)

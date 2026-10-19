@@ -17,11 +17,14 @@ BIGQUERY_ENV_VARS = [
     "DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH",
     "DATACONTRACT_BIGQUERY_BILLING_PROJECT",
     "DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT",
+    "DATACONTRACT_BIGQUERY_LOCATION",
+    "DATACONTRACT_BIGQUERY_KMS_KEY_NAME",
     "DATACONTRACT_BIGQUERY_PROJECT",
     "DATACONTRACT_BIGQUERY_DATASET",
 ]
 
 SERVICE_ACCOUNT = "runner@my-project.iam.gserviceaccount.com"
+KMS_KEY = "projects/my-kms-project/locations/europe-west3/keyRings/my-ring/cryptoKeys/my-key"
 
 
 @pytest.fixture
@@ -42,14 +45,19 @@ def _connect(**overrides):
     return connect.call_args.kwargs
 
 
-def _connect_ibis():
+def _connect_ibis(**overrides):
     """Connect through the real ibis BigQuery backend, stubbing out only the
     Google clients, so the assertions cover how ibis reads our arguments.
     Returns the connection and the patched ``bigquery.Client``."""
     with patch("ibis.backends.bigquery.bq.Client") as client:
         client.return_value.default_query_job_config = None
         with patch("ibis.backends.bigquery.bqstorage.BigQueryReadClient"):
-            return connect_ibis(Run.create_run(), None, _server()), client
+            with patch("ibis.backends.bigquery.pydata_google_auth.default", return_value=(MagicMock(), None)):
+                return connect_ibis(Run.create_run(), None, _server(**overrides)), client
+
+
+def _custom_properties(**values):
+    return [dict(property=name, value=value) for name, value in values.items()]
 
 
 def test_no_credentials_without_env_vars(env):
@@ -146,3 +154,46 @@ def test_project_is_required_with_a_billing_project(env):
         _connect(project=None)
 
     assert e.value.name == "missing_project"
+
+
+def test_no_location_or_kms_key_without_configuration(env):
+    con, client = _connect_ibis()
+
+    assert client.call_args.kwargs["location"] is None
+    assert con.client.default_query_job_config.destination_encryption_configuration is None
+
+
+def test_location_comes_from_env_variable(env):
+    env.setenv("DATACONTRACT_BIGQUERY_LOCATION", "europe-west3")
+
+    assert _connect()["location"] == "europe-west3"
+
+
+def test_location_comes_from_server_custom_property(env):
+    kwargs = _connect(customProperties=_custom_properties(location="europe-west3"))
+
+    assert kwargs["location"] == "europe-west3"
+
+
+def test_env_variable_wins_over_custom_property(env):
+    env.setenv("DATACONTRACT_BIGQUERY_LOCATION", "europe-west4")
+
+    kwargs = _connect(customProperties=_custom_properties(location="europe-west3"))
+
+    assert kwargs["location"] == "europe-west4"
+
+
+def test_kms_key_is_set_on_the_default_query_job_config(env):
+    """Every query ibis runs merges the client's default query job config, so a key
+    set there also encrypts the anonymous tables that hold the query results."""
+    env.setenv("DATACONTRACT_BIGQUERY_KMS_KEY_NAME", KMS_KEY)
+
+    con, _ = _connect_ibis()
+
+    assert con.client.default_query_job_config.destination_encryption_configuration.kms_key_name == KMS_KEY
+
+
+def test_kms_key_comes_from_server_custom_property(env):
+    con, _ = _connect_ibis(customProperties=_custom_properties(kmsKeyName=KMS_KEY))
+
+    assert con.client.default_query_job_config.destination_encryption_configuration.kms_key_name == KMS_KEY

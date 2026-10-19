@@ -31,6 +31,37 @@ Authentication uses a Service Account Key or Application Default Credentials (AD
 
 `project` and `dataset` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_BIGQUERY_PROJECT` and `DATACONTRACT_BIGQUERY_DATASET`. `datacontract import bigquery` always uses ADC — set `GOOGLE_APPLICATION_CREDENTIALS` to point it at a key file.
 
+### Query location and encryption key
+
+By default, query jobs run in the location BigQuery chooses (`US` when none can be inferred) and carry no encryption key. Projects that enforce the org policy `constraints/gcp.restrictNonCmekServices` reject such jobs:
+
+```
+Your administrator requires that you specify an encryption key for queries in project `my-project`.
+```
+
+Set the query location and a Cloud KMS key with these variables, or as `customProperties` on the server so each environment can declare its own:
+
+| Variable | Server `customProperties` | Example | Description |
+|---|---|---|---|
+| `DATACONTRACT_BIGQUERY_LOCATION` | `location` | `europe-west3` | Optional. Location in which query jobs run. Must match the location of the datasets. |
+| `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` | `kmsKeyName` | `projects/my-kms-project/locations/europe-west3/keyRings/my-ring/cryptoKeys/my-key` | Optional. Cloud KMS key that encrypts the query results. The caller's service account needs `roles/cloudkms.cryptoKeyEncrypterDecrypter` on the key. |
+
+The variable wins over the custom property.
+A location that doesn't match the datasets' fails with `403 Access Denied: … User does not have permission to query table …, or perhaps it does not exist`.
+
+```yaml
+servers:
+  - server: bigquery
+    type: bigquery
+    project: my-project
+    dataset: my_dataset
+    customProperties:
+      - property: location
+        value: europe-west3
+      - property: kmsKeyName
+        value: projects/my-kms-project/locations/europe-west3/keyRings/my-ring/cryptoKeys/my-key
+```
+
 ## Data types
 
 ### Importing
