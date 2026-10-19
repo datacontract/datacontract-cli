@@ -55,8 +55,7 @@ class _SafeLoaderNoTimestamp(yaml.SafeLoader):
     """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
 
     def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict[object, object]:
-        # Check only explicit keys before SafeLoader expands YAML merge keys.
-        # An explicit override of an inherited anchor value is valid YAML.
+        # Skip merge keys: overriding a value inherited from an anchor is valid YAML.
         first_marks = {}
         for key_node, _ in node.value:
             if key_node.tag == "tag:yaml.org,2002:merge":
@@ -65,7 +64,6 @@ class _SafeLoaderNoTimestamp(yaml.SafeLoader):
             try:
                 first_mark = first_marks.get(key)
             except TypeError:
-                # Let SafeLoader report its usual unhashable-key error.
                 return super().construct_mapping(node, deep=deep)
             if first_mark is not None:
                 raise yaml.constructor.ConstructorError(
