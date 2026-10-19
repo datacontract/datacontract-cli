@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract test` supports SAP HANA Cloud and SAP Datasphere through the optional `hana` extra (#1332)
 - `datacontract export excel` and `datacontract import excel` now support all versions of the Excel template (ODCS v3.0.2, v3.1.0, v3.2.0)
-- `datacontract import snowflake --lineage` imports upstream column lineage into `transformSourceObjects`
+- `datacontract import snowflake --lineage` imports upstream column lineage into `transformSourceObjects`, it's slow and experimental
 
 ### Fixed
 - `datacontract lint` validates against the ODCS schema for the `apiVersion` the contract declares, instead of always the newest one
