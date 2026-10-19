@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
 
+### Fixed
+- `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729)
+
 ## [1.2.7] - 2026-10-16
 
 ### Changed
