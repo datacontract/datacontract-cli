@@ -48,8 +48,7 @@ def _connect(**overrides):
 def _connect_ibis(**overrides):
     """Connect through the real ibis BigQuery backend, stubbing out only the
     Google clients, so the assertions cover how ibis reads our arguments.
-    Returns the connection and the patched ``bigquery.Client``.
-    Without credentials, ibis would look up application default credentials."""
+    Returns the connection and the patched ``bigquery.Client``."""
     with patch("ibis.backends.bigquery.bq.Client") as client:
         client.return_value.default_query_job_config = None
         with patch("ibis.backends.bigquery.bqstorage.BigQueryReadClient"):
