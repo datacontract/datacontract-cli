@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from deepdiff import DeepDiff
 from open_data_contract_standard.model import OpenDataContractStandard
 
-from datacontract.changelog.normalize import normalize
+from datacontract.changelog.normalize import normalize_pair
 
 
 def diff(v1: dict, v2: dict) -> dict:
@@ -23,8 +23,7 @@ def diff(v1: dict, v2: dict) -> dict:
     ignore_order=True   - dict key ordering is irrelevant
     verbose_level=2     - include old/new values, not just paths
     """
-    n1 = normalize(v1)
-    n2 = normalize(v2)
+    n1, n2 = normalize_pair(v1, v2)
     result = DeepDiff(n1, n2, ignore_order=True, verbose_level=2)
     result = json.loads(result.to_json())
     # DeepDiff reports two dicts that share no key as one value change of the whole
