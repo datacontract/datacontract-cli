@@ -1290,7 +1290,7 @@ def _resolve_col(columns: dict, field: str) -> str:
 def _resolve_expr(t, columns: dict, field: str):
     if field is None:
         raise _ColumnNotFound("Column 'None' not found")
-    if "." not in field:
+    if "." not in field or field.lower() in columns:
         return t[_resolve_col(columns, field)]
     return _resolve_nested_expr(t, field, columns)
 
@@ -1311,7 +1311,7 @@ def _row_predicate(t, columns: dict, field: str, build):
         return _row_predicate(t, columns, field[:-2], lambda array: array.filter(build).length() > 0)
     head, marker, tail = field.partition("[].")
     if not marker:
-        if "." not in field:
+        if "." not in field or field.lower() in columns:
             return build(_resolve_expr(t, columns, field))
         column, _, path = field.partition(".")
         return _path_predicate(t[_resolve_col(columns, column)], path, build)
@@ -1381,6 +1381,11 @@ def _walk_dtype(schema, field: str):
     under a parent that is not the object, array or map the path steps through."""
     if field is None:
         return None
+    # A column whose name contains path characters ("." or "[...]") is a literal
+    # column of that name, not a nested path; resolve it before splitting.
+    literal = field if field in schema else next((k for k in schema.keys() if k.lower() == field.lower()), None)
+    if literal is not None:
+        return schema[literal]
     dtype = None
     path = ""
     for index, part in enumerate(field.split(".")):
@@ -1421,6 +1426,11 @@ def _walk_dtype(schema, field: str):
 def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: str):
     """The real type at ``field`` as ``(property, label)``, from the catalog's nested native types
     where there are some, else from ibis; ``None`` or ``_Unchecked`` as for ``_walk_dtype``."""
+    # As in ``_walk_dtype``, a literal column name wins over the path reading.
+    if structured_types:
+        node = structured_types.get(field.lower())
+        if node is not None:
+            return node, node.physicalType
     parts = field.split(".")
     node = structured_types.get(parts[0].split("[", 1)[0].lower()) if structured_types else None
     if node is None:

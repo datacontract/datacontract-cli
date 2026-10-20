@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
+- `datacontract test`: columns whose names contain `.` or `[...]` (such as `Rate.x` or `Amount [A]`) are no longer reported as missing (#1760)
 
 ## [1.2.7] - 2026-10-16
 

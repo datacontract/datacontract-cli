@@ -1,7 +1,7 @@
 import ibis
 
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
-from datacontract.engines.ibis.ibis_check_execute import _run_present
+from datacontract.engines.ibis.ibis_check_execute import _run_present, _walk_dtype
 from datacontract.model.run import Check, ResultEnum, Run
 
 
@@ -106,6 +106,49 @@ def test_run_present_matches_uppercase_nested_field_for_lowercase_contract_path(
     _run_present(run, _NoLookupConnection(), "checks_testcase", schema, spec)
 
     assert run.checks[0].result == ResultEnum.passed
+
+
+def test_run_present_matches_column_whose_name_contains_a_dot():
+    run = _run_with_stubbed_check()
+    spec = CheckSpec(
+        key="k",
+        category="schema",
+        type="field_is_present",
+        name="field is present",
+        model="checks_testcase",
+        field="Rate.x",
+        metric=MetricType.FIELD_PRESENT,
+    )
+
+    _run_present(run, _NoLookupConnection(), "checks_testcase", ibis.schema({"Rate.x": "double"}), spec)
+
+    assert run.checks[0].result == ResultEnum.passed
+
+
+def test_run_present_matches_column_whose_name_contains_brackets():
+    run = _run_with_stubbed_check()
+    spec = CheckSpec(
+        key="k",
+        category="schema",
+        type="field_is_present",
+        name="field is present",
+        model="checks_testcase",
+        field="Amount [A]",
+        metric=MetricType.FIELD_PRESENT,
+    )
+
+    _run_present(run, _NoLookupConnection(), "checks_testcase", ibis.schema({"Amount [A]": "double"}), spec)
+
+    assert run.checks[0].result == ResultEnum.passed
+
+
+def test_walk_dtype_prefers_a_literal_column_over_the_path_reading():
+    # "s.b" is both a literal column and a path into the struct "s"; the literal
+    # column wins, while the path reading still applies when no literal exists.
+    schema = ibis.schema({"s": "struct<b: int64>", "s.b": "string"})
+    assert _walk_dtype(schema, "s.b") == ibis.dtype("string")
+    assert _walk_dtype(ibis.schema({"s": "struct<b: int64>"}), "s.b") == ibis.dtype("int64")
+    assert _walk_dtype(schema, "Rate.y") is None
 
 
 def _physical_type_spec(field: str) -> CheckSpec:
