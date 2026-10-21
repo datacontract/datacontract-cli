@@ -1,0 +1,52 @@
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+name: Update ODCS Excel template
+jobs:
+  update:
+    name: Open a pull request when the ODCS Excel template changed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.11'
+      - name: Vendor the ODCS Excel template and conformance pair
+        run: uv run --no-project --with requests python update_excel_template.py
+      - name: Add a changelog entry
+        run: |
+          if git diff --quiet; then exit 0; fi
+          python3 - <<'EOF'
+          from pathlib import Path
+
+          entry = "- `datacontract export excel`: the bundled ODCS Excel templates are updated to the latest version"
+          path = Path("CHANGELOG.md")
+          lines = path.read_text().splitlines()
+          start = lines.index("## [Unreleased]")
+          end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## [")), len(lines))
+          if entry not in lines[start:end]:
+              changed = next((i for i in range(start, end) if lines[i] == "### Changed"), None)
+              if changed is None:
+                  lines[end:end] = ["### Changed", entry, ""]
+              else:
+                  lines.insert(changed + 1, entry)
+              path.write_text("\n".join(lines) + "\n")
+          EOF
+      - name: Open a pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          # a personal access token, so that the CI workflows run on the pull request
+          token: ${{ secrets.EXCEL_TEMPLATE_SYNC_TOKEN }}
+          branch: update-excel-template
+          delete-branch: true
+          commit-message: Update the bundled ODCS Excel templates
+          title: Update the bundled ODCS Excel templates
+          body: |
+            Vendors the latest templates and conformance pair from [open-data-contract-standard-excel-template](https://github.com/datacontract/open-data-contract-standard-excel-template) with `update_excel_template.py`.
