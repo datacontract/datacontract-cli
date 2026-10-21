@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
 - `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added
-- `datacontract breaking` grades a quality threshold replaced by another operator (such as `mustBe` → `mustBeLessThan`), an inclusive `minimum`/`maximum` replaced by an exclusive one, timestamp bounds, and values added to `validValues`, `missingValues` or a duplicate check's `properties`, instead of warning
-- `datacontract breaking` treats changes that `datacontract test` does not check, such as a quality rule's `schedule` or `method`, a `text` rule or a rule it cannot run, as non-breaking
+- `datacontract breaking` grades more changes to quality rules and to `minimum`/`maximum` bounds instead of warning
+- `datacontract breaking` no longer flags changes that `datacontract test` does not check
 
 ## [1.2.7] - 2026-10-16
 

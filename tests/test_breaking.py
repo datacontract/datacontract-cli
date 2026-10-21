@@ -433,6 +433,23 @@ def _keyed(*names):
             id="valid-value-added",
         ),
         pytest.param(
+            _contract(
+                _quality(
+                    metric="invalidValues", arguments={"validValues": ["a", "b"]}, mustBeLessThan=5, unit="percent"
+                )
+            ),
+            _contract(
+                _quality(
+                    metric="invalidValues",
+                    arguments={"validValues": ["a", "b", "c"]},
+                    mustBeLessThan=5,
+                    unit="percent",
+                )
+            ),
+            {Direction.LOOSENS},
+            id="valid-value-added-to-percent-limit",
+        ),
+        pytest.param(
             _contract(_orders(quality=[{"metric": "nullValues", "mustBe": 0}])),
             _contract(_orders(quality=[{"name": "no_nulls", "metric": "nullValues", "mustBe": 0}])),
             set(),
@@ -457,6 +474,32 @@ def _keyed(*names):
             _contract(_orders(quality=[{"metric": "duplicateValues", "mustBeLessThan": 5}])),
             {Direction.LOOSENS},
             id="first-of-two-nameless-rules-removed",
+        ),
+        pytest.param(
+            _contract(
+                [
+                    {
+                        "name": "orders",
+                        "quality": [
+                            {"metric": "rowCount", "mustBeGreaterThan": 1000, "severity": "warning"},
+                            {"metric": "rowCount", "mustBeGreaterThan": 0},
+                        ],
+                    }
+                ]
+            ),
+            _contract(
+                [
+                    {
+                        "name": "orders",
+                        "quality": [
+                            {"metric": "rowCount", "mustBeGreaterThan": 0},
+                            {"metric": "rowCount", "mustBeGreaterThan": 1000, "severity": "warning"},
+                        ],
+                    }
+                ]
+            ),
+            set(),
+            id="nameless-rules-reordered",
         ),
         pytest.param(
             _contract(_quality(mustBeLessThan=10)),
@@ -584,6 +627,12 @@ def _keyed(*names):
             _contract(_orders(logicalTypeOptions={"exclusiveMinimum": -1})),
             set(),
             id="same-integer-bound",
+        ),
+        pytest.param(
+            _contract(_orders(logicalType="date", logicalTypeOptions={"maximum": "2025-01-01"})),
+            _contract(_orders(logicalType="date", logicalTypeOptions={"exclusiveMaximum": "2025-01-02"})),
+            set(),
+            id="same-date-bound",
         ),
         pytest.param(_contract(), _contract(_quality(mustBe=5, severity="warning")), set(), id="warning-rule"),
         pytest.param(

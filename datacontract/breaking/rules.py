@@ -190,7 +190,12 @@ class ValidationConstraintRule(BreakingChangeRule):
                 property_type = (_lookup(after, options_path.removesuffix(".logicalTypeOptions")) or {}).get(
                     "logicalType"
                 )
-                probes = _probes([*old_bounds.values(), *new_bounds.values()], integers=property_type == "integer")
+                if property_type == "date":
+                    # A date holds whole days, which _parse_number reads as midnight UTC.
+                    old_bounds, new_bounds = ({k: b / 86400 for k, b in d.items()} for d in (old_bounds, new_bounds))
+                probes = _probes(
+                    [*old_bounds.values(), *new_bounds.values()], integers=property_type in ("integer", "date")
+                )
 
                 def accepts(bounds: dict, value: float) -> bool:
                     return all(
@@ -213,7 +218,15 @@ class ValidationConstraintRule(BreakingChangeRule):
         elif entry.path.endswith(".pattern"):
             direction = Direction.UNDETERMINED
         else:
-            direction = _ordered_direction(entry.path, _parse_number(entry.old_value), _parse_number(entry.new_value))
+            old, new = _parse_number(entry.old_value), _parse_number(entry.new_value)
+            if old is None or new is None:
+                direction = Direction.UNDETERMINED
+            elif old == new:
+                direction = Direction.UNTESTED
+            elif key in ("minLength", "minimum", "exclusiveMinimum", "minItems"):
+                direction = Direction.TIGHTENS if new > old else Direction.LOOSENS
+            else:
+                direction = Direction.TIGHTENS if new < old else Direction.LOOSENS
         return RuleEvaluation(self.rule_id, direction, _change_message("validation constraint", entry))
 
 
@@ -411,7 +424,6 @@ class QualityConstraintRule(BreakingChangeRule):
         elif top in self._unchecked_fields:
             direction = Direction.UNTESTED
         else:
-            # What the rule checks changed: its type, metric, query, engine, implementation or custom check arguments.
             direction = Direction.UNDETERMINED
         subject = f"{field} of quality rule '{name}'" if field else "quality rule"
         return RuleEvaluation(self.rule_id, direction, _change_message(subject, entry))
@@ -475,16 +487,6 @@ def _flag_direction(entry: ChangelogEntry) -> Direction:
     return Direction.TIGHTENS if new else Direction.LOOSENS
 
 
-def _ordered_direction(path: str, old: float | None, new: float | None) -> Direction:
-    if old is None or new is None:
-        return Direction.UNDETERMINED
-    if old == new:
-        return Direction.UNTESTED
-    if path.endswith((".minLength", ".minimum", ".exclusiveMinimum", ".minItems")):
-        return Direction.TIGHTENS if new > old else Direction.LOOSENS
-    return Direction.TIGHTENS if new < old else Direction.LOOSENS
-
-
 def _is_guarantee(rule: dict, at_property: bool) -> bool:
     """Whether datacontract test turns a quality rule into a check that can fail, as _quality_rule_checks does."""
     if failure_result(rule.get("severity")) != ResultEnum.failed:
@@ -544,13 +546,13 @@ def _count_direction(rule: dict, more: bool) -> Direction:
 
 
 def _probes(bounds: list, integers: bool) -> list[float] | None:
-    """Values that tell apart any predicates on numbers that change their answer only at ``bounds``; None if not numbers."""
+    """Values that tell apart predicates that change their answer only at ``bounds``; None if not numbers."""
     bounds = sorted({bound for bound in bounds if bound is not None})
     if not all(isinstance(bound, (int, float)) and not isinstance(bound, bool) for bound in bounds):
         return None
     if integers:
         return sorted({n for bound in bounds for n in range(math.floor(bound) - 1, math.ceil(bound) + 2)})
-    return bounds + [(a + b) / 2 for a, b in zip(bounds, bounds[1:])] + [bounds[0] - 1, bounds[-1] + 1]
+    return sorted(bounds + [(a + b) / 2 for a, b in zip(bounds, bounds[1:])] + [bounds[0] - 1, bounds[-1] + 1])
 
 
 def _accepted_direction(old_accepts, new_accepts, probes: list[float]) -> Direction:

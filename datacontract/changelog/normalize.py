@@ -305,17 +305,14 @@ def _pair_owners(owners1, owners2):
 
 
 def _pair_quality(rules1: dict, rules2: dict) -> tuple[dict, dict]:
-    """Re-key two versions of a quality list so that a rule carries the same key in both.
-
-    A rule pairs by id, then by name, then by what it checks, then, if nameless on both sides, by position.
-    """
+    """Give paired quality rules one key, pairing by id, name, equal rule, what it checks, then position if nameless."""
     side1, side2 = (
         [(key, None if _POSITIONAL_KEY.fullmatch(key) else key, rule) for key, rule in rules.items()]
         for rules in (rules1, rules2)
     )
     pairs: dict[int, int] = {}  # index in side2 -> index in side1
     paired1: set[int] = set()
-    for tier in range(4):
+    for tier in range(5):
         for j, (_, name2, rule2) in enumerate(side2):
             if j in pairs:
                 continue
@@ -325,8 +322,9 @@ def _pair_quality(rules1: dict, rules2: dict) -> tuple[dict, dict]:
                 if (
                     (tier == 0 and rule1.get("id") is not None and rule1.get("id") == rule2.get("id"))
                     or (tier == 1 and name1 is not None and name1 == name2)
-                    or (tier == 2 and all(rule1.get(field) == rule2.get(field) for field in _CHECK_FIELDS))
-                    or (tier == 3 and name1 is None and name2 is None)
+                    or (tier == 2 and rule1 == rule2)
+                    or (tier == 3 and all(rule1.get(field) == rule2.get(field) for field in _CHECK_FIELDS))
+                    or (tier == 4 and name1 is None and name2 is None)
                 ):
                     pairs[j] = i
                     paired1.add(i)
