@@ -387,14 +387,15 @@ class DataContract:
         perspective: Perspective | str = Perspective.CONSUMER,
     ) -> BreakingChangeResult:
         """Classify the changelog between this contract and another for compatibility impact from ``perspective``."""
-        from datacontract.changelog.normalize import normalize
+        from datacontract.changelog.normalize import normalize_pair
 
         source, target = self.get_data_contract(), other.get_data_contract()
         return (detector or BreakingChangeDetector()).detect(
             self._changelog(source, other, target),
             Perspective(perspective),
-            normalize(source.model_dump(exclude_none=True, by_alias=True)),
-            normalize(target.model_dump(exclude_none=True, by_alias=True)),
+            *normalize_pair(
+                source.model_dump(exclude_none=True, by_alias=True), target.model_dump(exclude_none=True, by_alias=True)
+            ),
         )
 
     @classmethod

@@ -1,12 +1,34 @@
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import date
+from datetime import datetime, timezone
 
-from datacontract.engines.checks.create_checks import freshness_value_to_seconds
+from open_data_contract_standard.model import DataQuality
+from pydantic import ValidationError
+
+from datacontract.engines.checks.create_checks import (
+    freshness_value_to_seconds,
+    is_percent_unit,
+    to_threshold,
+    unrunnable_reason,
+)
+from datacontract.engines.checks.custom_quality_check import ENGINE as CUSTOM_CHECK_ENGINE
 from datacontract.engines.checks.severity import failure_result
 from datacontract.model.breaking import Direction
 from datacontract.model.changelog import ChangelogEntry, ChangelogType
 from datacontract.model.run import ResultEnum
+
+# In the order to_threshold reads them.
+_THRESHOLDS = (
+    "mustBe",
+    "mustNotBe",
+    "mustBeGreaterThan",
+    "mustBeGreaterOrEqualTo",
+    "mustBeLessThan",
+    "mustBeLessOrEqualTo",
+    "mustBeBetween",
+    "mustNotBeBetween",
+)
 
 
 @dataclass(frozen=True)
@@ -144,18 +166,67 @@ class ValidationConstraintRule(BreakingChangeRule):
         ".minItems",
         ".maxItems",
     )
+    _bounds = (("minimum", "exclusiveMinimum"), ("maximum", "exclusiveMaximum"))
 
     def evaluate(self, entry: ChangelogEntry, before: dict, after: dict) -> RuleEvaluation | None:
         if not entry.path.startswith("schema.") or not entry.path.endswith(self._suffixes):
             return None
-        if entry.type == ChangelogType.added:
+        options_path, key = entry.path.rsplit(".", 1)
+        old_options, new_options = (_lookup(tree, options_path) or {} for tree in (before, after))
+        group = next((group for group in self._bounds if key in group), ())
+        if entry.type != ChangelogType.updated and any(
+            options.get(other) is not None for other in group if other != key for options in (old_options, new_options)
+        ):
+            # An inclusive bound replaced by an exclusive one, or the reverse: compare what both versions accept.
+            old_bounds, new_bounds = (
+                {k: _parse_number(str(options[k])) for k in group if options.get(k) is not None}
+                for options in (old_options, new_options)
+            )
+            if key != _carrier(old_options, new_options, group):
+                direction = Direction.UNTESTED
+            elif None in (*old_bounds.values(), *new_bounds.values()):
+                direction = Direction.UNDETERMINED
+            else:
+                property_type = (_lookup(after, options_path.removesuffix(".logicalTypeOptions")) or {}).get(
+                    "logicalType"
+                )
+                if property_type == "date":
+                    # A date holds whole days, which _parse_number reads as midnight UTC.
+                    old_bounds, new_bounds = ({k: b / 86400 for k, b in d.items()} for d in (old_bounds, new_bounds))
+                probes = _probes(
+                    [*old_bounds.values(), *new_bounds.values()], integers=property_type in ("integer", "date")
+                )
+
+                def accepts(bounds: dict, value: float) -> bool:
+                    return all(
+                        {
+                            "minimum": value >= b,
+                            "exclusiveMinimum": value > b,
+                            "maximum": value <= b,
+                            "exclusiveMaximum": value < b,
+                        }[k]
+                        for k, b in bounds.items()
+                    )
+
+                direction = _accepted_direction(
+                    lambda value: accepts(old_bounds, value), lambda value: accepts(new_bounds, value), probes
+                )
+        elif entry.type == ChangelogType.added:
             direction = Direction.TIGHTENS
         elif entry.type == ChangelogType.removed:
             direction = Direction.LOOSENS
         elif entry.path.endswith(".pattern"):
             direction = Direction.UNDETERMINED
         else:
-            direction = _ordered_direction(entry.path, _parse_number(entry.old_value), _parse_number(entry.new_value))
+            old, new = _parse_number(entry.old_value), _parse_number(entry.new_value)
+            if old is None or new is None:
+                direction = Direction.UNDETERMINED
+            elif old == new:
+                direction = Direction.UNTESTED
+            elif key in ("minLength", "minimum", "exclusiveMinimum", "minItems"):
+                direction = Direction.TIGHTENS if new > old else Direction.LOOSENS
+            else:
+                direction = Direction.TIGHTENS if new < old else Direction.LOOSENS
         return RuleEvaluation(self.rule_id, direction, _change_message("validation constraint", entry))
 
 
@@ -265,11 +336,26 @@ class FreshnessChangedRule(BreakingChangeRule):
 
 class QualityConstraintRule(BreakingChangeRule):
     rule_id = "quality-constraint-changed"
-    _thresholds = (
-        ".mustBeLessThan",
-        ".mustBeLessOrEqualTo",
-        ".mustBeGreaterThan",
-        ".mustBeGreaterOrEqualTo",
+    # The list arguments a library metric reads, and whether adding a value to one counts more bad rows.
+    _counting_arguments = {
+        ("invalidValues", "validValues"): False,
+        ("missingValues", "missingValues"): True,
+        ("duplicateValues", "properties"): False,
+    }
+    _unchecked_fields = (
+        "id",
+        "name",
+        "rule",
+        "description",
+        "dimension",
+        "businessImpact",
+        "method",
+        "schedule",
+        "scheduler",
+        "severity",
+        "tags",
+        "customProperties",
+        "authoritativeDefinitions",
     )
 
     def evaluate(self, entry: ChangelogEntry, before: dict, after: dict) -> RuleEvaluation | None:
@@ -277,92 +363,67 @@ class QualityConstraintRule(BreakingChangeRule):
             return None
         quality_path, rule_path = entry.path.rsplit(".quality.", 1)
         name, _, field = rule_path.partition(".")
-        rule_versions = [
-            rule
+        old_rule, new_rule = (
+            rule if isinstance(rule, dict) else {}
             for rule in (_lookup(tree, f"{quality_path}.quality.{name}") for tree in (before, after))
-            if isinstance(rule, dict)
-        ]
-        if (
-            field
-            and rule_versions
-            and all(failure_result(rule.get("severity")) != ResultEnum.failed for rule in rule_versions)
-        ):
-            # A rule that can only warn guarantees nothing.
+        )
+        at_property = ".properties." in quality_path
+        was_guarantee, is_guarantee = (_is_guarantee(rule, at_property) for rule in (old_rule, new_rule))
+        metric = new_rule.get("metric")
+        top, _, rest = field.partition(".")
+        argument = rest.split(".")[0] if top == "arguments" and rest else None
+        if not was_guarantee and not is_guarantee:
             direction = Direction.UNTESTED
-        elif rule_path.endswith(".arguments.validValues"):
-            # The diff emits one entry per list element.
-            direction = {
-                ChangelogType.added: Direction.LOOSENS,
-                ChangelogType.removed: Direction.TIGHTENS,
-            }.get(entry.type, Direction.BOTH)
-        elif rule_path.endswith(".arguments.invalidValues"):
-            direction = {
-                ChangelogType.added: Direction.TIGHTENS,
-                ChangelogType.removed: Direction.LOOSENS,
-            }.get(entry.type, Direction.BOTH)
-        elif rule_path.endswith(self._thresholds + (".mustBe", ".mustNotBe", ".mustBeBetween", ".mustNotBeBetween")):
-            rule_path_in_contract, threshold = entry.path.rsplit(".", 1)
-            old_rule = _lookup(before, rule_path_in_contract) or {}
-            new_rule = _lookup(after, rule_path_in_contract) or {}
-            if entry.type == ChangelogType.added and threshold not in old_rule:
-                # Replacing one kind of threshold with another cannot be ordered.
-                direction = (
-                    Direction.UNDETERMINED if any(k.startswith("must") for k in old_rule) else Direction.TIGHTENS
-                )
-            elif entry.type == ChangelogType.removed and threshold not in new_rule:
-                direction = Direction.UNDETERMINED if any(k.startswith("must") for k in new_rule) else Direction.LOOSENS
-            elif rule_path.endswith(self._thresholds):
-                direction = _ordered_direction(
-                    entry.path, _parse_number(entry.old_value), _parse_number(entry.new_value)
-                )
-            elif rule_path.endswith((".mustBe", ".mustNotBe")):
+        elif not field:
+            direction = Direction.TIGHTENS if entry.type == ChangelogType.added else Direction.LOOSENS
+        elif was_guarantee != is_guarantee:
+            decisive = ("severity", "type", "engine", "implementation", "metric", "query", "arguments", "unit")
+            if top == _carrier(old_rule, new_rule, (*decisive, *_THRESHOLDS)):
+                direction = Direction.TIGHTENS if is_guarantee else Direction.LOOSENS
+            else:
+                direction = Direction.UNTESTED
+        elif top == "arguments" and new_rule.get("type") not in ("sql", "custom") and metric is not None:
+            if old_rule.get("metric") != metric:
+                # The metric entry carries the change.
+                direction = Direction.UNTESTED
+            elif argument is None:
+                # The whole block added or removed: only missingValues runs without it, counting nulls alone.
+                if metric != "missingValues":
+                    direction = Direction.UNDETERMINED
+                else:
+                    direction = _count_direction(new_rule, more=entry.type == ChangelogType.added)
+            elif (metric, argument) in self._counting_arguments and entry.type != ChangelogType.updated:
+                more = self._counting_arguments[(metric, argument)] == (entry.type == ChangelogType.added)
+                direction = _count_direction(new_rule, more)
+            elif (metric, argument) in self._counting_arguments or (metric, argument) == ("invalidValues", "pattern"):
                 direction = Direction.UNDETERMINED
             else:
-                # The diff reports the bounds as unordered list elements, so compare the whole ranges.
-                old_range, new_range = (
-                    sorted(bounds) if None not in bounds else None
-                    for bounds in (
-                        [_parse_number(str(v)) for v in value]
-                        if isinstance(value, list) and len(value) == 2
-                        else [None]
-                        for value in (old_rule.get(threshold), new_rule.get(threshold))
-                    )
+                direction = Direction.UNTESTED
+        elif field in _THRESHOLDS:
+            old, new = to_threshold(_threshold_quality(old_rule)), to_threshold(_threshold_quality(new_rule))
+            percent = {_is_percent(rule) for rule in (old_rule, new_rule)}
+            if field != _carrier(old_rule, new_rule, _THRESHOLDS):
+                direction = Direction.UNTESTED
+            elif old is None or new is None or len(percent) > 1:
+                direction = Direction.UNDETERMINED
+            else:
+                probes = _probes(
+                    [bound for t in (old, new) for bound in (t.value, t.value2) if bound is not None],
+                    # A library metric counts rows, unless it is a percentage of them.
+                    integers=not percent.pop() and new_rule.get("type") not in ("sql", "custom"),
                 )
-                if old_range is None or new_range is None:
-                    direction = Direction.UNDETERMINED
-                elif old_range == new_range:
-                    direction = Direction.UNTESTED
-                else:
-                    narrower = new_range[0] >= old_range[0] and new_range[1] <= old_range[1]
-                    wider = new_range[0] <= old_range[0] and new_range[1] >= old_range[1]
-                    # mustBeBetween names the allowed range, mustNotBeBetween the forbidden one.
-                    if threshold == "mustNotBeBetween":
-                        narrower, wider = wider, narrower
-                    if narrower:
-                        direction = Direction.TIGHTENS
-                    elif wider:
-                        direction = Direction.LOOSENS
-                    else:
-                        direction = Direction.BOTH
-        elif rule_path.endswith(".severity"):
-            was_blocking = failure_result(entry.old_value) == ResultEnum.failed
-            is_blocking = failure_result(entry.new_value) == ResultEnum.failed
-            if was_blocking == is_blocking:
-                direction = Direction.UNTESTED
-            else:
-                direction = Direction.TIGHTENS if is_blocking else Direction.LOOSENS
-        elif not field:
-            rule = _lookup(after if entry.type == ChangelogType.added else before, entry.path)
-            if failure_result(rule.get("severity") if isinstance(rule, dict) else None) != ResultEnum.failed:
-                direction = Direction.UNTESTED
-            else:
-                direction = Direction.TIGHTENS if entry.type == ChangelogType.added else Direction.LOOSENS
-        elif rule_path.endswith((".description", ".dimension", ".businessImpact")):
-            direction = Direction.UNTESTED
-        elif ".customProperties." in rule_path or ".authoritativeDefinitions." in rule_path or ".tags" in rule_path:
+                direction = (
+                    Direction.UNDETERMINED if probes is None else _accepted_direction(old.passes, new.passes, probes)
+                )
+        elif field == "metric" and {old_rule.get("metric"), metric} == {"nullValues", "missingValues"}:
+            missing_rule = new_rule if metric == "missingValues" else old_rule
+            markers = [v for v in (missing_rule.get("arguments") or {}).get("missingValues") or [] if v is not None]
+            direction = _count_direction(new_rule, more=metric == "missingValues") if markers else Direction.UNTESTED
+        elif field == "unit":
+            direction = Direction.UNTESTED if _is_percent(old_rule) == _is_percent(new_rule) else Direction.UNDETERMINED
+        elif top in self._unchecked_fields:
             direction = Direction.UNTESTED
         else:
-            # What the rule checks changed (type, metric, query, other arguments, thresholds we cannot order).
             direction = Direction.UNDETERMINED
         subject = f"{field} of quality rule '{name}'" if field else "quality rule"
         return RuleEvaluation(self.rule_id, direction, _change_message(subject, entry))
@@ -426,16 +487,82 @@ def _flag_direction(entry: ChangelogEntry) -> Direction:
     return Direction.TIGHTENS if new else Direction.LOOSENS
 
 
-def _ordered_direction(path: str, old: float | None, new: float | None) -> Direction:
-    if old is None or new is None:
+def _is_guarantee(rule: dict, at_property: bool) -> bool:
+    """Whether datacontract test turns a quality rule into a check that can fail, as _quality_rule_checks does."""
+    if failure_result(rule.get("severity")) != ResultEnum.failed:
+        return False
+    if rule.get("type") == "custom" and rule.get("engine") == "soda" and rule.get("implementation"):
+        return False
+    if rule.get("type") == "custom" and rule.get("engine") == CUSTOM_CHECK_ENGINE:
+        return True
+    if to_threshold(_threshold_quality(rule)) is None:
+        return False
+    if rule.get("type") == "sql":
+        return rule.get("query") is not None
+    if rule.get("metric") is None:
+        return False
+    try:
+        quality = DataQuality.model_validate({k: rule[k] for k in ("metric", "unit", "arguments") if k in rule})
+    except ValidationError:
+        return False
+    return unrunnable_reason(quality, "property" if at_property else None) is None
+
+
+def _threshold_quality(rule: dict) -> DataQuality:
+    """The thresholds of a normalized quality rule, ready for to_threshold."""
+    try:
+        return DataQuality.model_validate({k: v for k, v in rule.items() if k in _THRESHOLDS})
+    except ValidationError:
+        return DataQuality()
+
+
+def _is_percent(rule: dict) -> bool:
+    return is_percent_unit(DataQuality(unit=rule.get("unit")))
+
+
+def _carrier(old: dict, new: dict, keys: tuple[str, ...]) -> str | None:
+    """Of ``keys`` changing together, the one whose entry carries the change: the first set in v2, else removed."""
+    changed = [key for key in keys if old.get(key) != new.get(key)]
+    return next((key for key in changed if new.get(key) is not None), next(iter(changed), None))
+
+
+def _count_direction(rule: dict, more: bool) -> Direction:
+    """How counting more (or fewer) bad rows moves a quality rule, judged by the threshold it is checked against."""
+    threshold = to_threshold(_threshold_quality(rule))
+    probes = (
+        None if threshold is None else _probes([0, threshold.value, threshold.value2], integers=not _is_percent(rule))
+    )
+    if probes is None:
         return Direction.UNDETERMINED
-    if old == new:
+    accepted = [threshold.passes(p) for p in probes if p >= 0]
+    if all(accepted) or not any(accepted):
         return Direction.UNTESTED
-    if path.endswith(
-        (".minLength", ".minimum", ".exclusiveMinimum", ".minItems", ".mustBeGreaterThan", ".mustBeGreaterOrEqualTo")
-    ):
-        return Direction.TIGHTENS if new > old else Direction.LOOSENS
-    return Direction.TIGHTENS if new < old else Direction.LOOSENS
+    if accepted == sorted(accepted, reverse=True):
+        # Passes up to a limit: more bad rows can only fail it.
+        return Direction.TIGHTENS if more else Direction.LOOSENS
+    if accepted == sorted(accepted):
+        return Direction.LOOSENS if more else Direction.TIGHTENS
+    return Direction.BOTH
+
+
+def _probes(bounds: list, integers: bool) -> list[float] | None:
+    """Values that tell apart predicates that change their answer only at ``bounds``; None if not numbers."""
+    bounds = sorted({bound for bound in bounds if bound is not None})
+    if not all(isinstance(bound, (int, float)) and not isinstance(bound, bool) for bound in bounds):
+        return None
+    if integers:
+        return sorted({n for bound in bounds for n in range(math.floor(bound) - 1, math.ceil(bound) + 2)})
+    return sorted(bounds + [(a + b) / 2 for a, b in zip(bounds, bounds[1:])] + [bounds[0] - 1, bounds[-1] + 1])
+
+
+def _accepted_direction(old_accepts, new_accepts, probes: list[float]) -> Direction:
+    loosens = any(new_accepts(p) and not old_accepts(p) for p in probes)
+    tightens = any(old_accepts(p) and not new_accepts(p) for p in probes)
+    if loosens and tightens:
+        return Direction.BOTH
+    if loosens:
+        return Direction.LOOSENS
+    return Direction.TIGHTENS if tightens else Direction.UNTESTED
 
 
 def _parse_bool(value: str) -> bool | None:
@@ -454,10 +581,13 @@ def _parse_number(value: str | None) -> float | None:
     try:
         return float(normalized)
     except ValueError:
-        try:
-            return float(date.fromisoformat(normalized).toordinal())
-        except ValueError:
-            return None
+        pass
+    try:
+        # Python 3.10 reads no "Z" suffix.
+        parsed = datetime.fromisoformat(f"{normalized[:-1]}+00:00" if normalized.endswith("Z") else normalized)
+    except ValueError:
+        return None
+    return (parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)).timestamp()
 
 
 def _change_message(subject: str, entry: ChangelogEntry) -> str:
