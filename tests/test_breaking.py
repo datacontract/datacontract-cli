@@ -406,6 +406,16 @@ def _keyed(*names):
             id="threshold-replaced-by-wider",
         ),
         pytest.param(
+            _contract(_orders(quality=[{"name": "q", "metric": "nullValues", "mustBe": 0}])),
+            _contract(
+                _orders(
+                    quality=[{"name": "q", "metric": "nullValues", "mustBeLessThan": 10, "description": "Few nulls"}]
+                )
+            ),
+            {Direction.LOOSENS},
+            id="threshold-replaced-and-described",
+        ),
+        pytest.param(
             _contract(_quality(mustBeBetween=[0, 10])),
             _contract(_quality(mustBeLessThan=10)),
             {Direction.BOTH},
