@@ -1205,6 +1205,72 @@ def test_cli_no_dry_run_flag_writes_files(tmp_path: Path):
     assert (project / GENERATED_TESTS_DIR).is_dir()
 
 
+def _contract_linking_a_definition(directory: Path) -> Path:
+    """An orders contract whose `order_id` takes its meaning from a definition file."""
+    (directory / "order_id.yaml").write_text(
+        yaml.safe_dump({"description": "Identifies an order across systems.", "required": True})
+    )
+    contract = directory / "orders.odcs.yaml"
+    contract.write_text(
+        yaml.safe_dump(
+            {
+                "apiVersion": "v3.1.0",
+                "kind": "DataContract",
+                "id": "orders-sync-test",
+                "version": "1.0.0",
+                "status": "active",
+                "schema": [
+                    {
+                        "name": "orders",
+                        "properties": [
+                            {
+                                "name": "order_id",
+                                "logicalType": "string",
+                                "authoritativeDefinitions": [{"type": "definition", "url": "order_id.yaml"}],
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+    )
+    return contract
+
+
+def _order_id_column(project: Path) -> dict:
+    (model,) = yaml.safe_load((project / "models" / "orders.yml").read_text())["models"]
+    return next(c for c in model["columns"] if c["name"] == "order_id")
+
+
+def test_cli_sync_inlines_linked_definitions(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+
+    result = CliRunner().invoke(
+        app, ["dbt", "sync", str(_contract_linking_a_definition(tmp_path)), "--project-dir", str(project)]
+    )
+
+    assert result.exit_code == 0, result.output
+    column = _order_id_column(project)
+    assert column["description"] == "Identifies an order across systems."
+    assert "not_null" in yaml.safe_dump(column)
+
+
+def test_cli_sync_no_inline_references_syncs_the_contract_as_written(tmp_path: Path):
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    contract = _contract_linking_a_definition(tmp_path)
+
+    result = CliRunner().invoke(
+        app, ["dbt", "sync", str(contract), "--project-dir", str(project), "--no-inline-references"]
+    )
+
+    assert result.exit_code == 0, result.output
+    column = _order_id_column(project)
+    assert "description" not in column
+    assert "not_null" not in yaml.safe_dump(column)
+
+
 def test_sync_no_dry_run_matches_default_behavior(tmp_path: Path):
     """`dry_run=False` (the default) and an explicit `--no-dry-run` write identical files."""
     project_default = _copy_dbt_project(tmp_path / "default")

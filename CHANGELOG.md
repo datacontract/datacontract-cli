@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
 - `datacontract export excel`: the ODCS v3.2 template shows a tooltip with the field description on every field label
 - `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
+- `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export`
 
 ### Fixed
 - `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
