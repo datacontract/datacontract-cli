@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `datacontract test` matches custom quality check IDs regardless of case
-- `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export`
+- `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765)
 
 ### Fixed
 - `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
