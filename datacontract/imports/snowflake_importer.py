@@ -295,6 +295,7 @@ def account_usage_lineage_query() -> str:
         END;
     """
 
+
 def _quote_identifier(identifier: str) -> str:
     """Double-quote a Snowflake identifier, escaping any inner double-quotes."""
     return '"' + identifier.replace('"', '""') + '"'
