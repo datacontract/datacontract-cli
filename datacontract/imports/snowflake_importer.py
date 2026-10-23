@@ -229,6 +229,7 @@ def account_usage_lineage_query() -> str:
             v_table       STRING;
             v_column      STRING;
             v_object_name STRING;
+            v_template    STRING;
             v_stmt        STRING;
             v_all_lineage ARRAY DEFAULT ARRAY_CONSTRUCT();
             rs_final      RESULTSET;
@@ -249,13 +250,18 @@ def account_usage_lineage_query() -> str:
                                      || REPLACE(v_table, '"', '""') || '"."'
                                      || REPLACE(v_column, '"', '""') || '"';
 
-                v_stmt := 'SELECT DISTANCE, CONCAT_WS(''.'',
+                -- the object name is injected into a constant template as a string literal: escape the
+                -- backslash first (CHR(92)), then the single quote, so it cannot break out of the literal
+                v_template := $$SELECT DISTANCE, CONCAT_WS('.',
                         SOURCE_OBJECT_DATABASE,
                         SOURCE_OBJECT_SCHEMA,
                         SOURCE_OBJECT_NAME,
-                        SOURCE_COLUMN_NAME) as UPSTREAM_SOURCE FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE('
-                       || '''' || REPLACE(v_object_name, '''', '''''') || ''', '
-                       || '''COLUMN'', ''UPSTREAM'', 1))';
+                        SOURCE_COLUMN_NAME) as UPSTREAM_SOURCE
+                    FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE('<OBJECT_NAME>', 'COLUMN', 'UPSTREAM', 1))$$;
+                    
+                v_stmt := REPLACE(v_template,
+                                  '<OBJECT_NAME>',
+                                  REPLACE(REPLACE(v_object_name, CHR(92), CHR(92) || CHR(92)), '''', ''''''));
 
                 BEGIN
                     EXECUTE IMMEDIATE :v_stmt;
