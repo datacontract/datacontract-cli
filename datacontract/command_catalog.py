@@ -4,7 +4,7 @@ from typing import Optional
 import typer
 from typing_extensions import Annotated
 
-from datacontract.catalog.catalog import create_data_contract_html, create_index_html
+from datacontract.catalog.catalog import create_data_contract_page, create_index_html, create_index_md
 from datacontract.cli import app, console, debug_option, enable_debug_logging
 from datacontract.model.exceptions import DataContractException
 
@@ -20,7 +20,15 @@ def catalog(
             help="Glob pattern for the data contract files to include in the catalog. Applies recursively to any subfolders."
         ),
     ] = "*.yaml",
-    output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog html files.")] = "catalog/",
+    output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog files.")] = "catalog/",
+    markdown: Annotated[
+        bool,
+        typer.Option("--markdown", help="Create Markdown files with an index.md instead of HTML pages."),
+    ] = False,
+    mermaid: Annotated[
+        bool,
+        typer.Option("--mermaid", help="Add a Mermaid entity relationship diagram to each page. Requires --markdown."),
+    ] = False,
     schema: Annotated[
         str,
         typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
@@ -28,9 +36,11 @@ def catalog(
     debug: debug_option = None,
 ):
     """
-    Create an HTML catalog of data contracts.
+    Create a catalog of data contracts, as HTML or Markdown.
     """
     enable_debug_logging(debug)
+    if mermaid and not markdown:
+        raise typer.BadParameter("--mermaid requires --markdown (the HTML pages always include the diagram).")
 
     path = Path(output)
     try:
@@ -43,7 +53,7 @@ def catalog(
     contracts = []
     for file in Path().rglob(files):
         try:
-            create_data_contract_html(contracts, file, path, schema)
+            create_data_contract_page(contracts, file, path, schema, "markdown" if markdown else "html", mermaid)
         except DataContractException as e:
             if e.reason == "Cannot parse ODPS product":
                 console.print(f"Skipped {file} due to error: {e.reason}")
@@ -52,4 +62,7 @@ def catalog(
         except Exception as e:
             console.print(f"Skipped {file} due to error: {e}")
 
-    create_index_html(contracts, path)
+    if markdown:
+        create_index_md(contracts, path)
+    else:
+        create_index_html(contracts, path)

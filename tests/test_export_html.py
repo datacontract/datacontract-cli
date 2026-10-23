@@ -155,6 +155,37 @@ schema:
     assert "&gt;" not in diagram_block
 
 
+def test_html_export_links_diagram_and_relationships(tmp_path: Path):
+    """Schema tables link back to the diagram, and relationships link to the target column's anchor."""
+    contract = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: legit
+name: Orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: customer_id
+        logicalType: string
+        relationships:
+          - to: customers.id
+  - name: customers
+    logicalType: object
+    properties:
+      - name: id
+        logicalType: string
+        primaryKey: true
+"""
+    html = _export_html(tmp_path, contract)
+    assert 'class="diagram-link' in html and 'data-entity="orders"' in html
+    assert 'data-schema="customers"' in html
+    assert 'id="customers.id"' in html
+    assert 'href="#customers.id"' in html
+
+
 def test_html_export_renders_array_items_recursively(tmp_path: Path):
     contract = """\
 apiVersion: v3.1.0
@@ -209,3 +240,28 @@ schema:
     assert 'href="#orders"' in html
     assert 'id="customers"' in html
     assert 'href="#customers"' in html
+
+
+def test_html_export_disables_diagram_links_when_diagram_is_reduced(tmp_path: Path, monkeypatch):
+    from datacontract.export import mermaid_exporter
+
+    contract = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: legit
+name: Orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: id
+        logicalType: string
+"""
+    assert 'class="diagram-link' in _export_html(tmp_path, contract)
+
+    monkeypatch.setattr(mermaid_exporter, "MAX_TEXT_SIZE", 10)
+    html = _export_html(tmp_path, contract)
+    assert 'class="diagram-link' not in html
+    assert "entities[normalize" not in html

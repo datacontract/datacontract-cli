@@ -92,6 +92,9 @@ schema:
         physicalType: VARCHAR
         required: true
         description: Reference to the parent order.
+        relationships:
+          - type: foreignKey
+            to: orders.order_id
       - name: sku
         logicalType: string
         physicalType: VARCHAR
