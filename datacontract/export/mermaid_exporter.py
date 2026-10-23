@@ -170,7 +170,7 @@ _HTML_UNSAFE = str.maketrans({c: "" for c in "<>&\"'`"})
 
 
 def _sanitize_name(name: str) -> str:
-    name = name.replace("#", "Nb").replace(" ", "_").replace("/", "by")
+    name = name.replace("#", "Nb").replace("$", "dollar").replace(" ", "_").replace("/", "by")
     return name.translate(_HTML_UNSAFE)
 
 

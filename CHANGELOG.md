@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export markdown` shows `transformLogic` as inline code
 - `datacontract export mermaid` shows at most 5 attributes per entity, keys first, followed by `…`, and cuts entity names to 32 characters when the diagram exceeds Mermaid's size limit
 - `datacontract export mermaid` draws ODCS v3.2 relationships: schema-level and composite-key foreign keys, and references by id
+- `datacontract export mermaid` replaces `$` in table and column names with `dollar`
 - `datacontract dbt sync`: library metrics (`nullValues`, `missingValues`, `invalidValues`, `duplicateValues`) generate tests that check the metric against its bound
 - `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
 - `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added

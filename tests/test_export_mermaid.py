@@ -275,3 +275,29 @@ def test_mermaid_reduction_skips_relationship_labels(monkeypatch):
 
     monkeypatch.setattr(mermaid_exporter, "MAX_TEXT_SIZE", 0)
     assert '"**parents**" ||--o{ "**children**" : ""' in mermaid_exporter.to_mermaid(contract)
+
+
+def test_mermaid_replaces_dollar_sign_in_names():
+    from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+
+    from datacontract.export.mermaid_exporter import to_mermaid
+
+    contract = OpenDataContractStandard(
+        apiVersion="v3.2.0",
+        kind="DataContract",
+        id="x",
+        version="1.0.0",
+        status="active",
+        schema=[
+            SchemaObject(
+                name="sales$2024",
+                properties=[SchemaProperty(name="amount$usd", logicalType="decimal")],
+            )
+        ],
+    )
+
+    diagram = to_mermaid(contract)
+
+    assert '"**salesdollar2024**"' in diagram
+    assert "amountdollarusd decimal" in diagram
+    assert "$" not in diagram
