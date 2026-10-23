@@ -109,7 +109,7 @@ def test_custom_quality_check_without_a_default_query_is_an_error_on_hana():
 
 
 def test_custom_quality_check_collects_its_warnings_for_the_run_log_on_hana(tmp_path):
-    (tmp_path / "rows.yaml").write_text("queries:\n  ansi: SELECT COUNT(*) FROM ${table}\nmustBe: 0\n")
+    (tmp_path / "rows.yaml").write_text("version: 2\nqueries:\n  default: SELECT COUNT(*) FROM ${table}\nmustBe: 0\n")
     rule = DataQuality(type="custom", engine="datacontract-cli", implementation={"check": "rows"})
     warnings = []
 
@@ -122,7 +122,7 @@ def test_custom_quality_check_collects_its_warnings_for_the_run_log_on_hana(tmp_
     )
 
     assert check_by_type(checks, "model_quality_custom").result == ResultEnum.passed
-    assert warnings == ["Custom quality check 'rows': queries.ansi is now called queries.default. Rename it."]
+    assert warnings == ["Custom quality check 'rows': Unknown key 'version' is ignored."]
 
 
 @pytest.mark.parametrize("query", ["DELETE FROM {model}", "SELECT 1 FROM {model}; DROP TABLE ORDERS"])

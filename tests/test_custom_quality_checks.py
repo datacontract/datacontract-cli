@@ -256,7 +256,6 @@ def test_an_id_with_characters_entropy_data_does_not_allow_is_an_error(check_id)
     "content, reason",
     [
         ("queries: {SQLServer: SELECT 1}\nmustBe: 0\n", "queries.SQLServer is not a dialect name."),
-        ("queries: {ansi: SELECT 1, default: SELECT 1}\nmustBe: 0\n", "both queries.ansi and queries.default"),
         ("queries: {default: SELECT 1}\nmustBe: 0\nmustBeLessThan: 1\n", "only one expected result"),
         ("queries: {default: 'SELECT COUNT(*) FROM ${table}_${ENV}'}\nmustBe: 0\n", "${ENV} is neither"),
         (
@@ -571,8 +570,6 @@ def test_ignored_and_deprecated_parts_of_a_check_are_logged_once_and_the_check_s
     assert [log.message for log in run.logs if log.level == "WARN"] == [
         "Custom quality check 'between': Unknown key 'version' is ignored.",
         "Custom quality check 'between': Unknown key 'arguments.min.description' is ignored.",
-        "Custom quality check 'between': Argument min has the type 'value', which is now called 'any'.",
-        "Custom quality check 'between': queries.ansi is now called queries.default. Rename it.",
         "Custom quality check 'between': The dialect 'trin' is not supported by datacontract-cli. Use one of: "
         "athena, bigquery, clickhouse, databricks, duckdb, exasol, hive, oracle, postgres, redshift, snowflake, "
         "spark, trino, tsql.",
