@@ -16,7 +16,7 @@ from typing import Any, Iterator, Optional
 
 import openpyxl
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Team
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
 
 from datacontract.model.natural_keys import NATURAL_KEYS
 
@@ -93,13 +93,10 @@ def iter_elements(odcs: OpenDataContractStandard) -> Iterator[Element]:
         yield from _property_elements(schema.obj.properties, schema.ref, schema.label)
     for support in _keyed(odcs.support, NATURAL_KEYS["support"], "Support", "support channel"):
         yield support
-    if isinstance(odcs.team, Team):
+    if odcs.team is not None:
         yield Element("Team", odcs.team.name or "", odcs.team, "the team")
-        members = odcs.team.members
-    else:
-        members = odcs.team
-    for member in _keyed(members, NATURAL_KEYS["team.members"], "Team Member", "team member"):
-        yield member
+        for member in _keyed(odcs.team.members, NATURAL_KEYS["team.members"], "Team Member", "team member"):
+            yield member
     for role in _keyed(odcs.roles, NATURAL_KEYS["roles"], "Role", "role"):
         yield role
     for sla in _keyed(odcs.slaProperties, NATURAL_KEYS["slaProperties"], "SLA", "SLA property"):

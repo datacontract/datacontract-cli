@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
 - `datacontract export excel`: the ODCS v3.2 template shows a tooltip with the field description on every field label
 - `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
+- `datacontract export odcs`, `import odcs` and `import excel` write a `team` given as a list of members as a team object with `members` (this syntax is preferred by ODCS 3.2)
 
 ### Fixed
 - `datacontract dbt sync`: library metrics (`nullValues`, `missingValues`, `invalidValues`, `duplicateValues`) generate tests that check the metric against its bound
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added
 - `datacontract breaking` grades more changes to quality rules and to `minimum`/`maximum` bounds instead of warning
 - `datacontract breaking` no longer flags changes that `datacontract test` does not check
+- Contracts whose `team` is the deprecated list of members no longer fail to export, `import odcs --owner` or `dbt sync`
 
 ## [1.2.7] - 2026-10-16
 

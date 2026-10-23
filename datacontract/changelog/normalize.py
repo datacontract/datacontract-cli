@@ -263,8 +263,6 @@ def normalize(contract: dict) -> dict:
         team = out["team"]
         if isinstance(team, dict) and "members" in team and isinstance(team["members"], list):
             out["team"] = {**team, "members": _normalize_by(team["members"], "username")}
-        elif isinstance(team, list):
-            out["team"] = _normalize_by(team, "username")
 
     if "authoritativeDefinitions" in out and isinstance(out["authoritativeDefinitions"], list):
         out["authoritativeDefinitions"] = _normalize_auth_defs(out["authoritativeDefinitions"])
