@@ -41,6 +41,7 @@ def check_hana_execute(
         skip_reason = METADATA_ONLY_REASON if metadata_only else DRY_RUN_REASON if dry_run else None
         selection = CheckSelection.of(dimensions=dimensions, quality_ids=quality_ids, tags=tags)
         custom_quality_checks = Config.resolve(config).get_custom_quality_checks()
+        warnings: list[str] = []
         checks_before = len(run.checks)
 
         for schema_object in data_contract.schema_ or []:
@@ -69,8 +70,12 @@ def check_hana_execute(
                         row_filter=row_filter,
                         selection=selection,
                         custom_quality_checks=custom_quality_checks,
+                        warnings=warnings,
                     )
                 )
+
+        for warning in dict.fromkeys(warnings):
+            run.log_warn(warning)
 
         if check_categories is None or "servicelevel" in check_categories:
             run.checks.extend(

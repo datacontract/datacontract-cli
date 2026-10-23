@@ -8,6 +8,7 @@ from open_data_contract_standard.model import OpenDataContractStandard
 from typer.testing import CliRunner
 
 from datacontract.cli import app
+from datacontract.data_contract import DataContract
 from datacontract.export.excel_exporter import export_to_excel_bytes
 from datacontract.imports.excel_importer import import_excel_as_odcs, parse_port
 from datacontract.model.workbook import resolve_cell_value
@@ -85,6 +86,14 @@ def test_whole_price_amount_stays_an_integer(tmp_path):
     price_amount = import_excel_as_odcs(str(path)).price.priceAmount
     assert price_amount == 1000
     assert isinstance(price_amount, int)
+
+
+def test_import_excel_owner_keeps_the_members_of_a_member_list_team(tmp_path):
+    path = tmp_path / "members.xlsx"
+    path.write_bytes(export_to_excel_bytes(_contract("team:\n  members:\n  - username: alice\n")))
+    result = DataContract.import_from_source("excel", str(path), owner="sales")
+    assert result.team.name == "sales"
+    assert [member.username for member in result.team.members] == ["alice"]
 
 
 def test_resolve_cell_value():

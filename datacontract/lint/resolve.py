@@ -11,7 +11,7 @@ import requests
 import yaml
 from jsonschema import validators
 from jsonschema.exceptions import best_match
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Team
 from pydantic import BaseModel, ConfigDict
 
 from datacontract.config import Config
@@ -202,7 +202,7 @@ def resolve_data_contract_with_lint_info(
             configured_host_only=configured_host_only,
         )
     elif data_contract is not None:
-        return data_contract, None, []
+        return convert_member_list_team(data_contract), None, []
     else:
         raise DataContractException(
             type="lint",
@@ -879,7 +879,7 @@ def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContrac
     """Parse ODCS from a dictionary."""
     cls = _LaxOpenDataContractStandard if lax else OpenDataContractStandard
     try:
-        return cls(**yaml_dict)
+        return convert_member_list_team(cls(**yaml_dict))
     except Exception as e:
         raise DataContractException(
             type="schema",
@@ -888,6 +888,13 @@ def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContrac
             engine="datacontract-cli",
             original_exception=e,
         )
+
+
+def convert_member_list_team(odcs: OpenDataContractStandard) -> OpenDataContractStandard:
+    """Read the deprecated list-of-members `team` as a team object holding those members."""
+    if isinstance(odcs.team, list):
+        odcs.team = Team(members=odcs.team) if odcs.team else None
+    return odcs
 
 
 def _to_yaml(data_contract_str, location: str | None = None) -> dict:

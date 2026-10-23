@@ -105,3 +105,15 @@ def test_cli_mermaid_option():
     result = runner.invoke(app, ["export", "markdown", "./fixtures/markdown/export/datacontract.yaml", "--mermaid"])
     assert result.exit_code == 0
     assert "```mermaid" in result.stdout
+
+
+def test_team_without_name_is_left_out():
+    contract = OpenDataContractStandard.model_validate(
+        yaml.safe_load("""
+id: orders
+team:
+  members:
+    - username: alice
+""")
+    )
+    assert "**team:**" not in to_markdown(contract)

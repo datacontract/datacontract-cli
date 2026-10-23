@@ -46,7 +46,10 @@ def run_quality_checks(
     row_filter: str | None = None,
     selection: CheckSelection = SELECT_ALL,
     custom_quality_checks: str | None = None,
+    warnings: list[str] | None = None,
 ) -> list[Check]:
+    if warnings is None:
+        warnings = []
     table_name = schema_object.physicalName or schema_object.name
     checks: list[Check] = []
 
@@ -64,12 +67,14 @@ def run_quality_checks(
                 if not selects(selection, quality, f"field_quality_{kind}"):
                     continue
                 checks.append(
-                    _warning_check(
+                    _check(
                         check_type=f"field_quality_{kind}",
                         key=_quality_key(table_name, field_name, f"{suffix}_{index}"),
                         name=quality.description or unexecuted_check_name(table_name, field_name),
                         model=table_name,
                         field=field_name,
+                        implementation=None,
+                        result=ResultEnum.error if kind == "custom" else ResultEnum.warning,
                         reason=nested_not_run_reason("hana"),
                         quality=quality,
                     )
@@ -86,6 +91,7 @@ def run_quality_checks(
                 row_filter=row_filter,
                 selection=selection,
                 custom_quality_checks=custom_quality_checks,
+                warnings=warnings,
             )
             if check is not None:
                 checks.append(check)
@@ -103,6 +109,7 @@ def run_quality_checks(
             row_filter=row_filter,
             selection=selection,
             custom_quality_checks=custom_quality_checks,
+            warnings=warnings,
         )
         if check is not None:
             checks.append(check)
@@ -197,6 +204,7 @@ def _quality_check(
     row_filter: str | None = None,
     selection: CheckSelection = SELECT_ALL,
     custom_quality_checks: str | None = None,
+    warnings: list[str],
 ) -> Check | None:
     if quality.type == "custom" and quality.engine == ENGINE:
         return _custom_quality_check(
@@ -209,6 +217,7 @@ def _quality_check(
             skip_reason,
             custom_quality_checks,
             selection,
+            warnings,
         )
 
     if quality.type == "custom" and quality.engine == "soda":
@@ -459,14 +468,16 @@ def _custom_quality_check(
     skip_reason: str | None,
     custom_quality_checks: str | None,
     selection: CheckSelection,
+    warnings: list[str],
 ) -> Check | None:
     check_type = "field_quality_custom" if field_name is not None else "model_quality_custom"
     key = _quality_key(table_name, field_name, f"quality_custom_check_{index}")
     try:
-        # HANA has no dialect of its own among the queries, so only the ansi query runs here.
+        # HANA has no dialect of its own among the queries, so only the default query runs here.
         instance = instantiate(quality, table_name, field_name, None, custom_quality_checks)
         query = prepare_hana_query(instance.query, schema_name, table_name, field_name, instance)
     except CustomQualityCheckUnusable as e:
+        check_warnings = e.warnings
         rule = quality.model_copy(update={"dimension": e.dimension})
         if not selects(selection, rule, check_type):
             return None
@@ -477,11 +488,12 @@ def _custom_quality_check(
             model=table_name,
             field=field_name,
             implementation=None,
-            result=ResultEnum(e.result),
+            result=ResultEnum.error,
             reason=e.reason,
             quality=rule,
         )
     else:
+        check_warnings = instance.warnings
         # Measured like a SQL rule: the query's own number, never a percentage of rows.
         rule = instance.quality.model_copy(update={"type": "sql"})
         refusal = refusal_reason(query)
@@ -495,7 +507,7 @@ def _custom_quality_check(
                 model=table_name,
                 field=field_name,
                 implementation=query,
-                result=ResultEnum.failed,
+                result=ResultEnum.error,
                 reason=refusal,
                 quality=rule,
             )
@@ -518,6 +530,7 @@ def _custom_quality_check(
     if check is not None:
         # The rule as its author wrote it, not with the check's defaults filled in.
         check.qualityDefinition = quality_definition_yaml(quality)
+        warnings.extend(check_warnings)
     return check
 
 

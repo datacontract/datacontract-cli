@@ -86,7 +86,7 @@ def test_a_violated_check_fails_with_the_rendered_description_as_name():
     assert "amount < 0 OR amount > 100" in check.implementation
     assert check.diagnostics["value"] == 2
     assert check.diagnostics["custom_quality_check"] == "between"
-    assert check.diagnostics["query"] == "ansi"
+    assert check.diagnostics["query"] == "default"
     assert check.diagnostics["expected_result_from"] == "check"
     assert "check: between" in check.qualityDefinition
 
@@ -163,7 +163,7 @@ def test_a_variable_in_a_number_argument_becomes_a_number(tmp_path, monkeypatch)
 
 
 @pytest.mark.parametrize("value, given_as", [("abc", "'abc'"), (".inf", "inf")])
-def test_a_number_argument_that_is_no_number_is_a_warning(tmp_path, value, given_as):
+def test_a_number_argument_that_is_no_number_is_an_error(tmp_path, value, given_as):
     checks = _check_file(
         tmp_path,
         "above",
@@ -171,7 +171,7 @@ def test_a_number_argument_that_is_no_number_is_a_warning(tmp_path, value, given
         "SELECT COUNT(*) FROM ${table} WHERE ${column} > ${arguments.max}",
     )
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("above", f"max: {value}"))), checks)
-    _unexecuted(spec, "warning", f"${{arguments.max}} must be a number, but got {given_as}.")
+    _unexecuted(spec, "error", f"${{arguments.max}} must be a number, but got {given_as}.")
 
 
 def test_a_contract_variable_in_an_argument_is_resolved_into_a_literal(monkeypatch):
@@ -207,52 +207,64 @@ def test_a_rule_without_a_configured_folder_is_an_error():
 
 def test_an_unknown_check_is_an_error_naming_the_available_ones():
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("betwen"))))
-    _unexecuted(spec, "error", "no custom quality check named 'betwen'. Available: between, distinct_values")
+    _unexecuted(spec, "error", "no custom quality check with the ID 'betwen'. Available: between, distinct_values")
     assert spec.name == "betwen()"
 
 
 @pytest.mark.parametrize(
     "check, reason",
     [
-        ("rows_recnet", "There is no custom quality check named 'rows_recnet'. Did you mean rows_recent?"),
-        ("unrelated", "There is no custom quality check named 'unrelated'."),
+        ("rows_recnet", "There is no custom quality check with the ID 'rows_recnet'. Did you mean rows_recent?"),
+        ("unrelated", "There is no custom quality check with the ID 'unrelated'."),
     ],
 )
 def test_more_than_seven_checks_are_not_listed_but_similar_ones_are_suggested(tmp_path, check, reason):
     for name in [f"check_{index}" for index in range(7)] + ["rows_recent"]:
-        (tmp_path / f"{name}.yaml").write_text("queries: {ansi: SELECT 1}\nmustBe: 1\n")
+        (tmp_path / f"{name}.yaml").write_text("queries: {default: SELECT 1}\nmustBe: 1\n")
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule(check))), checks=str(tmp_path))
     _unexecuted(spec, "error", reason)
     assert spec.preset_reason == reason
 
 
 def test_a_check_defined_twice_is_an_error(tmp_path):
-    (tmp_path / "between.yaml").write_text("queries: {ansi: SELECT 1}\nmustBe: 1\n")
-    (tmp_path / "between.yml").write_text("queries: {ansi: SELECT 1}\nmustBe: 1\n")
+    (tmp_path / "between.yaml").write_text("queries: {default: SELECT 1}\nmustBe: 1\n")
+    (tmp_path / "between.yml").write_text("queries: {default: SELECT 1}\nmustBe: 1\n")
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("between"))), checks=str(tmp_path))
     _unexecuted(spec, "error", "defined twice: between.yaml, between.yml")
+
+
+def test_ids_that_differ_only_in_case_are_a_check_defined_twice(tmp_path):
+    (tmp_path / "Between.yaml").write_text("queries: {default: SELECT 1}\nmustBe: 1\n")
+    (tmp_path / "between.yml").write_text("queries: {default: SELECT 1}\nmustBe: 1\n")
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("between"))), checks=str(tmp_path))
+    _unexecuted(spec, "error", "The custom quality check 'between' is defined twice: Between.yaml, between.yml.")
+
+
+def test_the_id_is_looked_up_exactly(tmp_path):
+    (tmp_path / "Between.yaml").write_text("queries: {default: SELECT 1}\nmustBe: 1\n")
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("between"))), checks=str(tmp_path))
+    _unexecuted(spec, "error", "There is no custom quality check with the ID 'between'. Available: Between.")
+
+
+@pytest.mark.parametrize("check_id", ['"my check"', "a/b", "'a#b'", "a%b", "a;b", "'a?b'", '"a\\\\b"'])
+def test_an_id_with_characters_entropy_data_does_not_allow_is_an_error(check_id):
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule(check_id))))
+    _unexecuted(spec, "error", "must not contain spaces, slashes, or any of the characters \\ % ; # ?")
 
 
 @pytest.mark.parametrize(
     "content, reason",
     [
-        ("queries: {ansi: SELECT 1}\nmustbe: 0\n", "unknown key mustbe"),
-        ("queries: {sqlserver: SELECT 1}\nmustBe: 0\n", "queries.sqlserver is not a known dialect"),
-        ("queries: {ansi: SELECT 1}\nmustBe: 0\nmustBeLessThan: 1\n", "only one expected result"),
-        ("queries: {ansi: 'SELECT COUNT(*) FROM ${table}_${ENV}'}\nmustBe: 0\n", "${ENV} is neither"),
+        ("queries: {SQLServer: SELECT 1}\nmustBe: 0\n", "queries.SQLServer is not a dialect name."),
+        ("queries: {default: SELECT 1}\nmustBe: 0\nmustBeLessThan: 1\n", "only one expected result"),
+        ("queries: {default: 'SELECT COUNT(*) FROM ${table}_${ENV}'}\nmustBe: 0\n", "${ENV} is neither"),
         (
-            "queries: {ansi: 'SELECT COUNT(*) FROM {table} WHERE a > {arguments.y}'}\nmustBe: 0\n",
+            "queries: {default: 'SELECT COUNT(*) FROM {table} WHERE a > {arguments.y}'}\nmustBe: 0\n",
             "{arguments.y} is neither",
         ),
-        (
-            "queries: {ansi: 'SELECT TOP 1 x FROM ${table}'}\nmustBe: 0\n",
-            "queries.ansi is not portable SQL near '1' in line 1. Put SQL that only some databases understand under "
-            "their dialect, such as queries.tsql.",
-        ),
-        (
-            "queries: {ansi: 'SELECT COUNT(*) FROM ${table} WHERE'}\nmustBe: 0\n",
-            "queries.ansi is not portable SQL near 'WHERE' in line 1.",
-        ),
+        ("name: [a]\nqueries: {default: SELECT 1}\nmustBe: 0\n", "name must be a string."),
+        ("arguments: 5\nqueries: {default: SELECT 1}\nmustBe: 0\n", "arguments must be a mapping"),
+        ("arguments: {x: {type: text}}\nqueries: {default: SELECT 1}\nmustBe: 0\n", "must be any, identifier or"),
         ("mustBe: 0\n", "needs queries"),
     ],
 )
@@ -262,7 +274,7 @@ def test_a_broken_check_file_is_an_error(tmp_path, content, reason):
     _unexecuted(spec, "error", reason)
 
 
-def test_wrong_use_of_an_existing_check_warns():
+def test_wrong_use_of_an_existing_check_is_an_error():
     rules = "\n".join(
         [
             _rule("between", "min: 0\nmax: 1\nmni: 0"),
@@ -273,23 +285,23 @@ def test_wrong_use_of_an_existing_check_warns():
         ]
     )
     specs = _specs(_contract(property_quality=_amount_rule(rules)))
-    _unexecuted(specs[0], "warning", "has no argument mni")
-    _unexecuted(specs[1], "warning", "needs the argument max")
-    _unexecuted(specs[2], "warning", "Neither the rule nor the custom quality check 'distinct_values' sets")
+    _unexecuted(specs[0], "error", "has no argument mni")
+    _unexecuted(specs[1], "error", "needs the argument max")
+    _unexecuted(specs[2], "error", "Neither the rule nor the custom quality check 'distinct_values' sets")
     _unexecuted(
-        specs[3], "warning", "${arguments.of} must be the name of one column or table, such as amount, but got 1."
+        specs[3], "error", "${arguments.of} must be the name of one column or table, such as amount, but got 1."
     )
-    _unexecuted(specs[4], "warning", "needs the arguments min, max.")
+    _unexecuted(specs[4], "error", "needs the arguments min, max.")
 
 
 @pytest.mark.parametrize(
     "value, given_as", [("[email, amount]", "a list"), ('""', "an empty value"), ("null", "no value")]
 )
-def test_an_identifier_argument_that_is_not_a_name_warns(value, given_as):
+def test_an_identifier_argument_that_is_not_a_name_is_an_error(value, given_as):
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("distinct_values", f"of: {value}", "mustBe: 5"))))
     _unexecuted(
         spec,
-        "warning",
+        "error",
         f"${{arguments.of}} must be the name of one column or table, such as amount, but got {given_as}.",
     )
 
@@ -301,13 +313,13 @@ def test_an_identifier_argument_that_is_not_a_name_warns(value, given_as):
         ("min: []\nmax: 1", "${arguments.min} is an empty list. Give it at least one value."),
         (
             "min: [1, 2]\nmax: 1",
-            "${arguments.min} is a list, but queries.ansi uses it where one value goes. Pass a single value.",
+            "${arguments.min} is a list, but queries.default uses it where one value goes. Pass a single value.",
         ),
     ],
 )
-def test_a_value_argument_of_the_wrong_shape_warns(arguments, reason):
+def test_a_value_argument_of_the_wrong_shape_is_an_error(arguments, reason):
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("between", arguments))))
-    _unexecuted(spec, "warning", reason)
+    _unexecuted(spec, "error", reason)
 
 
 def test_a_dry_run_reports_a_missing_folder_as_an_error():
@@ -328,23 +340,23 @@ def test_the_dimension_of_the_check_selects_the_rule():
     assert not any(c.type == "field_quality_custom" for c in not_selected.checks)
 
 
-def test_a_column_check_on_a_schema_warns():
+def test_a_column_check_on_a_schema_is_an_error():
     [spec] = _specs(_contract(schema_quality=_schema_rule(_rule("between", "min: 0\nmax: 1"))))
-    _unexecuted(spec, "warning", "refers to the column, so declare it on a property")
+    _unexecuted(spec, "error", "refers to the column, so declare it on a property")
 
 
-def test_a_rule_on_an_array_item_warns():
+def test_a_rule_on_an_array_item_is_an_error():
     items_quality = "          quality:\n" + "".join(
         f"            {line}\n" for line in _rule("not_in", "values: [a]").splitlines()
     )
     [spec] = _specs(_contract(items_quality=items_quality))
-    _unexecuted(spec, "warning", "is an array item, not a column")
+    _unexecuted(spec, "error", "is an array item, not a column")
 
 
-def test_the_query_of_the_rule_dialect_is_used_and_otherwise_ansi_or_nothing():
+def test_the_query_of_the_rule_dialect_is_used_and_otherwise_the_default_query_or_nothing():
     contract = _contract(schema_quality=_schema_rule(_rule("tsql_only")))
     [on_duckdb] = _specs(contract)
-    _unexecuted(on_duckdb, "warning", "has no query for duckdb and no ansi query. It has queries for tsql.")
+    _unexecuted(on_duckdb, "error", "has no query for duckdb and no default query. It has queries for tsql.")
 
     [on_sqlserver] = _specs(contract, server=Server(server="production", type="sqlserver"))
     assert on_sqlserver.query == "SELECT TOP 1 COUNT(*) FROM orders"
@@ -354,7 +366,7 @@ def test_the_query_of_the_rule_dialect_is_used_and_otherwise_ansi_or_nothing():
 def test_the_call_form_quotes_only_strings_that_would_be_misread(tmp_path):
     (tmp_path / "codes.yaml").write_text(
         "arguments:\n  codes:\n  strict: {default: true}\n"
-        "queries: {ansi: 'SELECT COUNT(*) FROM ${table} WHERE ${column} IN (${arguments.codes})'}\nmustBe: 0\n"
+        "queries: {default: 'SELECT COUNT(*) FROM ${table} WHERE ${column} IN (${arguments.codes})'}\nmustBe: 0\n"
     )
     rule = _rule("codes", 'codes: ["007", "a, b", "", plain, 7]')
     [spec] = _specs(_contract(property_quality=_amount_rule(rule)), checks=str(tmp_path))
@@ -388,7 +400,7 @@ def test_ci_reads_the_folder_from_the_option(tmp_path):
 
 
 def _check_file(tmp_path, name: str, arguments: str, query: str) -> str:
-    (tmp_path / f"{name}.yaml").write_text(f'arguments:\n{arguments}queries:\n  ansi: "{query}"\nmustBe: 0\n')
+    (tmp_path / f"{name}.yaml").write_text(f'arguments:\n{arguments}queries:\n  default: "{query}"\nmustBe: 0\n')
     return str(tmp_path)
 
 
@@ -444,27 +456,35 @@ def test_a_negative_number_after_a_minus_does_not_start_a_comment(tmp_path):
 @pytest.mark.parametrize(
     "arguments, query, reason",
     [
-        ("  x:\n", "SELECT COUNT(*) FROM ${table} -- ${arguments.x}", "${arguments.x} in queries.ansi is in a comment"),
+        (
+            "  x:\n",
+            "SELECT COUNT(*) FROM ${table} -- ${arguments.x}",
+            "${arguments.x} in queries.default is in a comment",
+        ),
         (
             "  x:\n",
             'SELECT COUNT(*) FROM ${table} WHERE a = \\"${arguments.x}\\"',
-            "${arguments.x} in queries.ansi is in double quotes, which SQL reads as a name",
+            "${arguments.x} in queries.default is in double quotes, which SQL reads as a name",
         ),
-        ("  x:\n", "SELECT COUNT(*) FROM t_${arguments.x}", "${arguments.x} in queries.ansi is joined to other text"),
+        (
+            "  x:\n",
+            "SELECT COUNT(*) FROM t_${arguments.x}",
+            "${arguments.x} in queries.default is joined to other text",
+        ),
         (
             "  x:\n",
             "SELECT COUNT(*) FROM ${table} WHERE a = `${arguments.x}`",
-            "${arguments.x} in queries.ansi is in backticks, which SQL reads as a name",
+            "${arguments.x} in queries.default is in backticks, which SQL reads as a name",
         ),
         (
             "",
             "SELECT COUNT(*) FROM ${table}_archive",
-            "${table} in queries.ansi is a column or table name, so it must stand alone, not joined to other text",
+            "${table} in queries.default is a column or table name, so it must stand alone, not joined to other text",
         ),
         (
             "",
             "SELECT COUNT(*) FROM ${table} WHERE note LIKE '%${column}%'",
-            "${column} in queries.ansi is a column or table name, so it must stand alone, not inside a string.",
+            "${column} in queries.default is a column or table name, so it must stand alone, not inside a string.",
         ),
         (
             "  x: {type: identifier}\n",
@@ -497,7 +517,7 @@ def test_a_value_cannot_end_its_string_through_a_backslash_in_front_of_it(tmp_pa
     contract = _contract(property_quality=_amount_rule(rule))
     [spec] = _specs(contract, checks, server=Server(server="production", type="snowflake"))
 
-    _unexecuted(spec, "error", "the value of ${arguments.x} in queries.ansi would end its '...' string")
+    _unexecuted(spec, "error", "the value of ${arguments.x} in queries.default would end its '...' string")
 
 
 def test_a_boolean_value_is_1_or_0_on_sql_server(tmp_path):
@@ -518,14 +538,47 @@ def test_the_dollar_sign_of_an_argument_reference_is_optional(tmp_path):
 @pytest.mark.parametrize(
     "value, reason",
     [
-        ("[a, b]", "${arguments.x} is a list, but queries.ansi uses it inside a string. Pass a single value."),
-        ("null", "${arguments.x} is null, but queries.ansi uses it inside a string. Give it a value."),
+        ("[a, b]", "${arguments.x} is a list, but queries.default uses it inside a string. Pass a single value."),
+        ("null", "${arguments.x} is null, but queries.default uses it inside a string. Give it a value."),
     ],
 )
-def test_a_list_or_null_inside_a_string_warns(tmp_path, value, reason):
+def test_a_list_or_null_inside_a_string_is_an_error(tmp_path, value, reason):
     checks = _check_file(
         tmp_path, "check", "  x:\n", "SELECT COUNT(*) FROM ${table} WHERE ${column} LIKE '%${arguments.x}%'"
     )
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("check", f"x: {value}"))), checks)
 
-    _unexecuted(spec, "warning", reason)
+    _unexecuted(spec, "error", reason)
+
+
+def test_ignored_and_deprecated_parts_of_a_check_are_logged_once_and_the_check_still_runs(tmp_path):
+    (tmp_path / "between.yaml").write_text(
+        "name: Value range\n"
+        "version: 2\n"
+        "arguments:\n  min: {type: value, description: lower bound}\n  max:\n"
+        "queries:\n"
+        "  ansi: SELECT COUNT(*) FROM ${table} WHERE ${column} < ${arguments.min} OR ${column} > ${arguments.max}\n"
+        "  trin: SELECT 1\n"
+        "mustBe: 0\n"
+    )
+    rules = "\n".join([BETWEEN, BETWEEN.replace("max: 100", "max: 100\n    strict: true")])
+    run = _test(_contract(property_quality=_amount_rule(rules)), str(tmp_path))
+
+    checks = [c for c in run.checks if c.type == "field_quality_custom"]
+    assert [c.result for c in checks] == [ResultEnum.failed, ResultEnum.failed]
+    assert [c.name for c in checks] == ["between(min=0, max=100)", "between(min=0, max=100)"]
+    assert [log.message for log in run.logs if log.level == "WARN"] == [
+        "Custom quality check 'between': Unknown key 'version' is ignored.",
+        "Custom quality check 'between': Unknown key 'arguments.min.description' is ignored.",
+        "Custom quality check 'between': The dialect 'trin' is not supported by datacontract-cli. Use one of: "
+        "athena, bigquery, clickhouse, databricks, duckdb, exasol, hive, oracle, postgres, redshift, snowflake, "
+        "spark, trino, tsql.",
+        "Custom quality check 'between' on orders.amount: Unknown key 'implementation.strict' is ignored.",
+    ]
+
+
+def test_a_query_that_is_not_a_single_read_only_statement_is_an_error(tmp_path):
+    checks = _check_file(tmp_path, "check", "", "SELECT COUNT(*) FROM ${table}; DELETE FROM ${table}")
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("check"))), checks)
+
+    _unexecuted(spec, "error", "must be a single read-only query")
