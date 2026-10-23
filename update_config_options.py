@@ -61,6 +61,8 @@ def _type_label(annotation) -> str:
     text = str(annotation)
     if "SecretStr" in text:
         return "string (secret)"
+    if "dict" in text:
+        return "string (json)"
     if "int" in text:
         return "integer"
     if "bool" in text:

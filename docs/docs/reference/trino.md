@@ -32,6 +32,38 @@ servers:
 
 `host`, `port`, `catalog`, and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_TRINO_HOST`, `DATACONTRACT_TRINO_PORT`, `DATACONTRACT_TRINO_CATALOG`, and `DATACONTRACT_TRINO_SCHEMA`.
 
+## Custom HTTP headers
+
+Set `DATACONTRACT_TRINO_HTTP_HEADERS` to a JSON object with string keys and string values:
+
+```bash
+export DATACONTRACT_TRINO_HTTP_HEADERS='{"X-Trino-Client-Info":"datacontract-cli","X-Trino-Routing-Group":"analytics"}'
+```
+
+Headers are passed to `trino.dbapi.connect(http_headers=...)` for both `datacontract test` and `datacontract import trino`.
+
+In Python, pass a dictionary to `Config`:
+
+```python
+config = Config(
+    trino_http_headers={
+        "X-Trino-Client-Info": "datacontract-cli",
+        "X-Trino-Routing-Group": "analytics",
+    },
+)
+```
+
+In a [configuration file](../configuration.md), use a YAML mapping:
+
+```yaml
+trino:
+  http_headers:
+    X-Trino-Client-Info: datacontract-cli
+    X-Trino-Routing-Group: ${TRINO_ROUTING_GROUP:-analytics}
+```
+
+`Config(...)` merges headers from the environment with the supplied dictionary; supplied values win for matching keys. A YAML configuration supplies its own mapping without merging environment headers. Header values are not masked.
+
 ## Data types
 
 ### Importing

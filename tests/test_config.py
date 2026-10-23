@@ -67,6 +67,26 @@ def test_secrets_do_not_leak_into_repr():
     assert config.snowflake_password.get_secret_value() == "super-secret"
 
 
+def test_trino_http_headers_can_be_configured_by_env_name():
+    config = Config.resolve({"DATACONTRACT_TRINO_HTTP_HEADERS": '{"X-Trino-Client-Info": "datacontract-cli"}'})
+
+    assert config.get_trino_http_headers() == {"X-Trino-Client-Info": "datacontract-cli"}
+
+
+def test_trino_http_headers_merge_env_with_explicit_config(monkeypatch):
+    monkeypatch.setenv(
+        "DATACONTRACT_TRINO_HTTP_HEADERS",
+        '{"X-Trino-Client-Info": "datacontract-cli", "X-Trino-Routing-Group": "default"}',
+    )
+    config = Config(trino_http_headers={"X-Trino-Routing-Group": "analytics"})
+
+    assert config.get_trino_http_headers() == {
+        "X-Trino-Client-Info": "datacontract-cli",
+        "X-Trino-Routing-Group": "analytics",
+    }
+    assert Config.resolve(config.to_env_dict()).get_trino_http_headers() == config.get_trino_http_headers()
+
+
 def test_unknown_options_raise():
     with pytest.raises(ValueError, match="snowflake_pasword"):
         Config(snowflake_pasword="typo")
