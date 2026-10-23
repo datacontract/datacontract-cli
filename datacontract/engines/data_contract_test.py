@@ -168,6 +168,8 @@ def execute_data_contract_test(
         specs = [s for s in specs if s.tags and not tags.isdisjoint(s.tags)]
         if not specs:
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
+    for warning in dict.fromkeys(warning for spec in specs for warning in spec.warnings or []):
+        run.log_warn(warning)
     run.checks.extend(build_check_stubs(specs))
 
     if metadata_only:

@@ -69,7 +69,7 @@ def test_sql_quality_fail():
     assert check_by_type(checks, "model_quality_sql").result == ResultEnum.failed
 
 
-def test_custom_quality_check_runs_its_ansi_query():
+def test_custom_quality_check_runs_its_default_query():
     connection = FakeConnection((2,))
     rule = DataQuality(
         type="custom",
@@ -95,7 +95,7 @@ def test_placeholders_hana_has_no_value_for_fall_back_to_the_table():
     assert prepare_hana_query("SELECT COUNT(*) FROM {catalog}", "SALES", "ORDERS") == 'SELECT COUNT(*) FROM "ORDERS"'
 
 
-def test_custom_quality_check_without_an_ansi_query_warns_on_hana():
+def test_custom_quality_check_without_a_default_query_is_an_error_on_hana():
     rule = DataQuality(type="custom", engine="datacontract-cli", implementation={"check": "tsql_only"})
     schema = SchemaObject(name="ORDERS", quality=[rule])
 
@@ -104,8 +104,25 @@ def test_custom_quality_check_without_an_ansi_query_warns_on_hana():
     )
 
     check = check_by_type(checks, "model_quality_custom")
-    assert check.result == ResultEnum.warning
-    assert "no query for this server and no ansi query" in check.reason
+    assert check.result == ResultEnum.error
+    assert "no query for this server and no default query" in check.reason
+
+
+def test_custom_quality_check_collects_its_warnings_for_the_run_log_on_hana(tmp_path):
+    (tmp_path / "rows.yaml").write_text("queries:\n  ansi: SELECT COUNT(*) FROM ${table}\nmustBe: 0\n")
+    rule = DataQuality(type="custom", engine="datacontract-cli", implementation={"check": "rows"})
+    warnings = []
+
+    checks = run_quality_checks(
+        FakeConnection((0,)),
+        "SALES",
+        SchemaObject(name="ORDERS", quality=[rule]),
+        custom_quality_checks=str(tmp_path),
+        warnings=warnings,
+    )
+
+    assert check_by_type(checks, "model_quality_custom").result == ResultEnum.passed
+    assert warnings == ["Custom quality check 'rows': queries.ansi is now called queries.default. Rename it."]
 
 
 @pytest.mark.parametrize("query", ["DELETE FROM {model}", "SELECT 1 FROM {model}; DROP TABLE ORDERS"])

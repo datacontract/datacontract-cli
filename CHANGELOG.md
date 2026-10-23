@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export excel`: the ODCS v3.2 template shows a tooltip with the field description on every field label
 - `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
 - `datacontract export odcs`, `import odcs` and `import excel` write a `team` given as a list of members as a team object with `members` (this syntax is preferred by ODCS 3.2)
+- `datacontract test`: custom quality checks accept the files Entropy Data writes, with a `default` query and the argument type `any` (`ansi` and `value` still work)
+- `datacontract test`: a quality rule that can't use its custom quality check reports `error` instead of `warning` or `failed`
 
 ### Fixed
 - `datacontract dbt sync`: library metrics (`nullValues`, `missingValues`, `invalidValues`, `duplicateValues`) generate tests that check the metric against its bound
