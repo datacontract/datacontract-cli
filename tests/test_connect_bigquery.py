@@ -112,6 +112,14 @@ def test_billing_project_keeps_the_contract_project_as_the_data_project(env):
     assert client.call_args.kwargs["credentials"] is impersonated.return_value
 
 
+def test_queries_default_to_the_server_dataset(env):
+    """The SQL of a quality rule may name the table without its dataset."""
+    con, _ = _connect_ibis()
+
+    default_dataset = con.client.default_query_job_config.default_dataset
+    assert (default_dataset.project, default_dataset.dataset_id) == ("my-project", "my_dataset")
+
+
 def test_env_variables_override_the_contract_project_and_dataset(env):
     env.setenv("DATACONTRACT_BIGQUERY_PROJECT", "env-project")
     env.setenv("DATACONTRACT_BIGQUERY_DATASET", "env_dataset")
