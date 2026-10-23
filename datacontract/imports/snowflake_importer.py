@@ -225,7 +225,6 @@ def account_usage_lineage_query() -> str:
     # GET_LINEAGE only accepts constant arguments, so it is called once per column through dynamic SQL
     # and the results are accumulated in an ARRAY (no DDL, works with a read-only role).
     return """
-        EXECUTE IMMEDIATE $$
         DECLARE
             v_table       STRING;
             v_column      STRING;
@@ -250,7 +249,11 @@ def account_usage_lineage_query() -> str:
                                      || REPLACE(v_table, '"', '""') || '"."'
                                      || REPLACE(v_column, '"', '""') || '"';
 
-                v_stmt := 'SELECT * FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE('
+                v_stmt := 'SELECT DISTANCE, CONCAT_WS(''.'',
+                        SOURCE_OBJECT_DATABASE,
+                        SOURCE_OBJECT_SCHEMA,
+                        SOURCE_OBJECT_NAME,
+                        SOURCE_COLUMN_NAME) as UPSTREAM_SOURCE FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE('
                        || '''' || REPLACE(v_object_name, '''', '''''') || ''', '
                        || '''COLUMN'', ''UPSTREAM'', 1))';
 
@@ -277,20 +280,14 @@ def account_usage_lineage_query() -> str:
                 SELECT
                     f.value:INSPECTED_TABLE::STRING AS TABLE_NAME,
                     f.value:INSPECTED_COLUMN::STRING AS COLUMN_NAME,
-                    ARRAY_AGG(DISTINCT CONCAT_WS('.',
-                        f.value:SOURCE_OBJECT_DATABASE::STRING,
-                        f.value:SOURCE_OBJECT_SCHEMA::STRING,
-                        f.value:SOURCE_OBJECT_NAME::STRING,
-                        f.value:SOURCE_COLUMN_NAME::STRING)) AS UPSTREAM_SOURCES
+                    ARRAY_AGG(DISTINCT f.value:UPSTREAM_SOURCE::STRING) AS UPSTREAM_SOURCES
                 FROM TABLE(FLATTEN(INPUT => :v_all_lineage)) AS f
                 WHERE f.value:DISTANCE::INTEGER = 1
                 GROUP BY 1, 2
             );
             RETURN TABLE(rs_final);
         END;
-        $$
     """
-
 
 def _quote_identifier(identifier: str) -> str:
     """Double-quote a Snowflake identifier, escaping any inner double-quotes."""
