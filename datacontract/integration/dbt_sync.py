@@ -706,14 +706,14 @@ def _build_singular_sql(
     field: Optional[str] = None,
     description: Optional[str] = None,
 ) -> str:
-    # The ODCS query is expected to yield a single-column scalar metric. We alias that
-    # column to `metric_value` via the CTE column list, then return rows only when the
-    # bound is violated — dbt singular-test semantics (rows returned = test failed).
+    # Rows returned = bound violated (dbt singular-test semantics). Generated queries alias their scalar
+    # `metric_value` themselves, as BigQuery has no CTE column list; a user query's column is renamed by one.
     severity_arg = f"severity='{severity}', " if severity else ""
+    cte = "_dc_metric (metric_value)" if check_type == "custom_sql" else "_dc_metric"
     return (
         _generated_sql_header(contract_id, contract_version, model)
         + f"{{{{ config({severity_arg}{_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
-        f"WITH _dc_metric (metric_value) AS (\n"
+        f"WITH {cte} AS (\n"
         f"{query.rstrip()}\n"
         f")\n"
         f"SELECT metric_value FROM _dc_metric WHERE {violation_predicate}\n"
@@ -731,7 +731,7 @@ def _row_count_singular_test(
     return SingularTest(
         filename=_slugify(f"{contract_id}__{contract_version}__{model}__{_quality_label(quality, 1)}") + ".sql",
         sql=_build_singular_sql(
-            f"SELECT COUNT(*) FROM {_model_ref(model, model_version)}",
+            f"SELECT COUNT(*) AS metric_value FROM {_model_ref(model, model_version)}",
             predicate,
             _normalize_severity(quality.severity),
             contract_id,
@@ -746,28 +746,22 @@ def _row_count_singular_test(
 
 def _library_metric_singular_test(
     quality: DataQuality,
-    columns: list[str],
     contract_id: str,
     contract_version: str,
     model: str,
     model_version: Optional[str] = None,
     field: Optional[str] = None,
-) -> Optional[SingularTest]:
-    """Singular SQL test for a library metric, counted the way `datacontract test` counts it.
-
-    `columns` is the key of a schema-level `duplicateValues`; property-level metrics pass `[field]`.
-    """
-    predicate = _bound_violation_predicate(quality)
-    if predicate is None:
-        return None
+) -> SingularTest:
+    """Singular SQL test for a library metric, counted the way `datacontract test` counts it."""
     metric = quality.metric
     percent = is_percent_unit(quality)
     model_ref = _model_ref(model, model_version)
     if metric == "duplicateValues":
+        columns = [field] if field else quality.arguments["properties"]
         key = ", ".join(columns)
         key_present = " AND ".join(f"{c} IS NOT NULL" for c in columns)
         query = (
-            f"SELECT COUNT(*) FROM (SELECT {key} FROM {model_ref} WHERE {key_present} "
+            f"SELECT COUNT(*) AS metric_value FROM (SELECT {key} FROM {model_ref} WHERE {key_present} "
             f"GROUP BY {key} HAVING COUNT(*) > 1) _dc_duplicates"
         )
         count_name = "duplicate_count"
@@ -792,10 +786,10 @@ def _library_metric_singular_test(
             # An empty table is 0 %, as in `datacontract test`; a NULL would fail the bound predicate.
             query = (
                 f"SELECT COALESCE(100.0 * COUNT(CASE WHEN {bad_row} THEN 1 END) / NULLIF(COUNT(*), 0), 0) "
-                f"FROM {model_ref}"
+                f"AS metric_value FROM {model_ref}"
             )
         else:
-            query = f"SELECT COUNT(*) FROM {model_ref} WHERE {bad_row}"
+            query = f"SELECT COUNT(*) AS metric_value FROM {model_ref} WHERE {bad_row}"
 
     bound = f"{count_name} {to_threshold(quality).describe()}{'%' if percent else ''}"
     if field:
@@ -814,7 +808,7 @@ def _library_metric_singular_test(
         filename=_slugify(f"{contract_id}__{contract_version}__{model}__{label}") + ".sql",
         sql=_build_singular_sql(
             query,
-            predicate,
+            _bound_violation_predicate(quality),
             _normalize_severity(quality.severity),
             contract_id,
             contract_version,
@@ -1053,11 +1047,7 @@ def _model_data_tests(
         elif q.mustBe == 0 and len(pk_cols) > 1 and set(properties) == set(pk_cols):
             continue  # the composite primary key test already fails on any duplicate
         else:
-            test = _library_metric_singular_test(q, properties, contract_id, contract_version, model, model_version)
-            if test is None:
-                run.log_warn(f"Skipping quality on `{schema_obj.name}`: metric {q.metric} has no `mustBe*` bound.")
-                continue
-            singular_tests.append(test)
+            singular_tests.append(_library_metric_singular_test(q, contract_id, contract_version, model, model_version))
     return singular_tests
 
 
@@ -1200,13 +1190,11 @@ def _column_dict(
             if _test_args(_test_body(same_name)) == _test_args(_test_body(native)):
                 continue
 
-        test = _library_metric_singular_test(
-            data_quality, [prop.name], contract_id, contract_version, model_name, model_version, field=prop.name
+        singulars.append(
+            _library_metric_singular_test(
+                data_quality, contract_id, contract_version, model_name, model_version, field=prop.name
+            )
         )
-        if test is None:
-            run.log_warn(f"Skipping quality on `{prop.name}`: metric {metric} has no `mustBe*` bound.")
-            continue
-        singulars.append(test)
 
     if tests:
         column["data_tests"] = tests

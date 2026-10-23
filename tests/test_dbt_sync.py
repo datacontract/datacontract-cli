@@ -913,7 +913,7 @@ def test_row_count_singular_test_wraps_count_with_bound_predicate():
     quality = DataQuality(metric="rowCount", mustBeGreaterThan=1000)
     test = _row_count_singular_test(quality, contract_id="orders_sync_test", contract_version="1.0.0", model="orders")
     assert test is not None
-    assert "SELECT COUNT(*) FROM {{ ref('orders') }}" in test.sql
+    assert "SELECT COUNT(*) AS metric_value FROM {{ ref('orders') }}" in test.sql
     assert "metric_value <= 1000" in test.sql
 
 
@@ -935,7 +935,7 @@ def test_generate_outputs_singular_sql_carries_severity_and_meta():
 
 def test_build_singular_sql_wraps_query_with_violation_predicate():
     sql = _build_singular_sql(
-        "SELECT COUNT(*) FROM orders",
+        "SELECT COUNT(*) AS metric_value FROM orders",
         "metric_value IS NULL OR metric_value <= 1000",
         "error",
         "my-contract",
@@ -952,8 +952,7 @@ def test_build_singular_sql_wraps_query_with_violation_predicate():
     assert '"model": "orders"' in sql  # Model is round-tripped through `meta`
     assert '"contract_versions": ["1.0.0"]' in sql  # what the version-scoped `dbt test` selector keys off
     assert '"field"' not in sql  # model-level test, no field
-    assert "WITH _dc_metric (metric_value) AS (" in sql
-    assert "SELECT COUNT(*) FROM orders" in sql
+    assert "WITH _dc_metric AS (\nSELECT COUNT(*) AS metric_value FROM orders\n)" in sql
     assert "WHERE metric_value IS NULL OR metric_value <= 1000" in sql
 
 
@@ -1016,7 +1015,10 @@ def test_singular_query_resolves_object_and_property_placeholders():
     ]
     out = _singular_tests_for_qualities(qualities, "c", "1.0.0", "MY_TABLE", run, field="my_column")
     assert len(out) == 1
-    assert "SELECT COUNT(*) FROM {{ ref('MY_TABLE') }} WHERE my_column < 0" in out[0].sql
+    assert (
+        "WITH _dc_metric (metric_value) AS (\nSELECT COUNT(*) FROM {{ ref('MY_TABLE') }} WHERE my_column < 0"
+        in out[0].sql
+    )
     assert "{object}" not in out[0].sql
     assert "{property}" not in out[0].sql
 
@@ -1143,13 +1145,13 @@ def test_invalid_values_with_valid_values_and_zero_bound():
     [
         (
             DataQuality(metric="nullValues", mustBeLessThan=5),
-            ["SELECT COUNT(*) FROM {{ ref('orders') }} WHERE amount IS NULL", "metric_value >= 5"],
+            ["SELECT COUNT(*) AS metric_value FROM {{ ref('orders') }} WHERE amount IS NULL", "metric_value >= 5"],
         ),
         (
             DataQuality(metric="nullValues", mustBeLessThan=1, unit="percent"),
             [
                 "SELECT COALESCE(100.0 * COUNT(CASE WHEN amount IS NULL THEN 1 END) / NULLIF(COUNT(*), 0), 0) "
-                "FROM {{ ref('orders') }}",
+                "AS metric_value FROM {{ ref('orders') }}",
                 "metric_value >= 1",
                 "has missing_count < 1%",
             ],
@@ -1161,7 +1163,7 @@ def test_invalid_values_with_valid_values_and_zero_bound():
         (
             DataQuality(metric="duplicateValues", mustBeLessThan=10),
             [
-                "SELECT COUNT(*) FROM (SELECT amount FROM {{ ref('orders') }} WHERE amount IS NOT NULL "
+                "SELECT COUNT(*) AS metric_value FROM (SELECT amount FROM {{ ref('orders') }} WHERE amount IS NOT NULL "
                 "GROUP BY amount HAVING COUNT(*) > 1) _dc_duplicates",
                 "orders__amount__field_duplicate_values",
             ],
@@ -1197,7 +1199,7 @@ def test_schema_level_duplicate_values():
 
     assert len(singulars) == 1
     assert (
-        "SELECT COUNT(*) FROM (SELECT tenant_id, order_id FROM {{ ref('orders') }} "
+        "SELECT COUNT(*) AS metric_value FROM (SELECT tenant_id, order_id FROM {{ ref('orders') }} "
         "WHERE tenant_id IS NOT NULL AND order_id IS NOT NULL GROUP BY tenant_id, order_id HAVING COUNT(*) > 1)"
     ) in singulars[0].sql
     assert '"check": "orders__model_duplicate_values"' in singulars[0].sql
