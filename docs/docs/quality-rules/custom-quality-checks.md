@@ -34,7 +34,7 @@ or set `DATACONTRACT_CUSTOM_QUALITY_CHECKS`. See the [`test` command reference](
 
 ## Defining a check
 
-The folder holds one YAML file per check. The file name is the check's ID (`between.yaml` defines `between`). IDs are unique, case-insensitive and must not contain whitespace or any of `/ \ % ; # ?`.
+The folder holds one YAML file per check. The file name is the check's ID (`between.yaml` defines `between`). IDs are unique and must not contain whitespace or any of `/ \ % ; # ?`.
 
 ```yaml
 # custom-quality-checks/between.yaml
@@ -54,7 +54,7 @@ mustBe: 0
 
 | Key | Meaning |
 |---|---|
-| `name` | A short display name (optional). |
+| `name` | A short display name (optional, only used when exporting to Entropy Data). |
 | `description` | What the check verifies. Becomes the check's name in the results, with the placeholders and arguments filled in, unless the rule has a `description` of its own. |
 | `owner` | Who maintains the check. Documentation only. |
 | `dimension` | The [quality dimension](./index.md#quality-dimensions) the check measures. A `dimension` on the rule takes precedence. |
@@ -64,7 +64,7 @@ mustBe: 0
 
 ## Arguments
 
-A check declares its arguments under `arguments`, and a rule passes their values under `implementation.arguments`. `${arguments.<argumentName}` in the check definition gets replaced by the respective value:
+A check declares its arguments under `arguments`, and a rule passes their values under `implementation.arguments`. `${arguments.<argumentName>}` in the check definition gets replaced by the respective value:
 
 ```yaml
 # custom-quality-checks/recent_rows.yaml
@@ -115,7 +115,7 @@ queries:
     WHERE ${arguments.timestamp_column} >= DATEADD(day, -${arguments.days}, CAST(GETDATE() AS date))
 ```
 
-The keys are the dialect names in the [SQL dialect table](./sql.md#sql-dialect), so a check for a `mysql` server needs a `duckdb` query. For the `default` query, we recommend to use ANSI SQL. Note that on SAP HANA, only the `default` query runs.
+The keys are the dialect names in the [SQL dialect table](./sql.md#sql-dialect), so a check for a `mysql` server needs a `duckdb` query. Write the `default` query in ANSI SQL. Note that on SAP HANA, only the `default` query runs.
 
 ## Overriding the expected result
 

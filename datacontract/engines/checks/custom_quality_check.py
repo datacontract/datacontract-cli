@@ -157,7 +157,6 @@ def _parse(check_id: str, document) -> CustomQualityCheck:
         ]
         argument_type = spec.get("type", "any")
         if argument_type == "value":
-            warnings.append(f"Argument {argument} has the type 'value', which is now called 'any'.")
             argument_type = "any"
         if argument_type not in ("any", "identifier", "number"):
             raise invalid(f"argument {argument} has the type {argument_type!r}; it must be any, identifier or number.")
@@ -166,15 +165,11 @@ def _parse(check_id: str, document) -> CustomQualityCheck:
     queries = document.get("queries")
     if not isinstance(queries, dict) or not queries:
         raise invalid(f"it needs queries with at least one entry, e.g. queries.{DEFAULT_QUERY}.")
-    if "ansi" in queries:
-        if DEFAULT_QUERY in queries:
-            raise invalid(f"it has both queries.ansi and queries.{DEFAULT_QUERY}. Keep only queries.{DEFAULT_QUERY}.")
-        warnings.append(f"queries.ansi is now called queries.{DEFAULT_QUERY}. Rename it.")
     queries = {(DEFAULT_QUERY if dialect == "ansi" else str(dialect)): query for dialect, query in queries.items()}
     for dialect, query in queries.items():
         if not _DIALECT_NAME.fullmatch(dialect):
             raise invalid(
-                f"queries.{dialect} is no dialect name. "
+                f"queries.{dialect} is not a dialect name. "
                 "Use lowercase letters, digits and underscores, such as queries.snowflake."
             )
         if not isinstance(query, str) or not query.strip():

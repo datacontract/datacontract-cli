@@ -255,7 +255,7 @@ def test_an_id_with_characters_entropy_data_does_not_allow_is_an_error(check_id)
 @pytest.mark.parametrize(
     "content, reason",
     [
-        ("queries: {SQLServer: SELECT 1}\nmustBe: 0\n", "queries.SQLServer is no dialect name."),
+        ("queries: {SQLServer: SELECT 1}\nmustBe: 0\n", "queries.SQLServer is not a dialect name."),
         ("queries: {ansi: SELECT 1, default: SELECT 1}\nmustBe: 0\n", "both queries.ansi and queries.default"),
         ("queries: {default: SELECT 1}\nmustBe: 0\nmustBeLessThan: 1\n", "only one expected result"),
         ("queries: {default: 'SELECT COUNT(*) FROM ${table}_${ENV}'}\nmustBe: 0\n", "${ENV} is neither"),
