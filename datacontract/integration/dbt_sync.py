@@ -28,6 +28,7 @@ from ruamel.yaml.error import CommentMark
 from ruamel.yaml.tokens import CommentToken
 from ruamel.yaml.util import load_yaml_guess_indent
 
+from datacontract.engines.checks.create_checks import is_percent_unit, to_threshold, unrunnable_reason
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.export.sql_type_converter import _get_config_value, convert_to_sql_type
 from datacontract.integration.dbt_test_mapping import field_to_data_tests, get_logical_type_option
@@ -743,6 +744,89 @@ def _row_count_singular_test(
     )
 
 
+def _library_metric_singular_test(
+    quality: DataQuality,
+    columns: list[str],
+    contract_id: str,
+    contract_version: str,
+    model: str,
+    model_version: Optional[str] = None,
+    field: Optional[str] = None,
+) -> Optional[SingularTest]:
+    """Singular SQL test for a library metric, counted the way `datacontract test` counts it.
+
+    `columns` is the key of a schema-level `duplicateValues`; property-level metrics pass `[field]`.
+    """
+    predicate = _bound_violation_predicate(quality)
+    if predicate is None:
+        return None
+    metric = quality.metric
+    percent = is_percent_unit(quality)
+    model_ref = _model_ref(model, model_version)
+    if metric == "duplicateValues":
+        key = ", ".join(columns)
+        key_present = " AND ".join(f"{c} IS NOT NULL" for c in columns)
+        query = (
+            f"SELECT COUNT(*) FROM (SELECT {key} FROM {model_ref} WHERE {key_present} "
+            f"GROUP BY {key} HAVING COUNT(*) > 1) _dc_duplicates"
+        )
+        count_name = "duplicate_count"
+    else:
+        args = quality.arguments or {}
+        if metric == "invalidValues":
+            violations = []
+            if args.get("validValues") is not None:
+                valid = [_sql_literal(v) for v in args["validValues"] if v is not None]
+                violations.append(f"{field} NOT IN ({', '.join(valid)})" if valid else "1 = 1")
+            if args.get("pattern") is not None:
+                violations.append(_regex_violation_jinja(field, args["pattern"]))
+            bad_row = f"{field} IS NOT NULL AND ({' OR '.join(violations)})"
+            count_name = "invalid_count"
+        else:
+            missing = [_sql_literal(v) for v in (args.get("missingValues") or []) if v is not None]
+            bad_row = f"{field} IS NULL"
+            if metric == "missingValues" and missing:
+                bad_row += f" OR {field} IN ({', '.join(missing)})"
+            count_name = "missing_count"
+        if percent:
+            # An empty table is 0 %, as in `datacontract test`; a NULL would fail the bound predicate.
+            query = (
+                f"SELECT COALESCE(100.0 * COUNT(CASE WHEN {bad_row} THEN 1 END) / NULLIF(COUNT(*), 0), 0) "
+                f"FROM {model_ref}"
+            )
+        else:
+            query = f"SELECT COUNT(*) FROM {model_ref} WHERE {bad_row}"
+
+    bound = f"{count_name} {to_threshold(quality).describe()}{'%' if percent else ''}"
+    if field:
+        label = f"{field}__{metric}"
+        check_type = {
+            "nullValues": "field_null_values",
+            "missingValues": "field_missing_values",
+            "invalidValues": "field_invalid_values",
+            "duplicateValues": "field_duplicate_values",
+        }[metric]
+        description = quality.description or f"Check that field {field} has {bound}"
+    else:
+        label, check_type = metric, "model_duplicate_values"
+        description = quality.description or f"Check that model {model} has {bound} for columns {', '.join(columns)}"
+    return SingularTest(
+        filename=_slugify(f"{contract_id}__{contract_version}__{model}__{label}") + ".sql",
+        sql=_build_singular_sql(
+            query,
+            predicate,
+            _normalize_severity(quality.severity),
+            contract_id,
+            contract_version,
+            model,
+            check_type=check_type,
+            field=field,
+            description=description,
+        ),
+        description=description,
+    )
+
+
 def _composite_pk_singular_test(
     pk_cols: list[str], contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
 ) -> SingularTest:
@@ -935,7 +1019,7 @@ def _model_data_tests(
     model: str,
     model_version: Optional[str] = None,
 ) -> list[SingularTest]:
-    """Model-level singular SQL tests: composite-PK uniqueness + table-level rowCount.
+    """Model-level singular SQL tests: composite-PK uniqueness + table-level rowCount and duplicateValues.
 
     Everything is emitted as singular SQL (rather than `dbt_utils` / `dbt_expectations`
     YAML) so generated projects stay free of external macro dependencies.
@@ -955,10 +1039,25 @@ def _model_data_tests(
                 )
                 continue
             singular_tests.append(test)
-        else:
+            continue
+        properties = (q.arguments or {}).get("properties")
+        reason = unrunnable_reason(q, None)
+        if reason is None and q.metric == "duplicateValues" and not properties:
+            reason = "Metric duplicateValues needs a properties argument at schema level."
+        if reason is not None:
+            run.log_warn(f"Skipping quality on `{schema_obj.name}`: {reason}")
+        elif q.metric != "duplicateValues":
             run.log_warn(
                 f"Skipping unsupported quality on `{schema_obj.name}`: metric={q.metric!r} — please raise an issue on GitHub if this quality check should be added: https://github.com/datacontract/datacontract-cli/issues"
             )
+        elif q.mustBe == 0 and len(pk_cols) > 1 and set(properties) == set(pk_cols):
+            continue  # the composite primary key test already fails on any duplicate
+        else:
+            test = _library_metric_singular_test(q, properties, contract_id, contract_version, model, model_version)
+            if test is None:
+                run.log_warn(f"Skipping quality on `{schema_obj.name}`: metric {q.metric} has no `mustBe*` bound.")
+                continue
+            singular_tests.append(test)
     return singular_tests
 
 
@@ -1026,8 +1125,16 @@ def _apply_column_data_type(target: dict, prop: SchemaProperty, dialect: Optiona
 
 
 def _column_dict(
-    prop: SchemaProperty, odcs: OpenDataContractStandard, single_pk_name: Optional[str], model_name: str, run: Run
-) -> dict:
+    prop: SchemaProperty,
+    odcs: OpenDataContractStandard,
+    single_pk_name: Optional[str],
+    model_name: str,
+    run: Run,
+    contract_id: str,
+    contract_version: str,
+    model_version: Optional[str],
+) -> tuple[dict, list[SingularTest]]:
+    """The column's YAML entry with its generic tests, plus the singular tests its library metrics need."""
     column: dict = {"name": prop.name}
     base = field_to_data_tests(
         prop,
@@ -1036,6 +1143,7 @@ def _column_dict(
         supports_constraints=False,
         source_name=odcs.id or "_source",
         include_dbt_expectations_bounds=False,
+        include_quality_rule=False,
     )
     base = _rewrite_relationships_to_ref(base)
     tests = [
@@ -1049,31 +1157,60 @@ def _column_dict(
         for test in base
     ]
 
+    singulars: list[SingularTest] = []
     for data_quality in prop.quality or []:
-        if data_quality.metric and data_quality.metric.lower() == "invalidvalues":
-            continue
         if data_quality.query:
             continue
-        if data_quality.mustBe is not None:
-            entry = {"accepted_values": {"arguments": {"values": [data_quality.mustBe]}}}
-            tests.append(
-                _attach_test_config(
-                    entry,
-                    _normalize_severity(data_quality.severity),
-                    description=data_quality.description or _describe_dbt_test(entry, prop.name, model_name),
-                    check_type="field_enum",
-                    model=model_name,
-                    field=prop.name,
-                )
+        metric = data_quality.metric
+        reason = unrunnable_reason(data_quality, prop.name)
+        if reason is not None:
+            run.log_warn(f"Skipping quality on `{prop.name}`: {reason}")
+            continue
+        if metric not in ("nullValues", "missingValues", "invalidValues", "duplicateValues"):
+            run.log_warn(
+                f"Skipping unsupported quality on `{prop.name}`: metric={metric!r} — please raise an issue on GitHub if this quality check should be added: https://github.com/datacontract/datacontract-cli/issues"
             )
             continue
-        run.log_warn(
-            f"Skipping unsupported quality on `{prop.name}`: metric={data_quality.metric!r} — please raise an issue on GitHub if this quality check should be added: https://github.com/datacontract/datacontract-cli/issues"
+
+        args = data_quality.arguments or {}
+        valid_values = [v for v in (args.get("validValues") or []) if v is not None]
+        native, check_type = None, None
+        if data_quality.mustBe == 0 and metric == "nullValues":
+            native, check_type = "not_null", "field_null_values"
+        elif data_quality.mustBe == 0 and metric == "duplicateValues":
+            native, check_type = "unique", "field_duplicate_values"
+        elif data_quality.mustBe == 0 and metric == "invalidValues" and valid_values and args.get("pattern") is None:
+            native = {"accepted_values": {"arguments": {"values": valid_values}}}
+            check_type = "field_invalid_values"
+        if native is not None:
+            # dbt refuses two tests of one name on a column, and the YAML merge keys tests by name.
+            same_name = next((t for t in tests if _test_name(t) == _test_name(native)), None)
+            if same_name is None:
+                tests.append(
+                    _attach_test_config(
+                        native,
+                        _normalize_severity(data_quality.severity),
+                        description=data_quality.description or _describe_dbt_test(native, prop.name, model_name),
+                        check_type=check_type,
+                        model=model_name,
+                        field=prop.name,
+                    )
+                )
+                continue
+            if _test_args(_test_body(same_name)) == _test_args(_test_body(native)):
+                continue
+
+        test = _library_metric_singular_test(
+            data_quality, [prop.name], contract_id, contract_version, model_name, model_version, field=prop.name
         )
+        if test is None:
+            run.log_warn(f"Skipping quality on `{prop.name}`: metric {metric} has no `mustBe*` bound.")
+            continue
+        singulars.append(test)
 
     if tests:
         column["data_tests"] = tests
-    return column
+    return column, singulars
 
 
 def generate_dbt_tests_for_schema(
@@ -1100,12 +1237,16 @@ def generate_dbt_tests_for_schema(
     model_singulars = _model_data_tests(schema_obj, run, contract_id, contract_version, model_name, model_version)
 
     columns: list = []
+    singulars: list[SingularTest] = list(model_singulars)
     for prop in schema_obj.properties or []:
-        columns.append(_column_dict(prop, odcs, single_pk_name, model_name, run))
+        column, column_singulars = _column_dict(
+            prop, odcs, single_pk_name, model_name, run, contract_id, contract_version, model_version
+        )
+        columns.append(column)
+        singulars.extend(column_singulars)
     if columns:
         model_dict["columns"] = columns
 
-    singulars: list[SingularTest] = list(model_singulars)
     # Field-level bounds (length / regex / numeric range) → singular SQL
     for prop in schema_obj.properties or []:
         singulars.extend(_field_singular_tests(prop, contract_id, contract_version, model_name, model_version))

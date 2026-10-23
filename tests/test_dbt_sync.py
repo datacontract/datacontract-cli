@@ -14,7 +14,7 @@ from unittest import mock
 
 import pytest
 import yaml
-from open_data_contract_standard.model import DataQuality
+from open_data_contract_standard.model import DataQuality, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -38,6 +38,8 @@ from datacontract.integration.dbt_sync import (
     _row_count_singular_test,
     _singular_tests_for_qualities,
     _sql_literal,
+    _test_body,
+    _test_name,
     check_dbt_on_path,
     generate_dbt_tests,
     generate_dbt_tests_for_schema,
@@ -1042,7 +1044,195 @@ def test_generate_outputs_warns_on_unsupported_model_qualities():
     assert not any("row_count" in s.filename for s in singulars)  # neither quality produced a test
     messages = [log.message for log in run.logs]
     assert any("unsupported row-count quality" in m for m in messages)
-    assert any("metric='freshness'" in m for m in messages)
+    assert any("Metric freshness is not supported" in m for m in messages)
+
+
+def _generate_for_properties(properties: list[SchemaProperty], quality: Optional[list[DataQuality]] = None):
+    """`generate_dbt_tests_for_schema` on the fixture contract with its properties and schema quality replaced."""
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    schema_obj = odcs.schema_[0]
+    schema_obj.properties = properties
+    schema_obj.quality = quality
+    run = Run.create_run()
+    model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, "orders", run)
+    tests_by_column = {
+        c["name"]: {_test_name(t): _test_body(t) for t in c.get("data_tests", [])} for c in model_dict["columns"]
+    }
+    return tests_by_column, singulars, [log.message for log in run.logs]
+
+
+def test_zero_bound_library_metrics_become_dbt_generic_tests():
+    """`nullValues` / `duplicateValues` with `mustBe: 0` are dbt's `not_null` / `unique`, not `accepted_values: [0]`."""
+    tests, singulars, _ = _generate_for_properties(
+        [
+            SchemaProperty(
+                name="amount",
+                quality=[
+                    DataQuality(metric="nullValues", mustBe=0, severity="warning"),
+                    DataQuality(metric="duplicateValues", mustBe=0),
+                ],
+            )
+        ]
+    )
+
+    assert set(tests["amount"]) == {"not_null", "unique"}
+    assert tests["amount"]["not_null"]["config"]["severity"] == "warn"
+    assert (
+        tests["amount"]["not_null"]["config"]["meta"]["datacontract_cli"]["check"]
+        == "orders__amount__field_null_values"
+    )
+    assert (
+        tests["amount"]["unique"]["config"]["meta"]["datacontract_cli"]["check"]
+        == "orders__amount__field_duplicate_values"
+    )
+    assert singulars == []
+
+
+def test_zero_bound_library_metrics_fold_into_schema_tests():
+    """A column that `required` / `unique` already tests gets no second `not_null` / `unique`: dbt refuses
+    two tests of one name on a column."""
+    tests, singulars, _ = _generate_for_properties(
+        [
+            SchemaProperty(
+                name="amount",
+                required=True,
+                unique=True,
+                quality=[
+                    DataQuality(metric="nullValues", mustBe=0, severity="warning"),
+                    DataQuality(metric="nullValues", mustBe=0),
+                    DataQuality(metric="duplicateValues", mustBe=0),
+                ],
+            )
+        ]
+    )
+
+    assert set(tests["amount"]) == {"not_null", "unique"}
+    assert "severity" not in tests["amount"]["not_null"]["config"]
+    assert (
+        tests["amount"]["not_null"]["config"]["meta"]["datacontract_cli"]["check"] == "orders__amount__field_required"
+    )
+    assert tests["amount"]["unique"]["config"]["meta"]["datacontract_cli"]["check"] == "orders__amount__field_unique"
+    assert singulars == []
+
+
+def test_invalid_values_with_valid_values_and_zero_bound():
+    """`invalidValues` with `validValues` and `mustBe: 0` is `accepted_values`: merged into an enum's test with the
+    same values, a singular test otherwise."""
+    rule = DataQuality(metric="invalidValues", arguments={"validValues": ["a", "b", None]}, mustBe=0)
+    tests, singulars, _ = _generate_for_properties(
+        [
+            SchemaProperty(name="no_enum", quality=[rule]),
+            SchemaProperty(name="same_enum", logicalTypeOptions={"enum": ["a", "b"]}, quality=[rule]),
+            SchemaProperty(name="other_enum", logicalTypeOptions={"enum": ["a", "b", "c"]}, quality=[rule]),
+        ]
+    )
+
+    def accepted(column):
+        body = tests[column]["accepted_values"]
+        return body["arguments"]["values"], body["config"]["meta"]["datacontract_cli"]["check"]
+
+    assert accepted("no_enum") == (["a", "b"], "orders__no_enum__field_invalid_values")
+    assert accepted("same_enum") == (["a", "b"], "orders__same_enum__field_enum")
+    assert accepted("other_enum") == (["a", "b", "c"], "orders__other_enum__field_enum")
+    assert [s.filename for s in singulars] == ["orders_sync_test__1_0_0__orders__other_enum__invalidvalues.sql"]
+    assert "WHERE other_enum IS NOT NULL AND (other_enum NOT IN ('a', 'b'))" in singulars[0].sql
+
+
+@pytest.mark.parametrize(
+    "rule, fragments",
+    [
+        (
+            DataQuality(metric="nullValues", mustBeLessThan=5),
+            ["SELECT COUNT(*) FROM {{ ref('orders') }} WHERE amount IS NULL", "metric_value >= 5"],
+        ),
+        (
+            DataQuality(metric="nullValues", mustBeLessThan=1, unit="percent"),
+            [
+                "SELECT COALESCE(100.0 * COUNT(CASE WHEN amount IS NULL THEN 1 END) / NULLIF(COUNT(*), 0), 0) "
+                "FROM {{ ref('orders') }}",
+                "metric_value >= 1",
+                "has missing_count < 1%",
+            ],
+        ),
+        (
+            DataQuality(metric="missingValues", arguments={"missingValues": [None, "", "n/a"]}, mustBe=0),
+            ["WHERE amount IS NULL OR amount IN ('', 'n/a')", "orders__amount__field_missing_values"],
+        ),
+        (
+            DataQuality(metric="duplicateValues", mustBeLessThan=10),
+            [
+                "SELECT COUNT(*) FROM (SELECT amount FROM {{ ref('orders') }} WHERE amount IS NOT NULL "
+                "GROUP BY amount HAVING COUNT(*) > 1) _dc_duplicates",
+                "orders__amount__field_duplicate_values",
+            ],
+        ),
+        (
+            DataQuality(metric="invalidValues", arguments={"pattern": "^[a-z]+$"}, mustBe=0),
+            [
+                "WHERE amount IS NOT NULL AND ({% if target.type == 'bigquery' %}",
+                "orders__amount__field_invalid_values",
+            ],
+        ),
+        (
+            DataQuality(metric="invalidValues", arguments={"validValues": [None]}, mustBe=0),
+            ["WHERE amount IS NOT NULL AND (1 = 1)"],
+        ),
+    ],
+)
+def test_library_metrics_without_a_dbt_generic_test_become_singular_tests(rule, fragments):
+    tests, singulars, _ = _generate_for_properties([SchemaProperty(name="amount", quality=[rule])])
+
+    assert "amount" not in tests or not tests["amount"]
+    assert len(singulars) == 1
+    for fragment in fragments:
+        assert fragment in singulars[0].sql
+
+
+def test_schema_level_duplicate_values():
+    """Counts key combinations that occur more than once; folds into the composite primary key test."""
+    key = DataQuality(metric="duplicateValues", arguments={"properties": ["tenant_id", "order_id"]}, mustBe=0)
+    _, singulars, _ = _generate_for_properties(
+        [SchemaProperty(name="tenant_id"), SchemaProperty(name="order_id")], quality=[key]
+    )
+
+    assert len(singulars) == 1
+    assert (
+        "SELECT COUNT(*) FROM (SELECT tenant_id, order_id FROM {{ ref('orders') }} "
+        "WHERE tenant_id IS NOT NULL AND order_id IS NOT NULL GROUP BY tenant_id, order_id HAVING COUNT(*) > 1)"
+    ) in singulars[0].sql
+    assert '"check": "orders__model_duplicate_values"' in singulars[0].sql
+
+    _, singulars, _ = _generate_for_properties(
+        [SchemaProperty(name="tenant_id", primaryKey=True), SchemaProperty(name="order_id", primaryKey=True)],
+        quality=[key],
+    )
+    assert [s.filename for s in singulars] == ["orders_sync_test__1_0_0__orders__unique_combination.sql"]
+
+
+def test_unrunnable_library_metrics_are_skipped_with_the_reason():
+    tests, singulars, messages = _generate_for_properties(
+        [
+            SchemaProperty(
+                name="amount",
+                quality=[
+                    DataQuality(metric="invalidValues", mustBe=0),
+                    DataQuality(metric="duplicateValues", mustBeLessThan=1, unit="percent"),
+                ],
+            )
+        ],
+        quality=[DataQuality(metric="nullValues", mustBe=0), DataQuality(metric="duplicateValues", mustBe=0)],
+    )
+
+    assert not tests["amount"]
+    assert singulars == []
+    assert "Skipping quality on `amount`: Metric invalidValues needs a validValues or a pattern argument." in messages
+    assert any(m.startswith("Skipping quality on `amount`: 'unit:percent' has to be combined") for m in messages)
+    assert any(
+        m.startswith("Skipping quality on `orders`: Metric nullValues is only supported at property") for m in messages
+    )
+    assert (
+        "Skipping quality on `orders`: Metric duplicateValues needs a properties argument at schema level." in messages
+    )
 
 
 def test_disambiguate_singular_filenames_renames_duplicates():
@@ -1944,6 +2134,93 @@ def test_integration_end_to_end(tmp_path: Path):
     # The `include_in_tests` selector must actually match the generated tests — otherwise dbt
     # runs nothing and we'd silently report zero checks.
     assert result.run.checks, "dbt selected no managed tests — check the config.meta selector"
+
+
+LIBRARY_METRICS_CONTRACT = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    quality:
+      - metric: duplicateValues
+        arguments: {properties: [order_id, status]}
+        mustBe: 0
+    properties:
+      - name: order_id
+        logicalType: string
+        quality:
+          - {metric: nullValues, mustBe: 0}
+          - {metric: duplicateValues, mustBe: 0}
+      - name: customer_id
+        logicalType: string
+        quality:
+          - {metric: nullValues, mustBeLessThan: 2}
+          - {metric: duplicateValues, mustBeLessThan: 2}
+      - name: status
+        logicalType: string
+        quality:
+          - {metric: invalidValues, arguments: {validValues: [a, b]}, mustBe: 0}
+          - {metric: invalidValues, arguments: {pattern: '^[a-z]+$'}, mustBe: 0}
+      - name: note
+        logicalType: string
+        quality:
+          - {metric: missingValues, arguments: {missingValues: ['', 'n/a']}, mustBeLessThan: 50, unit: percent}
+"""
+
+
+@pytest.mark.skipif(not _dbt_available(), reason="dbt + dbt-duckdb not on PATH")
+@pytest.mark.parametrize(
+    "rows, expected",
+    [
+        ("('o1', 'c1', 'a', 'x'), ('o2', 'c1', 'b', 'y'), ('o3', NULL, 'a', '')", "passed"),
+        (
+            "('o1', 'c1', 'a', ''), ('o1', 'c1', 'a', 'n/a'), ('o2', 'c2', 'Z', ''), "
+            "(NULL, 'c2', 'b', 'x'), ('o3', NULL, 'a', 'y'), ('o4', NULL, 'b', '')",
+            "failed",
+        ),
+    ],
+)
+def test_integration_library_metrics(tmp_path: Path, rows: str, expected: str):
+    """Every library metric's generated test passes on data that meets the rule and fails on data that breaks it."""
+    project = _copy_dbt_project(tmp_path)
+    (project / "models" / "orders.sql").write_text(
+        f"select * from (values {rows}) as t(order_id, customer_id, status, note)"
+    )
+    contract = tmp_path / "orders.odcs.yaml"
+    contract.write_text(LIBRARY_METRICS_CONTRACT)
+    profiles_dir = tmp_path / "profiles"
+    profiles_dir.mkdir()
+    (profiles_dir / "profiles.yml").write_text(
+        "datacontract_sync_fixture:\n"
+        "  target: dev\n"
+        "  outputs:\n"
+        "    dev:\n"
+        "      type: duckdb\n"
+        f"      path: {tmp_path / 'warehouse.duckdb'}\n"
+    )
+    subprocess.run(
+        ["dbt", "run", "--project-dir", str(project), "--profiles-dir", str(profiles_dir)],
+        cwd=project,
+        check=True,
+        capture_output=True,
+    )
+
+    result = sync(contract=str(contract), project_dir=project, profiles_dir=profiles_dir)
+
+    assert sorted(c.key for c in result.run.checks) == [
+        "orders__customer_id__field_duplicate_values",
+        "orders__customer_id__field_null_values",
+        "orders__model_duplicate_values",
+        "orders__note__field_missing_values",
+        "orders__order_id__field_duplicate_values",
+        "orders__order_id__field_null_values",
+        "orders__status__field_invalid_values",
+        "orders__status__field_invalid_values",
+    ]
+    assert {c.result.value for c in result.run.checks} == {expected}
 
 
 # ---------------------------------------------------------------------------
