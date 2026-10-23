@@ -8,16 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717)
+- `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717 @nicolehazel)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
 - `datacontract import snowflake --lineage` imports upstream column lineage into `transformSourceObjects`, it's slow and experimental
+- `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744 @lairdman7)
 
 ### Changed
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
+- `datacontract export excel`: the ODCS v3.2 template shows a tooltip with the field description on every field label
 - `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
+- `datacontract export odcs`, `import odcs` and `import excel` write a `team` given as a list of members as a team object with `members` (this syntax is preferred by ODCS 3.2)
+- `datacontract test`: custom quality checks accept the files Entropy Data writes, with a `default` query and the argument type `any` (`ansi` and `value` still work)
+- `datacontract test`: a quality rule that can't use its custom quality check reports `error` instead of `warning` or `failed`
 
 ### Fixed
+- `datacontract dbt sync`: library metrics (`nullValues`, `missingValues`, `invalidValues`, `duplicateValues`) generate tests that check the metric against its bound
 - `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
+- `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added
+- `datacontract breaking` grades more changes to quality rules and to `minimum`/`maximum` bounds instead of warning
+- `datacontract breaking` no longer flags changes that `datacontract test` does not check
+- Contracts whose `team` is the deprecated list of members no longer fail to export, `import odcs --owner` or `dbt sync`
 
 ## [1.2.7] - 2026-10-16
 

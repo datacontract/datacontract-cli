@@ -635,6 +635,14 @@ class TestDiff:
         changed = result.get("values_changed", {})
         assert any("positive" in k for k in changed)
 
+    def test_first_of_two_nameless_quality_rules_removed(self):
+        def contract(*quality):
+            return _contract(schema=[{"name": "orders", "quality": list(quality)}])
+
+        nulls, duplicates = {"metric": "nullValues", "mustBe": 0}, {"metric": "duplicateValues", "mustBe": 0}
+        result = diff(contract(nulls, duplicates), contract(duplicates))
+        assert result == {"dictionary_item_removed": {"root['schema']['orders']['quality']['[0]']": nulls}}
+
     def test_schema_property_custom_property_added(self):
         v1 = _contract(
             schema=[

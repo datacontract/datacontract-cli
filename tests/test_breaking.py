@@ -13,7 +13,6 @@ from datacontract.breaking.rules import (
     KeyConstraintRule,
     MetadataFallbackRule,
     PropertyAddedOrRemovedRule,
-    QualityConstraintRule,
     RequiredChangedRule,
     RuleEvaluation,
     SchemaAddedOrRemovedRule,
@@ -191,30 +190,6 @@ def test_adding_a_validation_constraint_tightens():
     assert _direction(ValidationConstraintRule(), entry) == Direction.TIGHTENS
 
 
-QUALITY = "schema.orders.properties.status.quality.allowed"
-
-
-@pytest.mark.parametrize(
-    "path,change_type,old,new,direction",
-    [
-        (f"{QUALITY}.arguments.validValues", ChangelogType.removed, "3", None, Direction.TIGHTENS),
-        (f"{QUALITY}.arguments.validValues", ChangelogType.added, None, "4", Direction.LOOSENS),
-        (f"{QUALITY}.arguments.invalidValues", ChangelogType.added, None, "x", Direction.TIGHTENS),
-        (f"{QUALITY}.mustBeLessThan", ChangelogType.updated, "10", "5", Direction.TIGHTENS),
-        (f"{QUALITY}.mustBeGreaterThan", ChangelogType.updated, "10", "5", Direction.LOOSENS),
-        (f"{QUALITY}.query", ChangelogType.updated, "SELECT 1", "SELECT 2", Direction.UNDETERMINED),
-        (QUALITY, ChangelogType.added, None, None, Direction.TIGHTENS),
-        (QUALITY, ChangelogType.removed, None, None, Direction.LOOSENS),
-        (f"{QUALITY}.description", ChangelogType.updated, "a", "b", Direction.UNTESTED),
-        (f"{QUALITY}.severity", ChangelogType.updated, "error", "warning", Direction.LOOSENS),
-        (f"{QUALITY}.severity", ChangelogType.removed, "warning", None, Direction.TIGHTENS),
-        (f"{QUALITY}.severity", ChangelogType.updated, "warning", "info", Direction.UNTESTED),
-    ],
-)
-def test_quality_direction(path, change_type, old, new, direction):
-    assert _direction(QualityConstraintRule(), _entry(path, change_type, old, new)) == direction
-
-
 def test_unknown_change_is_untested():
     result = MetadataFallbackRule().evaluate(_entry("description.purpose", ChangelogType.updated, "old", "new"), {}, {})
     assert result.direction == Direction.UNTESTED
@@ -293,7 +268,7 @@ def _orders(**changes):
 
 
 def _quality(**rule):
-    return _orders(quality=[{"name": "q", "type": "library", "metric": "rowCount", **rule}])
+    return _orders(quality=[{"name": "q", "type": "library", "metric": "nullValues", **rule}])
 
 
 def _freshness(value, unit="h", element="orders.created_at"):
@@ -413,10 +388,261 @@ def _keyed(*names):
             id="not-between-wider",
         ),
         pytest.param(
+            _contract(_quality(mustBeLessThan=10)),
+            _contract(_quality(mustBeLessThan=5)),
+            {Direction.TIGHTENS},
+            id="less-than-lowered",
+        ),
+        pytest.param(
+            _contract(_quality(mustBeGreaterThan=10)),
+            _contract(_quality(mustBeGreaterThan=5)),
+            {Direction.LOOSENS},
+            id="greater-than-lowered",
+        ),
+        pytest.param(
+            _contract(_quality(mustBe=0)),
+            _contract(_quality(mustBeLessThan=10)),
+            {Direction.LOOSENS},
+            id="threshold-replaced-by-wider",
+        ),
+        pytest.param(
+            _contract(_orders(quality=[{"name": "q", "metric": "nullValues", "mustBe": 0}])),
+            _contract(
+                _orders(
+                    quality=[{"name": "q", "metric": "nullValues", "mustBeLessThan": 10, "description": "Few nulls"}]
+                )
+            ),
+            {Direction.LOOSENS},
+            id="threshold-replaced-and-described",
+        ),
+        pytest.param(
             _contract(_quality(mustBeBetween=[0, 10])),
             _contract(_quality(mustBeLessThan=10)),
+            {Direction.BOTH},
+            id="threshold-replaced-by-overlapping",
+        ),
+        pytest.param(
+            _contract(_quality(mustNotBe=0)),
+            _contract(_quality(mustNotBeBetween=[0, 10])),
+            {Direction.TIGHTENS},
+            id="threshold-replaced-by-narrower-complement",
+        ),
+        pytest.param(
+            _contract(_quality(mustBe=0)), _contract(_quality(mustBe=5)), {Direction.BOTH}, id="must-be-moved"
+        ),
+        pytest.param(
+            _contract(_quality(mustBeLessThan=10)),
+            _contract(_quality(mustBeLessThan=5, unit="percent")),
             {Direction.UNDETERMINED},
-            id="threshold-replaced",
+            id="threshold-in-other-unit",
+        ),
+        pytest.param(
+            _contract(_quality(metric="invalidValues", arguments={"validValues": ["a", "b"]}, mustBe=0)),
+            _contract(_quality(metric="invalidValues", arguments={"validValues": ["a", "b", "c"]}, mustBe=0)),
+            {Direction.LOOSENS},
+            id="valid-value-added",
+        ),
+        pytest.param(
+            _contract(
+                _quality(
+                    metric="invalidValues", arguments={"validValues": ["a", "b"]}, mustBeLessThan=5, unit="percent"
+                )
+            ),
+            _contract(
+                _quality(
+                    metric="invalidValues",
+                    arguments={"validValues": ["a", "b", "c"]},
+                    mustBeLessThan=5,
+                    unit="percent",
+                )
+            ),
+            {Direction.LOOSENS},
+            id="valid-value-added-to-percent-limit",
+        ),
+        pytest.param(
+            _contract(_orders(quality=[{"metric": "nullValues", "mustBe": 0}])),
+            _contract(_orders(quality=[{"name": "no_nulls", "metric": "nullValues", "mustBe": 0}])),
+            set(),
+            id="rule-named",
+        ),
+        pytest.param(
+            _contract(_orders(quality=[{"name": "a", "metric": "nullValues", "mustBe": 0}])),
+            _contract(_orders(quality=[{"name": "b", "metric": "nullValues", "mustBe": 0}])),
+            set(),
+            id="rule-renamed",
+        ),
+        pytest.param(
+            _contract(_orders(quality=[{"id": "q1", "name": "a", "metric": "nullValues", "mustBe": 0}])),
+            _contract(_orders(quality=[{"id": "q1", "name": "b", "metric": "nullValues", "mustBe": 1}])),
+            {Direction.BOTH},
+            id="rule-paired-by-id",
+        ),
+        pytest.param(
+            _contract(
+                _orders(quality=[{"metric": "nullValues", "mustBe": 0}, {"metric": "duplicateValues", "mustBe": 0}])
+            ),
+            _contract(_orders(quality=[{"metric": "duplicateValues", "mustBeLessThan": 5}])),
+            {Direction.LOOSENS},
+            id="first-of-two-nameless-rules-removed",
+        ),
+        pytest.param(
+            _contract(
+                [
+                    {
+                        "name": "orders",
+                        "quality": [
+                            {"metric": "rowCount", "mustBeGreaterThan": 1000, "severity": "warning"},
+                            {"metric": "rowCount", "mustBeGreaterThan": 0},
+                        ],
+                    }
+                ]
+            ),
+            _contract(
+                [
+                    {
+                        "name": "orders",
+                        "quality": [
+                            {"metric": "rowCount", "mustBeGreaterThan": 0},
+                            {"metric": "rowCount", "mustBeGreaterThan": 1000, "severity": "warning"},
+                        ],
+                    }
+                ]
+            ),
+            set(),
+            id="nameless-rules-reordered",
+        ),
+        pytest.param(
+            _contract(_quality(mustBeLessThan=10)),
+            _contract(_quality(mustBeLessThan=10, unit="rows")),
+            set(),
+            id="unit-rows-declared",
+        ),
+        pytest.param(
+            _contract(_quality(metric="nullValues", mustBeLessThan=5, unit="percent")),
+            _contract(_quality(metric="nullValues", mustBeLessThan=5, unit="%")),
+            set(),
+            id="unit-percent-respelled",
+        ),
+        pytest.param(
+            _contract(_quality(metric="invalidValues", arguments={"validValues": ["a", "b"]}, mustBe=0)),
+            _contract(_quality(metric="invalidValues", arguments={"validValues": ["a"]}, mustBe=0)),
+            {Direction.TIGHTENS},
+            id="valid-value-removed",
+        ),
+        pytest.param(
+            _contract(_quality(metric="missingValues", arguments={"missingValues": ["", "N/A"]}, mustBe=0)),
+            _contract(_quality(metric="missingValues", arguments={"missingValues": ["", "N/A", "-"]}, mustBe=0)),
+            {Direction.TIGHTENS},
+            id="missing-value-marker-added",
+        ),
+        pytest.param(
+            _contract(_quality(metric="nullValues", mustBe=0)),
+            _contract(_quality(metric="missingValues", arguments={"missingValues": ["N/A"]}, mustBe=0)),
+            {Direction.TIGHTENS},
+            id="null-values-to-missing-values",
+        ),
+        pytest.param(
+            _contract(
+                [
+                    {
+                        "name": "orders",
+                        "quality": [
+                            {"name": "q", "metric": "duplicateValues", "arguments": {"properties": ["a"]}, "mustBe": 0}
+                        ],
+                    }
+                ]
+            ),
+            _contract(
+                [
+                    {
+                        "name": "orders",
+                        "quality": [
+                            {
+                                "name": "q",
+                                "metric": "duplicateValues",
+                                "arguments": {"properties": ["a", "b"]},
+                                "mustBe": 0,
+                            }
+                        ],
+                    }
+                ]
+            ),
+            {Direction.LOOSENS},
+            id="duplicate-key-widened",
+        ),
+        pytest.param(
+            _contract(_quality(type="sql", metric=None, query="SELECT COUNT(*) FROM orders", mustBe=0)),
+            _contract(_quality(type="sql", metric=None, query="SELECT COUNT(*) FROM orders WHERE 1 = 1", mustBe=0)),
+            {Direction.UNDETERMINED},
+            id="query-changed",
+        ),
+        pytest.param(
+            _contract(_quality(mustBe=0, method="reconciliation", schedule="0 * * * *", scheduler="cron")),
+            _contract(_quality(mustBe=0, method="other", schedule="0 0 * * *", scheduler="cron")),
+            set(),
+            id="schedule-and-method-changed",
+        ),
+        pytest.param(_contract(), _contract(_quality(mustBe=0)), {Direction.TIGHTENS}, id="rule-added"),
+        pytest.param(_contract(_quality(mustBe=0)), _contract(), {Direction.LOOSENS}, id="rule-removed"),
+        pytest.param(
+            _contract(), _contract(_orders(quality=[{"type": "text", "description": "Nice"}])), set(), id="text-rule"
+        ),
+        pytest.param(
+            _contract(_orders(quality=[{"rule": "nullValues", "mustBe": 0}])),
+            _contract(_orders(quality=[{"metric": "nullValues", "mustBe": 0}])),
+            {Direction.TIGHTENS},
+            id="rule-alias-replaced-by-metric",
+        ),
+        pytest.param(
+            _contract(_quality(mustBe=0)),
+            _contract(_quality(mustBe=0, severity="warning")),
+            {Direction.LOOSENS},
+            id="rule-made-warning",
+        ),
+        pytest.param(
+            _contract(_orders(logicalTypeOptions={"minimum": 0})),
+            _contract(_orders(logicalTypeOptions={"exclusiveMinimum": 0})),
+            {Direction.TIGHTENS},
+            id="minimum-made-exclusive",
+        ),
+        pytest.param(
+            _contract(_orders(logicalTypeOptions={"maximum": 10})),
+            _contract(_orders(logicalTypeOptions={"exclusiveMaximum": 20})),
+            {Direction.LOOSENS},
+            id="maximum-replaced-by-higher-exclusive",
+        ),
+        pytest.param(
+            _contract(_orders(logicalType="timestamp", logicalTypeOptions={"minimum": "2024-01-01T00:00:00Z"})),
+            _contract(_orders(logicalType="timestamp", logicalTypeOptions={"minimum": "2025-01-01T00:00:00Z"})),
+            {Direction.TIGHTENS},
+            id="timestamp-minimum-raised",
+        ),
+        pytest.param(
+            _contract(_quality(mustBeGreaterThan=5)),
+            _contract(_quality(mustBeGreaterOrEqualTo=6)),
+            set(),
+            id="same-row-count-threshold",
+        ),
+        pytest.param(
+            _contract(_quality(metric="invalidValues", arguments={"validValues": ["a", "b"]}, mustBe=5)),
+            _contract(_quality(metric="invalidValues", arguments={"validValues": ["a", "b", "c"]}, mustBe=5)),
+            {Direction.BOTH},
+            id="valid-value-added-to-exact-count",
+        ),
+        pytest.param(
+            _contract(), _contract(_quality(metric="rowCount", mustBeGreaterThan=0)), set(), id="unrunnable-rule"
+        ),
+        pytest.param(
+            _contract(_orders(logicalTypeOptions={"minimum": 0})),
+            _contract(_orders(logicalTypeOptions={"exclusiveMinimum": -1})),
+            set(),
+            id="same-integer-bound",
+        ),
+        pytest.param(
+            _contract(_orders(logicalType="date", logicalTypeOptions={"maximum": "2025-01-01"})),
+            _contract(_orders(logicalType="date", logicalTypeOptions={"exclusiveMaximum": "2025-01-02"})),
+            set(),
+            id="same-date-bound",
         ),
         pytest.param(_contract(), _contract(_quality(mustBe=5, severity="warning")), set(), id="warning-rule"),
         pytest.param(
@@ -438,6 +664,16 @@ def _keyed(*names):
 )
 def test_change_direction(v1, v2, directions):
     assert _directions(v1, v2) == directions
+
+
+def test_replaced_threshold_is_graded_once():
+    result = DataContract(data_contract_str=yaml.safe_dump(_contract(_quality(mustBe=0)))).breaking(
+        DataContract(data_contract_str=yaml.safe_dump(_contract(_quality(mustBeLessThan=10))))
+    )
+    assert [(entry.path.rsplit(".", 1)[1], entry.direction) for entry in result.entries] == [
+        ("mustBe", Direction.UNTESTED),
+        ("mustBeLessThan", Direction.LOOSENS),
+    ]
 
 
 def test_golden_output():

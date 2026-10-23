@@ -1,0 +1,59 @@
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+name: Check ODCS Excel template
+jobs:
+  check:
+    name: Report an outdated ODCS Excel template in an issue
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.11'
+      - name: Compare the vendored files with the template repository
+        id: check
+        run: |
+          if uv run --no-project --with requests python update_excel_template.py --check > "$RUNNER_TEMP/check.log" 2>&1; then
+            echo "outdated=false" >> "$GITHUB_OUTPUT"
+          elif grep -q "^Vendored copies differ" "$RUNNER_TEMP/check.log"; then
+            echo "outdated=true" >> "$GITHUB_OUTPUT"
+          else
+            # a download error, not an outdated template
+            cat "$RUNNER_TEMP/check.log"
+            exit 1
+          fi
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTDATED: ${{ steps.check.outputs.outdated }}
+        run: |
+          title="The bundled ODCS Excel templates are outdated"
+          issue=$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
+            | jq -r --arg title "$title" '.[] | select(.title == $title) | .number' | head -1)
+          if [ "$OUTDATED" != "true" ]; then
+            if [ -n "$issue" ]; then
+              gh issue close "$issue" --comment "The vendored files match the template repository again."
+            fi
+            exit 0
+          fi
+          {
+            echo "The vendored files differ from [open-data-contract-standard-excel-template](https://github.com/datacontract/open-data-contract-standard-excel-template):"
+            echo
+            grep "^Vendored copies differ" "$RUNNER_TEMP/check.log" | sed 's/^.*: //' | tr ',' '\n' | sed 's/^ *//; s/^/- `/; s/$/`/'
+            echo
+            echo 'Update them with `python update_excel_template.py` and add a changelog entry.'
+          } > "$RUNNER_TEMP/body.md"
+          if [ -n "$issue" ]; then
+            gh issue edit "$issue" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh issue create --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          fi
