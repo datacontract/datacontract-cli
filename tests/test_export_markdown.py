@@ -54,3 +54,15 @@ schema:
     row = lines[0]
     # The row must have exactly 4 pipe chars as table delimiters (| col1 | col2 | col3 |)
     assert row.count("|") == 4, f"Expected 4 pipe delimiters in row, got {row.count('|')}: {row!r}"
+
+
+def test_team_without_name_is_left_out():
+    contract = OpenDataContractStandard.model_validate(
+        yaml.safe_load("""
+id: orders
+team:
+  members:
+    - username: alice
+""")
+    )
+    assert "**team:**" not in to_markdown(contract)
