@@ -54,3 +54,54 @@ schema:
     row = lines[0]
     # The row must have exactly 4 pipe chars as table delimiters (| col1 | col2 | col3 |)
     assert row.count("|") == 4, f"Expected 4 pipe delimiters in row, got {row.count('|')}: {row!r}"
+
+
+def test_transform_logic_rendered_as_code_span():
+    contract_yaml = """
+id: test-transform-logic
+schema:
+  - name: orders
+    properties:
+      - name: status
+        logicalType: string
+        transformLogic: "CASE WHEN s = 'Y' THEN \\"open\\" ELSE a || `b` END"
+"""
+    contract = OpenDataContractStandard.model_validate(yaml.safe_load(contract_yaml))
+    result = to_markdown(contract)
+
+    row = next(line for line in result.split("\n") if line.startswith("|") and " status " in line)
+    assert "**transformLogic:** `` CASE WHEN s = 'Y' THEN \"open\" ELSE a \\|\\| `b` END ``" in row
+    # the pipes inside the code span must not add table delimiters (| col1 | col2 | col3 |)
+    assert row.count("|") - row.count("\\|") == 4
+
+
+def test_mermaid_diagram_after_servers_only_when_requested():
+    contract = OpenDataContractStandard.model_validate(
+        yaml.safe_load(
+            """
+id: test-mermaid
+servers:
+  - server: prod
+    type: postgres
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        primaryKey: true
+"""
+        )
+    )
+
+    assert "```mermaid" not in to_markdown(contract)
+
+    result = to_markdown(contract, mermaid=True)
+    assert "## Entity Relationship Diagram\n```mermaid\nerDiagram\n" in result
+    assert result.index("## Servers") < result.index("## Entity Relationship Diagram") < result.index("## Schema")
+
+
+def test_cli_mermaid_option():
+    runner = CliRunner()
+    result = runner.invoke(app, ["export", "markdown", "./fixtures/markdown/export/datacontract.yaml", "--mermaid"])
+    assert result.exit_code == 0
+    assert "```mermaid" in result.stdout

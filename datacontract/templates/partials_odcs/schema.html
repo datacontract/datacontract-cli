@@ -29,7 +29,7 @@
     {% set schema_synonyms = schema.synonyms if schema.synonyms is defined and schema.synonyms else none %}
     {% set schema_context = schema.context if schema.context is defined and schema.context else none %}
 
-    <div class="mt-2 print:block" id="{{ schema_name }}">
+    <div class="mt-2 print:block" id="{{ schema_name }}" data-schema="{{ schema_name }}">
       <div class="overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
         <table class="min-w-full divide-y divide-gray-300 print:relative print:break-inside-auto">
           <thead class="bg-gray-50 print:table-header-group">
@@ -41,6 +41,10 @@
                   {% endif %}
                   <span class="font-mono font-medium {% if schema_business_name and schema_business_name != schema_name %}ml-1{% endif %}">{{ schema_name }}</span>
                 </a>
+
+                {% if mermaid_links %}
+                  <a href="#diagram" class="diagram-link ml-2 text-xs font-normal text-indigo-600 hover:underline" data-entity="{{ schema_name }}" title="Show in the entity relationship diagram">↑ Diagram</a>
+                {% endif %}
 
                 {% if schema_physical_name %}
                   <span class="ml-1 text-gray-400 cursor-help" title="{{ schema_physical_name }}">ⓘ</span>
@@ -54,6 +58,15 @@
 
                 {% if schema_deprecated %}
                   <span class="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-700/10">deprecated</span>
+                {% endif %}
+
+                {% set schema_relationships = schema.relationships if schema.relationships is defined and schema.relationships else [] %}
+                {% if schema_relationships %}
+                  <div class="mt-2 flex flex-wrap gap-1 font-normal">
+                    {% for rel in schema_relationships %}
+                      {{ schema_macros.render_relationship(rel) }}
+                    {% endfor %}
+                  </div>
                 {% endif %}
 
                 {% if schema_description %}

@@ -67,6 +67,7 @@ def _export(
     clickhouse_order_by: Optional[str] = None,
     suite_name: Optional[str] = None,
     check_categories: Optional[set[str]] = None,
+    mermaid: bool = False,
 ):
     result = DataContract(
         config=cli_config(),
@@ -86,6 +87,7 @@ def _export(
         clickhouse_order_by=clickhouse_order_by,
         suite_name=suite_name,
         check_categories=check_categories,
+        mermaid=mermaid,
     )
     if output is None:
         console.print(result, markup=False, soft_wrap=True)
@@ -440,11 +442,23 @@ def export_markdown(
     schema_name: schema_name_option = "all",
     schema: schema_option = None,
     inline_references: inline_references_option = True,
+    mermaid: Annotated[
+        bool, typer.Option("--mermaid", help="Add a Mermaid entity relationship diagram after the servers.")
+    ] = False,
     debug: debug_option = None,
 ):
     """Export a data contract to Markdown."""
     enable_debug_logging(debug)
-    _export(ExportFormat.markdown, location, output, server, schema_name, schema, inline_references=inline_references)
+    _export(
+        ExportFormat.markdown,
+        location,
+        output,
+        server,
+        schema_name,
+        schema,
+        inline_references=inline_references,
+        mermaid=mermaid,
+    )
 
 
 @export_app.command(

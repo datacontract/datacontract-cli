@@ -1,4 +1,16 @@
 {% import 'macros/context.html' as context_macros %}
+{% macro render_relationship(rel, from_ref=none) -%}
+  {# Shorthand references (`table.column`) match the row anchors; other notations are shown without a link. #}
+  {% set sources = [from_ref] if from_ref else (rel.from_ if rel.from_ is sequence and rel.from_ is not string else [rel.from_]) %}
+  {% set targets = rel.to if rel.to is sequence and rel.to is not string else [rel.to] %}
+  <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20" title="{{ rel.type or 'foreignKey' }}">
+    🔗
+    {% for ref in sources if ref %}{% if not loop.first %}, {% endif %}{{ ref }}{% endfor %}
+    →
+    {% for ref in targets if ref %}{% if not loop.first %}, {% endif %}{% if '/' in ref %}{{ ref }}{% else %}<a href="#{{ ref }}" class="underline">{{ ref }}</a>{% endif %}{% endfor %}
+  </span>
+{%- endmacro %}
+
 {% macro render_nested_properties(properties, parent_anchor, indent=0) -%}
   {% for property in properties or [] %}
     {% set property_name = property.name if property.name is defined and property.name else "items" %}
@@ -145,6 +157,10 @@
               primaryKey{% if property.primaryKeyPosition is defined and property.primaryKeyPosition %} ({{ property.primaryKeyPosition }}){% endif %}
             </span>
           {% endif %}
+
+          {% for rel in property.relationships or [] %}
+            {{ render_relationship(rel, from_ref=property_anchor) }}
+          {% endfor %}
 
           {% if property.required %}
             <span class="inline-flex items-center rounded-md bg-gray-50 px-1 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">required</span>

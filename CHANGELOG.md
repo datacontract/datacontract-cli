@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
+- `datacontract export markdown --mermaid` adds a Mermaid entity relationship diagram after the servers
+- `datacontract catalog --markdown` creates a Markdown catalog with an `index.md` instead of HTML pages, and `--mermaid` adds the entity relationship diagram to each page
+- `datacontract export html` links the diagram entities and the schema tables in both directions, and shows relationships as links to the referenced column (the links to the diagram are disabled when the diagram had to be reduced)
 - `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744)
 
 ### Changed
@@ -18,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
 
 ### Fixed
+- `datacontract export markdown` shows `transformLogic` as inline code
+- `datacontract export mermaid` shows at most 5 attributes per entity, keys first, followed by `…`, and cuts entity names to 32 characters when the diagram exceeds Mermaid's size limit
+- `datacontract export mermaid` draws ODCS v3.2 relationships: schema-level and composite-key foreign keys, and references by id
 - `datacontract dbt sync`: library metrics (`nullValues`, `missingValues`, `invalidValues`, `duplicateValues`) generate tests that check the metric against its bound
 - `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729,#1731 @banshee @ezno12)
 - `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added
