@@ -476,3 +476,41 @@ def test_import_bim_yaml_is_valid():
     assert parsed["kind"] == "DataContract"
     assert parsed["apiVersion"] == "v3.2.0"
     assert any(s["name"] == "Sales" for s in parsed["schema"])
+
+
+# ---------------------------------------------------------------------------
+# Power Query / SQL lineage
+# ---------------------------------------------------------------------------
+
+
+def test_import_sql_lineage_fills_transform_fields(tmp_path):
+    m_expression = [
+        "let",
+        '    Source = Value.NativeQuery(Databricks.Catalogs("host", "path", null){[Name="main",Kind="Database"]}[Data],'
+        ' "select o.id, upper(o.name) as customer_name from sales.orders o", null, [EnableFolding=true])',
+        "in",
+        "    Source",
+    ]
+    bim = {
+        "model": {
+            "tables": [
+                {
+                    "name": "Orders",
+                    "columns": [
+                        {"name": "id", "dataType": "int64", "sourceColumn": "id"},
+                        {"name": "customer_name", "dataType": "string", "sourceColumn": "customer_name"},
+                    ],
+                    "partitions": [{"name": "Orders", "source": {"type": "m", "expression": m_expression}}],
+                }
+            ]
+        }
+    }
+    path = tmp_path / "model.bim"
+    path.write_text(json.dumps(bim))
+
+    props = {p.name: p for p in import_powerbi_from_file(str(path)).schema_[0].properties}
+
+    assert props["id"].transformLogic == "o.id"
+    assert props["id"].transformSourceObjects == ["sales.orders.id"]
+    assert props["customer_name"].transformLogic == "UPPER(o.name)"
+    assert props["customer_name"].transformSourceObjects == ["sales.orders.name"]

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
 - `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744)
+- `datacontract import powerbi` fills `transformLogic` and `transformSourceObjects` of data columns from the Power Query / SQL lineage
 
 ### Changed
 - The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.16
