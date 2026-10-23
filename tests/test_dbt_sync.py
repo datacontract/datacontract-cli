@@ -986,7 +986,14 @@ def test_bound_violation_predicate_returns_none_without_bound():
         (42, "42"),
         (3.14, "3.14"),
         ("plain", "'plain'"),
-        ("O'Brien", "'O''Brien'"),
+        (
+            "O'Brien",
+            "{% if target.type in ['bigquery', 'spark', 'databricks'] %}'O\\'Brien'{% else %}'O''Brien'{% endif %}",
+        ),
+        (
+            "a\\b",
+            "{% if target.type in ['bigquery', 'spark', 'databricks'] %}'a\\\\b'{% else %}'a\\b'{% endif %}",
+        ),
     ],
 )
 def test_sql_literal(value, expected):
@@ -2169,7 +2176,7 @@ schema:
       - name: note
         logicalType: string
         quality:
-          - {metric: missingValues, arguments: {missingValues: ['', 'n/a']}, mustBeLessThan: 50, unit: percent}
+          - {metric: missingValues, arguments: {missingValues: ['', 'n/a', "n'a"]}, mustBeLessThan: 50, unit: percent}
 """
 
 

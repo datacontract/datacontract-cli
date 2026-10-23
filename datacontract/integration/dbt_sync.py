@@ -578,7 +578,12 @@ def _sql_literal(value: Any) -> str:
     if isinstance(value, bool):
         return "TRUE" if value else "FALSE"
     if isinstance(value, str):
-        return "'" + value.replace("'", "''") + "'"
+        standard = "'" + value.replace("'", "''") + "'"
+        if "'" not in value and "\\" not in value:
+            return standard
+        # These read a backslash as an escape, and `''` as two adjacent literals.
+        backslashed = "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'"
+        return f"{{% if target.type in ['bigquery', 'spark', 'databricks'] %}}{backslashed}{{% else %}}{standard}{{% endif %}}"
     return str(value)
 
 
