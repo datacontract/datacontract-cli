@@ -897,6 +897,7 @@ def _unexecuted_check(
     result: str = "warning",
     name: Optional[str] = None,
     dimension: Optional[str] = None,
+    warnings: Optional[List[str]] = None,
 ) -> List[CheckSpec]:
     """A rule the engine cannot run, reported rather than dropped."""
     return [
@@ -912,6 +913,7 @@ def _unexecuted_check(
             severity=quality.severity,
             preset_result=result,
             preset_reason=reason,
+            warnings=warnings,
         )
     ]
 
@@ -960,20 +962,29 @@ def _quality_rule_checks(
             check_key = f"{model}__{field}__quality_custom_check_{count}"
             check_type = "field_quality_custom"
         if field is not None and "[]" in field:
-            return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field))
+            return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field), "error")
         dialect = dialect_for_server_type(get_server_type(server))
         try:
             instance = instantiate(quality, model, field, dialect, custom_quality_checks)
             query = prepare_query(instance.query, model, field, server, instance)
         except CustomQualityCheckUnusable as e:
             return _unexecuted_check(
-                check_key, check_type, model, field, quality, e.reason, e.result, e.name, e.dimension
+                check_key, check_type, model, field, quality, e.reason, "error", e.name, e.dimension, e.warnings
             )
         rule = instance.quality
         refusal = refusal_reason(query, dialect)
         if refusal is not None:
             return _unexecuted_check(
-                check_key, check_type, model, field, rule, refusal, "failed", instance.name, rule.dimension
+                check_key,
+                check_type,
+                model,
+                field,
+                rule,
+                refusal,
+                "error",
+                instance.name,
+                rule.dimension,
+                instance.warnings,
             )
         return [
             CheckSpec(
@@ -989,6 +1000,7 @@ def _quality_rule_checks(
                 severity=rule.severity,
                 dimension=rule.dimension,
                 diagnostics=instance.diagnostics,
+                warnings=instance.warnings,
             )
         ]
     if quality.type == "sql":
