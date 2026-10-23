@@ -55,6 +55,34 @@ max_errors: 10
     assert config.max_errors == 10
 
 
+def test_from_yaml_reads_trino_http_headers_as_a_mapping(tmp_path, monkeypatch):
+    monkeypatch.setenv("TRINO_ROUTING_GROUP", "analytics")
+    monkeypatch.setenv("DATACONTRACT_TRINO_HTTP_HEADERS", '{"X-Trino-Routing-Group": "default"}')
+    path = _write_config(
+        tmp_path,
+        """
+trino:
+  http_headers:
+    X-Trino-Client-Info: datacontract-cli
+    X-Trino-Routing-Group: ${TRINO_ROUTING_GROUP}
+""",
+    )
+
+    config = Config.from_yaml(path)
+
+    assert config.get_trino_http_headers() == {
+        "X-Trino-Client-Info": "datacontract-cli",
+        "X-Trino-Routing-Group": "analytics",
+    }
+
+
+def test_from_yaml_empty_trino_http_headers_override_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_TRINO_HTTP_HEADERS", '{"X-Trino-Routing-Group": "analytics"}')
+    path = _write_config(tmp_path, "trino:\n  http_headers: {}\n")
+
+    assert Config.from_yaml(path).get_trino_http_headers() == {}
+
+
 def test_from_yaml_interpolates_environment_references(tmp_path, monkeypatch):
     monkeypatch.setenv("SNOWFLAKE_PASSWORD", "pw-from-env")
     path = _write_config(tmp_path, "snowflake:\n  password: ${SNOWFLAKE_PASSWORD}\n")

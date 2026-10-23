@@ -17,6 +17,7 @@ TRINO_ENV_VARS = [
     "DATACONTRACT_TRINO_USERNAME",
     "DATACONTRACT_TRINO_PASSWORD",
     "DATACONTRACT_TRINO_JWT_TOKEN",
+    "DATACONTRACT_TRINO_HTTP_HEADERS",
     "DATACONTRACT_TRINO_HOST",
     "DATACONTRACT_TRINO_PORT",
     "DATACONTRACT_TRINO_CATALOG",
@@ -49,8 +50,8 @@ def _server(**kwargs):
     return Server(**defaults)
 
 
-def _connect(server=None):
-    return connect_ibis(Run.create_run(), data_contract=None, server=server or _server())
+def _connect(server=None, config=None):
+    return connect_ibis(Run.create_run(), data_contract=None, server=server or _server(), config=config)
 
 
 def test_basic_auth_is_default(env, captured_connect):
@@ -140,3 +141,34 @@ def test_env_variables_override_the_contract_server_details(env, captured_connec
     assert captured_connect["port"] == 8443
     assert captured_connect["database"] == "env_catalog"
     assert captured_connect["schema"] == "env_schema"
+
+
+def test_http_headers_are_forwarded(env, captured_connect):
+    env.setenv("DATACONTRACT_TRINO_USERNAME", "my_user")
+    env.setenv(
+        "DATACONTRACT_TRINO_HTTP_HEADERS",
+        '{"X-Trino-Client-Info": "datacontract-cli", "X-Trino-Routing-Group": "analytics"}',
+    )
+
+    _connect()
+
+    assert captured_connect["http_headers"] == {
+        "X-Trino-Client-Info": "datacontract-cli",
+        "X-Trino-Routing-Group": "analytics",
+    }
+
+
+def test_http_headers_dictionary_is_forwarded(env, captured_connect):
+    from datacontract import Config
+
+    config = Config(
+        trino_username="my_user",
+        trino_http_headers={"X-Trino-Client-Info": "datacontract-cli", "X-Trino-Routing-Group": "analytics"},
+    )
+
+    _connect(config=config)
+
+    assert captured_connect["http_headers"] == {
+        "X-Trino-Client-Info": "datacontract-cli",
+        "X-Trino-Routing-Group": "analytics",
+    }

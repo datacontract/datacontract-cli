@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, TypeAdapter, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -334,6 +335,7 @@ class Config(BaseSettings):
     trino_username: str | None = None
     trino_password: SecretStr | None = None
     trino_jwt_token: SecretStr | None = None
+    trino_http_headers: dict[str, str] | None = None
     # overrides for the contract's servers block
     trino_host: str | None = None
     trino_port: int | None = None
@@ -402,7 +404,9 @@ class Config(BaseSettings):
         def walk(prefix: str, node: dict):
             for key, value in node.items():
                 name = f"{prefix}_{key}" if prefix else str(key)
-                if isinstance(value, dict):
+                if name in cls.model_fields and isinstance(value, dict):
+                    flat[name] = {k: _interpolate_env(v, path) for k, v in value.items()}
+                elif isinstance(value, dict):
                     walk(name, value)
                 else:
                     flat[name] = _interpolate_env(value, path)
@@ -1040,6 +1044,14 @@ class Config(BaseSettings):
     def get_trino_jwt_token(self, required: bool = False) -> str | None:
         return self._str_option("trino_jwt_token", required)
 
+    @field_validator("trino_http_headers", mode="before")
+    @classmethod
+    def _parse_trino_http_headers(cls, value):
+        return TypeAdapter(dict[str, str]).validate_json(value) if isinstance(value, str) else value
+
+    def get_trino_http_headers(self) -> dict[str, str] | None:
+        return self._parse_trino_http_headers(self._raw_option("trino_http_headers"))
+
     def get_trino_host(self, required: bool = False) -> str | None:
         return self._str_option("trino_host", required)
 
@@ -1090,6 +1102,8 @@ def env_name(field_name: str, field) -> str:
 def _as_env_value(value) -> str:
     if isinstance(value, SecretStr):
         return value.get_secret_value()
+    if isinstance(value, dict):
+        return json.dumps(value)
     if isinstance(value, bool):
         return "true" if value else "false"
     return str(value)
