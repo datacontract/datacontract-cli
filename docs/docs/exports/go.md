@@ -19,6 +19,8 @@ Running this against the [example `orders` contract](https://github.com/datacont
 ```go
 package main
 
+import "time"
+
 
 type Orders struct {
     OrderId string `json:"order_id" avro:"order_id"`  // Unique identifier of the order.

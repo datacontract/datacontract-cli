@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract breaking` grades more changes to quality rules and to `minimum`/`maximum` bounds instead of warning
 - `datacontract breaking` no longer flags changes that `datacontract test` does not check
 - Contracts whose `team` is the deprecated list of members no longer fail to export, `import odcs --owner` or `dbt sync`
+- `datacontract export go`: import `time` when a field is a `time.Time`, so the generated code compiles
 
 ## [1.2.7] - 2026-10-16
 

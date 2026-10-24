@@ -14,13 +14,17 @@ class GoExporter(Exporter):
 
 
 def to_go_types(contract: OpenDataContractStandard) -> str:
-    result = "package main\n\n"
-
+    go_types = []
     if contract.schema_:
         for schema_obj in contract.schema_:
-            go_types = generate_go_type(schema_obj, schema_obj.name)
-            for go_type in go_types:
-                result += f"\n{go_type}\n"
+            go_types.extend(generate_go_type(schema_obj, schema_obj.name))
+
+    result = "package main\n\n"
+    if any(re.search(r"^ +\S+ \S*time\.Time ", go_type, re.MULTILINE) for go_type in go_types):
+        result += 'import "time"\n\n'
+
+    for go_type in go_types:
+        result += f"\n{go_type}\n"
 
     return result
 
