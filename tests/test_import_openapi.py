@@ -211,3 +211,50 @@ def test_swagger_2_is_rejected(tmp_path: Path):
         import_openapi(source)
 
     assert "is not an OpenAPI 3.x document" in e.value.reason
+
+
+SHOP = "fixtures/import/openapi/shop.yaml"
+
+
+def test_several_operations_name_their_endpoints():
+    result = import_openapi(SHOP, ["listCustomers", "listOrders", "POST /orders/search", "GET /customers"])
+
+    assert [schema.name for schema in result.schema_] == ["listCustomers", "listOrders", "searchOrders"]
+    # the server is located at the base URL, and each schema at its endpoint below it
+    (server,) = result.servers
+    assert server.location == "https://api.example.com/v1"
+    assert server.customProperties is None
+    assert [[(p.property, p.value) for p in schema.customProperties] for schema in result.schema_] == [
+        [("endpoint", "/customers")],
+        [("endpoint", "/orders"), ("params", {"status": "${status:-open}"})],
+        [("endpoint", "/orders/search"), ("method", "POST"), ("body", {"status": "shipped"})],
+    ]
+
+
+def test_cli_asks_for_operations_in_a_terminal(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("datacontract.command_import._interactive", lambda: True)
+
+    result = CliRunner().invoke(
+        app,
+        ["import", "openapi", "--source", SHOP, "--output", tmp_path / "dc.yaml"],
+        input="7\nx\n1-2\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    # createOrder has no response to import, so it is not offered
+    assert "createOrder" not in result.output
+    assert "3. searchOrders (POST /orders/search)  (POST: import it only if it reads data)" in result.output
+    assert result.output.count("Enter numbers between 1 and 3") == 2
+    contract = yaml.safe_load((tmp_path / "dc.yaml").read_text())
+    assert [schema["name"] for schema in contract["schema"]] == ["listCustomers", "listOrders"]
+
+
+def test_cli_takes_several_operations(tmp_path: Path):
+    result = CliRunner().invoke(
+        app,
+        ["import", "openapi", "--source", SHOP, "--operation", "listCustomers", "--operation", "listOrders"],
+    )
+
+    assert result.exit_code == 0, result.output
+    contract = yaml.safe_load(result.stdout)
+    assert [schema["name"] for schema in contract["schema"]] == ["listCustomers", "listOrders"]

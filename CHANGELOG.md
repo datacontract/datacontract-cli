@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract test`: test API servers whose schemas are served by different endpoints, with an `endpoint` custom property per schema, including relationships across endpoints
+- `datacontract import openapi` imports several operations (repeat `--operation`, or pick them from a list in a terminal)
 - `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717 @nicolehazel)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
 - `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744 @lairdman7)
