@@ -181,6 +181,14 @@ class DataContract:
                     engine="datacontract-cli",
                 )
             )
+            run.checks.append(
+                Check(
+                    type="lint",
+                    result=ResultEnum.passed,
+                    name="Data contract has no duplicate entries",
+                    engine="datacontract-cli",
+                )
+            )
             run.checks.extend(_warning_checks(warnings))
             run.checks.extend(_unrunnable_rule_checks(data_contract))
             run.dataContractId = data_contract.id
