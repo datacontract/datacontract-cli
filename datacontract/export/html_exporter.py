@@ -8,7 +8,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.export.exporter import Exporter
-from datacontract.export.mermaid_exporter import to_mermaid
+from datacontract.export.mermaid_exporter import to_mermaid_and_reduced
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,8 @@ def to_html(data_contract: OpenDataContractStandard) -> str:
     datacontract_yaml = data_contract.to_yaml()
 
     # Get the mermaid diagram
-    mermaid_diagram = to_mermaid(data_contract)
+    # a reduced diagram has truncated entity names, which no longer match the anchors of the schema tables
+    mermaid_diagram, mermaid_reduced = to_mermaid_and_reduced(data_contract)
 
     # Render the template with necessary data
     html_string = template.render(
@@ -53,6 +54,7 @@ def to_html(data_contract: OpenDataContractStandard) -> str:
         formatted_date=_formatted_date(),
         datacontract_cli_version=get_version(),
         mermaid_diagram=mermaid_diagram,
+        mermaid_links=bool(mermaid_diagram) and not mermaid_reduced,
     )
 
     return html_string
