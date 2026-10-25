@@ -30,7 +30,7 @@ The `location` (URL) and `delimiter` (`new_line`, `array`, or `none`) come from 
 
 ## Request
 
-Custom properties of the server shape the request:
+Custom properties of the server, or of each schema served by its own endpoint, shape the request:
 
 | Custom property | Example | Description |
 |---|---|---|
