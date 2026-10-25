@@ -139,9 +139,6 @@ def run_sla_checks(
         schema_object, field_names = resolved
         if schema_filter != "all" and schema_object.name != schema_filter:
             continue
-        field_name = _sla_field_label(field_names)
-        quoted = [quote_identifier(f) for f in field_names]
-        column = quoted[0] if len(quoted) == 1 else f"COALESCE({', '.join(quoted)})"
         table_name = schema_object.physicalName or schema_object.name
         check_type = f"servicelevel_{sla.property}"
         # A service level property declares no dimension of its own, but it does
@@ -150,13 +147,9 @@ def run_sla_checks(
             continue
         row_filter = (model_filters or {}).get(table_name)
         if sla.property == "freshness":
-            check = _freshness_check(
-                connection, schema_name, table_name, field_name, column, sla, skip_reason, row_filter
-            )
+            check = _freshness_check(connection, schema_name, table_name, field_names, sla, skip_reason, row_filter)
         else:
-            check = _retention_check(
-                connection, schema_name, table_name, field_name, column, sla, skip_reason, row_filter
-            )
+            check = _retention_check(connection, schema_name, table_name, field_names, sla, skip_reason, row_filter)
         if check is not None:
             checks.append(check)
     return checks
@@ -629,8 +622,7 @@ def _freshness_check(
     connection,
     schema_name: str,
     table_name: str,
-    field_name: str,
-    column: str,
+    field_names: list[str],
     sla,
     skip_reason: str | None = None,
     row_filter: str | None = None,
@@ -638,8 +630,9 @@ def _freshness_check(
     threshold = _freshness_value_to_seconds(sla.value, sla.unit)
     if threshold is None:
         return None
+    field_name = _sla_field_label(field_names)
     sql = (
-        f"SELECT SECONDS_BETWEEN(MAX({column}), CURRENT_TIMESTAMP) "
+        f"SELECT SECONDS_BETWEEN(MAX({_coalesced_columns(field_names)}), CURRENT_TIMESTAMP) "
         f"FROM {table_reference(schema_name, table_name, row_filter)}"
     )
     return _servicelevel_check(
@@ -660,8 +653,7 @@ def _retention_check(
     connection,
     schema_name: str,
     table_name: str,
-    field_name: str,
-    column: str,
+    field_names: list[str],
     sla,
     skip_reason: str | None = None,
     row_filter: str | None = None,
@@ -669,8 +661,9 @@ def _retention_check(
     threshold = _retention_value_to_seconds(sla.value, sla.unit)
     if threshold is None:
         return None
+    field_name = _sla_field_label(field_names)
     sql = (
-        f"SELECT SECONDS_BETWEEN(MIN({column}), CURRENT_TIMESTAMP) "
+        f"SELECT SECONDS_BETWEEN(MIN({_coalesced_columns(field_names)}), CURRENT_TIMESTAMP) "
         f"FROM {table_reference(schema_name, table_name, row_filter)}"
     )
     return _servicelevel_check(
@@ -685,6 +678,12 @@ def _retention_check(
         skip_reason=skip_reason,
         quality_id=sla.id,
     )
+
+
+def _coalesced_columns(field_names: list[str]) -> str:
+    """The quoted column, or the COALESCE of the quoted columns in order."""
+    quoted = [quote_identifier(name) for name in field_names]
+    return quoted[0] if len(quoted) == 1 else f"COALESCE({', '.join(quoted)})"
 
 
 def _servicelevel_check(
