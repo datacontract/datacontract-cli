@@ -158,7 +158,8 @@ class CheckSpec:
     implied_type: bool = False  # FIELD_TYPE: the type is implied by `properties`, `items` or `map`, not declared
     expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
-    columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys
+    # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys; FRESHNESS / RETENTION coalesced in order
+    columns: Optional[List[str]] = None
 
     referenced_model: Optional[str] = None  # MISSING_REFERENCE_COUNT
     referenced_columns: Optional[List[str]] = None  # MISSING_REFERENCE_COUNT, pairwise with `columns`
