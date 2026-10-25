@@ -86,7 +86,7 @@ datacontract test --server production datacontract.yaml
   </a>
   <a className="doc-card" href="/testing/api">
     <img src="/img/icons/api.svg" alt="" />
-    <span><span className="doc-card-title">HTTP API</span><span className="doc-card-desc">JSON HTTP APIs (GET only)</span></span>
+    <span><span className="doc-card-title">HTTP API</span><span className="doc-card-desc">JSON and YAML HTTP APIs, GET and POST, one or more endpoints</span></span>
   </a>
   <a className="doc-card" href="/testing/kafka">
     <img src="/img/icons/kafka.svg" alt="" />

@@ -123,6 +123,8 @@ class Api:
 
     url: str = ""
     body: str = ""
+    # the body by path, without the query, for the paths that answer other than `body`
+    bodies: dict = field(default_factory=dict)
     content_type: str = "application/json"
     status: int = 200
     paths: list = field(default_factory=list)
@@ -133,8 +135,8 @@ class Api:
 
 @pytest.fixture
 def api():
-    """A local API that answers every GET and POST with the body and content type set on it, and records the
-    requests."""
+    """A local API that answers every GET and POST with the body (or the path's entry in bodies) and content type
+    set on it, and records the requests."""
     api = Api()
 
     class Handler(BaseHTTPRequestHandler):
@@ -143,7 +145,7 @@ def api():
             api.methods.append(self.command)
             api.headers.append(dict(self.headers))
             api.request_bodies.append(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
-            body = api.body.encode()
+            body = api.bodies.get(self.path.partition("?")[0], api.body).encode()
             self.send_response(api.status)
             self.send_header("Content-Type", api.content_type)
             self.send_header("Content-Length", str(len(body)))

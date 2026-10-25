@@ -1,12 +1,12 @@
 ---
 sidebar_position: 22
 title: "Import: OpenAPI"
-description: "Create a data contract from the response of a GET or POST operation in an OpenAPI 3.x document."
+description: "Create a data contract from the responses of GET or POST operations in an OpenAPI 3.x document."
 ---
 
 # <img className="page-icon" src="/img/icons/api.svg" alt="" /> Import: OpenAPI
 
-Creates a data contract from the response of one GET or POST operation in an [OpenAPI](https://www.openapis.org/) 3.0 or 3.1 document, in YAML or JSON. You can then [test the endpoint](../testing/api.md) against the contract.
+Creates a data contract from the responses of GET or POST operations in an [OpenAPI](https://www.openapis.org/) 3.0 or 3.1 document, in YAML or JSON. You can then [test the endpoints](../testing/api.md) against the contract.
 
 ```bash
 datacontract import openapi --source openapi.yaml --operation listOrders
@@ -14,13 +14,13 @@ datacontract import openapi --source openapi.yaml --operation listOrders
 
 ## What is imported
 
-- **Operation**: select the operation with `--operation`, by its `operationId` (`listOrders`), its method and path (`GET /orders`, `POST /orders/search`), or the path of a GET operation (`/orders`). If the document has only one GET operation, `--operation` can be omitted. A POST operation is never selected by its path alone, because a POST may change data: import only POST operations that read, such as a search.
-- **Schema**: the contract gets one schema, named after the `operationId` (or the path), described by the operation's `summary` or `description`. Its properties come from the response schema of the first success response (`200` first, then other `2xx` codes) with a JSON (`application/json`, `application/*+json`) or YAML (`application/yaml`, `text/yaml`) body.
+- **Operation**: select the operation with `--operation`, by its `operationId` (`listOrders`), its method and path (`GET /orders`, `POST /orders/search`), or the path of a GET operation (`/orders`). Repeat `--operation` to import several operations. In a terminal, `--operation` can be omitted to pick the operations from a list of those with an importable response. Otherwise, if the document has only one GET operation, `--operation` can be omitted. A POST operation is never selected by its path alone, because a POST may change data: import only POST operations that read, such as a search.
+- **Schema**: the contract gets one schema per operation, named after the `operationId` (or the path), described by the operation's `summary` or `description`. Its properties come from the response schema of the first success response (`200` first, then other `2xx` codes) with a JSON (`application/json`, `application/*+json`) or YAML (`application/yaml`, `text/yaml`) body.
 - **Arrays**: if the response is an array, the schema describes its items, which are the records.
 - **Types**: the response schema is mapped like a [JSON Schema](jsonschema.md). Local `$ref`s (to `#/components/...`) are resolved and `allOf` is merged. OpenAPI 3.0's `example` is imported as `examples`. A property that admits `null` (`nullable: true`, or `type: [string, "null"]`) is not `required`, as ODCS `required` means not null.
-- **Servers**: every absolute `servers` URL becomes an `api` server whose `location` is the endpoint's URL. Server variables take their `default`. Relative server URLs (such as `/v1`) are skipped with a warning, because they cannot be tested.
-- **Parameters**: path parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location`, and required query parameters variables in the server's `params` custom property, defaulting to the parameter's `example` or `default`. For example, `/orders/{orderId}` with `example: ORD-1001` becomes `/orders/${orderId:-ORD-1001}`. Set `orderId` in the environment to test another order.
-- **Request body**: for a POST operation, the server gets `method: POST` and a `body` custom property with the request body's JSON example: the media type's `example`, else its first entry in `examples`, else the schema's `example`. Without one, the contract has no `body` and a warning asks you to add it.
+- **Servers**: every absolute `servers` URL becomes an `api` server whose `location` is the endpoint's URL. Server variables take their `default`. With several operations, the `location` is the server URL, and each schema has an `endpoint` custom property with its path, and its own `method`, `params` and `body`. Relative server URLs (such as `/v1`) are skipped with a warning, because they cannot be tested.
+- **Parameters**: path parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location` (with several operations, in the schema's `endpoint`), and required query parameters variables in the `params` custom property, defaulting to the parameter's `example` or `default`. For example, `/orders/{orderId}` with `example: ORD-1001` becomes `/orders/${orderId:-ORD-1001}`. Set `orderId` in the environment to test another order.
+- **Request body**: for a POST operation, the server (with several operations, the schema) gets `method: POST` and a `body` custom property with the request body's JSON example: the media type's `example`, else its first entry in `examples`, else the schema's `example`. Without one, the contract has no `body` and a warning asks you to add it.
 
 Swagger 2.0 documents are not supported, and `$ref`s to other files are not followed.
 
