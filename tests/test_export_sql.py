@@ -187,7 +187,7 @@ status: active
 schema:
   - name: orders_enriched
     physicalType: view
-    description: One row per order with its customer.
+    description: One row per order with the customer's name.
     properties:
       - name: order_id
         logicalType: string
@@ -231,7 +231,7 @@ CREATE OR REPLACE VIEW orders_enriched (
   order_id COMMENT 'Unique identifier of the order.',
   customer_id,
   customer_name
-) COMMENT='One row per order with its customer.' AS
+) COMMENT='One row per order with the customer''s name.' AS
 SELECT
   order_id,
   customer_id,

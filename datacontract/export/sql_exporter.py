@@ -235,16 +235,16 @@ def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
 
     # Snowflake and Databricks take column comments in the view's column list
     if server_type in ("snowflake", "databricks"):
-        quote = '"' if server_type == "databricks" else "'"
+        quote, escape = ('"', _escape) if server_type == "databricks" else ("'", _escape_single_quoted)
         columns = []
         for prop, column_name in zip(properties, column_names):
             if prop.description is not None:
-                column_name += f" COMMENT {quote}{_escape(prop.description)}{quote}"
+                column_name += f" COMMENT {quote}{escape(prop.description)}{quote}"
             columns.append(f"  {column_name}")
         result += " (\n" + ",\n".join(columns) + "\n)"
         if model.description is not None:
             separator = "=" if server_type == "snowflake" else " "
-            result += f" COMMENT{separator}{quote}{_escape(model.description)}{quote}"
+            result += f" COMMENT{separator}{quote}{escape(model.description)}{quote}"
 
     result += " AS\nSELECT\n" + ",\n".join(f"  {c}" for c in select)
     result += f"\nFROM {from_clause};\n"
