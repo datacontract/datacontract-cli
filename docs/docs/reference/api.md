@@ -30,13 +30,15 @@ The `location` (URL) and `delimiter` (`new_line`, `array`, or `none`) come from 
 
 ## Request
 
-Custom properties of the server shape the request:
+Custom properties of the server, or of each schema served by its own endpoint, shape the request:
 
 | Custom property | Example | Description |
 |---|---|---|
 | `method` | `POST` | `GET` (default) or `POST`. |
 | `params` | `{limit: 100, status: [placed, shipped]}` | The query parameters, each a string, number or boolean, or a list of them for a repeated parameter. |
 | `body` | `{query: {status: shipped}}` | The request body. A mapping or list is sent as JSON, a string as the JSON text it holds. Requires `method: POST`. |
+
+For schemas served by different endpoints, each schema has an `endpoint` custom property with its path below the server's `location` (such as `/orders`), and `method`, `params` and `body` are custom properties of the schema instead of the server. Each schema is then tested against the response of its endpoint, and every schema needs one.
 
 A `${VAR}` [variable](../configuration.md#variables-in-the-data-contract) may appear in any string of `params` and `body`; it resolves to a string, so write a number the API requires as a literal, or put the reference into a string `body` without quotes: `'{"size": ${SIZE:-100}}'`.
 

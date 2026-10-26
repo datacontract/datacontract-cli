@@ -273,7 +273,7 @@ headers, which are matched case-insensitively and map mechanically to the enviro
 Per-request headers are never written to the process environment, so one server can serve several
 tenants. Send them over HTTPS only.
 
-See [Configuration](https://docs.datacontract.com/configuration) for the full list of options.
+See [Configuration](https://cli.datacontract.com/configuration) for the full list of options.
 """
 
 # The endpoints are plain `def`, not `async def`: they block on data sources, and FastAPI runs
@@ -290,7 +290,7 @@ app = FastAPI(
     },
     contact={
         "name": "Data Contract CLI",
-        "url": "https://docs.datacontract.com/",
+        "url": "https://cli.datacontract.com/",
     },
     # Relative, so the document works for any deployment. A second, absolute entry would
     # show up as a target in the Swagger UI dropdown and invite sending contracts there.
@@ -301,7 +301,7 @@ app = FastAPI(
             "description": "Run the schema and quality tests of a data contract against the actual data.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://docs.datacontract.com/testing/",
+                "url": "https://cli.datacontract.com/testing/",
             },
         },
         {
@@ -309,7 +309,7 @@ app = FastAPI(
             "description": "Validate that a data contract is syntactically correct and follows the standard.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://docs.datacontract.com/commands/lint",
+                "url": "https://cli.datacontract.com/commands/lint",
             },
         },
         {
@@ -317,7 +317,7 @@ app = FastAPI(
             "description": "Convert a data contract into another format, such as SQL DDL, Avro, or dbt.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://docs.datacontract.com/exports/",
+                "url": "https://cli.datacontract.com/exports/",
             },
         },
         {
@@ -325,7 +325,7 @@ app = FastAPI(
             "description": "Compare two versions of a data contract and list what changed.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://docs.datacontract.com/commands/changelog",
+                "url": "https://cli.datacontract.com/commands/changelog",
             },
         },
         {
@@ -333,7 +333,7 @@ app = FastAPI(
             "description": "Compare two versions of a data contract and grade each change by compatibility impact.",
             "externalDocs": {
                 "description": "Documentation",
-                "url": "https://docs.datacontract.com/commands/breaking",
+                "url": "https://cli.datacontract.com/commands/breaking",
             },
         },
     ],
@@ -368,7 +368,7 @@ def _openapi_with_external_docs() -> dict:
         "externalDocs",
         {
             "description": "Data Contract CLI documentation",
-            "url": "https://docs.datacontract.com/api",
+            "url": "https://cli.datacontract.com/api",
         },
     )
     return schema

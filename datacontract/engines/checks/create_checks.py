@@ -28,6 +28,7 @@ from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, 
 from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
+    CustomQualityChecks,
     CustomQualityCheckUnusable,
     Instance,
     instantiate,
@@ -234,7 +235,7 @@ def create_checks(
     server: Optional[Server],
     schema_name: str = "all",
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     if data_contract.schema_ is None:
@@ -265,7 +266,7 @@ def _to_schema_checks(
     schema_object: SchemaObject,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     server_type = get_server_type(server) if server is not None else None
@@ -831,7 +832,7 @@ def _quality_checks(
     quality_list: List[DataQuality],
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
@@ -897,6 +898,7 @@ def _unexecuted_check(
     result: str = "warning",
     name: Optional[str] = None,
     dimension: Optional[str] = None,
+    warnings: Optional[List[str]] = None,
 ) -> List[CheckSpec]:
     """A rule the engine cannot run, reported rather than dropped."""
     return [
@@ -912,6 +914,7 @@ def _unexecuted_check(
             severity=quality.severity,
             preset_result=result,
             preset_reason=reason,
+            warnings=warnings,
         )
     ]
 
@@ -931,7 +934,7 @@ def _quality_rule_checks(
     count: int,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -960,20 +963,29 @@ def _quality_rule_checks(
             check_key = f"{model}__{field}__quality_custom_check_{count}"
             check_type = "field_quality_custom"
         if field is not None and "[]" in field:
-            return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field))
+            return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field), "error")
         dialect = dialect_for_server_type(get_server_type(server))
         try:
             instance = instantiate(quality, model, field, dialect, custom_quality_checks)
             query = prepare_query(instance.query, model, field, server, instance)
         except CustomQualityCheckUnusable as e:
             return _unexecuted_check(
-                check_key, check_type, model, field, quality, e.reason, e.result, e.name, e.dimension
+                check_key, check_type, model, field, quality, e.reason, "error", e.name, e.dimension, e.warnings
             )
         rule = instance.quality
         refusal = refusal_reason(query, dialect)
         if refusal is not None:
             return _unexecuted_check(
-                check_key, check_type, model, field, rule, refusal, "failed", instance.name, rule.dimension
+                check_key,
+                check_type,
+                model,
+                field,
+                rule,
+                refusal,
+                "error",
+                instance.name,
+                rule.dimension,
+                instance.warnings,
             )
         return [
             CheckSpec(
@@ -989,6 +1001,7 @@ def _quality_rule_checks(
                 severity=rule.severity,
                 dimension=rule.dimension,
                 diagnostics=instance.diagnostics,
+                warnings=instance.warnings,
             )
         ]
     if quality.type == "sql":

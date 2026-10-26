@@ -49,6 +49,7 @@ slaProperties[].authoritativeDefinitions[] AuthoritativeDefinition -> .url
 schema[].properties[].enum[]             EnumValue      -> .value (or .id)
 schema[]/properties[].synonyms[]         Synonym        -> .synonym (or .id)
 schema[]/properties[].relationships[]    Relationship   -> .id, else from:to
+schema[]/properties[].quality[]          DataQuality    -> .name, else position; re-keyed by normalize_pair
 context.verifiedStatements[]             VerifiedStatement -> .question (or .id)
 context.constraints[]                    Constraint     -> .constraint (or .id)
 servers[]                                Server         -> .server
@@ -61,6 +62,12 @@ authoritativeDefinitions[]               AuthoritativeDefinition -> .url
 description.authoritativeDefinitions[]   AuthoritativeDefinition -> .url
 description.customProperties[]           CustomProperty -> .property
 """
+
+import re
+
+_POSITIONAL_KEY = re.compile(r"\[\d+\]")
+# What a quality rule checks, as opposed to its thresholds and arguments.
+_CHECK_FIELDS = ("type", "metric", "rule", "query", "engine", "implementation")
 
 
 def _normalize_by(items: list[dict], key_field: str) -> dict:
@@ -256,8 +263,6 @@ def normalize(contract: dict) -> dict:
         team = out["team"]
         if isinstance(team, dict) and "members" in team and isinstance(team["members"], list):
             out["team"] = {**team, "members": _normalize_by(team["members"], "username")}
-        elif isinstance(team, list):
-            out["team"] = _normalize_by(team, "username")
 
     if "authoritativeDefinitions" in out and isinstance(out["authoritativeDefinitions"], list):
         out["authoritativeDefinitions"] = _normalize_auth_defs(out["authoritativeDefinitions"])
@@ -272,3 +277,70 @@ def normalize(contract: dict) -> dict:
         out["description"] = normalized_desc
 
     return out
+
+
+def normalize_pair(v1: dict, v2: dict) -> tuple[dict, dict]:
+    """Normalize two versions of a contract, giving each quality rule the same key in both."""
+    n1, n2 = normalize(v1), normalize(v2)
+    _pair_owners(n1.get("schema"), n2.get("schema"))
+    return n1, n2
+
+
+def _pair_owners(owners1, owners2):
+    """Pair the quality rules of the schema objects or properties present in both versions, recursively."""
+    if not isinstance(owners1, dict) or not isinstance(owners2, dict):
+        return
+    for key in owners1.keys() & owners2.keys():
+        owner1, owner2 = owners1[key], owners2[key]
+        if not isinstance(owner1, dict) or not isinstance(owner2, dict):
+            continue
+        if isinstance(owner1.get("quality"), dict) and isinstance(owner2.get("quality"), dict):
+            owner1["quality"], owner2["quality"] = _pair_quality(owner1["quality"], owner2["quality"])
+        _pair_owners(owner1.get("properties"), owner2.get("properties"))
+        _pair_owners(owner1.get("map"), owner2.get("map"))
+        if isinstance(owner1.get("items"), dict) and isinstance(owner2.get("items"), dict):
+            _pair_owners({"items": owner1["items"]}, {"items": owner2["items"]})
+
+
+def _pair_quality(rules1: dict, rules2: dict) -> tuple[dict, dict]:
+    """Give paired quality rules one key, pairing by id, name, equal rule, what it checks, then position if nameless."""
+    side1, side2 = (
+        [(key, None if _POSITIONAL_KEY.fullmatch(key) else key, rule) for key, rule in rules.items()]
+        for rules in (rules1, rules2)
+    )
+    pairs: dict[int, int] = {}  # index in side2 -> index in side1
+    paired1: set[int] = set()
+    for tier in range(5):
+        for j, (_, name2, rule2) in enumerate(side2):
+            if j in pairs:
+                continue
+            for i, (_, name1, rule1) in enumerate(side1):
+                if i in paired1:
+                    continue
+                if (
+                    (tier == 0 and rule1.get("id") is not None and rule1.get("id") == rule2.get("id"))
+                    or (tier == 1 and name1 is not None and name1 == name2)
+                    or (tier == 2 and rule1 == rule2)
+                    or (tier == 3 and all(rule1.get(field) == rule2.get(field) for field in _CHECK_FIELDS))
+                    or (tier == 4 and name1 is None and name2 is None)
+                ):
+                    pairs[j] = i
+                    paired1.add(i)
+                    break
+
+    # Paired nameless rules take their position from the side that also has unpaired nameless rules, so no key clashes.
+    positions_from_v1 = any(name is None and i not in paired1 for i, (_, name, _) in enumerate(side1))
+    out1 = {key: rule for i, (key, _, rule) in enumerate(side1) if i not in paired1}
+    out2 = {}
+    for j, (key2, name2, rule2) in enumerate(side2):
+        if j not in pairs:
+            out2[key2] = rule2
+            continue
+        key1, name1, rule1 = side1[pairs[j]]
+        if name1 != name2:
+            # normalize strips the name, so put it back for the diff to report the rename.
+            rule1 = {**rule1, "name": name1} if name1 else rule1
+            rule2 = {**rule2, "name": name2} if name2 else rule2
+        shared = name2 or name1 or (key1 if positions_from_v1 else key2)
+        out1[shared], out2[shared] = rule1, rule2
+    return out1, out2
