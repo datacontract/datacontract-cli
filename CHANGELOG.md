@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test` loads the custom quality checks a contract uses from Entropy Data when an Entropy Data API key is set, unless the local folder has them
+- `datacontract export sql`: export a schema with `physicalType: view` as a view (#1031)
 
 ### Changed
 - `datacontract test` matches custom quality check IDs regardless of case
