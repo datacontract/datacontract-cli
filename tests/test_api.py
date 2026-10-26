@@ -539,6 +539,53 @@ def test_custom_quality_checks_folder_header_is_rejected():
     assert "configured by the API server" in response.json()["detail"]
 
 
+@responses.activate
+def test_test_endpoint_loads_custom_quality_checks_with_the_api_key_of_the_request(allow_local_files, monkeypatch):
+    for name in ("ENTROPY_DATA_API_KEY", "DATAMESH_MANAGER_API_KEY", "DATACONTRACT_MANAGER_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    with open("fixtures/custom-quality-checks/checks/between.yaml", encoding="utf-8") as f:
+        responses.add(
+            responses.GET, "https://entropy.example.com/api/custom-quality-checks/between/check.yaml", body=f.read()
+        )
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    properties:
+      - name: amount
+        logicalType: integer
+        quality:
+          - type: custom
+            engine: datacontract-cli
+            implementation:
+              check: between
+              arguments: {min: 0, max: 100}
+"""
+
+    response = client.post(
+        url="/test",
+        content=contract,
+        headers={
+            "Content-Type": "application/yaml",
+            "entropy-data-host": "https://entropy.example.com",
+            "entropy-data-api-key": "ed_request_key",
+        },
+    )
+
+    check = next(c for c in response.json()["checks"] if c["type"] == "field_quality_custom")
+    assert check["result"] == "failed"
+    assert responses.calls[0].request.headers["x-api-key"] == "ed_request_key"
+
+
 def test_test_endpoint_uses_config_from_headers(allow_local_files):
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()

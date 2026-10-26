@@ -1,6 +1,7 @@
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
 from datacontract.config import Config
+from datacontract.engines.checks.custom_quality_check import CustomQualityChecks
 from datacontract.engines.hana.hana_check_selection import CheckSelection
 from datacontract.engines.hana.hana_connection import get_connection
 from datacontract.engines.hana.hana_quality_check import run_quality_checks, run_sla_checks
@@ -22,6 +23,7 @@ def check_hana_execute(
     quality_ids: set[str] | None = None,
     tags: set[str] | None = None,
     config: Config | None = None,
+    custom_quality_checks: CustomQualityChecks | None = None,
 ):
     connection = None
     try:
@@ -40,7 +42,6 @@ def check_hana_execute(
             connection = get_connection(server, config)
         skip_reason = METADATA_ONLY_REASON if metadata_only else DRY_RUN_REASON if dry_run else None
         selection = CheckSelection.of(dimensions=dimensions, quality_ids=quality_ids, tags=tags)
-        custom_quality_checks = Config.resolve(config).get_custom_quality_checks()
         warnings: list[str] = []
         checks_before = len(run.checks)
 

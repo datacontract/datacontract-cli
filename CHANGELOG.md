@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` loads the custom quality checks a contract uses from Entropy Data when an Entropy Data API key is set, unless the local folder has them
+
+### Changed
+- `datacontract test` matches custom quality check IDs regardless of case
+
 ## [1.2.8] - 2026-10-26
 
 ### Added

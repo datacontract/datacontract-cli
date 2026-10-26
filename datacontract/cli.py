@@ -36,7 +36,8 @@ custom_quality_checks_option = Annotated[
     typer.Option(
         metavar="DIR",
         help="Folder with the custom quality checks the contract's quality rules use, one YAML file per check. "
-        "Defaults to DATACONTRACT_CUSTOM_QUALITY_CHECKS.",
+        "Defaults to DATACONTRACT_CUSTOM_QUALITY_CHECKS. With ENTROPY_DATA_API_KEY, checks missing here are loaded "
+        "from Entropy Data.",
     ),
 ]
 
