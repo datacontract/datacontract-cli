@@ -5,6 +5,8 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
 
+logger = logging.getLogger(__name__)
+
 
 class SqlExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
@@ -190,17 +192,10 @@ def _to_sql_table(
 
 
 def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
-    """Select the properties from their transformSourceObjects.
-
-    ODCS does not say how several source objects are joined, so the view is then a draft with a
-    `<TODO: join condition>` that the user has to fill in before it can be created. Without any source object,
-    it is a draft selecting `FROM <TODO: source object>`.
-    """
+    """Select the properties from their transformSourceObjects, as a draft with TODOs unless there is one source."""
     properties = model.properties or []
     column_names = [prop.physicalName or prop.name for prop in properties]
 
-    # An entry of transformSourceObjects whose last part is the property's name is a column of the object
-    # before it; any other entry is an object.
     select = []
     all_sources = []
     for prop, column_name in zip(properties, column_names):
@@ -231,7 +226,7 @@ def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
         for source, column, column_name in select
     ]
     if len(sources) != 1:
-        logging.getLogger(__name__).warning(
+        logger.warning(
             "Schema '%s' is a view with %s source objects, which cannot be exported safely. "
             "Please replace the TODOs in the exported SQL.",
             model.name,

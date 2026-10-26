@@ -1,5 +1,3 @@
-import re
-
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -242,16 +240,46 @@ FROM bronze.orders;
 
 
 def test_to_sql_ddl_view_several_sources_is_a_draft():
-    contract = VIEW_CONTRACT.removesuffix("bronze.orders\n") + "bronze.customers\n"
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-view
+name: orders-view
+version: 1.0.0
+status: active
+schema:
+  - name: orders_enriched
+    physicalType: view
+    properties:
+      - name: order_id
+        logicalType: string
+        transformSourceObjects: [bronze.orders]
+      - name: customer_name
+        logicalType: string
+        transformSourceObjects: [bronze.customers]
+"""
     actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
     assert actual.endswith(
-        "SELECT\n  orders.order_id,\n  orders.customer_id,\n  customers.customer_name\n"
+        "SELECT\n  orders.order_id,\n  customers.customer_name\n"
         "FROM bronze.orders orders\nJOIN bronze.customers customers ON <TODO: join condition>;"
     )
 
 
 def test_to_sql_ddl_view_without_sources_is_a_draft():
-    contract = re.sub(r" +transformSourceObjects:\n( {10}- .*\n)+", "", VIEW_CONTRACT)
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-view
+name: orders-view
+version: 1.0.0
+status: active
+schema:
+  - name: orders_enriched
+    physicalType: view
+    properties:
+      - name: order_id
+        logicalType: string
+"""
     actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
     assert actual.endswith("FROM <TODO: source object>;")
 
