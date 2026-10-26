@@ -173,3 +173,150 @@ CREATE OR REPLACE TABLE datacontract_staging.orders_latest.line_items (
 ) COMMENT "A single article that is part of an order.";
 """.strip()
     assert actual == expected
+
+
+VIEW_CONTRACT = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-view
+name: orders-view
+version: 1.0.0
+status: active
+schema:
+  - name: orders_enriched
+    physicalType: view
+    description: One row per order with the customer's name.
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        primaryKey: true
+        description: Unique identifier of the order.
+        transformSourceObjects:
+          - bronze.orders.order_id
+      - name: customer_id
+        logicalType: string
+        transformSourceObjects:
+          - bronze.orders
+      - name: customer_name
+        logicalType: string
+        transformSourceObjects:
+          - bronze.orders
+"""
+
+
+def test_to_sql_ddl_view_postgres():
+    actual = DataContract(data_contract_str=VIEW_CONTRACT).export("sql", sql_server_type="postgres")
+    expected = """
+-- Data Contract: orders-view
+-- SQL Dialect: postgres
+CREATE OR REPLACE VIEW orders_enriched AS
+SELECT
+  order_id,
+  customer_id,
+  customer_name
+FROM bronze.orders;
+""".strip()
+    assert actual == expected
+
+
+def test_to_sql_ddl_view_snowflake():
+    actual = DataContract(data_contract_str=VIEW_CONTRACT).export("sql", sql_server_type="snowflake")
+    expected = """
+-- Data Contract: orders-view
+-- SQL Dialect: snowflake
+CREATE OR REPLACE VIEW orders_enriched (
+  order_id COMMENT 'Unique identifier of the order.',
+  customer_id,
+  customer_name
+) COMMENT='One row per order with the customer''s name.' AS
+SELECT
+  order_id,
+  customer_id,
+  customer_name
+FROM bronze.orders;
+""".strip()
+    assert actual == expected
+
+
+def test_to_sql_ddl_view_several_sources_is_a_draft():
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-view
+name: orders-view
+version: 1.0.0
+status: active
+schema:
+  - name: orders_enriched
+    physicalType: view
+    properties:
+      - name: order_id
+        logicalType: string
+        transformSourceObjects: [bronze.orders]
+      - name: customer_name
+        logicalType: string
+        transformSourceObjects: [bronze.customers]
+"""
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
+    assert actual.endswith(
+        "SELECT\n  orders.order_id,\n  customers.customer_name\n"
+        "FROM bronze.orders orders\nJOIN bronze.customers customers ON <TODO: join condition>;"
+    )
+
+
+def test_to_sql_ddl_view_without_sources_is_a_draft():
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-view
+name: orders-view
+version: 1.0.0
+status: active
+schema:
+  - name: orders_enriched
+    physicalType: view
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
+    assert actual.endswith("FROM <TODO: source object>;")
+
+
+def test_to_sql_ddl_view_sqlserver_is_its_own_batch():
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders
+name: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+  - name: orders_v
+    physicalType: view
+    properties:
+      - name: order_id
+        logicalType: string
+        transformSourceObjects:
+          - orders
+"""
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="sqlserver")
+    expected = """
+-- Data Contract: orders
+-- SQL Dialect: sqlserver
+CREATE TABLE orders (
+  order_id varchar
+);
+GO
+CREATE OR ALTER VIEW orders_v AS
+SELECT
+  order_id
+FROM orders;
+GO
+""".strip()
+    assert actual == expected
