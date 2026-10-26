@@ -127,7 +127,7 @@ def add_basic_info(contract, data_contract: OpenDataContractStandard, graph, odc
         graph.add((bnode_info, odcs.version, Literal(data_contract.version)))
 
     # Add team/owner
-    if data_contract.team:
+    if data_contract.team and data_contract.team.name:
         graph.add((bnode_info, odcs.team, Literal(data_contract.team.name)))
 
 

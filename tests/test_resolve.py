@@ -1,6 +1,8 @@
 import tempfile
 
 import pytest
+import yaml
+from open_data_contract_standard.model import OpenDataContractStandard, Team
 
 from datacontract.data_contract import DataContract
 from datacontract.lint.resolve import _to_yaml, resolve_data_contract
@@ -317,6 +319,46 @@ def test_resolve_dcs_status_preserved_when_set():
     """,
     )
     assert odcs.status == "active"
+
+
+MEMBER_LIST_TEAM_CONTRACT = """
+apiVersion: v3.2.0
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+team:
+  - username: alice
+    role: owner
+"""
+
+
+def test_resolve_member_list_team_as_team_without_name():
+    odcs = resolve_data_contract(data_contract_str=MEMBER_LIST_TEAM_CONTRACT)
+    assert isinstance(odcs.team, Team)
+    assert odcs.team.name is None
+    assert [member.username for member in odcs.team.members] == ["alice"]
+
+
+def test_resolve_empty_member_list_team_as_no_team():
+    odcs = resolve_data_contract(
+        data_contract_str="""
+    apiVersion: v3.2.0
+    kind: DataContract
+    id: orders
+    version: 1.0.0
+    status: active
+    team: []
+    """,
+    )
+    assert odcs.team is None
+
+
+def test_resolve_member_list_team_of_a_parsed_contract():
+    odcs = OpenDataContractStandard.model_validate(yaml.safe_load(MEMBER_LIST_TEAM_CONTRACT))
+    resolved = resolve_data_contract(data_contract=odcs)
+    assert isinstance(resolved.team, Team)
+    assert [member.username for member in resolved.team.members] == ["alice"]
 
 
 @pytest.mark.parametrize(

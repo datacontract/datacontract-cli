@@ -27,7 +27,7 @@ inline_references_option = Annotated[
         help="Resolve authoritativeDefinitions of type definition, semantics or businessDefinition and inline them "
         "into the contract. Relative URLs and semantics IRIs are looked up on the ENTROPY_DATA_HOST "
         "(default https://api.entropy-data.com), other URLs are fetched directly, file "
-        "references are read from disk. See https://docs.datacontract.com/semantics"
+        "references are read from disk. See https://cli.datacontract.com/semantics"
     ),
 ]
 
@@ -149,8 +149,8 @@ app = typer.Typer(
     add_completion=False,
     # the locals of a --debug traceback can hold credentials
     pretty_exceptions_show_locals=False,
-    help="CLI to manage data contracts. Documentation: https://docs.datacontract.com",
-    epilog="Read the full documentation at https://docs.datacontract.com",
+    help="CLI to manage data contracts. Documentation: https://cli.datacontract.com",
+    epilog="Read the full documentation at https://cli.datacontract.com",
 )
 
 

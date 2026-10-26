@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.2.7"
+version = "1.2.8"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -67,7 +67,7 @@ dependencies = [
   "jinja_partials>=0.2.1,<1.0.0",
   "datacontract-specification>=1.2.3,<2.0.0",
   "open-data-contract-standard>=3.2.0,<3.3.0",
-  "deepdiff>=6.0.0,<10.0.0",
+  "deepdiff>=8.0.0,<10.0.0",
 ]
 
 [project.optional-dependencies]
@@ -132,7 +132,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.7.0",
-  "databricks-sdk<0.154.0",
+  "databricks-sdk<0.157.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -288,7 +288,7 @@ rdf = [
 ]
 
 api = [
-  "fastapi>=0.115.0,<0.144.0",
+  "fastapi>=0.115.0,<0.162.0",
   "uvicorn>=0.44.0,<0.55.0",
 ]
 
@@ -324,13 +324,13 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-xdist",
-  "pymssql==2.4.4",
+  "pymssql==2.4.5",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
   # test fixtures to load seed SQL (the engine connects via ibis-postgres'
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
-  "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.17.1",
+  "mysql-connector-python>=8.0.30,<26.11.0",
+  "ruff==0.17.2",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.340.0",
 ]
@@ -339,10 +339,10 @@ dev = [
 # "Project links" sidebar); unrecognised names render as plain bullets.
 [project.urls]
 Homepage = "https://cli.datacontract.com"
-Documentation = "https://docs.datacontract.com"
+Documentation = "https://cli.datacontract.com"
 Repository = "https://github.com/datacontract/datacontract-cli"
 Issues = "https://github.com/datacontract/datacontract-cli/issues"
-Changelog = "https://docs.datacontract.com/release-notes"
+Changelog = "https://cli.datacontract.com/release-notes"
 
 [project.scripts]
 datacontract = "datacontract.cli:main"
