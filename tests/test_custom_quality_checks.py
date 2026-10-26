@@ -633,7 +633,18 @@ def test_an_id_the_folder_does_not_have_is_looked_up_in_entropy_data(entropy_dat
 
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("betwen"))))
 
-    assert spec.preset_reason == f"Neither {CHECKS} nor Entropy Data has the custom quality check 'betwen'."
+    assert spec.preset_reason == f"Neither '{CHECKS}' nor Entropy Data has the custom quality check 'betwen'."
+
+
+def test_a_failed_lookup_of_an_id_the_folder_does_not_have_names_the_folder(entropy_data):
+    entropy_data.get(f"{PLATFORM}/api/custom-quality-checks/betwen/check.yaml", status=500)
+
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("betwen"))))
+
+    assert spec.preset_reason == (
+        f"The custom quality check 'betwen' is not in '{CHECKS}' and could not be loaded from entropy.example.com: "
+        "HTTP 500 Internal Server Error."
+    )
 
 
 def test_a_missing_folder_is_an_error_without_asking_entropy_data(entropy_data):
@@ -687,7 +698,7 @@ def test_a_failed_lookup_is_an_error_for_every_rule_using_the_check_and_asked_on
 def test_a_dot_id_is_an_error_without_asking_entropy_data(entropy_data, check_id):
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule(check_id))), checks=None)
 
-    _unexecuted(spec, "error", "must not be . or ..")
+    _unexecuted(spec, "error", "is no valid custom quality check ID.")
     assert len(entropy_data.calls) == 0
 
 

@@ -159,7 +159,7 @@ class CustomQualityChecks:
                     self._fetched[key] = response.content.decode("utf-8")
                 elif response.status_code == 404:
                     self._fetched[key] = CustomQualityCheckError(
-                        f"Neither {self.directory} nor Entropy Data has the custom quality check '{check_id}'."
+                        f"Neither '{self.directory}' nor Entropy Data has the custom quality check '{check_id}'."
                         if self.directory is not None
                         else f"Entropy Data has no custom quality check '{check_id}'."
                     )
@@ -172,9 +172,12 @@ class CustomQualityChecks:
                 else:
                     reason = f"HTTP {response.status_code} {response.reason}"
             if reason is not None:
+                source = urlparse(self.host).netloc or self.host
                 self._fetched[key] = CustomQualityCheckError(
-                    f"Could not load the custom quality check '{check_id}' from "
-                    f"{urlparse(self.host).netloc or self.host}: {reason}."
+                    f"The custom quality check '{check_id}' is not in '{self.directory}' and could not be loaded "
+                    f"from {source}: {reason}."
+                    if self.directory is not None
+                    else f"Could not load the custom quality check '{check_id}' from {source}: {reason}."
                 )
         fetched = self._fetched[key]
         if isinstance(fetched, CustomQualityCheckError):
@@ -451,7 +454,7 @@ def instantiate(
             "or any of the characters \\ % ; # ?"
         )
     if check_id in (".", ".."):
-        raise unusable(f"The custom quality check ID '{check_id}' must not be . or ..")
+        raise unusable(f"'{check_id}' is no valid custom quality check ID.")
     location = model if field_name is None else f"{model}.{field_name}"
     rule_warnings += [
         f"Custom quality check '{check_id}' on {location}: Unknown key 'implementation.{key}' is ignored."
