@@ -22,7 +22,7 @@ from sqlglot.tokens import TokenType
 from datacontract.config import Config
 from datacontract.config.variables import _ENUM_VALUES
 from datacontract.engines.checks.sql_guard import _DIALECT_BY_SERVER_TYPE
-from datacontract.integration.entropy_data import _get_host
+from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
 from datacontract.lint.resolve import _api_key_for, _SafeLoaderNoTimestamp
 
 ENGINE = "datacontract-cli"
@@ -100,8 +100,16 @@ class CustomQualityChecks:
 
     def __init__(self, config: Config, untrusted_contract: bool = False):
         self.directory = config.get_custom_quality_checks()
-        self.host = _get_host(config).rstrip("/")
+        # An untrusted caller may set the host per request (API header); checks still come from the platform
+        # as the environment sees it, or the request would choose where the server sends its GET.
+        self.host = _get_host(None if untrusted_contract else config).rstrip("/")
         self.api_key = _api_key_for(self.host, config, untrusted_contract)
+        # A key the request brought for its own host is not sent to the environment's host.
+        self.ignored_request_host = (
+            _get_host(config)
+            if untrusted_contract and self.api_key is None and _get_api_key_or_none(config) is not None
+            else None
+        )
         # lowercased ID -> the check's YAML, or why Entropy Data could not provide it
         self._fetched: dict[str, str | CustomQualityCheckError] = {}
 
@@ -475,6 +483,12 @@ def instantiate(
     if custom_quality_checks is None or (
         custom_quality_checks.directory is None and custom_quality_checks.api_key is None
     ):
+        if custom_quality_checks is not None and custom_quality_checks.ignored_request_host is not None:
+            raise unusable(
+                f"The rule uses the custom quality check '{check_id}', but the request's API key belongs to its "
+                f"entropy-data-host '{custom_quality_checks.ignored_request_host}', so set ENTROPY_DATA_HOST to that "
+                "host on the server running the API."
+            )
         raise unusable(
             f"The rule uses the custom quality check '{check_id}', but neither a custom quality checks folder nor "
             f"an Entropy Data API key is configured. Pass --custom-quality-checks, or set "

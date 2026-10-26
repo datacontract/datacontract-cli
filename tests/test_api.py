@@ -539,15 +539,7 @@ def test_custom_quality_checks_folder_header_is_rejected():
     assert "configured by the API server" in response.json()["detail"]
 
 
-@responses.activate
-def test_test_endpoint_loads_custom_quality_checks_with_the_api_key_of_the_request(allow_local_files, monkeypatch):
-    for name in ("ENTROPY_DATA_API_KEY", "DATAMESH_MANAGER_API_KEY", "DATACONTRACT_MANAGER_API_KEY"):
-        monkeypatch.delenv(name, raising=False)
-    with open("fixtures/custom-quality-checks/checks/between.yaml", encoding="utf-8") as f:
-        responses.add(
-            responses.GET, "https://entropy.example.com/api/custom-quality-checks/between/check.yaml", body=f.read()
-        )
-    contract = """
+_CUSTOM_QUALITY_CHECK_CONTRACT = """
 apiVersion: v3.1.0
 kind: DataContract
 id: orders
@@ -571,9 +563,20 @@ schema:
               arguments: {min: 0, max: 100}
 """
 
+
+@responses.activate
+def test_test_endpoint_loads_custom_quality_checks_with_the_api_key_of_the_request(allow_local_files, monkeypatch):
+    for name in ("ENTROPY_DATA_API_KEY", "DATAMESH_MANAGER_API_KEY", "DATACONTRACT_MANAGER_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    with open("fixtures/custom-quality-checks/checks/between.yaml", encoding="utf-8") as f:
+        responses.add(
+            responses.GET, "https://entropy.example.com/api/custom-quality-checks/between/check.yaml", body=f.read()
+        )
+
     response = client.post(
         url="/test",
-        content=contract,
+        content=_CUSTOM_QUALITY_CHECK_CONTRACT,
         headers={
             "Content-Type": "application/yaml",
             "entropy-data-host": "https://entropy.example.com",
@@ -584,6 +587,35 @@ schema:
     check = next(c for c in response.json()["checks"] if c["type"] == "field_quality_custom")
     assert check["result"] == "failed"
     assert responses.calls[0].request.headers["x-api-key"] == "ed_request_key"
+
+
+@responses.activate
+def test_test_endpoint_does_not_load_custom_quality_checks_from_the_host_of_the_request(allow_local_files, monkeypatch):
+    for name in (
+        "ENTROPY_DATA_API_KEY",
+        "DATAMESH_MANAGER_API_KEY",
+        "DATACONTRACT_MANAGER_API_KEY",
+        "ENTROPY_DATA_HOST",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    response = client.post(
+        url="/test",
+        content=_CUSTOM_QUALITY_CHECK_CONTRACT,
+        headers={
+            "Content-Type": "application/yaml",
+            "entropy-data-host": "http://169.254.169.254/latest/meta-data#",
+            "entropy-data-api-key": "ed_request_key",
+        },
+    )
+
+    check = next(c for c in response.json()["checks"] if c["type"] == "field_quality_custom")
+    assert check["result"] == "error"
+    assert check["reason"] == (
+        "The rule uses the custom quality check 'between', but the request's API key belongs to its entropy-data-host "
+        "'http://169.254.169.254/latest/meta-data#', so set ENTROPY_DATA_HOST to that host on the server running the API."
+    )
+    assert len(responses.calls) == 0
 
 
 def test_test_endpoint_uses_config_from_headers(allow_local_files):
