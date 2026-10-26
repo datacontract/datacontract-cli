@@ -248,6 +248,8 @@ def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
 
     result += " AS\nSELECT\n" + ",\n".join(f"  {c}" for c in select)
     result += f"\nFROM {from_clause};\n"
+    if server_type == "sqlserver":
+        result = f"GO\n{result}GO\n"
     return result
 
 

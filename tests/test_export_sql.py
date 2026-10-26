@@ -251,3 +251,41 @@ def test_to_sql_ddl_view_without_sources_is_a_draft():
     contract = re.sub(r" +transformSourceObjects:\n( {10}- .*\n)+", "", VIEW_CONTRACT)
     actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
     assert actual.endswith("FROM <TODO: source object>;")
+
+
+def test_to_sql_ddl_view_sqlserver_is_its_own_batch():
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders
+name: orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+  - name: orders_v
+    physicalType: view
+    properties:
+      - name: order_id
+        logicalType: string
+        transformSourceObjects:
+          - orders
+"""
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="sqlserver")
+    expected = """
+-- Data Contract: orders
+-- SQL Dialect: sqlserver
+CREATE TABLE orders (
+  order_id varchar
+);
+GO
+CREATE OR ALTER VIEW orders_v AS
+SELECT
+  order_id
+FROM orders;
+GO
+""".strip()
+    assert actual == expected
