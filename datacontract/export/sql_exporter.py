@@ -232,7 +232,8 @@ def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
     ]
     if len(sources) != 1:
         logging.getLogger(__name__).warning(
-            "Schema '%s' is a view with %s source objects; the exported view is a draft with TODOs to fill in.",
+            "Schema '%s' is a view with %s source objects, which cannot be exported safely. "
+            "Please replace the TODOs in the exported SQL.",
             model.name,
             len(sources),
         )
