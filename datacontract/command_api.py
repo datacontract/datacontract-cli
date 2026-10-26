@@ -78,7 +78,7 @@ def api(
     This is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive information.
 
     To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in
-    https://docs.datacontract.com/configuration
+    https://cli.datacontract.com/configuration
 
     It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.:
     `datacontract api --port 1234 --root_path /datacontract`.

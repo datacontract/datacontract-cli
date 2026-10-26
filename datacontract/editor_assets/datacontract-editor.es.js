@@ -55047,11 +55047,11 @@ var OU = ({ isOpen: e, onClose: t }) => {
 					t("testResults.help.runIntro"),
 					" ",
 					/* @__PURE__ */ (0, Z.jsx)("a", {
-						href: "https://docs.datacontract.com/api",
+						href: "https://cli.datacontract.com/api",
 						target: "_blank",
 						rel: "noopener noreferrer",
 						className: "font-semibold underline hover:text-blue-600 dark:hover:text-blue-200",
-						children: "docs.datacontract.com/api"
+						children: "cli.datacontract.com/api"
 					}),
 					" ",
 					t("testResults.help.runIntroSuffix")
@@ -55073,11 +55073,11 @@ var OU = ({ isOpen: e, onClose: t }) => {
 					t("testResults.help.moreInfo"),
 					" ",
 					/* @__PURE__ */ (0, Z.jsx)("a", {
-						href: "https://docs.datacontract.com/api",
+						href: "https://cli.datacontract.com/api",
 						target: "_blank",
 						rel: "noopener noreferrer",
 						className: "font-semibold underline hover:text-blue-600 dark:hover:text-blue-200",
-						children: "https://docs.datacontract.com/api"
+						children: "https://cli.datacontract.com/api"
 					})
 				] })
 			]

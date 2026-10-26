@@ -9,7 +9,7 @@ import type {WrapperProps} from '@docusaurus/types';
 type Props = WrapperProps<typeof LayoutType>;
 
 const AUTHORS_ID = 'https://datacontract.com/#authors';
-const SOFTWARE_ID = 'https://docs.datacontract.com/#software';
+const SOFTWARE_ID = 'https://cli.datacontract.com/#software';
 
 const authors = {
   '@type': 'Organization',
@@ -61,7 +61,7 @@ const homepageGraph = [
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Windows, macOS, Linux',
     programmingLanguage: 'Python',
-    url: 'https://docs.datacontract.com/',
+    url: 'https://cli.datacontract.com/',
     downloadUrl: 'https://pypi.org/project/datacontract-cli/',
     installUrl: 'https://pypi.org/project/datacontract-cli/',
     codeRepository: 'https://github.com/datacontract/datacontract-cli',
@@ -73,16 +73,16 @@ const homepageGraph = [
   authors,
   {
     '@type': 'WebSite',
-    '@id': 'https://docs.datacontract.com/#website',
+    '@id': 'https://cli.datacontract.com/#website',
     name: 'Data Contract CLI Documentation',
-    url: 'https://docs.datacontract.com/',
+    url: 'https://cli.datacontract.com/',
     inLanguage: 'en',
     publisher: {'@id': AUTHORS_ID},
     about: {'@id': SOFTWARE_ID},
   },
   {
     '@type': 'FAQPage',
-    '@id': 'https://docs.datacontract.com/#faq',
+    '@id': 'https://cli.datacontract.com/#faq',
     mainEntity: faq.map(([question, answer]) => ({
       '@type': 'Question',
       name: question,

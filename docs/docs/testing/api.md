@@ -1,12 +1,12 @@
 ---
 sidebar_position: 15
 title: "HTTP API"
-description: "Test the JSON or YAML responses of a REST API's GET or POST endpoint against a data contract, created from its OpenAPI document or a sample response."
+description: "Test the JSON or YAML responses of a REST API's GET or POST endpoints against a data contract, created from its OpenAPI document or a sample response."
 ---
 
 # <img className="page-icon" src="/img/icons/api.svg" alt="" /> HTTP API
 
-Test the response of a REST API's GET or POST endpoint. `datacontract test` calls the endpoint and checks the response, JSON or YAML, against the contract.
+Test the responses of a REST API's GET or POST endpoints. `datacontract test` calls the endpoints and checks the responses, JSON or YAML, against the contract.
 
 ## 1. Install
 
@@ -65,6 +65,14 @@ schema:
   # ...
 ```
 
+To test several endpoints of the API in one run, repeat `--operation`, or run the command in a terminal without `--operation` to pick the operations from a list:
+
+```bash
+datacontract import openapi --source openapi.yaml --operation listCustomers --operation listOrders --output datacontract.yaml
+```
+
+Each operation becomes a schema, served by its own endpoint (see [Testing several endpoints](#testing-several-endpoints)).
+
 Path parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location`, and required query parameters variables in `params`, defaulting to the parameter's `example` or `default`. Set them in the environment to call the endpoint with other values, for example `limit=10 datacontract test datacontract.yaml`. See [Import: OpenAPI](../imports/openapi.md) for what is imported.
 
 ### From a response
@@ -109,6 +117,42 @@ servers:
 ```
 
 This sends a POST request with the query parameters `limit=100`, `status=placed` and `status=shipped`, and the body `{"query": {"customer_id": "C-1"}, "size": 100}`. See the [reference](../reference/api.md#request) for the rules.
+
+### Testing several endpoints
+
+When the schemas of a contract are served by different endpoints of the same API, locate the server at the API's base URL, and give each schema an `endpoint` custom property with its path below the `location`. Each endpoint is called, and its response is tested against its schema. Relationships between the schemas are checked across the endpoints, such as that every order references an existing customer:
+
+```yaml
+servers:
+  - server: production
+    type: api
+    location: "https://api.example.com/v1"
+schema:
+  - name: customers
+    customProperties:
+      - property: endpoint
+        value: /customers
+    properties:
+      - name: id
+        logicalType: string
+        unique: true
+  - name: orders
+    customProperties:
+      - property: endpoint
+        value: /orders
+      - property: params
+        value:
+          status: ${status:-open}
+    properties:
+      - name: order_id
+        logicalType: string
+      - name: customer_id
+        logicalType: string
+        relationships:
+          - to: customers.id
+```
+
+The `method`, `params` and `body` of an endpoint are custom properties of its schema, not of the server. Every schema needs an endpoint. With `--schema-name`, only that schema's endpoint is called, so its relationships to other schemas are not checked.
 
 ## 4. Test the actual data
 

@@ -339,10 +339,10 @@ dev = [
 # "Project links" sidebar); unrecognised names render as plain bullets.
 [project.urls]
 Homepage = "https://cli.datacontract.com"
-Documentation = "https://docs.datacontract.com"
+Documentation = "https://cli.datacontract.com"
 Repository = "https://github.com/datacontract/datacontract-cli"
 Issues = "https://github.com/datacontract/datacontract-cli/issues"
-Changelog = "https://docs.datacontract.com/release-notes"
+Changelog = "https://cli.datacontract.com/release-notes"
 
 [project.scripts]
 datacontract = "datacontract.cli:main"

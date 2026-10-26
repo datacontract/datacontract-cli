@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Shop API
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+paths:
+  /customers:
+    get:
+      operationId: listCustomers
+      summary: All customers.
+      responses:
+        "200":
+          description: The customers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id]
+                  properties:
+                    id:
+                      type: string
+                    email:
+                      type: string
+  /orders:
+    get:
+      operationId: listOrders
+      summary: The orders with a status.
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: string
+            default: open
+      responses:
+        "200":
+          description: The orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [order_id]
+                  properties:
+                    order_id:
+                      type: string
+                    customer_id:
+                      type: string
+                    amount:
+                      type: number
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          description: Created.
+  /orders/search:
+    post:
+      operationId: searchOrders
+      requestBody:
+        content:
+          application/json:
+            example:
+              status: shipped
+      responses:
+        "200":
+          description: The matching orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    order_id:
+                      type: string

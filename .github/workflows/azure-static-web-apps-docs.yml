@@ -1,8 +1,7 @@
 name: Docs
 
 # Builds the Docusaurus documentation site in docs/ on every PR
-# and deploys it to docs.datacontract.com on push to main.
-# Runs alongside the GitHub Pages site at cli.datacontract.com.
+# and deploys it to cli.datacontract.com on push to main.
 
 on:
   push:
