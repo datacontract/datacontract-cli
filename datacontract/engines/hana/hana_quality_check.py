@@ -16,6 +16,7 @@ from datacontract.engines.checks.create_checks import (
 from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
+    CustomQualityChecks,
     CustomQualityCheckUnusable,
     Instance,
     instantiate,
@@ -45,7 +46,7 @@ def run_quality_checks(
     skip_reason: str | None = None,
     row_filter: str | None = None,
     selection: CheckSelection = SELECT_ALL,
-    custom_quality_checks: str | None = None,
+    custom_quality_checks: CustomQualityChecks | None = None,
     warnings: list[str] | None = None,
 ) -> list[Check]:
     if warnings is None:
@@ -203,7 +204,7 @@ def _quality_check(
     *,
     row_filter: str | None = None,
     selection: CheckSelection = SELECT_ALL,
-    custom_quality_checks: str | None = None,
+    custom_quality_checks: CustomQualityChecks | None = None,
     warnings: list[str],
 ) -> Check | None:
     if quality.type == "custom" and quality.engine == ENGINE:
@@ -466,7 +467,7 @@ def _custom_quality_check(
     quality: DataQuality,
     index: int,
     skip_reason: str | None,
-    custom_quality_checks: str | None,
+    custom_quality_checks: CustomQualityChecks | None,
     selection: CheckSelection,
     warnings: list[str],
 ) -> Check | None:

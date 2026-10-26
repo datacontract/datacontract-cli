@@ -28,6 +28,7 @@ from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, 
 from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
+    CustomQualityChecks,
     CustomQualityCheckUnusable,
     Instance,
     instantiate,
@@ -234,7 +235,7 @@ def create_checks(
     server: Optional[Server],
     schema_name: str = "all",
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     if data_contract.schema_ is None:
@@ -265,7 +266,7 @@ def _to_schema_checks(
     schema_object: SchemaObject,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     server_type = get_server_type(server) if server is not None else None
@@ -831,7 +832,7 @@ def _quality_checks(
     quality_list: List[DataQuality],
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
@@ -933,7 +934,7 @@ def _quality_rule_checks(
     count: int,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:

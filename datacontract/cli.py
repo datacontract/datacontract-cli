@@ -35,8 +35,7 @@ custom_quality_checks_option = Annotated[
     Optional[Path],
     typer.Option(
         metavar="DIR",
-        help="Folder with the custom quality checks the contract's quality rules use, one YAML file per check. "
-        "Defaults to DATACONTRACT_CUSTOM_QUALITY_CHECKS.",
+        help="Folder with custom quality checks. Defaults to DATACONTRACT_CUSTOM_QUALITY_CHECKS.",
     ),
 ]
 

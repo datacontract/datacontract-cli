@@ -38,9 +38,11 @@ datacontract test datacontract.yaml --custom-quality-checks ./custom-quality-che
 
 or set `DATACONTRACT_CUSTOM_QUALITY_CHECKS`. See the [`test` command reference](../commands/test.md).
 
+With an Entropy Data API key (`ENTROPY_DATA_API_KEY`, and `ENTROPY_DATA_HOST` for a self-hosted instance), `datacontract test` loads each check the contract uses from [Entropy Data](https://www.entropy-data.com), unless the folder has a check with that ID. Test runs started from Entropy Data already send a key.
+
 ### Defining a check
 
-The folder holds one YAML file per check. The file name is the check's ID (`between.yaml` defines `between`). IDs are unique and must not contain whitespace or any of `/ \ % ; # ?`.
+The folder holds one YAML file per check. The file name is the check's ID (`between.yaml` defines `between`). IDs are unique regardless of case (`between` and `Between` are the same check) and must not contain whitespace or any of `/ \ % ; # ?`.
 
 ```yaml
 # custom-quality-checks/between.yaml
