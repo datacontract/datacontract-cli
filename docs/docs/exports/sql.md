@@ -74,11 +74,11 @@ schema:
 ```sql
 CREATE OR REPLACE VIEW orders_enriched AS
 SELECT
-  order_id,
-  customer_id,
-  customer_name
-FROM bronze.orders
-JOIN bronze.customers ON <TODO: join condition>;
+  orders.order_id,
+  orders.customer_id,
+  customers.customer_name
+FROM bronze.orders orders
+JOIN bronze.customers customers ON <TODO: join condition>;
 ```
 
 ## ClickHouse

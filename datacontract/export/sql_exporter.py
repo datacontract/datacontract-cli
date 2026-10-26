@@ -206,6 +206,7 @@ def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
     for prop, column_name in zip(properties, column_names):
         names = {n.lower() for n in (prop.name, prop.physicalName) if n}
         column = column_name
+        first = len(all_sources)
         for entry in prop.transformSourceObjects or []:
             obj, _, col = entry.rpartition(".")
             if obj and col.lower() in names:
@@ -213,8 +214,22 @@ def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
                 column = col
             else:
                 all_sources.append(entry)
-        select.append(column if column == column_name else f"{column} AS {column_name}")
+        prop_sources = set(all_sources[first:])
+        select.append((prop_sources.pop() if len(prop_sources) == 1 else None, column, column_name))
     sources = list(dict.fromkeys(all_sources))
+    aliases = {}
+    if len(sources) > 1:
+        for source in sources:
+            base = alias = source.rpartition(".")[2]
+            n = 2
+            while alias in aliases.values():
+                alias, n = f"{base}_{n}", n + 1
+            aliases[source] = alias
+    select = [
+        (f"{aliases[source]}.{column}" if source in aliases else column)
+        + ("" if column == column_name else f" AS {column_name}")
+        for source, column, column_name in select
+    ]
     if len(sources) != 1:
         logging.getLogger(__name__).warning(
             "Schema '%s' is a view with %s source objects; the exported view is a draft with TODOs to fill in.",
@@ -223,8 +238,10 @@ def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
         )
 
     from_clause = sources[0] if sources else "<TODO: source object>"
-    for source in sources[1:]:
-        from_clause += f"\nJOIN {source} ON <TODO: join condition>"
+    if aliases:
+        from_clause += f" {aliases[sources[0]]}"
+        for source in sources[1:]:
+            from_clause += f"\nJOIN {source} {aliases[source]} ON <TODO: join condition>"
 
     if server_type == "sqlserver":
         result = f"CREATE OR ALTER VIEW {model_name}"

@@ -244,7 +244,10 @@ FROM bronze.orders;
 def test_to_sql_ddl_view_several_sources_is_a_draft():
     contract = VIEW_CONTRACT.removesuffix("bronze.orders\n") + "bronze.customers\n"
     actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="postgres")
-    assert actual.endswith("FROM bronze.orders\nJOIN bronze.customers ON <TODO: join condition>;")
+    assert actual.endswith(
+        "SELECT\n  orders.order_id,\n  orders.customer_id,\n  customers.customer_name\n"
+        "FROM bronze.orders orders\nJOIN bronze.customers customers ON <TODO: join condition>;"
+    )
 
 
 def test_to_sql_ddl_view_without_sources_is_a_draft():
