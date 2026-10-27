@@ -375,9 +375,22 @@ def _connect_bigquery(ibis, server: Server, config: Config):
     )
     if credentials:
         kwargs["credentials"] = credentials
+    location = config.get_bigquery_location() or _get_custom_property(server, "location")
+    if location:
+        kwargs["location"] = location
     con = ibis.bigquery.connect(**kwargs)
     # BigQuery requires a dataset on every table name, but the SQL of quality rules may name the table bare.
     con.client.default_query_job_config.default_dataset = f"{con.data_project}.{con.dataset}"
+
+    kms_key_name = config.get_bigquery_kms_key_name() or _get_custom_property(server, "kmsKeyName")
+    if kms_key_name:
+        from google.cloud import bigquery
+
+        # Projects that enforce CMEK reject query jobs without a key. A dataset's default key does not
+        # cover the anonymous tables holding query results, so set it on the config every query uses.
+        con.client.default_query_job_config.destination_encryption_configuration = bigquery.EncryptionConfiguration(
+            kms_key_name=kms_key_name
+        )
     return con
 
 

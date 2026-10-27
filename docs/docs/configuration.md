@@ -175,6 +175,8 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `bigquery_account_info_json_path` | string |  |
 | `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `bigquery_billing_project` | string |  |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `bigquery_impersonation_account` | string |  |
+| `DATACONTRACT_BIGQUERY_LOCATION` | `bigquery_location` | string |  |
+| `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` | `bigquery_kms_key_name` | string |  |
 | `DATACONTRACT_BIGQUERY_PROJECT` | `bigquery_project` | string | Overrides `project` from the contract's `servers` block |
 | `DATACONTRACT_BIGQUERY_DATASET` | `bigquery_dataset` | string | Overrides `dataset` from the contract's `servers` block |
 
