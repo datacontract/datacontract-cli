@@ -363,8 +363,18 @@ def _run_model(
         except _ColumnNotFound as e:
             set_result(run, spec.key, ResultEnum.failed, str(e) or f"Column '{spec.field}' not found")
         except Exception as e:
-            logger.warning("Check '%s' errored: %s", spec.key, e)
-            set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
+            # BigQuery spells its message out twice; its first error holds it once
+            try:
+                detail = e.errors[0]["message"]
+            except (AttributeError, LookupError, TypeError):
+                detail = str(e)
+            logger.warning("Check '%s' errored: %s", spec.key, detail)
+            reason = (
+                f"The custom quality check {spec.custom_quality_check} could not run: {detail}"
+                if spec.custom_quality_check
+                else f"Error evaluating check: {detail}"
+            )
+            set_result(run, spec.key, ResultEnum.failed, reason)
 
     if agg_exprs:
         _run_aggregation(run, t, agg_exprs)

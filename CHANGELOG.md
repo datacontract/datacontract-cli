@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `datacontract test` matches custom quality check IDs regardless of case
 
+### Fixed
+- `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
+
 ## [1.2.8] - 2026-10-26
 
 ### Added
