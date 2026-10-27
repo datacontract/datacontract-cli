@@ -5,12 +5,14 @@ from pathlib import Path
 
 import pytest
 import responses
+from google.api_core.exceptions import BadRequest
 from open_data_contract_standard.model import Server
 
 from datacontract.config import Config
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.create_checks import create_checks
 from datacontract.engines.checks.custom_quality_check import CustomQualityChecks
+from datacontract.engines.ibis import ibis_check_execute
 from datacontract.model.run import ResultEnum
 
 CHECKS = "./fixtures/custom-quality-checks/checks"
@@ -474,6 +476,24 @@ def test_a_query_the_database_rejects_names_the_check_and_its_arguments(tmp_path
     check = next(c for c in run.checks if c.type == "model_quality_custom")
     assert check.result == ResultEnum.failed
     assert check.reason.startswith("The custom quality check below(min=0) could not run: Binder Error:")
+
+
+def test_a_bigquery_error_shows_its_message_once(tmp_path, monkeypatch):
+    message = "Unrecognized name: nope at [1:38]"
+    error = BadRequest(
+        f"{message}; reason: invalidQuery, location: query, message: {message}\n\nLocation: US\nJob ID: 1234\n",
+        errors=[{"reason": "invalidQuery", "location": "query", "message": message}],
+    )
+
+    def reject(con, query, dialect):
+        raise error
+
+    monkeypatch.setattr(ibis_check_execute, "_run_scalar", reject)
+    checks = _check_file(tmp_path, "below", "  min:\n", "SELECT COUNT(*) FROM ${table} WHERE nope < ${arguments.min}")
+    run = _test(_contract(schema_quality=_schema_rule(_rule("below", "min: 0"))), checks)
+
+    check = next(c for c in run.checks if c.type == "model_quality_custom")
+    assert check.reason == f"The custom quality check below(min=0) could not run: {message}"
 
 
 def test_a_negative_number_after_a_minus_does_not_start_a_comment(tmp_path):

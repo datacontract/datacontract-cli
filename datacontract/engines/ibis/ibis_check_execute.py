@@ -363,8 +363,11 @@ def _run_model(
         except _ColumnNotFound as e:
             set_result(run, spec.key, ResultEnum.failed, str(e) or f"Column '{spec.field}' not found")
         except Exception as e:
-            # BigQuery's str() repeats the message after the failed job's details
-            detail = e.message if isinstance(getattr(e, "message", None), str) else str(e)
+            # BigQuery spells its message out twice; its first error holds it once
+            try:
+                detail = e.errors[0]["message"]
+            except (AttributeError, LookupError, TypeError):
+                detail = str(e)
             logger.warning("Check '%s' errored: %s", spec.key, detail)
             reason = (
                 f"The custom quality check {spec.custom_quality_check} could not run: {detail}"
