@@ -1001,6 +1001,7 @@ def _quality_rule_checks(
                 severity=rule.severity,
                 dimension=rule.dimension,
                 diagnostics=instance.diagnostics,
+                custom_quality_check=instance.call,
                 warnings=instance.warnings,
             )
         ]

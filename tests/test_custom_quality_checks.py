@@ -467,6 +467,15 @@ def test_a_value_in_a_string_that_is_not_plain_makes_the_check_invalid(tmp_path)
     _unexecuted(spec, "error", "${arguments.x} in queries.postgres is inside a string written as E'...'.")
 
 
+def test_a_query_the_database_rejects_names_the_check_and_its_arguments(tmp_path):
+    checks = _check_file(tmp_path, "below", "  min:\n", "SELECT COUNT(*) FROM ${table} WHERE email < ${arguments.min}")
+    run = _test(_contract(schema_quality=_schema_rule(_rule("below", "min: 0"))), checks)
+
+    check = next(c for c in run.checks if c.type == "model_quality_custom")
+    assert check.result == ResultEnum.failed
+    assert check.reason.startswith("The custom quality check below(min=0) could not run: Binder Error:")
+
+
 def test_a_negative_number_after_a_minus_does_not_start_a_comment(tmp_path):
     checks = _check_file(
         tmp_path, "check", "  x:\n", "SELECT COUNT(*) FROM ${table} WHERE ${column} < 5 -${arguments.x} AND 1 = 1"
