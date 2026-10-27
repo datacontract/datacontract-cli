@@ -109,6 +109,7 @@ def test_billing_project_keeps_the_contract_project_as_the_data_project(env):
     assert con.data_project == "my-project"
     assert con.billing_project == "my-billing-project"
     assert con.dataset == "my_dataset"
+    assert str(con.client.default_query_job_config.default_dataset) == "my-project.my_dataset"
     assert client.call_args.kwargs["credentials"] is impersonated.return_value
 
 

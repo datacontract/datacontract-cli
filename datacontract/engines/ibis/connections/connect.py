@@ -375,7 +375,10 @@ def _connect_bigquery(ibis, server: Server, config: Config):
     )
     if credentials:
         kwargs["credentials"] = credentials
-    return ibis.bigquery.connect(**kwargs)
+    con = ibis.bigquery.connect(**kwargs)
+    # BigQuery requires a dataset on every table name, but the SQL of quality rules may name the table bare.
+    con.client.default_query_job_config.default_dataset = f"{con.data_project}.{con.dataset}"
+    return con
 
 
 _BIGQUERY_SCOPES = ["https://www.googleapis.com/auth/bigquery"]
