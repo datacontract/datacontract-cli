@@ -525,14 +525,26 @@ def test_unknown_config_header_is_rejected():
     assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
 
 
-def test_custom_quality_checks_folder_header_is_rejected():
+@pytest.mark.parametrize(
+    "header",
+    [
+        "datacontract-custom-quality-checks",
+        "datacontract-snowflake-private-key-file",
+        "datacontract-snowflake-private-key-path",
+        "datacontract-bigquery-account-info-json-path",
+        "datacontract-databricks-profile",
+        "datacontract-oracle-client-dir",
+        "datacontract-duckdb-database",
+    ],
+)
+def test_server_path_header_is_rejected(header):
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
 
     response = client.post(
         url="/test",
         content=data_contract_str,
-        headers={"Content-Type": "application/yaml", "datacontract-custom-quality-checks": "/etc"},
+        headers={"Content-Type": "application/yaml", header: "/etc"},
     )
 
     assert response.status_code == 400
@@ -784,7 +796,9 @@ def test_cross_origin_preflight_is_not_approved():
 
 # --- B1/C1: an environment-held credential must not be sent to a contract-chosen host ---
 
-from datacontract.api import _reject_environment_credentials_to_untrusted_host  # noqa: E402
+from fastapi import HTTPException  # noqa: E402
+
+from datacontract.api import _reject_environment_credentials_to_untrusted_host, config_from_headers  # noqa: E402
 from datacontract.config import Config  # noqa: E402
 
 _POSTGRES_CONTRACT = """\
@@ -876,6 +890,94 @@ def test_api_app_marks_contracts_untrusted():
     from datacontract.api import app as api_app
 
     assert api_app.state.untrusted_contracts is True
+
+
+_SNOWFLAKE_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: snowflake-exfil
+name: snowflake-exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: snowflake
+    account: attacker-account
+    database: ANALYTICS
+    schema: PUBLIC
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+@pytest.mark.parametrize("header", ["datacontract-snowflake-host", "datacontract-snowflake-port"])
+def test_guard_blocks_snowflake_host_header_despite_pinned_account(monkeypatch, header):
+    """The operator pins the account, but the host and port override where the connector sends the login."""
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_PASSWORD", "prod-secret")
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "prod-account")
+    config = config_from_headers({header: "443" if header.endswith("port") else "attacker.example"})
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(_SNOWFLAKE_CONTRACT, "production", config)
+    assert exc.value.status_code == 422
+    assert header.upper().replace("-", "_") in exc.value.detail
+
+
+def test_test_endpoint_blocks_snowflake_host_header(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_PASSWORD", "prod-secret")
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "prod-account")
+    response = client.post(
+        "/test?server=production",
+        content=_SNOWFLAKE_CONTRACT,
+        headers={"Content-Type": "application/yaml", "datacontract-snowflake-host": "attacker.example"},
+    )
+    assert response.status_code == 422
+    assert "DATACONTRACT_SNOWFLAKE_HOST" in response.json()["detail"]
+
+
+def test_guard_blocks_env_snowflake_private_key_file(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE", "/keys/rsa_key.p8")
+    monkeypatch.delenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", raising=False)
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(_SNOWFLAKE_CONTRACT, "production", None)
+    assert "DATACONTRACT_SNOWFLAKE_ACCOUNT" in exc.value.detail
+
+
+_DATABRICKS_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: databricks-exfil
+name: databricks-exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: databricks
+    host: attacker.example
+    catalog: main
+    schema: default
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+def test_guard_blocks_env_databricks_profile(monkeypatch):
+    """A profile's credentials would be sent to the contract's host, not the host the profile names."""
+    monkeypatch.setenv("DATACONTRACT_DATABRICKS_PROFILE", "prod")
+    monkeypatch.delenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", raising=False)
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(_DATABRICKS_CONTRACT, "production", None)
+    assert "DATACONTRACT_DATABRICKS_SERVER_HOSTNAME" in exc.value.detail
 
 
 _KAFKA_CONTRACT = """\

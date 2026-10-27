@@ -443,6 +443,20 @@ AUTHENTICATION_RESPONSES: dict[int | str, dict] = {
 
 _CONFIG_HEADER_PREFIX = "datacontract-"
 
+# Options naming a file or folder on the server's disk: the operator's to choose, never the caller's,
+# or a caller could have the server sign a login with the operator's key for a host of their choosing.
+_SERVER_PATH_OPTIONS = frozenset(
+    {
+        "DATACONTRACT_CUSTOM_QUALITY_CHECKS",
+        "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE",
+        "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH",
+        "DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH",
+        "DATACONTRACT_DATABRICKS_PROFILE",
+        "DATACONTRACT_ORACLE_CLIENT_DIR",
+        "DATACONTRACT_DUCKDB_DATABASE",
+    }
+)
+
 
 def config_from_headers(headers) -> "Config | None":
     """Build a per-request Config from configuration option headers.
@@ -452,8 +466,8 @@ def config_from_headers(headers) -> "Config | None":
     → ``DATACONTRACT_SNOWFLAKE_PASSWORD``, ``entropy-data-api-key`` →
     ``ENTROPY_DATA_API_KEY``. Returns None when no config headers are present,
     so env-var-configured deployments behave exactly as before. Unknown
-    ``datacontract-*`` option names are rejected with a 400, and so is the
-    custom quality checks folder.
+    ``datacontract-*`` option names are rejected with a 400, and so are options
+    naming a path on the server's disk.
     """
     known = known_env_names()
     values = {}
@@ -461,11 +475,11 @@ def config_from_headers(headers) -> "Config | None":
         lowered = name.lower()
         env = lowered.upper().replace("-", "_")
         if lowered.startswith(_CONFIG_HEADER_PREFIX) or env in known:
-            if env == "DATACONTRACT_CUSTOM_QUALITY_CHECKS":
-                # A folder on the server's disk is the operator's to choose, never the caller's.
+            if env in _SERVER_PATH_OPTIONS:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="The custom quality checks folder is configured by the API server, not per request.",
+                    detail=f"{env} names a path on the server's disk, so it is configured by the API server, "
+                    f"not per request.",
                 )
             values[env] = value
     if not values:
@@ -519,9 +533,19 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "snowflake": (
         "account",
         "snowflake_account",
-        ("snowflake_password", "snowflake_token", "snowflake_private_key"),
+        (
+            "snowflake_password",
+            "snowflake_token",
+            "snowflake_private_key",
+            "snowflake_private_key_file",
+            "snowflake_private_key_path",
+        ),
     ),
-    "databricks": ("host", "databricks_server_hostname", ("databricks_token", "databricks_client_secret")),
+    "databricks": (
+        "host",
+        "databricks_server_hostname",
+        ("databricks_token", "databricks_client_secret", "databricks_profile"),
+    ),
     # Kafka's broker host is always the contract's `server.host` (no environment
     # option pins it), so an environment-held SASL password can never be paired
     # with a posted contract safely -- host_field is None, so it is always rejected.
@@ -630,11 +654,25 @@ def _reject_environment_credentials_to_untrusted_host(body: str, server_name: st
     target_attr, host_field, secret_fields = guard
     if not any(resolved.option_source(field) == "env" for field in secret_fields):
         return  # no environment-held secret for this server type; nothing to protect
-    if host_field is not None and resolved.option_source(host_field) == "env":
-        return  # the operator pinned the target host; the contract's host is ignored
     held = [
         env_name(field, Config.model_fields[field]) for field in secret_fields if resolved.option_source(field) == "env"
     ]
+    if host_field is not None and resolved.option_source(host_field) == "env":
+        # Snowflake's host and port override the address the pinned account resolves to.
+        redirects = [
+            env_name(field, Config.model_fields[field])
+            for field in ("snowflake_host", "snowflake_port")
+            if server.type == "snowflake" and resolved.option_source(field) == "request"
+        ]
+        if not redirects:
+            return  # the operator pinned the target host; the contract's host is ignored
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"This server holds a credential for snowflake servers in its environment ({', '.join(held)}), so "
+            f"the connection must go to the account the server's environment pins; {', '.join(redirects)} cannot be "
+            f"set per request. Remove it, or send the full set of credentials with the request instead of relying on "
+            f"the server's environment.",
+        )
     if host_field is not None:
         env_var = env_name(host_field, Config.model_fields[host_field])
         detail = (

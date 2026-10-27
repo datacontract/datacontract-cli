@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `datacontract test` matches custom quality check IDs regardless of case
 
+### Security
+- `datacontract api` refuses request headers that name a file on the server (Snowflake private key file, BigQuery service account file, Databricks profile, Oracle client folder, DuckDB database), no longer lets a `datacontract-snowflake-host` or `-port` header send an environment-held Snowflake credential to another host, and treats an environment-held Databricks profile like a token
+
 ## [1.2.8] - 2026-10-26
 
 ### Added
