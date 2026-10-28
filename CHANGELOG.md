@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract test` on Azure files authenticates through the Azure credential chain (Azure CLI, managed identity, …) when the `DATACONTRACT_AZURE_TENANT_ID` / `_CLIENT_ID` / `_CLIENT_SECRET` service principal options are not all set. `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` optionally selects the providers (e.g. `cli;env`).
 - `datacontract test` loads the custom quality checks a contract uses from Entropy Data when an Entropy Data API key is set, unless the local folder has them
 - `datacontract export sql`: export a schema with `physicalType: view` as a view (#1031)
 - `datacontract test`: set the BigQuery query location and a Cloud KMS encryption key (CMEK) via `DATACONTRACT_BIGQUERY_LOCATION` / `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` or the server `customProperties` `location` / `kmsKeyName` (#1728)

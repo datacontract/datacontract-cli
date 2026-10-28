@@ -21,15 +21,19 @@ servers:
 
 ## Authentication
 
-Authentication uses an Azure Service Principal (App Registration) with a secret:
+Two authentication methods are supported by the DuckDB engine (`datacontract test` on Azure files):
+
+1. **Service Principal (App Registration) with a secret.** Used when all three of `DATACONTRACT_AZURE_TENANT_ID`, `DATACONTRACT_AZURE_CLIENT_ID` and `DATACONTRACT_AZURE_CLIENT_SECRET` are set.
+2. **Azure credential chain.** Used as soon as the service principal variables are not all set: Azure CLI (`az login`), environment, managed identity, workload identity, and so on. It uses the `CREDENTIAL_CHAIN` provider of the DuckDB `azure` extension and needs DuckDB 1.0 or newer; with an older DuckDB the service principal variables stay mandatory.
 
 | Variable | Example | Description |
 |---|---|---|
-| `DATACONTRACT_AZURE_TENANT_ID` | `79f5b80f-...` | The Azure Tenant ID |
-| `DATACONTRACT_AZURE_CLIENT_ID` | `3cf7ce49-...` | The Application/Client ID of the app registration |
-| `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1M...` | The client secret value |
+| `DATACONTRACT_AZURE_TENANT_ID` | `79f5b80f-...` | The Azure Tenant ID (service principal) |
+| `DATACONTRACT_AZURE_CLIENT_ID` | `3cf7ce49-...` | The Application/Client ID of the app registration (service principal) |
+| `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1M...` | The client secret value (service principal) |
+| `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` | `cli;env;managed_identity` | Optional, credential chain only. `;`-separated providers, tried in order. Default: the DuckDB `azure` extension default chain |
 
-The service principal needs the **Storage Blob Data Reader** role. The [metadata-check path](../testing/azure.md#metadata-checks) alternatively accepts `DATACONTRACT_AZURE_CONNECTION_STRING` or `DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY`.
+The storage account is derived from the `location` of the server. The identity (service principal or the one found by the credential chain) needs the **Storage Blob Data Reader** role. The [metadata-check path](../testing/azure.md#metadata-checks) alternatively accepts `DATACONTRACT_AZURE_CONNECTION_STRING` or `DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY`.
 
 Supported `location` URL formats (in the `servers` block):
 
