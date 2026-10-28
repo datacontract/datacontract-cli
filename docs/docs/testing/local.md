@@ -76,7 +76,7 @@ The command exits with code `1`, so the same call works as a gate in [CI/CD pipe
 
 ## Excel workbooks
 
-Excel workbooks (`format: xlsx`) need `pip install 'datacontract-cli[xlsx]'`. Each schema is one sheet: its `physicalName` is the sheet's name, matched case-sensitively, and a contract with a single schema may leave it out to read the first sheet. The first row of a sheet holds the column names. Columns before the first and after the last header cell are not read, and a column with an empty header cell between them gets a generated name. Rows that are empty in every column are skipped.
+Excel workbooks (`format: xlsx`) need `pip install 'datacontract-cli[xlsx]'`. Each schema is one sheet: its `physicalName` is the sheet's name, matched case-sensitively, and a contract with a single schema may leave it out to read the first sheet. The first row of a sheet holds the column names, unless the schema sets an `xlsxRange`. Columns before the first and after the last header cell are not read, and a column with an empty header cell between them gets a generated name. Rows that are empty in every column are skipped.
 
 ```yaml
 servers:
@@ -89,6 +89,17 @@ schema:
     physicalName: Orders
   - name: country_codes
     physicalName: Country Codes
+```
+
+A sheet with a title or notes above its header sets the cells to read in the schema's `xlsxRange` custom property, header row first. The range names its last column and may leave out its last row, such as `A2:K` for a header in row 2 spanning columns A to K; its value is passed to DuckDB's `read_xlsx` as `range`.
+
+```yaml
+schema:
+  - name: results
+    physicalName: Dose Response Stats
+    customProperties:
+      - property: xlsxRange
+        value: A2:K
 ```
 
 The `path` names a single workbook, without a glob. When several schemas share it, each needs its `physicalName`. Formulas are read as the values Excel last stored for them, and the older `.xls` format is not supported.

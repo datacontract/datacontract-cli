@@ -453,6 +453,9 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
     options = f"'{_sql_literal(model_path)}', header=true, stop_at_empty=false"
     if sheet:
         options += f", sheet='{_sql_literal(sheet)}'"
+    cell_range = _xlsx_range(schema_obj)
+    if cell_range:
+        options += f", range='{_sql_literal(cell_range)}'"
     typed = f"read_xlsx({options}, ignore_errors=true)"
     text = f"read_xlsx({options}, all_varchar=true)"
     cells = f"(SELECT * FROM {typed}) AS t POSITIONAL JOIN (SELECT * FROM {text}) AS r"
@@ -488,6 +491,11 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
     # DuckDB identifiers are case-insensitive, so sheet Orders already answers to orders
     if schema_obj.name.lower() != view.lower():
         con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(view)};")
+
+
+def _xlsx_range(schema_obj: SchemaObject) -> Optional[str]:
+    """The cells of the sheet to read, header row first, for a sheet whose header is not in its first row."""
+    return next((c.value for c in schema_obj.customProperties or [] if c.property == "xlsxRange"), None)
 
 
 def _cell_value(column: str, sql_type: str, inferred_type: str) -> str:
