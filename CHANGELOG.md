@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Python integrations can reuse Databricks SQL and SDK connection factories without loading a testing engine.
 - `datacontract test` loads the custom quality checks a contract uses from Entropy Data when an Entropy Data API key is set, unless the local folder has them
 - `datacontract export sql`: export a schema with `physicalType: view` as a view (#1031)
 - `datacontract test`: set the BigQuery query location and a Cloud KMS encryption key (CMEK) via `DATACONTRACT_BIGQUERY_LOCATION` / `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` or the server `customProperties` `location` / `kmsKeyName` (#1728)
