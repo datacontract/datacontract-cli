@@ -202,7 +202,7 @@ The page for each source above lists its `servers` fields and the environment va
 
 ## Options
 
-`--server`, `--schema-name`, `--checks`, `--dimension`, `--quality-id`, and `--tag` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json` or `junit`, `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
+`--server`, `--schema-name`, `--checks`, `--dimension`, `--quality-id`, and `--tag` narrow down what runs. `--output` with `--output-format` writes the results to a file as `json`, `junit`, or `oors` ([Open Observability Results Standard](https://github.com/bitol-io/open-observability-results-standard) v0.8.1, experimental; a file name ending in `.oors.yaml` or `.oors.json` selects it, and `.yaml` writes YAML), `--publish` sends them to a URL, and `--include-failed-samples` collects a small sample of the offending rows. See the full [`test` command reference](../commands/test.md).
 
 For CI/CD pipelines, use the [`ci`](../commands/ci.md) command. It runs the same checks as `test`, takes several contracts at once, and adds annotations, summaries, and exit-code control.
 

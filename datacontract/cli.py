@@ -275,7 +275,9 @@ def resolve_output_format(output_format: Optional[OutputFormat], output: Optiona
     inferred = OutputFormat.infer_from_output_path(output)
     if inferred is None:
         detail = f" from extension '{output.suffix}'" if output.suffix else ""
-        console.print(f"Error: Cannot infer output format{detail}. Please specify --output-format (json or junit).")
+        console.print(
+            f"Error: Cannot infer output format{detail}. Please specify --output-format (json, junit or oors)."
+        )
         raise typer.Exit(code=1)
 
     return inferred
