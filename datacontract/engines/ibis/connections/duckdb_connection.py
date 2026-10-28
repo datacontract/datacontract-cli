@@ -465,6 +465,7 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
 
     # Like DuckDB's own identifiers, a header answers to its name in any case
     headers = {row[0].lower(): row for row in con.sql(f"DESCRIBE SELECT * FROM {typed}").fetchall()}
+    check_xlsx_header_row(con, model_path, sheet, cell_range, len(headers))
     # A row that is empty in every column is a spacer, not a record
     not_empty = f"coalesce({', '.join(f'r.{_quote(row[0])}' for row in headers.values())}) IS NOT NULL"
     columns, errors = [], []
@@ -491,6 +492,57 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
     # DuckDB identifiers are case-insensitive, so sheet Orders already answers to orders
     if schema_obj.name.lower() != view.lower():
         con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(view)};")
+
+
+# The first cell of a range, and the last column if it names one: A2:K, A2:K500, B3
+_RANGE_START = re.compile(r"([A-Za-z]+)(\d+)(?::([A-Za-z]+)\d*)?")
+
+
+def _column_number(letters: str) -> int:
+    number = 0
+    for letter in letters.upper():
+        number = number * 26 + ord(letter) - ord("A") + 1
+    return number
+
+
+def _column_letters(number: int) -> str:
+    letters = ""
+    while number:
+        number, remainder = divmod(number - 1, 26)
+        letters = chr(ord("A") + remainder) + letters
+    return letters
+
+
+def check_xlsx_header_row(con, model_path: str, sheet: Optional[str], cell_range: Optional[str], width: int) -> None:
+    """Refuse a sheet whose header row is empty.
+
+    read_xlsx skips empty rows before the header, even inside a range, so a sheet with an empty row
+    where its header should be would be read from the next row down and pass. The header row is the
+    first row of the sheet, or of the schema's xlsxRange; `width` is the number of columns read_xlsx
+    found, which bounds the cells read (reading a whole row out to column XFD takes over a second).
+    """
+    match = _RANGE_START.fullmatch(cell_range or "A1")
+    if not match:
+        # read_xlsx reports a malformed range itself
+        return
+    first_column, row, last_column = match.groups()
+    last_column = last_column or _column_letters(_column_number(first_column) + max(width, 1) - 1)
+    options = (
+        f"'{_sql_literal(model_path)}', header=false, all_varchar=true, range='{first_column}{row}:{last_column}{row}'"
+    )
+    if sheet:
+        options += f", sheet='{_sql_literal(sheet)}'"
+    header = con.sql(f"SELECT * FROM read_xlsx({options})").fetchone()
+    if header is None or all(cell is None for cell in header):
+        where = f"row {row} of sheet '{sheet}'" if sheet else f"row {row} of the first sheet"
+        raise DataContractException(
+            type="xlsx-connection",
+            name="empty_header_row",
+            reason=(
+                f"The header should be on {where}, but that row is empty. "
+                "Set the schema's xlsxRange to start at the header row."
+            ),
+        )
 
 
 def _xlsx_range(schema_obj: SchemaObject) -> Optional[str]:

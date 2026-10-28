@@ -153,6 +153,29 @@ def test_a_sheet_with_its_header_below_a_title_fails_without_a_range(tmp_path: P
     assert "Check that field 'order_id' is present" in failed(run)
 
 
+def test_a_sheet_with_an_empty_row_above_its_header_fails(tmp_path: Path):
+    workbook = load_workbook(WORKBOOK)
+    workbook["Orders"].insert_rows(1)
+    workbook.save(tmp_path / "delivery.xlsx")
+
+    run = DataContract(data_contract_str=contract(str(tmp_path / "delivery.xlsx"), models=["orders"])).test()
+
+    assert run.result != "passed"
+    assert any("row 1 of sheet 'Orders'" in (c.reason or "") for c in run.checks)
+
+
+def test_a_range_that_starts_on_an_empty_row_fails(tmp_path: Path):
+    path = titled(tmp_path)
+    workbook = load_workbook(path)
+    workbook["Orders"].insert_rows(2)
+    workbook.save(path)
+
+    run = DataContract(data_contract_str=contract(path, models=["orders"], customProperties=XLSX_RANGE)).test()
+
+    assert run.result != "passed"
+    assert any("row 2 of sheet 'Orders'" in (c.reason or "") for c in run.checks)
+
+
 def test_a_fraction_in_an_integer_column_is_not_rounded(tmp_path: Path):
     run = DataContract(data_contract_str=contract(edited(tmp_path, F3=1.5), models=["orders"])).test()
 

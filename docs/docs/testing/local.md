@@ -91,7 +91,7 @@ schema:
     physicalName: Country Codes
 ```
 
-A sheet with a title or notes above its header sets the cells to read in the schema's `xlsxRange` custom property, header row first. The range names its last column and may leave out its last row, such as `A2:K` for a header in row 2 spanning columns A to K; its value is passed to DuckDB's `read_xlsx` as `range`.
+A sheet with a title or notes above its header sets the cells to read in the schema's `xlsxRange` custom property, header row first. The range names its last column and may leave out its last row, such as `A2:K` for a header in row 2 spanning columns A to K; its value is passed to DuckDB's `read_xlsx` as `range`. The header row, the first row of the sheet or of its `xlsxRange`, must hold the column names: a sheet whose header row is empty fails rather than being read from the next row down.
 
 ```yaml
 schema:
