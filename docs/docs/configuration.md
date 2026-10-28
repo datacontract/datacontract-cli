@@ -167,6 +167,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_AZURE_TENANT_ID` | `azure_tenant_id` | string |  |
 | `DATACONTRACT_AZURE_CLIENT_ID` | `azure_client_id` | string |  |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `azure_client_secret` | string (secret) |  |
+| `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` | `azure_credential_chain` | string |  |
 
 ### BigQuery
 

@@ -27,6 +27,8 @@ DATACONTRACT_AZURE_CLIENT_ID=3cf7ce49-e2e9-4cbc-a922-4328d4a58622
 DATACONTRACT_AZURE_CLIENT_SECRET=yZK8Q~GWO1MMXXXXXXXXXXXXX
 ```
 
+Without these three variables, the Azure credential chain is used instead (for example after `az login`, or with a managed identity). Set `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` (e.g. `cli;env;managed_identity`) to choose the providers.
+
 ## 3. Create a contract from your files
 
 Import the schema straight from the container. This also generates a ready-to-test `servers` block:
@@ -80,7 +82,7 @@ Run `datacontract test datacontract.yaml` again: every violation is listed as an
 
 ## Reference
 
-All authentication options (service principal, connection string, account key), supported location URL formats, and the data type handling per file format: **[Azure Reference](../reference/azure.md)**.
+All authentication options (service principal, credential chain, connection string, account key), supported location URL formats, and the data type handling per file format: **[Azure Reference](../reference/azure.md)**.
 
 ## Troubleshooting
 
