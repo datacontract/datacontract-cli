@@ -30,7 +30,8 @@ def test_cli():
             "TEST_SCHEMA",
         ],
     )
-    assert result.exit_code == 1 and result.exception.msg.split(",")[0] == "251005: User is empty"
+    assert result.exit_code == 1
+    assert "user" in result.exception.msg.lower()
 
 
 def test_cli_connection():

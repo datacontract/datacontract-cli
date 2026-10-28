@@ -443,13 +443,15 @@ AUTHENTICATION_RESPONSES: dict[int | str, dict] = {
 
 _CONFIG_HEADER_PREFIX = "datacontract-"
 
-# Options naming a file or folder on the server's disk: the operator's to choose, never the caller's,
-# or a caller could have the server sign a login with the operator's key for a host of their choosing.
-_SERVER_PATH_OPTIONS = frozenset(
+# Options naming a file or folder on the server's disk, or the server's own workload identity: the operator's
+# to choose, never the caller's, or a caller could have the server log in as the operator to a host of their choosing.
+_SERVER_ONLY_OPTIONS = frozenset(
     {
         "DATACONTRACT_CUSTOM_QUALITY_CHECKS",
         "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE",
         "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH",
+        "DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH",
+        "DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER",
         "DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH",
         "DATACONTRACT_DATABRICKS_PROFILE",
         "DATACONTRACT_ORACLE_CLIENT_DIR",
@@ -467,7 +469,7 @@ def config_from_headers(headers) -> "Config | None":
     ``ENTROPY_DATA_API_KEY``. Returns None when no config headers are present,
     so env-var-configured deployments behave exactly as before. Unknown
     ``datacontract-*`` option names are rejected with a 400, and so are options
-    naming a path on the server's disk.
+    only the operator may set.
     """
     known = known_env_names()
     values = {}
@@ -475,11 +477,10 @@ def config_from_headers(headers) -> "Config | None":
         lowered = name.lower()
         env = lowered.upper().replace("-", "_")
         if lowered.startswith(_CONFIG_HEADER_PREFIX) or env in known:
-            if env in _SERVER_PATH_OPTIONS:
+            if env in _SERVER_ONLY_OPTIONS:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"{env} names a path on the server's disk, so it is configured by the API server, "
-                    f"not per request.",
+                    detail=f"{env} is configured by the API server, not per request.",
                 )
             values[env] = value
     if not values:
@@ -539,6 +540,8 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
             "snowflake_private_key",
             "snowflake_private_key_file",
             "snowflake_private_key_path",
+            "snowflake_token_file_path",
+            "snowflake_workload_identity_provider",
         ),
     ),
     "databricks": (

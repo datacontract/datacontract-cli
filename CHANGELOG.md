@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` loads the custom quality checks a contract uses from Entropy Data when an Entropy Data API key is set, unless the local folder has them
 - `datacontract export sql`: export a schema with `physicalType: view` as a view (#1031)
 - `datacontract test`: set the BigQuery query location and a Cloud KMS encryption key (CMEK) via `DATACONTRACT_BIGQUERY_LOCATION` / `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` or the server `customProperties` `location` / `kmsKeyName` (#1728)
+- `datacontract test`: log in to Snowflake with workload identity federation via `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER` and `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH`
 
 ### Changed
+- The `snowflake` extra supports snowflake-connector-python 5.x and requires at least 3.17
 - `datacontract test` matches custom quality check IDs regardless of case
 
 ### Security

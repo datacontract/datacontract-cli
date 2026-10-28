@@ -5,6 +5,7 @@ which kwargs the dispatch passes for a given set of env vars.
 """
 
 import os
+import warnings
 
 import ibis
 import pytest
@@ -171,3 +172,64 @@ def test_env_variables_override_the_contract_server_details(env, captured_connec
     assert captured_connect["account"] == "env-account"
     assert captured_connect["database"] == "ENV_DB"
     assert captured_connect["schema"] == "ENV_SCHEMA"
+
+
+def test_every_option_reaches_a_parameter_the_installed_connector_knows(env, captured_connect):
+    """The connector ignores parameter names it does not know, so one it renames or drops would silently stop
+    working."""
+    for name, value in {
+        "USERNAME": "svc_test",
+        "PASSWORD": "secret",
+        "AUTHENTICATOR": "WORKLOAD_IDENTITY",
+        "WORKLOAD_IDENTITY_PROVIDER": "OIDC",
+        "ROLE": "TESTER",
+        "TOKEN": "token",
+        "TOKEN_FILE_PATH": "/var/run/secrets/tokens/snowflake-token",
+        "PASSCODE": "123456",
+        "PRIVATE_KEY": "TUlJ",
+        "PRIVATE_KEY_FILE": KEY_FILE,
+        "PRIVATE_KEY_FILE_PWD": "secret",
+        "WAREHOUSE": "COMPUTE_WH",
+        "HOST": "abc-xy123.snowflakecomputing.com",
+        "LOGIN_TIMEOUT": "10",
+        "NETWORK_TIMEOUT": "20",
+        "SOCKET_TIMEOUT": "30",
+        "PORT": "443",
+    }.items():
+        env.setenv(f"DATACONTRACT_SNOWFLAKE_{name}", value)
+
+    _connect()
+
+    parameters = {name: value for name, value in captured_connect.items() if name != "create_object_udfs"}
+    assert parameters.keys() == {
+        "user",
+        "password",
+        "authenticator",
+        "workload_identity_provider",
+        "role",
+        "token",
+        "token_file_path",
+        "passcode",
+        "private_key",
+        "private_key_file",
+        "private_key_file_pwd",
+        "warehouse",
+        "host",
+        "login_timeout",
+        "network_timeout",
+        "socket_timeout",
+        "port",
+        "account",
+        "database",
+        "schema",
+    }
+    try:
+        from snowflake.connector.connection_config import ConnectionConfig
+    except ImportError:  # connector 4.x and earlier
+        from snowflake.connector.connection import DEFAULT_CONFIGURATION
+
+        assert parameters.keys() <= DEFAULT_CONFIGURATION.keys()
+    else:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            assert ConnectionConfig.from_kwargs(**parameters)._extra == {}

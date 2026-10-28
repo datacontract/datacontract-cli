@@ -535,9 +535,11 @@ def test_unknown_config_header_is_rejected():
         "datacontract-databricks-profile",
         "datacontract-oracle-client-dir",
         "datacontract-duckdb-database",
+        "datacontract-snowflake-token-file-path",
+        "datacontract-snowflake-workload-identity-provider",
     ],
 )
-def test_server_path_header_is_rejected(header):
+def test_server_only_header_is_rejected(header):
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
 
@@ -939,8 +941,16 @@ def test_test_endpoint_blocks_snowflake_host_header(monkeypatch):
     assert "DATACONTRACT_SNOWFLAKE_HOST" in response.json()["detail"]
 
 
-def test_guard_blocks_env_snowflake_private_key_file(monkeypatch):
-    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE", "/keys/rsa_key.p8")
+@pytest.mark.parametrize(
+    "variable, value",
+    [
+        ("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE", "/keys/rsa_key.p8"),
+        ("DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH", "/var/run/secrets/tokens/snowflake-token"),
+        ("DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER", "AWS"),
+    ],
+)
+def test_guard_blocks_env_snowflake_identity_without_pinned_account(monkeypatch, variable, value):
+    monkeypatch.setenv(variable, value)
     monkeypatch.delenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", raising=False)
 
     with pytest.raises(HTTPException) as exc:

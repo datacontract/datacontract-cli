@@ -211,8 +211,10 @@ azure = [
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.9",
-  "ibis-framework[snowflake]>=10.0.0,<13.0.0"
+  "snowflake-connector-python[pandas]>=3.17,<5.2",
+  "ibis-framework[snowflake]>=10.0.0,<13.0.0",
+  # ibis imports packaging unconditionally; snowflake-connector-python 5.x no longer pulls it in.
+  "packaging>=21.3"
 ]
 
 sqlserver = [
