@@ -48,7 +48,7 @@ The variables below are passed as connection parameters to the [snowflake-connec
 
 For key-pair auth, set `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` to the path of the key file and `..._PRIVATE_KEY_FILE_PWD` to its passphrase, if it has one. `..._PRIVATE_KEY` takes the key itself rather than a path. `..._AUTHENTICATOR` can stay unset: the driver switches to key-pair auth whenever a key is given.
 
-For [workload identity federation](https://docs.snowflake.com/en/user-guide/workload-identity-federation), set `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR=WORKLOAD_IDENTITY` and `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER` to `AWS`, `AZURE`, `GCP` or `OIDC`. With `OIDC`, for example from a Kubernetes pod, also point `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH` at the projected service account token, such as `/var/run/secrets/tokens/snowflake-token`. No password or key is stored.
+For [workload identity federation](https://docs.snowflake.com/en/user-guide/workload-identity-federation), set `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR=WORKLOAD_IDENTITY` and `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER` to `AWS`, `AZURE`, `GCP` or `OIDC`. With `OIDC`, for example from a Kubernetes pod, also point `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH` at the projected service account token, such as `/var/run/secrets/tokens/snowflake-token`.
 
 ### Deprecated variables
 
