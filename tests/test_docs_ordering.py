@@ -44,8 +44,8 @@ def sidebar_label(page, prefix: str) -> str:
     return rendered.removeprefix(prefix)
 
 
-def sidebar_position(page) -> int:
-    return int(re.search(r"^sidebar_position: (\d+)$", page.read_text(), re.M).group(1))
+def sidebar_position(page) -> float:
+    return float(re.search(r"^sidebar_position: (\d+(?:\.\d+)?)$", page.read_text(), re.M).group(1))
 
 
 @pytest.mark.parametrize("folder, prefix, _command", SIDEBAR_FOLDERS, ids=SIDEBAR_IDS)
