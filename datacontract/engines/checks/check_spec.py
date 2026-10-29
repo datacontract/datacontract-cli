@@ -166,6 +166,7 @@ class CheckSpec:
     query: Optional[str] = None  # CUSTOM_SQL (placeholders already substituted)
     dialect: Optional[str] = None  # CUSTOM_SQL input SQL dialect
     diagnostics: Optional[dict] = None  # CUSTOM_SQL: reported alongside the measured value
+    custom_quality_check: Optional[str] = None  # CUSTOM_SQL: the check's ID and arguments, as between(min=1, max=100)
     warnings: Optional[List[str]] = None  # for the run's log
 
     seconds: Optional[int] = None  # FRESHNESS / RETENTION threshold in seconds

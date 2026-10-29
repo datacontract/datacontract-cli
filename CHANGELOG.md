@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `snowflake` extra supports snowflake-connector-python 5.x and requires at least 3.17
 - `datacontract test` matches custom quality check IDs regardless of case
 
+### Fixed
+- `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
+
 ### Security
 - `datacontract api` refuses headers that name a file on the server or send a Snowflake credential held in the server's environment to another host
 - `datacontract api` applies its credential and local file guards to servers declared as `type: custom` with a `customType`, or with an ODCS type synonym such as `postgresql`

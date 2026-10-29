@@ -299,6 +299,8 @@ class Instance:
     # The rule with the check's defaults filled in: expected result and dimension.
     quality: DataQuality
     name: str
+    # The check's ID with the rule's arguments, as between(min=1, max=100)
+    call: str
     diagnostics: dict
     warnings: list[str]
 
@@ -531,6 +533,7 @@ def instantiate(
                 for item in (value if isinstance(value, list) else [value])
             ]
             arguments[argument] = (False, numbers if isinstance(value, list) else numbers[0])
+    call = f"{check.id}({', '.join(f'{name}={value_text(value)}' for name, (_, value) in arguments.items())})"
     if quality.description:
         name = quality.description
     elif check.description:
@@ -550,7 +553,7 @@ def instantiate(
 
         name = reference_pattern(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS).sub(fill, check.description)
     else:
-        name = f"{check.id}({', '.join(f'{name}={value_text(value)}' for name, (_, value) in arguments.items())})"
+        name = call
 
     for argument, (identifier, value) in arguments.items():
         if identifier and (not isinstance(value, str) or not value):
@@ -612,6 +615,7 @@ def instantiate(
         arguments=arguments,
         quality=quality.model_copy(update=updates),
         name=name,
+        call=call,
         diagnostics={
             "custom_quality_check": check.id,
             "query": query_dialect,
