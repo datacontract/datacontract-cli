@@ -550,7 +550,7 @@ def test_server_only_header_is_rejected(header):
     )
 
     assert response.status_code == 400
-    assert "configured by the API server" in response.json()["detail"]
+    assert "is set on the API server" in response.json()["detail"]
 
 
 _CUSTOM_QUALITY_CHECK_CONTRACT = """

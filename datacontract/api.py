@@ -480,7 +480,7 @@ def config_from_headers(headers) -> "Config | None":
             if env in _SERVER_ONLY_OPTIONS:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"{env} is configured by the API server, not per request.",
+                    detail=f"{env} is set on the API server. It is not possible to override it per request.",
                 )
             values[env] = value
     if not values:
@@ -676,10 +676,8 @@ def _reject_environment_credentials_to_untrusted_host(body: str, server_name: st
             return  # the operator pinned the target host; the contract's host is ignored
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"This server holds a credential for snowflake servers in its environment ({', '.join(held)}), so "
-            f"the connection must go to the account the server's environment pins; {', '.join(redirects)} cannot be "
-            f"set per request. Remove it, or send the full set of credentials with the request instead of relying on "
-            f"the server's environment.",
+            detail=f"{', '.join(redirects)} cannot be set per request while the API server uses its own Snowflake "
+            f"credential ({', '.join(held)}). Remove it, or send all credentials with the request.",
         )
     if host_field is not None:
         env_var = env_name(host_field, Config.model_fields[host_field])
