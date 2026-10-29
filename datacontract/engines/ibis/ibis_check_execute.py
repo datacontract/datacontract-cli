@@ -1321,7 +1321,8 @@ def _resolve_expr(t, columns: dict, field: str, value_type: Optional[str] = None
     if _backend_name(t) == "snowflake":
         from datacontract.engines.ibis.snowflake_nested_values import nested_value
 
-        return nested_value(t[_resolve_col(columns, _root(field))], field, value_type)
+        # unnamed, ibis would name a grouped value after its whole expression, past Snowflake's 255 characters
+        return nested_value(t[_resolve_col(columns, _root(field))], field, value_type).name(field)
     return _resolve_nested_expr(t, field, columns)
 
 

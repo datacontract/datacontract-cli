@@ -9,6 +9,7 @@ from datacontract.engines.ibis.ibis_check_execute import (
     _item_duplicate_predicate,
     _missing_expr,
     _resolve_dtype,
+    _resolve_expr,
     _row_predicate,
 )
 
@@ -167,3 +168,9 @@ def test_checks_on_array_items_compile_for_snowflake():
 
     assert "TRANSFORM(AS_ARRAY(" in _snowflake_sql(missing)
     assert "ARRAY_DISTINCT(" in _snowflake_sql(repeated)
+
+
+def test_a_duplicate_check_on_a_nested_property_on_snowflake_groups_by_a_short_name():
+    key = _resolve_expr(SNOWFLAKE, SNOWFLAKE_COLUMNS, "customer.email", "string")
+
+    assert SNOWFLAKE.group_by([key]).aggregate(n=SNOWFLAKE.count()).columns[0] == "customer.email"
