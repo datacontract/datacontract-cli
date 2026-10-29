@@ -12,7 +12,7 @@ from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field, ValidationError
 
 from datacontract.config import Config, known_env_names
-from datacontract.config.variables import CONTRACT_VARIABLES_ENV, allowed_environment, resolve_variables
+from datacontract.config.variables import CONTRACT_VARIABLES_ENV, allowed_environment, resolve_server_variables
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.breaking import BreakingChangeEntry, Perspective
 from datacontract.model.changelog import ChangelogEntry
@@ -531,6 +531,7 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "hive": ("host", "hive_host", ("hive_password",)),
     "redshift": ("host", "redshift_host", ("redshift_password",)),
     "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
+    "mssql": ("host", "sqlserver_host", ("sqlserver_password",)),
     "snowflake": (
         "account",
         "snowflake_account",
@@ -566,13 +567,17 @@ def _selected_server(body: str, server_name: str | None, config):
     """
     from datacontract.engines.data_contract_test import get_server
     from datacontract.lint import resolve
+    from datacontract.model.server import get_server_type
 
     try:
         data_contract = resolve.resolve_data_contract(data_contract_str=body, config=config)
         server = get_server(data_contract, server_name)
-        # Guard the server type the test will run against, not a ${VAR:-local} reference to it.
-        variables = allowed_environment(_allowed_contract_variables())
-        return server and server.model_copy(update={"type": resolve_variables(server.type, variables=variables)})
+        if server is None:
+            return None
+        # Guard the server type the test will connect to: references like ${VAR:-local} resolved, and
+        # `custom` + customType or an ODCS synonym such as `postgresql` mapped to the type the CLI dispatches on.
+        server = resolve_server_variables(server, allowed_environment(_allowed_contract_variables()))
+        return server.model_copy(update={"type": get_server_type(server)})
     except Exception:
         return None
 

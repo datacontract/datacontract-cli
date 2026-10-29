@@ -800,7 +800,7 @@ def test_cross_origin_preflight_is_not_approved():
 
 from fastapi import HTTPException  # noqa: E402
 
-from datacontract.api import _reject_environment_credentials_to_untrusted_host, config_from_headers  # noqa: E402
+from datacontract.api import _reject_environment_credentials_to_untrusted_host  # noqa: E402
 from datacontract.config import Config  # noqa: E402
 
 _POSTGRES_CONTRACT = """\
@@ -838,6 +838,34 @@ def test_guard_blocks_env_credential_to_contract_host(monkeypatch):
         _reject_environment_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)
     assert exc.value.status_code == 422
     assert "DATACONTRACT_POSTGRES_HOST" in exc.value.detail
+
+
+@pytest.mark.parametrize(
+    "server_type",
+    [
+        "    type: postgresql\n",
+        "    type: custom\n    customProperties:\n      - property: customType\n        value: postgres\n",
+    ],
+)
+def test_guard_blocks_env_credential_whatever_the_type_spelling(monkeypatch, server_type):
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    contract = _POSTGRES_CONTRACT.replace("    type: postgres\n", server_type)
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(contract, "production", None)
+    assert "DATACONTRACT_POSTGRES_HOST" in exc.value.detail
+
+
+def test_test_endpoint_refuses_a_duckdb_database_named_as_custom_type():
+    contract = _POSTGRES_CONTRACT.replace(
+        "    type: postgres\n    host: attacker.example\n    port: 5432\n    database: analytics\n",
+        "    type: custom\n    database: /var/lib/app/secrets.duckdb\n"
+        "    customProperties:\n      - property: customType\n        value: duckdb\n",
+    )
+    response = client.post("/test?server=production", content=contract, headers={"Content-Type": "application/yaml"})
+    assert response.status_code == 422
+    assert "Server type 'duckdb'" in response.json()["detail"]
 
 
 def test_guard_allows_when_operator_pins_the_host(monkeypatch):
@@ -916,29 +944,20 @@ schema:
 """
 
 
-@pytest.mark.parametrize("header", ["datacontract-snowflake-host", "datacontract-snowflake-port"])
-def test_guard_blocks_snowflake_host_header_despite_pinned_account(monkeypatch, header):
+@pytest.mark.parametrize(
+    "header, value", [("datacontract-snowflake-host", "attacker.example"), ("datacontract-snowflake-port", "443")]
+)
+def test_test_endpoint_blocks_snowflake_host_header_despite_pinned_account(monkeypatch, header, value):
     """The operator pins the account, but the host and port override where the connector sends the login."""
-    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_PASSWORD", "prod-secret")
-    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "prod-account")
-    config = config_from_headers({header: "443" if header.endswith("port") else "attacker.example"})
-
-    with pytest.raises(HTTPException) as exc:
-        _reject_environment_credentials_to_untrusted_host(_SNOWFLAKE_CONTRACT, "production", config)
-    assert exc.value.status_code == 422
-    assert header.upper().replace("-", "_") in exc.value.detail
-
-
-def test_test_endpoint_blocks_snowflake_host_header(monkeypatch):
     monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_PASSWORD", "prod-secret")
     monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "prod-account")
     response = client.post(
         "/test?server=production",
         content=_SNOWFLAKE_CONTRACT,
-        headers={"Content-Type": "application/yaml", "datacontract-snowflake-host": "attacker.example"},
+        headers={"Content-Type": "application/yaml", header: value},
     )
     assert response.status_code == 422
-    assert "DATACONTRACT_SNOWFLAKE_HOST" in response.json()["detail"]
+    assert header.upper().replace("-", "_") in response.json()["detail"]
 
 
 @pytest.mark.parametrize(
