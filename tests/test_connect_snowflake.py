@@ -174,6 +174,17 @@ def test_env_variables_override_the_contract_server_details(env, captured_connec
     assert captured_connect["schema"] == "ENV_SCHEMA"
 
 
+def test_token_file_is_sent_without_its_trailing_newline(env, captured_connect, tmp_path):
+    token_file = tmp_path / "snowflake-token"
+    token_file.write_text("eyJhbGciOiJSUzI1NiJ9.e30.c2lnbmF0dXJl\n")
+    env.setenv("DATACONTRACT_SNOWFLAKE_TOKEN", "stale")
+    env.setenv("DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH", str(token_file))
+
+    _connect()
+
+    assert captured_connect["token"] == "eyJhbGciOiJSUzI1NiJ9.e30.c2lnbmF0dXJl"
+
+
 def test_every_option_reaches_a_parameter_the_installed_connector_knows(env, captured_connect):
     """The connector ignores parameter names it does not know, so one it renames or drops would silently stop
     working."""
@@ -184,7 +195,6 @@ def test_every_option_reaches_a_parameter_the_installed_connector_knows(env, cap
         "WORKLOAD_IDENTITY_PROVIDER": "OIDC",
         "ROLE": "TESTER",
         "TOKEN": "token",
-        "TOKEN_FILE_PATH": "/var/run/secrets/tokens/snowflake-token",
         "PASSCODE": "123456",
         "PRIVATE_KEY": "TUlJ",
         "PRIVATE_KEY_FILE": KEY_FILE,
@@ -208,7 +218,6 @@ def test_every_option_reaches_a_parameter_the_installed_connector_knows(env, cap
         "workload_identity_provider",
         "role",
         "token",
-        "token_file_path",
         "passcode",
         "private_key",
         "private_key_file",

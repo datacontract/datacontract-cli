@@ -524,7 +524,11 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     put("workload_identity_provider", config.get_snowflake_workload_identity_provider())
     put("role", config.get_snowflake_role())
     put("token", config.get_snowflake_token())
-    put("token_file_path", config.get_snowflake_token_file_path())
+    token_file_path = config.get_snowflake_token_file_path()
+    if token_file_path:
+        # Connectors before 5.0 send the file verbatim, and a trailing newline breaks the JWT.
+        with open(token_file_path) as f:
+            put("token", f.read().strip())
     put("passcode", config.get_snowflake_passcode())
     put("private_key", _snowflake_private_key(config.get_snowflake_private_key()))
     put("private_key_file", config.get_snowflake_private_key_file())
