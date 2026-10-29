@@ -28,6 +28,7 @@ DATABRICKS_ENV_VARS = [
 def clean_databricks_env(monkeypatch):
     for name in DATABRICKS_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("DATACONTRACT_DATABRICKS_HTTP_PATH", "/sql/1.0/warehouses/test")
     return monkeypatch
 
 
@@ -49,7 +50,7 @@ def patched_databricks_sdk(monkeypatch):
     """Stand in for the Databricks SDK, whose ``Config`` authenticates on construction."""
     from databricks.sdk import core
 
-    recorded = {"oauth_service_principal_result": "service-principal-header-factory"}
+    recorded = {"oauth_service_principal_result": lambda: "service-principal-header-factory"}
 
     class FakeConfig:
         def __init__(self, **kwargs):
@@ -111,11 +112,12 @@ def test_oauth_service_principal_uses_the_sdk_service_principal_provider(
     _connect()
     header_factory = captured_connect["credentials_provider"]()
 
-    assert header_factory == "service-principal-header-factory"
+    assert header_factory() == "service-principal-header-factory"
     assert patched_databricks_sdk["config_kwargs"] == {
         "host": "https://dbc-x.cloud.databricks.com",
         "client_id": "client-id",
         "client_secret": "client-secret",
+        "auth_type": "oauth-m2m",
     }
 
 
@@ -141,7 +143,10 @@ def test_config_profile_uses_unified_auth(clean_databricks_env, captured_connect
     header_factory = captured_connect["credentials_provider"]()
 
     assert header_factory() == "unified-auth-header-factory"
-    assert patched_databricks_sdk["config_kwargs"] == {"profile": "my-profile"}
+    assert patched_databricks_sdk["config_kwargs"] == {
+        "profile": "my-profile",
+        "host": "https://dbc-x.cloud.databricks.com",
+    }
 
 
 def test_token_wins_over_service_principal(clean_databricks_env, captured_connect):

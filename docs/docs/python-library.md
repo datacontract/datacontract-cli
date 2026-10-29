@@ -198,3 +198,40 @@ snowflake:
   role: TESTER
 max_errors: 10
 ```
+
+## Databricks connections without a testing engine
+
+Integrations can reuse Databricks configuration and authentication without loading
+Ibis or running data tests:
+
+```python
+from datacontract.connections.databricks import DatabricksConnectionSettings
+
+# Reads DATACONTRACT_DATABRICKS_* configuration. These fallbacks can come from a server.
+settings = DatabricksConnectionSettings.from_config(
+    host="workspace.cloud.databricks.com", catalog="main", schema="sales"
+)
+connection = settings.connect_sql()
+try:
+    with connection.cursor() as cursor:
+        cursor.execute("DESCRIBE TABLE main.sales.orders")
+finally:
+    connection.close()
+
+client = settings.workspace_client()
+table = client.tables.get("main.sales.orders")
+```
+
+`from_config` also accepts a `Config` instance or a dictionary keyed by configuration
+environment-variable names. Settings capture resolved values when constructed.
+Authentication follows the test engine's precedence: PAT, OAuth service principal,
+SDK profile, explicit authentication type. Partial OAuth credentials fail explicitly.
+Both factories pin the resolved workspace host, including when using a profile.
+`azure-cli` uses the SDK with the current Azure CLI login. For interactive browser
+login, `databricks-oauth` maps to SDK `oauth-u2m` for the workspace client.
+
+Install the `databricks` extra for the optional SQL connector and SDK. The raw
+factory itself does not import Ibis, execute setup SQL, or create staging volumes.
+Callers own connection lifecycle, SQL execution and error handling. SDK credential
+providers refresh headers on demand and redact authentication failure details.
+SQL connections require a warehouse HTTP path. SDK clients do not.
