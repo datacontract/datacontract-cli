@@ -11,6 +11,7 @@ from rich.table import Table
 from datacontract.model.run import Run
 from datacontract.output.json_test_results import write_json_test_results
 from datacontract.output.junit_test_results import write_junit_test_results
+from datacontract.output.oors_test_results import write_oors_test_results
 from datacontract.output.output_format import OutputFormat
 
 
@@ -28,6 +29,9 @@ def write_test_result(
         console.print(f"Written {output_format.value} test results to {output_path}")
     elif output_format == OutputFormat.junit:
         write_junit_test_results(run, output_path)
+        console.print(f"Written {output_format.value} test results to {output_path}")
+    elif output_format == OutputFormat.oors:
+        write_oors_test_results(run, output_path)
         console.print(f"Written {output_format.value} test results to {output_path}")
 
     if run.server and data_contract and data_contract.servers:

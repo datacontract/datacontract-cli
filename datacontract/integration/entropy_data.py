@@ -87,11 +87,11 @@ def _to_check_payload(check: dict) -> dict:
     published.update({name: check[old] for old, name in _CHECK_RENAMED.items() if old in check})
     if check.get("failedSamples"):
         published["failedSamples"] = [json.dumps(row) for row in check["failedSamples"]]
-    published.update(_row_counts(check.get("diagnostics") or {}))
+    published.update(row_counts(check.get("diagnostics") or {}))
     return {name: value for name, value in published.items() if value is not None}
 
 
-def _row_counts(diagnostics: dict) -> dict:
+def row_counts(diagnostics: dict) -> dict:
     """The failed and total row counts a check measured, both in rows or neither.
 
     The API sums them across checks into a row-level quality score, so a count in any
