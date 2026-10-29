@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
+- `datacontract test` works without network access when the `xlsx`, `s3`, `gcs` or `azure` extra is installed
 
 ### Security
 - `datacontract api` refuses headers that name a file on the server or send a Snowflake credential held in the server's environment to another host
