@@ -117,6 +117,65 @@ def test_rows_below_an_empty_row_are_checked(tmp_path: Path):
     assert failed(run) == {"Check that field amount has type number": "Actual custom_sql(amount) was 1, expected = 0"}
 
 
+def titled(tmp_path: Path, **cells) -> str:
+    """The fixture workbook with a title row above the header of its Orders sheet, e.g. E4="n/a"."""
+    workbook = load_workbook(WORKBOOK)
+    orders = workbook["Orders"]
+    orders.insert_rows(1)
+    orders["A1"] = "Orders export"
+    for cell, value in cells.items():
+        orders[cell] = value
+    workbook.save(tmp_path / "delivery.xlsx")
+    return str(tmp_path / "delivery.xlsx")
+
+
+XLSX_RANGE = [{"property": "xlsxRange", "value": "A2:H"}]
+
+
+def test_a_sheet_with_its_header_below_a_title_is_read_from_its_range(tmp_path: Path):
+    contract_str = contract(titled(tmp_path), models=["orders"], customProperties=XLSX_RANGE)
+
+    assert DataContract(data_contract_str=contract_str).test().result == "passed"
+    assert rows(contract_str, "orders") == rows(contract(WORKBOOK, models=["orders"]), "orders")
+
+
+def test_a_value_of_the_wrong_type_is_found_within_the_range(tmp_path: Path):
+    contract_str = contract(titled(tmp_path, E4="n/a"), models=["orders"], customProperties=XLSX_RANGE)
+
+    assert failed(DataContract(data_contract_str=contract_str).test()) == {
+        "Check that field amount has type number": "Actual custom_sql(amount) was 1, expected = 0"
+    }
+
+
+def test_a_sheet_with_its_header_below_a_title_fails_without_a_range(tmp_path: Path):
+    run = DataContract(data_contract_str=contract(titled(tmp_path), models=["orders"])).test()
+
+    assert "Check that field 'order_id' is present" in failed(run)
+
+
+def test_a_sheet_with_an_empty_row_above_its_header_fails(tmp_path: Path):
+    workbook = load_workbook(WORKBOOK)
+    workbook["Orders"].insert_rows(1)
+    workbook.save(tmp_path / "delivery.xlsx")
+
+    run = DataContract(data_contract_str=contract(str(tmp_path / "delivery.xlsx"), models=["orders"])).test()
+
+    assert run.result != "passed"
+    assert any("row 1 of sheet 'Orders'" in (c.reason or "") for c in run.checks)
+
+
+def test_a_range_that_starts_on_an_empty_row_fails(tmp_path: Path):
+    path = titled(tmp_path)
+    workbook = load_workbook(path)
+    workbook["Orders"].insert_rows(2)
+    workbook.save(path)
+
+    run = DataContract(data_contract_str=contract(path, models=["orders"], customProperties=XLSX_RANGE)).test()
+
+    assert run.result != "passed"
+    assert any("row 2 of sheet 'Orders'" in (c.reason or "") for c in run.checks)
+
+
 def test_a_fraction_in_an_integer_column_is_not_rounded(tmp_path: Path):
     run = DataContract(data_contract_str=contract(edited(tmp_path, F3=1.5), models=["orders"])).test()
 

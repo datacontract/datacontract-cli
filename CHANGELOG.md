@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
+- `datacontract test`: test Excel sheets whose header is not in the first row, with an `xlsxRange` custom property per schema, and fail a sheet whose header row is empty (#1717 @nicolehazel)
 
 ## [1.2.9] - 2026-10-30
 
