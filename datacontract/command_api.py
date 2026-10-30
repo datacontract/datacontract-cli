@@ -57,6 +57,14 @@ def api(
             help="Let a posted data contract read the server's own disk through servers[].type: local. Off by default.",
         ),
     ] = None,
+    allow_private_network: Annotated[
+        bool | None,
+        typer.Option(
+            "--allow-private-network/--no-allow-private-network",
+            help="Let a posted data contract's API requests (servers[].type: api) reach private network addresses, "
+            "such as localhost or the cloud metadata endpoint. Off by default.",
+        ),
+    ] = None,
     debug: debug_option = None,
 ):
     """
@@ -70,7 +78,7 @@ def api(
     This is highly recommended, as data contract tests may be subject to SQL injections or leak sensitive information.
 
     To connect to servers (such as a Snowflake data source), set the credentials as environment variables as documented in
-    https://docs.datacontract.com/configuration
+    https://cli.datacontract.com/configuration
 
     It is possible to run the API with extra arguments for `uvicorn.run()` as keyword arguments, e.g.:
     `datacontract api --port 1234 --root_path /datacontract`.
@@ -78,12 +86,14 @@ def api(
     enable_debug_logging(debug)
 
     # Passed through the environment, which survives uvicorn's --reload respawn.
-    from datacontract.api import ALLOW_LOCAL_FILES_ENV
+    from datacontract.api import ALLOW_LOCAL_FILES_ENV, ALLOW_PRIVATE_NETWORK_ENV
 
     if contract_variables is not None:
         os.environ[CONTRACT_VARIABLES_ENV] = contract_variables
     if allow_local_files is not None:
         os.environ[ALLOW_LOCAL_FILES_ENV] = "true" if allow_local_files else "false"
+    if allow_private_network is not None:
+        os.environ[ALLOW_PRIVATE_NETWORK_ENV] = "true" if allow_private_network else "false"
 
     import uvicorn
     from uvicorn.config import LOGGING_CONFIG

@@ -208,13 +208,14 @@ price:
   priceCurrency: EUR
   priceUnit: Per 1000 requests
 team:
-- username: vimportant
-  role: administrator
-  dateIn: '2020-01-01'
-- username: nimportant
-  role: reader
-  dateIn: '2020-01-01'
-  dateOut: '2024-10-10'
+  members:
+  - username: vimportant
+    role: administrator
+    dateIn: '2020-01-01'
+  - username: nimportant
+    role: reader
+    dateIn: '2020-01-01'
+    dateOut: '2024-10-10'
 slaProperties:
 - property: availability
   value: 95%

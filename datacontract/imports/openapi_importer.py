@@ -1,11 +1,11 @@
-"""Import the response of one GET operation of an OpenAPI 3.x document."""
+"""Import the responses of GET or POST operations of an OpenAPI 3.x document."""
 
 import logging
 import re
 from urllib.parse import urlsplit
 
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.jsonschema_importer import SchemaResolver, to_schema_object
@@ -29,8 +29,7 @@ class OpenApiImporter(Importer):
         return import_openapi(source, import_args.get("openapi_operation"))
 
 
-def import_openapi(source: str, operation: str | None = None) -> OpenDataContractStandard:
-    """The contract of the response of one GET operation, with an API server for each server of the document."""
+def read_openapi(source: str) -> dict:
     try:
         with open(source, "r", encoding="utf-8") as file:
             spec = yaml.load(file, Loader=_SafeLoaderNoTimestamp)
@@ -38,53 +37,125 @@ def import_openapi(source: str, operation: str | None = None) -> OpenDataContrac
         raise _schema_error(f"Failed to read OpenAPI document {source}: {e}") from e
     if not isinstance(spec, dict) or not str(spec.get("openapi", "")).startswith("3."):
         raise _schema_error(f"{source} is not an OpenAPI 3.x document.")
+    return spec
 
+
+def operations(spec: dict) -> list[tuple[str, dict, str, dict]]:
+    """The path, path item, method, and operation of every GET and POST operation."""
+    return [
+        (path, item, method.upper(), item[method])
+        for path, item in (spec.get("paths") or {}).items()
+        if isinstance(item, dict)
+        for method in ("get", "post")
+        if isinstance(item.get(method), dict)
+    ]
+
+
+def operation_label(operation: tuple[str, dict, str, dict]) -> str:
+    path, _, method, definition = operation
+    return f"{definition['operationId']} ({method} {path})" if definition.get("operationId") else f"{method} {path}"
+
+
+def import_openapi(source: str, operation: str | list[str] | None = None) -> OpenDataContractStandard:
+    """The contract of the responses of GET or POST operations, one schema each, with an API server for each server
+    of the document. With several operations, each schema names its `endpoint` below the server's location."""
+    spec = read_openapi(source)
     resolver = SchemaResolver(spec)
-    path, path_item, get = _select_operation(spec, operation)
-    schema = _response_schema(resolver, path, get)
-    resolver.warn()
-    # an array response holds the records, which the schema describes
-    record = schema["items"] if schema.get("type") == "array" and isinstance(schema.get("items"), dict) else schema
-    if not record.get("properties"):
-        logger.warning(f"The response of GET {path} has no object properties, so the schema has no properties.")
+    selected = []
+    for selection in operation if isinstance(operation, list) and operation else [operation or None]:
+        match = _select_operation(spec, selection)
+        if match not in selected:
+            selected.append(match)
 
-    name = get.get("operationId") or "_".join(re.findall(r"[A-Za-z0-9]+", path)) or "root"
-    odcs = create_odcs(name=spec.get("info", {}).get("title") or name)
+    schemas, requests = [], {}
+    for path, path_item, method, definition in selected:
+        schema = _response_schema(resolver, f"{method} {path}", definition)
+        # an array response holds the records, which the schema describes
+        record = schema["items"] if schema.get("type") == "array" and isinstance(schema.get("items"), dict) else schema
+        if not record.get("properties"):
+            logger.warning(
+                f"The response of {method} {path} has no object properties, so the schema has no properties."
+            )
+        name = definition.get("operationId") or "_".join(re.findall(r"[A-Za-z0-9]+", path)) or "root"
+        if name in requests:
+            raise _schema_error(f"Two of the operations import as the schema {name!r}; give them an operationId.")
+        schemas.append(
+            to_schema_object(
+                {**_to_json_schema(record), "type": "object"},
+                name,
+                definition.get("summary") or definition.get("description"),
+            )
+        )
+        endpoint, params = _endpoint(resolver, path, path_item, definition)
+        request = {"path": endpoint}
+        if method == "POST":
+            request["method"] = "POST"
+        if params:
+            request["params"] = params
+        if method == "POST":
+            body = _request_body_example(resolver, definition)
+            if body is not None:
+                request["body"] = body
+            elif resolver.resolve(definition.get("requestBody") or {}).get("required"):
+                logger.warning(
+                    f"The request body of {method} {path} has no JSON example, so the contract has no body; "
+                    f"add one to the body custom property."
+                )
+        requests[name] = request
+    resolver.warn()
+
+    odcs = create_odcs(name=spec.get("info", {}).get("title") or schemas[0].name)
     if spec.get("info", {}).get("version"):
         odcs.version = str(spec["info"]["version"])
-    odcs.schema_ = [
-        to_schema_object(
-            {**_to_json_schema(record), "type": "object"}, name, get.get("summary") or get.get("description")
-        )
-    ]
-    odcs.servers = _servers(spec, _endpoint(resolver, path, path_item, get)) or None
+    odcs.schema_ = schemas
+    if len(requests) == 1:
+        (request,) = requests.values()
+        endpoint = request.pop("path")
+        custom_properties = [CustomProperty(property=key, value=value) for key, value in request.items()]
+    else:
+        # the servers are located at the base URL, and each schema at its endpoint below it
+        endpoint, custom_properties = "", []
+        for schema, request in zip(schemas, requests.values()):
+            schema.customProperties = [CustomProperty(property="endpoint", value=request.pop("path"))] + [
+                CustomProperty(property=key, value=value) for key, value in request.items()
+            ]
+    odcs.servers = _servers(spec, endpoint, custom_properties) or None
     return odcs
 
 
-def _select_operation(spec: dict, operation: str | None) -> tuple[str, dict, dict]:
-    """The path, path item, and GET operation that --operation names, or the only GET operation."""
-    gets = [
-        (path, item, item["get"])
-        for path, item in (spec.get("paths") or {}).items()
-        if isinstance(item, dict) and isinstance(item.get("get"), dict)
-    ]
+def _select_operation(spec: dict, operation: str | None) -> tuple[str, dict, str, dict]:
+    """The path, path item, method, and operation that --operation names, or the only GET operation.
+
+    A POST operation is selected only by its operationId or as `POST /path`, as it may change data.
+    """
+    available_operations = operations(spec)
+    gets = [o for o in available_operations if o[2] == "GET"]
     if operation is not None:
-        matches = [g for g in gets if operation in (g[2].get("operationId"), g[0], f"GET {g[0]}")]
+        method, _, path = operation.partition(" ")
+        matches = [
+            o
+            for o in available_operations
+            if operation == o[3].get("operationId")
+            or (method.upper(), path) == (o[2], o[0])
+            or (o[2] == "GET" and operation == o[0])
+        ]
     else:
         matches = gets if len(gets) == 1 else []
     if len(matches) == 1:
         return matches[0]
-    available = ", ".join(f"{g[2]['operationId']} (GET {g[0]})" if g[2].get("operationId") else g[0] for g in gets)
-    if not gets:
-        raise _schema_error("The OpenAPI document has no GET operation.")
+    available = ", ".join(operation_label(o) for o in available_operations)
+    if not available_operations:
+        raise _schema_error("The OpenAPI document has no GET or POST operation.")
     if operation is None:
-        raise _schema_error(f"Select one GET operation with --operation, by operationId or path: {available}")
-    raise _schema_error(f"No GET operation {operation!r}. Available: {available}")
+        raise _schema_error(
+            f"Select one or more operations with --operation, by operationId or method and path: {available}"
+        )
+    raise _schema_error(f"No GET or POST operation {operation!r}. Available: {available}")
 
 
-def _response_schema(resolver: SchemaResolver, path: str, get: dict) -> dict:
+def _response_schema(resolver: SchemaResolver, label: str, operation: dict) -> dict:
     """The resolved schema of the first success response with a JSON or YAML body."""
-    responses = get.get("responses") or {}
+    responses = operation.get("responses") or {}
     # 200 first, then the other success codes and the 2XX range
     for code in sorted((c for c in map(str, responses) if c.startswith("2")), key=lambda c: (c != "200", c)):
         response = resolver.resolve(responses.get(code) if code in responses else responses.get(int(code)))
@@ -92,7 +163,7 @@ def _response_schema(resolver: SchemaResolver, path: str, get: dict) -> dict:
             if JSON_MEDIA_TYPE.match(media_type) or YAML_MEDIA_TYPE.match(media_type):
                 if isinstance(body, dict) and isinstance(body.get("schema"), dict):
                     return resolver.resolve(body["schema"])
-    raise _schema_error(f"GET {path} has no success response with a JSON or YAML schema.")
+    raise _schema_error(f"{label} has no success response with a JSON or YAML schema.")
 
 
 def _to_json_schema(schema):
@@ -129,10 +200,31 @@ def _admits_null(schema) -> bool:
     )
 
 
-def _parameters(resolver: SchemaResolver, path_item: dict, get: dict) -> dict:
+def _request_body_example(resolver: SchemaResolver, operation: dict):
+    """The JSON example of the operation's request body: the media type's example, else its first named example,
+    else the schema's."""
+    content = resolver.resolve(operation.get("requestBody") or {}).get("content") or {}
+    for media_type, body in content.items():
+        if not JSON_MEDIA_TYPE.match(media_type) or not isinstance(body, dict):
+            continue
+        if "example" in body:
+            return body["example"]
+        for example in (body.get("examples") or {}).values():
+            example = resolver.resolve(example)
+            if isinstance(example, dict) and "value" in example:
+                return example["value"]
+        schema = resolver.resolve(body.get("schema") or {})
+        if "example" in schema:
+            return schema["example"]
+        if schema.get("examples"):
+            return schema["examples"][0]
+    return None
+
+
+def _parameters(resolver: SchemaResolver, path_item: dict, operation: dict) -> dict:
     """The parameters of the operation by (in, name); the operation's own replace those of its path."""
     parameters = {}
-    for parameter in (path_item.get("parameters") or []) + (get.get("parameters") or []):
+    for parameter in (path_item.get("parameters") or []) + (operation.get("parameters") or []):
         parameter = resolver.resolve(parameter)
         if isinstance(parameter, dict) and "name" in parameter:
             parameters[(parameter.get("in"), parameter["name"])] = parameter
@@ -150,20 +242,20 @@ def _variable(parameter: dict) -> str:
     return f"${{{name}}}" if value is None else f"${{{name}:-{value}}}"
 
 
-def _endpoint(resolver: SchemaResolver, path: str, path_item: dict, get: dict) -> str:
-    """The path with its parameters as variables, followed by the required query parameters."""
-    parameters = _parameters(resolver, path_item, get)
+def _endpoint(resolver: SchemaResolver, path: str, path_item: dict, operation: dict) -> tuple[str, dict]:
+    """The path with its parameters as variables, and the required query parameters as variables."""
+    parameters = _parameters(resolver, path_item, operation)
     # every placeholder, even one without a declared parameter
     path = re.sub(r"\{([^}]+)\}", lambda m: _variable(parameters.get(("path", m.group(1)), {"name": m.group(1)})), path)
-    query = [
-        f"{name}={_variable(parameter)}"
+    params = {
+        name: _variable(parameter)
         for (where, name), parameter in parameters.items()
         if where == "query" and parameter.get("required")
-    ]
-    return path + ("?" + "&".join(query) if query else "")
+    }
+    return path, params
 
 
-def _servers(spec: dict, endpoint: str) -> list:
+def _servers(spec: dict, endpoint: str, custom_properties: list) -> list:
     """An API server for each absolute server URL of the document, located at the endpoint."""
     servers = []
     for index, server in enumerate(spec.get("servers") or []):
@@ -181,6 +273,7 @@ def _servers(spec: dict, endpoint: str) -> list:
         odcs_server = create_server(name=name, server_type="api", location=url.rstrip("/") + endpoint)
         if server.get("description"):
             odcs_server.description = server["description"]
+        odcs_server.customProperties = custom_properties or None
         servers.append(odcs_server)
     if not servers:
         logger.warning("The OpenAPI document has no absolute server URL, so the contract has no server to test.")

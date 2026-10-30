@@ -20,11 +20,11 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 
 ![Main features of the Data Contract CLI](datacontractcli.png)
 
-> 📖 **Full documentation: [docs.datacontract.com](https://docs.datacontract.com)**
+> 📖 **Full documentation: [cli.datacontract.com](https://cli.datacontract.com)**
 >
-> Quick links: [Quickstart](https://docs.datacontract.com/quickstart) · [Commands](https://docs.datacontract.com/commands) · [Best Practices](https://docs.datacontract.com/best-practices) · [Custom Export and Import](https://docs.datacontract.com/extending) · [Release Notes](https://docs.datacontract.com/release-notes) · [Development Setup](#development-setup)
+> Quick links: [Quickstart](https://cli.datacontract.com/quickstart) · [Commands](https://cli.datacontract.com/commands) · [Best Practices](https://cli.datacontract.com/best-practices) · [Custom Export and Import](https://cli.datacontract.com/extending) · [Release Notes](https://cli.datacontract.com/release-notes) · [Development Setup](#development-setup)
 >
-> For LLMs: [docs.datacontract.com/llms.txt](https://docs.datacontract.com/llms.txt) · [docs.datacontract.com/llms-full.txt](https://docs.datacontract.com/llms-full.txt)
+> For LLMs: [cli.datacontract.com/llms.txt](https://cli.datacontract.com/llms.txt) · [cli.datacontract.com/llms-full.txt](https://cli.datacontract.com/llms-full.txt) · [Data Contract Skills](https://github.com/datacontract/datacontract-skills) for coding agents
 
 ## Getting started
 
@@ -98,9 +98,9 @@ $ datacontract import snowflake --source <account> --database ORDER_DB --schema 
 $ datacontract test datacontract.yaml
 ```
 
-Copy-paste guides with credentials setup are available for [Snowflake](https://docs.datacontract.com/testing/snowflake), [BigQuery](https://docs.datacontract.com/testing/bigquery), [Databricks](https://docs.datacontract.com/testing/databricks), and [15+ other sources](https://docs.datacontract.com/testing).
+Copy-paste guides with credentials setup are available for [Snowflake](https://cli.datacontract.com/testing/snowflake), [BigQuery](https://cli.datacontract.com/testing/bigquery), [Databricks](https://cli.datacontract.com/testing/databricks), and [15+ other sources](https://cli.datacontract.com/testing).
 
-We can also use the data contract metadata to export in many [formats](https://docs.datacontract.com/exports), e.g., to generate a SQL DDL:
+We can also use the data contract metadata to export in many [formats](https://cli.datacontract.com/exports), e.g., to generate a SQL DDL:
 
 ```bash
 $ datacontract export sql https://datacontract.com/orders-v1.odcs.yaml
@@ -147,7 +147,7 @@ $ datacontract lint odcs.yaml
 # show a changelog between two data contracts
 $ datacontract changelog v1.odcs.yaml v2.odcs.yaml
 
-# fail when a contract change is backward-incompatible
+# fail when a contract change breaks a guarantee consumers rely on
 $ datacontract breaking v1.odcs.yaml v2.odcs.yaml
 
 # execute schema and quality checks (define credentials as environment variables)
@@ -185,7 +185,8 @@ if not run.has_passed():
 ## How to
 
 - [How to integrate Data Contract CLI in your CI/CD pipeline as a GitHub Action](https://github.com/datacontract/datacontract-action/)
-- [How to run the Data Contract CLI API to test data contracts with POST requests](https://docs.datacontract.com/api)
+- [How to let your coding agent (Claude Code, Codex, GitHub Copilot) create and test data contracts with the Data Contract Skills](https://github.com/datacontract/datacontract-skills)
+- [How to run the Data Contract CLI API to test data contracts with POST requests](https://cli.datacontract.com/api)
 - [How to run Data Contract CLI in a Databricks pipeline](https://www.datamesh-architecture.com/howto/build-a-dataproduct-with-databricks#test-the-data-product)
 
 
@@ -255,7 +256,7 @@ alias datacontract='docker run --rm -v "${PWD}:/home/datacontract" datacontract/
 
 _Note:_ The output of Docker command line messages is limited to 80 columns and may include line breaks. Don't pipe docker output to files if you want to export code. Use the `--output` option instead.
 
-Released images are signed with [cosign](https://docs.sigstore.dev/cosign/signing/overview/) keyless signing. See [Verifying the image](https://docs.datacontract.com/installation#verifying-the-image) to check a signature before you run it.
+Released images are signed with [cosign](https://docs.sigstore.dev/cosign/signing/overview/) keyless signing. See [Verifying the image](https://cli.datacontract.com/installation#verifying-the-image) to check a signature before you run it.
 
 
 
@@ -283,6 +284,7 @@ A list of available extras:
 | DuckDB (local file, CSV import and API response testing) | `pip install datacontract-cli[duckdb]` |
 | Exasol | `pip install datacontract-cli[exasol]` |
 | Excel | `pip install datacontract-cli[excel]` |
+| Excel workbooks (testing) | `pip install datacontract-cli[xlsx]` |
 | GCS | `pip install datacontract-cli[gcs]` |
 | SAP HANA / Datasphere | `pip install datacontract-cli[hana]` (not part of `all`: `hdbcli` is proprietary) |
 | Apache Iceberg (schema import and export, REST catalog testing) | `pip install datacontract-cli[iceberg]` |
@@ -304,18 +306,18 @@ A list of available extras:
 
 ## Documentation
 
-📖 **The full documentation is at [docs.datacontract.com](https://docs.datacontract.com).**
+📖 **The full documentation is at [cli.datacontract.com](https://cli.datacontract.com).**
 
 It covers everything in depth, including the complete command reference:
 
-- [Quickstart](https://docs.datacontract.com/quickstart) — install and run your first test
-- [Open Data Contract Standard](https://docs.datacontract.com/open-data-contract-standard) — the contract format
-- [Test your Data](https://docs.datacontract.com/testing) — schema & quality tests against 18+ data sources
-- [Define your Quality Rules](https://docs.datacontract.com/quality-rules) — SQL, library, text, and custom checks
-- [Sync with dbt](https://docs.datacontract.com/dbt) · [Edit your contract](https://docs.datacontract.com/editor)
-- [Imports](https://docs.datacontract.com/imports) and [Exports](https://docs.datacontract.com/exports) — convert to/from 25+ formats
-- [API](https://docs.datacontract.com/api) and [Python Library](https://docs.datacontract.com/python-library)
-- [Command reference](https://docs.datacontract.com/commands) — `init`, `lint`, `test`, `export`, `import`, `dbt`, `ci`, `catalog`, `publish`, `api`, and more
+- [Quickstart](https://cli.datacontract.com/quickstart) — install and run your first test
+- [Open Data Contract Standard](https://cli.datacontract.com/open-data-contract-standard) — the contract format
+- [Test your Data](https://cli.datacontract.com/testing) — schema & quality tests against 18+ data sources
+- [Define your Quality Rules](https://cli.datacontract.com/quality-rules) — SQL, library, text, and custom checks
+- [Sync with dbt](https://cli.datacontract.com/dbt) · [Edit your contract](https://cli.datacontract.com/editor)
+- [Imports](https://cli.datacontract.com/imports) and [Exports](https://cli.datacontract.com/exports) — convert to/from 25+ formats
+- [API](https://cli.datacontract.com/api) and [Python Library](https://cli.datacontract.com/python-library)
+- [Command reference](https://cli.datacontract.com/commands) — `init`, `lint`, `test`, `export`, `import`, `dbt`, `ci`, `catalog`, `publish`, `api`, and more
 
 ## Development Setup
 

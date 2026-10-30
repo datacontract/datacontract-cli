@@ -52,6 +52,35 @@ spark.conf.set("spark.databricks.delta.schema.typeCheck.enabled", "false")
 ```
 :::
 
+## Views
+
+A schema with `physicalType: view` is exported as a `CREATE OR REPLACE VIEW` (`CREATE OR ALTER VIEW` on SQL Server) that selects each property from the object in its `transformSourceObjects`. An entry whose last part is the property's name, such as `bronze.orders.order_id`, is read as that column of the object. Snowflake and Databricks views keep the column and view descriptions as comments.
+
+ODCS does not say how several source objects are joined. When the properties come from several source objects, or from none, the view is exported as a draft that cannot be created until you fill in each `<TODO: join condition>` or `<TODO: source object>`, and a warning is logged.
+
+```yaml
+schema:
+  - name: orders_enriched
+    physicalType: view
+    properties:
+      - name: order_id
+        transformSourceObjects: [bronze.orders]
+      - name: customer_id
+        transformSourceObjects: [bronze.orders]
+      - name: customer_name
+        transformSourceObjects: [bronze.customers]
+```
+
+```sql
+CREATE OR REPLACE VIEW orders_enriched AS
+SELECT
+  orders.order_id,
+  orders.customer_id,
+  customers.customer_name
+FROM bronze.orders orders
+JOIN bronze.customers customers ON <TODO: join condition>;
+```
+
 ## ClickHouse
 
 ```bash

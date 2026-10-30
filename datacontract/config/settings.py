@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 _ENV_PREFIX = "DATACONTRACT_"
 
+# Used by the drivers that would otherwise wait forever for an unresponsive data source.
+DEFAULT_CONNECT_TIMEOUT = 30
+
 # Deprecated option (field name) -> replacement (field name). Single source for
 # the accessor warnings, the Snowflake connect synonyms, and the generated docs.
 DEPRECATED_OPTIONS = {
@@ -110,8 +113,10 @@ class Config(BaseSettings):
 
     # general
     api_header_authorization: SecretStr | None = None
+    api_header_x_api_key: SecretStr | None = None
     custom_quality_checks: str | None = None
     max_errors: int | None = None
+    connect_timeout: int | None = None
 
     # athena (credentials come from the s3_* options)
     # overrides for the contract's servers block
@@ -131,6 +136,8 @@ class Config(BaseSettings):
     bigquery_account_info_json_path: str | None = None
     bigquery_billing_project: str | None = None
     bigquery_impersonation_account: str | None = None
+    bigquery_location: str | None = None
+    bigquery_kms_key_name: str | None = None
     # overrides for the contract's servers block
     bigquery_project: str | None = None
     bigquery_dataset: str | None = None
@@ -274,8 +281,10 @@ class Config(BaseSettings):
     snowflake_username: str | None = None
     snowflake_password: SecretStr | None = None
     snowflake_authenticator: str | None = None
+    snowflake_workload_identity_provider: str | None = None
     snowflake_role: str | None = None
     snowflake_token: SecretStr | None = None
+    snowflake_token_file_path: str | None = None
     snowflake_passcode: SecretStr | None = None
     snowflake_private_key: SecretStr | None = None
     snowflake_private_key_file: str | None = None
@@ -522,6 +531,9 @@ class Config(BaseSettings):
     def get_api_header_authorization(self, required: bool = False) -> str | None:
         return self._str_option("api_header_authorization", required)
 
+    def get_api_header_x_api_key(self, required: bool = False) -> str | None:
+        return self._str_option("api_header_x_api_key", required)
+
     # --- custom quality checks ---
     def get_custom_quality_checks(self) -> str | None:
         return self._str_option("custom_quality_checks")
@@ -529,6 +541,11 @@ class Config(BaseSettings):
     # --- max ---
     def get_max_errors(self) -> int | None:
         return self._int_option("max_errors")
+
+    # --- connect timeout ---
+    def get_connect_timeout(self) -> int:
+        """Seconds to wait for a data source to accept a connection, for drivers that wait forever by default."""
+        return self._int_option("connect_timeout") or DEFAULT_CONNECT_TIMEOUT
 
     # --- athena ---
     def get_athena_catalog(self, required: bool = False) -> str | None:
@@ -568,6 +585,12 @@ class Config(BaseSettings):
 
     def get_bigquery_impersonation_account(self, required: bool = False) -> str | None:
         return self._str_option("bigquery_impersonation_account", required)
+
+    def get_bigquery_location(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_location", required)
+
+    def get_bigquery_kms_key_name(self, required: bool = False) -> str | None:
+        return self._str_option("bigquery_kms_key_name", required)
 
     def get_bigquery_project(self, required: bool = False) -> str | None:
         return self._str_option("bigquery_project", required)
@@ -889,11 +912,17 @@ class Config(BaseSettings):
     def get_snowflake_authenticator(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_authenticator", required)
 
+    def get_snowflake_workload_identity_provider(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_workload_identity_provider", required)
+
     def get_snowflake_role(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_role", required)
 
     def get_snowflake_token(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_token", required)
+
+    def get_snowflake_token_file_path(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_token_file_path", required)
 
     def get_snowflake_passcode(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_passcode", required)

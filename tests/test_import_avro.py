@@ -1,9 +1,12 @@
+import json
+
 import pytest
 import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
 from datacontract.data_contract import DataContract
+from datacontract.export.avro_exporter import to_avro_schema
 from datacontract.model.exceptions import DataContractException
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
@@ -462,3 +465,15 @@ def test_import_avro_multi_branch_union_raises_error():
         DataContract.import_from_source("avro", "fixtures/avro/data/multi_union.avsc")
     assert "multiple non-null types" in str(exc_info.value.reason)
     assert "multi_type_field" in str(exc_info.value.reason)
+
+
+def test_import_avro_aliases_roundtrip():
+    result = DataContract.import_from_source("avro", "fixtures/avro/data/aliases.avsc")
+
+    schema = result.schema_[0]
+    assert [(cp.property, cp.value) for cp in schema.customProperties] == [("avroAliases", ["OldAliasTest"])]
+    field = schema.properties[0]
+    assert [(cp.property, cp.value) for cp in field.customProperties] == [("avroAliases", ["AnonymousId"])]
+
+    with open("fixtures/avro/data/aliases.avsc") as file:
+        assert to_avro_schema(schema.name, schema) == json.load(file)

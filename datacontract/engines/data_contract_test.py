@@ -3,6 +3,7 @@ import json
 import tempfile
 import typing
 from typing import Mapping
+from urllib.parse import parse_qsl, urlsplit
 
 import requests
 import yaml
@@ -11,6 +12,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, Server
 from datacontract.config import Config
 from datacontract.engines.checks.check_spec import MetricType
 from datacontract.engines.checks.create_checks import create_checks, to_schema_name
+from datacontract.engines.checks.custom_quality_check import CustomQualityChecks
 from datacontract.engines.checks.dimensions import default_dimension
 
 if typing.TYPE_CHECKING:
@@ -28,6 +30,7 @@ from datacontract.engines.datacontract.check_that_datacontract_contains_valid_se
     check_that_datacontract_contains_valid_server_configuration,
 )
 from datacontract.engines.fastjsonschema.check_jsonschema import check_jsonschema
+from datacontract.engines.http_api import ApiSession, PrivateAddressRefused, PublicAddressAdapter, api_headers
 from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, execute_ibis_checks, set_result
 from datacontract.lint.resolve import _SafeLoaderNoTimestamp
 from datacontract.model.exceptions import DataContractException
@@ -54,6 +57,7 @@ def execute_data_contract_test(
     config: Config | None = None,
     untrusted_contract: bool = False,
     allowed_variables: list[str] | None = None,
+    allow_private_network: bool = False,
 ):
     config = Config.resolve(config)
     # An untrusted contract reads only the allow-listed variables.
@@ -109,20 +113,18 @@ def execute_data_contract_test(
         check_that_quality_ids_exist(data_contract, quality_ids, schema_name)
 
     if server.type == "api":
-        if dry_run:
-            # A dry run reads nothing, so the response that would become the
-            # local file is never fetched; stand in the server it would return.
-            server = Server(
-                server="api_local",
-                type="local",
-                format="json",
-                path="(not fetched: dry run)",
-                delimiter=server.delimiter,
-            )
-        else:
-            server = process_api_response(run, server, config)
+        server = process_api_response(
+            run,
+            data_contract,
+            server,
+            schema_name,
+            config,
+            dry_run=dry_run,
+            public_addresses_only=untrusted_contract and not allow_private_network,
+        )
 
     model_filters = resolve_row_filters(data_contract, server, run, filter, filters, schema_name)
+    custom_quality_checks = CustomQualityChecks(config, untrusted_contract)
 
     if server.type == "hana":
         from datacontract.engines.hana.check_hana_execute import check_hana_execute
@@ -140,6 +142,7 @@ def execute_data_contract_test(
             quality_ids=quality_ids,
             tags=tags,
             config=config,
+            custom_quality_checks=custom_quality_checks,
         )
         return
 
@@ -148,7 +151,7 @@ def execute_data_contract_test(
         server,
         schema_name=schema_name,
         variables=variables,
-        custom_quality_checks=config.get_custom_quality_checks(),
+        custom_quality_checks=custom_quality_checks,
     )
     if check_categories is not None:
         specs = [s for s in specs if s.category in check_categories]
@@ -170,6 +173,8 @@ def execute_data_contract_test(
         specs = [s for s in specs if s.tags and not tags.isdisjoint(s.tags)]
         if not specs:
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
+    for warning in dict.fromkeys(warning for spec in specs for warning in spec.warnings or []):
+        run.log_warn(warning)
     run.checks.extend(build_check_stubs(specs))
 
     if metadata_only:
@@ -436,22 +441,144 @@ def _report_dry_run(
         run.log_warn("dry run: file-metadata checks for blob schemas are not included in the plan")
 
 
-def process_api_response(run, server, config: Config | None = None):
+def process_api_response(
+    run,
+    data_contract: OpenDataContractStandard,
+    server,
+    schema_name: str = "all",
+    config: Config | None = None,
+    dry_run: bool = False,
+    public_addresses_only: bool = False,
+):
+    """Fetch the API response, or with schemas that name their `endpoint` one response per schema, and return the
+    local server that reads them."""
     config = Config.resolve(config)
+    custom_properties = {prop.property: prop.value for prop in server.customProperties or []}
+    schema_properties = {
+        schema.name: {prop.property: prop.value for prop in schema.customProperties or []}
+        for schema in data_contract.schema_ or []
+    }
+    endpoints = any("endpoint" in properties for properties in schema_properties.values())
+    if endpoints:
+        requests_by_file = _endpoint_requests(server, custom_properties, schema_properties, schema_name)
+    else:
+        for name, properties in schema_properties.items():
+            request_properties = sorted({"method", "params", "body"} & set(properties))
+            if request_properties:
+                raise _api_request_error(
+                    f"Schema {name!r} has the {request_properties[0]} custom property, which requires an endpoint "
+                    "custom property."
+                )
+        requests_by_file = {"api_response": _api_request(server.location, custom_properties)}
+
+    if dry_run:
+        # A dry run reads nothing, so the response that would become the
+        # local file is never fetched; stand in the server it would return.
+        return Server(
+            server="api_local",
+            type="local",
+            format="json",
+            path="(not fetched: dry run)",
+            delimiter=server.delimiter,
+        )
+
     tmp_dir = tempfile.TemporaryDirectory(prefix="datacontract_cli_api_")
     atexit.register(tmp_dir.cleanup)
-    headers = {"Accept": "application/json, application/yaml;q=0.9, */*;q=0.8"}
-    if config.get_api_header_authorization() is not None:
-        headers["Authorization"] = config.get_api_header_authorization()
+    with ApiSession() as session:
+        if public_addresses_only:
+            session.trust_env = False
+            session.mount("http://", PublicAddressAdapter())
+            session.mount("https://", PublicAddressAdapter())
+        for file_name, (method, url, params, body) in requests_by_file.items():
+            content = _fetch_api_response(session, config, method, url, params, body)
+            with open(f"{tmp_dir.name}/{file_name}.json", "w", encoding="utf-8") as f:
+                f.write(content)
+            run.log_info(f"Saved API response of {method} {url} to {tmp_dir.name}/{file_name}.json")
+    new_server = Server(
+        server="api_local",
+        type="local",
+        format="json",
+        path=f"{tmp_dir.name}/{{model}}.json" if endpoints else f"{tmp_dir.name}/api_response.json",
+        delimiter=server.delimiter,
+    )
+    return new_server
+
+
+def _endpoint_requests(server, custom_properties: dict, schema_properties: dict, schema_name: str) -> dict[str, tuple]:
+    """The request of each schema under test, at its `endpoint` below the server's location."""
+    shared = sorted({"method", "params", "body"} & set(custom_properties))
+    if shared:
+        raise _api_request_error(
+            f"The {shared[0]} custom property of the server cannot be combined with schema endpoints; "
+            "set it on each schema instead."
+        )
+    requests_by_schema = {}
+    for name, properties in schema_properties.items():
+        if schema_name != "all" and name != schema_name:
+            continue
+        if not isinstance(properties.get("endpoint"), str):
+            raise _api_request_error(f"Schema {name!r} needs an endpoint custom property with its path.")
+        # the response is saved under the schema's name, which must stay a plain file name
+        if name in (".", "..") or any(c in name for c in "/\\'{}\0"):
+            raise _api_request_error(f"Schema {name!r} cannot be fetched from an endpoint: its name is no file name.")
+        url = f"{server.location.rstrip('/')}/{properties['endpoint'].lstrip('/')}"
+        requests_by_schema[name] = _api_request(url, properties)
+    return requests_by_schema
+
+
+def _api_request(url: str, request: dict) -> tuple[str, str, dict, typing.Any]:
+    """The method, URL, query parameters, and body of a request as `method`, `params`, and `body` describe it."""
+    method = str(request.get("method", "GET")).upper()
+    if method not in ("GET", "POST"):
+        raise _api_request_error(f"Method {request['method']!r} is not supported; use GET or POST.")
+    if "body" in request and method != "POST":
+        raise _api_request_error("A body requires method POST.")
+    if not isinstance(request.get("params", {}), dict):
+        raise _api_request_error("The params custom property must map each query parameter name to its value.")
+    params = {}
+    for name, value in request.get("params", {}).items():
+        values = value if isinstance(value, list) else [value]
+        if not all(isinstance(v, (str, int, float, bool)) for v in values):
+            raise _api_request_error(
+                f"Query parameter {name!r} must be a string, number, or boolean, or a list of them."
+            )
+        params[name] = [str(v).lower() if isinstance(v, bool) else v for v in values]
+    clashes = sorted(set(params) & {name for name, _ in parse_qsl(urlsplit(url).query, keep_blank_values=True)})
+    if clashes:
+        raise _api_request_error(
+            f"Query parameter {clashes[0]!r} is set both in the location and in the params custom property."
+        )
+    return method, url, params, request.get("body")
+
+
+def _fetch_api_response(session: ApiSession, config: Config, method: str, url: str, params: dict, body) -> str:
+    """The response as JSON text."""
+    headers = {"Accept": "application/json, application/yaml;q=0.9, */*;q=0.8", **api_headers(config)}
+    # a string is the JSON text as written, anything else is converted to JSON
+    if isinstance(body, str):
+        headers["Content-Type"] = "application/json"
     try:
-        response = requests.get(server.location, headers=headers)
+        response = session.request(
+            method,
+            url,
+            params=params,
+            headers=headers,
+            timeout=(config.get_connect_timeout(), None),
+            data=body.encode() if isinstance(body, str) else None,
+            json=None if isinstance(body, str) else body,
+        )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
+        # urllib3 wraps the refusal in its retry error
+        refusal = getattr(e.args[0], "reason", None) if e.args else None
+        error = refusal.message if isinstance(refusal, PrivateAddressRefused) else e
+        # the API's own explanation, such as which part of the body it rejected
+        answer = f" {e.response.text[:500]}" if e.response is not None and e.response.text else ""
         raise DataContractException(
             type="connection",
             name="API server connection error",
             result=ResultEnum.error,
-            reason=f"Failed to fetch API response from {server.location}: {e}",
+            reason=f"Failed to fetch API response from {url}: {error}{answer}",
             engine="datacontract-cli",
         )
     content = response.text
@@ -464,22 +591,22 @@ def process_api_response(run, server, config: Config | None = None):
                 type="schema",
                 name="Parse API response",
                 result=ResultEnum.error,
-                reason=f"Failed to parse the YAML response from {server.location}: {e}",
+                reason=f"Failed to parse the YAML response from {url}: {e}",
                 engine="datacontract-cli",
             )
         # a stream of several documents holds one record each
         content = json.dumps(documents[0] if len(documents) == 1 else documents, default=str)
-    with open(f"{tmp_dir.name}/api_response.json", "w", encoding="utf-8") as f:
-        f.write(content)
-    run.log_info(f"Saved API response to {tmp_dir.name}/api_response.json")
-    new_server = Server(
-        server="api_local",
-        type="local",
-        format="json",
-        path=f"{tmp_dir.name}/api_response.json",
-        delimiter=server.delimiter,
+    return content
+
+
+def _api_request_error(reason: str) -> DataContractException:
+    return DataContractException(
+        type="general",
+        name="Build the API request",
+        result=ResultEnum.failed,
+        reason=reason,
+        engine="datacontract-cli",
     )
-    return new_server
 
 
 def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:

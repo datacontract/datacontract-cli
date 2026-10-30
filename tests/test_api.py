@@ -5,7 +5,7 @@ import requests
 import responses
 from fastapi.testclient import TestClient
 
-from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
+from datacontract.api import ALLOW_LOCAL_FILES_ENV, ALLOW_PRIVATE_NETWORK_ENV, app
 from datacontract.lint.resolve import clear_definition_cache
 from datacontract.model.exceptions import DataContractException
 from tests.dcs_deprecation import DCS_DEPRECATION
@@ -93,10 +93,23 @@ def test_breaking():
     assert "v1" not in data
     assert "v2" not in data
     assert data["is_breaking"] is True
+    assert data["perspective"] == "consumer"
     assert "summary" in data
     assert "entries" in data
     assert data["entries"][0]["level"] in ("info", "warning", "error")
     assert "message" in data["entries"][0]
+
+
+def test_breaking_from_the_producer_perspective():
+    with open("fixtures/changelog/breaking/warning_only_v1.yaml", "r") as f:
+        v1 = f.read()
+    with open("fixtures/changelog/breaking/warning_only_v2.yaml", "r") as f:
+        v2 = f.read()
+    assert client.post(url="/breaking", json={"v1": v1, "v2": v2}).json()["is_breaking"] is False
+    response = client.post(url="/breaking", params={"perspective": "producer"}, json={"v1": v1, "v2": v2})
+    assert response.status_code == 200
+    assert response.json()["perspective"] == "producer"
+    assert response.json()["is_breaking"] is True
 
 
 def test_breaking_invalid_yaml():
@@ -512,18 +525,111 @@ def test_unknown_config_header_is_rejected():
     assert "DATACONTRACT_SNOWFLAKE_TYPO" in response.json()["detail"]
 
 
-def test_custom_quality_checks_folder_header_is_rejected():
+@pytest.mark.parametrize(
+    "header",
+    [
+        "datacontract-custom-quality-checks",
+        "datacontract-snowflake-private-key-file",
+        "datacontract-snowflake-private-key-path",
+        "datacontract-bigquery-account-info-json-path",
+        "datacontract-databricks-profile",
+        "datacontract-oracle-client-dir",
+        "datacontract-duckdb-database",
+        "datacontract-snowflake-token-file-path",
+        "datacontract-snowflake-workload-identity-provider",
+    ],
+)
+def test_server_only_header_is_rejected(header):
     with open("fixtures/local-json/datacontract.yaml", "r", encoding="utf-8") as f:
         data_contract_str = f.read()
 
     response = client.post(
         url="/test",
         content=data_contract_str,
-        headers={"Content-Type": "application/yaml", "datacontract-custom-quality-checks": "/etc"},
+        headers={"Content-Type": "application/yaml", header: "/etc"},
     )
 
     assert response.status_code == 400
-    assert "configured by the API server" in response.json()["detail"]
+    assert "is set on the API server" in response.json()["detail"]
+
+
+_CUSTOM_QUALITY_CHECK_CONTRACT = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: ./fixtures/diagnostics/data/orders.csv
+    format: csv
+schema:
+  - name: orders
+    properties:
+      - name: amount
+        logicalType: integer
+        quality:
+          - type: custom
+            engine: datacontract-cli
+            implementation:
+              check: between
+              arguments: {min: 0, max: 100}
+"""
+
+
+@responses.activate
+def test_test_endpoint_loads_custom_quality_checks_with_the_api_key_of_the_request(allow_local_files, monkeypatch):
+    for name in ("ENTROPY_DATA_API_KEY", "DATAMESH_MANAGER_API_KEY", "DATACONTRACT_MANAGER_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("ENTROPY_DATA_HOST", "https://entropy.example.com")
+    with open("fixtures/custom-quality-checks/checks/between.yaml", encoding="utf-8") as f:
+        responses.add(
+            responses.GET, "https://entropy.example.com/api/custom-quality-checks/between/check.yaml", body=f.read()
+        )
+
+    response = client.post(
+        url="/test",
+        content=_CUSTOM_QUALITY_CHECK_CONTRACT,
+        headers={
+            "Content-Type": "application/yaml",
+            "entropy-data-host": "https://entropy.example.com",
+            "entropy-data-api-key": "ed_request_key",
+        },
+    )
+
+    check = next(c for c in response.json()["checks"] if c["type"] == "field_quality_custom")
+    assert check["result"] == "failed"
+    assert responses.calls[0].request.headers["x-api-key"] == "ed_request_key"
+
+
+@responses.activate
+def test_test_endpoint_does_not_load_custom_quality_checks_from_the_host_of_the_request(allow_local_files, monkeypatch):
+    for name in (
+        "ENTROPY_DATA_API_KEY",
+        "DATAMESH_MANAGER_API_KEY",
+        "DATACONTRACT_MANAGER_API_KEY",
+        "ENTROPY_DATA_HOST",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    response = client.post(
+        url="/test",
+        content=_CUSTOM_QUALITY_CHECK_CONTRACT,
+        headers={
+            "Content-Type": "application/yaml",
+            "entropy-data-host": "http://169.254.169.254/latest/meta-data#",
+            "entropy-data-api-key": "ed_request_key",
+        },
+    )
+
+    check = next(c for c in response.json()["checks"] if c["type"] == "field_quality_custom")
+    assert check["result"] == "error"
+    assert check["reason"] == (
+        "The rule uses the custom quality check 'between', but the request's API key belongs to its entropy-data-host "
+        "'http://169.254.169.254/latest/meta-data#', so set ENTROPY_DATA_HOST to that host on the server running the API."
+    )
+    assert len(responses.calls) == 0
 
 
 def test_test_endpoint_uses_config_from_headers(allow_local_files):
@@ -692,6 +798,8 @@ def test_cross_origin_preflight_is_not_approved():
 
 # --- B1/C1: an environment-held credential must not be sent to a contract-chosen host ---
 
+from fastapi import HTTPException  # noqa: E402
+
 from datacontract.api import _reject_environment_credentials_to_untrusted_host  # noqa: E402
 from datacontract.config import Config  # noqa: E402
 
@@ -730,6 +838,34 @@ def test_guard_blocks_env_credential_to_contract_host(monkeypatch):
         _reject_environment_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", None)
     assert exc.value.status_code == 422
     assert "DATACONTRACT_POSTGRES_HOST" in exc.value.detail
+
+
+@pytest.mark.parametrize(
+    "server_type",
+    [
+        "    type: postgresql\n",
+        "    type: custom\n    customProperties:\n      - property: customType\n        value: postgres\n",
+    ],
+)
+def test_guard_blocks_env_credential_whatever_the_type_spelling(monkeypatch, server_type):
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", "prod-secret")
+    monkeypatch.delenv("DATACONTRACT_POSTGRES_HOST", raising=False)
+    contract = _POSTGRES_CONTRACT.replace("    type: postgres\n", server_type)
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(contract, "production", None)
+    assert "DATACONTRACT_POSTGRES_HOST" in exc.value.detail
+
+
+def test_test_endpoint_refuses_a_duckdb_database_named_as_custom_type():
+    contract = _POSTGRES_CONTRACT.replace(
+        "    type: postgres\n    host: attacker.example\n    port: 5432\n    database: analytics\n",
+        "    type: custom\n    database: /var/lib/app/secrets.duckdb\n"
+        "    customProperties:\n      - property: customType\n        value: duckdb\n",
+    )
+    response = client.post("/test?server=production", content=contract, headers={"Content-Type": "application/yaml"})
+    assert response.status_code == 422
+    assert "Server type 'duckdb'" in response.json()["detail"]
 
 
 def test_guard_allows_when_operator_pins_the_host(monkeypatch):
@@ -786,6 +922,93 @@ def test_api_app_marks_contracts_untrusted():
     assert api_app.state.untrusted_contracts is True
 
 
+_SNOWFLAKE_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: snowflake-exfil
+name: snowflake-exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: snowflake
+    account: attacker-account
+    database: ANALYTICS
+    schema: PUBLIC
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+@pytest.mark.parametrize(
+    "header, value", [("datacontract-snowflake-host", "attacker.example"), ("datacontract-snowflake-port", "443")]
+)
+def test_test_endpoint_blocks_snowflake_host_header_despite_pinned_account(monkeypatch, header, value):
+    """The operator pins the account, but the host and port override where the connector sends the login."""
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_PASSWORD", "prod-secret")
+    monkeypatch.setenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", "prod-account")
+    response = client.post(
+        "/test?server=production",
+        content=_SNOWFLAKE_CONTRACT,
+        headers={"Content-Type": "application/yaml", header: value},
+    )
+    assert response.status_code == 422
+    assert header.upper().replace("-", "_") in response.json()["detail"]
+
+
+@pytest.mark.parametrize(
+    "variable, value",
+    [
+        ("DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE", "/keys/rsa_key.p8"),
+        ("DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH", "/var/run/secrets/tokens/snowflake-token"),
+        ("DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER", "AWS"),
+    ],
+)
+def test_guard_blocks_env_snowflake_identity_without_pinned_account(monkeypatch, variable, value):
+    monkeypatch.setenv(variable, value)
+    monkeypatch.delenv("DATACONTRACT_SNOWFLAKE_ACCOUNT", raising=False)
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(_SNOWFLAKE_CONTRACT, "production", None)
+    assert "DATACONTRACT_SNOWFLAKE_ACCOUNT" in exc.value.detail
+
+
+_DATABRICKS_CONTRACT = """\
+apiVersion: v3.0.2
+kind: DataContract
+id: databricks-exfil
+name: databricks-exfil
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: databricks
+    host: attacker.example
+    catalog: main
+    schema: default
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+def test_guard_blocks_env_databricks_profile(monkeypatch):
+    """A profile's credentials would be sent to the contract's host, not the host the profile names."""
+    monkeypatch.setenv("DATACONTRACT_DATABRICKS_PROFILE", "prod")
+    monkeypatch.delenv("DATACONTRACT_DATABRICKS_SERVER_HOSTNAME", raising=False)
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(_DATABRICKS_CONTRACT, "production", None)
+    assert "DATACONTRACT_DATABRICKS_SERVER_HOSTNAME" in exc.value.detail
+
+
 _KAFKA_CONTRACT = """\
 apiVersion: v3.0.2
 kind: DataContract
@@ -823,6 +1046,66 @@ def test_guard_blocks_env_kafka_password(monkeypatch):
 def test_guard_allows_kafka_without_environment_secret(monkeypatch):
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_PASSWORD", raising=False)
     _reject_environment_credentials_to_untrusted_host(_KAFKA_CONTRACT, "production", None)  # no raise
+
+
+def _api_contract(location: str) -> str:
+    return f"""\
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-api
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: api
+    location: {location}
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+"""
+
+
+@pytest.mark.parametrize("variable", ["DATACONTRACT_API_HEADER_AUTHORIZATION", "DATACONTRACT_API_HEADER_X_API_KEY"])
+def test_guard_blocks_env_api_header(monkeypatch, variable):
+    """Nothing pins an API server's location, so an environment-held API credential can never be paired with a
+    posted contract."""
+    monkeypatch.setenv(variable, "prod-secret")
+    response = client.post(
+        "/test", content=_api_contract("https://attacker.example/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.status_code == 422
+    assert f"credential for api servers in its environment ({variable})" in response.json()["detail"]
+    assert f"as request headers instead ({variable.lower().replace('_', '-')})" in response.json()["detail"]
+
+
+@pytest.fixture
+def no_api_headers(monkeypatch):
+    monkeypatch.delenv("DATACONTRACT_API_HEADER_AUTHORIZATION", raising=False)
+    monkeypatch.delenv("DATACONTRACT_API_HEADER_X_API_KEY", raising=False)
+    monkeypatch.delenv(ALLOW_PRIVATE_NETWORK_ENV, raising=False)
+
+
+def test_api_server_requests_stay_off_private_networks(api, no_api_headers):
+    api.body = '[{"order_id": "ORD-1"}]'
+    response = client.post(
+        "/test", content=_api_contract(f"{api.url}/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.status_code == 200
+    assert response.json()["result"] == "error"
+    assert "a posted data contract may not reach a private network address" in response.text
+    assert api.paths == []
+
+
+def test_api_server_requests_reach_private_networks_when_allowed(api, no_api_headers, monkeypatch):
+    monkeypatch.setenv(ALLOW_PRIVATE_NETWORK_ENV, "true")
+    api.body = '[{"order_id": "ORD-1"}]'
+    response = client.post(
+        "/test", content=_api_contract(f"{api.url}/orders"), headers={"Content-Type": "application/yaml"}
+    )
+    assert response.json()["result"] == "passed", response.text
+    assert api.paths == ["/orders"]
 
 
 # --- publish_url is restricted to environment-pinned platform URLs ---

@@ -157,3 +157,39 @@ def test_without_a_delimiter_json_files_are_read_as_duckdb_reads_them(tmp_path, 
     run = DataContract(data_contract_str=contract).test()
 
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+def control_properties(values) -> str:
+    entries = "".join(f"\n          - value: {'null' if value is None else value}" for value in values)
+    return f"""      - name: id
+        logicalType: string
+        required: true
+      - name: control
+        logicalType: string
+        required: false
+        enum:{entries}"""
+
+
+@pytest.mark.parametrize("values", [["TSN", "TSLSV"], ["TSN", "TSLSV", None]])
+def test_an_optional_enum_field_accepts_null(tmp_path, values):
+    (tmp_path / "orders.json").write_text('[{"id": "1", "control": "TSN"}, {"id": "2", "control": null}]')
+
+    run = DataContract(data_contract_str=json_contract(tmp_path / "orders.json", control_properties(values))).test()
+
+    assert run.result == "passed", run.pretty()
+
+
+@pytest.mark.parametrize(
+    "values, invalid_count",
+    [(["TSN", "TSLSV"], 1), (["TSN", "TSLSV", None], 1), ([None], 2)],
+)
+def test_a_null_among_the_allowed_values_does_not_let_other_values_through(tmp_path, values, invalid_count):
+    (tmp_path / "orders.json").write_text(
+        '[{"id": "1", "control": "TSN"}, {"id": "2", "control": null}, {"id": "3", "control": "BOGUS"}]'
+    )
+
+    run = DataContract(data_contract_str=json_contract(tmp_path / "orders.json", control_properties(values))).test()
+
+    check = next(c for c in run.checks if c.type == "field_enum")
+    assert check.result == "failed"
+    assert check.reason == f"Actual invalid_count(control) was {invalid_count}, expected = 0"

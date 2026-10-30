@@ -95,14 +95,16 @@ schema:
 
 A property can declare a portable `logicalType`, a native `physicalType`, or both. Which one is checked depends on the backend:
 
-- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the nine backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, and Athena. It takes precedence over `logicalType`.
+- **`physicalType`** is compared against the column's real declared type read from the platform catalog. This applies on the backends with catalog introspection: Snowflake, BigQuery, Databricks, Postgres, Redshift, SQL Server, Oracle, Trino, Athena, Exasol, ClickHouse, and Hive. It takes precedence over `logicalType`.
 - **`logicalType`** is used everywhere else, and as the fallback when the native type cannot be read. Both the declared and the actual type are normalized to an ODCS category before comparison, so `integer` and `number` are mutually compatible.
 
-On every backend except `csv`, `json`, `parquet` and `xml` files, a property with a complex `logicalType` (`object`, `array` or `map`) gets a **nested type check** covering the full declared structure.
+Nested properties are checked like top-level ones: each property under `properties`, the `items` of an array, and the `key` and `value` of a map get their own type check at their path, such as `customer.email`, `items[].sku`, `matrix[][]` or `attributes[value]`. A nested `physicalType` is compared against the native type the catalog reports for it on Athena, Trino, Databricks, BigQuery, ClickHouse (except inside a `Tuple`), Hive and Snowflake, and reported as a warning on the other backends with catalog introspection.
 
 ODCS v3.2.0 `logicalType: vector` requires `logicalTypeOptions.dimensions` to be a positive integer. Lint rejects a missing options block as well as missing or invalid dimensions, including in nested definitions.
 
 Property-level `enum` entries must have distinct values, even if their labels, IDs, or descriptions differ. Lint checks this throughout properties, array items, and map keys and values. JSON numbers compare by value (`1` equals `1.0`); strings and booleans remain distinct from numbers.
+
+An `enum` constrains only values that are present, whether a value may be missing is up to `required`. Therefore, `null` should not be part of an `enum`.
 
 Vector type checks compare dimensions and element types when the data source reports them. `logicalTypeOptions.elementType` defaults to `float32`; a column reported as `float64` or `int8` does not satisfy that declaration. Catalogs that expose only a numeric array without its element width cannot confirm an element-type mismatch.
 
@@ -220,7 +222,7 @@ These are common sources of confusion. They are valid ODCS and appear in exports
 - **`logicalTypeOptions.format`** — never enforced, on any property. On a `string` property (`email`, `uuid`, `uri`, …) use `pattern` for an enforceable equivalent. On a `date`, `timestamp` or `time` property `format` holds a date pattern such as `yyyy-MM-dd`, and `pattern` is *not* an equivalent there: by the time a check runs, the column has already been parsed as a date, so there is no string left to match. Such a column is validated as a date, in whatever format the server stores it.
 - **Descriptive attributes** — `description`, `businessName`, `examples`, `tags`, `classification`, `criticalDataElement`, `transformSourceObjects`, and `customProperties`. `authoritativeDefinitions` generates no check either, but it *is* resolved and inlined before the checks are built — see [Link your Semantics](./semantics.md).
 - **Schema-level attributes** other than `name`, `physicalName`, `properties`, and `quality`.
-- **Constraints and quality rules on nested properties, on some servers** — `required`, `unique`, `pattern`, `enum`, the other `logicalTypeOptions` and `quality` rules below the top level are checked on the `dataframe`, `databricks`, `trino` and `athena` servers and on every server read through DuckDB (`local`, `s3`, `gcs`, `azure`, `duckdb`, `iceberg`, `kafka`). On every other server, nested properties are only type-checked, and each of their constraints and quality rules is reported as a warning. On SAP HANA, only their quality rules are reported as warnings; their constraints are not checked.
+- **Constraints and quality rules on nested properties, on some servers** — `required`, `unique`, `pattern`, `enum`, the other `logicalTypeOptions` and `quality` rules below the top level are checked on the `dataframe`, `databricks`, `trino`, `athena` and `snowflake` servers and on every server read through DuckDB (`local`, `s3`, `gcs`, `azure`, `duckdb`, `iceberg`, `kafka`). On every other server, nested properties are only type-checked, and each of their constraints and quality rules is reported as a warning. On SAP HANA, only their quality rules are reported as warnings; their constraints are not checked.
 
 Anything beyond this list that you want verified belongs in a [quality rule](./quality-rules/index.md) — a `type: library` metric for the common cases, or `type: sql` for arbitrary expressions.
 

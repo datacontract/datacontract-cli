@@ -1,7 +1,7 @@
 from typing import List
 
 import avro.schema
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -59,11 +59,12 @@ def import_avro(source: str) -> OpenDataContractStandard:
         properties=properties,
     )
 
-    # Add namespace as custom property if present
+    schema_custom_props = []
     if avro_schema.get_prop("namespace") is not None:
-        from open_data_contract_standard.model import CustomProperty
-
-        schema_obj.customProperties = [CustomProperty(property="namespace", value=avro_schema.get_prop("namespace"))]
+        schema_custom_props.append(CustomProperty(property="namespace", value=avro_schema.get_prop("namespace")))
+    if avro_schema.get_prop("aliases") is not None:
+        schema_custom_props.append(CustomProperty(property="avroAliases", value=avro_schema.get_prop("aliases")))
+    schema_obj.customProperties = schema_custom_props or None
 
     odcs.schema_.append(schema_obj)
 
@@ -91,6 +92,8 @@ def import_avro_field(field: avro.schema.Field) -> SchemaProperty:
         custom_props["avroLogicalType"] = field.get_prop("logicalType")
     if field.default is not None:
         custom_props["avroDefault"] = str(field.default)
+    if field.get_prop("aliases") is not None:
+        custom_props["avroAliases"] = field.get_prop("aliases")
 
     # Determine type and nested structures
     if field.type.type == "record":

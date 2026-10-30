@@ -1,4 +1,4 @@
-# Data Contract CLI documentation — https://docs.datacontract.com
+# Data Contract CLI documentation — https://cli.datacontract.com
 # Allow all standard crawlers.
 User-agent: *
 Allow: /
@@ -25,4 +25,4 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://docs.datacontract.com/sitemap.xml
+Sitemap: https://cli.datacontract.com/sitemap.xml

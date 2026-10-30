@@ -58,7 +58,7 @@ def metadata_response(monkeypatch):
     response.content = (FIXTURES / "who-metadata.xml").read_bytes()
     response.headers = {"OData-Version": "4.0"}
     get = Mock(return_value=response)
-    monkeypatch.setattr("datacontract.imports.odata_importer._ODataSession.get", get)
+    monkeypatch.setattr("datacontract.engines.http_api.ApiSession.get", get)
     return response, get
 
 
@@ -821,13 +821,16 @@ def test_redirect_authentication(http_transport, monkeypatch, authorization, tar
     routes[initial_url] = (302, {"Location": redirect_url}, b"")
     routes[redirect_url] = (302, {"Location": final_url}, b"")
     routes[final_url] = document
-    DataContract.import_from_source("odata", source=SERVICE_ROOT, config=Config(api_header_authorization=authorization))
+    api_key = authorization and "redirect-key"
+    config = Config(api_header_authorization=authorization, api_header_x_api_key=api_key)
+    DataContract.import_from_source("odata", source=SERVICE_ROOT, config=config)
     requests_by_url = {request.url: request for request, _ in sent}
-    assert requests_by_url[initial_url].headers.get("Authorization") == authorization
-    expected = authorization if retained else None
-    assert requests_by_url[redirect_url].headers.get("Authorization") == expected
+    headers = ("Authorization", "X-API-Key")
+    assert [requests_by_url[initial_url].headers.get(h) for h in headers] == [authorization, api_key]
+    expected = [authorization, api_key] if retained else [None, None]
+    assert [requests_by_url[redirect_url].headers.get(h) for h in headers] == expected
     # Returning to the initial host must not restore credentials removed earlier.
-    assert requests_by_url[final_url].headers.get("Authorization") == expected
+    assert [requests_by_url[final_url].headers.get(h) for h in headers] == expected
     netrc.assert_not_called()
 
 

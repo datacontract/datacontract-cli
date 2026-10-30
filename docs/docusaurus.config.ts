@@ -52,7 +52,7 @@ const config: Config = {
   },
 
   // Production url of the documentation site.
-  url: 'https://docs.datacontract.com',
+  url: 'https://cli.datacontract.com',
   baseUrl: '/',
 
   // One URL per page, without a trailing slash.
@@ -116,9 +116,9 @@ const config: Config = {
             const { defaultCreateSitemapItems, ...rest } = params;
             const items = await defaultCreateSitemapItems(rest);
             const hubs: Record<string, number> = {
-              'https://docs.datacontract.com/': 1.0,
-              'https://docs.datacontract.com/quickstart': 0.9,
-              'https://docs.datacontract.com/commands': 0.9,
+              'https://cli.datacontract.com/': 1.0,
+              'https://cli.datacontract.com/quickstart': 0.9,
+              'https://cli.datacontract.com/commands': 0.9,
             };
             return items.map((item) => {
               const priority = hubs[item.url];
@@ -169,6 +169,7 @@ const config: Config = {
           'scheduling/*.md',
           'dbt.md',
           'editor.md',
+          'ai-agents.md',
           'imports/index.md',
           'imports/*.md',
           'exports/index.md',
@@ -188,6 +189,7 @@ const config: Config = {
           'extending.md',
           'migrate-dcs-to-odcs.md',
           'comparison.md',
+          'recognition.md',
           'entropy-data.md',
           'release-notes.md',
           'contributing.md',
@@ -287,6 +289,7 @@ const config: Config = {
           items: [
             { label: 'datacontract.com', href: 'https://datacontract.com' },
             { label: 'Data Contract Editor', href: 'https://editor.datacontract.com' },
+            { label: 'Data Contract Skills', href: 'https://github.com/datacontract/datacontract-skills' },
             { label: 'PyPI', href: 'https://pypi.org/project/datacontract-cli/' },
           ],
         },

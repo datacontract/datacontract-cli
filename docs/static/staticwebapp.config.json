@@ -13,6 +13,116 @@
       "statusCode": 301
     },
     {
+      "route": "/connect",
+      "redirect": "/testing",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/index",
+      "redirect": "/testing",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/api",
+      "redirect": "/testing/api",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/athena",
+      "redirect": "/testing/athena",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/azure",
+      "redirect": "/testing/azure",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/bigquery",
+      "redirect": "/testing/bigquery",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/databricks",
+      "redirect": "/testing/databricks",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/dataframe",
+      "redirect": "/testing/dataframe",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/gcs",
+      "redirect": "/testing/gcs",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/impala",
+      "redirect": "/testing/impala",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/kafka",
+      "redirect": "/testing/kafka",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/local",
+      "redirect": "/testing/local",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/mysql",
+      "redirect": "/testing/mysql",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/oracle",
+      "redirect": "/testing/oracle",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/postgres",
+      "redirect": "/testing/postgres",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/redshift",
+      "redirect": "/testing/redshift",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/s3",
+      "redirect": "/testing/s3",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/snowflake",
+      "redirect": "/testing/snowflake",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/sqlserver",
+      "redirect": "/testing/sqlserver",
+      "statusCode": 301
+    },
+    {
+      "route": "/connect/trino",
+      "redirect": "/testing/trino",
+      "statusCode": 301
+    },
+    {
+      "route": "/ci-cd",
+      "redirect": "/scheduling",
+      "statusCode": 301
+    },
+    {
+      "route": "/quality-rules/custom-quality-checks",
+      "redirect": "/quality-rules/custom#user-defined-quality-rules",
+      "statusCode": 301
+    },
+    {
       "route": "/assets/*",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"

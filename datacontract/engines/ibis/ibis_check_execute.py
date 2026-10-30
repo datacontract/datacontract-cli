@@ -22,11 +22,10 @@ from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.type_normalize import (
-    format_mismatch_reason,
+    UNKNOWN_LOGICAL_TYPE,
     normalize_type_name,
     schema_property_matches,
     schema_property_mismatch_reason,
-    schema_property_mismatch_reasons,
 )
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.dtype_category import ibis_dtype_to_schema_property
@@ -36,6 +35,7 @@ from datacontract.engines.ibis.native_type import (
     supports_native_type_introspection,
 )
 from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types, has_nesting
+from datacontract.imports.odcs_helper import property_from_type_string
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 # that does not exist (`local`) or to an unrelated one (`api` installs the web
 # server dependencies, not a test backend).
 _INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb", "iceberg": "iceberg"}
+_FULL_TYPE_STRING_SERVERS = {"athena", "trino", "databricks", "bigquery", "clickhouse", "hive"}
 
 
 def install_extra_for(server_type: Optional[str]) -> str:
@@ -90,8 +91,6 @@ def _describe(spec: CheckSpec) -> str:
         return f"type({spec.field}) == {spec.expected_type_label}"
     if spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
         return f"physical_type({spec.field}) == {spec.expected_physical_type}"
-    if spec.metric == MetricType.FIELD_NESTED_TYPE:
-        return f"nested_types({spec.field}) match the contract"
     if spec.metric == MetricType.FIELD_PRESENT:
         return f"present({spec.field})"
     if spec.threshold is not None:
@@ -251,13 +250,19 @@ def _run_model(
             )
 
     # Snowflake collapses structured OBJECT/ARRAY nesting in the ibis dtype; read
-    # the real nested types from SHOW COLUMNS so field_type checks can recurse.
+    # the real nested types from SHOW COLUMNS so the nested checks can resolve them.
     structured_types = None
     if get_server_type(server) == "snowflake" and any(
-        spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE, MetricType.FIELD_NESTED_TYPE)
+        spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE)
+        or (spec.metric == MetricType.FIELD_PRESENT and _is_nested_path(spec.field))
         for spec in specs
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
+    # The other catalogs report a nested column's whole type in one string, e.g. array(row(sku varchar))
+    native_trees = structured_types
+    if native_types and get_server_type(server) in _FULL_TYPE_STRING_SERVERS:
+        parsed = {column: property_from_type_string(column, native) for column, native in native_types.items()}
+        native_trees = {column: prop for column, prop in parsed.items() if has_nesting(prop)}
 
     # Applied after the catalog reads above: those need the real table name, and
     # the schema/type checks compare declared types, which no row filter changes.
@@ -294,14 +299,23 @@ def _run_model(
     for spec in specs:
         try:
             named = None  # set for count-style metrics that get batched
+            if spec.metric in (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT, MetricType.DUPLICATE_COUNT):
+                dtype = _walk_dtype(schema, spec.field)
+                if isinstance(dtype, _Unchecked) and dtype.mismatched:
+                    set_result(run, spec.key, ResultEnum.warning, dtype)
+                    continue
             if spec.metric == MetricType.ROW_COUNT:
                 named = t.count().name(spec.key)
             elif spec.metric == MetricType.MISSING_COUNT:
-                predicate = _row_predicate(t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values))
+                predicate = _row_predicate(
+                    t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
+                )
                 named = _count_true(predicate).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 dtype = _resolve_dtype(schema, spec.field)
-                if _has_array_constraints(spec) and not dtype.is_array():
+                # ibis reports no type inside a nested Snowflake column, where a value has the type it is cast to
+                cast = _is_nested_path(spec.field) and _backend_name(t) == "snowflake"
+                if _has_array_constraints(spec) and not cast and not dtype.is_array():
                     # Silently dropping the constraint would report the check as
                     # passed, which is worse than saying it could not be run.
                     _set_impl(run, spec.key, _describe(spec), None)
@@ -314,16 +328,16 @@ def _run_model(
                     continue
                 unconstrained = []
 
-                def _invalid(c, _t=t, _dtype=dtype, _spec=spec, _flag=unconstrained):
+                def _invalid(c, _t=t, _dtype=dtype, _spec=spec, _flag=unconstrained, _cast=cast):
                     import ibis
 
-                    built = _invalid_expr(_t, c, _dtype, _spec)
+                    built = _invalid_expr(_t, c, c.type() if _cast else _dtype, _spec)
                     if built is None:
                         _flag.append(True)
                         return ibis.literal(False)
                     return built
 
-                expr = _row_predicate(t, columns, spec.field, _invalid)
+                expr = _row_predicate(t, columns, spec.field, _invalid, spec.value_type)
                 if unconstrained:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
@@ -335,13 +349,11 @@ def _run_model(
             elif spec.metric == MetricType.MISSING_REFERENCE_COUNT:
                 _run_missing_reference(run, con, server, t, columns, spec, schema_name)
             elif spec.metric == MetricType.FIELD_PRESENT:
-                _run_present(run, con, model, columns, schema, spec)
+                _run_present(run, con, model, schema, spec, structured_types)
             elif spec.metric == MetricType.FIELD_TYPE:
                 _run_type(run, schema, columns, spec, structured_types, native_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
-                _run_physical_type(run, con, server, schema, native_types, spec, structured_types)
-            elif spec.metric == MetricType.FIELD_NESTED_TYPE:
-                _run_nested_type(run, schema, spec, structured_types, sqlglot_dialect(con))
+                _run_physical_type(run, con, server, schema, native_types, spec, native_trees)
             elif spec.metric in (MetricType.FRESHNESS, MetricType.RETENTION):
                 _run_freshness(run, t, columns, spec)
             elif spec.metric == MetricType.CUSTOM_SQL:
@@ -355,11 +367,33 @@ def _run_model(
         except _ColumnNotFound as e:
             set_result(run, spec.key, ResultEnum.failed, str(e) or f"Column '{spec.field}' not found")
         except Exception as e:
-            logger.warning("Check '%s' errored: %s", spec.key, e)
-            set_result(run, spec.key, ResultEnum.failed, f"Error evaluating check: {e}")
+            # BigQuery spells its message out twice; its first error holds it once
+            try:
+                detail = e.errors[0]["message"]
+            except (AttributeError, LookupError, TypeError):
+                detail = str(e)
+            logger.warning("Check '%s' errored: %s", spec.key, detail)
+            reason = (
+                f"The custom quality check {spec.custom_quality_check} could not run: {detail}"
+                if spec.custom_quality_check
+                else f"Error evaluating check: {detail}"
+            )
+            set_result(run, spec.key, ResultEnum.failed, reason)
 
     if agg_exprs:
         _run_aggregation(run, t, agg_exprs)
+
+    # The fix for a structure the parent cannot hold starts at the parent's type, so its line fails
+    type_lines = {
+        spec.field: spec.key for spec in specs if spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE)
+    }
+    keys = {spec.key for spec in specs}
+    for check in run.checks:
+        mismatched = getattr(check.reason, "mismatched", None)
+        if check.key in keys and mismatched in type_lines:
+            parent = next(c for c in run.checks if c.key == type_lines[mismatched])
+            if parent.result != ResultEnum.failed:
+                set_result(run, parent.key, ResultEnum.failed, check.reason.mismatch)
 
     if include_failed_samples:
         _collect_failed_samples(run, t, unfiltered_t, columns, schema, model, specs, data_contract, server)
@@ -483,28 +517,31 @@ def _samples_for(t, columns, schema, spec: CheckSpec, identifiers, sensitive):
     if spec.metric == MetricType.DUPLICATE_COUNT:
         if not _is_item_duplicate(spec):
             return _duplicate_samples(t, columns, sensitive, spec)
-        predicate = _item_duplicate_predicate(t, columns, spec.field)
+        predicate = _item_duplicate_predicate(t, columns, spec.field, spec.value_type)
     elif spec.metric == MetricType.MISSING_COUNT:
-        predicate = _row_predicate(t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values))
+        predicate = _row_predicate(
+            t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
+        )
     else:  # INVALID_COUNT
         dtype = _resolve_dtype(schema, spec.field)
+        cast = _is_nested_path(spec.field) and _backend_name(t) == "snowflake"
         unconstrained = []
 
         def _invalid(c, _flag=unconstrained):
             import ibis
 
-            built = _invalid_expr(t, c, dtype, spec)
+            built = _invalid_expr(t, c, c.type() if cast else dtype, spec)
             if built is None:
                 _flag.append(True)
                 return ibis.literal(False)
             return built
 
-        predicate = _row_predicate(t, columns, spec.field, _invalid)
+        predicate = _row_predicate(t, columns, spec.field, _invalid, spec.value_type)
         if unconstrained:
             return None
 
     # A nested path is not a column; show the one it starts from.
-    root = spec.field.split("[]")[0].split(".")[0] if spec.field else None
+    root = _root(spec.field) if spec.field else None
     select_cols = _select_columns(columns, sensitive, [*identifiers, root])
     rows = t.filter(predicate)
     rows = rows.select(select_cols) if select_cols else rows
@@ -774,10 +811,15 @@ def _duplicate_scope(t, unfiltered_t, columns, spec: CheckSpec):
         return t
     fields = spec.columns or [spec.field]
     if unfiltered_t is None:
-        return t.filter([_resolve_expr(t, columns, f).notnull() for f in fields])
-    rows = unfiltered_t.filter([_resolve_expr(unfiltered_t, columns, f).notnull() for f in fields])
-    window = t.select([_resolve_expr(t, columns, f).name(f"_key{i}") for i, f in enumerate(fields)]).distinct()
-    return rows.semi_join(window, [_resolve_expr(rows, columns, f) == window[f"_key{i}"] for i, f in enumerate(fields)])
+        return t.filter([_resolve_expr(t, columns, f, spec.value_type).notnull() for f in fields])
+    rows = unfiltered_t.filter([_resolve_expr(unfiltered_t, columns, f, spec.value_type).notnull() for f in fields])
+    window = t.select(
+        [_resolve_expr(t, columns, f, spec.value_type).name(f"_key{i}") for i, f in enumerate(fields)]
+    ).distinct()
+    return rows.semi_join(
+        window,
+        [_resolve_expr(rows, columns, f, spec.value_type) == window[f"_key{i}"] for i, f in enumerate(fields)],
+    )
 
 
 def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_count: int):
@@ -790,7 +832,7 @@ def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_coun
         return
 
     t = _duplicate_scope(t, unfiltered_t, columns, spec)
-    cols = [_resolve_expr(t, columns, c) for c in (spec.columns or [spec.field])]
+    cols = [_resolve_expr(t, columns, c, spec.value_type) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
@@ -840,8 +882,12 @@ def _is_item_duplicate(spec: CheckSpec) -> bool:
     return any("[]" in c for c in (spec.columns or [spec.field]) if c)
 
 
-def _item_duplicate_predicate(t, columns, field: str):
+def _item_duplicate_predicate(t, columns, field: str, value_type: Optional[str]):
     """Parent rows whose array repeats a value in the item property ``field``."""
+    if _backend_name(t) == "snowflake":
+        from datacontract.engines.ibis.snowflake_nested_values import item_repeats
+
+        return item_repeats(t[_resolve_col(columns, _root(field))], field, value_type)
     if field.endswith("[]"):
         # the items of an array of plain values are the values themselves
         array_path, leaf = field[:-2], None
@@ -860,14 +906,14 @@ def _run_item_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
 
     Counted in parent rows.
     """
-    bad = t.filter(_item_duplicate_predicate(t, columns, spec.field))
+    bad = t.filter(_item_duplicate_predicate(t, columns, spec.field, spec.value_type))
     _record_sql(run, spec, bad)
     repeats = int(bad.count().execute())
     _evaluate(run, spec, repeats, row_count=row_count)
     _update_diagnostics(run, spec.key, {"failed_rows": repeats})
 
 
-def _run_present(run: Run, con, model: str, columns, schema, spec: CheckSpec):
+def _run_present(run: Run, con, model: str, schema, spec: CheckSpec, structured_types=None):
     target = f"{model}__raw__" if spec.uses_raw_view else model
     _set_impl(run, spec.key, f"column '{spec.field}' exists in {target}", "introspection")
     if spec.uses_raw_view:
@@ -876,12 +922,15 @@ def _run_present(run: Run, con, model: str, columns, schema, spec: CheckSpec):
             table = raw
         except Exception:
             table = _resolve_table(con, model)
-        target_schema = table.schema()
+        located = _locate(table.schema(), None, spec.field)
     else:
         # Reuse the already-resolved model schema to avoid an extra lookup that
         # can fail on case-sensitive backends (for example Oracle).
-        target_schema = schema
-    ok = _field_present(target_schema, spec.field)
+        located = _locate(schema, structured_types, spec.field)
+    if isinstance(located, _Unchecked):
+        set_result(run, spec.key, ResultEnum.warning, located)
+        return
+    ok = located is not None
     _set_diagnostics(run, spec.key, _diag(metric="field_present", field=spec.field, present=ok))
     set_result(
         run,
@@ -905,15 +954,21 @@ def _run_type(
         f"type of '{spec.field}' is compatible with '{spec.expected_type_label}'",
         "introspection",
     )
-    dtype = _resolve_dtype(schema, spec.field)
-    if dtype is None:
+    # Here the catalog's native types are not read, but a declared json is still what ibis reports
+    if (spec.expected_schema_property.physicalType or "").lower() in ("json", "jsonb", "variant"):
+        dtype = _walk_dtype(schema, spec.field)
+        if dtype is not None and not isinstance(dtype, _Unchecked) and dtype.is_json():
+            set_result(run, spec.key, ResultEnum.passed, None)
+            return
+    located = _locate(schema, structured_types, spec.field)
+    if isinstance(located, _Unchecked):
+        set_result(run, spec.key, ResultEnum.warning, located)
+        return
+    if located is None:
         _set_diagnostics(run, spec.key, _diag(metric="field_type", field=spec.field, expected=spec.expected_type_label))
         set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
-    # Snowflake structured types come back collapsed from ibis; prefer the nested
-    # tree recovered from SHOW COLUMNS when available.
-    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
-    actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
+    actual_prop, actual_label = located
     native_type = native_types.get(spec.field.lower()) if native_types else None
     if native_type and actual_prop.physicalType is None and spec.expected_category == "vector":
         # ibis reports a vector as a plain array; the catalog's declared type carries the dimensions
@@ -925,10 +980,14 @@ def _run_type(
             metric="field_type",
             field=spec.field,
             expected=spec.expected_type_label,
-            actual=structured_prop.physicalType if structured_prop else str(dtype),
+            actual=actual_label,
         ),
     )
-    if schema_property_matches(spec.expected_schema_property, actual_prop):
+    # The contract claims a structure, not a type, which json or a variant may hold
+    dynamic = (
+        actual_prop.logicalType == UNKNOWN_LOGICAL_TYPE and normalize_type_name(actual_prop.physicalType) == "object"
+    )
+    if schema_property_matches(spec.expected_schema_property, actual_prop) or (spec.implied_type and dynamic):
         set_result(run, spec.key, ResultEnum.passed, None)
     else:
         reason = schema_property_mismatch_reason(spec.expected_schema_property, actual_prop)
@@ -936,7 +995,7 @@ def _run_type(
             run,
             spec.key,
             ResultEnum.failed,
-            reason or f"Expected type '{spec.expected_type_label}' but column is '{dtype}'",
+            reason or f"Expected type '{spec.expected_type_label}' but column is '{actual_label}'",
         )
 
 
@@ -947,7 +1006,7 @@ def _run_physical_type(
     schema,
     native_types,
     spec: CheckSpec,
-    structured_types: dict[str, SchemaProperty] | None = None,
+    native_trees: dict[str, SchemaProperty] | None = None,
 ):
     """Compare a column's real native type against the contract's physicalType.
 
@@ -962,18 +1021,25 @@ def _run_physical_type(
         f"physical type of '{spec.field}' is '{spec.expected_physical_type}'",
         "introspection",
     )
-    dtype = _resolve_dtype(schema, spec.field)
-    if dtype is None:
+    located = _locate(schema, native_trees, spec.field)
+    if isinstance(located, _Unchecked):
+        set_result(run, spec.key, ResultEnum.warning, located)
+        return
+    if located is None:
         _set_diagnostics(
             run, spec.key, _diag(metric="field_physical_type", field=spec.field, expected=spec.expected_physical_type)
         )
         set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
         return
+    actual_prop, _ = located
 
-    # The catalog reports a structured OBJECT/ARRAY as its bare token, dropping the
-    # nested types; the tree recovered from SHOW COLUMNS renders the real native type.
-    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
-    if structured_prop is not None and has_nesting(structured_prop):
+    # Snowflake's catalog reports a structured OBJECT/ARRAY as its bare token, dropping
+    # the nested types; the tree recovered from SHOW COLUMNS renders the real native type.
+    nested_path = _is_nested_path(spec.field)
+    structured_prop = native_trees.get(spec.field.lower()) if native_trees and not nested_path else None
+    if nested_path:
+        actual_native = actual_prop.physicalType
+    elif structured_prop is not None and has_nesting(structured_prop):
         actual_native = structured_prop.physicalType
     else:
         actual_native = native_types.get(spec.field.lower()) if native_types else None
@@ -1001,10 +1067,9 @@ def _run_physical_type(
         set_result(run, spec.key, ResultEnum.failed, reason)
         return
 
-    # Native types are read per top-level column, so a nested path never has one.
-    # The logicalType fallback would report `passed` for a physical type nothing
-    # compared, so skip instead.
-    if actual_native is None and ("." in spec.field or "[]" in spec.field):
+    # The logicalType fallback would report `passed` for a nested physical type nothing compared, so skip
+    # instead; an unreadable catalog falls back like the top level.
+    if actual_native is None and nested_path and native_types is not None:
         set_result(
             run,
             spec.key,
@@ -1017,12 +1082,11 @@ def _run_physical_type(
     # logicalType category check when the property declares one.
     fallback = spec.expected_schema_property
     if fallback is not None and fallback.logicalType is not None:
-        actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
         if schema_property_matches(fallback, actual_prop):
             set_result(run, spec.key, ResultEnum.passed, None)
         else:
             mismatch = schema_property_mismatch_reason(fallback, actual_prop)
-            actual_label = actual_native or dtype
+            actual_label = actual_native or located[1]
             set_result(
                 run,
                 spec.key,
@@ -1032,77 +1096,6 @@ def _run_physical_type(
         return
 
     set_result(run, spec.key, ResultEnum.warning, f"{reason}; skipping the physical type check")
-
-
-def _run_nested_type(
-    run: Run,
-    schema,
-    spec: CheckSpec,
-    structured_types: dict[str, SchemaProperty] | None = None,
-    dialect=None,
-):
-    """Compare the children a property declares (``properties:`` / ``items:``) against
-    the column's real nested structure. The column's own type is the base check's job.
-    """
-    metric = spec.type
-    _set_impl(run, spec.key, f"nested types of '{spec.field}' match the contract", "introspection")
-    dtype = _resolve_dtype(schema, spec.field)
-    if dtype is None:
-        _set_diagnostics(run, spec.key, _diag(metric=metric, field=spec.field, expected=spec.expected_type_label))
-        set_result(run, spec.key, ResultEnum.failed, f"Column '{spec.field}' is missing")
-        return
-    structured_prop = structured_types.get(spec.field.lower()) if structured_types else None
-    actual_prop = structured_prop or ibis_dtype_to_schema_property(dtype)
-    actual_label = (structured_prop.physicalType if structured_prop else None) or str(dtype)
-    _set_diagnostics(
-        run,
-        spec.key,
-        _diag(metric=metric, field=spec.field, expected=spec.expected_type_label, actual=actual_label),
-    )
-
-    expected = spec.expected_schema_property
-    expected_base = normalize_type_name(expected.logicalType or expected.physicalType)
-    actual_base = normalize_type_name(actual_prop.logicalType or actual_prop.physicalType)
-    if expected_base == "object" and actual_base == "map":
-        # a map column declared as an object: the comparator reads it as an untyped object
-        actual_base = "object"
-    if expected_base == "vector" and actual_base == "array":
-        # an array of numbers is how platforms without a vector type store one
-        actual_base = "vector"
-    if actual_base is None:
-        # A dynamically-typed column (json / variant / jsonb) holds a different
-        # structure per row, so there is nothing to compare the children against.
-        set_result(
-            run,
-            spec.key,
-            ResultEnum.warning,
-            f"The structure of the '{actual_label}' column '{spec.field}' cannot be read; "
-            f"skipping the nested type check",
-        )
-        return
-    if expected_base != actual_base:
-        # The base type check names the actual type; repeating it here would print
-        # the column's whole rendered structure.
-        set_result(
-            run,
-            spec.key,
-            ResultEnum.failed,
-            f"Cannot verify the nested types of '{spec.field}': the column is not an {expected_base}",
-        )
-        return
-
-    errors = schema_property_mismatch_reasons(expected, actual_prop, spec.field, dialect)
-    if not errors:
-        set_result(run, spec.key, ResultEnum.passed, None)
-        return
-    _update_diagnostics(run, spec.key, {"errors": [error.message for error in errors]})
-    verified = any(error.verifiable for error in errors)
-    set_result(
-        run,
-        spec.key,
-        ResultEnum.failed if verified else ResultEnum.warning,
-        format_mismatch_reason(errors),
-    )
 
 
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
@@ -1320,11 +1313,16 @@ def _resolve_col(columns: dict, field: str) -> str:
     return actual
 
 
-def _resolve_expr(t, columns: dict, field: str):
+def _resolve_expr(t, columns: dict, field: str, value_type: Optional[str] = None):
     if field is None:
         raise _ColumnNotFound("Column 'None' not found")
     if "." not in field:
         return t[_resolve_col(columns, field)]
+    if _backend_name(t) == "snowflake":
+        from datacontract.engines.ibis.snowflake_nested_values import nested_value
+
+        # unnamed, ibis would name a grouped value after its whole expression, past Snowflake's 255 characters
+        return nested_value(t[_resolve_col(columns, _root(field))], field, value_type).name(field)
     return _resolve_nested_expr(t, field, columns)
 
 
@@ -1333,12 +1331,16 @@ def _resolve_nested_expr(t, field: str, columns: dict):
     return _struct_path(t[_resolve_col(columns, head)], tail)
 
 
-def _row_predicate(t, columns: dict, field: str, build):
+def _row_predicate(t, columns: dict, field: str, build, value_type: Optional[str] = None):
     """A boolean over *parent* rows for ``build`` applied at ``field``.
 
     An array hop (``items[].sku``) becomes "some element satisfies build", so the
     row count never changes and an empty array is never a violation.
     """
+    if _is_nested_path(field) and _backend_name(t) == "snowflake":
+        from datacontract.engines.ibis.snowflake_nested_values import row_predicate
+
+        return row_predicate(t[_resolve_col(columns, _root(field))], field, build, value_type)
     if field.endswith("[]"):
         # The items of an array of plain values: the row breaks the rule when one of its items does
         return _row_predicate(t, columns, field[:-2], lambda array: array.filter(build).length() > 0)
@@ -1394,41 +1396,141 @@ def _struct_field_name(value, name: str) -> str:
     return match
 
 
+class _Unchecked(str):
+    """Why the type at a path cannot be checked, which the check reports as a warning."""
+
+    # The path whose real type cannot hold the structure the contract declares below it,
+    # and the reason its type line fails with
+    mismatched: Optional[str] = None
+    mismatch: Optional[str] = None
+
+
 def _resolve_dtype(schema, field: str):
+    dtype = _walk_dtype(schema, field)
+    return None if isinstance(dtype, _Unchecked) else dtype
+
+
+def _walk_dtype(schema, field: str):
+    """The ibis dtype at ``field``; ``None`` when it does not exist, ``_Unchecked`` when it is
+    inside untyped data (json, an unknown type, or a map standing in for an untyped object) or
+    under a parent that is not the object, array or map the path steps through."""
     if field is None:
         return None
-    current = schema
-    parts = field.split(".")
     dtype = None
-    for idx, part in enumerate(parts):
-        name, marker, _ = part.partition("[]")
-        try:
-            dtype = current[name]
-        except Exception:
-            # Backends that report uppercase names (Snowflake, Oracle, Databricks)
-            # must still match a contract that spells the field in lower case.
-            actual = next((k for k in current.keys() if k.lower() == name.lower()), None)
-            if actual is None:
-                return None
-            dtype = current[actual]
-        if marker:
-            # `items[]` names the element type, not the array's own type.
-            try:
+    path = ""
+    for index, part in enumerate(field.split(".")):
+        name = part.split("[", 1)[0]
+        if index == 0:
+            fields = schema
+        elif dtype.is_struct():
+            fields = dtype.fields
+        elif dtype.is_json() or dtype.is_unknown() or (dtype.is_map() and dtype.value_type.is_json()):
+            return _untyped_data(path)
+        elif dtype.is_map():
+            return _map_declared_as_object(path)
+        else:
+            return _structure_mismatch(path, "is not an object")
+        # Backends that report uppercase names (Snowflake, Oracle, Databricks)
+        # must still match a contract that spells the field in lower case.
+        actual = name if name in fields else next((k for k in fields.keys() if k.lower() == name.lower()), None)
+        if actual is None:
+            return None
+        dtype = fields[actual]
+        path = f"{path}.{name}" if path else name
+        # `items[]` names the element type, `attrs[key]` the key type, not the array's or map's own type.
+        for hop in _HOP.findall(part):
+            if dtype.is_json() or dtype.is_unknown():
+                return _untyped_data(path)
+            if hop:
+                if not dtype.is_map():
+                    return _structure_mismatch(path, "is not a map")
+                dtype = dtype.key_type if hop == "key" else dtype.value_type
+            else:
+                if not dtype.is_array():
+                    return _structure_mismatch(path, "is not an array")
                 dtype = dtype.value_type
-            except Exception:
-                return None
-        if idx < len(parts) - 1:
-            try:
-                current = dtype.fields
-            except Exception:
-                return None
+            path = f"{path}[{hop}]"
     return dtype
 
 
-def _field_present(schema, field: str) -> bool:
-    if field is None:
-        return False
-    return _resolve_dtype(schema, field) is not None
+def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: str):
+    """The real type at ``field`` as ``(property, label)``, from the catalog's nested native types
+    where there are some, else from ibis; ``None`` or ``_Unchecked`` as for ``_walk_dtype``."""
+    parts = field.split(".")
+    node = structured_types.get(parts[0].split("[", 1)[0].lower()) if structured_types else None
+    if node is None:
+        dtype = _walk_dtype(schema, field)
+        if dtype is None or isinstance(dtype, _Unchecked):
+            return dtype
+        if field.endswith("]") and dtype.is_json():
+            # an array whose element type the backend does not report, e.g. Snowflake's ARRAY
+            return _untyped_data(field[: field.rindex("[")])
+        return ibis_dtype_to_schema_property(dtype), str(dtype)
+    path = ""
+    for index, part in enumerate(parts):
+        name = part.split("[", 1)[0]
+        if index:
+            if not node.properties:
+                if _untyped(node):
+                    return _untyped_data(path)
+                if normalize_type_name(node.logicalType) == "map":
+                    return _map_declared_as_object(path)
+                return _structure_mismatch(path, "is not an object")
+            node = next((child for child in node.properties if (child.name or "").lower() == name.lower()), None)
+            if node is None:
+                return None
+        path = f"{path}.{name}" if path else name
+        for hop in _HOP.findall(part):
+            if hop:
+                child = (node.map.key if hop == "key" else node.map.value) if node.map else None
+            else:
+                child = node.items
+            if child is None:
+                return (
+                    _untyped_data(path)
+                    if _untyped(node)
+                    else _structure_mismatch(path, "is not a map" if hop else "is not an array")
+                )
+            node = child
+            path = f"{path}[{hop}]"
+    return node, node.physicalType
+
+
+# The hops of a path segment: `[]` into an array's items, `[key]` and `[value]` into a map's
+_HOP = re.compile(r"\[(\w*)\]")
+
+
+def _root(field: str) -> str:
+    """The column a nested path starts from."""
+    return field.split("[")[0].split(".")[0]
+
+
+def _is_nested_path(field: Optional[str]) -> bool:
+    return bool(field) and ("." in field or "[" in field)
+
+
+def _untyped(prop: SchemaProperty) -> bool:
+    return normalize_type_name(prop.logicalType) in ("object", "array", None)
+
+
+def _untyped_data(path: str) -> _Unchecked:
+    return _Unchecked(
+        f"'{path}' holds untyped data, such as json, whose structure cannot be read; skipping the check. "
+        f"Use a structured type for '{path}' to check what it contains."
+    )
+
+
+def _map_declared_as_object(path: str) -> _Unchecked:
+    return _structure_mismatch(
+        path, "is a map, not an object", f". Declare '{path}' as a map to check its key and value."
+    )
+
+
+def _structure_mismatch(path: str, mismatch: str, advice: str = "") -> _Unchecked:
+    reason = _Unchecked(f"'{path}' {mismatch}; skipping the check{advice}")
+    reason.mismatched = path
+    reason.mismatch = f"'{path}' {mismatch}{advice}"
+    return reason
 
 
 def _table_database(con, server: Optional[Server]) -> Optional[str]:

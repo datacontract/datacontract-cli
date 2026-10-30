@@ -1,12 +1,12 @@
 ---
 sidebar_position: 15
 title: "HTTP API"
-description: "Test the JSON or YAML responses of a REST API's GET endpoint against a data contract, created from its OpenAPI document or a sample response."
+description: "Test the JSON or YAML responses of a REST API's GET or POST endpoints against a data contract, created from its OpenAPI document or a sample response."
 ---
 
 # <img className="page-icon" src="/img/icons/api.svg" alt="" /> HTTP API
 
-Test the response of a REST API's GET endpoint. `datacontract test` calls the endpoint and checks the response, JSON or YAML, against the contract. Only GET requests are supported.
+Test the responses of a REST API's GET or POST endpoints. `datacontract test` calls the endpoints and checks the responses, JSON or YAML, against the contract.
 
 ## 1. Install
 
@@ -20,11 +20,12 @@ See [Installation](../installation.md) for pip, pipx, and Docker.
 
 ## 2. Authenticate
 
-If the API requires authentication, set the value for the `authorization` header:
+If the API requires authentication, set the value for the `Authorization` header, or the API key for the `X-API-Key` header:
 
 ```bash
 # .env
 DATACONTRACT_API_HEADER_AUTHORIZATION="Bearer <token>"
+DATACONTRACT_API_HEADER_X_API_KEY="<api-key>"
 ```
 
 For public endpoints, skip this step.
@@ -33,7 +34,7 @@ For public endpoints, skip this step.
 
 ### From the OpenAPI document
 
-If the API has an OpenAPI 3.x document, import the GET operation you want to test, by its `operationId` or its path:
+If the API has an OpenAPI 3.x document, import the operation you want to test, by its `operationId` or its method and path (`POST /orders/search`):
 
 ```bash
 datacontract import openapi --source openapi.yaml --operation listOrders --output datacontract.yaml
@@ -43,20 +44,36 @@ The contract gets one schema for the operation's response, and an `api` server f
 
 ```yaml
 servers:
-  - server: production
-    type: api
-    description: Production
-    location: https://api.example.com/v1/orders?limit=${limit:-100}
-  - server: staging
-    type: api
-    description: Staging
-    location: https://staging.api.example.com/v1/orders?limit=${limit:-100}
+- server: production
+  type: api
+  description: Production
+  customProperties:
+  - property: params
+    value:
+      limit: ${limit:-100}
+  location: https://api.example.com/v1/orders
+- server: staging
+  type: api
+  description: Staging
+  customProperties:
+  - property: params
+    value:
+      limit: ${limit:-100}
+  location: https://staging.api.example.com/v1/orders
 schema:
-  - name: listOrders
-    # ...
+- name: listOrders
+  # ...
 ```
 
-Path parameters and required query parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location`, defaulting to the parameter's `example` or `default`. Set them in the environment to call the endpoint with other values, for example `limit=10 datacontract test datacontract.yaml`. See [Import: OpenAPI](../imports/openapi.md) for what is imported.
+To test several endpoints of the API in one run, repeat `--operation`, or run the command in a terminal without `--operation` to pick the operations from a list:
+
+```bash
+datacontract import openapi --source openapi.yaml --operation listCustomers --operation listOrders --output datacontract.yaml
+```
+
+Each operation becomes a schema, served by its own endpoint (see [Testing several endpoints](#testing-several-endpoints)).
+
+Path parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location`, and required query parameters variables in `params`, defaulting to the parameter's `example` or `default`. Set them in the environment to call the endpoint with other values, for example `limit=10 datacontract test datacontract.yaml`. See [Import: OpenAPI](../imports/openapi.md) for what is imported.
 
 ### From a response
 
@@ -76,6 +93,67 @@ servers:
     location: "https://api.example.com/orders"
 ```
 
+### Testing POST requests
+
+Custom properties of the server set the method, the query parameters and the JSON body of the request. For a search API that only accepts POST:
+
+```yaml
+servers:
+  - server: search
+    type: api
+    location: "https://api.example.com/orders/search"
+    customProperties:
+      - property: method
+        value: POST
+      - property: params
+        value:
+          limit: ${limit:-100}
+          status: [placed, shipped]
+      - property: body
+        value:
+          query:
+            customer_id: ${customer_id:-C-1}
+          size: 100
+```
+
+This sends a POST request with the query parameters `limit=100`, `status=placed` and `status=shipped`, and the body `{"query": {"customer_id": "C-1"}, "size": 100}`. See the [reference](../reference/api.md#request) for the rules.
+
+### Testing several endpoints
+
+When the schemas of a contract are served by different endpoints of the same API, locate the server at the API's base URL, and give each schema an `endpoint` custom property with its path below the `location`. Each endpoint is called, and its response is tested against its schema. Relationships between the schemas are checked across the endpoints, such as that every order references an existing customer:
+
+```yaml
+servers:
+  - server: production
+    type: api
+    location: "https://api.example.com/v1"
+schema:
+  - name: customers
+    customProperties:
+      - property: endpoint
+        value: /customers
+    properties:
+      - name: id
+        logicalType: string
+        unique: true
+  - name: orders
+    customProperties:
+      - property: endpoint
+        value: /orders
+      - property: params
+        value:
+          status: ${status:-open}
+    properties:
+      - name: order_id
+        logicalType: string
+      - name: customer_id
+        logicalType: string
+        relationships:
+          - to: customers.id
+```
+
+The `method`, `params` and `body` of an endpoint are custom properties of its schema, not of the server. Every schema needs an endpoint. With `--schema-name`, only that schema's endpoint is called, so its relationships to other schemas are not checked.
+
 ## 4. Test the actual data
 
 ```bash
@@ -86,14 +164,15 @@ The first server is tested unless you select one with `--server`, e.g. `--server
 
 ```
 Testing datacontract.yaml
-Server: production (type=api, location=https://api.example.com/v1/orders?limit=${limit:-100})
-╭────────┬───────────────────────────────────────────┬──────────┬─────────────────────────────╮
-│ Result │ Check                                     │ Field    │ Details                     │
-├────────┼───────────────────────────────────────────┼──────────┼─────────────────────────────┤
-│ passed │ Check that JSON has valid schema          │          │ All JSON entries are valid. │
-│ passed │ Check that field 'order_id' is present    │ order_id │                             │
-│  ...   │                                           │          │                             │
-╰────────┴───────────────────────────────────────────┴──────────┴─────────────────────────────╯
+Server: production (type=api, location=https://api.example.com/v1/orders)
+╭────────┬─────────────────────────────────────────────────┬──────────┬─────────╮
+│ Result │ Check                                           │ Field    │ Details │
+├────────┼─────────────────────────────────────────────────┼──────────┼─────────┤
+│  ...   │                                                 │          │         │
+│ passed │ Check that field 'order_id' is present          │ order_id │         │
+│ passed │ Check that field order_id has no missing values │ order_id │         │
+│  ...   │                                                 │          │         │
+╰────────┴─────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Ran 10 checks. Took 1.2 seconds.
 ```
 
@@ -112,6 +191,6 @@ Authentication options and data type handling: **[HTTP API Reference](../referen
 
 ## Troubleshooting
 
-- **`401` / `403`**: set `DATACONTRACT_API_HEADER_AUTHORIZATION` including the scheme (e.g. `Bearer eyJ...`), not just the raw token.
+- **`401` / `403`**: set `DATACONTRACT_API_HEADER_AUTHORIZATION` including the scheme (e.g. `Bearer eyJ...`), not just the raw token, or `DATACONTRACT_API_HEADER_X_API_KEY` if the API expects an `X-API-Key` header.
 - **`Variable orderId referenced in ... is not set`**: the endpoint has a path or query parameter without an example or default. Set it in the environment or a `.env` file, or write a default into the `location` (`${orderId:-ORD-1001}`).
 - **Schema checks fail on a wrapped response**: if the API returns `{"data": [...]}` instead of a plain array, model the wrapper object in the schema, or set `delimiter` accordingly (`array` for a JSON array of records, `none` for a single object).

@@ -5,6 +5,9 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
+from dataclasses import dataclass, field
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -108,3 +111,55 @@ def generated_docs():
     if shutil.which("node") is None:
         pytest.skip("node is needed to generate docs/docs/release-notes.md")
     _generate(["node", "docs/scripts/generate-release-notes.mjs"])
+
+
+@dataclass
+class Api:
+    """What the local API answers, and the requests it received.
+
+    Attributes rather than one dict: what a request records must never end up in
+    the headers of a response.
+    """
+
+    url: str = ""
+    body: str = ""
+    # the body by path, without the query, for the paths that answer other than `body`
+    bodies: dict = field(default_factory=dict)
+    content_type: str = "application/json"
+    status: int = 200
+    paths: list = field(default_factory=list)
+    methods: list = field(default_factory=list)
+    headers: list = field(default_factory=list)
+    request_bodies: list = field(default_factory=list)
+
+
+@pytest.fixture
+def api():
+    """A local API that answers every GET and POST with the body (or the path's entry in bodies) and content type
+    set on it, and records the requests."""
+    api = Api()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            api.paths.append(self.path)
+            api.methods.append(self.command)
+            api.headers.append(dict(self.headers))
+            api.request_bodies.append(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
+            body = api.bodies.get(self.path.partition("?")[0], api.body).encode()
+            self.send_response(api.status)
+            self.send_header("Content-Type", api.content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        do_POST = do_GET
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    api.url = f"http://127.0.0.1:{server.server_port}"
+    yield api
+    server.shutdown()
+    server.server_close()

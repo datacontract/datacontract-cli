@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "AliasTest",
+  "doc": "Test avro including a field alias",
+  "aliases": ["OldAliasTest"],
+  "fields": [
+    {
+      "name": "SessionId",
+      "doc": "This is the test field.",
+      "type": ["null", "string"],
+      "aliases": ["AnonymousId"]
+    }
+  ]
+}

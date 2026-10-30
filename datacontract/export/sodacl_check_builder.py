@@ -318,7 +318,7 @@ def check_property_is_present(
     uses_raw_view = (
         server is not None
         and server.type in ["local", "s3", "gcs", "azure"]
-        and server.format in ["csv", "parquet", "json", "xml"]
+        and server.format in ["csv", "parquet", "json", "xml", "xlsx"]
     )
     target = f"{model_name}__raw__" if uses_raw_view else model_name
     sodacl_check_dict = {
@@ -984,6 +984,7 @@ def check_quality_list(
             elif quality.metric == "invalidValues":
                 if property_name is not None:
                     valid_values = quality.arguments.get("validValues") if quality.arguments else None
+                    valid_values = [value for value in valid_values or [] if value is not None] or None
                     checks.append(
                         check_property_invalid_values(
                             schema_name, property_name, threshold, valid_values, quoting_config

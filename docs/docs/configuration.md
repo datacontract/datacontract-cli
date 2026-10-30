@@ -144,8 +144,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 | Environment variable | `Config` field | Type | Notes |
 |---|---|---|---|
 | `DATACONTRACT_API_HEADER_AUTHORIZATION` | `api_header_authorization` | string (secret) |  |
+| `DATACONTRACT_API_HEADER_X_API_KEY` | `api_header_x_api_key` | string (secret) |  |
 | `DATACONTRACT_CUSTOM_QUALITY_CHECKS` | `custom_quality_checks` | string |  |
 | `DATACONTRACT_MAX_ERRORS` | `max_errors` | integer |  |
+| `DATACONTRACT_CONNECT_TIMEOUT` | `connect_timeout` | integer |  |
 
 ### Athena
 
@@ -173,6 +175,8 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH` | `bigquery_account_info_json_path` | string |  |
 | `DATACONTRACT_BIGQUERY_BILLING_PROJECT` | `bigquery_billing_project` | string |  |
 | `DATACONTRACT_BIGQUERY_IMPERSONATION_ACCOUNT` | `bigquery_impersonation_account` | string |  |
+| `DATACONTRACT_BIGQUERY_LOCATION` | `bigquery_location` | string |  |
+| `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` | `bigquery_kms_key_name` | string |  |
 | `DATACONTRACT_BIGQUERY_PROJECT` | `bigquery_project` | string | Overrides `project` from the contract's `servers` block |
 | `DATACONTRACT_BIGQUERY_DATASET` | `bigquery_dataset` | string | Overrides `dataset` from the contract's `servers` block |
 
@@ -350,8 +354,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_SNOWFLAKE_USERNAME` | `snowflake_username` | string |  |
 | `DATACONTRACT_SNOWFLAKE_PASSWORD` | `snowflake_password` | string (secret) |  |
 | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR` | `snowflake_authenticator` | string |  |
+| `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER` | `snowflake_workload_identity_provider` | string |  |
 | `DATACONTRACT_SNOWFLAKE_ROLE` | `snowflake_role` | string |  |
 | `DATACONTRACT_SNOWFLAKE_TOKEN` | `snowflake_token` | string (secret) |  |
+| `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH` | `snowflake_token_file_path` | string |  |
 | `DATACONTRACT_SNOWFLAKE_PASSCODE` | `snowflake_passcode` | string (secret) |  |
 | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY` | `snowflake_private_key` | string (secret) |  |
 | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` | `snowflake_private_key_file` | string |  |
