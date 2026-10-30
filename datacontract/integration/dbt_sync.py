@@ -2873,6 +2873,7 @@ def generate_dbt_tests(
     model_version: Optional[str] = None,
     server: Optional[str] = None,
     dry_run: bool = False,
+    inline_references: bool = True,
 ) -> DbtTestGenerationResult:
     """Resolve the contract, merge its tests + metadata into the dbt project's model YAML in place.
 
@@ -2880,13 +2881,14 @@ def generate_dbt_tests(
     into a versioned model — a `versions:` block — additively, leaving sibling versions untouched.
     `server` selects the ODCS server whose `type` maps `logicalType`s to a `data_type`.
     `dry_run` computes and reports the same plan without writing, deleting, or moving any files.
+    `inline_references` inlines the definitions the contract's properties link to, as `lint`, `test` and `export` do.
     """
     explicit_project_dir = project_dir is not None
     project_dir = (project_dir or Path.cwd()).resolve()
     _ensure_dbt_project(project_dir, explicit=explicit_project_dir)
 
     contract_path = Path(contract).resolve()
-    odcs = resolve_data_contract(str(contract_path))
+    odcs = resolve_data_contract(str(contract_path), inline_references=inline_references)
     logger.info(f"Resolved contract {odcs.id}@{odcs.version} from {contract_path}")
     dialect = _resolve_type_dialect(odcs, server)
 
