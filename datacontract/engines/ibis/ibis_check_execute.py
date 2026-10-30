@@ -1099,9 +1099,13 @@ def _run_physical_type(
 
 
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
+    import ibis
     import pandas as pd
 
-    col = _resolve_expr(t, columns, spec.field)
+    if spec.columns:
+        col = ibis.coalesce(*(_resolve_expr(t, columns, field) for field in spec.columns))
+    else:
+        col = _resolve_expr(t, columns, spec.field)
     reduction = col.min() if spec.metric == MetricType.RETENTION else col.max()
     _record_sql(run, spec, t.aggregate(value=reduction))
     raw = reduction.execute()

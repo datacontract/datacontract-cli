@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import openapi` imports several operations (repeat `--operation`, or pick them from a list in a terminal) (#1780)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
 - `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744 @lairdman7)
+- `datacontract test`: freshness and retention service levels read fields inside a struct (`orders.audit.revision_ts`) and the first non-null of several fields (`coalesce(orders.audit.revision_ts, orders.audit.creation_ts)`) (#1778 @travishofmeister)
 
 ### Changed
 - The documentation moved from docs.datacontract.com to cli.datacontract.com

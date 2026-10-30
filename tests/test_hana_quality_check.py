@@ -462,6 +462,32 @@ def test_freshness_check():
     assert "SECONDS_BETWEEN(MAX" in connection.executed[0][0]
 
 
+def test_freshness_check_coalesces_columns():
+    connection = FakeConnection((60,))
+    contract = OpenDataContractStandard(
+        id="hana-test",
+        schema=[
+            SchemaObject(
+                name="ORDERS",
+                properties=[
+                    SchemaProperty(name="UPDATED_AT"),
+                    SchemaProperty(name="created", physicalName="CREATED_AT"),
+                ],
+            )
+        ],
+        slaProperties=[
+            ServiceLevelAgreementProperty(
+                property="freshness", element="coalesce(ORDERS.UPDATED_AT, ORDERS.created)", value=5, unit="m"
+            )
+        ],
+    )
+
+    checks = run_sla_checks(connection, "SALES", contract)
+
+    assert check_by_type(checks, "servicelevel_freshness").result == ResultEnum.passed
+    assert 'MAX(COALESCE("UPDATED_AT", "CREATED_AT"))' in connection.executed[0][0]
+
+
 def test_retention_check():
     connection = FakeConnection((4000,))
     contract = OpenDataContractStandard(
