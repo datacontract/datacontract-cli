@@ -48,6 +48,7 @@ EXPORTS = {
     "dbml": ("datacontract export dbml orders.odcs.yaml --output orders.dbml", "text", None),
     "go": ("datacontract export go orders.odcs.yaml --output orders.go", "go", None),
     "spark": ("datacontract export spark orders.odcs.yaml", "python", 34),
+    "polars": ("datacontract export polars orders.odcs.yaml --output orders_schema.py", "python", None),
     "sqlalchemy": ("datacontract export sqlalchemy orders.odcs.yaml --output orders_models.py", "python", None),
     "iceberg": (
         "datacontract export iceberg orders.odcs.yaml --schema-name orders --output orders.iceberg.json",

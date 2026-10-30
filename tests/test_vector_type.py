@@ -273,6 +273,7 @@ def test_exporters_read_the_vector():
 
     assert "array<float>" in data_contract.export("avro-idl")
     assert "ArrayType(" in data_contract.export("spark") and "FloatType()" in data_contract.export("spark")
+    assert '"embedding": pl.Array(pl.Float32, 3)' in data_contract.export("polars")
     assert "repeated float embedding" in data_contract.export("protobuf")
     assert "list[float]" in data_contract.export("pydantic-model")
     assert "[]float32" in data_contract.export("go")

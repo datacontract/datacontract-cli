@@ -12,7 +12,7 @@ from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field, ValidationError
 
 from datacontract.config import Config, known_env_names
-from datacontract.config.variables import CONTRACT_VARIABLES_ENV, allowed_environment, resolve_variables
+from datacontract.config.variables import CONTRACT_VARIABLES_ENV, allowed_environment, resolve_server_variables
 from datacontract.data_contract import DataContract, ExportFormat
 from datacontract.model.breaking import BreakingChangeEntry, Perspective
 from datacontract.model.changelog import ChangelogEntry
@@ -443,6 +443,22 @@ AUTHENTICATION_RESPONSES: dict[int | str, dict] = {
 
 _CONFIG_HEADER_PREFIX = "datacontract-"
 
+# Options naming a file or folder on the server's disk, or the server's own workload identity: the operator's
+# to choose, never the caller's, or a caller could have the server log in as the operator to a host of their choosing.
+_SERVER_ONLY_OPTIONS = frozenset(
+    {
+        "DATACONTRACT_CUSTOM_QUALITY_CHECKS",
+        "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE",
+        "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH",
+        "DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH",
+        "DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER",
+        "DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH",
+        "DATACONTRACT_DATABRICKS_PROFILE",
+        "DATACONTRACT_ORACLE_CLIENT_DIR",
+        "DATACONTRACT_DUCKDB_DATABASE",
+    }
+)
+
 
 def config_from_headers(headers) -> "Config | None":
     """Build a per-request Config from configuration option headers.
@@ -452,8 +468,8 @@ def config_from_headers(headers) -> "Config | None":
     → ``DATACONTRACT_SNOWFLAKE_PASSWORD``, ``entropy-data-api-key`` →
     ``ENTROPY_DATA_API_KEY``. Returns None when no config headers are present,
     so env-var-configured deployments behave exactly as before. Unknown
-    ``datacontract-*`` option names are rejected with a 400, and so is the
-    custom quality checks folder.
+    ``datacontract-*`` option names are rejected with a 400, and so are options
+    only the operator may set.
     """
     known = known_env_names()
     values = {}
@@ -461,11 +477,10 @@ def config_from_headers(headers) -> "Config | None":
         lowered = name.lower()
         env = lowered.upper().replace("-", "_")
         if lowered.startswith(_CONFIG_HEADER_PREFIX) or env in known:
-            if env == "DATACONTRACT_CUSTOM_QUALITY_CHECKS":
-                # A folder on the server's disk is the operator's to choose, never the caller's.
+            if env in _SERVER_ONLY_OPTIONS:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="The custom quality checks folder is configured by the API server, not per request.",
+                    detail=f"{env} is set on the API server. It is not possible to override it per request.",
                 )
             values[env] = value
     if not values:
@@ -516,12 +531,25 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "hive": ("host", "hive_host", ("hive_password",)),
     "redshift": ("host", "redshift_host", ("redshift_password",)),
     "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
+    "mssql": ("host", "sqlserver_host", ("sqlserver_password",)),
     "snowflake": (
         "account",
         "snowflake_account",
-        ("snowflake_password", "snowflake_token", "snowflake_private_key"),
+        (
+            "snowflake_password",
+            "snowflake_token",
+            "snowflake_private_key",
+            "snowflake_private_key_file",
+            "snowflake_private_key_path",
+            "snowflake_token_file_path",
+            "snowflake_workload_identity_provider",
+        ),
     ),
-    "databricks": ("host", "databricks_server_hostname", ("databricks_token", "databricks_client_secret")),
+    "databricks": (
+        "host",
+        "databricks_server_hostname",
+        ("databricks_token", "databricks_client_secret", "databricks_profile"),
+    ),
     # Kafka's broker host is always the contract's `server.host` (no environment
     # option pins it), so an environment-held SASL password can never be paired
     # with a posted contract safely -- host_field is None, so it is always rejected.
@@ -539,13 +567,17 @@ def _selected_server(body: str, server_name: str | None, config):
     """
     from datacontract.engines.data_contract_test import get_server
     from datacontract.lint import resolve
+    from datacontract.model.server import get_server_type
 
     try:
         data_contract = resolve.resolve_data_contract(data_contract_str=body, config=config)
         server = get_server(data_contract, server_name)
-        # Guard the server type the test will run against, not a ${VAR:-local} reference to it.
-        variables = allowed_environment(_allowed_contract_variables())
-        return server and server.model_copy(update={"type": resolve_variables(server.type, variables=variables)})
+        if server is None:
+            return None
+        # Guard the server type the test will connect to: references like ${VAR:-local} resolved, and
+        # `custom` + customType or an ODCS synonym such as `postgresql` mapped to the type the CLI dispatches on.
+        server = resolve_server_variables(server, allowed_environment(_allowed_contract_variables()))
+        return server.model_copy(update={"type": get_server_type(server)})
     except Exception:
         return None
 
@@ -630,11 +662,23 @@ def _reject_environment_credentials_to_untrusted_host(body: str, server_name: st
     target_attr, host_field, secret_fields = guard
     if not any(resolved.option_source(field) == "env" for field in secret_fields):
         return  # no environment-held secret for this server type; nothing to protect
-    if host_field is not None and resolved.option_source(host_field) == "env":
-        return  # the operator pinned the target host; the contract's host is ignored
     held = [
         env_name(field, Config.model_fields[field]) for field in secret_fields if resolved.option_source(field) == "env"
     ]
+    if host_field is not None and resolved.option_source(host_field) == "env":
+        # Snowflake's host and port override the address the pinned account resolves to.
+        redirects = [
+            env_name(field, Config.model_fields[field])
+            for field in ("snowflake_host", "snowflake_port")
+            if server.type == "snowflake" and resolved.option_source(field) == "request"
+        ]
+        if not redirects:
+            return  # the operator pinned the target host; the contract's host is ignored
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{', '.join(redirects)} cannot be set per request while the API server uses its own Snowflake "
+            f"credential ({', '.join(held)}). Remove it, or send all credentials with the request.",
+        )
     if host_field is not None:
         env_var = env_name(host_field, Config.model_fields[host_field])
         detail = (
