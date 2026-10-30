@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.8] - 2026-10-26
 
 ### Added
+- `datacontract lint` fails on duplicate schema, property, server, role, support channel, team member, SLA property and id entries
+- `datacontract test`: test API servers whose schemas are served by different endpoints, with an `endpoint` custom property per schema, including relationships across endpoints
+- `datacontract import openapi` imports several operations (repeat `--operation`, or pick them from a list in a terminal)
 - `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717 @nicolehazel)
 - `datacontract test`: test API servers whose schemas are served by different endpoints, with an `endpoint` custom property per schema, including relationships across endpoints (#1780)
 - `datacontract import openapi` imports several operations (repeat `--operation`, or pick them from a list in a terminal) (#1780)

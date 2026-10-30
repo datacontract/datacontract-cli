@@ -115,7 +115,7 @@ def test_lint_warns_about_a_misspelled_property_key_once_with_all_errors():
 
     run = data_contract.lint()
 
-    assert [check.result for check in run.checks] == ["passed", "warning"]
+    assert [check.result for check in run.checks] == ["passed", "passed", "warning"]
 
 
 def test_test_warns_about_a_misspelled_property_key():

@@ -35,6 +35,7 @@ def test_lint():
     assert response.json()["result"] == "warning"
     assert [(check["name"], check["result"]) for check in response.json()["checks"]] == [
         ("Data contract is syntactically valid", "passed"),
+        ("Data contract has no duplicate entries", "passed"),
         (DCS_DEPRECATION, "warning"),
     ]
 
