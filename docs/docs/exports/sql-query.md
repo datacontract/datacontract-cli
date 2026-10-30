@@ -1,5 +1,5 @@
 ---
-sidebar_position: 27
+sidebar_position: 28
 title: "Export: SQL Query"
 description: "Export a data contract to a SQL SELECT query."
 ---
