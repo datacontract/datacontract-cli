@@ -882,6 +882,9 @@ def _connect_trino(ibis, server: Server, config: Config):
         database=config.get_trino_catalog() or server.catalog,
         schema=config.get_trino_schema() or server.schema_,
     )
+    http_headers = config.get_trino_http_headers()
+    if http_headers is not None:
+        kwargs["http_headers"] = http_headers
 
     if authentication == "basic":
         user = config.get_trino_username(required=True)
