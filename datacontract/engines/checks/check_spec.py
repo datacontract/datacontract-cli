@@ -151,6 +151,7 @@ class CheckSpec:
     valid_min_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_max_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_unique_items: Optional[bool] = None  # INVALID_COUNT, array columns
+    value_type: Optional[str] = None  # the declared type a value stored untyped is cast to
 
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type

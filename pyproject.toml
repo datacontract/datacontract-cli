@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.2.8"
+version = "1.2.9"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -211,8 +211,10 @@ azure = [
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.9",
-  "ibis-framework[snowflake]>=10.0.0,<13.0.0"
+  "snowflake-connector-python[pandas]>=3.17,<5.2",
+  "ibis-framework[snowflake]>=10.0.0,<13.0.0",
+  # ibis imports packaging unconditionally; snowflake-connector-python 5.x no longer pulls it in.
+  "packaging>=21.3,<27.0"
 ]
 
 sqlserver = [

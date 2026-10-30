@@ -55,6 +55,7 @@ _NESTED_CHECK_SERVER_TYPES = {
     "kafka",
     "trino",
     "athena",
+    "snowflake",
 } | _FILE_SERVER_TYPES
 
 
@@ -213,10 +214,14 @@ def prepare_query(
         names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
 
     def identifier(name: str, forced: bool) -> str:
-        return ".".join(
+        parts = [
             exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
             for part in name.split(".")
-        )
+        ]
+        if dialect == "snowflake" and name == field_name:
+            # Snowflake reaches into a column's value with `:`; a dot would name a table's column
+            return parts[0] + "".join(f":{part}" for part in parts[1:])
+        return ".".join(parts)
 
     if instance is not None:
         return instance.render(dialect, names, identifier)
@@ -599,6 +604,7 @@ def _to_schema_checks(
 
         # A check the server cannot run is reported, not dropped.
         for check in checks[first_check:]:
+            check.value_type = prop_type
             if check.preset_result == "warning":
                 # An unrunnable rule keeps its own, more specific reason.
                 continue
