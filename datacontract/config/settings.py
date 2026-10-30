@@ -281,8 +281,10 @@ class Config(BaseSettings):
     snowflake_username: str | None = None
     snowflake_password: SecretStr | None = None
     snowflake_authenticator: str | None = None
+    snowflake_workload_identity_provider: str | None = None
     snowflake_role: str | None = None
     snowflake_token: SecretStr | None = None
+    snowflake_token_file_path: str | None = None
     snowflake_passcode: SecretStr | None = None
     snowflake_private_key: SecretStr | None = None
     snowflake_private_key_file: str | None = None
@@ -910,11 +912,17 @@ class Config(BaseSettings):
     def get_snowflake_authenticator(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_authenticator", required)
 
+    def get_snowflake_workload_identity_provider(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_workload_identity_provider", required)
+
     def get_snowflake_role(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_role", required)
 
     def get_snowflake_token(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_token", required)
+
+    def get_snowflake_token_file_path(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_token_file_path", required)
 
     def get_snowflake_passcode(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_passcode", required)

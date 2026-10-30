@@ -12,12 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract export sql`: export a schema with `physicalType: view` as a view (#1031)
 - `datacontract test`: set the BigQuery query location and a Cloud KMS encryption key (CMEK) via `DATACONTRACT_BIGQUERY_LOCATION` / `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` or the server `customProperties` `location` / `kmsKeyName` (#1728)
 - `datacontract test`: check constraints and quality rules on nested properties on Snowflake servers, in `VARIANT` columns as well as structured ones
+- `datacontract test`: log in to Snowflake with workload identity federation via `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER` and `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH`
 
 ### Changed
+- The `snowflake` extra supports snowflake-connector-python 5.x and requires at least 3.17
 - `datacontract test` matches custom quality check IDs regardless of case
 
 ### Fixed
 - `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
+
+### Security
+- `datacontract api` refuses headers that name a file on the server or send a Snowflake credential held in the server's environment to another host
+- `datacontract api` applies its credential and local file guards to servers declared as `type: custom` with a `customType`, or with an ODCS type synonym such as `postgresql`
 
 ## [1.2.8] - 2026-10-26
 

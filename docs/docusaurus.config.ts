@@ -189,6 +189,7 @@ const config: Config = {
           'extending.md',
           'migrate-dcs-to-odcs.md',
           'comparison.md',
+          'recognition.md',
           'entropy-data.md',
           'release-notes.md',
           'contributing.md',
