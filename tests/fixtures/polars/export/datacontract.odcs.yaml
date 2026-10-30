@@ -49,7 +49,7 @@ schema:
       - name: sku
         logicalType: string
       - name: units
-        physicalType: smallint
+        physicalType: int16
         logicalType: integer
   - name: address
     logicalType: object

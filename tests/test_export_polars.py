@@ -33,8 +33,6 @@ def _contract(*schemas: SchemaObject) -> OpenDataContractStandard:
         # the width a physical type names is kept
         (SchemaProperty(name="f", physicalType="int32", logicalType="integer"), PolarsType("pl.Int32")),
         (SchemaProperty(name="f", physicalType="INT64", logicalType="integer"), PolarsType("pl.Int64")),
-        (SchemaProperty(name="f", physicalType="tinyint", logicalType="integer"), PolarsType("pl.Int8")),
-        (SchemaProperty(name="f", physicalType="smallint", logicalType="integer"), PolarsType("pl.Int16")),
         (SchemaProperty(name="f", physicalType="bigint unsigned", logicalType="integer"), PolarsType("pl.UInt64")),
         (SchemaProperty(name="f", physicalType="uint8", logicalType="integer"), PolarsType("pl.UInt8")),
         (SchemaProperty(name="f", physicalType="float32", logicalType="number"), PolarsType("pl.Float32")),
@@ -43,6 +41,9 @@ def _contract(*schemas: SchemaObject) -> OpenDataContractStandard:
         (SchemaProperty(name="f", physicalType="bytea"), PolarsType("pl.Binary")),
         # int8 is 64 bits in Postgres and DuckDB but 8 in ClickHouse, so the logical type decides
         (SchemaProperty(name="f", physicalType="int8", logicalType="integer"), PolarsType("pl.Int64")),
+        # integer is INT64 in BigQuery and NUMBER(38,0) in Snowflake, float is 64 bits in Snowflake
+        (SchemaProperty(name="f", physicalType="INTEGER", logicalType="integer"), PolarsType("pl.Int64")),
+        (SchemaProperty(name="f", physicalType="float", logicalType="number"), PolarsType("pl.Float64")),
         # an unknown physical type falls back to the logical type
         (SchemaProperty(name="f", physicalType="geography", logicalType="string"), PolarsType("pl.String")),
         # the integer and number formats of ODCS name the width when no physical type does

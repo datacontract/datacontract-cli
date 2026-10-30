@@ -46,8 +46,9 @@ _VECTOR_ELEMENT_TYPES = {
 }
 
 # Physical type names, without their parameters, that mean the same width on every
-# platform. `int8` is left out: it is a 64-bit integer in Postgres and DuckDB and an
-# 8-bit one in ClickHouse.
+# platform. Left out: `int8`, 64 bits in Postgres and DuckDB but 8 in ClickHouse;
+# `tinyint`, `smallint`, `int` and `integer`, INT64 in BigQuery and NUMBER(38,0) in
+# Snowflake; and `float`, `float4` and `real`, 64 bits in Snowflake.
 _PHYSICAL_TYPES = {
     "string": "String",
     "varchar": "String",
@@ -58,14 +59,10 @@ _PHYSICAL_TYPES = {
     "character varying": "String",
     "boolean": "Boolean",
     "bool": "Boolean",
-    "tinyint": "Int8",
     "int1": "Int8",
-    "smallint": "Int16",
     "int2": "Int16",
     "int16": "Int16",
     "short": "Int16",
-    "integer": "Int32",
-    "int": "Int32",
     "int4": "Int32",
     "int32": "Int32",
     "mediumint": "Int32",
@@ -91,9 +88,6 @@ _PHYSICAL_TYPES = {
     "uint128": "UInt128",
     "uhugeint": "UInt128",
     "float16": "Float16",
-    "float": "Float32",
-    "real": "Float32",
-    "float4": "Float32",
     "float32": "Float32",
     "double": "Float64",
     "double precision": "Float64",

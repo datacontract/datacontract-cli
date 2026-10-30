@@ -24,7 +24,7 @@ orders = pl.Schema(
         "order_id": pl.String,
         "order_timestamp": pl.Datetime(time_unit="us"),
         "customer_id": pl.String,
-        "order_total": pl.Int32,
+        "order_total": pl.Int64,
         "status": pl.String,
     }
 )
@@ -34,7 +34,7 @@ line_items = pl.Schema(
         "line_item_id": pl.String,
         "order_id": pl.String,
         "sku": pl.String,
-        "quantity": pl.Int32,
+        "quantity": pl.Int64,
     }
 )
 ```
@@ -47,14 +47,13 @@ The `physicalType` decides when it names a width or a precision, then the `forma
 
 | Contract | Polars type |
 |---|---|
-| `tinyint` | `Int8` |
-| `smallint`, `int16` | `Int16` |
-| `int`, `integer`, `int32` | `Int32` |
+| `int16` | `Int16` |
+| `int32` | `Int32` |
 | `bigint`, `int64` | `Int64` |
 | `hugeint`, `int128` | `Int128` |
 | `uint8` to `uint128`, and the unsigned MySQL and DuckDB integer types | `UInt8` to `UInt128` |
 | `float16` | `Float16` |
-| `float`, `real`, `float32` | `Float32` |
+| `float32` | `Float32` |
 | `double`, `float64` | `Float64` |
 | `decimal(p,s)`, `numeric(p,s)`, `number(p,s)` | `Decimal(precision=p, scale=s)` |
 | `decimal`, `numeric` | `Decimal()`, whose precision Polars chooses and whose scale is 0 |
@@ -67,7 +66,7 @@ The `physicalType` decides when it names a width or a precision, then the `forma
 | `logicalType: map` | `List` of `Struct` with `key` and `value`, as Polars reads Arrow maps |
 | `logicalType: vector` | `Array` of the `elementType` with `dimensions` elements; `binary` elements are `Boolean`, `bfloat16` ones `Float32` |
 
-`int8` has no width of its own: it is a 64-bit integer in Postgres and DuckDB and an 8-bit one in ClickHouse, so the `logicalType` decides. A decimal with more than 38 digits fails the export, since a Polars decimal cannot hold it. A property with neither a `logicalType` nor a `physicalType` is `Null`.
+Some names have no width of their own, so the `logicalType` decides: `int8` is a 64-bit integer in Postgres and DuckDB and an 8-bit one in ClickHouse, `tinyint`, `smallint`, `int` and `integer` are 64-bit in BigQuery and `NUMBER(38,0)` in Snowflake, and `float`, `float4` and `real` are 64-bit in Snowflake. A decimal with more than 38 digits fails the export, since a Polars decimal cannot hold it. A property with neither a `logicalType` nor a `physicalType` is `Null`.
 
 Polars 1.0 has no `Int128`, `UInt128` or `Float16`. The module uses them only for a contract that declares those widths.
 
