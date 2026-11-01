@@ -250,11 +250,13 @@ const config: Config = {
           'aria-label': 'Join the community on Slack',
         },
         {
-          href: 'https://github.com/datacontract/datacontract-cli',
-          label: 'GitHub',
+          type: 'html',
           position: 'right',
-          className: 'navbar-github-link',
-          'aria-label': 'GitHub repository',
+          className: 'navbar-github-star',
+          value:
+            '<a href="https://github.com/datacontract/datacontract-cli" target="_blank" rel="noopener noreferrer" aria-label="Star Data Contract CLI on GitHub">' +
+            '<img src="https://img.shields.io/github/stars/datacontract/datacontract-cli?style=social&logo=github&label=Star" alt="Star on GitHub" height="20" />' +
+            '</a>',
         },
       ],
     },
