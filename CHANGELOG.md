@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
+- Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
 
 ## [1.2.9] - 2026-10-30
 
