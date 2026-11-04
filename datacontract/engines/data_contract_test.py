@@ -12,6 +12,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, Server
 from datacontract.config import Config
 from datacontract.engines.checks.check_spec import MetricType
 from datacontract.engines.checks.create_checks import create_checks, to_schema_name
+from datacontract.engines.checks.custom_quality_check import CustomQualityChecks
 from datacontract.engines.checks.dimensions import default_dimension
 
 if typing.TYPE_CHECKING:
@@ -123,6 +124,7 @@ def execute_data_contract_test(
         )
 
     model_filters = resolve_row_filters(data_contract, server, run, filter, filters, schema_name)
+    custom_quality_checks = CustomQualityChecks(config, untrusted_contract)
 
     if server.type == "hana":
         from datacontract.engines.hana.check_hana_execute import check_hana_execute
@@ -140,6 +142,7 @@ def execute_data_contract_test(
             quality_ids=quality_ids,
             tags=tags,
             config=config,
+            custom_quality_checks=custom_quality_checks,
         )
         return
 
@@ -148,7 +151,7 @@ def execute_data_contract_test(
         server,
         schema_name=schema_name,
         variables=variables,
-        custom_quality_checks=config.get_custom_quality_checks(),
+        custom_quality_checks=custom_quality_checks,
     )
     if check_categories is not None:
         specs = [s for s in specs if s.category in check_categories]

@@ -8,7 +8,9 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
+from urllib.parse import quote, urlparse
 
+import requests
 import sqlglot
 import yaml
 from open_data_contract_standard.model import DataQuality
@@ -17,9 +19,11 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import TokenType
 
+from datacontract.config import Config
 from datacontract.config.variables import _ENUM_VALUES
 from datacontract.engines.checks.sql_guard import _DIALECT_BY_SERVER_TYPE
-from datacontract.lint.resolve import _SafeLoaderNoTimestamp
+from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
+from datacontract.lint.resolve import _api_key_for, _SafeLoaderNoTimestamp
 
 ENGINE = "datacontract-cli"
 
@@ -91,41 +95,104 @@ class CustomQualityCheck:
     warnings: list[str] = field(default_factory=list)
 
 
-def load(directory: str, check_id: str) -> CustomQualityCheck:
-    folder = Path(directory)
-    if not folder.is_dir():
-        problem = "is a file, not a folder" if folder.exists() else "does not exist"
-        raise CustomQualityCheckError(f"The custom quality checks folder {directory} {problem}.")
-    # The ID comes from the contract, so it is looked up among the files, never joined into a path.
-    # IDs are unique ignoring case.
-    files: dict[str, list[Path]] = {}
-    for path in sorted(folder.iterdir()):
-        if path.is_file() and path.suffix in (".yaml", ".yml"):
-            files.setdefault(path.stem.lower(), []).append(path)
-    paths = files.get(check_id.lower(), [])
-    if len(paths) > 1:
-        raise CustomQualityCheckError(
-            f"The custom quality check '{check_id}' is defined twice: {', '.join(path.name for path in paths)}."
+class CustomQualityChecks:
+    """Where a test run finds its custom quality checks: the folder first, then Entropy Data."""
+
+    def __init__(self, config: Config, untrusted_contract: bool = False):
+        self.directory = config.get_custom_quality_checks()
+        # An untrusted caller may set the host per request (API header); checks still come from the platform
+        # as the environment sees it, or the request would choose where the server sends its GET.
+        self.host = _get_host(None if untrusted_contract else config).rstrip("/")
+        self.api_key = _api_key_for(self.host, config, untrusted_contract)
+        # A key the request brought for its own host is not sent to the environment's host.
+        self.ignored_request_host = (
+            _get_host(config)
+            if untrusted_contract and self.api_key is None and _get_api_key_or_none(config) is not None
+            else None
         )
-    if not paths or paths[0].stem != check_id:
-        ids = sorted(path.stem for group in files.values() for path in group)
-        if len(ids) <= 7:
-            hint = f" Available: {', '.join(ids) or 'none'}."
-        else:
-            similar = difflib.get_close_matches(check_id, ids, n=3)
-            hint = f" Did you mean {', '.join(similar)}?" if similar else ""
-        raise CustomQualityCheckError(f"There is no custom quality check with the ID '{check_id}'.{hint}")
-    try:
-        document = yaml.load(paths[0].read_text(encoding="utf-8"), Loader=_SafeLoaderNoTimestamp)
-    except yaml.YAMLError as e:
-        raise CustomQualityCheckError(f"The custom quality check '{check_id}' is not valid YAML: {e}")
-    return _parse(check_id, document)
+        # lowercased ID -> the check's YAML, or why Entropy Data could not provide it
+        self._fetched: dict[str, str | CustomQualityCheckError] = {}
+
+    def load(self, check_id: str) -> CustomQualityCheck:
+        """The check with ``check_id``, regardless of case."""
+        if self.directory is not None:
+            folder = Path(self.directory)
+            if not folder.is_dir():
+                problem = "is a file, not a folder" if folder.exists() else "does not exist"
+                raise CustomQualityCheckError(f"The custom quality checks folder {self.directory} {problem}.")
+            # The ID comes from the contract, so it is looked up among the files, never joined into a path.
+            files: dict[str, list[Path]] = {}
+            for path in sorted(folder.iterdir()):
+                if path.is_file() and path.suffix in (".yaml", ".yml"):
+                    files.setdefault(path.stem.lower(), []).append(path)
+            paths = files.get(check_id.lower(), [])
+            if len(paths) > 1:
+                raise CustomQualityCheckError(
+                    f"The custom quality check '{check_id}' is defined twice: {', '.join(path.name for path in paths)}."
+                )
+            if paths:
+                return _parse(check_id, paths[0].read_text(encoding="utf-8"))
+            if self.api_key is None:
+                ids = sorted(path.stem for group in files.values() for path in group)
+                if len(ids) <= 7:
+                    hint = f" Available: {', '.join(ids) or 'none'}."
+                else:
+                    similar = difflib.get_close_matches(check_id, ids, n=3)
+                    hint = f" Did you mean {', '.join(similar)}?" if similar else ""
+                raise CustomQualityCheckError(f"There is no custom quality check with the ID '{check_id}'.{hint}")
+
+        key = check_id.lower()
+        if key not in self._fetched:
+            reason = None
+            try:
+                # Not following redirects keeps the API key from travelling to another host.
+                response = requests.get(
+                    f"{self.host}/api/custom-quality-checks/{quote(check_id, safe='')}/check.yaml",
+                    headers={"x-api-key": self.api_key, "Accept": "application/yaml"},
+                    timeout=10,
+                    allow_redirects=False,
+                )
+            except requests.RequestException as e:
+                reason = str(e)
+            else:
+                if response.status_code == 200:
+                    self._fetched[key] = response.content.decode("utf-8")
+                elif response.status_code == 404:
+                    self._fetched[key] = CustomQualityCheckError(
+                        f"Neither '{self.directory}' nor Entropy Data has the custom quality check '{check_id}'."
+                        if self.directory is not None
+                        else f"Entropy Data has no custom quality check '{check_id}'."
+                    )
+                elif response.is_redirect:
+                    reason = (
+                        f"HTTP {response.status_code} redirect to '{response.headers.get('Location')}' is not followed"
+                    )
+                elif response.status_code in (401, 403):
+                    reason = f"the API key was rejected (HTTP {response.status_code})"
+                else:
+                    reason = f"HTTP {response.status_code} {response.reason}"
+            if reason is not None:
+                source = urlparse(self.host).netloc or self.host
+                self._fetched[key] = CustomQualityCheckError(
+                    f"The custom quality check '{check_id}' is not in '{self.directory}' and could not be loaded "
+                    f"from {source}: {reason}."
+                    if self.directory is not None
+                    else f"Could not load the custom quality check '{check_id}' from {source}: {reason}."
+                )
+        fetched = self._fetched[key]
+        if isinstance(fetched, CustomQualityCheckError):
+            raise fetched
+        return _parse(check_id, fetched)
 
 
-def _parse(check_id: str, document) -> CustomQualityCheck:
+def _parse(check_id: str, text: str) -> CustomQualityCheck:
     def invalid(detail: str) -> CustomQualityCheckError:
         return CustomQualityCheckError(f"The custom quality check '{check_id}' is invalid: {detail}")
 
+    try:
+        document = yaml.load(text, Loader=_SafeLoaderNoTimestamp)
+    except yaml.YAMLError as e:
+        raise CustomQualityCheckError(f"The custom quality check '{check_id}' is not valid YAML: {e}")
     if not isinstance(document, dict):
         raise invalid("it must be a YAML mapping.")
     # Unknown keys only warn, so a file written for a newer version still runs.
@@ -232,6 +299,8 @@ class Instance:
     # The rule with the check's defaults filled in: expected result and dimension.
     quality: DataQuality
     name: str
+    # The check's ID with the rule's arguments, as between(min=1, max=100)
+    call: str
     diagnostics: dict
     warnings: list[str]
 
@@ -365,7 +434,7 @@ def instantiate(
     model: str,
     field_name: Optional[str],
     dialect: Optional[str],
-    directory: Optional[str],
+    custom_quality_checks: Optional[CustomQualityChecks],
 ) -> Instance:
     """The rule's custom quality check for a server whose rules are written in ``dialect``."""
     implementation = quality.implementation if isinstance(quality.implementation, dict) else {}
@@ -386,6 +455,8 @@ def instantiate(
             f"The custom quality check ID '{check_id}' must not contain spaces, slashes, "
             "or any of the characters \\ % ; # ?"
         )
+    if check_id in (".", ".."):
+        raise unusable(f"'{check_id}' is no valid custom quality check ID.")
     location = model if field_name is None else f"{model}.{field_name}"
     rule_warnings += [
         f"Custom quality check '{check_id}' on {location}: Unknown key 'implementation.{key}' is ignored."
@@ -414,13 +485,22 @@ def instantiate(
         or f"{check_id}({', '.join(f'{argument}={value_text(value)}' for argument, value in given.items())})"
     )
 
-    if directory is None:
+    if custom_quality_checks is None or (
+        custom_quality_checks.directory is None and custom_quality_checks.api_key is None
+    ):
+        if custom_quality_checks is not None and custom_quality_checks.ignored_request_host is not None:
+            raise unusable(
+                f"The rule uses the custom quality check '{check_id}', but the request's API key belongs to its "
+                f"entropy-data-host '{custom_quality_checks.ignored_request_host}', so set ENTROPY_DATA_HOST to that "
+                "host on the server running the API."
+            )
         raise unusable(
-            f"The rule uses the custom quality check '{check_id}', but no custom quality checks folder is "
-            f"configured. Pass --custom-quality-checks or set DATACONTRACT_CUSTOM_QUALITY_CHECKS.",
+            f"The rule uses the custom quality check '{check_id}', but neither a custom quality checks folder nor "
+            f"an Entropy Data API key is configured. Pass --custom-quality-checks, or set "
+            f"DATACONTRACT_CUSTOM_QUALITY_CHECKS or ENTROPY_DATA_API_KEY.",
         )
     try:
-        check = load(directory, check_id)
+        check = custom_quality_checks.load(check_id)
     except CustomQualityCheckError as e:
         raise unusable(str(e))
 
@@ -453,6 +533,7 @@ def instantiate(
                 for item in (value if isinstance(value, list) else [value])
             ]
             arguments[argument] = (False, numbers if isinstance(value, list) else numbers[0])
+    call = f"{check.id}({', '.join(f'{name}={value_text(value)}' for name, (_, value) in arguments.items())})"
     if quality.description:
         name = quality.description
     elif check.description:
@@ -472,7 +553,7 @@ def instantiate(
 
         name = reference_pattern(TABLE_PLACEHOLDERS + COLUMN_PLACEHOLDERS).sub(fill, check.description)
     else:
-        name = f"{check.id}({', '.join(f'{name}={value_text(value)}' for name, (_, value) in arguments.items())})"
+        name = call
 
     for argument, (identifier, value) in arguments.items():
         if identifier and (not isinstance(value, str) or not value):
@@ -534,6 +615,7 @@ def instantiate(
         arguments=arguments,
         quality=quality.model_copy(update=updates),
         name=name,
+        call=call,
         diagnostics={
             "custom_quality_check": check.id,
             "query": query_dialect,

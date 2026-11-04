@@ -1,7 +1,11 @@
+import logging
+
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
+
+logger = logging.getLogger(__name__)
 
 
 class SqlExporter(Exporter):
@@ -113,6 +117,9 @@ def _to_sql_table(
     server_type: str = "snowflake",
     **kwargs,
 ) -> str:
+    if (model.physicalType or "").lower() == "view":
+        return _to_sql_view(model_name, model, server_type)
+
     if server_type == "databricks":
         # Databricks recommends to use the CREATE OR REPLACE statement for unity managed tables
         # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using.html
@@ -181,6 +188,81 @@ def _to_sql_table(
     elif server_type == "snowflake" and model.description is not None:
         result += f" COMMENT='{_escape_single_quoted(model.description)}'"
     result += ";\n"
+    return result
+
+
+def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
+    """Select the properties from their transformSourceObjects, as a draft with TODOs unless there is one source."""
+    properties = model.properties or []
+    column_names = [prop.physicalName or prop.name for prop in properties]
+
+    select = []
+    all_sources = []
+    for prop, column_name in zip(properties, column_names):
+        names = {n.lower() for n in (prop.name, prop.physicalName) if n}
+        column = column_name
+        first = len(all_sources)
+        for entry in prop.transformSourceObjects or []:
+            obj, _, col = entry.rpartition(".")
+            if obj and col.lower() in names:
+                all_sources.append(obj)
+                column = col
+            else:
+                all_sources.append(entry)
+        prop_sources = set(all_sources[first:])
+        select.append((prop_sources.pop() if len(prop_sources) == 1 else None, column, column_name))
+    sources = list(dict.fromkeys(all_sources))
+    aliases = {}
+    if len(sources) > 1:
+        for source in sources:
+            base = alias = source.rpartition(".")[2]
+            n = 2
+            while alias in aliases.values():
+                alias, n = f"{base}_{n}", n + 1
+            aliases[source] = alias
+    select = [
+        (f"{aliases[source]}.{column}" if source in aliases else column)
+        + ("" if column == column_name else f" AS {column_name}")
+        for source, column, column_name in select
+    ]
+    if len(sources) != 1:
+        logger.warning(
+            "Schema '%s' is a view with %s source objects, which cannot be exported safely. "
+            "Please replace the TODOs in the exported SQL.",
+            model.name,
+            len(sources),
+        )
+
+    from_clause = sources[0] if sources else "<TODO: source object>"
+    if aliases:
+        from_clause += f" {aliases[sources[0]]}"
+        for source in sources[1:]:
+            from_clause += f"\nJOIN {source} {aliases[source]} ON <TODO: join condition>"
+
+    if server_type == "sqlserver":
+        result = f"CREATE OR ALTER VIEW {model_name}"
+    elif server_type == "clickhouse":
+        result = f"CREATE OR REPLACE VIEW `{model_name}`"
+    else:
+        result = f"CREATE OR REPLACE VIEW {model_name}"
+
+    # Snowflake and Databricks take column comments in the view's column list
+    if server_type in ("snowflake", "databricks"):
+        quote, escape = ('"', _escape) if server_type == "databricks" else ("'", _escape_single_quoted)
+        columns = []
+        for prop, column_name in zip(properties, column_names):
+            if prop.description is not None:
+                column_name += f" COMMENT {quote}{escape(prop.description)}{quote}"
+            columns.append(f"  {column_name}")
+        result += " (\n" + ",\n".join(columns) + "\n)"
+        if model.description is not None:
+            separator = "=" if server_type == "snowflake" else " "
+            result += f" COMMENT{separator}{quote}{escape(model.description)}{quote}"
+
+    result += " AS\nSELECT\n" + ",\n".join(f"  {c}" for c in select)
+    result += f"\nFROM {from_clause};\n"
+    if server_type == "sqlserver":
+        result = f"GO\n{result}GO\n"
     return result
 
 

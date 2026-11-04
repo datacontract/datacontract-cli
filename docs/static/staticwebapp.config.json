@@ -118,6 +118,11 @@
       "statusCode": 301
     },
     {
+      "route": "/quality-rules/custom-quality-checks",
+      "redirect": "/quality-rules/custom#user-defined-quality-rules",
+      "statusCode": 301
+    },
+    {
       "route": "/assets/*",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"

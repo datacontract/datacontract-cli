@@ -28,6 +28,7 @@ from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, 
 from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
+    CustomQualityChecks,
     CustomQualityCheckUnusable,
     Instance,
     instantiate,
@@ -54,6 +55,7 @@ _NESTED_CHECK_SERVER_TYPES = {
     "kafka",
     "trino",
     "athena",
+    "snowflake",
 } | _FILE_SERVER_TYPES
 
 
@@ -212,10 +214,14 @@ def prepare_query(
         names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
 
     def identifier(name: str, forced: bool) -> str:
-        return ".".join(
+        parts = [
             exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
             for part in name.split(".")
-        )
+        ]
+        if dialect == "snowflake" and name == field_name:
+            # Snowflake reaches into a column's value with `:`; a dot would name a table's column
+            return parts[0] + "".join(f":{part}" for part in parts[1:])
+        return ".".join(parts)
 
     if instance is not None:
         return instance.render(dialect, names, identifier)
@@ -234,7 +240,7 @@ def create_checks(
     server: Optional[Server],
     schema_name: str = "all",
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     if data_contract.schema_ is None:
@@ -265,7 +271,7 @@ def _to_schema_checks(
     schema_object: SchemaObject,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     server_type = get_server_type(server) if server is not None else None
@@ -598,6 +604,7 @@ def _to_schema_checks(
 
         # A check the server cannot run is reported, not dropped.
         for check in checks[first_check:]:
+            check.value_type = prop_type
             if check.preset_result == "warning":
                 # An unrunnable rule keeps its own, more specific reason.
                 continue
@@ -831,7 +838,7 @@ def _quality_checks(
     quality_list: List[DataQuality],
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
@@ -933,7 +940,7 @@ def _quality_rule_checks(
     count: int,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -1000,6 +1007,7 @@ def _quality_rule_checks(
                 severity=rule.severity,
                 dimension=rule.dimension,
                 diagnostics=instance.diagnostics,
+                custom_quality_check=instance.call,
                 warnings=instance.warnings,
             )
         ]

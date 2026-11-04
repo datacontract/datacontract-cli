@@ -7,8 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
+
+- - `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765)
+
 ### Added
+- `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
+- Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
 - Contracts with duplicate names or ids fail validation
+
+## [1.2.9] - 2026-10-30
+
+### Added
+- `datacontract test`:
+  - loads the custom quality checks a contract uses from Entropy Data when an Entropy Data API key is set, unless the local folder has them
+  - check constraints and quality rules on nested properties on Snowflake servers, in `VARIANT` columns as well as structured ones
+  - set the BigQuery query location and a Cloud KMS encryption key (CMEK) via `DATACONTRACT_BIGQUERY_LOCATION` / `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` or the server `customProperties` `location` / `kmsKeyName` (#1728 @SabineGl @ezno12)
+  - log in to Snowflake with workload identity federation (AWS, Azure, GCP or OIDC) via `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER`, reading an OIDC token from `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH`
+- `datacontract export sql`: export a schema with `physicalType: view` as a view (#1031 @dmaresma @OGsiji)
+
+### Changed
+- The `snowflake` extra supports snowflake-connector-python 5.x and requires at least 3.17
+- `datacontract test` matches custom quality check IDs regardless of case
+- `datacontract test`: errors about custom quality checks name the folder searched, and the check and its arguments when the database rejects its query
+
+### Security
+- `datacontract api` refuses headers that name a file on the server or the server's own workload identity, and keeps Snowflake and Databricks credentials held in the server's environment from hosts a request chooses
+- `datacontract api` applies its credential and local file guards to servers declared as `type: custom` with a `customType`, or with an ODCS type synonym such as `postgresql`
+
+### Fixed
+- `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
 
 ## [1.2.8] - 2026-10-26
 

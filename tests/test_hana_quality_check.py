@@ -9,6 +9,8 @@ from open_data_contract_standard.model import (
     ServiceLevelAgreementProperty,
 )
 
+from datacontract.config import Config
+from datacontract.engines.checks.custom_quality_check import CustomQualityChecks
 from datacontract.engines.hana.hana_quality_check import (
     prepare_hana_query,
     run_quality_checks,
@@ -79,7 +81,12 @@ def test_custom_quality_check_runs_its_default_query():
     schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="AMOUNT", quality=[rule])])
 
     checks = run_quality_checks(
-        connection, "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+        connection,
+        "SALES",
+        schema,
+        custom_quality_checks=CustomQualityChecks(
+            Config(custom_quality_checks="fixtures/custom-quality-checks/checks")
+        ),
     )
 
     check = check_by_type(checks, "field_quality_custom")
@@ -100,7 +107,12 @@ def test_custom_quality_check_without_a_default_query_is_an_error_on_hana():
     schema = SchemaObject(name="ORDERS", quality=[rule])
 
     checks = run_quality_checks(
-        FakeConnection(), "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+        FakeConnection(),
+        "SALES",
+        schema,
+        custom_quality_checks=CustomQualityChecks(
+            Config(custom_quality_checks="fixtures/custom-quality-checks/checks")
+        ),
     )
 
     check = check_by_type(checks, "model_quality_custom")
@@ -117,7 +129,7 @@ def test_custom_quality_check_collects_its_warnings_for_the_run_log_on_hana(tmp_
         FakeConnection((0,)),
         "SALES",
         SchemaObject(name="ORDERS", quality=[rule]),
-        custom_quality_checks=str(tmp_path),
+        custom_quality_checks=CustomQualityChecks(Config(custom_quality_checks=str(tmp_path))),
         warnings=warnings,
     )
 
