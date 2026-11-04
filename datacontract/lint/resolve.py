@@ -19,6 +19,7 @@ from datacontract.config.variables import contains_variables
 from datacontract.lint.constraints import enum_value_errors
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
+from datacontract.model.enum_values import get_enum_values
 from datacontract.model.exceptions import (
     DataContractException,
     DataContractValidationErrors,
@@ -719,11 +720,21 @@ def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProper
     """Inline the definition's set fields where the property left them unset.
 
     "Set" follows pydantic's `model_fields_set`, so `description: ""`
-    counts as set and is preserved.
+    counts as set and is preserved. Two fields are read more carefully:
+    `logicalTypeOptions` merges key by key, as each key is a constraint of
+    its own, and `enum` counts as set when the author declared the allowed
+    values in one of the older places `get_enum_values` reads.
     """
     author_set = set(prop.model_fields_set)
+    if get_enum_values(prop) is not None:
+        author_set.add("enum")
     for field in definition.model_fields_set:
-        if field in _NON_MERGEABLE_FIELDS or field in author_set:
+        if field in _NON_MERGEABLE_FIELDS:
+            continue
+        if field == "logicalTypeOptions" and definition.logicalTypeOptions:
+            prop.logicalTypeOptions = {**definition.logicalTypeOptions, **(prop.logicalTypeOptions or {})}
+            continue
+        if field in author_set:
             continue
         setattr(prop, field, getattr(definition, field))
 
