@@ -7,7 +7,7 @@
     🔗
     {% for ref in sources if ref %}{% if not loop.first %}, {% endif %}{{ ref }}{% endfor %}
     →
-    {% for ref in targets if ref %}{% if not loop.first %}, {% endif %}{% if '/' in ref %}{{ ref }}{% else %}<a href="#{{ ref }}" class="underline">{{ ref }}</a>{% endif %}{% endfor %}
+    <span>{% for ref in targets if ref %}{% if not loop.first %}, {% endif %}{% if '/' in ref %}{{ ref }}{% else %}<a href="#{{ ref }}" class="underline">{{ ref }}</a>{% endif %}{% endfor %}</span>
   </span>
 {%- endmacro %}
 

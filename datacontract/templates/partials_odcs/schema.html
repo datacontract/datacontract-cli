@@ -42,12 +42,12 @@
                   <span class="font-mono font-medium {% if schema_business_name and schema_business_name != schema_name %}ml-1{% endif %}">{{ schema_name }}</span>
                 </a>
 
-                {% if mermaid_links %}
-                  <a href="#diagram" class="diagram-link ml-2 text-xs font-normal text-indigo-600 hover:underline" data-entity="{{ schema_name }}" title="Show in the entity relationship diagram">↑ Diagram</a>
-                {% endif %}
-
                 {% if schema_physical_name %}
                   <span class="ml-1 text-gray-400 cursor-help" title="{{ schema_physical_name }}">ⓘ</span>
+                {% endif %}
+
+                {% if mermaid_links %}
+                  <a href="#diagram" class="diagram-link ml-2 text-xs font-normal text-indigo-600 hover:underline" data-entity="{{ schema_name }}" title="Show in the entity relationship diagram">↑ Diagram</a>
                 {% endif %}
 
                 {% if schema_type %}
