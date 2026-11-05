@@ -115,15 +115,3 @@ def test_older_physical_only_properties_still_lint():
     doc = document({"physicalType": "VARCHAR"})
     doc["apiVersion"] = "v3.1.0"
     assert DataContract(data_contract_str=yaml.safe_dump(doc)).lint().result == "passed"
-
-
-def lint_doc(doc):
-    return DataContract(data_contract_str=yaml.safe_dump(doc)).lint()
-
-
-def test_ids_are_unique_per_array_not_per_contract():
-    doc = document({"id": "shared"})
-    doc["schema"][0]["id"] = "shared"
-    assert lint_doc(doc).result == "passed"
-    doc["schema"][0]["properties"].append({"name": "other", "id": "shared"})
-    assert lint_doc(doc).result == "failed"

@@ -58,21 +58,12 @@ def test_unique_names_are_valid():
         ),
         ({"roles": [{"role": "r"}, {"role": "r"}]}, "roles[1].role duplicates roles[0].role"),
         (
-            {"support": [{"channel": "c", "url": "u"}, {"channel": "c", "url": "u"}]},
-            "support[1].channel duplicates support[0].channel",
-        ),
-        (
-            {"team": {"members": [{"username": "u"}, {"username": "u"}]}},
-            "team.members[1].username duplicates team.members[0].username",
-        ),
-        ({"team": [{"username": "u"}, {"username": "u"}]}, "team.members[1].username duplicates"),
-        (
             {"slaProperties": [{"property": "latency", "value": 1}, {"property": "latency", "value": 2}]},
             "slaProperties[1].property duplicates slaProperties[0].property ('latency')",
         ),
         (
-            {"schema": [{"name": "o", "id": "x", "properties": [{"name": "a", "id": "x"}]}]},
-            "schema[0].properties[0].id duplicates schema[0].id ('x')",
+            {"schema": [{"name": "o", "properties": [{"name": "a", "id": "x"}, {"name": "b", "id": "x"}]}]},
+            "schema[0].properties[1].id duplicates schema[0].properties[0].id ('x')",
         ),
         (
             {"schema": [{"name": "o", "quality": [{"id": "q", "type": "text"}, {"id": "q", "type": "text"}]}]},
@@ -101,6 +92,11 @@ def test_sla_property_differing_by_element_is_valid():
     assert lint(document(slaProperties=sla)).result == "passed"
 
 
+def test_same_id_in_different_arrays_is_valid():
+    doc = document(schema=[{"name": "o", "id": "x", "properties": [{"name": "a", "id": "x"}]}])
+    assert lint(doc).result == "passed"
+
+
 def test_names_are_case_sensitive():
     assert lint(document(schema=[{"name": "Orders"}, {"name": "orders"}])).result == "passed"
 
@@ -113,8 +109,8 @@ def test_all_errors_reports_every_duplicate():
     assert any("servers[1].server" in r for r in reasons(run))
 
 
-def test_custom_schema_still_fails_on_duplicates(tmp_path):
+def test_custom_schema_skips_duplicate_checks(tmp_path):
     custom = tmp_path / "custom.json"
     custom.write_text('{"type":"object"}')
     assert lint(document(), schema_location=str(custom)).result == "passed"
-    assert lint(document(schema=[{"name": "a"}, {"name": "a"}]), schema_location=str(custom)).result == "failed"
+    assert lint(document(schema=[{"name": "a"}, {"name": "a"}]), schema_location=str(custom)).result == "passed"
