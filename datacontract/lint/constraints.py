@@ -105,10 +105,7 @@ def duplicate_name_errors(contract: dict) -> list[DataContractException]:
         visit(schema, f"schema[{index}]")
     check(contract.get("servers"), "servers", ("server",), "server names")
     check(contract.get("roles"), "roles", ("role",), "role names")
-    check(contract.get("support"), "support", ("channel",), "support channels")
     check(contract.get("slaProperties"), "slaProperties", ("property", "element"), "SLA properties")
-    team = contract.get("team")
-    check(team.get("members") if isinstance(team, dict) else team, "team.members", ("username",), "team members")
 
     ids = {}
 
