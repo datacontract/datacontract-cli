@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
 - Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
-- Contracts with duplicate names or ids fail validation
+- `datacontract lint` and `datacontract test` fails on duplicate schema, property, server, role and SLA property names, and on duplicate `id`s within the same array; checks are skipped with a custom `--json-schema`
 
 ## [1.2.9] - 2026-10-30
 
