@@ -107,25 +107,25 @@ def duplicate_name_errors(contract: dict) -> list[DataContractException]:
     check(contract.get("roles"), "roles", ("role",), "role names")
     check(contract.get("slaProperties"), "slaProperties", ("property", "element"), "SLA properties")
 
-    ids = {}
-
-    def collect_ids(node, path, list_item=False):
+    def collect_ids(node, path):
         if isinstance(node, list):
+            seen = {}  # ids only need to be unique within their containing array
             for index, item in enumerate(node):
-                collect_ids(item, f"{path}[{index}]", True)
-        elif isinstance(node, dict):
-            value = node.get("id")
-            if list_item and isinstance(value, str):
-                if value in ids:
-                    errors.append(
-                        DataContractException(
-                            type="lint",
-                            name="Check that ids are unique",
-                            reason=f"{path}.id duplicates {ids[value]}.id ({value!r})",
+                item_path = f"{path}[{index}]"
+                value = item.get("id") if isinstance(item, dict) else None
+                if isinstance(value, str):
+                    if value in seen:
+                        errors.append(
+                            DataContractException(
+                                type="lint",
+                                name="Check that ids are unique",
+                                reason=f"{item_path}.id duplicates {seen[value]}.id ({value!r})",
+                            )
                         )
-                    )
-                else:
-                    ids[value] = path
+                    else:
+                        seen[value] = item_path
+                collect_ids(item, item_path)
+        elif isinstance(node, dict):
             for key, child in node.items():
                 collect_ids(child, f"{path}.{key}" if path else key)
 
