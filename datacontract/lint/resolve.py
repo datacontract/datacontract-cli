@@ -829,8 +829,8 @@ def _resolve_data_contract_from_str(
             )
         except DataContractValidationErrors as e:
             errors.extend(e.errors)
-        errors.extend(duplicate_name_errors(yaml_dict))
         if not custom_schema:
+            errors.extend(duplicate_name_errors(yaml_dict))
             errors.extend(enum_value_errors(yaml_dict))
         if errors:
             if all_errors:
