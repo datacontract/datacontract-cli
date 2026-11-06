@@ -50,8 +50,8 @@ def _server(**kwargs):
     return Server(**defaults)
 
 
-def _connect(server=None, config=None):
-    return connect_ibis(Run.create_run(), data_contract=None, server=server or _server(), config=config)
+def _connect(server=None):
+    return connect_ibis(Run.create_run(), data_contract=None, server=server or _server())
 
 
 def test_basic_auth_is_default(env, captured_connect):
@@ -151,22 +151,6 @@ def test_http_headers_are_forwarded(env, captured_connect):
     )
 
     _connect()
-
-    assert captured_connect["http_headers"] == {
-        "X-Trino-Client-Info": "datacontract-cli",
-        "X-Trino-Routing-Group": "analytics",
-    }
-
-
-def test_http_headers_key_value_string_is_forwarded(env, captured_connect):
-    from datacontract import Config
-
-    config = Config(
-        trino_username="my_user",
-        trino_http_headers="X-Trino-Client-Info=datacontract-cli,X-Trino-Routing-Group=analytics",
-    )
-
-    _connect(config=config)
 
     assert captured_connect["http_headers"] == {
         "X-Trino-Client-Info": "datacontract-cli",
