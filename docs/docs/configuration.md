@@ -416,6 +416,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_TRINO_USERNAME` | `trino_username` | string |  |
 | `DATACONTRACT_TRINO_PASSWORD` | `trino_password` | string (secret) |  |
 | `DATACONTRACT_TRINO_JWT_TOKEN` | `trino_jwt_token` | string (secret) |  |
+| `DATACONTRACT_TRINO_HTTP_HEADERS` | `trino_http_headers` | string (secret) |  |
 | `DATACONTRACT_TRINO_HOST` | `trino_host` | string | Overrides `host` from the contract's `servers` block |
 | `DATACONTRACT_TRINO_PORT` | `trino_port` | integer | Overrides `port` from the contract's `servers` block |
 | `DATACONTRACT_TRINO_CATALOG` | `trino_catalog` | string | Overrides `catalog` from the contract's `servers` block |

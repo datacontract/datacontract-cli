@@ -132,7 +132,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.7.0",
-  "databricks-sdk<0.157.0",
+  "databricks-sdk<0.159.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -206,7 +206,7 @@ gcs = [
 azure = [
   "datacontract-cli[duckdb]",
   "duckdb-extension-azure>=1.5.0,<1.6.0",
-  "azure-identity>=1.17.1,<1.27",
+  "azure-identity>=1.17.1,<1.28",
   "azure-storage-blob>=12.24,<12.32",
 ]
 
@@ -319,20 +319,20 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.2.4",
+  "moto==5.2.5",
   "openapi-spec-validator>=0.7,<0.10",  # asserts that `datacontract api` serves a valid OpenAPI document
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
   "pytest",
   "pytest-cov",
   "pytest-xdist",
-  "pymssql==2.4.5",
+  "pymssql==2.4.6",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
   # test fixtures to load seed SQL (the engine connects via ibis-postgres'
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.11.0",
-  "ruff==0.17.2",
+  "ruff==0.17.3",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.340.0",
 ]

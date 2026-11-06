@@ -24,7 +24,10 @@ class ExporterFactory:
         if type(exporters[name]) is tuple:
             exporter_class = load_module_class(module_path=exporters[name][0], class_name=exporters[name][1])
         if not exporter_class:
-            raise ValueError(f"Module {name} could not be loaded.")
+            raise ValueError(
+                f"The '{name}' exporter could not be loaded, an optional dependency is probably missing. "
+                "See https://cli.datacontract.com/installation for the extras to install."
+            )
         return exporter_class(name)
 
 

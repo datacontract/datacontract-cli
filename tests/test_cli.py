@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -161,6 +162,17 @@ def test_error_message_keeps_bracketed_text(monkeypatch, capsys):
         cli.main()
 
     assert "botocore[crt]" in capsys.readouterr().out
+
+
+def test_a_failed_import_links_its_guide(monkeypatch, capsys):
+    from datacontract import cli
+
+    monkeypatch.setattr(sys, "argv", ["datacontract", "import", "sql", "--source", "does-not-exist.sql"])
+
+    with pytest.raises(SystemExit):
+        cli.main()
+
+    assert "See https://cli.datacontract.com/imports/sql" in capsys.readouterr().out
 
 
 def test_test_publish_empty_string_skips_publish(monkeypatch):

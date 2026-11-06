@@ -157,6 +157,8 @@ if not run.has_passed():
 - Roll data contracts out across a team: **[Adopting Data Contracts](./best-practices.md)**.
 - Browse everything the CLI can do: **[Commands](./commands/index.md)**.
 
+Worked for you? **[Star us on GitHub](https://github.com/datacontract/datacontract-cli)** ⭐
+
 ## Installation options
 
 See the dedicated **[Installation](./installation.md)** page for all options (uv, uvx, pip, venv, pipx, Docker) and the full list of optional dependencies (extras).

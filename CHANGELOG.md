@@ -6,12 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
+
+### Fixed
+- Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
 
 - - `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765)
 
 ### Added
 - `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
 - `datacontract test`: test Excel sheets whose header is not in the first row, with an `xlsxRange` custom property per schema, and fail a sheet whose header row is empty (#1717 @nicolehazel)
+- Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
+- `datacontract lint` and `datacontract test` fail on duplicate schema, property, server and role names, and on duplicate `id`s within the same array; checks are skipped with a custom `--json-schema`
 
 ## [1.2.9] - 2026-10-30
 

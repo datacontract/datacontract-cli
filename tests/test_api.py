@@ -891,6 +891,22 @@ def test_guard_allows_caller_supplied_credentials(monkeypatch):
     _reject_environment_credentials_to_untrusted_host(_POSTGRES_CONTRACT, "production", config)  # no raise
 
 
+@pytest.mark.parametrize("secret", ["DATACONTRACT_TRINO_JWT_TOKEN", "DATACONTRACT_TRINO_HTTP_HEADERS"])
+def test_guard_blocks_env_trino_secrets(monkeypatch, secret):
+    monkeypatch.setenv(secret, "prod-secret")
+    monkeypatch.delenv("DATACONTRACT_TRINO_HOST", raising=False)
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(
+            _POSTGRES_CONTRACT.replace("type: postgres", "type: trino").replace("database:", "catalog:"),
+            "production",
+            None,
+        )
+    assert exc.value.status_code == 422
+    assert secret in exc.value.detail
+
+
 def test_test_endpoint_blocks_credential_exfiltration(monkeypatch):
     """End to end through the API: POST a contract naming the host while the
     server holds a postgres password -> 422, no connection attempted."""
