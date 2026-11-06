@@ -164,6 +164,17 @@ def test_a_sheet_with_an_empty_row_above_its_header_fails(tmp_path: Path):
     assert any("row 1 of sheet 'Orders'" in (c.reason or "") for c in run.checks)
 
 
+def test_a_sheet_whose_columns_start_right_of_column_a_is_read(tmp_path: Path):
+    workbook = load_workbook(WORKBOOK)
+    workbook["Country Codes"].insert_cols(1, 2)
+    workbook["Orders"].insert_cols(1, 8)
+    workbook.save(tmp_path / "delivery.xlsx")
+
+    run = DataContract(data_contract_str=contract(str(tmp_path / "delivery.xlsx"))).test()
+
+    assert run.result == "passed", failed(run)
+
+
 def test_a_range_that_starts_on_an_empty_row_fails(tmp_path: Path):
     path = titled(tmp_path)
     workbook = load_workbook(path)

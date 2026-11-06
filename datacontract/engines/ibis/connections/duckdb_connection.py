@@ -519,30 +519,33 @@ def check_xlsx_header_row(con, model_path: str, sheet: Optional[str], cell_range
     read_xlsx skips empty rows before the header, even inside a range, so a sheet with an empty row
     where its header should be would be read from the next row down and pass. The header row is the
     first row of the sheet, or of the schema's xlsxRange; `width` is the number of columns read_xlsx
-    found, which bounds the cells read (reading a whole row out to column XFD takes over a second).
+    found, which bounds the first read (reading a whole row out to column XFD takes over a second).
+    Only the whole row can show it is empty, as read_xlsx also skips empty columns before the header.
     """
     match = _RANGE_START.fullmatch(cell_range or "A1")
     if not match:
         # read_xlsx reports a malformed range itself
         return
     first_column, row, last_column = match.groups()
-    last_column = last_column or _column_letters(_column_number(first_column) + max(width, 1) - 1)
-    options = (
-        f"'{_sql_literal(model_path)}', header=false, all_varchar=true, range='{first_column}{row}:{last_column}{row}'"
-    )
-    if sheet:
-        options += f", sheet='{_sql_literal(sheet)}'"
-    header = con.sql(f"SELECT * FROM read_xlsx({options})").fetchone()
-    if header is None or all(cell is None for cell in header):
-        where = f"row {row} of sheet '{sheet}'" if sheet else f"row {row} of the first sheet"
-        raise DataContractException(
-            type="xlsx-connection",
-            name="empty_header_row",
-            reason=(
-                f"The header should be on {where}, but that row is empty. "
-                "Set the schema's xlsxRange to start at the header row."
-            ),
+    width_bound = _column_letters(_column_number(first_column) + max(width, 1) - 1)
+    for last in [last_column] if last_column else [width_bound, "XFD"]:
+        options = (
+            f"'{_sql_literal(model_path)}', header=false, all_varchar=true, range='{first_column}{row}:{last}{row}'"
         )
+        if sheet:
+            options += f", sheet='{_sql_literal(sheet)}'"
+        header = con.sql(f"SELECT * FROM read_xlsx({options})").fetchone()
+        if header is not None and any(cell is not None for cell in header):
+            return
+    where = f"row {row} of sheet '{sheet}'" if sheet else f"row {row} of the first sheet"
+    raise DataContractException(
+        type="xlsx-connection",
+        name="empty_header_row",
+        reason=(
+            f"The header should be on {where}, but that row is empty. "
+            "Set the schema's xlsxRange to start at the header row."
+        ),
+    )
 
 
 def _xlsx_range(schema_obj: SchemaObject) -> Optional[str]:
