@@ -8,7 +8,6 @@ and registered in DuckDB, where the checks run like they do for file sources.
 
 from __future__ import annotations
 
-import json
 import re
 from typing import TYPE_CHECKING, Optional
 
@@ -83,7 +82,7 @@ def catalog_properties(server: Server, config: Config | None = None) -> dict[str
             properties["rest.signing-region"] = region
     extra = config.get_iceberg_properties()
     if extra:
-        properties.update(_parse_properties(extra))
+        properties.update(extra)
     return properties
 
 
@@ -100,24 +99,6 @@ def aws_region(catalog_url: str) -> Optional[str]:
     """The region in an AWS-hosted catalog endpoint, else ``None``."""
     match = _AWS_ENDPOINT.match(catalog_url or "")
     return match.group("region") if match else None
-
-
-def _parse_properties(text: str) -> dict[str, str]:
-    """Extra pyiceberg catalog properties: a JSON object, or ``key=value`` pairs separated by commas."""
-    text = text.strip()
-    if text.startswith("{"):
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError as e:
-            raise DataContractException(
-                type="iceberg-connection",
-                name="invalid_properties",
-                reason=f"DATACONTRACT_ICEBERG_PROPERTIES is not valid JSON: {e}",
-                engine="datacontract-cli",
-            )
-        return {str(k): str(v) for k, v in parsed.items()}
-    pairs = (pair.partition("=") for pair in text.split(",") if pair.strip())
-    return {key.strip(): value.strip() for key, _, value in pairs if key.strip()}
 
 
 def load_iceberg_catalog(server: Server, config: Config | None = None) -> Catalog:

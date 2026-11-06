@@ -525,7 +525,7 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "mysql": ("host", "mysql_host", ("mysql_password",)),
     "oracle": ("host", "oracle_host", ("oracle_password",)),
     "impala": ("host", "impala_host", ("impala_password",)),
-    "trino": ("host", "trino_host", ("trino_password",)),
+    "trino": ("host", "trino_host", ("trino_password", "trino_jwt_token", "trino_http_headers")),
     "exasol": ("host", "exasol_host", ("exasol_password",)),
     "clickhouse": ("host", "clickhouse_host", ("clickhouse_password",)),
     "hive": ("host", "hive_host", ("hive_password",)),
