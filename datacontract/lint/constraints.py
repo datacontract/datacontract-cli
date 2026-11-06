@@ -60,37 +60,34 @@ def enum_value_errors(contract: dict) -> list[DataContractException]:
 
 
 def duplicate_name_errors(contract: dict) -> list[DataContractException]:
-    """Require unique schema, property, server, role, support channel, team member and SLA entries, and unique ids.
+    """Require unique schema, property, server and role names, and unique ids.
 
     JSON Schema cannot express uniqueness by a key. Invalid shapes are left to JSON Schema.
     """
     errors = []
 
-    def check(entries, path, keys, label):
+    def check(entries, path, key, label):
         seen = {}
         for index, entry in enumerate(entries if isinstance(entries, list) else []):
-            if not isinstance(entry, dict):
+            value = entry.get(key) if isinstance(entry, dict) else None
+            if not isinstance(value, str):
                 continue
-            key = tuple(entry.get(k) for k in keys)
-            if not isinstance(key[0], str) or not all(v is None or isinstance(v, str) for v in key):
-                continue
-            if key in seen:
-                value = ", ".join(repr(v) for v in key if v is not None)
+            if value in seen:
                 errors.append(
                     DataContractException(
                         type="lint",
                         name=f"Check that {label} are unique",
-                        reason=f"{path}[{index}].{keys[0]} duplicates {path}[{seen[key]}].{keys[0]} ({value})",
+                        reason=f"{path}[{index}].{key} duplicates {path}[{seen[value]}].{key} ({value!r})",
                     )
                 )
             else:
-                seen[key] = index
+                seen[value] = index
 
     def visit(node, path):
         if not isinstance(node, dict):
             return
         properties = node.get("properties")
-        check(properties, f"{path}.properties", ("name",), "property names")
+        check(properties, f"{path}.properties", "name", "property names")
         for index, prop in enumerate(properties if isinstance(properties, list) else []):
             visit(prop, f"{path}.properties[{index}]")
         visit(node.get("items"), f"{path}.items")
@@ -100,12 +97,11 @@ def duplicate_name_errors(contract: dict) -> list[DataContractException]:
                 visit(mapping.get(side), f"{path}.map.{side}")
 
     schemas = contract.get("schema")
-    check(schemas, "schema", ("name",), "schema names")
+    check(schemas, "schema", "name", "schema names")
     for index, schema in enumerate(schemas if isinstance(schemas, list) else []):
         visit(schema, f"schema[{index}]")
-    check(contract.get("servers"), "servers", ("server",), "server names")
-    check(contract.get("roles"), "roles", ("role",), "role names")
-    check(contract.get("slaProperties"), "slaProperties", ("property", "element"), "SLA properties")
+    check(contract.get("servers"), "servers", "server", "server names")
+    check(contract.get("roles"), "roles", "role", "role names")
 
     def collect_ids(node, path):
         if isinstance(node, list):

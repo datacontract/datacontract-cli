@@ -58,10 +58,6 @@ def test_unique_names_are_valid():
         ),
         ({"roles": [{"role": "r"}, {"role": "r"}]}, "roles[1].role duplicates roles[0].role"),
         (
-            {"slaProperties": [{"property": "latency", "value": 1}, {"property": "latency", "value": 2}]},
-            "slaProperties[1].property duplicates slaProperties[0].property ('latency')",
-        ),
-        (
             {"schema": [{"name": "o", "properties": [{"name": "a", "id": "x"}, {"name": "b", "id": "x"}]}]},
             "schema[0].properties[1].id duplicates schema[0].properties[0].id ('x')",
         ),
@@ -87,8 +83,11 @@ def test_same_name_in_different_scopes_is_valid():
     assert lint(doc).result == "passed"
 
 
-def test_sla_property_differing_by_element_is_valid():
-    sla = [{"property": "latency", "value": 1, "element": "a.x"}, {"property": "latency", "value": 1, "element": "b.x"}]
+def test_repeated_sla_property_is_valid():
+    sla = [
+        {"property": "timeOfAvailability", "value": "09:00-08:00", "element": "orders.a", "driver": "regulatory"},
+        {"property": "timeOfAvailability", "value": "08:00-08:00", "element": "orders.a", "driver": "analytics"},
+    ]
     assert lint(document(slaProperties=sla)).result == "passed"
 
 
