@@ -30,3 +30,13 @@ def test_with_tags(tmp_path: PosixPath):
         # naive assertion which only checks that it appears anywhere in the document
         assert "tag expected-tag" in content
         assert 'data-tag="expected-tag"' in content
+
+
+def test_home_links_point_to_the_catalog_index(tmp_path: PosixPath):
+    runner = CliRunner()
+    result = runner.invoke(app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--output", tmp_path])
+    assert result.exit_code == 0
+
+    assert 'font-semibold" href="index.html"' in (tmp_path / "index.html").read_text()
+    contract_page = tmp_path / "fixtures/catalog/datacontract-2.odcs.html"
+    assert 'font-semibold" href="../../index.html"' in contract_page.read_text()

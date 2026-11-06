@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
+- `datacontract catalog`: home links lead to the catalog's index when it is not hosted at the domain root (#1810)
 
 - - `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765)
 
