@@ -35,6 +35,7 @@ class SnowflakeImporter(Importer):
                 database=import_args.get("database"),
                 schema=import_args.get("schema"),
                 config=config,
+                lineage=bool(import_args.get("lineage", False)),
             )
         else:
             raise DataContractException(
@@ -220,12 +221,87 @@ def local_data_quality_monitoring_results_query() -> str:
 """
 
 
+def account_usage_lineage_query() -> str:
+    # GET_LINEAGE only accepts constant arguments, so it is called once per column through dynamic SQL
+    # and the results are accumulated in an ARRAY (no DDL, works with a read-only role).
+    return """
+        DECLARE
+            v_table       STRING;
+            v_column      STRING;
+            v_object_name STRING;
+            v_template    STRING;
+            v_stmt        STRING;
+            v_all_lineage ARRAY DEFAULT ARRAY_CONSTRUCT();
+            rs_final      RESULTSET;
+
+            c_columns CURSOR FOR
+                SELECT IS_C.TABLE_CATALOG, IS_C.TABLE_SCHEMA, IS_C.TABLE_NAME, IS_C.COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS AS IS_C
+                WHERE IS_C.TABLE_CATALOG = CURRENT_DATABASE()
+                AND IS_C.TABLE_SCHEMA = CURRENT_SCHEMA()
+                ORDER BY IS_C.TABLE_NAME, IS_C.ORDINAL_POSITION;
+        BEGIN
+            FOR rec IN c_columns DO
+                v_table := rec.TABLE_NAME;
+                v_column := rec.COLUMN_NAME;
+
+                v_object_name := '"' || REPLACE(rec.TABLE_CATALOG, '"', '""') || '"."'
+                                     || REPLACE(rec.TABLE_SCHEMA, '"', '""') || '"."'
+                                     || REPLACE(v_table, '"', '""') || '"."'
+                                     || REPLACE(v_column, '"', '""') || '"';
+
+                -- the object name is injected into a constant template as a string literal: escape the
+                -- backslash first (CHR(92)), then the single quote, so it cannot break out of the literal
+                v_template := $$SELECT DISTANCE, CONCAT_WS('.',
+                        SOURCE_OBJECT_DATABASE,
+                        SOURCE_OBJECT_SCHEMA,
+                        SOURCE_OBJECT_NAME,
+                        SOURCE_COLUMN_NAME) as UPSTREAM_SOURCE
+                    FROM TABLE(SNOWFLAKE.CORE.GET_LINEAGE('<OBJECT_NAME>', 'COLUMN', 'UPSTREAM', 1))$$;
+                    
+                v_stmt := REPLACE(v_template,
+                                  '<OBJECT_NAME>',
+                                  REPLACE(REPLACE(v_object_name, CHR(92), CHR(92) || CHR(92)), '''', ''''''));
+
+                BEGIN
+                    EXECUTE IMMEDIATE :v_stmt;
+
+                    SELECT ARRAY_CAT(
+                               :v_all_lineage,
+                               COALESCE(ARRAY_AGG(
+                                   OBJECT_INSERT(
+                                       OBJECT_INSERT(OBJECT_CONSTRUCT_KEEP_NULL(*), 'INSPECTED_TABLE', :v_table),
+                                       'INSPECTED_COLUMN', :v_column)
+                               ), ARRAY_CONSTRUCT()))
+                      INTO :v_all_lineage
+                      FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+                EXCEPTION
+                    -- skip columns whose lineage is unavailable (unsupported object, missing privileges)
+                    WHEN OTHER THEN
+                        NULL;
+                END;
+            END FOR;
+
+            rs_final := (
+                SELECT
+                    f.value:INSPECTED_TABLE::STRING AS TABLE_NAME,
+                    f.value:INSPECTED_COLUMN::STRING AS COLUMN_NAME,
+                    ARRAY_AGG(DISTINCT f.value:UPSTREAM_SOURCE::STRING) AS UPSTREAM_SOURCES
+                FROM TABLE(FLATTEN(INPUT => :v_all_lineage)) AS f
+                WHERE f.value:DISTANCE::INTEGER = 1
+                GROUP BY 1, 2
+            );
+            RETURN TABLE(rs_final);
+        END;
+    """
+
+
 def _quote_identifier(identifier: str) -> str:
     """Double-quote a Snowflake identifier, escaping any inner double-quotes."""
     return '"' + identifier.replace('"', '""') + '"'
 
 
-def import_information_schema(conn) -> Dict[str, List[Dict]]:
+def import_information_schema(conn, lineage: bool = False) -> Dict[str, List[Dict]]:
     from snowflake.connector import DictCursor
     from snowflake.connector.constants import QueryStatus
 
@@ -247,8 +323,13 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
         cur.execute_async(local_data_quality_monitoring_results_query())
         query_pool["quality"] = str(cur.sfqid)
 
-    # optional queries that may fail due to insufficient privileges — return empty list instead of crashing
-    optional_queries = {"tags", "quality"}
+        # one GET_LINEAGE call per column is slow on large schemas, so lineage is opt-in
+        if lineage:
+            cur.execute_async(account_usage_lineage_query())
+            query_pool["lineage"] = str(cur.sfqid)
+
+    # optional queries that may fail due to insufficient privileges or non-Enterprise edition — return empty list instead of crashing
+    optional_queries = {"tags", "quality", "lineage"}
 
     # wait for all queries to finish; cap at 5 minutes to avoid hanging indefinitely
     _QUERY_TIMEOUT_S = 300
@@ -288,13 +369,17 @@ def import_information_schema(conn) -> Dict[str, List[Dict]]:
 
 
 def schema_properties_cleansing(
-    properties: List[SchemaProperty], properties_tags: List[Dict[str, Any]], properties_quality: List[Dict[str, Any]]
+    properties: List[SchemaProperty],
+    properties_tags: List[Dict[str, Any]],
+    properties_quality: List[Dict[str, Any]],
+    properties_lineage: List[Dict[str, Any]] = None,
 ) -> List[SchemaProperty]:
     """
     Cleanses the properties list by removing None values and ensuring all required fields are present.
     """
     tags_adapter = TypeAdapter(list[str])
     quality_adapter = TypeAdapter(list[DataQuality])
+    lineage_adapter = TypeAdapter(list[str])
     cleansed_properties = []
 
     for prop in properties:
@@ -313,6 +398,11 @@ def schema_properties_cleansing(
         ]
         quality = [
             q["QUALITY"] for q in properties_quality if q["COLUMN_NAME"] == prop.name and q["COLUMN_NAME"] is not None
+        ]
+        lineage = [
+            entry["UPSTREAM_SOURCES"]
+            for entry in (properties_lineage or [])
+            if entry["COLUMN_NAME"] == prop.name and entry["COLUMN_NAME"] is not None
         ]
 
         prop = create_property(
@@ -333,6 +423,12 @@ def schema_properties_cleansing(
             dimensions=dimensions,
             element_type=element_type,
         )
+
+        if lineage:
+            upstream_sources = lineage_adapter.validate_json(lineage[0] if isinstance(lineage[0], str) else "[]")
+            if upstream_sources:
+                prop.transformSourceObjects = upstream_sources
+
         cleansed_properties.append(prop)
 
     return cleansed_properties
@@ -353,7 +449,7 @@ def property_customs_ordinal_position_sort(col: SchemaProperty) -> Any:
 
 
 def import_snowflake_from_connector(
-    account: str, database: str, schema: str, config: "Config | None" = None
+    account: str, database: str, schema: str, config: "Config | None" = None, lineage: bool = False
 ) -> OpenDataContractStandard:
     config = Config.resolve(config)
 
@@ -379,7 +475,7 @@ def import_snowflake_from_connector(
             cur.execute(f"USE SCHEMA {_quote_identifier(database)}.{schema_identifier}")
 
         # get all information from information_schema in parallel to optimize performance
-        result_sets = import_information_schema(cnx)
+        result_sets = import_information_schema(cnx, lineage=lineage)
         # connection can be closed after fetching all resultsets as they are stored in memory and we don't need to fetch anything else from snowflake
     finally:
         cnx.close()
@@ -447,9 +543,13 @@ def import_snowflake_from_connector(
             if quality["TABLE_NAME"] == schema_item.name and quality["TYPES"] == "COLUMN"
         ]
 
+        properties_lineage = [
+            entry for entry in result_sets.get("lineage", []) if entry["TABLE_NAME"] == schema_item.name
+        ]
+
         if schema_item.properties is not None:
             schema_item.properties = schema_properties_cleansing(
-                schema_item.properties, properties_tags, properties_quality
+                schema_item.properties, properties_tags, properties_quality, properties_lineage
             )
             schema_item.properties.sort(key=property_customs_ordinal_position_sort)
         enhanced_schemas.append(schema_item)

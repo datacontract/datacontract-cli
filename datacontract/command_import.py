@@ -582,6 +582,13 @@ def import_snowflake(
     output: output_option = None,
     database: database_option = None,
     schema: Annotated[Optional[str], typer.Option("--schema", help="Snowflake schema name.")] = None,
+    lineage: Annotated[
+        bool,
+        typer.Option(
+            "--lineage",
+            help="Import upstream column lineage into transformSourceObjects (Enterprise edition, slow on large schemas).",
+        ),
+    ] = False,
     owner: owner_option = None,
     id: id_option = None,
     debug: debug_option = None,
@@ -589,7 +596,14 @@ def import_snowflake(
     """Import a data contract from a Snowflake workspace."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="snowflake", source=source, database=database, schema=schema, owner=owner, id=id
+        config=cli_config(),
+        format="snowflake",
+        source=source,
+        database=database,
+        schema=schema,
+        lineage=lineage,
+        owner=owner,
+        id=id,
     )
     _write_result(result, output)
 
