@@ -978,7 +978,8 @@ def _validate_json_schema(
             json.dumps(schema), object_hook=lambda o: {k: v for k, v in o.items() if k != "unevaluatedProperties"}
         )
     validator_cls = validators.validator_for(schema)
-    validator_cls.check_schema(schema)
+    if custom_schema:
+        validator_cls.check_schema(schema)  # the bundled schemas are checked by the tests
     validator = validator_cls(schema=schema)
     # jsonschema can report the same error once per schema branch; keep one.
     errors = {(error.json_path, error.message): error for error in validator.iter_errors(yaml_str)}.values()
