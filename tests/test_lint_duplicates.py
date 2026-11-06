@@ -123,4 +123,5 @@ def test_custom_schema_skips_duplicate_checks(tmp_path):
     custom = tmp_path / "custom.json"
     custom.write_text('{"type":"object"}')
     assert lint(document(), schema_location=str(custom)).result == "passed"
-    assert lint(document(schema=[{"name": "a"}, {"name": "a"}]), schema_location=str(custom)).result == "passed"
+    schema = [{"name": "a", "id": "x"}, {"name": "a", "id": "x"}]
+    assert lint(document(schema=schema), schema_location=str(custom)).result == "passed"

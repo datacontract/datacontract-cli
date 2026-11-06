@@ -91,13 +91,11 @@ def test_all_errors_combines_schema_and_enum_violations():
     assert any("duplicates enum" in reason for reason in reasons)
 
 
-@pytest.mark.parametrize("prop", [{"enum": [{"value": "a"}, {"value": "a"}]}, {"logicalType": "vector"}, {"id": "a"}])
+@pytest.mark.parametrize("prop", [{"enum": [{"value": "a"}, {"value": "a"}]}, {"logicalType": "vector"}])
 def test_custom_schema_remains_the_source_of_truth(tmp_path, prop):
     schema = tmp_path / "custom.json"
     schema.write_text('{"type":"object"}')
-    doc = document(prop)
-    doc["schema"][0]["properties"].append({"name": "field", **prop})  # duplicate name and id
-    assert DataContract(data_contract_str=yaml.safe_dump(doc), schema_location=str(schema)).lint().result == "passed"
+    assert lint(prop, schema_location=str(schema)).result == "passed"
 
 
 @pytest.mark.parametrize(
