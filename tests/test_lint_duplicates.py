@@ -96,6 +96,17 @@ def test_same_id_in_different_arrays_is_valid():
     assert lint(doc).result == "passed"
 
 
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"customProperties": [{"property": "related", "value": [{"id": "x", "v": 1}, {"id": "x", "v": 2}]}]},
+        {"schema": [{"name": "o", "properties": [{"name": "a", "examples": [{"id": "x"}, {"id": "x"}]}]}]},
+    ],
+)
+def test_repeated_id_in_free_form_values_is_valid(overrides):
+    assert lint(document(**overrides)).result == "passed"
+
+
 def test_names_are_case_sensitive():
     assert lint(document(schema=[{"name": "Orders"}, {"name": "orders"}])).result == "passed"
 

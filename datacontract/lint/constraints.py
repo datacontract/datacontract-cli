@@ -123,7 +123,9 @@ def duplicate_name_errors(contract: dict) -> list[DataContractException]:
                 collect_ids(item, item_path)
         elif isinstance(node, dict):
             for key, child in node.items():
-                collect_ids(child, f"{path}.{key}" if path else key)
+                # These hold the user's own data, where an id is not an ODCS stable id
+                if key not in ("value", "examples", "arguments", "implementation"):
+                    collect_ids(child, f"{path}.{key}" if path else key)
 
     collect_ids(contract, "")
     return errors
