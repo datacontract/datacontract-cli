@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict
 
 from datacontract.config import Config
 from datacontract.config.variables import contains_variables
-from datacontract.lint.constraints import enum_value_errors
+from datacontract.lint.constraints import duplicate_name_errors, enum_value_errors
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
 from datacontract.model.enum_values import get_enum_values
@@ -830,6 +830,7 @@ def _resolve_data_contract_from_str(
         except DataContractValidationErrors as e:
             errors.extend(e.errors)
         if not custom_schema:
+            errors.extend(duplicate_name_errors(yaml_dict))
             errors.extend(enum_value_errors(yaml_dict))
         if errors:
             if all_errors:
