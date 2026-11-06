@@ -7,8 +7,10 @@ from open_data_contract_standard.model import DataQuality, OpenDataContractStand
 from datacontract.engines.checks.create_checks import (
     _iter_property_paths,
     _retention_value_to_seconds,
+    _sla_field_label,
     is_percent_unit,
     nested_not_run_reason,
+    parse_sla_element,
     quality_definition_yaml,
     unexecuted_check_name,
     unrunnable_reason,
@@ -135,7 +137,7 @@ def run_sla_checks(
         resolved = _resolve_sla_element(data_contract, sla.element)
         if resolved is None:
             continue
-        schema_object, field_name = resolved
+        schema_object, field_names = resolved
         if schema_filter != "all" and schema_object.name != schema_filter:
             continue
         table_name = schema_object.physicalName or schema_object.name
@@ -146,9 +148,9 @@ def run_sla_checks(
             continue
         row_filter = (model_filters or {}).get(table_name)
         if sla.property == "freshness":
-            check = _freshness_check(connection, schema_name, table_name, field_name, sla, skip_reason, row_filter)
+            check = _freshness_check(connection, schema_name, table_name, field_names, sla, skip_reason, row_filter)
         else:
-            check = _retention_check(connection, schema_name, table_name, field_name, sla, skip_reason, row_filter)
+            check = _retention_check(connection, schema_name, table_name, field_names, sla, skip_reason, row_filter)
         if check is not None:
             checks.append(check)
     return checks
@@ -621,7 +623,7 @@ def _freshness_check(
     connection,
     schema_name: str,
     table_name: str,
-    field_name: str,
+    field_names: list[str],
     sla,
     skip_reason: str | None = None,
     row_filter: str | None = None,
@@ -629,8 +631,9 @@ def _freshness_check(
     threshold = _freshness_value_to_seconds(sla.value, sla.unit)
     if threshold is None:
         return None
+    field_name = _sla_field_label(field_names)
     sql = (
-        f"SELECT SECONDS_BETWEEN(MAX({quote_identifier(field_name)}), CURRENT_TIMESTAMP) "
+        f"SELECT SECONDS_BETWEEN(MAX({_coalesced_columns(field_names)}), CURRENT_TIMESTAMP) "
         f"FROM {table_reference(schema_name, table_name, row_filter)}"
     )
     return _servicelevel_check(
@@ -651,7 +654,7 @@ def _retention_check(
     connection,
     schema_name: str,
     table_name: str,
-    field_name: str,
+    field_names: list[str],
     sla,
     skip_reason: str | None = None,
     row_filter: str | None = None,
@@ -659,8 +662,9 @@ def _retention_check(
     threshold = _retention_value_to_seconds(sla.value, sla.unit)
     if threshold is None:
         return None
+    field_name = _sla_field_label(field_names)
     sql = (
-        f"SELECT SECONDS_BETWEEN(MIN({quote_identifier(field_name)}), CURRENT_TIMESTAMP) "
+        f"SELECT SECONDS_BETWEEN(MIN({_coalesced_columns(field_names)}), CURRENT_TIMESTAMP) "
         f"FROM {table_reference(schema_name, table_name, row_filter)}"
     )
     return _servicelevel_check(
@@ -675,6 +679,12 @@ def _retention_check(
         skip_reason=skip_reason,
         quality_id=sla.id,
     )
+
+
+def _coalesced_columns(field_names: list[str]) -> str:
+    """The quoted column, or the COALESCE of the quoted columns in order."""
+    quoted = [quote_identifier(name) for name in field_names]
+    return quoted[0] if len(quoted) == 1 else f"COALESCE({', '.join(quoted)})"
 
 
 def _servicelevel_check(
@@ -771,16 +781,18 @@ def _freshness_value_to_seconds(value, unit: str | None) -> int | None:
 
 
 def _resolve_sla_element(data_contract: OpenDataContractStandard, element: str | None):
-    if element is None or element.count(".") != 1:
+    """The schema object and the columns the element names, coalesced in order; HANA tables hold no structs."""
+    parsed = parse_sla_element(element)
+    if parsed is None or any(len(path) != 1 for path in parsed[1]):
         return None
-    model_name, field_name = element.split(".")
-    for schema_object in data_contract.schema_ or []:
-        if schema_object.name != model_name:
-            continue
-        for prop in schema_object.properties or []:
-            if prop.name == field_name:
-                return schema_object, prop.physicalName or prop.name
-    return None
+    model_name, paths = parsed
+    schema_object = next((s for s in data_contract.schema_ or [] if s.name == model_name), None)
+    if schema_object is None:
+        return None
+    props = {prop.name: prop for prop in schema_object.properties or []}
+    if any(name not in props for (name,) in paths):
+        return None
+    return schema_object, [props[name].physicalName or props[name].name for (name,) in paths]
 
 
 def _quality_key(table_name: str, field_name: str | None, suffix: str) -> str:

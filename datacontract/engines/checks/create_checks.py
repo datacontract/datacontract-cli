@@ -1194,42 +1194,70 @@ def _to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opt
     checks: List[CheckSpec] = []
     if data_contract.slaProperties is None:
         return checks
+    server_type = get_server_type(server) if server is not None else None
     for sla in data_contract.slaProperties:
         if sla.property == "freshness":
             check = _freshness_check(data_contract, sla, server)
-            if check is not None:
-                checks.append(check)
         elif sla.property == "retention":
             check = _retention_check(data_contract, sla, server)
-            if check is not None:
-                checks.append(check)
+        else:
+            continue
+        if check is None:
+            continue
+        # A struct field the server cannot read is reported, not dropped; an unreadable value keeps its failure.
+        nested = any("." in field for field in check.columns or [check.field])
+        if nested and server_type not in _NESTED_CHECK_SERVER_TYPES and check.preset_result is None:
+            check.metric = MetricType.UNSUPPORTED
+            check.preset_result = "warning"
+            check.preset_reason = nested_not_run_reason(server_type)
+        checks.append(check)
     return checks
 
 
-def _split_element(element: Optional[str]) -> Optional[tuple[str, str]]:
-    if element is None or "." not in element or element.count(".") > 1:
+def parse_sla_element(element: Optional[str]) -> Optional[tuple[str, List[List[str]]]]:
+    """The model and the property paths an sla element names, or ``None`` when it names none.
+
+    ``model.field`` names a column, ``model.struct.field`` a field in a struct, and
+    ``coalesce(model.a, model.b)`` the first of several that is not null, all in one model.
+    """
+    if element is None:
         return None
-    model, field = element.split(".")
-    return model, field
+    match = re.fullmatch(r"\s*coalesce\s*\((.*)\)\s*", element, re.IGNORECASE)
+    if match is None and "," in element:
+        return None
+    references = match.group(1).split(",") if match else [element]
+    paths = [reference.strip().split(".") for reference in references]
+    if any(len(path) < 2 or "" in path for path in paths) or len({path[0] for path in paths}) != 1:
+        return None
+    return paths[0][0], [path[1:] for path in paths]
 
 
 def _resolve_sla_element(
     data_contract: OpenDataContractStandard, element: Optional[str], server: Optional[Server]
-) -> Optional[tuple[str, str]]:
-    """The (model, field) a contract-language sla element points at, in warehouse terms."""
-    parts = _split_element(element)
-    if parts is None:
-        logger.info(f"sla element {element!r} is not a single model.field, skipping")
+) -> Optional[tuple[str, List[str]]]:
+    """The model and the fields a contract-language sla element points at, in warehouse terms."""
+    parsed = parse_sla_element(element)
+    if parsed is None:
+        logger.info(f"sla element {element!r} is neither a model.field reference nor a coalesce of them, skipping")
         return None
-    model, field = parts
+    model, paths = parsed
     schema_object = _get_schema_by_name(data_contract, model)
     if schema_object is None:
         return None
+    fields = []
+    for path in paths:
+        properties, names = schema_object.properties, []
+        for name in path:
+            prop = next((p for p in properties or [] if p.name == name), None)
+            names.append((prop.physicalName or prop.name) if prop is not None else name)
+            properties = prop.properties if prop is not None else None
+        fields.append(".".join(names))
     server_type = server.type if server and server.type else None
-    prop = next((p for p in schema_object.properties or [] if p.name == field), None)
-    if prop is not None and prop.physicalName:
-        field = prop.physicalName
-    return to_schema_name(schema_object, server_type), field
+    return to_schema_name(schema_object, server_type), fields
+
+
+def _sla_field_label(fields: List[str]) -> str:
+    return fields[0] if len(fields) == 1 else f"coalesce({', '.join(fields)})"
 
 
 def _freshness_check(
@@ -1240,7 +1268,8 @@ def _freshness_check(
     resolved = _resolve_sla_element(data_contract, sla.element, server)
     if resolved is None:
         return None
-    model, field = resolved
+    model, fields = resolved
+    field = _sla_field_label(fields)
 
     unit = (sla.unit or "d").lower() or "d"
     seconds = freshness_value_to_seconds(sla.value, unit)
@@ -1274,6 +1303,7 @@ def _freshness_check(
         name=f"Freshness of {model}.{field} < {threshold}",
         model=model,
         field=field,
+        columns=fields if len(fields) > 1 else None,
         metric=MetricType.FRESHNESS,
         quality_id=sla.id,
         seconds=seconds,
@@ -1318,7 +1348,8 @@ def _retention_check(
     resolved = _resolve_sla_element(data_contract, sla.element, server)
     if resolved is None:
         return None
-    model, field = resolved
+    model, fields = resolved
+    field = _sla_field_label(fields)
     seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
         return None
@@ -1329,6 +1360,7 @@ def _retention_check(
         name=f"Retention of {model}.{field} < {seconds}s",
         model=model,
         field=field,
+        columns=fields if len(fields) > 1 else None,
         metric=MetricType.RETENTION,
         quality_id=sla.id,
         seconds=seconds,
