@@ -758,6 +758,19 @@ def setup_azure_connection(con, server: Server, config: Config, untrusted_contra
     else:
         # No service principal configured: resolve credentials through the Azure credential chain
         # (az cli, env, managed identity, workload identity, ...).
+        missing = [
+            name
+            for name, value in [
+                ("DATACONTRACT_AZURE_TENANT_ID", tenant_id),
+                ("DATACONTRACT_AZURE_CLIENT_ID", client_id),
+                ("DATACONTRACT_AZURE_CLIENT_SECRET", client_secret),
+            ]
+            if not value
+        ]
+        if len(missing) == 3:
+            logger.info("Using the Azure credential chain")
+        else:
+            logger.info("Using the Azure credential chain: %s not set", " and ".join(missing))
         provider = "CREDENTIAL_CHAIN"
         options = {"CHAIN": config.get_azure_credential_chain()}
 
