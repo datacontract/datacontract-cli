@@ -1,8 +1,11 @@
+import json
 import os
 import re
+import sys
 from unittest.mock import MagicMock
 
 import pytest
+import yaml
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -163,6 +166,17 @@ def test_error_message_keeps_bracketed_text(monkeypatch, capsys):
     assert "botocore[crt]" in capsys.readouterr().out
 
 
+def test_a_failed_import_links_its_guide(monkeypatch, capsys):
+    from datacontract import cli
+
+    monkeypatch.setattr(sys, "argv", ["datacontract", "import", "sql", "--source", "does-not-exist.sql"])
+
+    with pytest.raises(SystemExit):
+        cli.main()
+
+    assert "See https://cli.datacontract.com/imports/sql" in capsys.readouterr().out
+
+
 def test_test_publish_empty_string_skips_publish(monkeypatch):
     """`--publish ''` means "don't publish" — CI templates render it when the URL is unset."""
     calls = []
@@ -179,3 +193,43 @@ def test_test_publish_rejects_non_http_url():
     result = runner.invoke(app, ["test", "--publish", "ftp://foo", "./fixtures/parquet/datacontract.yaml"])
     assert result.exit_code == 1
     assert "must start with http:// or https://" in result.stdout
+
+
+@pytest.mark.parametrize("output_format, load", [("json", json.loads), ("yaml", yaml.safe_load)])
+def test_changelog_output_format_is_machine_readable(output_format, load):
+    result = runner.invoke(
+        app,
+        [
+            "changelog",
+            "fixtures/changelog/integration/changelog_integration_v1.yaml",
+            "fixtures/changelog/integration/changelog_integration_v2.yaml",
+            "--output-format",
+            output_format,
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    data = load(result.stdout)
+    assert {"v1", "v2", "summary", "entries"} <= set(data)
+    assert data["entries"]
+
+
+@pytest.mark.parametrize("output_format, load", [("json", json.loads), ("yaml", yaml.safe_load)])
+def test_changelog_output_format_without_changes(output_format, load):
+    fixture = "fixtures/changelog/integration/changelog_integration_v1.yaml"
+    result = runner.invoke(app, ["changelog", fixture, fixture, "--output-format", output_format])
+    assert result.exit_code == 0, result.output
+    data = load(result.stdout)
+    assert data["summary"] == []
+    assert data["entries"] == []
+
+
+def test_changelog_yaml_and_json_output_hold_the_same_changes():
+    args = [
+        "changelog",
+        "fixtures/changelog/integration/changelog_integration_v1.yaml",
+        "fixtures/changelog/integration/changelog_integration_v2.yaml",
+        "--output-format",
+    ]
+    as_json = json.loads(runner.invoke(app, args + ["json"]).stdout)
+    as_yaml = yaml.safe_load(runner.invoke(app, args + ["yaml"]).stdout)
+    assert as_yaml == as_json

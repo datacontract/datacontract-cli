@@ -1,5 +1,5 @@
 ---
-sidebar_position: 21
+sidebar_position: 22
 title: "Export: Protobuf"
 description: "Export a data contract to a Protobuf schema."
 ---

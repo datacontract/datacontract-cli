@@ -1,17 +1,37 @@
 """Custom quality checks: SQL checks defined once in a folder and used by name from a contract."""
 
 import json
+from pathlib import Path
 
 import pytest
+import responses
+from google.api_core.exceptions import BadRequest
 from open_data_contract_standard.model import Server
 
 from datacontract.config import Config
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.create_checks import create_checks
+from datacontract.engines.checks.custom_quality_check import CustomQualityChecks
+from datacontract.engines.ibis import ibis_check_execute
 from datacontract.model.run import ResultEnum
 
 CHECKS = "./fixtures/custom-quality-checks/checks"
 CSV_PATH = "./fixtures/diagnostics/data/orders.csv"
+PLATFORM = "https://entropy.example.com"
+
+
+@pytest.fixture(autouse=True)
+def _no_entropy_data_api_key(monkeypatch):
+    for name in ("ENTROPY_DATA_API_KEY", "DATAMESH_MANAGER_API_KEY", "DATACONTRACT_MANAGER_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+
+
+@pytest.fixture
+def entropy_data(monkeypatch):
+    monkeypatch.setenv("ENTROPY_DATA_HOST", PLATFORM)
+    monkeypatch.setenv("ENTROPY_DATA_API_KEY", "ed_test_key")
+    with responses.RequestsMock() as mock:
+        yield mock
 
 
 def _contract(property_quality: str = "", schema_quality: str = "", items_quality: str = "") -> str:
@@ -59,7 +79,11 @@ def _specs(contract: str, checks: str | None = CHECKS, server: Server | None = N
     odcs = DataContract(data_contract_str=contract).get_data_contract()
     return [
         spec
-        for spec in create_checks(odcs, server or odcs.servers[0], custom_quality_checks=checks)
+        for spec in create_checks(
+            odcs,
+            server or odcs.servers[0],
+            custom_quality_checks=CustomQualityChecks(Config(custom_quality_checks=checks)),
+        )
         if spec.type in ("field_quality_custom", "model_quality_custom")
     ]
 
@@ -240,10 +264,11 @@ def test_ids_that_differ_only_in_case_are_a_check_defined_twice(tmp_path):
     _unexecuted(spec, "error", "The custom quality check 'between' is defined twice: Between.yaml, between.yml.")
 
 
-def test_the_id_is_looked_up_exactly(tmp_path):
+def test_the_id_is_looked_up_regardless_of_case(tmp_path):
     (tmp_path / "Between.yaml").write_text("queries: {default: SELECT 1}\nmustBe: 1\n")
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("between"))), checks=str(tmp_path))
-    _unexecuted(spec, "error", "There is no custom quality check with the ID 'between'. Available: Between.")
+    assert spec.preset_result is None
+    assert spec.query == "SELECT 1"
 
 
 @pytest.mark.parametrize("check_id", ['"my check"', "a/b", "'a#b'", "a%b", "a;b", "'a?b'", '"a\\\\b"'])
@@ -444,6 +469,33 @@ def test_a_value_in_a_string_that_is_not_plain_makes_the_check_invalid(tmp_path)
     _unexecuted(spec, "error", "${arguments.x} in queries.postgres is inside a string written as E'...'.")
 
 
+def test_a_query_the_database_rejects_names_the_check_and_its_arguments(tmp_path):
+    checks = _check_file(tmp_path, "below", "  min:\n", "SELECT COUNT(*) FROM ${table} WHERE email < ${arguments.min}")
+    run = _test(_contract(schema_quality=_schema_rule(_rule("below", "min: 0"))), checks)
+
+    check = next(c for c in run.checks if c.type == "model_quality_custom")
+    assert check.result == ResultEnum.failed
+    assert check.reason.startswith("The custom quality check below(min=0) could not run: Binder Error:")
+
+
+def test_a_bigquery_error_shows_its_message_once(tmp_path, monkeypatch):
+    message = "Unrecognized name: nope at [1:38]"
+    error = BadRequest(
+        f"{message}; reason: invalidQuery, location: query, message: {message}\n\nLocation: US\nJob ID: 1234\n",
+        errors=[{"reason": "invalidQuery", "location": "query", "message": message}],
+    )
+
+    def reject(con, query, dialect):
+        raise error
+
+    monkeypatch.setattr(ibis_check_execute, "_run_scalar", reject)
+    checks = _check_file(tmp_path, "below", "  min:\n", "SELECT COUNT(*) FROM ${table} WHERE nope < ${arguments.min}")
+    run = _test(_contract(schema_quality=_schema_rule(_rule("below", "min: 0"))), checks)
+
+    check = next(c for c in run.checks if c.type == "model_quality_custom")
+    assert check.reason == f"The custom quality check below(min=0) could not run: {message}"
+
+
 def test_a_negative_number_after_a_minus_does_not_start_a_comment(tmp_path):
     checks = _check_file(
         tmp_path, "check", "  x:\n", "SELECT COUNT(*) FROM ${table} WHERE ${column} < 5 -${arguments.x} AND 1 = 1"
@@ -582,3 +634,108 @@ def test_a_query_that_is_not_a_single_read_only_statement_is_an_error(tmp_path):
     [spec] = _specs(_contract(property_quality=_amount_rule(_rule("check"))), checks)
 
     _unexecuted(spec, "error", "must be a single read-only query")
+
+
+def test_without_a_folder_the_check_comes_from_entropy_data(entropy_data):
+    entropy_data.get(
+        f"{PLATFORM}/api/custom-quality-checks/Between/check.yaml", body=(Path(CHECKS) / "between.yaml").read_text()
+    )
+    rule = BETWEEN.replace("check: between", "check: Between")
+
+    run = DataContract(data_contract_str=_contract(property_quality=_amount_rule(rule))).test()
+
+    check = next(c for c in run.checks if c.type == "field_quality_custom")
+    assert check.result == ResultEnum.failed
+    assert check.name == "amount between 0 and 100."
+    assert entropy_data.calls[0].request.headers["x-api-key"] == "ed_test_key"
+
+
+def test_a_check_in_the_folder_takes_the_place_of_the_one_in_entropy_data(entropy_data):
+    [spec] = _specs(_contract(property_quality=_amount_rule(BETWEEN)))
+
+    assert spec.preset_result is None
+    assert len(entropy_data.calls) == 0
+
+
+def test_an_id_the_folder_does_not_have_is_looked_up_in_entropy_data(entropy_data):
+    entropy_data.get(f"{PLATFORM}/api/custom-quality-checks/betwen/check.yaml", status=404)
+
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("betwen"))))
+
+    assert spec.preset_reason == f"Neither '{CHECKS}' nor Entropy Data has the custom quality check 'betwen'."
+
+
+def test_a_failed_lookup_of_an_id_the_folder_does_not_have_names_the_folder(entropy_data):
+    entropy_data.get(f"{PLATFORM}/api/custom-quality-checks/betwen/check.yaml", status=500)
+
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("betwen"))))
+
+    assert spec.preset_reason == (
+        f"The custom quality check 'betwen' is not in '{CHECKS}' and could not be loaded from entropy.example.com: "
+        "HTTP 500 Internal Server Error."
+    )
+
+
+def test_a_missing_folder_is_an_error_without_asking_entropy_data(entropy_data):
+    [spec] = _specs(_contract(property_quality=_amount_rule(BETWEEN)), checks="./does-not-exist")
+
+    _unexecuted(spec, "error", "The custom quality checks folder ./does-not-exist does not exist.")
+    assert len(entropy_data.calls) == 0
+
+
+def test_a_broken_check_file_is_an_error_without_asking_entropy_data(entropy_data, tmp_path):
+    (tmp_path / "between.yaml").write_text("queries: [")
+
+    [spec] = _specs(_contract(property_quality=_amount_rule(BETWEEN)), checks=str(tmp_path))
+
+    _unexecuted(spec, "error", "The custom quality check 'between' is not valid YAML")
+    assert len(entropy_data.calls) == 0
+
+
+@pytest.mark.parametrize(
+    "response, reason",
+    [
+        ({"status": 404}, "Entropy Data has no custom quality check 'between'."),
+        (
+            {"status": 401},
+            "Could not load the custom quality check 'between' from entropy.example.com: "
+            "the API key was rejected (HTTP 401).",
+        ),
+        (
+            {"status": 500},
+            "Could not load the custom quality check 'between' from entropy.example.com: "
+            "HTTP 500 Internal Server Error.",
+        ),
+        (
+            {"status": 302, "headers": {"Location": "https://elsewhere.example.com/check.yaml"}},
+            "Could not load the custom quality check 'between' from entropy.example.com: "
+            "HTTP 302 redirect to 'https://elsewhere.example.com/check.yaml' is not followed.",
+        ),
+    ],
+)
+def test_a_failed_lookup_is_an_error_for_every_rule_using_the_check_and_asked_once(entropy_data, response, reason):
+    entropy_data.get(f"{PLATFORM}/api/custom-quality-checks/between/check.yaml", **response)
+    rules = "\n".join([BETWEEN, BETWEEN.replace("check: between", "check: BETWEEN")])
+
+    specs = _specs(_contract(property_quality=_amount_rule(rules)), checks=None)
+
+    assert [spec.preset_reason for spec in specs] == [reason, reason]
+    assert len(entropy_data.calls) == 1
+
+
+@pytest.mark.parametrize("check_id", [".", "'..'"])
+def test_a_dot_id_is_an_error_without_asking_entropy_data(entropy_data, check_id):
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule(check_id))), checks=None)
+
+    _unexecuted(spec, "error", "is no valid custom quality check ID.")
+    assert len(entropy_data.calls) == 0
+
+
+def test_the_id_is_url_encoded(entropy_data):
+    entropy_data.get(
+        f"{PLATFORM}/api/custom-quality-checks/a%26b%C3%A4/check.yaml", body=(Path(CHECKS) / "between.yaml").read_text()
+    )
+
+    [spec] = _specs(_contract(property_quality=_amount_rule(_rule("a&bä", "min: 0\nmax: 1"))), checks=None)
+
+    assert spec.preset_result is None

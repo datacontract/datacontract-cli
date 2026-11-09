@@ -404,7 +404,7 @@ def edit(
     The server also acts as the editor's test runner: "Run test" in the editor executes
     the data contract tests locally against the servers defined in the data contract.
     Credentials for the data sources must be provided as environment variables, see
-    https://docs.datacontract.com/testing
+    https://cli.datacontract.com/testing
     The editor's AI assistant is enabled by setting DATACONTRACT_EDITOR_AI_ENDPOINT, together with
     DATACONTRACT_EDITOR_AI_API_KEY, DATACONTRACT_EDITOR_AI_MODEL, DATACONTRACT_EDITOR_AI_PROVIDER
     (openai or anthropic), and DATACONTRACT_EDITOR_AI_AUTH_HEADER (bearer, api-key, or x-api-key).

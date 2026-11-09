@@ -9,9 +9,36 @@ from rich.markup import escape
 from rich.table import Table
 
 from datacontract.model.run import Run
+from datacontract.model.server import get_server_type
 from datacontract.output.json_test_results import write_json_test_results
 from datacontract.output.junit_test_results import write_junit_test_results
 from datacontract.output.output_format import OutputFormat
+
+# The server types with a page under docs/docs/reference/, linked when a test run fails.
+REFERENCE_DOCS_SERVER_TYPES = {
+    "api",
+    "athena",
+    "azure",
+    "bigquery",
+    "clickhouse",
+    "databricks",
+    "dataframe",
+    "exasol",
+    "gcs",
+    "hive",
+    "iceberg",
+    "impala",
+    "kafka",
+    "local",
+    "mysql",
+    "oracle",
+    "postgres",
+    "redshift",
+    "s3",
+    "snowflake",
+    "sqlserver",
+    "trino",
+}
 
 
 def write_test_result(
@@ -30,40 +57,41 @@ def write_test_result(
         write_junit_test_results(run, output_path)
         console.print(f"Written {output_format.value} test results to {output_path}")
 
+    server = None
     if run.server and data_contract and data_contract.servers:
         server = next((s for s in data_contract.servers if s.server == run.server), None)
-        if server:
-            details = []
-            if server.type:
-                details.append(f"type={server.type}")
-            if server.format:
-                details.append(f"format={server.format}")
-            if server.host:
-                details.append(f"host={server.host}")
-            if server.port:
-                details.append(f"port={server.port}")
-            if server.database:
-                details.append(f"database={server.database}")
-            if server.schema_:
-                details.append(f"schema={server.schema_}")
-            if server.catalog:
-                details.append(f"catalog={server.catalog}")
-            if server.dataset:
-                details.append(f"dataset={server.dataset}")
-            if server.project:
-                details.append(f"project={server.project}")
-            if server.account:
-                details.append(f"account={server.account}")
-            method = next((p.value for p in server.customProperties or [] if p.property == "method"), None)
-            if server.type == "api" and method:
-                details.append(f"method={method}")
-            if server.location:
-                details.append(f"location={server.location}")
-            if server.path:
-                details.append(f"path={server.path}")
-            details_str = ", ".join(details) if details else ""
-            if details_str:
-                console.print(f"Server: {run.server} ({details_str})")
+    if server:
+        details = []
+        if server.type:
+            details.append(f"type={server.type}")
+        if server.format:
+            details.append(f"format={server.format}")
+        if server.host:
+            details.append(f"host={server.host}")
+        if server.port:
+            details.append(f"port={server.port}")
+        if server.database:
+            details.append(f"database={server.database}")
+        if server.schema_:
+            details.append(f"schema={server.schema_}")
+        if server.catalog:
+            details.append(f"catalog={server.catalog}")
+        if server.dataset:
+            details.append(f"dataset={server.dataset}")
+        if server.project:
+            details.append(f"project={server.project}")
+        if server.account:
+            details.append(f"account={server.account}")
+        method = next((p.value for p in server.customProperties or [] if p.property == "method"), None)
+        if server.type == "api" and method:
+            details.append(f"method={method}")
+        if server.location:
+            details.append(f"location={server.location}")
+        if server.path:
+            details.append(f"path={server.path}")
+        details_str = ", ".join(details) if details else ""
+        if details_str:
+            console.print(f"Server: {run.server} ({details_str})")
 
     if run.filters:
         for schema_name, predicate in run.filters.items():
@@ -93,6 +121,12 @@ def write_test_result(
     else:
         console.print("🔴 Data contract is invalid, found the following errors:")
         print_findings(run, console)
+        server_type = get_server_type(server)
+        if server_type in REFERENCE_DOCS_SERVER_TYPES:
+            console.print(
+                f"See https://cli.datacontract.com/reference/{server_type} "
+                f"for {server_type} connection, authentication, and type mapping options."
+            )
         raise typer.Exit(code=1)
 
 

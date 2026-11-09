@@ -56,4 +56,4 @@ The skills ask before connecting to a data source and never ask for credentials 
 
 ## Documentation for LLMs
 
-Agents without the skills can still read this documentation in a compact form: [llms.txt](https://docs.datacontract.com/llms.txt) (a link index) and [llms-full.txt](https://docs.datacontract.com/llms-full.txt) (every page in one file).
+Agents without the skills can still read this documentation in a compact form: [llms.txt](https://cli.datacontract.com/llms.txt) (a link index) and [llms-full.txt](https://cli.datacontract.com/llms-full.txt) (every page in one file).

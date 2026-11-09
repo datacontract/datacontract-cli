@@ -16,6 +16,13 @@ Use `datacontract changelog` to compare the source contract (`v1`) with the targ
 datacontract changelog v1.odcs.yaml v2.odcs.yaml
 ```
 
+To process the changes with other tools, print them as JSON or YAML. The output has the same `summary` and `entries` as the `POST /changelog` response, plus the `v1` and `v2` labels:
+
+```bash
+datacontract changelog v1.odcs.yaml v2.odcs.yaml --output-format json > changelog.json
+datacontract changelog v1.odcs.yaml v2.odcs.yaml --output-format yaml > changelog.yaml
+```
+
 See the generated [changelog command reference](./commands/changelog.md) for all options.
 
 ## Breaking changes

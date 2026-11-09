@@ -151,6 +151,7 @@ class CheckSpec:
     valid_min_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_max_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_unique_items: Optional[bool] = None  # INVALID_COUNT, array columns
+    value_type: Optional[str] = None  # the declared type a value stored untyped is cast to
 
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
@@ -166,6 +167,7 @@ class CheckSpec:
     query: Optional[str] = None  # CUSTOM_SQL (placeholders already substituted)
     dialect: Optional[str] = None  # CUSTOM_SQL input SQL dialect
     diagnostics: Optional[dict] = None  # CUSTOM_SQL: reported alongside the measured value
+    custom_quality_check: Optional[str] = None  # CUSTOM_SQL: the check's ID and arguments, as between(min=1, max=100)
     warnings: Optional[List[str]] = None  # for the run's log
 
     seconds: Optional[int] = None  # FRESHNESS / RETENTION threshold in seconds

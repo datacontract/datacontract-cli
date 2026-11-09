@@ -4,9 +4,13 @@ title: "Link your Semantics"
 description: "Link a property to a shared semantic concept or reusable definition with ODCS authoritativeDefinitions, by URL or IRI, and let the CLI inline it."
 ---
 
+import {EntropyExplainsVideo, EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # Link your Semantics
 
 A property does not have to carry its full meaning inline. With the ODCS `authoritativeDefinitions` attribute, a property can **link to a shared semantic concept** — a business term defined once, centrally — and the CLI resolves that link and inlines the definition before linting, testing, or exporting the contract.
+
+<EntropyExplainsLink episode="semantics" />
 
 ```yaml
 schema:
@@ -141,7 +145,7 @@ An IRI lookup always requires an API key — `/api/semantics` is API-key only. A
 
 ## Turning resolution off
 
-Resolution runs by default on [`lint`](./commands/lint.md), [`test`](./commands/test.md), [`ci`](./commands/ci.md), [`changelog`](./commands/changelog.md), [`breaking`](./commands/breaking.md), and every [`export`](./commands/export/index.md) format. Pass `--no-inline-references` to skip it and work with the contract exactly as written:
+Resolution runs by default on [`lint`](./commands/lint.md), [`test`](./commands/test.md), [`ci`](./commands/ci.md), [`changelog`](./commands/changelog.md), [`breaking`](./commands/breaking.md), [`dbt sync`](./commands/dbt/sync.md), and every [`export`](./commands/export/index.md) format. Pass `--no-inline-references` to skip it and work with the contract exactly as written:
 
 ```bash
 datacontract lint --no-inline-references datacontract.yaml

@@ -35,7 +35,7 @@ def create_data_contract_page(
     data_contract = DataContract(
         data_contract_file=f"{file.absolute()}", inline_references=True, schema_location=schema, config=cli_config()
     )
-    page = data_contract.export(export_format=export_format, mermaid=mermaid)
+    html = data_contract.export(export_format="html", home_href="../" * len(file.parent.parts) + "index.html")
     odcs = data_contract.get_data_contract()
     file_without_suffix = file.with_suffix(".md" if export_format == "markdown" else ".html")
     page_filepath = path / file_without_suffix

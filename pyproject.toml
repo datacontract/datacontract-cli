@@ -1,6 +1,6 @@
 [project]
 name = "datacontract-cli"
-version = "1.2.7"
+version = "1.2.9"
 description = "The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library."
 license = "MIT"
 readme = "README.md"
@@ -47,7 +47,7 @@ keywords = [
 ]
 requires-python = ">=3.10,<3.15"
 dependencies = [
-  "typer>=0.18.0,<0.28",
+  "typer>=0.18.0,<0.29",
   "click>=8.1.0,<9.0.0",
   "pydantic>=2.8.2,<2.15.0",
   "pydantic-settings>=2.5.0,<3.0.0",
@@ -131,8 +131,8 @@ dataframe = [
 # `ibis.pyspark.connect(session=spark)` still works against that session.
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
-  "databricks-sql-connector>=3.7.0,<4.7.0",
-  "databricks-sdk<0.154.0",
+  "databricks-sql-connector>=3.7.0,<4.10.0",
+  "databricks-sdk<0.163.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -205,14 +205,16 @@ gcs = [
 
 azure = [
   "datacontract-cli[duckdb]",
-  'duckdb-extension-azure>=1.0.3,<1.1.0; platform_system != "Linux" or platform_machine != "aarch64"',
-  "azure-identity>=1.17.1,<1.18",
-  "azure-storage-blob>=12.24,<12.30",
+  "duckdb-extension-azure>=1.5.0,<1.6.0",
+  "azure-identity>=1.17.1,<1.28",
+  "azure-storage-blob>=12.24,<12.32",
 ]
 
 snowflake = [
-  "snowflake-connector-python[pandas]>=3.6,<4.9",
-  "ibis-framework[snowflake]>=10.0.0,<13.0.0"
+  "snowflake-connector-python[pandas]>=3.17,<5.2",
+  "ibis-framework[snowflake]>=10.0.0,<13.0.0",
+  # ibis imports packaging unconditionally; snowflake-connector-python 5.x no longer pulls it in.
+  "packaging>=21.3,<27.0"
 ]
 
 sqlserver = [
@@ -288,7 +290,7 @@ rdf = [
 ]
 
 api = [
-  "fastapi>=0.115.0,<0.144.0",
+  "fastapi>=0.115.0,<0.163.0",
   "uvicorn>=0.44.0,<0.55.0",
 ]
 
@@ -317,20 +319,20 @@ dev = [
   "httpx==0.28.1",
   "kafka-python",
   "minio==7.2.20",  # Pin to 7.2.17 - 7.2.18+ has keyword-only params incompatible with testcontainers
-  "moto==5.2.4",
+  "moto==5.2.5",
   "openapi-spec-validator>=0.7,<0.10",  # asserts that `datacontract api` serves a valid OpenAPI document
   "pandas>=2.1.0",
   "pre-commit>=3.7.1,<4.7.0",
   "pytest",
   "pytest-cov",
   "pytest-xdist",
-  "pymssql==2.4.4",
+  "pymssql==2.4.6",
   # psycopg2 / mysql-connector-python are used directly by the postgres / mysql
   # test fixtures to load seed SQL (the engine connects via ibis-postgres'
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
-  "mysql-connector-python>=8.0.30,<26.8.0",
-  "ruff==0.17.1",
+  "mysql-connector-python>=8.0.30,<26.11.0",
+  "ruff==0.17.4",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.340.0",
 ]
@@ -339,10 +341,10 @@ dev = [
 # "Project links" sidebar); unrecognised names render as plain bullets.
 [project.urls]
 Homepage = "https://cli.datacontract.com"
-Documentation = "https://docs.datacontract.com"
+Documentation = "https://cli.datacontract.com"
 Repository = "https://github.com/datacontract/datacontract-cli"
 Issues = "https://github.com/datacontract/datacontract-cli/issues"
-Changelog = "https://docs.datacontract.com/release-notes"
+Changelog = "https://cli.datacontract.com/release-notes"
 
 [project.scripts]
 datacontract = "datacontract.cli:main"
