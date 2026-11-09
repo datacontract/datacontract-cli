@@ -34,6 +34,11 @@ from datacontract.model.workbook import (
 
 logger = logging.getLogger(__name__)
 
+ODCS_EXCEL_TEMPLATE_URL = (
+    "https://github.com/datacontract/open-data-contract-standard-excel-template/raw/refs/heads/main/odcs-template.xlsx"
+)
+CUSTOM_PROPS_START_COL = 39
+
 
 class ExcelExporter(Exporter):
     """Excel exporter that uses the official ODCS template"""
@@ -102,32 +107,38 @@ class Export:
         return True
 
 
-def export_to_excel_bytes(odcs: OpenDataContractStandard, template_path: Optional[str] = None) -> bytes:
-    """Export ODCS to Excel using the official template (or a custom one) and return the workbook bytes."""
+def export_to_excel_bytes(
+    odcs: OpenDataContractStandard,
+    template_path: Optional[str] = None,
+    custom_props_start_col: Optional[int] = CUSTOM_PROPS_START_COL,
+) -> bytes:
+    """
+    Export ODCS to Excel format using the official template and return as bytes
+
+    Args:
+        odcs: OpenDataContractStandard object to export
+        template_path: Optional path/URL to custom Excel template. If None, uses default template.
+        custom_props_start_col: Column index where custom properties start (1-based)
+
+    Returns:
+        Excel file as bytes
+    """
     if template_path:
         workbook = create_workbook_from_template(template_path)
     else:
         workbook = create_workbook_from_bundled_template(odcs.apiVersion)
 
     try:
-        export = Export(workbook, odcs)
-        fill_fundamentals(export)
-        fill_schema(export)
-        fill_relationships(export)
-        fill_quality(export)
-        fill_support(export)
-        fill_team(export)
-        fill_roles(export)
-        fill_sla_properties(export)
-        fill_servers(export)
-        fill_pricing(export)
-        fill_enum(export)
-        fill_synonyms(export)
-        fill_context_sheets(export)
-        # last: the row fillers above decide what ends up here
-        fill_custom_properties(export)
-        fill_authoritative_definitions(export)
-        warn_unsupported(export)
+        fill_fundamentals(workbook, odcs)
+        fill_schema(workbook, odcs, custom_props_start_col)
+        fill_quality(workbook, odcs)
+        fill_custom_properties(workbook, odcs)
+        fill_support(workbook, odcs)
+        fill_team(workbook, odcs)
+        fill_roles(workbook, odcs)
+        fill_sla_properties(workbook, odcs)
+        fill_servers(workbook, odcs)
+        fill_pricing(workbook, odcs)
 
         workbook.active = workbook["Fundamentals"]
         try:
@@ -243,20 +254,9 @@ def context_instructions(context) -> Optional[str]:
     return context if isinstance(context, str) else context.instructions
 
 
-def fill_pricing(export: Export):
-    if export.odcs.price:
-        set_cell_value_by_name(export, "price.priceAmount", export.odcs.price.priceAmount)
-        set_cell_value_by_name(export, "price.priceCurrency", export.odcs.price.priceCurrency)
-        set_cell_value_by_name(export, "price.priceUnit", export.odcs.price.priceUnit)
-        set_optional_cell(export, "price.id", export.odcs.price.id)
-
-
-# --- Schema sheets --------------------------------------------------------------------------------
-
-
-def fill_schema(export: Export):
-    """Fill schema information by cloning the template sheet once per schema"""
-    workbook = export.workbook
+def fill_schema(workbook: Workbook, odcs: OpenDataContractStandard, custom_props_start_col: Optional[int]):
+    """Fill schema information by cloning template sheets"""
+    # Get template sheet "Schema <table_name>"
     schema_template_sheet = workbook["Schema <table_name>"]
 
     if not export.odcs.schema_:
@@ -271,10 +271,11 @@ def fill_schema(export: Export):
         workbook.move_sheet(new_sheet, offset=workbook.index(schema_template_sheet) - workbook.index(new_sheet))
         new_sheets.append((new_sheet, schema))
 
-    workbook.remove(schema_template_sheet)
-
-    for new_sheet, schema in new_sheets:
-        fill_single_schema(export, new_sheet, schema)
+            # Fill in schema information
+            fill_single_schema(new_sheet, schema, custom_props_start_col)
+    else:
+        # Remove the template sheet even if no schemas
+        workbook.remove(schema_template_sheet)
 
 
 def copy_sheet_names(workbook: Workbook, template_sheet: Worksheet, new_sheet: Worksheet):
@@ -289,12 +290,10 @@ def copy_sheet_names(workbook: Workbook, template_sheet: Worksheet, new_sheet: W
             logger.warning(f"Failed to copy worksheet-scoped named range {name_str}: {e}")
 
 
-def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
-    set_cell_value_by_name_in_sheet(export, sheet, "schema.name", schema.name)
-    set_cell_value_by_name_in_sheet(export, sheet, "schema.physicalType", schema.physicalType or "table")
-    set_cell_value_by_name_in_sheet(export, sheet, "schema.description", schema.description)
-    set_cell_value_by_name_in_sheet(export, sheet, "schema.businessName", schema.businessName)
-    set_cell_value_by_name_in_sheet(export, sheet, "schema.physicalName", schema.physicalName)
+def fill_single_schema(sheet: Worksheet, schema: SchemaObject, custom_props_start_col: int):
+    """Fill a single schema sheet with schema information using named ranges"""
+    # Use worksheet-scoped named ranges that were copied from the template
+    set_cell_value_by_name_in_sheet(sheet, "schema.name", schema.name)
     set_cell_value_by_name_in_sheet(
         export, sheet, "schema.dataGranularityDescription", schema.dataGranularityDescription
     )
@@ -325,16 +324,59 @@ def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
     export.inline_custom_properties(schema, inline=False)  # the schema block has no inline columns
 
     if schema.properties:
-        header_row = properties_header_row(sheet)
-        header_map = header_columns(sheet, header_row)
-        row_index = header_row + 1
-        for prop in schema.properties:
-            row_index = fill_property_row(export, sheet, header_row, header_map, row_index, "", prop)
+        fill_properties_in_schema_sheet(sheet, schema.properties, custom_props_start_col=custom_props_start_col)
 
 
-def properties_header_row(sheet: Worksheet) -> int:
-    ref = name_to_ref_in_sheet(sheet, "schema.properties")
-    return parse_range_safely(ref) if ref else 13
+def fill_properties_in_schema_sheet(
+    sheet: Worksheet, properties: List[SchemaProperty], prefix: str = "", custom_props_start_col: int = 39
+):
+    """Fill properties in the schema sheet using the template's existing properties table"""
+    try:
+        # The template already has a properties table starting at row 13 with headers
+        # Find the header row and map column names to indices
+        header_row_index = 13
+        headers = get_headers_from_header_row(sheet, header_row_index)
+
+        # Reverse the headers dict to map header_name -> column_index
+        header_map = {header_name.lower(): col_idx for col_idx, header_name in headers.items()}
+
+        def _collect_custom_property_names(props: List[SchemaProperty]) -> list:
+            """Recursively collect unique customProperties.property names, preserving insertion order."""
+            seen: dict = {}
+
+            def _recurse(prop_list):
+                for prop in prop_list:
+                    if prop.customProperties:
+                        for cp in prop.customProperties:
+                            if cp.property and cp.property not in seen:
+                                seen[cp.property] = None
+                    if prop.properties:
+                        _recurse(prop.properties)
+                    if prop.items:
+                        _recurse([prop.items])
+
+            _recurse(props)
+            return list(seen.keys())
+
+        def _register_custom_property_columns(props: List[SchemaProperty]):
+            """Write custom property names as extra column headers starting at column AM (index 39)
+            and register them in header_map so fill_single_property_template can populate values."""
+
+            for offset, name in enumerate(_collect_custom_property_names(props)):
+                col_1based = custom_props_start_col + offset
+                sheet.cell(row=header_row_index, column=col_1based).value = name
+                # header_map uses 0-based indices (col_idx + 1 in set_by_header)
+                header_map[name.lower()] = col_1based - 1
+
+        _register_custom_property_columns(properties)
+
+        # Fill properties starting after header row
+        row_index = header_row_index + 1
+        for property in properties:
+            row_index = fill_single_property_template(sheet, row_index, prefix, property, header_map)
+
+    except Exception as e:
+        logger.warning(f"Error filling properties: {e}")
 
 
 LOGICAL_TYPE_OPTION_HEADERS = {
@@ -422,6 +464,11 @@ def fill_property_row(
     export.sheet_authoritative_definitions(prop, skip=inline)
 
     write_inline_custom_properties(export, sheet, header_row, row_index, prop)
+
+    # customProperties Pivot extra columns
+    if property.customProperties:
+        for custom_prop in property.customProperties:
+            set_by_header(f"{custom_prop.property}", custom_prop.value)
 
     next_row_index = row_index + 1
     for nested in prop.properties or []:

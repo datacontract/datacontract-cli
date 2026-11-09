@@ -135,66 +135,13 @@ importer_factory.register_lazy_importer(
 importer_factory.register_lazy_importer(
     name=ImportFormat.powerbi,
     module_path="datacontract.imports.powerbi_importer",
-    class_name="PowerBiImporter",
+    class_name="PowerBIImporter",
 )
 importer_factory.register_lazy_importer(
     name=ImportFormat.snowflake,
     module_path="datacontract.imports.snowflake_importer",
     class_name="SnowflakeImporter",
 )
-importer_factory.register_lazy_importer(
-    name=ImportFormat.redshift,
-    module_path="datacontract.imports.redshift_importer",
-    class_name="RedshiftImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.postgres,
-    module_path="datacontract.imports.postgres_importer",
-    class_name="PostgresImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.athena,
-    module_path="datacontract.imports.athena_importer",
-    class_name="AthenaImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.trino,
-    module_path="datacontract.imports.trino_importer",
-    class_name="TrinoImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.clickhouse,
-    module_path="datacontract.imports.clickhouse_importer",
-    class_name="ClickHouseImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.hive,
-    module_path="datacontract.imports.hive_importer",
-    class_name="HiveImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.oracle,
-    module_path="datacontract.imports.oracle_importer",
-    class_name="OracleImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.sqlserver,
-    module_path="datacontract.imports.sqlserver_importer",
-    class_name="SqlServerImporter",
-)
-importer_factory.register_lazy_importer(
-    name=ImportFormat.mysql,
-    module_path="datacontract.imports.mysql_importer",
-    class_name="MysqlImporter",
-)
-# one importer, registered once per object storage; it reads the server type
-# from the format it was registered under
-for _storage in (ImportFormat.s3, ImportFormat.gcs, ImportFormat.adls):
-    importer_factory.register_lazy_importer(
-        name=_storage,
-        module_path="datacontract.imports.object_storage_importer",
-        class_name="ObjectStorageImporter",
-    )
 importer_factory.register_lazy_importer(
     name=ImportFormat.json,
     module_path="datacontract.imports.json_importer",

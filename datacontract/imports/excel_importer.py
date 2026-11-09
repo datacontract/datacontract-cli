@@ -43,6 +43,11 @@ from datacontract.model.workbook import (
 
 logger = logging.getLogger(__name__)
 
+# Custom property columns start at column AM (0-based index 38), i.e., after column AL.
+# Any column header at or beyond this index in the properties header row is treated as a
+# custom property name; non-blank intersections with each data row become CustomProperty entries.
+CUSTOM_PROPERTIES_START_COL = 38
+
 
 class ExcelImporter(Importer):
     def import_source(
@@ -300,12 +305,38 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
     if not header_row:
         return None
     try:
-        table = RowSheet(sheet, header_row)
-        property_lookup = {}  # full dotted name -> property, for nesting
+        # Find the properties table
+        properties_range = get_range_by_name_in_sheet(sheet, "schema.properties")
+        if not properties_range:
+            return None
+        
+        # Get header row to map column names to indices
+        header_row = list(sheet.rows)[properties_range[0] - 1]  # Convert to 0-based indexing
+        headers = {}
+        for i, cell in enumerate(header_row):
+            if cell.value:
+                headers[cell.value.lower()] = i
 
-        for row in table.rows():
-            property_name = row.text("property")
-            if not property_name:
+        # Columns at or beyond CUSTOM_PROPERTIES_START_COL with a non-blank header are
+        # custom property names (unpivoted: header = property, cell value = value).
+        custom_prop_cols: dict[int, str] = {
+            i: str(cell.value).strip()
+            for i, cell in enumerate(header_row)
+            if i >= CUSTOM_PROPERTIES_START_COL and cell.value and str(cell.value).strip()
+        }
+
+        # Process property rows
+        property_lookup = {}  # Dictionary to keep track of properties by name for nesting
+
+        # First, create all properties
+        for row_idx in range(properties_range[0], properties_range[1]):
+            if len(list(sheet.rows)) < row_idx + 1:
+                break
+            row = list(sheet.rows)[row_idx]
+
+            # Skip empty rows or header row
+            property_name = get_cell_value(row, headers.get("property"))
+            if not property_name or row_idx == properties_range[0] - 1:
                 continue
 
             property_obj = SchemaProperty(
@@ -344,6 +375,31 @@ def import_properties(sheet) -> Optional[List[SchemaProperty]]:
                     AuthoritativeDefinition(url=authoritative_definition_url, type=authoritative_definition_type)
                 ]
 
+            # Quality will be attached later via quality_map
+            property_obj.quality = None
+
+            # Transform sources
+            transform_sources = get_cell_value(row, headers.get("transform sources"))
+            if transform_sources:
+                property_obj.transformSourceObjects = [
+                    src.strip() for src in transform_sources.split(",") if src.strip()
+                ]
+
+            # Examples
+            examples = get_cell_value(row, headers.get("example(s)"))
+            if examples:
+                property_obj.examples = [ex.strip() for ex in examples.split(",") if ex.strip()]
+
+            # Custom properties: unpivot header row columns >= CUSTOM_PROPERTIES_START_COL
+            if custom_prop_cols:
+                custom_props = [
+                    CustomProperty(property=prop_name, value=get_cell_value(row, col_idx))
+                    for col_idx, prop_name in custom_prop_cols.items()
+                    if get_cell_value(row, col_idx) is not None
+                ]
+                property_obj.customProperties = custom_props if custom_props else None
+
+            # Add to lookup dictionary
             property_lookup[property_name] = property_obj
 
         root_properties = []
