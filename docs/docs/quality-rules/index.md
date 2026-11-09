@@ -5,9 +5,13 @@ slug: /quality-rules
 description: "Define and run data quality rules in a data contract using ODCS quality checks: SQL, library, text, and custom."
 ---
 
+import {EntropyExplainsVideo, EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # Define your Quality Rules
 
 Beyond the [schema checks](../schema.md) (presence, type, `required`, `unique`, primary keys, value ranges), a data contract can declare **quality rules**. When you run [`datacontract test`](../testing/index.md), executable rules run against the data source and are reported alongside the schema checks.
+
+<EntropyExplainsLink episode="data-quality" />
 
 Quality rules use the ODCS `quality` attribute, which can be attached either to a **schema** (table/object level) or to an individual **property** (column/field level):
 

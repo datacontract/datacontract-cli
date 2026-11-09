@@ -4,9 +4,13 @@ title: "Link your Semantics"
 description: "Link a property to a shared semantic concept or reusable definition with ODCS authoritativeDefinitions, by URL or IRI, and let the CLI inline it."
 ---
 
+import {EntropyExplainsVideo, EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # Link your Semantics
 
 A property does not have to carry its full meaning inline. With the ODCS `authoritativeDefinitions` attribute, a property can **link to a shared semantic concept** — a business term defined once, centrally — and the CLI resolves that link and inlines the definition before linting, testing, or exporting the contract.
+
+<EntropyExplainsLink episode="semantics" />
 
 ```yaml
 schema:
