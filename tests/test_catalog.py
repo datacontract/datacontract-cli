@@ -88,6 +88,8 @@ def test_markdown_index_escapes_the_title_of_the_link(tmp_path: PosixPath):
     create_index_md(contracts, tmp_path)
 
     assert "[Orders \\[v2\\] \\\\ draft](" in (tmp_path / "index.md").read_text()
+
+
 def test_home_links_point_to_the_catalog_index(tmp_path: PosixPath):
     runner = CliRunner()
     result = runner.invoke(app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--output", tmp_path])
