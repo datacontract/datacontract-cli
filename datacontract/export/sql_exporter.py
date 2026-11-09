@@ -158,7 +158,7 @@ def _to_sql_table(
                 col += " primary key"
             if server_type == "databricks" and prop.description is not None:
                 col += f' COMMENT "{_escape(prop.description)}"'
-            if server_type == "snowflake" and prop.description is not None:
+            if server_type in ("snowflake", "mysql") and prop.description is not None:
                 col += f" COMMENT '{_escape_single_quoted(prop.description)}'"
         if current_line < total_lines:
             col += ","
@@ -185,7 +185,7 @@ def _to_sql_table(
             result += f"\nCOMMENT '{_escape_single_quoted(model.description)}'"
     elif server_type == "databricks" and model.description is not None:
         result += f' COMMENT "{_escape(model.description)}"'
-    elif server_type == "snowflake" and model.description is not None:
+    elif server_type in ("snowflake", "mysql") and model.description is not None:
         result += f" COMMENT='{_escape_single_quoted(model.description)}'"
     result += ";\n"
     return result

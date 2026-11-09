@@ -77,6 +77,34 @@ CREATE TABLE extracts (
     assert actual == expected
 
 
+def test_to_sql_ddl_mysql_comments():
+    actual = DataContract(
+        data_contract_str="""
+apiVersion: v3.1.0
+kind: DataContract
+id: mysql-comments
+name: MySQL Comments
+version: 1.0.0
+status: active
+schema:
+- name: orders
+  description: The shop's orders.
+  properties:
+  - name: order_id
+    logicalType: integer
+    description: Unique identifier of the order.
+"""
+    ).export("sql", sql_server_type="mysql")
+    expected = """
+-- Data Contract: mysql-comments
+-- SQL Dialect: mysql
+CREATE TABLE orders (
+  order_id int COMMENT 'Unique identifier of the order.'
+) COMMENT='The shop''s orders.';
+""".strip()
+    assert actual == expected
+
+
 def test_to_sql_ddl_databricks_unity_catalog():
     actual = DataContract(data_contract_file="fixtures/databricks-sql/datacontract.yaml").export("sql")
     expected = """
