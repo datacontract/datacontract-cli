@@ -453,6 +453,9 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
     options = f"'{_sql_literal(model_path)}', header=true, stop_at_empty=false"
     if sheet:
         options += f", sheet='{_sql_literal(sheet)}'"
+    cell_range = _xlsx_range(schema_obj)
+    if cell_range:
+        options += f", range='{_sql_literal(cell_range)}'"
     typed = f"read_xlsx({options}, ignore_errors=true)"
     text = f"read_xlsx({options}, all_varchar=true)"
     cells = f"(SELECT * FROM {typed}) AS t POSITIONAL JOIN (SELECT * FROM {text}) AS r"
@@ -462,6 +465,7 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
 
     # Like DuckDB's own identifiers, a header answers to its name in any case
     headers = {row[0].lower(): row for row in con.sql(f"DESCRIBE SELECT * FROM {typed}").fetchall()}
+    check_xlsx_header_row(con, model_path, sheet, cell_range, len(headers))
     # A row that is empty in every column is a spacer, not a record
     not_empty = f"coalesce({', '.join(f'r.{_quote(row[0])}' for row in headers.values())}) IS NOT NULL"
     columns, errors = [], []
@@ -488,6 +492,65 @@ def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
     # DuckDB identifiers are case-insensitive, so sheet Orders already answers to orders
     if schema_obj.name.lower() != view.lower():
         con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(view)};")
+
+
+# The first cell of a range, and the last column if it names one: A2:K, A2:K500, B3
+_RANGE_START = re.compile(r"([A-Za-z]+)(\d+)(?::([A-Za-z]+)\d*)?")
+
+
+def _column_number(letters: str) -> int:
+    number = 0
+    for letter in letters.upper():
+        number = number * 26 + ord(letter) - ord("A") + 1
+    return number
+
+
+def _column_letters(number: int) -> str:
+    letters = ""
+    while number:
+        number, remainder = divmod(number - 1, 26)
+        letters = chr(ord("A") + remainder) + letters
+    return letters
+
+
+def check_xlsx_header_row(con, model_path: str, sheet: Optional[str], cell_range: Optional[str], width: int) -> None:
+    """Refuse a sheet whose header row is empty.
+
+    read_xlsx skips empty rows before the header, even inside a range, so a sheet with an empty row
+    where its header should be would be read from the next row down and pass. The header row is the
+    first row of the sheet, or of the schema's xlsxRange; `width` is the number of columns read_xlsx
+    found, which bounds the first read (reading a whole row out to column XFD takes over a second).
+    Only the whole row can show it is empty, as read_xlsx also skips empty columns before the header.
+    """
+    match = _RANGE_START.fullmatch(cell_range or "A1")
+    if not match:
+        # read_xlsx reports a malformed range itself
+        return
+    first_column, row, last_column = match.groups()
+    width_bound = _column_letters(_column_number(first_column) + max(width, 1) - 1)
+    for last in [last_column] if last_column else [width_bound, "XFD"]:
+        options = (
+            f"'{_sql_literal(model_path)}', header=false, all_varchar=true, range='{first_column}{row}:{last}{row}'"
+        )
+        if sheet:
+            options += f", sheet='{_sql_literal(sheet)}'"
+        header = con.sql(f"SELECT * FROM read_xlsx({options})").fetchone()
+        if header is not None and any(cell is not None for cell in header):
+            return
+    where = f"row {row} of sheet '{sheet}'" if sheet else f"row {row} of the first sheet"
+    raise DataContractException(
+        type="xlsx-connection",
+        name="empty_header_row",
+        reason=(
+            f"The header should be on {where}, but that row is empty. "
+            "Set the schema's xlsxRange to start at the header row."
+        ),
+    )
+
+
+def _xlsx_range(schema_obj: SchemaObject) -> Optional[str]:
+    """The cells of the sheet to read, header row first, for a sheet whose header is not in its first row."""
+    return next((c.value for c in schema_obj.customProperties or [] if c.property == "xlsxRange"), None)
 
 
 def _cell_value(column: str, sql_type: str, inferred_type: str) -> str:
@@ -594,25 +657,18 @@ def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properti
 
 
 def _load_extension(con, name: str, extra: str) -> None:
-    import gzip
     import importlib.resources
     import pathlib
-    import shutil
-    import tempfile
 
     # first try to use locally bundled wheel to support air-gapped environments
     try:
         ext_module = importlib.import_module(f"duckdb_extension_{name}")
         module_path = pathlib.Path(str(importlib.resources.files(ext_module)))
         duckdb_version = con.sql("PRAGMA version;").fetchone()[0]
-        extension_file_gz = module_path / "extensions" / duckdb_version / f"{name}.duckdb_extension.gz"
+        extension_file = module_path / "extensions" / duckdb_version / f"{name}.duckdb_extension"
 
-        if extension_file_gz.exists():
-            tmpdir = pathlib.Path(tempfile.mkdtemp(prefix=f"datacontract-{name}-"))
-            extension_file = tmpdir / f"{name}.duckdb_extension"
-            with gzip.open(extension_file_gz, "rb") as src, open(extension_file, "wb") as dst:
-                shutil.copyfileobj(src, dst)
-            con.sql(f"LOAD '{extension_file}'")
+        if extension_file.exists():
+            con.sql(f"LOAD '{_sql_literal(extension_file)}'")
             return
     except ImportError:
         pass

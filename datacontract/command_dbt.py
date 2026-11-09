@@ -12,6 +12,7 @@ from datacontract.cli import (
     console,
     debug_option,
     enable_debug_logging,
+    inline_references_option,
     validate_publish_url,
 )
 from datacontract.config import cli_config
@@ -337,6 +338,7 @@ def sync_command(
         ),
     ] = None,
     ssl_verification: Annotated[bool, typer.Option(help="SSL verification when publishing test results.")] = True,
+    inline_references: inline_references_option = True,
     debug: debug_option = None,
 ):
     """
@@ -371,7 +373,7 @@ def sync_command(
             console.print(f"[yellow]Skipping {path}: not an ODCS data contract.[/yellow]")
             continue
         try:
-            odcs = resolve_data_contract(str(path))
+            odcs = resolve_data_contract(str(path), inline_references=inline_references)
             model_names = list(resolve_model_names(odcs, model_resolution, schema_name).values())
             dbt_version = resolve_versioned_target(project_dir, model_names, parse_filename_version(path))
             loaded.append((path, odcs, model_names, dbt_version))
@@ -399,6 +401,7 @@ def sync_command(
                 model_version=dbt_version,
                 server=server,
                 dry_run=dry_run,
+                inline_references=inline_references,
             )
         except Exception as e:
             if not multiple_contracts:

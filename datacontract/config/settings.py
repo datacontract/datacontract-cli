@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -282,8 +283,10 @@ class Config(BaseSettings):
     snowflake_username: str | None = None
     snowflake_password: SecretStr | None = None
     snowflake_authenticator: str | None = None
+    snowflake_workload_identity_provider: str | None = None
     snowflake_role: str | None = None
     snowflake_token: SecretStr | None = None
+    snowflake_token_file_path: str | None = None
     snowflake_passcode: SecretStr | None = None
     snowflake_private_key: SecretStr | None = None
     snowflake_private_key_file: str | None = None
@@ -337,6 +340,7 @@ class Config(BaseSettings):
     trino_username: str | None = None
     trino_password: SecretStr | None = None
     trino_jwt_token: SecretStr | None = None
+    trino_http_headers: SecretStr | None = None
     # overrides for the contract's servers block
     trino_host: str | None = None
     trino_port: int | None = None
@@ -504,6 +508,29 @@ class Config(BaseSettings):
             return value
         # A set-but-empty variable counts as false, matching pre-Config parsing.
         return str(value).strip().lower() in _TRUTHY
+
+    def _dict_option(self, field_name: str, required: bool = False) -> dict[str, str] | None:
+        """Parse JSON-object or comma-separated ``key=value`` connection properties."""
+        text = self._str_option(field_name, required)
+        if not text:
+            return None
+        if text.startswith("{"):
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError as e:
+                key = env_name(field_name, type(self).model_fields[field_name])
+                server_type = field_name.split("_")[0]
+                from datacontract.model.exceptions import DataContractException
+
+                raise DataContractException(
+                    type=f"{server_type}-connection",
+                    name=f"invalid_mapping_{key}",
+                    reason=f"{key} is not valid JSON: {e}",
+                    engine="datacontract-cli",
+                )
+            return {str(k): str(v) for k, v in parsed.items()}
+        pairs = (pair.partition("=") for pair in text.split(",") if pair.strip())
+        return {key.strip(): value.strip() for key, _, value in pairs if key.strip()}
 
     # --- entropy ---
     def get_entropy_data_api_key(self, required: bool = False) -> str | None:
@@ -708,8 +735,8 @@ class Config(BaseSettings):
     def get_iceberg_signing_name(self, required: bool = False) -> str | None:
         return self._str_option("iceberg_signing_name", required)
 
-    def get_iceberg_properties(self, required: bool = False) -> str | None:
-        return self._str_option("iceberg_properties", required)
+    def get_iceberg_properties(self, required: bool = False) -> dict[str, str] | None:
+        return self._dict_option("iceberg_properties", required)
 
     def get_iceberg_credential(self, required: bool = False) -> str | None:
         return self._str_option("iceberg_credential", required)
@@ -914,11 +941,17 @@ class Config(BaseSettings):
     def get_snowflake_authenticator(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_authenticator", required)
 
+    def get_snowflake_workload_identity_provider(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_workload_identity_provider", required)
+
     def get_snowflake_role(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_role", required)
 
     def get_snowflake_token(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_token", required)
+
+    def get_snowflake_token_file_path(self, required: bool = False) -> str | None:
+        return self._str_option("snowflake_token_file_path", required)
 
     def get_snowflake_passcode(self, required: bool = False) -> str | None:
         return self._str_option("snowflake_passcode", required)
@@ -1051,6 +1084,9 @@ class Config(BaseSettings):
 
     def get_trino_jwt_token(self, required: bool = False) -> str | None:
         return self._str_option("trino_jwt_token", required)
+
+    def get_trino_http_headers(self, required: bool = False) -> dict[str, str] | None:
+        return self._dict_option("trino_http_headers", required)
 
     def get_trino_host(self, required: bool = False) -> str | None:
         return self._str_option("trino_host", required)
