@@ -91,8 +91,13 @@ const config: Config = {
       src: 'https://cloud.umami.is/script.js',
       defer: true,
       'data-website-id': '3cc8a904-405b-4d1a-b3ef-bd4b484d8645',
+      // Only report from production, so local `docusaurus start` and preview builds don't skew the stats.
+      'data-domains': 'cli.datacontract.com',
     },
   ],
+
+  // Umami click tracking (important links, code copies) + UTM on links to Entropy Data.
+  clientModules: [require.resolve('./src/clientModules/umamiAutoTrack.js')],
 
   presets: [
     [
