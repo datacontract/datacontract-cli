@@ -14,6 +14,7 @@ const RULES = [
   ['auto-to-entropy-data-api', /\/\/api\.entropy-data\.com/],
   ['auto-to-entropy-data', /\/\/(www\.|app\.|docs\.)?entropy-data\.com/],
   ['auto-to-datacontract-editor', /\/\/editor\.datacontract\.com/],
+  ['auto-to-tutorial', /\/\/learn\.datacontract\.com/],
   ['auto-github-star', /\/\/github\.com\/datacontract\/datacontract-cli\/?([?#]|$)/],
   ['auto-to-github', /\/\/github\.com\/(datacontract|bitol-io|entropy-data)\b/],
   ['auto-join-slack', /datacontract\.com\/slack|\.slack\.com\//],
