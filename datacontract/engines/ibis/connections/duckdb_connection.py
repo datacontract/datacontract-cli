@@ -734,21 +734,13 @@ def setup_gcs_connection(con, server: Server, config: Config):
     """)
 
 
-def _duckdb_supports_azure_credential_chain() -> bool:
-    """The azure extension's CREDENTIAL_CHAIN provider exists from DuckDB 1.0. The ibis duckdb backend reuses the
-    same duckdb module, so the duckdb version is the deciding factor."""
-    duckdb = _import_duckdb()
-    match = re.match(r"(\d+)\.(\d+)", duckdb.__version__)
-    return match is not None and (int(match.group(1)), int(match.group(2))) >= (1, 0)
-
-
 def setup_azure_connection(con, server: Server, config: Config, untrusted_contract: bool = False):
     tenant_id = config.get_azure_tenant_id()
     client_id = config.get_azure_client_id()
     client_secret = config.get_azure_client_secret()
     use_service_principal = bool(tenant_id and client_id and client_secret)
 
-    if not use_service_principal and (untrusted_contract or not _duckdb_supports_azure_credential_chain()):
+    if not use_service_principal and untrusted_contract:
         # The credential chain would read with the host's own identity from any account an untrusted contract names
         tenant_id = config.get_azure_tenant_id(required=True)
         client_id = config.get_azure_client_id(required=True)

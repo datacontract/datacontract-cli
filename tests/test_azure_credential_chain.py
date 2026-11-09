@@ -18,8 +18,7 @@ def _clean_env(monkeypatch):
     monkeypatch.setattr(dc, "_load_extension", lambda *a, **k: None)
 
 
-def _run(monkeypatch, supported=True, untrusted_contract=False, **options):
-    monkeypatch.setattr(dc, "_duckdb_supports_azure_credential_chain", lambda: supported)
+def _run(monkeypatch, untrusted_contract=False, **options):
     con = MagicMock()
     dc.setup_azure_connection(con, Server(type="azure", location=LOCATION), Config(**options), untrusted_contract)
     return con.sql.call_args[0][0]
@@ -54,11 +53,6 @@ def test_credential_chain_is_escaped(monkeypatch):
 def test_credential_chain_read_from_env(monkeypatch):
     monkeypatch.setenv("DATACONTRACT_AZURE_CREDENTIAL_CHAIN", "managed_identity")
     assert "CHAIN 'managed_identity'" in _run(monkeypatch)
-
-
-def test_old_duckdb_requires_spn_options(monkeypatch):
-    with pytest.raises(DataContractException):
-        _run(monkeypatch, supported=False)
 
 
 def test_untrusted_contract_requires_spn_options(monkeypatch):

@@ -24,7 +24,7 @@ servers:
 Two authentication methods are supported by the DuckDB engine (`datacontract test` on Azure files):
 
 1. **Service Principal (App Registration) with a secret.** Used when all three of `DATACONTRACT_AZURE_TENANT_ID`, `DATACONTRACT_AZURE_CLIENT_ID` and `DATACONTRACT_AZURE_CLIENT_SECRET` are set.
-2. **Azure credential chain.** Used as soon as the service principal variables are not all set: Azure CLI (`az login`), environment, managed identity, workload identity, and so on. It uses the `CREDENTIAL_CHAIN` provider of the DuckDB `azure` extension and needs DuckDB 1.0 or newer; with an older DuckDB the service principal variables stay mandatory. Contracts posted to `datacontract api` never use the chain, so the API server's own identity is not lent to its callers; send the service principal as `datacontract-azure-*` request headers instead.
+2. **Azure credential chain.** Used as soon as the service principal variables are not all set: Azure CLI (`az login`), environment, managed identity, workload identity, and so on. It uses the `CREDENTIAL_CHAIN` provider of the DuckDB `azure` extension. Contracts posted to `datacontract api` never use the chain, so the API server's own identity is not lent to its callers; send the service principal as `datacontract-azure-*` request headers instead.
 
 | Variable | Example | Description |
 |---|---|---|
