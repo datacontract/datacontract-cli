@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
-- `datacontract export sql`: MySQL tables and columns get their descriptions as `COMMENT`s (#1811)
+- `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
 
 ### Fixed
 - Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`

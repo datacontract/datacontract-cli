@@ -105,6 +105,32 @@ CREATE TABLE orders (
     assert actual == expected
 
 
+def test_to_sql_ddl_mysql_truncates_long_comments():
+    actual = DataContract(
+        data_contract_str=f"""
+apiVersion: v3.1.0
+kind: DataContract
+id: mysql-long-comments
+name: MySQL Long Comments
+version: 1.0.0
+status: active
+schema:
+- name: orders
+  description: {"t" * 3000}
+  properties:
+  - name: order_id
+    logicalType: integer
+    description: {"c" * 2000}
+"""
+    ).export("sql", sql_server_type="mysql")
+    column_comment = "c" * 1000 + "... (1000 chars omitted)"
+    table_comment = "t" * 2024 + "... (976 chars omitted)"
+    assert f"order_id int COMMENT '{column_comment}'" in actual
+    assert f") COMMENT='{table_comment}';" in actual
+    assert len(column_comment) <= 1024
+    assert len(table_comment) <= 2048
+
+
 def test_to_sql_ddl_databricks_unity_catalog():
     actual = DataContract(data_contract_file="fixtures/databricks-sql/datacontract.yaml").export("sql")
     expected = """

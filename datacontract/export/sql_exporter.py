@@ -158,8 +158,10 @@ def _to_sql_table(
                 col += " primary key"
             if server_type == "databricks" and prop.description is not None:
                 col += f' COMMENT "{_escape(prop.description)}"'
-            if server_type in ("snowflake", "mysql") and prop.description is not None:
+            if server_type == "snowflake" and prop.description is not None:
                 col += f" COMMENT '{_escape_single_quoted(prop.description)}'"
+            if server_type == "mysql" and prop.description is not None:
+                col += f" COMMENT '{_escape_single_quoted(_truncate_mysql_comment(prop.description, 1024))}'"
         if current_line < total_lines:
             col += ","
         col += "\n"
@@ -185,8 +187,10 @@ def _to_sql_table(
             result += f"\nCOMMENT '{_escape_single_quoted(model.description)}'"
     elif server_type == "databricks" and model.description is not None:
         result += f' COMMENT "{_escape(model.description)}"'
-    elif server_type in ("snowflake", "mysql") and model.description is not None:
+    elif server_type == "snowflake" and model.description is not None:
         result += f" COMMENT='{_escape_single_quoted(model.description)}'"
+    elif server_type == "mysql" and model.description is not None:
+        result += f" COMMENT='{_escape_single_quoted(_truncate_mysql_comment(model.description, 2048))}'"
     result += ";\n"
     return result
 
@@ -278,6 +282,14 @@ def _escape(text: str | None) -> str | None:
     if text is None:
         return None
     return text.replace('"', '\\"')
+
+
+def _truncate_mysql_comment(comment: str, max_chars: int) -> str:
+    """MySQL in strict mode rejects the whole CREATE TABLE when a comment exceeds its limit."""
+    if len(comment) <= max_chars:
+        return comment
+    kept = max_chars - len(f"... ({len(comment)} chars omitted)")
+    return f"{comment[:kept]}... ({len(comment) - kept} chars omitted)"
 
 
 def _escape_single_quoted(text: str | None) -> str | None:
