@@ -56,7 +56,7 @@ def get_duckdb_connection(
         setup_gcs_connection(con, server, config)
     if server.type == "azure":
         path = server.location
-        setup_azure_connection(con, server, config)
+        setup_azure_connection(con, server, config, untrusted_contract)
 
     if server.format == "delta":
         # Updating an extension reaches the network and the extension directory,
@@ -790,37 +790,49 @@ def setup_gcs_connection(con, server: Server, config: Config):
     """)
 
 
-def setup_azure_connection(con, server: Server, config: Config):
-    tenant_id = config.get_azure_tenant_id(required=True)
-    client_id = config.get_azure_client_id(required=True)
-    client_secret = config.get_azure_client_secret(required=True)
+def setup_azure_connection(con, server: Server, config: Config, untrusted_contract: bool = False):
+    tenant_id = config.get_azure_tenant_id()
+    client_id = config.get_azure_client_id()
+    client_secret = config.get_azure_client_secret()
+    use_service_principal = bool(tenant_id and client_id and client_secret)
+
+    if not use_service_principal and untrusted_contract:
+        # The credential chain would read with the host's own identity from any account an untrusted contract names
+        tenant_id = config.get_azure_tenant_id(required=True)
+        client_id = config.get_azure_client_id(required=True)
+        client_secret = config.get_azure_client_secret(required=True)
+
     storage_account = (
         to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
     )
 
     _load_extension(con, "azure", "azure")
 
-    if storage_account is not None:
-        con.sql(f"""
-        CREATE SECRET azure_spn (
-            TYPE AZURE,
-            PROVIDER SERVICE_PRINCIPAL,
-            TENANT_ID '{_sql_literal(tenant_id)}',
-            CLIENT_ID '{_sql_literal(client_id)}',
-            CLIENT_SECRET '{_sql_literal(client_secret)}',
-            ACCOUNT_NAME '{_sql_literal(storage_account)}'
-        );
-        """)
+    if use_service_principal:
+        provider = "SERVICE_PRINCIPAL"
+        options = {"TENANT_ID": tenant_id, "CLIENT_ID": client_id, "CLIENT_SECRET": client_secret}
     else:
-        con.sql(f"""
-        CREATE SECRET azure_spn (
-            TYPE AZURE,
-            PROVIDER SERVICE_PRINCIPAL,
-            TENANT_ID '{_sql_literal(tenant_id)}',
-            CLIENT_ID '{_sql_literal(client_id)}',
-            CLIENT_SECRET '{_sql_literal(client_secret)}'
-        );
-        """)
+        # No service principal configured: resolve credentials through the Azure credential chain
+        # (az cli, env, managed identity, workload identity, ...).
+        missing = [
+            name
+            for name, value in [
+                ("DATACONTRACT_AZURE_TENANT_ID", tenant_id),
+                ("DATACONTRACT_AZURE_CLIENT_ID", client_id),
+                ("DATACONTRACT_AZURE_CLIENT_SECRET", client_secret),
+            ]
+            if not value
+        ]
+        if len(missing) == 3:
+            logger.info("Using the Azure credential chain")
+        else:
+            logger.info("Using the Azure credential chain: %s not set", " and ".join(missing))
+        provider = "CREDENTIAL_CHAIN"
+        options = {"CHAIN": config.get_azure_credential_chain()}
+
+    options["ACCOUNT_NAME"] = storage_account
+    clauses = [f"PROVIDER {provider}"] + [f"{name} '{_sql_literal(v)}'" for name, v in options.items() if v]
+    con.sql(f"CREATE OR REPLACE SECRET azure_spn (TYPE AZURE, {', '.join(clauses)});")
 
 
 def to_azure_storage_account(location: str) -> str | None:

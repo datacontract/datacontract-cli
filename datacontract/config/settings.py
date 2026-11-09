@@ -132,6 +132,7 @@ class Config(BaseSettings):
     azure_tenant_id: str | None = None
     azure_client_id: str | None = None
     azure_client_secret: SecretStr | None = None
+    azure_credential_chain: str | None = None
 
     # bigquery
     bigquery_account_info_json_path: str | None = None
@@ -600,6 +601,9 @@ class Config(BaseSettings):
 
     def get_azure_client_secret(self, required: bool = False) -> str | None:
         return self._str_option("azure_client_secret", required)
+
+    def get_azure_credential_chain(self, required: bool = False) -> str | None:
+        return self._str_option("azure_credential_chain", required)
 
     # --- bigquery ---
     def get_bigquery_account_info_json_path(self, required: bool = False) -> str | None:

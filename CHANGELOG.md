@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: test Excel sheets whose header is not in the first row, with an `xlsxRange` custom property per schema, and fail a sheet whose header row is empty (#1717 @nicolehazel)
 - Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
 - `datacontract lint` and `datacontract test` fail on duplicate schema, property, server and role names, and on duplicate `id`s within the same array; checks are skipped with a custom `--json-schema`
+- `datacontract test` and `datacontract import` authenticate to Azure through the Azure credential chain (e.g. `az login`) when no service principal is configured (@dmaresma)
 
 ## [1.2.9] - 2026-10-30
 
