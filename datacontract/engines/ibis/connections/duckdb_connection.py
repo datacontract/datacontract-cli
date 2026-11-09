@@ -56,7 +56,7 @@ def get_duckdb_connection(
         setup_gcs_connection(con, server, config)
     if server.type == "azure":
         path = server.location
-        setup_azure_connection(con, server, config)
+        setup_azure_connection(con, server, config, untrusted_contract)
 
     if server.format == "delta":
         # Updating an extension reaches the network and the extension directory,
@@ -742,14 +742,14 @@ def _duckdb_supports_azure_credential_chain() -> bool:
     return match is not None and (int(match.group(1)), int(match.group(2))) >= (1, 0)
 
 
-def setup_azure_connection(con, server: Server, config: Config):
+def setup_azure_connection(con, server: Server, config: Config, untrusted_contract: bool = False):
     tenant_id = config.get_azure_tenant_id()
     client_id = config.get_azure_client_id()
     client_secret = config.get_azure_client_secret()
     use_service_principal = bool(tenant_id and client_id and client_secret)
 
-    if not use_service_principal and not _duckdb_supports_azure_credential_chain():
-        # DuckDB too old for the credential chain: keep the explicit error on missing options
+    if not use_service_principal and (untrusted_contract or not _duckdb_supports_azure_credential_chain()):
+        # The credential chain would read with the host's own identity from any account an untrusted contract names
         tenant_id = config.get_azure_tenant_id(required=True)
         client_id = config.get_azure_client_id(required=True)
         client_secret = config.get_azure_client_secret(required=True)
