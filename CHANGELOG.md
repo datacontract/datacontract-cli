@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - - `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765)
 
 ### Added
+- `datacontract changelog --output-format json|yaml`: print the changelog as JSON or YAML to process it with other tools (#1792)
 - `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
 - `datacontract test`: test Excel sheets whose header is not in the first row, with an `xlsxRange` custom property per schema, and fail a sheet whose header row is empty (#1717 @nicolehazel)
 - Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
