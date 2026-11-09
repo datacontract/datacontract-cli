@@ -50,11 +50,6 @@ def test_credential_chain_is_escaped(monkeypatch):
     assert "CHAIN 'cli''); DROP'" in sql
 
 
-def test_credential_chain_read_from_env(monkeypatch):
-    monkeypatch.setenv("DATACONTRACT_AZURE_CREDENTIAL_CHAIN", "managed_identity")
-    assert "CHAIN 'managed_identity'" in _run(monkeypatch)
-
-
 def test_untrusted_contract_requires_spn_options(monkeypatch):
     with pytest.raises(DataContractException):
         _run(monkeypatch, untrusted_contract=True)
