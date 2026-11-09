@@ -98,9 +98,53 @@ schema:
     expected = """
 -- Data Contract: mysql-comments
 -- SQL Dialect: mysql
-CREATE TABLE orders (
-  order_id int COMMENT 'Unique identifier of the order.'
+CREATE TABLE `orders` (
+  `order_id` int COMMENT 'Unique identifier of the order.'
 ) COMMENT='The shop''s orders.';
+""".strip()
+    assert actual == expected
+
+
+def test_to_sql_ddl_mysql_quotes_reserved_words():
+    actual = DataContract(
+        data_contract_str="""
+apiVersion: v3.1.0
+kind: DataContract
+id: mysql-reserved
+name: MySQL Reserved Words
+version: 1.0.0
+status: active
+schema:
+- name: order
+  properties:
+  - name: key
+    logicalType: integer
+    primaryKey: true
+    primaryKeyPosition: 1
+  - name: group
+    logicalType: integer
+    primaryKey: true
+    primaryKeyPosition: 2
+- name: window
+  physicalType: view
+  properties:
+  - name: rank
+    logicalType: integer
+    transformSourceObjects: [orders.rank]
+"""
+    ).export("sql", sql_server_type="mysql")
+    expected = """
+-- Data Contract: mysql-reserved
+-- SQL Dialect: mysql
+CREATE TABLE `order` (
+  `key` int,
+  `group` int,
+  CONSTRAINT pk_order PRIMARY KEY (`key`, `group`)
+);
+CREATE OR REPLACE VIEW `window` AS
+SELECT
+  `rank`
+FROM orders;
 """.strip()
     assert actual == expected
 
@@ -125,7 +169,7 @@ schema:
     ).export("sql", sql_server_type="mysql")
     column_comment = "c" * 1000 + "... (1000 chars omitted)"
     table_comment = "t" * 2024 + "... (976 chars omitted)"
-    assert f"order_id int COMMENT '{column_comment}'" in actual
+    assert f"`order_id` int COMMENT '{column_comment}'" in actual
     assert f") COMMENT='{table_comment}';" in actual
     assert len(column_comment) <= 1024
     assert len(table_comment) <= 2048
