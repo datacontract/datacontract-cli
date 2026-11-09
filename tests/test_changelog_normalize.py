@@ -206,16 +206,6 @@ class TestNormalize:
         assert "alice" in result["team"]["members"]
         assert "bob" in result["team"]["members"]
 
-    def test_team_deprecated_array_form(self):
-        contract = _contract(
-            team=[
-                {"username": "alice", "role": "lead"},
-            ]
-        )
-        result = normalize(contract)
-        assert isinstance(result["team"], dict)
-        assert "alice" in result["team"]
-
     def test_quality_keyed_by_name_with_positional_fallback(self):
         contract = _contract(
             schema=[

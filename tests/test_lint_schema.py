@@ -1,7 +1,11 @@
 import json
 from importlib import resources
 
+import pytest
+from jsonschema import validators
+
 from datacontract.lint import schema
+from datacontract.lint.resolve import ODCS_SCHEMA_VERSIONS
 from datacontract.lint.schema import fetch_schema
 
 # odcs-3.1.0 has an en dash in a description: "camel case–the same"
@@ -18,3 +22,10 @@ def test_fetch_schema_decodes_local_schema_as_utf8(non_utf8_default_encoding):
     location = str(resources.files("datacontract").joinpath("schemas", ODCS_SCHEMA))
 
     assert "camel case–the same" in json.dumps(fetch_schema(location), ensure_ascii=False)
+
+
+@pytest.mark.parametrize("version", sorted(set(ODCS_SCHEMA_VERSIONS.values())))
+def test_bundled_odcs_schema_is_valid_against_its_metaschema(version):
+    bundled_schema = fetch_schema(resources.files("datacontract").joinpath("schemas", f"odcs-{version}.schema.json"))
+
+    validators.validator_for(bundled_schema).check_schema(bundled_schema)

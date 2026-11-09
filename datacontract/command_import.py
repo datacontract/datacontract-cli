@@ -1,8 +1,10 @@
+import sys
 from pathlib import Path
 from typing import List, Optional
 
 import typer
 from rich.console import Console
+from rich.prompt import Prompt
 from typing_extensions import Annotated
 
 from datacontract.cli import OrderedCommandsWithMigrationHints, debug_option, enable_debug_logging
@@ -1046,16 +1048,18 @@ def import_odata(
 
 @import_app.command(
     name="openapi",
-    epilog="Example: datacontract import openapi --source openapi.yaml --operation listOrders --output datacontract.yaml",
+    epilog="Example: datacontract import openapi --source openapi.yaml --operation listCustomers "
+    "--operation listOrders --output datacontract.yaml",
 )
 def import_openapi(
     source: Annotated[Optional[str], typer.Option(help="Path to the OpenAPI 3.x document (YAML or JSON).")] = None,
     operation: Annotated[
-        Optional[str],
+        Optional[List[str]],
         typer.Option(
             help="The GET or POST operation to import, by operationId, method and path, or a GET operation's path "
-            "(e.g. listOrders, 'POST /orders/search', or /orders). Required unless the document has exactly one GET "
-            "operation."
+            "(e.g. listOrders, 'POST /orders/search', or /orders). Repeat for several operations, each becoming a "
+            "schema served by its own endpoint. Without it, a terminal asks which operations to import; otherwise "
+            "it is required unless the document has exactly one GET operation."
         ),
     ] = None,
     output: output_option = None,
@@ -1063,9 +1067,58 @@ def import_openapi(
     id: id_option = None,
     debug: debug_option = None,
 ):
-    """Import a data contract from the response of a GET or POST operation in an OpenAPI 3.x document."""
+    """Import a data contract from the responses of GET or POST operations in an OpenAPI 3.x document."""
     enable_debug_logging(debug)
+    if not operation and source is not None and _interactive():
+        operation = _ask_openapi_operations(source)
     result = DataContract.import_from_source(
         config=cli_config(), format="openapi", source=source, openapi_operation=operation, owner=owner, id=id
     )
     _write_result(result, output)
+
+
+def _interactive() -> bool:
+    return sys.stdin.isatty()
+
+
+def _ask_openapi_operations(source: str) -> list[str] | None:
+    """The operations the user picks from the document's GET and POST operations, as `METHOD path`."""
+    from datacontract.imports.jsonschema_importer import SchemaResolver
+    from datacontract.imports.openapi_importer import _response_schema, operation_label, operations, read_openapi
+    from datacontract.model.exceptions import DataContractException
+
+    spec = read_openapi(source)
+    resolver = SchemaResolver(spec)
+    available = []
+    # only the operations whose response can be imported
+    for candidate in operations(spec):
+        try:
+            _response_schema(resolver, operation_label(candidate), candidate[3])
+            available.append(candidate)
+        except DataContractException:
+            pass
+    if len(available) < 2:
+        return None
+    # the prompt goes to stderr, as stdout may receive the contract
+    prompt_console = Console(stderr=True)
+    prompt_console.print("Operations in the OpenAPI document:")
+    for number, candidate in enumerate(available, start=1):
+        # testing a POST operation sends the request, so it should only read
+        note = "  (POST: import it only if it reads data)" if candidate[2] == "POST" else ""
+        prompt_console.print(f"  {number}. {operation_label(candidate)}{note}", markup=False)
+    while True:
+        answer = Prompt.ask(
+            "Operations to import (numbers or ranges separated by commas, or 'all')", console=prompt_console
+        )
+        if answer.strip().lower() == "all":
+            return [f"{method} {path}" for path, _, method, _ in available]
+        numbers = []
+        try:
+            for part in filter(None, (p.strip() for p in answer.split(","))):
+                first, _, last = part.partition("-")
+                numbers += range(int(first), int(last or first) + 1)
+        except ValueError:
+            numbers = []
+        if numbers and all(1 <= n <= len(available) for n in numbers):
+            return [f"{available[n - 1][2]} {available[n - 1][0]}" for n in dict.fromkeys(numbers)]
+        prompt_console.print(f"Enter numbers between 1 and {len(available)}, such as 1,3 or 1-2, or 'all'.")

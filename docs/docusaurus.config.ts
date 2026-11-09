@@ -52,7 +52,7 @@ const config: Config = {
   },
 
   // Production url of the documentation site.
-  url: 'https://docs.datacontract.com',
+  url: 'https://cli.datacontract.com',
   baseUrl: '/',
 
   // One URL per page, without a trailing slash.
@@ -91,8 +91,13 @@ const config: Config = {
       src: 'https://cloud.umami.is/script.js',
       defer: true,
       'data-website-id': '3cc8a904-405b-4d1a-b3ef-bd4b484d8645',
+      // Only report from production, so local `docusaurus start` and preview builds don't skew the stats.
+      'data-domains': 'cli.datacontract.com',
     },
   ],
+
+  // Umami click tracking (important links, code copies) + UTM on links to Entropy Data.
+  clientModules: [require.resolve('./src/clientModules/umamiAutoTrack.js')],
 
   presets: [
     [
@@ -116,9 +121,9 @@ const config: Config = {
             const { defaultCreateSitemapItems, ...rest } = params;
             const items = await defaultCreateSitemapItems(rest);
             const hubs: Record<string, number> = {
-              'https://docs.datacontract.com/': 1.0,
-              'https://docs.datacontract.com/quickstart': 0.9,
-              'https://docs.datacontract.com/commands': 0.9,
+              'https://cli.datacontract.com/': 1.0,
+              'https://cli.datacontract.com/quickstart': 0.9,
+              'https://cli.datacontract.com/commands': 0.9,
             };
             return items.map((item) => {
               const priority = hubs[item.url];
@@ -189,6 +194,7 @@ const config: Config = {
           'extending.md',
           'migrate-dcs-to-odcs.md',
           'comparison.md',
+          'recognition.md',
           'entropy-data.md',
           'release-notes.md',
           'contributing.md',
@@ -249,11 +255,13 @@ const config: Config = {
           'aria-label': 'Join the community on Slack',
         },
         {
-          href: 'https://github.com/datacontract/datacontract-cli',
-          label: 'GitHub',
+          type: 'html',
           position: 'right',
-          className: 'navbar-github-link',
-          'aria-label': 'GitHub repository',
+          className: 'navbar-github-star',
+          value:
+            '<a href="https://github.com/datacontract/datacontract-cli" target="_blank" rel="noopener noreferrer" aria-label="Star Data Contract CLI on GitHub">' +
+            '<img src="https://img.shields.io/github/stars/datacontract/datacontract-cli?style=social&logo=github&label=Star" alt="Star on GitHub" height="20" />' +
+            '</a>',
         },
       ],
     },

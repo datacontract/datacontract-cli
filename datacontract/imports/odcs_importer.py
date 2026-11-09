@@ -2,6 +2,7 @@ import yaml
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.imports.importer import Importer
+from datacontract.lint.resolve import convert_member_list_team
 from datacontract.lint.resources import read_resource
 from datacontract.model.exceptions import DataContractException
 
@@ -44,7 +45,7 @@ def import_odcs(source: str, config=None) -> OpenDataContractStandard:
         )
     elif odcs_api_version.startswith("v3."):
         # Parse directly as ODCS
-        return OpenDataContractStandard.model_validate(odcs_yaml)
+        return convert_member_list_team(OpenDataContractStandard.model_validate(odcs_yaml))
     else:
         raise DataContractException(
             type="schema",

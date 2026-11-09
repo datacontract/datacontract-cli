@@ -14,7 +14,6 @@ from open_data_contract_standard.model import (
     OpenDataContractStandard,
     SchemaObject,
     SchemaProperty,
-    Team,
 )
 from openpyxl.cell.cell import Cell
 from openpyxl.utils import range_boundaries
@@ -629,24 +628,24 @@ def fill_support(export: Export):
 
 def fill_team(export: Export):
     team = export.odcs.team
-    members = team.members if isinstance(team, Team) else team
-    if isinstance(team, Team):
-        for name, value in (
-            ("team.name", team.name),
-            ("team.description", team.description),
-            ("team.tags", ",".join(team.tags) if team.tags else None),
-            ("team.id", team.id),
-        ):
-            if value is not None and not set_optional_cell(export, name, value):
-                export.unsupported["team details"] += 1
-        # the team block has no inline pairs: every custom property goes to the sheet
-        export.custom_property_rows += [(export.element(team), prop) for prop in team.customProperties or []]
-        export.sheet_authoritative_definitions(team)
+    if team is None:
+        return
+    for name, value in (
+        ("team.name", team.name),
+        ("team.description", team.description),
+        ("team.tags", ",".join(team.tags) if team.tags else None),
+        ("team.id", team.id),
+    ):
+        if value is not None and not set_optional_cell(export, name, value):
+            export.unsupported["team details"] += 1
+    # the team block has no inline pairs: every custom property goes to the sheet
+    export.custom_property_rows += [(export.element(team), prop) for prop in team.customProperties or []]
+    export.sheet_authoritative_definitions(team)
     found = row_sheet(export, "Team", "team")
     if not found:
         return
     sheet, header_row = found
-    for offset, member in enumerate(members or []):
+    for offset, member in enumerate(team.members or []):
         values = {
             "username": member.username,
             "name": member.name,
