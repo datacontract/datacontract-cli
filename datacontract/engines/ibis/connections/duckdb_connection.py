@@ -753,28 +753,17 @@ def setup_azure_connection(con, server: Server, config: Config, untrusted_contra
     _load_extension(con, "azure", "azure")
 
     if use_service_principal:
-        provider_options = f"""
-            PROVIDER SERVICE_PRINCIPAL,
-            TENANT_ID '{_sql_literal(tenant_id)}',
-            CLIENT_ID '{_sql_literal(client_id)}',
-            CLIENT_SECRET '{_sql_literal(client_secret)}'"""
+        provider = "SERVICE_PRINCIPAL"
+        options = {"TENANT_ID": tenant_id, "CLIENT_ID": client_id, "CLIENT_SECRET": client_secret}
     else:
         # No service principal configured: resolve credentials through the Azure credential chain
         # (az cli, env, managed identity, workload identity, ...).
-        provider_options = "\n            PROVIDER CREDENTIAL_CHAIN"
-        chain = config.get_azure_credential_chain()
-        if chain:
-            provider_options += f",\n            CHAIN '{_sql_literal(chain)}'"
+        provider = "CREDENTIAL_CHAIN"
+        options = {"CHAIN": config.get_azure_credential_chain()}
 
-    account_option = (
-        f",\n            ACCOUNT_NAME '{_sql_literal(storage_account)}'" if storage_account is not None else ""
-    )
-
-    con.sql(f"""
-        CREATE OR REPLACE SECRET azure_spn (
-            TYPE AZURE,{provider_options}{account_option}
-        );
-        """)
+    options["ACCOUNT_NAME"] = storage_account
+    clauses = [f"PROVIDER {provider}"] + [f"{name} '{_sql_literal(v)}'" for name, v in options.items() if v]
+    con.sql(f"CREATE OR REPLACE SECRET azure_spn (TYPE AZURE, {', '.join(clauses)});")
 
 
 def to_azure_storage_account(location: str) -> str | None:
