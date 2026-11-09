@@ -1,13 +1,13 @@
 {% import 'macros/context.html' as context_macros %}
 {% macro render_relationship(rel, from_ref=none) -%}
-  {# Shorthand references (`table.column`) match the row anchors; other notations are shown without a link. #}
+  {# References (`table.column` or by id) resolve to `table.column`, which matches the row anchors; the others are shown without a link. #}
   {% set sources = [from_ref] if from_ref else (rel.from_ if rel.from_ is sequence and rel.from_ is not string else [rel.from_]) %}
   {% set targets = rel.to if rel.to is sequence and rel.to is not string else [rel.to] %}
   <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20" title="{{ rel.type or 'foreignKey' }}">
     🔗
-    {% for ref in sources if ref %}{% if not loop.first %}, {% endif %}{{ ref }}{% endfor %}
+    {% for ref in sources if ref %}{% if not loop.first %}, {% endif %}{% set resolved = resolve_reference(ref) %}{{ resolved[0] ~ '.' ~ resolved[1] if resolved else ref }}{% endfor %}
     →
-    <span>{% for ref in targets if ref %}{% if not loop.first %}, {% endif %}{% if '/' in ref %}{{ ref }}{% else %}<a href="#{{ ref }}" class="underline">{{ ref }}</a>{% endif %}{% endfor %}</span>
+    <span>{% for ref in targets if ref %}{% if not loop.first %}, {% endif %}{% set resolved = resolve_reference(ref) %}{% set target = resolved[0] ~ '.' ~ resolved[1] if resolved else ref %}{% if not resolved and '/' in ref %}{{ ref }}{% else %}<a href="#{{ target }}" class="underline">{{ target }}</a>{% endif %}{% endfor %}</span>
   </span>
 {%- endmacro %}
 

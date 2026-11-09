@@ -1,3 +1,5 @@
+import re
+
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.export.exporter import Exporter
@@ -18,39 +20,38 @@ MAX_ENTITY_NAME_LENGTH = 32
 
 def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
     """Convert ODCS data contract to Mermaid ER diagram."""
-    return to_mermaid_and_reduced(data_contract)[0]
+    return to_mermaid_and_entities(data_contract)[0]
 
 
-def to_mermaid_and_reduced(data_contract: OpenDataContractStandard) -> tuple[str | None, bool]:
-    """Convert to a Mermaid ER diagram, and tell whether it had to be reduced because it was too large.
+def to_mermaid_and_entities(data_contract: OpenDataContractStandard) -> tuple[str | None, bool, dict[str, str]]:
+    """Convert to a Mermaid ER diagram, tell whether it had to be reduced because it was too large, and map each
+    schema name to the entity name drawn in the diagram.
 
-    A reduced diagram has at most MAX_ATTRIBUTES per entity and entity names cut to MAX_ENTITY_NAME_LENGTH, so its
-    entities no longer match the names of the data contract.
+    A reduced diagram has at most MAX_ATTRIBUTES per entity and entity names cut to MAX_ENTITY_NAME_LENGTH.
     """
     try:
         if not data_contract.schema_:
-            return None, False
-        diagram = _build_diagram(data_contract)
+            return None, False, {}
+        diagram, entities = _build_diagram(data_contract)
         if len(diagram) > MAX_TEXT_SIZE:
-            return _build_diagram(data_contract, reduced=True), True
-        return diagram, False
+            diagram, entities = _build_diagram(data_contract, reduced=True)
+            return diagram, True, entities
+        return diagram, False, entities
 
     except Exception as e:
         print(f"Error generating ODCS mermaid diagram: {e}")
-        return None, False
+        return None, False, {}
 
 
-def _build_diagram(data_contract: OpenDataContractStandard, reduced: bool = False) -> str:
+def _build_diagram(data_contract: OpenDataContractStandard, reduced: bool = False) -> tuple[str, dict[str, str]]:
     max_attributes = MAX_ATTRIBUTES if reduced else None
     entity_names: dict[str, str] = {}
 
     def entity_name(name: str) -> str:
-        clean = _sanitize_name(name)
-        if not reduced:
-            return clean
         if name not in entity_names:
-            candidate, n = clean[:MAX_ENTITY_NAME_LENGTH], 1
-            while candidate in entity_names.values():  # two long names with the same beginning
+            clean = _sanitize_name(name)
+            candidate, n = (clean[:MAX_ENTITY_NAME_LENGTH] if reduced else clean), 1
+            while reduced and candidate in entity_names.values():  # two long names with the same beginning
                 n += 1
                 candidate = f"{clean[: MAX_ENTITY_NAME_LENGTH - len(str(n)) - 1]}_{n}"
             entity_names[name] = candidate
@@ -58,7 +59,7 @@ def _build_diagram(data_contract: OpenDataContractStandard, reduced: bool = Fals
 
     mmd_entity = "erDiagram\n"
     mmd_references = []
-    ids = _collect_ids(data_contract)
+    ids = collect_ids(data_contract)
 
     # ODCS 3.2: relationships are declared on a property (implicit `from`) or on the schema (explicit `from`)
     relationships = []  # (from_model, from_fields, to_model, to_fields)
@@ -118,10 +119,10 @@ def _build_diagram(data_contract: OpenDataContractStandard, reduced: bool = Fals
     if mmd_references:
         mmd_entity += "\n" + "\n".join(mmd_references)
 
-    return mmd_entity + "\n"
+    return mmd_entity + "\n", entity_names
 
 
-def _collect_ids(data_contract: OpenDataContractStandard) -> dict[str, str]:
+def collect_ids(data_contract: OpenDataContractStandard) -> dict[str, str]:
     """Map schema/property ids to names, to resolve fully qualified references (`schema/<id>/properties/<id>`)."""
     ids = {}
     for schema in data_contract.schema_:
@@ -133,9 +134,9 @@ def _collect_ids(data_contract: OpenDataContractStandard) -> dict[str, str]:
     return ids
 
 
-def _parse_reference(ref: str, ids: dict[str, str]) -> tuple[str, str] | None:
+def parse_reference(ref: str, ids: dict[str, str]) -> tuple[str, str] | None:
     """Split a shorthand (`table.column`) or fully qualified (`schema/<id>/properties/<id>`) reference."""
-    if "/" in ref:
+    if re.match(r"^(#?/)?schema/", ref):
         segments = ref.split("#")[-1].strip("/").split("/")
         if len(segments) < 4:
             return None
@@ -148,14 +149,15 @@ def _resolve(rel, schema_name: str, prop_name: str | None, ids: dict[str, str]):
     """Normalize a relationship to (from_model, from_fields, to_model, to_fields); None if unusable."""
     if (rel.type or "foreignKey") != "foreignKey":
         return None
-    sources = [f"{schema_name}.{prop_name}"] if prop_name else rel.from_
+    sources = rel.from_
     targets = rel.to
-    if not sources or not targets:
+    if not (prop_name or sources) or not targets:
         return None
     sources = [sources] if isinstance(sources, str) else sources
     targets = [targets] if isinstance(targets, str) else targets
-    froms = [_parse_reference(ref, ids) for ref in sources]
-    tos = [_parse_reference(ref, ids) for ref in targets]
+    # a relationship declared on a property starts at that property: use its names as they are, not a parsed reference
+    froms = [(schema_name, prop_name)] if prop_name else [parse_reference(ref, ids) for ref in sources]
+    tos = [parse_reference(ref, ids) for ref in targets]
     if None in froms or None in tos:
         return None
     return froms[0][0], [f for _, f in froms], tos[0][0], [f for _, f in tos]

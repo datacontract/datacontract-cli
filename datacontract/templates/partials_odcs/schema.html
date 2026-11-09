@@ -29,7 +29,7 @@
     {% set schema_synonyms = schema.synonyms if schema.synonyms is defined and schema.synonyms else none %}
     {% set schema_context = schema.context if schema.context is defined and schema.context else none %}
 
-    <div class="mt-2 print:block" id="{{ schema_name }}" data-schema="{{ schema_name }}">
+    <div class="mt-2 print:block" id="{{ schema_name }}" data-entity="{{ mermaid_entities.get(schema_name, schema_name) }}">
       <div class="overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
         <table class="min-w-full divide-y divide-gray-300 print:relative print:break-inside-auto">
           <thead class="bg-gray-50 print:table-header-group">
@@ -47,7 +47,7 @@
                 {% endif %}
 
                 {% if mermaid_links %}
-                  <a href="#diagram" class="diagram-link ml-2 text-xs font-normal text-indigo-600 hover:underline" data-entity="{{ schema_name }}" title="Show in the entity relationship diagram">↑ Diagram</a>
+                  <a href="#diagram" class="diagram-link ml-2 text-xs font-normal text-indigo-600 hover:underline" data-entity="{{ mermaid_entities.get(schema_name, schema_name) }}" title="Show in the entity relationship diagram">↑ Diagram</a>
                 {% endif %}
 
                 {% if schema_type %}

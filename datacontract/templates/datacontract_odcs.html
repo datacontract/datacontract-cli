@@ -24,7 +24,7 @@
           {{ render_partial('partials_odcs/context.html', datacontract=datacontract) }}
           {{ render_partial('partials_odcs/term_of_use.html', datacontract=datacontract) }}
           {{ render_partial('partials_odcs/diagram.html', mermaid_diagram=mermaid_diagram, mermaid_links=mermaid_links) }}
-          {{ render_partial('partials_odcs/schema.html', datacontract=datacontract, mermaid_links=mermaid_links) }}
+          {{ render_partial('partials_odcs/schema.html', datacontract=datacontract, mermaid_links=mermaid_links, mermaid_entities=mermaid_entities) }}
           {{ render_partial('partials_odcs/servers.html', datacontract=datacontract) }}
           {{ render_partial('partials_odcs/team.html', datacontract=datacontract) }}
           {{ render_partial('partials_odcs/support.html', datacontract=datacontract) }}

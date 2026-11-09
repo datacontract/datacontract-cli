@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717 @nicolehazel)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
 - `datacontract export markdown --mermaid` adds a Mermaid entity relationship diagram after the servers
-- `datacontract catalog --markdown` creates a Markdown catalog with an `index.md` instead of HTML pages, and `--mermaid` adds the entity relationship diagram to each page
-- `datacontract export html` links the diagram entities and the schema tables in both directions, and shows relationships as links to the referenced column (the links to the diagram are disabled when the diagram had to be reduced)
+- `datacontract catalog --format markdown` creates a Markdown catalog with an `index.md` instead of HTML pages, and `--mermaid` adds the entity relationship diagram to each page
+- `datacontract export html` links the diagram entities and the schema tables in both directions, and shows relationships, including references by id, as links to the referenced column
 - `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744 @lairdman7)
 
 ### Changed

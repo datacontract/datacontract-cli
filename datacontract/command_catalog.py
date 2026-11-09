@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -7,6 +8,11 @@ from typing_extensions import Annotated
 from datacontract.catalog.catalog import create_data_contract_page, create_index_html, create_index_md
 from datacontract.cli import app, console, debug_option, enable_debug_logging
 from datacontract.model.exceptions import DataContractException
+
+
+class CatalogFormat(str, Enum):
+    html = "html"
+    markdown = "markdown"
 
 
 @app.command(
@@ -21,13 +27,15 @@ def catalog(
         ),
     ] = "*.yaml",
     output: Annotated[Optional[str], typer.Option(help="Output directory for the catalog files.")] = "catalog/",
-    markdown: Annotated[
-        bool,
-        typer.Option("--markdown", help="Create Markdown files with an index.md instead of HTML pages."),
-    ] = False,
+    format: Annotated[
+        CatalogFormat,
+        typer.Option(help="Format of the catalog pages: HTML pages, or Markdown files with an index.md."),
+    ] = CatalogFormat.html,
     mermaid: Annotated[
         bool,
-        typer.Option("--mermaid", help="Add a Mermaid entity relationship diagram to each page. Requires --markdown."),
+        typer.Option(
+            "--mermaid", help="Add a Mermaid entity relationship diagram to each page. Requires --format markdown."
+        ),
     ] = False,
     schema: Annotated[
         str,
@@ -39,8 +47,9 @@ def catalog(
     Create a catalog of data contracts, as HTML or Markdown.
     """
     enable_debug_logging(debug)
+    markdown = format == CatalogFormat.markdown
     if mermaid and not markdown:
-        raise typer.BadParameter("--mermaid requires --markdown (the HTML pages always include the diagram).")
+        raise typer.BadParameter("--mermaid requires --format markdown (the HTML pages always include the diagram).")
 
     path = Path(output)
     try:

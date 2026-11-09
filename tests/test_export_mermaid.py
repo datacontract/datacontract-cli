@@ -194,13 +194,14 @@ def test_mermaid_truncates_entity_names_when_diagram_is_too_large(monkeypatch):
         ],
     )
 
-    diagram, reduced = mermaid_exporter.to_mermaid_and_reduced(contract)
+    diagram, reduced, _ = mermaid_exporter.to_mermaid_and_entities(contract)
     assert not reduced and prefix + "one" in diagram
 
     monkeypatch.setattr(mermaid_exporter, "MAX_TEXT_SIZE", len(diagram) - 1)
-    diagram, reduced = mermaid_exporter.to_mermaid_and_reduced(contract)
+    diagram, reduced, entities = mermaid_exporter.to_mermaid_and_entities(contract)
 
     assert reduced
+    assert entities[prefix + "one"] == "a_very_long_entity_name_prefix_o"
     assert '"**a_very_long_entity_name_prefix_o**"' in diagram
     # a second name with the same 32 first characters stays distinct
     assert '"**a_very_long_entity_name_prefix_2**"' in diagram
@@ -301,3 +302,29 @@ def test_mermaid_replaces_dollar_sign_in_names():
     assert '"**salesdollar2024**"' in diagram
     assert "amountdollarusd decimal" in diagram
     assert "$" not in diagram
+
+
+def test_mermaid_relationship_on_a_property_of_a_table_with_slashes():
+    """A table named like an SAP BW object (`/BIC/AZSALES`) keeps the edge of the foreign key on its property."""
+    from open_data_contract_standard.model import OpenDataContractStandard, Relationship, SchemaObject, SchemaProperty
+
+    from datacontract.export.mermaid_exporter import to_mermaid
+
+    contract = OpenDataContractStandard(
+        apiVersion="v3.2.0",
+        kind="DataContract",
+        id="x",
+        version="1.0.0",
+        status="active",
+        schema=[
+            SchemaObject(
+                name="/BIC/AZSALES",
+                properties=[
+                    SchemaProperty(name="order_id", logicalType="string", relationships=[Relationship(to="orders.id")])
+                ],
+            ),
+            SchemaObject(name="orders", properties=[SchemaProperty(name="id", logicalType="string")]),
+        ],
+    )
+
+    assert '"**orders**" ||--o{ "**byBICbyAZSALES**" : "order_id → id"' in to_mermaid(contract)

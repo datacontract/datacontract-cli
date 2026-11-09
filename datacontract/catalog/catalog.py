@@ -1,4 +1,5 @@
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -158,6 +159,11 @@ def create_index_html(contracts, path):
     print(f"Created {index_filepath}")
 
 
+def _escape_link_text(text: str) -> str:
+    """Escape the characters that end the text of a Markdown link."""
+    return re.sub(r"([\\\[\]])", r"\\\1", str(text))
+
+
 def create_index_md(contracts, path):
     index_filepath = path / "index.md"
     lines = [
@@ -172,7 +178,7 @@ def create_index_md(contracts, path):
     for contract in sorted(contracts, key=lambda c: c.spec.info.title.lower()):
         info = contract.spec.info
         cells = [
-            f"[{info.title}]({quote(contract.link.as_posix())})",
+            f"[{_escape_link_text(info.title)}]({quote(contract.link.as_posix())})",
             info.version,
             info.owner or "",
             info.description or "",
