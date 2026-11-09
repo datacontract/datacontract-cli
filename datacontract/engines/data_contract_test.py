@@ -599,7 +599,6 @@ def _fetch_api_response(session: ApiSession, config: Config, method: str, url: s
     return content
 
 
-<<<<<<< HEAD
 def _api_request_error(reason: str) -> DataContractException:
     return DataContractException(
         type="general",
@@ -610,8 +609,6 @@ def _api_request_error(reason: str) -> DataContractException:
     )
 
 
-=======
->>>>>>> current_main
 def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
     """Return True if the (possibly filtered) schema list contains any logicalType='blob' schema."""
     if data_contract.schema_ is None:
