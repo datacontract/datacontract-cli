@@ -19,6 +19,12 @@ if typing.TYPE_CHECKING:
     from duckdb.duckdb import DuckDBPyConnection
     from pyspark.sql import SparkSession
 
+from datacontract.config.variables import (
+    VariableError,
+    allowed_environment,
+    resolve_runtime_variables,
+    resolve_server_variables,
+)
 from datacontract.engines.datacontract.check_azure_blob_file import check_azure_blob_file
 from datacontract.engines.datacontract.check_that_datacontract_contains_valid_servers_configuration import (
     check_that_datacontract_contains_valid_server_configuration,
@@ -496,6 +502,111 @@ def process_api_response(
         delimiter=server.delimiter,
     )
     return new_server
+
+
+def _endpoint_requests(server, custom_properties: dict, schema_properties: dict, schema_name: str) -> dict[str, tuple]:
+    """The request of each schema under test, at its `endpoint` below the server's location."""
+    shared = sorted({"method", "params", "body"} & set(custom_properties))
+    if shared:
+        raise _api_request_error(
+            f"The {shared[0]} custom property of the server cannot be combined with schema endpoints; "
+            "set it on each schema instead."
+        )
+    requests_by_schema = {}
+    for name, properties in schema_properties.items():
+        if schema_name != "all" and name != schema_name:
+            continue
+        if not isinstance(properties.get("endpoint"), str):
+            raise _api_request_error(f"Schema {name!r} needs an endpoint custom property with its path.")
+        # the response is saved under the schema's name, which must stay a plain file name
+        if name in (".", "..") or any(c in name for c in "/\\'{}\0"):
+            raise _api_request_error(f"Schema {name!r} cannot be fetched from an endpoint: its name is no file name.")
+        url = f"{server.location.rstrip('/')}/{properties['endpoint'].lstrip('/')}"
+        requests_by_schema[name] = _api_request(url, properties)
+    return requests_by_schema
+
+
+def _api_request(url: str, request: dict) -> tuple[str, str, dict, typing.Any]:
+    """The method, URL, query parameters, and body of a request as `method`, `params`, and `body` describe it."""
+    method = str(request.get("method", "GET")).upper()
+    if method not in ("GET", "POST"):
+        raise _api_request_error(f"Method {request['method']!r} is not supported; use GET or POST.")
+    if "body" in request and method != "POST":
+        raise _api_request_error("A body requires method POST.")
+    if not isinstance(request.get("params", {}), dict):
+        raise _api_request_error("The params custom property must map each query parameter name to its value.")
+    params = {}
+    for name, value in request.get("params", {}).items():
+        values = value if isinstance(value, list) else [value]
+        if not all(isinstance(v, (str, int, float, bool)) for v in values):
+            raise _api_request_error(
+                f"Query parameter {name!r} must be a string, number, or boolean, or a list of them."
+            )
+        params[name] = [str(v).lower() if isinstance(v, bool) else v for v in values]
+    clashes = sorted(set(params) & {name for name, _ in parse_qsl(urlsplit(url).query, keep_blank_values=True)})
+    if clashes:
+        raise _api_request_error(
+            f"Query parameter {clashes[0]!r} is set both in the location and in the params custom property."
+        )
+    return method, url, params, request.get("body")
+
+
+def _fetch_api_response(session: ApiSession, config: Config, method: str, url: str, params: dict, body) -> str:
+    """The response as JSON text."""
+    headers = {"Accept": "application/json, application/yaml;q=0.9, */*;q=0.8", **api_headers(config)}
+    # a string is the JSON text as written, anything else is converted to JSON
+    if isinstance(body, str):
+        headers["Content-Type"] = "application/json"
+    try:
+        response = session.request(
+            method,
+            url,
+            params=params,
+            headers=headers,
+            timeout=(config.get_connect_timeout(), None),
+            data=body.encode() if isinstance(body, str) else None,
+            json=None if isinstance(body, str) else body,
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        # urllib3 wraps the refusal in its retry error
+        refusal = getattr(e.args[0], "reason", None) if e.args else None
+        error = refusal.message if isinstance(refusal, PrivateAddressRefused) else e
+        # the API's own explanation, such as which part of the body it rejected
+        answer = f" {e.response.text[:500]}" if e.response is not None and e.response.text else ""
+        raise DataContractException(
+            type="connection",
+            name="API server connection error",
+            result=ResultEnum.error,
+            reason=f"Failed to fetch API response from {url}: {error}{answer}",
+            engine="datacontract-cli",
+        )
+    content = response.text
+    if "yaml" in response.headers.get("Content-Type", "").lower():
+        # a YAML response is tested as the JSON it holds
+        try:
+            documents = list(yaml.load_all(content, Loader=_SafeLoaderNoTimestamp))
+        except yaml.YAMLError as e:
+            raise DataContractException(
+                type="schema",
+                name="Parse API response",
+                result=ResultEnum.error,
+                reason=f"Failed to parse the YAML response from {url}: {e}",
+                engine="datacontract-cli",
+            )
+        # a stream of several documents holds one record each
+        content = json.dumps(documents[0] if len(documents) == 1 else documents, default=str)
+    return content
+
+
+def _api_request_error(reason: str) -> DataContractException:
+    return DataContractException(
+        type="general",
+        name="Build the API request",
+        result=ResultEnum.failed,
+        reason=reason,
+        engine="datacontract-cli",
+    )
 
 
 def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
