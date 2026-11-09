@@ -31,7 +31,7 @@ Two authentication methods are supported by the DuckDB engine (`datacontract tes
 | `DATACONTRACT_AZURE_TENANT_ID` | `79f5b80f-...` | The Azure Tenant ID (service principal) |
 | `DATACONTRACT_AZURE_CLIENT_ID` | `3cf7ce49-...` | The Application/Client ID of the app registration (service principal) |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `yZK8Q~GWO1M...` | The client secret value (service principal) |
-| `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` | `cli;env;managed_identity` | Optional, credential chain only. `;`-separated providers, tried in order. Default: the DuckDB `azure` extension default chain |
+| `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` | `cli;env;managed_identity` | Optional, credential chain only. `;`-separated providers, tried in order. Default: the DuckDB `azure` extension default chain. Delta tables need `cli` to use `az login` |
 
 The storage account is derived from the `location` of the server. The identity (service principal or the one found by the credential chain) needs the **Storage Blob Data Reader** role. The [metadata-check path](../testing/azure.md#metadata-checks) alternatively accepts `DATACONTRACT_AZURE_CONNECTION_STRING` or `DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY`.
 

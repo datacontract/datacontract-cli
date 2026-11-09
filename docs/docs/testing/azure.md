@@ -27,7 +27,7 @@ DATACONTRACT_AZURE_CLIENT_ID=3cf7ce49-e2e9-4cbc-a922-4328d4a58622
 DATACONTRACT_AZURE_CLIENT_SECRET=yZK8Q~GWO1MMXXXXXXXXXXXXX
 ```
 
-Without these three variables, the Azure credential chain is used instead (for example after `az login`, or with a managed identity). Set `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` (e.g. `cli;env;managed_identity`) to choose the providers.
+Without these three variables, the Azure credential chain is used instead (for example after `az login`, or with a managed identity). Set `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` (e.g. `cli;env;managed_identity`) to choose the providers. Delta tables don't pick up `az login` from the default chain; set `DATACONTRACT_AZURE_CREDENTIAL_CHAIN=cli` for them.
 
 ## 3. Create a contract from your files
 
