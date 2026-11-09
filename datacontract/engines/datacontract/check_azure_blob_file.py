@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import uuid
 from datetime import datetime, timezone
@@ -56,8 +57,19 @@ _BLOB_EXTRACTORS: Dict[str, Callable[["BlobProperties"], Any]] = {
 }
 
 # Quality metrics on SchemaObject interpreted as file-count thresholds
-_FILE_COUNT_METRICS = ["rowCount"]
-
+_FILE_COUNT_METRICS = {
+    "rowCount",
+    "fileCount",
+    "blobCount",
+    "itemCount",
+    "recordCount",
+    "count",
+    "numFiles",
+    "numBlobs",
+    "numItems",
+    "numObjects",
+    "numRows",
+}
 
 # Property names where MIME parameter stripping is applied before comparison
 _MIMETYPE_PROPS = {"contentType", "content-type", "mimetype", "mimeType", "mime_type"}
@@ -72,30 +84,18 @@ def check_azure_blob_file(
     run: Run,
     data_contract: OpenDataContractStandard,
     server: Server,
-    schema_name: str = "all",
     check_categories: set[str] | None = None,
-    dimensions: set[str] | None = None,
-    quality_ids: set[str] | None = None,
-    tags: set[str] | None = None,
-    config: Config | None = None,
 ) -> None:
     """Run Azure Blob Storage metadata checks for all blob-logicalType schemas.
 
     Only schemas with ``logicalType == "blob"`` are processed; others are skipped.
-    When ``schema_name`` is not ``"all"``, only that schema is checked.
     No exception is raised if the server is not Azure or if no blob schemas exist —
     the function simply returns without adding checks.
     """
-    check_filter = CheckFilter(categories=check_categories, dimensions=dimensions, quality_ids=quality_ids, tags=tags)
-
     if data_contract.schema_ is None:
         return
 
-    blob_schemas = [
-        s
-        for s in data_contract.schema_
-        if (s.logicalType or "").lower() == "blob" and (schema_name == "all" or s.name == schema_name)
-    ]
+    blob_schemas = [s for s in data_contract.schema_ if (s.logicalType or "").lower() == "blob"]
     if not blob_schemas:
         return
 
@@ -109,12 +109,11 @@ def check_azure_blob_file(
             model=None,
             result=ResultEnum.failed,
             reason="Server block has no 'location' property. Cannot resolve container and prefix.",
-            check_filter=check_filter,
         )
         return
 
     try:
-        blob_service_client = _build_blob_service_client(location, Config.resolve(config))
+        blob_service_client = _build_blob_service_client(location)
     except Exception as exc:
         _append_check(
             run,
@@ -124,7 +123,6 @@ def check_azure_blob_file(
             model=None,
             result=ResultEnum.error,
             reason=f"Could not connect to Azure Blob Storage: {exc}",
-            check_filter=check_filter,
         )
         return
 
@@ -142,7 +140,6 @@ def check_azure_blob_file(
             "abfss://<container>@<account>.dfs.core.windows.net/<prefix>, "
             "azure://<container>@<account>.blob.core.windows.net/<prefix>, "
             "wasbs://<container>@<account>.blob.core.windows.net/<prefix>.",
-            check_filter=check_filter,
         )
         return
 
@@ -151,7 +148,7 @@ def check_azure_blob_file(
     )
 
     for schema in blob_schemas:
-        _check_schema(run, schema, blob_service_client, container_name, prefix, check_filter)
+        _check_schema(run, schema, blob_service_client, container_name, prefix)
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +162,6 @@ def _check_schema(
     blob_service_client: "BlobServiceClient",
     container_name: str,
     prefix: str,
-    check_filter: CheckFilter = CheckFilter(),
 ) -> None:
     schema_name = schema.name or "unknown"
 
@@ -174,21 +170,6 @@ def _check_schema(
         container_client = blob_service_client.get_container_client(container_name)
         blobs: List["BlobProperties"] = list(container_client.list_blobs(name_starts_with=prefix or None))
     except Exception as exc:
-        logger.debug("Azure list_blobs failed (container=%s, prefix=%s)", container_name, prefix, exc_info=True)
-        from azure.core.exceptions import ClientAuthenticationError, ServiceRequestError
-
-        if isinstance(exc, ServiceRequestError):
-            reason = (
-                f"Could not connect to Azure Blob Storage for container '{container_name}'. "
-                "Check the account URL in the server location and your network."
-            )
-        elif isinstance(exc, ClientAuthenticationError):
-            reason = (
-                f"Authentication failed for Azure Blob Storage container '{container_name}'. "
-                "Check the configured credentials (DATACONTRACT_AZURE_* environment variables)."
-            )
-        else:
-            reason = f"Failed to list blobs in container '{container_name}' with prefix '{prefix}': {exc}"
         _append_check(
             run,
             check_type="azure_file_list",
@@ -196,8 +177,7 @@ def _check_schema(
             name=f"[{schema_name}] Azure Blob File — list blobs",
             model=schema_name,
             result=ResultEnum.error,
-            reason=reason,
-            check_filter=check_filter,
+            reason=f"Failed to list blobs in container '{container_name}' with prefix '{prefix}': {exc}",
         )
         return
 
@@ -210,11 +190,11 @@ def _check_schema(
     # ── Per-property checks (driven by schema.properties) ────────────────────
     if schema.properties:
         for prop in schema.properties:
-            _check_property(run, schema_name, prop, blobs, check_filter)
+            _check_property(run, schema_name, prop, blobs)
 
     # ── Quality file-count thresholds on the schema object ───────────────────
     if schema.quality:
-        _check_file_count_quality(run, schema_name, schema.quality, file_count, check_filter)
+        _check_file_count_quality(run, schema_name, schema.quality, file_count)
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +207,6 @@ def _check_property(
     schema_name: str,
     prop: SchemaProperty,
     blobs: List["BlobProperties"],
-    check_filter: CheckFilter = CheckFilter(),
 ) -> None:
     """Run required + quality checks for one declared schema property across all blobs."""
     prop_name = prop.name
@@ -251,7 +230,6 @@ def _check_property(
                 result=ResultEnum.failed,
                 reason=f"{len(missing)} blob(s) have no value for '{prop_name}'.",
                 details="; ".join(missing[:5]) + (" …" if len(missing) > 5 else ""),
-                check_filter=check_filter,
             )
         else:
             _append_check(
@@ -263,7 +241,6 @@ def _check_property(
                 field=prop_name,
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) have a value for '{prop_name}'.",
-                check_filter=check_filter,
             )
 
     # ── quality constraints ────────────────────────────────────────────────────
@@ -299,8 +276,6 @@ def _check_property(
                 result=ResultEnum.failed,
                 reason=f"{len(violations)} blob(s) violate '{prop_name} {constraint_desc}'.",
                 details=details,
-                check_filter=check_filter,
-                quality=quality,
             )
         else:
             _append_check(
@@ -312,8 +287,6 @@ def _check_property(
                 field=prop_name,
                 result=ResultEnum.passed,
                 reason=f"All {len(blobs)} blob(s) satisfy '{prop_name} {constraint_desc}'.",
-                check_filter=check_filter,
-                quality=quality,
             )
 
 
@@ -420,7 +393,6 @@ def _check_file_count_quality(
     schema_name: str,
     quality_list: List[DataQuality],
     file_count: int,
-    check_filter: CheckFilter = CheckFilter(),
 ) -> None:
     """Evaluate schema-level quality thresholds interpreted as file-count constraints."""
     for quality in quality_list:
@@ -436,8 +408,6 @@ def _check_file_count_quality(
             model=schema_name,
             result=ResultEnum.passed if passed else ResultEnum.failed,
             reason=reason,
-            check_filter=check_filter,
-            quality=quality,
         )
 
 
@@ -446,7 +416,7 @@ def _check_file_count_quality(
 # ---------------------------------------------------------------------------
 
 
-def _build_blob_service_client(location: str, config: Config) -> "BlobServiceClient":
+def _build_blob_service_client(location: str) -> "BlobServiceClient":
     """Create a ``BlobServiceClient`` using available credentials."""
     try:
         from azure.storage.blob import BlobServiceClient
@@ -455,13 +425,13 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
             type="schema",
             result="failed",
             name="azure-storage extra missing",
-            reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-            engine="datacontract-cli",
+            reason="Install the extra datacontract-cli[azure] to use azure",
+            engine="datacontract",
             original_exception=exc,
         )
 
     # 1. Connection string
-    conn_str = config.get_azure_connection_string()
+    conn_str = os.getenv("DATACONTRACT_AZURE_CONNECTION_STRING")
     if conn_str:
         return BlobServiceClient.from_connection_string(conn_str)
 
@@ -469,14 +439,14 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
     account_url = _account_url_from_location(location)
 
     # 2. Storage account key
-    account_key = config.get_azure_storage_account_key()
+    account_key = os.getenv("DATACONTRACT_AZURE_STORAGE_ACCOUNT_KEY")
     if account_key and account_url:
         return BlobServiceClient(account_url=account_url, credential=account_key)
 
     # 3. Service principal
-    tenant_id = config.get_azure_tenant_id()
-    client_id = config.get_azure_client_id()
-    client_secret = config.get_azure_client_secret()
+    tenant_id = os.getenv("DATACONTRACT_AZURE_TENANT_ID")
+    client_id = os.getenv("DATACONTRACT_AZURE_CLIENT_ID")
+    client_secret = os.getenv("DATACONTRACT_AZURE_CLIENT_SECRET")
     if tenant_id and client_id and client_secret:
         try:
             from azure.identity import ClientSecretCredential
@@ -485,8 +455,8 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
                 type="schema",
                 result="failed",
                 name="azure-identity extra missing",
-                reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-                engine="datacontract-cli",
+                reason="Install the extra datacontract-cli[azure] to use azure",
+                engine="datacontract",
                 original_exception=exc,
             )
         credential = ClientSecretCredential(
@@ -504,8 +474,8 @@ def _build_blob_service_client(location: str, config: Config) -> "BlobServiceCli
             type="schema",
             result="failed",
             name="azure-identity extra missing",
-            reason="Install the extra datacontract-cli[azure] to connect to Azure Blob Storage",
-            engine="datacontract-cli",
+            reason="Install the extra datacontract-cli[azure] to use azure",
+            engine="datacontract",
             original_exception=exc,
         )
     return BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
@@ -604,25 +574,7 @@ def _append_check(
     reason: str,
     field: Optional[str] = None,
     details: Optional[str] = None,
-    check_filter: CheckFilter = CheckFilter(),
-    quality: Optional[DataQuality] = None,
 ) -> None:
-    """Append a check to the run, unless the active `test` filters exclude it.
-
-    ``quality`` is the ODCS rule the check comes from, if any: it supplies the
-    dimension, id and tags that `--dimension`, `--quality-id` and `--tag` match on.
-    """
-    quality_id = quality.id if quality is not None else None
-    tags = list(quality.tags) if quality is not None and quality.tags else None
-    dimension = quality.dimension if quality is not None else None
-    if not check_filter.matches(
-        category=category,
-        check_type=check_type,
-        dimension=dimension,
-        quality_id=quality_id,
-        tags=tags,
-    ):
-        return
     run.checks.append(
         Check(
             id=str(uuid.uuid4()),
@@ -632,11 +584,7 @@ def _append_check(
             name=name,
             model=model,
             field=field,
-            qualityId=quality_id,
-            tags=tags,
-            dimension=dimension or default_dimension(check_type),
-            qualityDefinition=quality_definition_yaml(quality) if quality is not None else None,
-            engine="datacontract-cli",
+            engine="datacontract",
             language="python",
             result=result,
             reason=reason,
