@@ -8,10 +8,12 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.config import Config
 from datacontract.config.settings import DEFAULT_CONNECT_TIMEOUT
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
+from datacontract.engines.ibis.connections.s3_object_metadata import list_object_metadata
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
+from datacontract.model.server import is_metadata_server
 
 if TYPE_CHECKING:
     import duckdb
@@ -50,7 +52,8 @@ def get_duckdb_connection(
         path = server.path
     if server.type == "s3":
         path = server.location
-        setup_s3_connection(con, server, config)
+        if not is_metadata_server(server):  # the objects are listed with boto3, not read by duckdb
+            setup_s3_connection(con, server, config)
     if server.type == "gcs":
         path = server.location
         setup_gcs_connection(con, server, config)
@@ -89,7 +92,9 @@ def get_duckdb_connection(
             model_path = _model_path(path, model_name)
             run.log_info(f"Creating table {model_name} for {model_path}")
 
-            if server.format == "json":
+            if server.type == "s3" and is_metadata_server(server):
+                create_object_metadata_table(con, server, schema_obj, model_path, config)
+            elif server.format == "json":
                 encoding = _duckdb_encoding(server)
                 if encoding and encoding != "utf-8":
                     run.log_warn(
@@ -132,6 +137,17 @@ def get_duckdb_connection(
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
     return con
+
+
+def create_object_metadata_table(con, server: Server, schema_obj: SchemaObject, location: str, config: Config) -> None:
+    """A table of the objects at ``location``, one row each, instead of a view of their contents."""
+    columns, rows = list_object_metadata(server, schema_obj, location, config)
+    table = _quote(schema_obj.name)
+    con.sql(f"CREATE TABLE {table} ({', '.join(f'{_quote(name)} {t}' for name, t in columns.items())})")
+    if rows:
+        con.executemany(f"INSERT INTO {table} VALUES ({', '.join('?' for _ in columns)})", rows)
+    # the presence checks of file servers read the raw view, which here is the table itself
+    con.sql(f"CREATE VIEW {_quote(schema_obj.name + '__raw__')} AS SELECT * FROM {table}")
 
 
 def _model_path(path: str, model_name: str) -> str:

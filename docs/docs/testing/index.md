@@ -153,6 +153,8 @@ Selecting `properties` (or its legacy alias `schema`) is not metadata-only. The 
 Use `--metadata-only` to skip these value-level checks: only the schema-reading checks (field presence and types) run, and the rest show as `skipped`. One exception: on JSON file and API sources, record validation still reads every record; `--metadata-only` does not disable it.
 :::
 
+On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with the custom property `metadata: true` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
+
 `--dimension` cuts across those categories instead: it selects every check that measures one aspect of data quality — the [quality rules](../quality-rules/index.md#quality-dimensions) tagged with that `dimension` plus the schema and service level checks that measure the same thing.
 
 `--quality-id` and `--tag` go the other way and narrow the run to individual [quality rules](../quality-rules/index.md#identifying-rules): `--quality-id` runs the one rule declaring that `id`, `--tag` runs every rule declaring that tag, and neither runs any schema or service level check.
@@ -175,7 +177,7 @@ A dry run is not offline in general: a contract that references [external semant
 :::
 
 :::caution
-Contracts with `logicalType: blob` schemas on Azure do not support dry runs.
+Azure servers with the custom property `metadata: true` do not support dry runs.
 :::
 
 ## Configuring the connection

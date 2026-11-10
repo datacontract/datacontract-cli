@@ -35,7 +35,7 @@ from datacontract.engines.ibis.ibis_check_execute import build_check_stubs, exec
 from datacontract.lint.resolve import _SafeLoaderNoTimestamp
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.model.server import resolve_server_overrides
+from datacontract.model.server import is_metadata_server, resolve_server_overrides
 
 
 def execute_data_contract_test(
@@ -205,8 +205,8 @@ def execute_data_contract_test(
     # TODO check server credentials are complete for nicer error messages
     if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
         check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
-    # Azure Blob / ADLS Gen2 file-metadata checks (logicalType=blob schemas)
-    if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
+    # Azure Blob / ADLS Gen2 file-metadata checks (servers with the custom property metadata: true)
+    if server.type == "azure" and is_metadata_server(server):
         check_azure_blob_file(
             run,
             data_contract,
@@ -384,7 +384,7 @@ def _runs_jsonschema_checks(
     what actually runs. The JSON Schema validation emits checks of type "schema"
     throughout, so it is out of scope once a quality rule is selected by id or tag.
     """
-    if server.format != "json" or server.type == "kafka":
+    if server.format != "json" or server.type == "kafka" or is_metadata_server(server):
         return False
     return (
         (check_categories is None or "schema" in check_categories)
@@ -428,7 +428,7 @@ def _report_dry_run(
     # The blob checks read file metadata to decide which checks exist at all,
     # so they cannot be planned without reading. Say so rather than reporting a
     # plan that is quietly missing them.
-    if server.type == "azure" and _has_blob_schemas(data_contract, schema_name):
+    if server.type == "azure" and is_metadata_server(server):
         run.checks.append(
             Check(
                 type="schema",
@@ -438,7 +438,7 @@ def _report_dry_run(
                 engine="datacontract-cli",
             )
         )
-        run.log_warn("dry run: file-metadata checks for blob schemas are not included in the plan")
+        run.log_warn("dry run: file-metadata checks for Azure Blob storage are not included in the plan")
 
 
 def process_api_response(
@@ -607,15 +607,3 @@ def _api_request_error(reason: str) -> DataContractException:
         reason=reason,
         engine="datacontract-cli",
     )
-
-
-def _has_blob_schemas(data_contract: OpenDataContractStandard, schema_name: str) -> bool:
-    """Return True if the (possibly filtered) schema list contains any logicalType='blob' schema."""
-    if data_contract.schema_ is None:
-        return False
-    for s in data_contract.schema_:
-        if schema_name != "all" and s.name != schema_name:
-            continue
-        if (s.logicalType or "").lower() == "blob":
-            return True
-    return False

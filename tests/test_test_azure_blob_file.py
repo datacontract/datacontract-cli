@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from unittest.mock import MagicMock, patch
 
+from open_data_contract_standard.model import CustomProperty
+
 from datacontract.engines.datacontract.check_azure_blob_file import (
     _account_url_from_location,
     _parse_location,
@@ -26,6 +28,7 @@ from datacontract.model.run import ResultEnum, Run
 # ---------------------------------------------------------------------------
 
 FIXTURE_PATH = "fixtures/azure-blob-file/datacontract.yaml"
+METADATA = CustomProperty(property="metadata", value=True)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -275,6 +278,7 @@ class TestCheckAzureBlobFile:
         from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, Server
 
         dc = OpenDataContractStandard()
+        # without the metadata custom property, the server is tested against the file contents
         dc.servers = [Server(server="prod", type="azure", location="https://acct.blob.core.windows.net/c/p/")]
         dc.schema_ = [SchemaObject(name="my_table", physicalType="table")]
         run = _make_run()
@@ -291,8 +295,8 @@ class TestCheckAzureBlobFile:
         from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, Server
 
         dc = OpenDataContractStandard()
-        dc.servers = [Server(server="prod", type="azure")]
-        dc.schema_ = [SchemaObject(name="files", logicalType="blob")]
+        dc.servers = [Server(server="prod", type="azure", customProperties=[METADATA])]
+        dc.schema_ = [SchemaObject(name="files")]
         run = _make_run()
         check_azure_blob_file(run, dc, dc.servers[0])
         checks = _checks_by_type(run, "azure_blob_configuration")
@@ -304,8 +308,15 @@ class TestCheckAzureBlobFile:
         from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, Server
 
         dc = OpenDataContractStandard()
-        dc.servers = [Server(server="prod", type="azure", location="https://acct.blob.core.windows.net/c/")]
-        dc.schema_ = [SchemaObject(name="files", logicalType="blob")]
+        dc.servers = [
+            Server(
+                server="prod",
+                type="azure",
+                location="https://acct.blob.core.windows.net/c/",
+                customProperties=[METADATA],
+            )
+        ]
+        dc.schema_ = [SchemaObject(name="files")]
         run = _make_run()
         with patch(
             "datacontract.engines.datacontract.check_azure_blob_file._build_blob_service_client",
