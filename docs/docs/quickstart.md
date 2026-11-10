@@ -4,6 +4,8 @@ title: "Quickstart"
 description: "Install the Data Contract CLI and test, export, and import your first data contract."
 ---
 
+import {EntropyExplainsVideo, EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # Quickstart
 
 This guide gets you from zero to a tested data contract in a few minutes — first against a hosted demo database (60 seconds, nothing to set up), then against your own data warehouse (about 5 minutes).
@@ -56,6 +58,8 @@ Server: production (type=postgres, host=..., port=6543, database=postgres, schem
 The CLI verified that the YAML itself is valid, that all records comply with the schema, and that all quality attributes are met.
 
 ## Test your own data (5 minutes)
+
+<EntropyExplainsVideo episode="under-contract" />
 
 The real magic moment is when a contract catches drift in *your* data. Import a contract straight from an existing table — the import generates the schema and a ready-to-test `servers` block — then test the actual data against it:
 

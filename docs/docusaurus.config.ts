@@ -147,6 +147,8 @@ const config: Config = {
         // Emit a raw-markdown file for each page so the .md links in llms.txt
         // resolve to served files instead of 404ing.
         generateMarkdownFiles: true,
+        // MDX imports (e.g. the Entropy Explains video component) are not content
+        excludeImports: true,
         docsDir: 'docs',
         title: 'Data Contract CLI',
         description:
