@@ -88,6 +88,9 @@ def normalize_server_type(server_type: Optional[str]) -> Optional[str]:
     return SERVER_TYPE_SYNONYMS.get(server_type, server_type)
 
 
+POSTGRES_CATALOG_SCHEMA = "pg_catalog"
+
+
 def is_metadata_server(server: Optional[Server]) -> bool:
     """Whether the server is tested against the metadata of its files (custom property ``metadata: true``)
     instead of their contents."""
@@ -143,4 +146,7 @@ def resolve_server_overrides(server: Optional[Server], config: Config, run: Run)
                 f"overriding '{declared}' from the contract"
             )
 
+    if server_type == "postgres" and is_metadata_server(server):
+        # The schemas name catalog views such as pg_stat_user_tables, not tables of the data schema
+        updates["schema_"] = POSTGRES_CATALOG_SCHEMA
     return server.model_copy(update=updates) if updates else server

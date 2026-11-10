@@ -125,7 +125,7 @@ def connect_ibis(
             user=config.get_postgres_username(required=True),
             password=config.get_postgres_password(required=True),
             database=config.get_postgres_database() or server.database,
-            schema=config.get_postgres_schema() or server.schema_,
+            schema=server.schema_ if is_metadata_server(server) else config.get_postgres_schema() or server.schema_,
             # libpq waits forever for a server that accepts the connection but never answers
             connect_timeout=config.get_connect_timeout(),
         )

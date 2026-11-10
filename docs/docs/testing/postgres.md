@@ -86,6 +86,50 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
+## Metadata checks
+
+Instead of the data, you can check what Postgres knows about it: table statistics, sizes, owners, and comments. Mark a server with the custom property `metadata: true`; its schemas then name views of the `pg_catalog` schema, such as `pg_stat_user_tables` or `pg_tables`, and their properties name the views' columns:
+
+```yaml
+servers:
+  - server: catalog
+    type: postgres
+    host: localhost
+    port: 5432
+    database: postgres
+    schema: public  # not used: the schemas are looked up in pg_catalog
+    customProperties:
+      - property: metadata
+        value: true
+
+schema:
+  - name: pg_stat_user_tables  # one row per table
+    quality:
+      - type: sql
+        description: Every table in the public schema has fresh statistics
+        query: |
+          SELECT COUNT(*) FROM pg_stat_user_tables
+          WHERE schemaname = 'public' AND COALESCE(last_autoanalyze, last_analyze, '-infinity') < now() - interval '1 day'
+        mustBe: 0
+    properties:
+      - name: relname
+        logicalType: string
+        physicalType: name
+        required: true
+        logicalTypeOptions:
+          pattern: "^[a-z_]+$"  # snake_case table names
+      - name: n_live_tup
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 100000000
+      - name: n_dead_tup
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 1000000
+```
+
+Every check works on these views as on a table, including the freshness and retention service levels on a timestamp column such as `last_analyze`. Postgres records no creation or last-modified time for a table; the closest are the `last_analyze`, `last_autoanalyze`, `last_vacuum` and `last_autovacuum` columns.
+
 ## Reference
 
 All authentication options and the data type mappings: **[Postgres Reference](../reference/postgres.md)**.
