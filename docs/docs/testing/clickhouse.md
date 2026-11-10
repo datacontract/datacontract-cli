@@ -82,6 +82,34 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
+## Metadata checks
+
+Instead of the data, you can check what ClickHouse records about it. Point a server at the catalog (`database: system`); its schemas then name the catalog views, and every check works on them as on a table:
+
+```yaml
+servers:
+  - server: catalog
+    type: clickhouse
+    host: localhost
+    port: 8123
+    database: system
+schema:
+  - name: tables
+    quality:
+      - type: sql
+        description: Every table in the shop database is a MergeTree table
+        query: SELECT COUNT(*) FROM tables WHERE database = 'shop' AND engine NOT LIKE '%MergeTree'
+        mustBe: 0
+    properties:
+      - name: name
+        logicalType: string
+        required: true
+      - name: total_bytes
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 1000000000000
+```
+
 ## Reference
 
 All authentication options and the data type handling: **[ClickHouse Reference](../reference/clickhouse.md)**.

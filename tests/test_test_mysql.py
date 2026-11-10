@@ -77,3 +77,41 @@ def _init_sql(file_path):
     connection.commit()
     cursor.close()
     connection.close()
+
+
+def test_catalog_views_are_checked_like_tables(start_mysql_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", mysql_container.username)
+    monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", mysql_container.password)
+    _init_sql("fixtures/mysql/data/data.sql")
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: mysql-catalog
+name: MySQL catalog
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: mysql
+    host: localhost
+    port: {mysql_container.get_exposed_port(3306)}
+    database: information_schema
+schema:
+  - name: TABLES
+    quality:
+      - type: sql
+        description: Every table in the test database uses InnoDB
+        query: SELECT COUNT(*) FROM TABLES WHERE TABLE_SCHEMA = 'test' AND ENGINE <> 'InnoDB'
+        mustBe: 0
+    properties:
+      - name: TABLE_NAME
+        logicalType: string
+        required: true
+      - name: TABLE_ROWS
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 100000000
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]

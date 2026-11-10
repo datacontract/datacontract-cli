@@ -192,3 +192,35 @@ def test_the_configured_schema_can_be_passed_programmatically(duckdb_database_wi
     ).test()
 
     assert run.result == ResultEnum.passed, [check.reason for check in run.checks if check.reason]
+
+
+def test_catalog_views_are_checked_like_tables(duckdb_database):
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: duckdb-catalog
+name: DuckDB catalog
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: duckdb
+    database: {duckdb_database}
+    schema: information_schema
+schema:
+  - name: tables
+    quality:
+      - type: sql
+        description: The main schema holds only tables, no views
+        query: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'main' AND table_type <> 'BASE TABLE'
+        mustBe: 0
+    properties:
+      - name: table_name
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: "^[a-z_]+$"
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == ResultEnum.passed, [(c.name, c.reason) for c in run.checks if c.result != "passed"]

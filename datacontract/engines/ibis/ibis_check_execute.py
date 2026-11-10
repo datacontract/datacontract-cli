@@ -1589,10 +1589,16 @@ def _apply_row_filter(t, model: str, predicate: str):
     return t.alias(alias).sql(f"SELECT * FROM {alias} WHERE {predicate}")
 
 
+_DUCKDB_SHOW_NAMES = {"tables", "databases", "schemas", "variables"}
+
+
 def _resolve_table(con, model: str, database: Optional[str] = None):
     """Resolve a table by name, tolerating case differences."""
     if getattr(con, "name", None) == "pyspark":
         return _pyspark_table_unconvertible_as_unknown(con, model)
+    # duckdb reads `DESCRIBE "tables"` as `SHOW TABLES` however it is quoted, unless the name is qualified
+    if getattr(con, "name", None) == "duckdb" and not database and model.lower() in _DUCKDB_SHOW_NAMES:
+        database = "main"
     kwargs = {"database": database} if database else {}
     try:
         return con.table(model, **kwargs)

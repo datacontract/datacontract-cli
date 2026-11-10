@@ -61,6 +61,31 @@ Custom SQL rules are written in DuckDB SQL, and must be [read-only queries](../q
         mustBe: 0
 ```
 
+## Metadata checks
+
+Instead of the data, you can check what DuckDB records about it. Point a server at the catalog (`schema: information_schema`); its schemas then name the catalog views, and every check works on them as on a table:
+
+```yaml
+servers:
+  - server: catalog
+    type: duckdb
+    database: ./warehouse.duckdb
+    schema: information_schema
+schema:
+  - name: tables
+    quality:
+      - type: sql
+        description: The main schema holds only tables, no views
+        query: SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'main' AND table_type <> 'BASE TABLE'
+        mustBe: 0
+    properties:
+      - name: table_name
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: "^[a-z_]+$"
+```
+
 ## Environment variables
 
 | Environment Variable | Example | Description |

@@ -145,3 +145,39 @@ def test_failed_rows_are_sampled():
 
     regex = next(check for check in run.checks if check.name.startswith("Check that field order_id matches regex"))
     assert regex.failedSamples == [{"order_id": "order-3"}]
+
+
+def test_catalog_tables_are_checked_like_tables():
+    load("shop", "orders.sql")
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: clickhouse-catalog
+name: ClickHouse catalog
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: clickhouse
+    host: localhost
+    port: {clickhouse.get_exposed_port(8123)}
+    database: system
+schema:
+  - name: tables
+    quality:
+      - type: sql
+        description: Every table in the shop database is a MergeTree table
+        query: SELECT COUNT(*) FROM tables WHERE database = 'shop' AND engine NOT LIKE '%MergeTree'
+        mustBe: 0
+    properties:
+      - name: name
+        logicalType: string
+        required: true
+      - name: total_bytes
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 1000000000000
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert failed_checks(run) == {}

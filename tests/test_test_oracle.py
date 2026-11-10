@@ -91,3 +91,46 @@ def _setup_datacontract(datacontract):
     port = oracleContainer.get_exposed_port(ORACLE_SERVER_PORT)
     data_contract_str = data_contract_str.replace("__PORT__", str(port))
     return data_contract_str
+
+
+def test_catalog_views_are_checked_like_tables(oracle_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_ORACLE_USERNAME", "SYSTEM")
+    monkeypatch.setenv("DATACONTRACT_ORACLE_PASSWORD", oracleContainer.oracle_password)
+    _init_sql("fixtures/oracle/data/testcase.sql")
+    with sqlalchemy.create_engine(oracleContainer.get_connection_url()).begin() as connection:
+        connection.exec_driver_sql("BEGIN DBMS_STATS.GATHER_TABLE_STATS('SYSTEM', 'CHECKS_TESTCASE'); END;")
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: oracle-catalog
+name: Oracle catalog
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: oracle
+    host: localhost
+    port: {oracleContainer.get_exposed_port(ORACLE_SERVER_PORT)}
+    serviceName: FREEPDB1
+    schema: SYS
+schema:
+  - name: ALL_TABLES
+    quality:
+      - type: sql
+        description: Every table of the SYSTEM user has statistics from the last week
+        query: |
+          SELECT COUNT(*) FROM ALL_TABLES
+          WHERE OWNER = 'SYSTEM' AND TABLE_NAME = 'CHECKS_TESTCASE' AND (LAST_ANALYZED IS NULL OR LAST_ANALYZED < SYSDATE - 7)
+        mustBe: 0
+    properties:
+      - name: TABLE_NAME
+        logicalType: string
+        required: true
+      - name: NUM_ROWS
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 100000000
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]

@@ -166,9 +166,11 @@ On databases, point the server's `schema` (or `database`) at the catalog instead
 | Server type | Catalog | Example views |
 |---|---|---|
 | [Postgres](./postgres.md#metadata-checks) | `schema: pg_catalog` | `pg_stat_user_tables`, `pg_tables`, `pg_class` |
-| ClickHouse | `database: system` | `tables`, `parts` |
-| DuckDB | `schema: information_schema` | `tables`, `columns` |
-| Trino | `schema: information_schema` | `tables`, `columns` |
+| [ClickHouse](./clickhouse.md#metadata-checks) | `database: system` | `tables`, `parts` |
+| [DuckDB](./duckdb.md#metadata-checks) | `schema: information_schema` | `tables`, `columns` |
+| [MySQL](./mysql.md#metadata-checks) | `database: information_schema` | `TABLES`, `COLUMNS` |
+| [Oracle](./oracle.md#metadata-checks) | `schema: SYS` | `ALL_TABLES`, `ALL_TAB_COLUMNS` |
+| [Trino](./trino.md#metadata-checks) | `schema: information_schema` | `tables`, `columns` |
 
 The catalog views cover the whole database; narrow them to the data with `--filter` or a SQL rule, such as `database = 'default'`.
 
