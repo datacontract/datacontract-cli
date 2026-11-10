@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test`: freshness and retention service levels read fields inside a struct (`orders.audit.revision_ts`) (#1778 @travishofmeister)
-- `datacontract test` checks the metadata of S3 objects (size, content type, last modified, …) on servers with the custom property `metadata: true`
+- `datacontract test` checks the metadata of files on S3, Google Cloud Storage and local servers (size, content type, last modified, user-defined metadata, …) on servers with `format: metadata`
 
 ### Changed
-- `datacontract test`: Azure Blob metadata checks are enabled with the server custom property `metadata: true` instead of the non-standard schema `logicalType: blob`
+- `datacontract test`: Azure Blob metadata checks are enabled with the server `format: metadata` instead of the non-standard schema `logicalType: blob`
 
 ### Fixed
-
+- `datacontract test` reads tables named `tables`, `databases`, `schemas` or `variables` on DuckDB-backed servers, such as MySQL's `information_schema.TABLES`
 - `datacontract import spark` maps Spark `GeometryType` and `GeographyType` columns to the logical type `object`
 - `datacontract test` finds columns whose name contains `.` or `[`, also in `{property}` of SQL rules, and no longer reads a name like `a.b` as field `b` of struct `a` (#1760)
 - `datacontract dbt sync`: generated tests quote the columns marked `quote: true`, and sync marks names that need quoting on every platform

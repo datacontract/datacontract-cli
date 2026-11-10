@@ -88,3 +88,59 @@ def test_file_contents_are_not_read(s3):
 
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
     assert not [c for c in run.checks if c.engine == "jsonschema"]
+
+
+user_metadata_contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: user-metadata
+name: User metadata
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: s3
+    location: s3://my-bucket/exports/
+    customProperties:
+      - property: metadata
+        value: true
+schema:
+  - name: files
+    properties:
+      - name: metadata
+        logicalType: object
+        properties:
+          - name: Owner
+            logicalType: string
+            required: true
+            logicalTypeOptions:
+              pattern: "^team-"
+"""
+
+
+def test_user_defined_metadata_is_checked_per_key(s3):
+    s3.put_object(Bucket=bucket, Key="exports/a.png", Body=b"", Metadata={"owner": "team-a"})
+    s3.put_object(Bucket=bucket, Key="exports/b.png", Body=b"", Metadata={"owner": "bob"})
+    s3.put_object(Bucket=bucket, Key="exports/c.png", Body=b"")
+
+    run = DataContract(data_contract_str=user_metadata_contract).test()
+
+    failed = _failed(run)
+    assert set(failed) == {"field_required", "field_regex"}
+    assert failed["field_required"].reason.endswith("was 1, expected = 0")
+    assert failed["field_regex"].reason.endswith("was 1, expected = 0")
+
+
+def test_user_defined_metadata_without_keys_is_a_map(s3):
+    s3.put_object(Bucket=bucket, Key="exports/a.png", Body=b"", Metadata={"owner": "team-a"})
+    s3.put_object(Bucket=bucket, Key="exports/b.png", Body=b"")
+    contract = user_metadata_contract[: user_metadata_contract.index("        properties:")] + (
+        "        quality:\n"
+        "          - type: sql\n"
+        "            query: SELECT COUNT(*) FROM files WHERE metadata['owner'] = 'team-a'\n"
+        "            mustBe: 1\n"
+    )
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]

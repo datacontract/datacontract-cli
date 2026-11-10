@@ -52,16 +52,25 @@ def list_object_metadata(
 ) -> tuple[dict[str, str], list[list[Any]]]:
     """The columns (name -> duckdb type) and rows of the metadata table: one row per object at ``location``."""
     bucket, pattern = _split_location(location)
-    declared = {prop.name for prop in schema_obj.properties or []}
+    declared = {prop.name: prop for prop in schema_obj.properties or []}
     head_columns = {name: spec for name, spec in _HEAD_COLUMNS.items() if name in declared}
     columns = _LIST_COLUMNS | head_columns
+    # User-defined metadata (x-amz-meta-*): a struct of the keys the contract declares, else a map of all of them
+    metadata_keys = None
+    if "metadata" in declared:
+        metadata_keys = [p.name for p in declared["metadata"].properties or []]
+        struct = ", ".join('"' + key.replace('"', '""') + '" VARCHAR' for key in metadata_keys)
+        columns |= {"metadata": ("Metadata", f"STRUCT({struct})" if metadata_keys else "MAP(VARCHAR, VARCHAR)")}
 
     client = _s3_client(server, config)
     objects = _list_objects(client, bucket, pattern)
-    if head_columns:
+    if head_columns or metadata_keys is not None:
         with ThreadPoolExecutor(max_workers=_HEAD_WORKERS) as executor:
             heads = executor.map(lambda o: client.head_object(Bucket=bucket, Key=o["Key"]), objects)
             objects = [o | head for o, head in zip(objects, heads)]
+    if metadata_keys:
+        # S3 stores the keys in lower case
+        objects = [o | {"Metadata": {k: o.get("Metadata", {}).get(k.lower()) for k in metadata_keys}} for o in objects]
     logger.info("Found %d object(s) at %s", len(objects), location)
     rows = [[o.get(response_key) for response_key, _ in columns.values()] for o in objects]
     return {name: duckdb_type for name, (_, duckdb_type) in columns.items()}, rows
