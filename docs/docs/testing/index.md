@@ -159,20 +159,18 @@ Use `--metadata-only` to skip these value-level checks: only the schema-reading 
 
 ### Metadata checks
 
-A server with the custom property `metadata: true` is tested against metadata instead of the data. On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), each schema describes the files at the server `location` (size, content type, last modified, …). On databases, the schemas name the catalog views, and every check works on them as on a table:
+On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with the custom property `metadata: true` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
 
-| Server type | Schemas are looked up in | Example views |
+Databases need no such property: point the server's `schema` (or `database`) at the catalog, and the schemas name its views. Every check works on them as on a table:
+
+| Server type | Catalog | Example views |
 |---|---|---|
-| [Postgres](./postgres.md#metadata-checks) | `pg_catalog` | `pg_stat_user_tables`, `pg_tables`, `pg_class` |
-| Redshift | `pg_catalog` | `svv_table_info`, `pg_tables` |
-| ClickHouse | the `system` database | `tables`, `parts` |
-| DuckDB | `information_schema` | `tables`, `columns` |
-| Trino | `information_schema` of the server's `catalog` | `tables`, `columns` |
-| Snowflake | `INFORMATION_SCHEMA` of the server's `database` | `TABLES`, `COLUMNS` |
-| Databricks | `information_schema` of the server's `catalog` | `tables`, `columns` |
-| Oracle, Exasol | `SYS` | `ALL_TABLES`, `ALL_OBJECTS`; `EXA_ALL_TABLES`, `EXA_ALL_OBJECT_SIZES` |
+| [Postgres](./postgres.md#metadata-checks) | `schema: pg_catalog` | `pg_stat_user_tables`, `pg_tables`, `pg_class` |
+| ClickHouse | `database: system` | `tables`, `parts` |
+| DuckDB | `schema: information_schema` | `tables`, `columns` |
+| Trino | `schema: information_schema` | `tables`, `columns` |
 
-The catalog views cover the whole database; narrow them to the data with `--filter` or a SQL rule, such as `schemaname = 'public'`.
+The catalog views cover the whole database; narrow them to the data with `--filter` or a SQL rule, such as `database = 'default'`.
 
 ```yaml
 servers:
@@ -180,10 +178,7 @@ servers:
     type: clickhouse
     host: localhost
     port: 8123
-    database: default  # not used: the schemas are looked up in system
-    customProperties:
-      - property: metadata
-        value: true
+    database: system
 schema:
   - name: tables
     properties:
