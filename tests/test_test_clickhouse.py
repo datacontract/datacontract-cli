@@ -145,3 +145,44 @@ def test_failed_rows_are_sampled():
 
     regex = next(check for check in run.checks if check.name.startswith("Check that field order_id matches regex"))
     assert regex.failedSamples == [{"order_id": "order-3"}]
+
+
+METADATA_CONTRACT = """apiVersion: v3.1.0
+kind: DataContract
+id: clickhouse-metadata
+name: ClickHouse tables
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: clickhouse
+    host: localhost
+    port: __PORT__
+    database: default
+    customProperties:
+      - property: metadata
+        value: true
+schema:
+  - name: tables
+    properties:
+      - name: name
+        logicalType: string
+        required: true
+      - name: total_bytes
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 1000000000000
+      - name: metadata_modification_time
+        logicalType: timestamp
+        required: true
+"""
+
+
+def test_metadata_server_checks_the_system_tables(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_CLICKHOUSE_DATABASE", "default")
+    contract = METADATA_CONTRACT.replace("__PORT__", str(clickhouse.get_exposed_port(8123)))
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == ResultEnum.passed, failed_checks(run)
+    assert {check.field for check in run.checks if check.field} == {"name", "total_bytes", "metadata_modification_time"}

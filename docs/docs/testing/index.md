@@ -153,11 +153,45 @@ Selecting `properties` (or its legacy alias `schema`) is not metadata-only. The 
 Use `--metadata-only` to skip these value-level checks: only the schema-reading checks (field presence and types) run, and the rest show as `skipped`. One exception: on JSON file and API sources, record validation still reads every record; `--metadata-only` does not disable it.
 :::
 
-On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with the custom property `metadata: true` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents. On [Postgres](./postgres.md#metadata-checks), its schemas name `pg_catalog` views such as `pg_stat_user_tables`.
-
 `--dimension` cuts across those categories instead: it selects every check that measures one aspect of data quality — the [quality rules](../quality-rules/index.md#quality-dimensions) tagged with that `dimension` plus the schema and service level checks that measure the same thing.
 
 `--quality-id` and `--tag` go the other way and narrow the run to individual [quality rules](../quality-rules/index.md#identifying-rules): `--quality-id` runs the one rule declaring that `id`, `--tag` runs every rule declaring that tag, and neither runs any schema or service level check.
+
+### Metadata checks
+
+A server with the custom property `metadata: true` is tested against metadata instead of the data. On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), each schema describes the files at the server `location` (size, content type, last modified, …). On databases, the schemas name the catalog views, and every check works on them as on a table:
+
+| Server type | Schemas are looked up in | Example views |
+|---|---|---|
+| [Postgres](./postgres.md#metadata-checks) | `pg_catalog` | `pg_stat_user_tables`, `pg_tables`, `pg_class` |
+| Redshift | `pg_catalog` | `svv_table_info`, `pg_tables` |
+| ClickHouse | the `system` database | `tables`, `parts` |
+| DuckDB | `information_schema` | `tables`, `columns` |
+| Trino | `information_schema` of the server's `catalog` | `tables`, `columns` |
+| Snowflake | `INFORMATION_SCHEMA` of the server's `database` | `TABLES`, `COLUMNS` |
+| Databricks | `information_schema` of the server's `catalog` | `tables`, `columns` |
+| Oracle, Exasol | `SYS` | `ALL_TABLES`, `ALL_OBJECTS`; `EXA_ALL_TABLES`, `EXA_ALL_OBJECT_SIZES` |
+
+The catalog views cover the whole database; narrow them to the data with `--filter` or a SQL rule, such as `schemaname = 'public'`.
+
+```yaml
+servers:
+  - server: catalog
+    type: clickhouse
+    host: localhost
+    port: 8123
+    database: default  # not used: the schemas are looked up in system
+    customProperties:
+      - property: metadata
+        value: true
+schema:
+  - name: tables
+    properties:
+      - name: total_bytes
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 1000000000000
+```
 
 ## Dry Run
 
