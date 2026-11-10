@@ -11,9 +11,7 @@ servers:
   - server: production
     type: s3
     location: s3://my-bucket/exports/nightly/
-    customProperties:
-      - property: metadata
-        value: true
+    format: metadata
 
 schema:
   - name: nightly_export_files

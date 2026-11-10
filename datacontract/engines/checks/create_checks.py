@@ -51,7 +51,7 @@ from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_key, get_map_value
 from datacontract.model.odcs import is_closed_schema
-from datacontract.model.server import get_server_type, is_metadata_server
+from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +264,7 @@ def create_checks(
     for schema_obj in data_contract.schema_:
         if schema_name != "all" and schema_obj.name != schema_name:
             continue
-        if server is not None and server.type == "azure" and is_metadata_server(server):
+        if server is not None and server.type == "azure" and server.format == "metadata":
             # File-metadata checks are emitted by check_azure_blob_file
             continue
         checks.extend(_to_schema_checks(schema_obj, server, variables, custom_quality_checks))

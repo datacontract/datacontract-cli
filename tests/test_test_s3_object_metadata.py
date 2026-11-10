@@ -78,18 +78,6 @@ def test_glob_location_lists_only_matching_objects(s3):
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
 
 
-def test_file_contents_are_not_read(s3):
-    # the server declares json, but its schemas describe the files, not their records
-    _put(s3, "exports/nightly/2026-11-09/a.png")
-    with open(datacontract) as f:
-        contract = f.read().replace("    customProperties:", "    format: json\n    customProperties:")
-
-    run = DataContract(data_contract_str=contract).test()
-
-    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
-    assert not [c for c in run.checks if c.engine == "jsonschema"]
-
-
 user_metadata_contract = """
 apiVersion: v3.1.0
 kind: DataContract
@@ -101,9 +89,7 @@ servers:
   - server: production
     type: s3
     location: s3://my-bucket/exports/
-    customProperties:
-      - property: metadata
-        value: true
+    format: metadata
 schema:
   - name: files
     properties:

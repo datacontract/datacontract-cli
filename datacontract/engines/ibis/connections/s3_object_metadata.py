@@ -1,6 +1,6 @@
 """Load the metadata of the objects in an S3 location as a table, one row per object.
 
-An ``s3`` server with the custom property ``metadata: true`` stands for the
+An ``s3`` server with ``format: metadata`` stands for the
 files themselves rather than the records inside them. The properties of its
 schemas name object attributes (``size``, ``contentType``, ``lastModified``, ...), so once the
 listing is a table, every check the contract can express runs on it unchanged:
