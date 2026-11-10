@@ -168,6 +168,7 @@ On databases, point the server's `schema` (or `database`) at the catalog instead
 | [Postgres](./postgres.md#metadata-checks) | `schema: pg_catalog` | `pg_stat_user_tables`, `pg_tables`, `pg_class` |
 | [ClickHouse](./clickhouse.md#metadata-checks) | `database: system` | `tables`, `parts` |
 | [DuckDB](./duckdb.md#metadata-checks) | `schema: information_schema` | `tables`, `columns` |
+| [Exasol](./exasol.md#metadata-checks) | any `schema`: the system views are global | `EXA_ALL_OBJECTS`, `EXA_ALL_TABLES` |
 | [MySQL](./mysql.md#metadata-checks) | `database: information_schema` | `TABLES`, `COLUMNS` |
 | [Oracle](./oracle.md#metadata-checks) | `schema: SYS` | `ALL_TABLES`, `ALL_TAB_COLUMNS` |
 | [Trino](./trino.md#metadata-checks) | `schema: information_schema` | `tables`, `columns` |
