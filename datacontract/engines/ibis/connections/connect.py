@@ -67,8 +67,8 @@ def connect_ibis(
     server_type = get_server_type(server)
 
     if server_type in _FILE_SERVER_TYPES:
-        # on S3, the object metadata is a table of its own
-        supported = _SUPPORTED_FILE_FORMATS | ({"metadata"} if server_type == "s3" else set())
+        # on S3 and local servers, the metadata of the files is a table of its own
+        supported = _SUPPORTED_FILE_FORMATS | ({"metadata"} if server_type in ("s3", "local") else set())
         if server.format not in supported:
             _unsupported(run, f"Format {server.format} not yet supported by datacontract CLI")
             return None
