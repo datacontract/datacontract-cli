@@ -35,12 +35,6 @@ _FILE_SERVER_TYPES = {"s3", "gcs", "azure", "local"}
 _SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta", "xml", "xlsx"}
 
 
-def _location(configured, declared, server: Server):
-    """The configured value wins over the contract's, except on a metadata server: its
-    location is the catalog, which ``resolve_server_overrides`` already set."""
-    return declared if is_metadata_server(server) else configured or declared
-
-
 def _import_ibis():
     try:
         import ibis
@@ -131,7 +125,7 @@ def connect_ibis(
             user=config.get_postgres_username(required=True),
             password=config.get_postgres_password(required=True),
             database=config.get_postgres_database() or server.database,
-            schema=_location(config.get_postgres_schema(), server.schema_, server),
+            schema=config.get_postgres_schema() or server.schema_,
             # libpq waits forever for a server that accepts the connection but never answers
             connect_timeout=config.get_connect_timeout(),
         )
@@ -148,7 +142,7 @@ def connect_ibis(
             port=config.get_redshift_port() or (int(server.port) if server.port else 5439),
             user=login.user,
             database=database,
-            schema=_location(config.get_redshift_schema(), server.schema_, server),
+            schema=config.get_redshift_schema() or server.schema_,
             client_encoding=CLIENT_ENCODING,
             connect_timeout=config.get_connect_timeout(),
         )
@@ -252,7 +246,7 @@ def _connect_databricks(ibis, server: Server, run: Run, config: Config):
         server_hostname=host,
         http_path=config.get_databricks_http_path(),
         catalog=config.get_databricks_catalog() or server.catalog,
-        schema=_location(config.get_databricks_schema(), server.schema_, server),
+        schema=config.get_databricks_schema() or server.schema_,
     )
 
     token = config.get_databricks_token()
@@ -577,7 +571,7 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
         create_object_udfs=config.get_snowflake_create_object_udfs(default=False),
         account=config.get_snowflake_account() or server.account,
         database=config.get_snowflake_database() or server.database,
-        schema=_location(config.get_snowflake_schema(), server.schema_, server),
+        schema=config.get_snowflake_schema() or server.schema_,
         **kwargs,
     )
 
@@ -610,7 +604,7 @@ def _connect_duckdb_database(ibis, server: Server, run: Run, config: Config):
             original_exception=e,
         )
 
-    schema = _location(config.get_duckdb_schema(), server.schema_, server)
+    schema = config.get_duckdb_schema() or server.schema_
     if schema:
         # `connect()` takes no schema, so the session's search path is set here:
         # otherwise an unqualified table name in a quality rule's SQL resolves
@@ -887,7 +881,7 @@ def _connect_trino(ibis, server: Server, config: Config):
         port=config.get_trino_port() or (int(server.port) if server.port else 8080),
         user=None,
         database=config.get_trino_catalog() or server.catalog,
-        schema=_location(config.get_trino_schema(), server.schema_, server),
+        schema=config.get_trino_schema() or server.schema_,
     )
     http_headers = config.get_trino_http_headers()
     if http_headers is not None:
@@ -950,7 +944,7 @@ def _connect_exasol(ibis, server: Server, config: Config):
         password=config.get_exasol_password(required=True),
         websocket_sslopt={"cert_reqs": cert_reqs},
     )
-    schema = _location(config.get_exasol_schema(), server.schema_, server)
+    schema = config.get_exasol_schema() or server.schema_
     if schema:
         kwargs["schema"] = schema
 
@@ -985,7 +979,7 @@ def _connect_clickhouse(ibis, server: Server, run: Run | None, config: Config):
     return ibis.clickhouse.connect(
         host=config.get_clickhouse_host() or server.host,
         port=port or (8443 if secure else 8123),
-        database=_location(config.get_clickhouse_database(), server.database, server) or "default",
+        database=config.get_clickhouse_database() or server.database or "default",
         user=config.get_clickhouse_username() or "default",
         password=config.get_clickhouse_password() or "",
         secure=secure,

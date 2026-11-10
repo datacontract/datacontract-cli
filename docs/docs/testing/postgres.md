@@ -88,7 +88,7 @@ Run `datacontract test datacontract.yaml` again: every violation is listed as an
 
 ## Metadata checks
 
-Instead of the data, you can check what Postgres knows about it: table statistics, sizes, owners, and comments. Mark a server with the custom property `metadata: true`; its schemas then name views of the `pg_catalog` schema, such as `pg_stat_user_tables` or `pg_tables`, and their properties name the views' columns:
+Instead of the data, you can check what Postgres knows about it: table statistics, sizes, owners, and comments. Point a server at the `pg_catalog` schema; its schemas then name the catalog views, such as `pg_stat_user_tables` or `pg_tables`, and their properties name the views' columns:
 
 ```yaml
 servers:
@@ -97,10 +97,7 @@ servers:
     host: localhost
     port: 5432
     database: postgres
-    schema: public  # not used: the schemas are looked up in pg_catalog
-    customProperties:
-      - property: metadata
-        value: true
+    schema: pg_catalog
 
 schema:
   - name: pg_stat_user_tables  # one row per table

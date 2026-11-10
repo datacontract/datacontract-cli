@@ -88,21 +88,6 @@ def normalize_server_type(server_type: Optional[str]) -> Optional[str]:
     return SERVER_TYPE_SYNONYMS.get(server_type, server_type)
 
 
-# Where each server type keeps its catalog views. A server with the custom property
-# `metadata: true` is pointed there, so its schemas name those views instead of tables.
-METADATA_LOCATIONS = {
-    "postgres": {"schema_": "pg_catalog"},
-    "redshift": {"schema_": "pg_catalog"},
-    "clickhouse": {"database": "system"},
-    "duckdb": {"schema_": "information_schema"},
-    "trino": {"schema_": "information_schema"},
-    "snowflake": {"schema_": "INFORMATION_SCHEMA"},
-    "databricks": {"schema_": "information_schema"},
-    "oracle": {"schema_": "SYS"},
-    "exasol": {"schema_": "SYS"},
-}
-
-
 def is_metadata_server(server: Optional[Server]) -> bool:
     """Whether the server is tested against the metadata of its files (custom property ``metadata: true``)
     instead of their contents."""
@@ -158,6 +143,4 @@ def resolve_server_overrides(server: Optional[Server], config: Config, run: Run)
                 f"overriding '{declared}' from the contract"
             )
 
-    if is_metadata_server(server):
-        updates |= METADATA_LOCATIONS.get(server_type, {})
     return server.model_copy(update=updates) if updates else server
