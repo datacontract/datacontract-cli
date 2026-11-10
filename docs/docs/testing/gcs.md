@@ -77,6 +77,19 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
+## Metadata checks
+
+[Metadata checks](./s3.md#metadata-checks) work on GCS as on S3: with `format: metadata`, each schema describes the objects at the server `location` (`name`, `size`, `lastModified`, `contentType`, …) instead of their contents. The user-defined metadata (`x-goog-meta-*`) is the `metadata` property, and the storage class (`STANDARD`, `NEARLINE`, …) costs a request per object, as GCS does not list it.
+
+```yaml
+servers:
+  - server: production
+    type: s3
+    endpointUrl: https://storage.googleapis.com
+    location: s3://my-bucket/exports/
+    format: metadata
+```
+
 ## Reference
 
 All authentication options and the data type handling per file format: **[GCS Reference](../reference/gcs.md)**.

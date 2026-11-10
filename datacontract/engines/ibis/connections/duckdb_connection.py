@@ -7,6 +7,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.config import Config
 from datacontract.config.settings import DEFAULT_CONNECT_TIMEOUT
+from datacontract.engines.ibis.connections import local_file_metadata
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.engines.ibis.connections.s3_object_metadata import list_object_metadata
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
@@ -91,8 +92,12 @@ def get_duckdb_connection(
             model_path = _model_path(path, model_name)
             run.log_info(f"Creating table {model_name} for {model_path}")
 
-            if server.type == "s3" and server.format == "metadata":
-                create_object_metadata_table(con, server, schema_obj, model_path, config)
+            if server.format == "metadata":
+                if server.type == "s3":
+                    columns, rows = list_object_metadata(server, schema_obj, model_path, config)
+                else:
+                    columns, rows = local_file_metadata.COLUMNS, local_file_metadata.list_file_metadata(model_path)
+                create_metadata_table(con, schema_obj.name, columns, rows)
             elif server.format == "json":
                 encoding = _duckdb_encoding(server)
                 if encoding and encoding != "utf-8":
@@ -138,15 +143,14 @@ def get_duckdb_connection(
     return con
 
 
-def create_object_metadata_table(con, server: Server, schema_obj: SchemaObject, location: str, config: Config) -> None:
-    """A table of the objects at ``location``, one row each, instead of a view of their contents."""
-    columns, rows = list_object_metadata(server, schema_obj, location, config)
-    table = _quote(schema_obj.name)
+def create_metadata_table(con, model_name: str, columns: dict[str, str], rows: list[list[Any]]) -> None:
+    """A table of the files of a model, one row each, instead of a view of their contents."""
+    table = _quote(model_name)
     con.sql(f"CREATE TABLE {table} ({', '.join(f'{_quote(name)} {t}' for name, t in columns.items())})")
     if rows:
         con.executemany(f"INSERT INTO {table} VALUES ({', '.join('?' for _ in columns)})", rows)
     # the presence checks of file servers read the raw view, which here is the table itself
-    con.sql(f"CREATE VIEW {_quote(schema_obj.name + '__raw__')} AS SELECT * FROM {table}")
+    con.sql(f"CREATE VIEW {_quote(model_name + '__raw__')} AS SELECT * FROM {table}")
 
 
 def _model_path(path: str, model_name: str) -> str:

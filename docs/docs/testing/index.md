@@ -159,7 +159,7 @@ Use `--metadata-only` to skip these value-level checks: only the schema-reading 
 
 ### Metadata checks
 
-On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with `format: metadata` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
+On [S3](./s3.md#metadata-checks), [Google Cloud Storage](./gcs.md#metadata-checks), [Azure](./azure.md#metadata-checks), and [local files](./local.md#metadata-checks), a server with `format: metadata` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
 
 On databases, point the server's `schema` (or `database`) at the catalog instead, and the schemas name its views. Every check works on them as on a table:
 

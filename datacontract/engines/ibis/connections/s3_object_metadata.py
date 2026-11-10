@@ -64,9 +64,11 @@ def list_object_metadata(
 
     client = _s3_client(server, config)
     objects = _list_objects(client, bucket, pattern)
-    if head_columns or metadata_keys is not None:
+    # Google Cloud Storage lists no storage class; it returns one per object only on HeadObject
+    storage_class_missing = "storageClass" in declared and any(o.get("StorageClass") is None for o in objects)
+    if head_columns or metadata_keys is not None or storage_class_missing:
         with ThreadPoolExecutor(max_workers=_HEAD_WORKERS) as executor:
-            heads = executor.map(lambda o: client.head_object(Bucket=bucket, Key=o["Key"]), objects)
+            heads = executor.map(lambda o: _head_object(client, bucket, o), objects)
             objects = [o | head for o, head in zip(objects, heads)]
     if metadata_keys:
         # S3 stores the keys in lower case
@@ -112,6 +114,16 @@ def _s3_client(server: Server, config: Config):
         aws_session_token=credentials.session_token,
         config=boto_config,
     )
+
+
+def _head_object(client, bucket: str, obj: dict[str, Any]) -> dict[str, Any]:
+    head = client.head_object(Bucket=bucket, Key=obj["Key"])
+    # Google Cloud Storage answers with x-goog-* headers, which boto3 does not parse
+    headers = head.get("ResponseMetadata", {}).get("HTTPHeaders", {})
+    goog_metadata = {k.removeprefix("x-goog-meta-"): v for k, v in headers.items() if k.startswith("x-goog-meta-")}
+    head["Metadata"] = head.get("Metadata", {}) | goog_metadata
+    head["StorageClass"] = obj.get("StorageClass") or head.get("StorageClass") or headers.get("x-goog-storage-class")
+    return head
 
 
 def _list_objects(client, bucket: str, pattern: str) -> list[dict[str, Any]]:

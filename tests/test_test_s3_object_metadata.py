@@ -130,3 +130,44 @@ def test_user_defined_metadata_without_keys_is_a_map(s3):
     run = DataContract(data_contract_str=contract).test()
 
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+@pytest.fixture
+def gcs_responses(s3):
+    """Answer like Google Cloud Storage: no storage class in the listing, x-goog-* headers on HeadObject."""
+
+    def drop_storage_class(parsed, **kwargs):
+        for obj in parsed.get("Contents", []):
+            obj.pop("StorageClass", None)
+
+    def goog_headers(parsed, **kwargs):
+        parsed["Metadata"] = {}
+        parsed["ResponseMetadata"]["HTTPHeaders"] |= {"x-goog-meta-owner": "team-a", "x-goog-storage-class": "NEARLINE"}
+
+    events = boto3.DEFAULT_SESSION.events
+    events.register("after-call.s3.ListObjectsV2", drop_storage_class)
+    events.register("after-call.s3.HeadObject", goog_headers)
+    yield s3
+    events.unregister("after-call.s3.ListObjectsV2", drop_storage_class)
+    events.unregister("after-call.s3.HeadObject", goog_headers)
+
+
+def test_google_cloud_storage_metadata_and_storage_class_are_read(gcs_responses):
+    gcs_responses.put_object(Bucket=bucket, Key="exports/a.png", Body=b"")
+    contract = user_metadata_contract.replace(
+        "    properties:\n      - name: metadata",
+        "    properties:\n"
+        "      - name: storageClass\n"
+        "        logicalType: string\n"
+        "        required: true\n"
+        "        quality:\n"
+        "          - metric: invalidValues\n"
+        "            arguments:\n"
+        "              validValues: [NEARLINE]\n"
+        "            mustBe: 0\n"
+        "      - name: metadata",
+    )
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
