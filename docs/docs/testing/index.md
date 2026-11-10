@@ -159,9 +159,9 @@ Use `--metadata-only` to skip these value-level checks: only the schema-reading 
 
 ### Metadata checks
 
-On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with the custom property `metadata: true` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
+On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with `format: metadata` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
 
-Databases need no such property: point the server's `schema` (or `database`) at the catalog, and the schemas name its views. Every check works on them as on a table:
+On databases, point the server's `schema` (or `database`) at the catalog instead, and the schemas name its views. Every check works on them as on a table:
 
 | Server type | Catalog | Example views |
 |---|---|---|
@@ -206,7 +206,7 @@ A dry run is not offline in general: a contract that references [external semant
 :::
 
 :::caution
-Azure servers with the custom property `metadata: true` do not support dry runs.
+Azure servers with `format: metadata` do not support dry runs.
 :::
 
 ## Configuring the connection

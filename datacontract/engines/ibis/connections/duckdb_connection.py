@@ -13,7 +13,6 @@ from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
-from datacontract.model.server import is_metadata_server
 
 if TYPE_CHECKING:
     import duckdb
@@ -52,7 +51,7 @@ def get_duckdb_connection(
         path = server.path
     if server.type == "s3":
         path = server.location
-        if not is_metadata_server(server):  # the objects are listed with boto3, not read by duckdb
+        if server.format != "metadata":  # the objects are listed with boto3, not read by duckdb
             setup_s3_connection(con, server, config)
     if server.type == "gcs":
         path = server.location
@@ -92,7 +91,7 @@ def get_duckdb_connection(
             model_path = _model_path(path, model_name)
             run.log_info(f"Creating table {model_name} for {model_path}")
 
-            if server.type == "s3" and is_metadata_server(server):
+            if server.type == "s3" and server.format == "metadata":
                 create_object_metadata_table(con, server, schema_obj, model_path, config)
             elif server.format == "json":
                 encoding = _duckdb_encoding(server)

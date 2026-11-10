@@ -11,10 +11,7 @@ servers:
   - server: production
     type: azure
     location: https://myaccount.blob.core.windows.net/mycontainer/raw/orders/
-    format: json
-    customProperties:
-      - property: metadata
-        value: true
+    format: metadata
 
 schema:
   - name: orders_files

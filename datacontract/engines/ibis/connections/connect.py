@@ -23,7 +23,7 @@ from datacontract.engines.ibis.connections import aws_credentials
 from datacontract.engines.ibis.connections.duckdb_connection import get_duckdb_connection
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.model.server import LINT_ONLY_SERVER_TYPES, get_server_type, is_metadata_server
+from datacontract.model.server import LINT_ONLY_SERVER_TYPES, get_server_type
 
 if typing.TYPE_CHECKING:
     import ibis
@@ -67,8 +67,9 @@ def connect_ibis(
     server_type = get_server_type(server)
 
     if server_type in _FILE_SERVER_TYPES:
-        # the object metadata is a table of its own, whatever the format of the files
-        if server.format not in _SUPPORTED_FILE_FORMATS and not is_metadata_server(server):
+        # on S3, the object metadata is a table of its own
+        supported = _SUPPORTED_FILE_FORMATS | ({"metadata"} if server_type == "s3" else set())
+        if server.format not in supported:
             _unsupported(run, f"Format {server.format} not yet supported by datacontract CLI")
             return None
         run.log_info(f"Connecting to {server_type} {server.format} via duckdb")

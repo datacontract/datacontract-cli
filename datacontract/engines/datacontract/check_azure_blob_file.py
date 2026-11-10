@@ -21,7 +21,6 @@ from datacontract.engines.checks.create_checks import quality_definition_yaml
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
-from datacontract.model.server import is_metadata_server
 
 if TYPE_CHECKING:
     from azure.storage.blob import BlobProperties, BlobServiceClient
@@ -80,7 +79,7 @@ def check_azure_blob_file(
     tags: set[str] | None = None,
     config: Config | None = None,
 ) -> None:
-    """Run Azure Blob Storage metadata checks for the schemas of a server with the custom property ``metadata: true``.
+    """Run Azure Blob Storage metadata checks for the schemas of a server with ``format: metadata``.
 
     When ``schema_name`` is not ``"all"``, only that schema is checked.
     No exception is raised if the server is no metadata server or if no schemas exist —
@@ -94,7 +93,7 @@ def check_azure_blob_file(
     metadata_schemas = [
         s
         for s in data_contract.schema_
-        if is_metadata_server(server) and (schema_name == "all" or s.name == schema_name)
+        if server.format == "metadata" and (schema_name == "all" or s.name == schema_name)
     ]
     if not metadata_schemas:
         return
