@@ -5,6 +5,7 @@ import ibis.expr.operations as ops
 import pytest
 from ibis.backends.snowflake import Backend as SnowflakeBackend
 
+from datacontract.engines.checks.check_spec import FieldPath, Hop
 from datacontract.engines.ibis.ibis_check_execute import (
     _item_duplicate_predicate,
     _missing_expr,
@@ -23,15 +24,18 @@ TABLE = ibis.table(
 )
 COLUMNS = {c.lower(): c for c in TABLE.columns}
 
+CUSTOMER_NAME = FieldPath(("customer", "name"))
+ITEMS_SKU = FieldPath(("items", Hop.ITEMS, "sku"))
+
 
 @pytest.mark.parametrize(
     "path,expected",
     [
         ("order_id", "string"),
-        ("customer.name", "string"),
-        ("items[].sku", "string"),
-        ("customer.tags[].tag_id", "string"),
-        ("items[].parts[].part_no", "string"),
+        (CUSTOMER_NAME, "string"),
+        (ITEMS_SKU, "string"),
+        (FieldPath(("customer", "tags", Hop.ITEMS, "tag_id")), "string"),
+        (FieldPath(("items", Hop.ITEMS, "parts", Hop.ITEMS, "part_no")), "string"),
     ],
 )
 def test_resolve_dtype_steps_through_array_elements(path, expected):
@@ -39,7 +43,7 @@ def test_resolve_dtype_steps_through_array_elements(path, expected):
 
 
 def test_resolve_dtype_is_case_insensitive_across_an_array_hop():
-    assert str(_resolve_dtype(TABLE.schema(), "ITEMS[].SKU")) == "string"
+    assert str(_resolve_dtype(TABLE.schema(), FieldPath(("ITEMS", Hop.ITEMS, "SKU")))) == "string"
 
 
 def _sql(path):
@@ -48,19 +52,19 @@ def _sql(path):
 
 
 def test_a_plain_path_compiles_to_a_column_predicate():
-    assert "FILTER(" not in _sql("customer.name")
+    assert "FILTER(" not in _sql(CUSTOMER_NAME)
 
 
 def test_an_array_hop_compiles_to_a_predicate_over_the_elements():
     # A predicate over the array keeps one row per parent, so counts stay in
     # parent rows and an empty array is never a violation.
-    sql = _sql("items[].sku")
+    sql = _sql(ITEMS_SKU)
     assert "SIZE(FILTER(`t0`.`items`" in sql
     assert "`sku`)ISNULL" in sql.replace(" ", "")
 
 
 def test_nested_array_hops_compile_to_nested_predicates():
-    assert _sql("items[].parts[].part_no").count("FILTER(") == 2
+    assert _sql(FieldPath(("items", Hop.ITEMS, "parts", Hop.ITEMS, "part_no"))).count("FILTER(") == 2
 
 
 UPPERCASE = ibis.table(
@@ -70,7 +74,7 @@ UPPERCASE = ibis.table(
 UPPERCASE_COLUMNS = {c.lower(): c for c in UPPERCASE.columns}
 
 
-@pytest.mark.parametrize("path", ["customer.name", "items[].sku"])
+@pytest.mark.parametrize("path", [CUSTOMER_NAME, ITEMS_SKU])
 def test_a_path_resolves_to_a_value_when_the_backend_reports_uppercase_names(path):
     # _resolve_dtype already folds case; the value side has to agree, or presence
     # and type checks pass while the count checks raise KeyError.
@@ -100,9 +104,9 @@ def test_item_duplicate_samples_use_the_same_predicate_as_the_check():
         type="field_unique",
         name="unique",
         model="orders",
-        field="items[].sku",
+        field=ITEMS_SKU,
         metric=MetricType.DUPLICATE_COUNT,
-        columns=["items[].sku"],
+        columns=[ITEMS_SKU],
     )
     samples = _samples_for(t, {c.lower(): c for c in t.columns}, t.schema(), spec, ["order_id"], set())
 
@@ -110,7 +114,13 @@ def test_item_duplicate_samples_use_the_same_predicate_as_the_check():
     assert [row["order_id"] for row in samples] == ["repeats"]
 
 
-@pytest.mark.parametrize("path", ["customer.address.city", "items[].supplier.name"])
+@pytest.mark.parametrize(
+    "path",
+    [
+        FieldPath(("customer", "address", "city")),
+        FieldPath(("items", Hop.ITEMS, "supplier", "name")),
+    ],
+)
 def test_the_fields_of_an_absent_optional_object_are_not_missing(path):
     # Its own `required` check reports the object; counting its fields as well
     # would fail every required field inside an optional object.
@@ -129,7 +139,9 @@ def test_the_fields_of_an_absent_optional_object_are_not_missing(path):
 def test_a_path_to_the_items_of_an_array_of_plain_values_is_a_predicate_over_the_items():
     t = ibis.memtable({"id": ["clean", "bad", "none"], "tags": [["a", "b"], ["a", None], None]})
 
-    predicate = _row_predicate(t, {c: c for c in t.columns}, "tags[]", lambda c: _missing_expr(c, None))
+    predicate = _row_predicate(
+        t, {c: c for c in t.columns}, FieldPath(("tags", Hop.ITEMS)), lambda c: _missing_expr(c, None)
+    )
 
     assert t.filter(predicate).id.to_list() == ["bad"]
 
@@ -137,7 +149,12 @@ def test_a_path_to_the_items_of_an_array_of_plain_values_is_a_predicate_over_the
 def test_a_path_to_items_inside_an_array_of_objects_checks_every_level():
     t = ibis.memtable({"id": ["clean", "bad"], "orders": [[{"codes": ["X1"]}], [{"codes": ["X1"]}, {"codes": [None]}]]})
 
-    predicate = _row_predicate(t, {c: c for c in t.columns}, "orders[].codes[]", lambda c: _missing_expr(c, None))
+    predicate = _row_predicate(
+        t,
+        {c: c for c in t.columns},
+        FieldPath(("orders", Hop.ITEMS, "codes", Hop.ITEMS)),
+        lambda c: _missing_expr(c, None),
+    )
 
     assert t.filter(predicate).id.to_list() == ["bad"]
 
@@ -157,20 +174,22 @@ def _snowflake_sql(predicate):
 
 def test_a_deep_path_on_snowflake_looks_up_each_key_once():
     # every step reads its value several times and ibis inlines each read, so the SQL could grow exponentially
-    predicate = _row_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, "customer.a.b.c.d", lambda c: c.isnull(), "string")
+    predicate = _row_predicate(
+        SNOWFLAKE, SNOWFLAKE_COLUMNS, FieldPath(("customer", "a", "b", "c", "d")), lambda c: c.isnull(), "string"
+    )
 
     assert _snowflake_sql(predicate).count("GET_IGNORE_CASE(") == 4
 
 
 def test_checks_on_array_items_compile_for_snowflake():
-    missing = _row_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, "items[].sku", lambda c: c.isnull(), "string")
-    repeated = _item_duplicate_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, "items[].sku", "string")
+    missing = _row_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, ITEMS_SKU, lambda c: c.isnull(), "string")
+    repeated = _item_duplicate_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, ITEMS_SKU, "string")
 
     assert "TRANSFORM(AS_ARRAY(" in _snowflake_sql(missing)
     assert "ARRAY_DISTINCT(" in _snowflake_sql(repeated)
 
 
 def test_a_duplicate_check_on_a_nested_property_on_snowflake_groups_by_a_short_name():
-    key = _resolve_expr(SNOWFLAKE, SNOWFLAKE_COLUMNS, "customer.email", "string")
+    key = _resolve_expr(SNOWFLAKE, SNOWFLAKE_COLUMNS, FieldPath(("customer", "email")), "string")
 
     assert SNOWFLAKE.group_by([key]).aggregate(n=SNOWFLAKE.count()).columns[0] == "customer.email"

@@ -24,7 +24,16 @@ from open_data_contract_standard.model import (
 from sqlglot import Dialect, exp
 
 from datacontract.config.variables import VariableError, contains_variables, resolve_variables
-from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, MetricType, Op, Threshold
+from datacontract.engines.checks.check_spec import (
+    METADATA_METRICS,
+    CheckSpec,
+    FieldPath,
+    Hop,
+    MetricType,
+    Op,
+    Threshold,
+    path_steps,
+)
 from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
@@ -108,32 +117,33 @@ def _implied_type(prop: SchemaProperty) -> str | None:
 
 def _iter_property_paths(
     properties: list[SchemaProperty] | None,
-    prefix: str | None = None,
+    steps: tuple[str | Hop, ...] = (),
 ):
     """Yield ``(path, property, nested)`` for every property, descending into objects, array items and maps."""
     for prop in properties or []:
-        field = prop.physicalName or prop.name
-        field_path = f"{prefix}.{field}" if prefix else field
-        yield field_path, prop, prefix is not None
-        yield from _iter_nested_paths(prop, field_path)
+        prop_steps = (*steps, prop.physicalName or prop.name)
+        yield FieldPath(prop_steps), prop, bool(steps)
+        yield from _iter_nested_paths(prop, prop_steps)
 
 
-def _iter_nested_paths(prop: SchemaProperty, field_path: str):
+def _iter_nested_paths(prop: SchemaProperty, steps: tuple[str | Hop, ...]):
     prop_type = _property_type(prop)
     if prop_type == "array" and prop.items is not None:
-        # `[]` marks the array hop; the executor turns it into a predicate
-        # over the elements instead of a column lookup.
+        # The executor turns the array hop into a predicate over the elements
+        # instead of a column lookup.
         items = prop.items
+        items_steps = (*steps, Hop.ITEMS)
         if items.logicalType or items.physicalType or items.properties or _constrains_values(items):
-            yield f"{field_path}[]", items, True
-        yield from _iter_nested_paths(items, f"{field_path}[]")
+            yield FieldPath(items_steps), items, True
+        yield from _iter_nested_paths(items, items_steps)
     elif prop_type == "map":
-        for side, definition in (("key", get_map_key(prop)), ("value", get_map_value(prop))):
+        for hop, definition in ((Hop.KEY, get_map_key(prop)), (Hop.VALUE, get_map_value(prop))):
             if definition is not None:
-                yield f"{field_path}[{side}]", definition, True
-                yield from _iter_nested_paths(definition, f"{field_path}[{side}]")
+                hop_steps = (*steps, hop)
+                yield FieldPath(hop_steps), definition, True
+                yield from _iter_nested_paths(definition, hop_steps)
     elif prop.properties and prop_type in ("object", None):
-        yield from _iter_property_paths(prop.properties, field_path)
+        yield from _iter_property_paths(prop.properties, steps)
 
 
 def _constrains_values(prop: SchemaProperty) -> bool:
@@ -192,10 +202,12 @@ def prepare_query(
 ) -> Optional[str]:
     """Substitute placeholders in a user SQL query.
 
-    Each dot-separated part of a name is quoted only where the server's dialect
-    cannot read it bare, so a plain name keeps the backend's case-insensitive
-    resolution. Quotes the author wrote around a placeholder are dropped, except
-    that backticks force the name to be quoted (e.g. a reserved word on Spark).
+    Each dot-separated part of a model name, and each step of a nested property's
+    path, is quoted only where the server's dialect cannot read it bare, so a plain
+    name keeps the backend's case-insensitive resolution. A property's name is one
+    name, even where it holds a dot. Quotes the author wrote around a placeholder
+    are dropped, except that backticks force the name to be quoted (e.g. a reserved
+    word on Spark).
     For a custom quality check ``instance``, its arguments are substituted too.
     """
     if not query:
@@ -211,12 +223,14 @@ def prepare_query(
     for placeholder in ("dataset", "project", "catalog", "database"):
         names[placeholder] = (getattr(server, placeholder, None) if server else None) or model_name
     if field_name is not None:
-        names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
+        names |= dict.fromkeys(COLUMN_PLACEHOLDERS, FieldPath(path_steps(field_name)))
 
     def identifier(name: str, forced: bool) -> str:
+        steps = path_steps(name) if isinstance(name, FieldPath) else name.split(".")
         parts = [
             exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
-            for part in name.split(".")
+            for part in steps
+            if isinstance(part, str)  # a map's key or value is no part of a name
         ]
         if dialect == "snowflake" and name == field_name:
             # Snowflake reaches into a column's value with `:`; a dot would name a table's column
@@ -319,7 +333,7 @@ def _to_schema_checks(
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
         # An array's or map's own presence covers that of its items, key and value
-        if not field.endswith("]") and (not documents or (prop.required and not nested)):
+        if not isinstance(field.steps[-1], Hop) and (not documents or (prop.required and not nested)):
             checks.append(
                 CheckSpec(
                     key=f"{model}__{field}__field_is_present",
@@ -400,7 +414,7 @@ def _to_schema_checks(
             )
 
         # A map key is never null, so a required key holds by definition
-        if prop.required and not field.endswith("[key]"):
+        if prop.required and field.steps[-1] is not Hop.KEY:
             checks.append(
                 _missing_count_check(
                     model,
@@ -614,9 +628,9 @@ def _to_schema_checks(
                     continue
                 # The file is cast into the contract's types, so a type check would compare the contract with itself.
                 reason = f"Checking types in {server.format} files is not supported yet."
-            elif "[key]" in field or "[value]" in field:
+            elif Hop.KEY in field.steps or Hop.VALUE in field.steps:
                 reason = "Checks on the key or value of a map are not supported yet."
-            elif "[][]" in field:
+            elif any(a is b is Hop.ITEMS for a, b in zip(field.steps, field.steps[1:])):
                 reason = "Checks on the items of an array's items are not supported yet."
             elif nested and server_type not in _NESTED_CHECK_SERVER_TYPES:
                 reason = nested_not_run_reason(server_type)
@@ -926,9 +940,11 @@ def _unexecuted_check(
 
 
 def _array_item_reason(field: str) -> str:
+    steps = path_steps(field)
+    array = FieldPath(steps[: steps.index(Hop.ITEMS)])
     return (
         f"'{field}' is an array item, not a column, so it cannot be substituted into a query. "
-        f"Declare the rule on '{field.split('[]')[0]}' instead and match the elements with array "
+        f"Declare the rule on '{array}' instead and match the elements with array "
         f"functions, for example size(filter(...)) > 0."
     )
 
@@ -968,7 +984,7 @@ def _quality_rule_checks(
         else:
             check_key = f"{model}__{field}__quality_custom_check_{count}"
             check_type = "field_quality_custom"
-        if field is not None and "[]" in field:
+        if field is not None and Hop.ITEMS in path_steps(field):
             return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field), "error")
         dialect = dialect_for_server_type(get_server_type(server))
         try:
@@ -1018,7 +1034,7 @@ def _quality_rule_checks(
         else:
             check_key = f"{model}__{field}__quality_sql_{count}"
             check_type = "field_quality_sql"
-        if field is not None and "[]" in field:
+        if field is not None and Hop.ITEMS in path_steps(field):
             return [
                 CheckSpec(
                     key=check_key,

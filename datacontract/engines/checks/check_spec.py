@@ -20,6 +20,37 @@ if TYPE_CHECKING:
     from open_data_contract_standard.model import SchemaProperty
 
 
+class Hop(Enum):
+    """A step through a declared structure rather than by name: into an array's items, or a map's key or value."""
+
+    ITEMS = "[]"
+    KEY = "[key]"
+    VALUE = "[value]"
+
+
+class FieldPath(str):
+    """Where a property sits below its column.
+
+    As text it reads ``items[].sku``, which names the checks and messages. ``steps`` holds what it is made of,
+    names and hops, so a name is never split or cut: a column called ``Rate.x`` or ``Amount [A]`` is one step.
+    """
+
+    steps: tuple[str | Hop, ...]
+
+    def __new__(cls, steps: tuple[str | Hop, ...]):
+        text = ""
+        for step in steps:
+            text += step.value if isinstance(step, Hop) else f".{step}" if text else step
+        path = super().__new__(cls, text)
+        path.steps = steps
+        return path
+
+
+def path_steps(field: str) -> tuple[str | Hop, ...]:
+    """The steps of a check's field. A plain string is the name of one column."""
+    return field.steps if isinstance(field, FieldPath) else (field,)
+
+
 class MetricType(str, Enum):
     """The kind of value a check computes against a model/field."""
 
