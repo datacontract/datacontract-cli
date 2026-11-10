@@ -153,7 +153,7 @@ Selecting `properties` (or its legacy alias `schema`) is not metadata-only. The 
 Use `--metadata-only` to skip these value-level checks: only the schema-reading checks (field presence and types) run, and the rest show as `skipped`. One exception: on JSON file and API sources, record validation still reads every record; `--metadata-only` does not disable it.
 :::
 
-On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with the custom property `metadata: true` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
+On [S3](./s3.md#metadata-checks) and [Azure](./azure.md#metadata-checks), a server with the custom property `metadata: true` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents. On [Postgres](./postgres.md#metadata-checks), its schemas name `pg_catalog` views such as `pg_stat_user_tables`.
 
 `--dimension` cuts across those categories instead: it selects every check that measures one aspect of data quality — the [quality rules](../quality-rules/index.md#quality-dimensions) tagged with that `dimension` plus the schema and service level checks that measure the same thing.
 
