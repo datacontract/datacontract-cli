@@ -2391,8 +2391,7 @@
           "type": "string",
           "description": "The logical element data type.",
           "enum": [
-            "object",
-            "blob"
+            "object"
           ]
         },
         "physicalName": {

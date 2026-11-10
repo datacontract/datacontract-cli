@@ -88,6 +88,15 @@ def normalize_server_type(server_type: Optional[str]) -> Optional[str]:
     return SERVER_TYPE_SYNONYMS.get(server_type, server_type)
 
 
+def is_metadata_server(server: Optional[Server]) -> bool:
+    """Whether the server is tested against the metadata of its files (custom property ``metadata: true``)
+    instead of their contents."""
+    if server is None:
+        return False
+    value = _get_custom_property(server, "metadata")
+    return value is True or str(value).lower() == "true"
+
+
 def _get_custom_property(server: Server, name: str) -> Optional[str]:
     for prop in server.customProperties or []:
         if prop.property == name:

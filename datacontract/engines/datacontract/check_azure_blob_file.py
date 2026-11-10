@@ -21,6 +21,7 @@ from datacontract.engines.checks.create_checks import quality_definition_yaml
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.model.server import is_metadata_server
 
 if TYPE_CHECKING:
     from azure.storage.blob import BlobProperties, BlobServiceClient
@@ -79,11 +80,10 @@ def check_azure_blob_file(
     tags: set[str] | None = None,
     config: Config | None = None,
 ) -> None:
-    """Run Azure Blob Storage metadata checks for all blob-logicalType schemas.
+    """Run Azure Blob Storage metadata checks for the schemas of a server with the custom property ``metadata: true``.
 
-    Only schemas with ``logicalType == "blob"`` are processed; others are skipped.
     When ``schema_name`` is not ``"all"``, only that schema is checked.
-    No exception is raised if the server is not Azure or if no blob schemas exist —
+    No exception is raised if the server is no metadata server or if no schemas exist —
     the function simply returns without adding checks.
     """
     check_filter = CheckFilter(categories=check_categories, dimensions=dimensions, quality_ids=quality_ids, tags=tags)
@@ -91,12 +91,12 @@ def check_azure_blob_file(
     if data_contract.schema_ is None:
         return
 
-    blob_schemas = [
+    metadata_schemas = [
         s
         for s in data_contract.schema_
-        if (s.logicalType or "").lower() == "blob" and (schema_name == "all" or s.name == schema_name)
+        if is_metadata_server(server) and (schema_name == "all" or s.name == schema_name)
     ]
-    if not blob_schemas:
+    if not metadata_schemas:
         return
 
     location = server.location if server else None
@@ -147,10 +147,10 @@ def check_azure_blob_file(
         return
 
     run.log_info(
-        f"Azure Blob File checks: container='{container_name}', prefix='{prefix}', {len(blob_schemas)} blob schema(s)"
+        f"Azure Blob File checks: container='{container_name}', prefix='{prefix}', {len(metadata_schemas)} schema(s)"
     )
 
-    for schema in blob_schemas:
+    for schema in metadata_schemas:
         _check_schema(run, schema, blob_service_client, container_name, prefix, check_filter)
 
 

@@ -1,0 +1,90 @@
+import boto3
+import pytest
+from moto import mock_aws
+
+from datacontract.data_contract import DataContract
+
+datacontract = "fixtures/s3-object-metadata/datacontract.yaml"
+bucket = "my-bucket"
+
+
+@pytest.fixture
+def s3(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_S3_ACCESS_KEY_ID", "test-access")
+    monkeypatch.setenv("DATACONTRACT_S3_SECRET_ACCESS_KEY", "test-secret")
+    monkeypatch.setenv("DATACONTRACT_S3_REGION", "us-east-1")
+    with mock_aws():
+        client = boto3.client("s3", region_name="us-east-1")
+        client.create_bucket(Bucket=bucket)
+        yield client
+
+
+def _put(s3, key, size=1024, content_type="image/png"):
+    s3.put_object(Bucket=bucket, Key=key, Body=b"\0" * size, ContentType=content_type)
+
+
+def _failed(run):
+    return {c.type: c for c in run.checks if c.result != "passed"}
+
+
+def test_conforming_objects_pass(s3):
+    _put(s3, "exports/nightly/2026-11-09/a.png")
+    _put(s3, "exports/nightly/2026-11-10/b.png")
+
+    run = DataContract(data_contract_file=datacontract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+    assert {c.field for c in run.checks if c.field} == {"name", "contentType", "size", "lastModified"}
+    assert any(c.type == "servicelevel_freshness" for c in run.checks)
+
+
+def test_violating_objects_fail(s3):
+    _put(s3, "exports/nightly/2026-11-09/a.png")
+    _put(s3, "exports/nightly/2026-11-09/huge.png", size=5242881)
+    _put(s3, "exports/nightly/2026-11-09/b.png", content_type="image/jpeg")
+    _put(s3, "exports/nightly/readme.txt", content_type="text/plain")
+
+    run = DataContract(data_contract_file=datacontract).test()
+
+    assert run.result == "failed"
+    failed = _failed(run)
+    assert set(failed) == {"field_regex", "field_invalid_values", "field_maximum"}
+    assert failed["field_regex"].reason.endswith("was 1, expected = 0")
+    assert failed["field_invalid_values"].reason.endswith("was 2, expected = 0")
+    assert failed["field_maximum"].reason.endswith("was 1, expected = 0")
+
+
+def test_empty_location_fails_the_row_count(s3):
+    _put(s3, "elsewhere/a.png")
+
+    run = DataContract(data_contract_file=datacontract).test()
+
+    assert set(_failed(run)) == {"row_count", "servicelevel_freshness"}
+
+
+def test_glob_location_lists_only_matching_objects(s3):
+    _put(s3, "exports/nightly/2026-11-09/a.png")
+    _put(s3, "exports/nightly/2026-11-09/b.png")
+    _put(s3, "exports/nightly/2026-11-09/notes.txt", content_type="text/plain")
+    # a single * stays within one path segment
+    _put(s3, "exports/nightly/2026-11-09/nested/c.png", content_type="text/plain")
+    # folder placeholders are no files
+    s3.put_object(Bucket=bucket, Key="exports/nightly/2026-11-09/")
+    with open(datacontract) as f:
+        contract = f.read().replace("s3://my-bucket/exports/nightly/", "s3://my-bucket/exports/nightly/*/*.png")
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+def test_file_contents_are_not_read(s3):
+    # the server declares json, but its schemas describe the files, not their records
+    _put(s3, "exports/nightly/2026-11-09/a.png")
+    with open(datacontract) as f:
+        contract = f.read().replace("    customProperties:", "    format: json\n    customProperties:")
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+    assert not [c for c in run.checks if c.engine == "jsonschema"]

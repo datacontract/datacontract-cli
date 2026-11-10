@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `datacontract test`: freshness and retention service levels read fields inside a struct (`orders.audit.revision_ts`) (#1778 @travishofmeister)
+- `datacontract test` checks the metadata of S3 objects (size, content type, last modified, …) on servers with the custom property `metadata: true`
+
+### Changed
+- `datacontract test`: Azure Blob metadata checks are enabled with the server custom property `metadata: true` instead of the non-standard schema `logicalType: blob`
 
 ### Fixed
 
