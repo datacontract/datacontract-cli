@@ -1,0 +1,52 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: nightly-png-export
+name: Nightly PNG Export
+version: 1.0.0
+status: active
+description:
+  purpose: Nightly PNG export files for downstream consumers, checked by their S3 object metadata.
+
+servers:
+  - server: production
+    type: s3
+    location: s3://my-bucket/exports/nightly/
+    format: metadata
+
+schema:
+  - name: nightly_export_files
+    description: One row per object under the server location.
+    quality:
+      - metric: rowCount
+        mustBeGreaterThan: 0
+    properties:
+      - name: name
+        logicalType: string
+        description: The object key.
+        required: true
+        logicalTypeOptions:
+          pattern: "^exports/nightly/[0-9]{4}-[0-9]{2}-[0-9]{2}/.*\\.png$"
+      - name: contentType
+        logicalType: string
+        quality:
+          - metric: invalidValues
+            arguments:
+              validValues:
+                - image/png
+            mustBe: 0
+      - name: size
+        logicalType: integer
+        description: Size in bytes, at most 5 MiB.
+        logicalTypeOptions:
+          maximum: 5242880
+      - name: lastModified
+        logicalType: timestamp
+        description: When the object was written.
+        logicalTypeOptions:
+          minimum: "2026-01-01T00:00:00Z"
+
+slaProperties:
+  - property: freshness
+    value: 24
+    unit: h
+    element: nightly_export_files.lastModified

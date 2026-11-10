@@ -97,6 +97,39 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
+## Metadata checks
+
+Instead of the data, you can check what Exasol records about it. The system views, such as `EXA_ALL_OBJECTS` and `EXA_ALL_TABLES`, can be read from any schema, so the server keeps its own `schema` and its schemas name the views; every check works on them as on a table. `EXA_ALL_OBJECTS` records when each table was created and last written to:
+
+```yaml
+servers:
+  - server: catalog
+    type: exasol
+    host: exasol.acme.com
+    port: 8563
+    schema: SALES  # not SYS: Exasol cannot read the views' columns from there
+schema:
+  - name: EXA_ALL_OBJECTS
+    quality:
+      - type: sql
+        description: Every table in the SALES schema was written to in the last day
+        query: |
+          SELECT COUNT(*) FROM EXA_ALL_OBJECTS
+          WHERE ROOT_NAME = 'SALES' AND OBJECT_TYPE = 'TABLE' AND LAST_COMMIT < ADD_DAYS(CURRENT_TIMESTAMP, -1)
+        mustBe: 0
+    properties:
+      - name: OBJECT_NAME
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: "^[A-Z_0-9]+$"
+      - name: CREATED
+        logicalType: timestamp
+        required: true
+      - name: LAST_COMMIT
+        logicalType: timestamp
+```
+
 ## Reference
 
 All authentication options (including TLS) and the data type handling: **[Exasol Reference](../reference/exasol.md)**.

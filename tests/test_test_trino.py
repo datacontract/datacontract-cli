@@ -244,3 +244,42 @@ def test_nested_physical_types_are_checked_on_their_own_lines(trino_container, m
         ("items[].qty", "field_physical_type"),
         ("carrier", "field_physical_type"),
     }
+
+
+def test_catalog_views_are_checked_like_tables(trino_container, monkeypatch):
+    _prepare_table()
+    monkeypatch.setenv("DATACONTRACT_TRINO_USERNAME", "my_user")
+    monkeypatch.setenv("DATACONTRACT_TRINO_PASSWORD", "")
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: trino-catalog
+name: Trino catalog
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: trino
+    host: localhost
+    port: {trino.get_exposed_port(8080)}
+    catalog: memory
+    schema: information_schema
+schema:
+  - name: columns
+    quality:
+      - type: sql
+        description: Every column of my_schema.my_table is documented in the contract
+        query: SELECT COUNT(*) FROM columns WHERE table_schema = 'my_schema' AND table_name = 'my_table'
+        mustBe: 3
+    properties:
+      - name: column_name
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: "^[a-z_]+$"
+      - name: data_type
+        logicalType: string
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == ResultEnum.passed, [(c.name, c.reason) for c in run.checks if c.result != "passed"]

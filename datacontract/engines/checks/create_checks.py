@@ -248,7 +248,7 @@ def create_checks(
     for schema_obj in data_contract.schema_:
         if schema_name != "all" and schema_obj.name != schema_name:
             continue
-        if _is_azure_blob_schema(schema_obj, server):
+        if server is not None and server.type == "azure" and server.format == "metadata":
             # File-metadata checks are emitted by check_azure_blob_file
             continue
         checks.extend(_to_schema_checks(schema_obj, server, variables, custom_quality_checks))
@@ -261,10 +261,6 @@ def create_checks(
         if check.dimension is None:
             check.dimension = default_dimension(check.type)
     return checks
-
-
-def _is_azure_blob_schema(schema_object: SchemaObject, server: Optional[Server]) -> bool:
-    return server is not None and server.type == "azure" and (schema_object.logicalType or "").lower() == "blob"
 
 
 def _to_schema_checks(

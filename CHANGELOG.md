@@ -9,8 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
 - `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
+- `datacontract test` checks the metadata of files on S3, Google Cloud Storage and local servers (size, content type, last modified, user-defined metadata, …) on servers with `format: metadata`
+
+### Changed
+- `datacontract test`: Azure Blob metadata checks are enabled with the server `format: metadata` instead of the non-standard schema `logicalType: blob`
 
 ### Fixed
+- `datacontract test` reads tables named `tables`, `databases`, `schemas` or `variables` on DuckDB-backed servers, such as MySQL's `information_schema.TABLES`
 - Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
 - `datacontract catalog`: home links lead to the catalog's index when it is not hosted at the domain root (#1810)
 - `datacontract export sql` quotes MySQL table, view and column names, so reserved words like `order` no longer break the DDL

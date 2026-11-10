@@ -50,6 +50,7 @@ Type handling depends on the `format` in the `servers` block:
 | `xlsx` | Each cell is read as the contract's type of its column, including Excel dates stored as numbers. A cell that has a value of another type fails the type check of its column. |
 | `parquet` | The file is read **as the contract's types**, like CSV, so checking its types is not supported yet, and a value that can't be cast surfaces as a read error. |
 | `delta` | Column types come from the Delta table; the contract's `logicalType` is checked by category. |
+| `metadata` | No file is read: each schema is a table of the files' attributes (size, last modified, …), see [metadata checks](../testing/local.md#metadata-checks). |
 
 **Presence.** For `json` and `xml`, only the required top-level properties are checked for presence: a document may leave out a property that is not required, even in every record. For the other formats, every column of the contract must exist in the file.
 
