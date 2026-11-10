@@ -208,3 +208,57 @@ def _init_sql(file_path):
     connection.commit()
     cursor.close()
     connection.close()
+
+
+def test_catalog_views_are_checked_like_tables(postgres_container, monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    _init_sql("fixtures/postgres/data/data.sql")
+    import psycopg2
+
+    with psycopg2.connect(
+        database=postgres.dbname,
+        user=postgres.username,
+        password=postgres.password,
+        host=postgres.get_container_host_ip(),
+        port=postgres.get_exposed_port(5432),
+    ) as connection:
+        connection.cursor().execute("ANALYZE")
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: postgres-catalog
+name: Postgres catalog
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: postgres
+    host: localhost
+    port: {postgres.get_exposed_port(5432)}
+    database: {postgres.dbname}
+    schema: pg_catalog
+schema:
+  - name: pg_stat_user_tables
+    quality:
+      - type: sql
+        description: Every table in the public schema has fresh statistics
+        query: |
+          SELECT COUNT(*) FROM pg_stat_user_tables
+          WHERE schemaname = 'public' AND COALESCE(last_autoanalyze, last_analyze, '-infinity') < now() - interval '1 day'
+        mustBe: 0
+    properties:
+      - name: relname
+        logicalType: string
+        physicalType: name
+        required: true
+        logicalTypeOptions:
+          pattern: "^[a-z_]+$"
+      - name: n_live_tup
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 100000000
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]

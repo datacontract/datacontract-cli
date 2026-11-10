@@ -81,6 +81,34 @@ The tables are copied into DuckDB before the checks run, so write the query in [
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
+## Metadata checks
+
+Instead of the data, you can check what MySQL records about it. Point a server at the catalog (`database: information_schema`); its schemas then name the catalog views, and every check works on them as on a table:
+
+```yaml
+servers:
+  - server: catalog
+    type: mysql
+    host: localhost
+    port: 3306
+    database: information_schema
+schema:
+  - name: TABLES
+    quality:
+      - type: sql
+        description: Every table in the shop database uses InnoDB
+        query: SELECT COUNT(*) FROM TABLES WHERE TABLE_SCHEMA = 'shop' AND ENGINE <> 'InnoDB'
+        mustBe: 0
+    properties:
+      - name: TABLE_NAME
+        logicalType: string
+        required: true
+      - name: TABLE_ROWS
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 100000000
+```
+
 ## Reference
 
 All authentication options and the data type mappings: **[MySQL Reference](../reference/mysql.md)**.
