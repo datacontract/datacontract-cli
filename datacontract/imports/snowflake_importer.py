@@ -424,9 +424,7 @@ def schema_properties_cleansing(
         )
 
         if lineage:
-            upstream_sources = lineage_adapter.validate_json(lineage[0] if isinstance(lineage[0], str) else "[]")
-            if upstream_sources:
-                prop.transformSourceObjects = upstream_sources
+            prop.transformSourceObjects = lineage_adapter.validate_json(lineage[0])
 
         cleansed_properties.append(prop)
 
