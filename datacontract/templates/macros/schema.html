@@ -220,15 +220,15 @@
           {% if property_custom_properties %}
             {% if property_custom_properties is mapping %}
               {% for key, value in property_custom_properties.items() %}
-                <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                  {{ key }}:<span class="markdown markdown-inline">{{ value }}</span>
+                <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                  {{ key }}:<span class="markdown markdown-inline markdown-breaks">{{ value }}</span>
                 </span>
               {% endfor %}
             {% elif property_custom_properties is sequence and property_custom_properties is not string %}
               {% for cp in property_custom_properties %}
                 {% if cp.property is defined and cp.value is defined %}
-                  <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                    {{ cp.property }}:<span class="markdown markdown-inline">{{ cp.value }}</span>
+                  <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                    {{ cp.property }}:<span class="markdown markdown-inline markdown-breaks">{{ cp.value }}</span>
                   </span>
                 {% endif %}
               {% endfor %}

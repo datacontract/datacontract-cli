@@ -333,10 +333,10 @@ def test_html_export_marks_descriptions_and_custom_property_values_for_markdown_
     html = _export_html(tmp_path, _MARKDOWN_CONTRACT)
     assert '<div class="markdown text-sm font-normal text-gray-500 mt-1">The *orders* table</div>' in html
     assert '<div class="markdown">One of `open` or **closed**</div>' in html
-    assert '<div class="markdown mt-1 text-sm text-gray-700">Orders **purpose**</div>' in html
-    assert '<div class="markdown mt-1 text-sm text-gray-700">Use it *daily*</div>' in html
+    assert '<div class="markdown markdown-breaks mt-1 text-sm text-gray-700">Orders **purpose**</div>' in html
+    assert '<div class="markdown markdown-breaks mt-1 text-sm text-gray-700">Use it *daily*</div>' in html
     assert "- no history\n- no PII" in html
-    assert '<div class="markdown">See [the guide](https://example.com/guide)</div>' in html
+    assert '<div class="markdown markdown-breaks">See [the guide](https://example.com/guide)</div>' in html
     # the renderer sanitizes what it produces
     assert "marked" in html and "DOMPurify.sanitize(" in html
 
@@ -362,6 +362,40 @@ def test_html_export_tags_show_the_property_as_text_and_the_value_for_markdown_r
     )
     html = _export_html(tmp_path, contract)
     assert (
-        'owner&lt;b&gt;:<span class="markdown markdown-inline">**finance** [wiki](https://example.com)</span>' in html
+        'owner&lt;b&gt;:<span class="markdown markdown-inline markdown-breaks">**finance** [wiki](https://example.com)</span>'
+        in html
     )
     assert "parseInline" in html
+    # the property stays at the top left of the tag, next to the first line of a multi-line value
+    assert '<span class="inline-flex items-start text-left rounded-md bg-amber-50' in html
+
+
+def test_html_export_lays_out_structured_root_custom_properties_with_markdown_texts(tmp_path: Path):
+    contract = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: legit
+name: Orders
+version: 1.0.0
+status: active
+customProperties:
+  - property: context
+    value:
+      system: "**MBA** <b>x</b>"
+      levels:
+        - first
+        - second
+      flag: true
+schema:
+  - name: orders
+    properties:
+      - name: id
+        logicalType: string
+"""
+    html = _export_html(tmp_path, contract)
+    assert '<div class="shrink-0 font-medium text-gray-900">system:</div>' in html
+    assert '<div class="markdown markdown-breaks">**MBA** &lt;b&gt;x&lt;/b&gt;</div>' in html
+    assert '<li><div class="markdown markdown-breaks">first</div></li>' in html
+    assert "flag:</div>" in html
+    # no JSON dump of the value any more
+    assert '{"system"' not in html and "&#34;system&#34;" not in html

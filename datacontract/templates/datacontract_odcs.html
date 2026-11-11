@@ -84,7 +84,11 @@
     document.querySelectorAll('.markdown').forEach((element) => {
       const text = element.textContent.trim();
       // a value inside a tag is rendered inline, without paragraphs
-      const html = element.classList.contains('markdown-inline') ? marked.parseInline(text) : marked.parse(text);
+      // `markdown-breaks` keeps the line breaks of the text
+      const options = { breaks: element.classList.contains('markdown-breaks') };
+      const html = element.classList.contains('markdown-inline')
+        ? marked.parseInline(text, options)
+        : marked.parse(text, options);
       element.innerHTML = DOMPurify.sanitize(html);
       element.classList.add('rendered');
     });

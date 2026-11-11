@@ -39,21 +39,21 @@
           {% if description.purpose %}
           <div id="description-purpose">
             <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Purpose</div>
-            <div class="markdown mt-1 text-sm text-gray-700">{{ description.purpose }}</div>
+            <div class="markdown markdown-breaks mt-1 text-sm text-gray-700">{{ description.purpose }}</div>
           </div>
           {% endif %}
 
           {% if description.usage %}
           <div id="description-usage">
             <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Usage</div>
-            <div class="markdown mt-1 text-sm text-gray-700">{{ description.usage }}</div>
+            <div class="markdown markdown-breaks mt-1 text-sm text-gray-700">{{ description.usage }}</div>
           </div>
           {% endif %}
 
           {% if description.limitations %}
           <div id="description-limitations">
             <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Limitations</div>
-            <div class="markdown mt-1 text-sm text-gray-700">{{ description.limitations }}</div>
+            <div class="markdown markdown-breaks mt-1 text-sm text-gray-700">{{ description.limitations }}</div>
           </div>
           {% endif %}
 
@@ -69,7 +69,7 @@
                     {% if value is mapping or (value is sequence and value is not string) %}
                       {{ value | tojson }}
                     {% else %}
-                      <div class="markdown">{{ value }}</div>
+                      <div class="markdown markdown-breaks">{{ value }}</div>
                     {% endif %}
                   </div>
                 </div>
@@ -84,7 +84,7 @@
                     {% if custom_property.value is mapping or (custom_property.value is sequence and custom_property.value is not string) %}
                       {{ custom_property.value | tojson }}
                     {% else %}
-                      <div class="markdown">{{ custom_property.value }}</div>
+                      <div class="markdown markdown-breaks">{{ custom_property.value }}</div>
                     {% endif %}
                   </div>
                 </div>
