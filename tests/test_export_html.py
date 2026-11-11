@@ -299,3 +299,69 @@ schema:
     html = _export_html(tmp_path, contract)
     assert 'href="#customers.customer_id"' in html
     assert ">customers.customer_id</a>" in html
+
+
+_MARKDOWN_CONTRACT = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: legit
+name: Orders
+version: 1.0.0
+status: active
+description:
+  purpose: Orders **purpose**
+  usage: Use it *daily*
+  limitations: |
+    - no history
+    - no PII
+customProperties:
+  - property: doc
+    value: "See [the guide](https://example.com/guide)"
+schema:
+  - name: orders
+    logicalType: object
+    description: "The *orders* table"
+    properties:
+      - name: status
+        logicalType: string
+        description: "One of `open` or **closed**"
+"""
+
+
+def test_html_export_marks_descriptions_and_custom_property_values_for_markdown_rendering(tmp_path: Path):
+    """The browser renders the Markdown, so the page carries the text, escaped, in `.markdown` elements."""
+    html = _export_html(tmp_path, _MARKDOWN_CONTRACT)
+    assert '<div class="markdown text-sm font-normal text-gray-500 mt-1">The *orders* table</div>' in html
+    assert '<div class="markdown">One of `open` or **closed**</div>' in html
+    assert '<div class="markdown mt-1 text-sm text-gray-700">Orders **purpose**</div>' in html
+    assert '<div class="markdown mt-1 text-sm text-gray-700">Use it *daily*</div>' in html
+    assert "- no history\n- no PII" in html
+    assert '<div class="markdown">See [the guide](https://example.com/guide)</div>' in html
+    # the renderer sanitizes what it produces
+    assert "marked" in html and "DOMPurify.sanitize(" in html
+
+
+def test_html_export_markdown_text_is_escaped_in_the_page(tmp_path: Path):
+    contract = _MARKDOWN_CONTRACT.replace(
+        "One of `open` or **closed**", "<script>alert(1)</script> <img src=x onerror=alert(2)>"
+    )
+    html = _export_html(tmp_path, contract)
+    assert "<script>alert(1)" not in html
+    assert "<img src=x" not in html
+    # raw HTML in a Markdown text is escaped by the renderer too, not only sanitized
+    assert "renderer: { html:" in html
+    assert (
+        '<div class="markdown">&lt;script&gt;alert(1)&lt;/script&gt; &lt;img src=x onerror=alert(2)&gt;</div>' in html
+    )
+
+
+def test_html_export_tags_show_the_property_as_text_and_the_value_for_markdown_rendering(tmp_path: Path):
+    contract = _MARKDOWN_CONTRACT.replace(
+        '    description: "The *orders* table"\n',
+        '    description: "The *orders* table"\n    customProperties:\n      - property: owner<b>\n        value: "**finance** [wiki](https://example.com)"\n',
+    )
+    html = _export_html(tmp_path, contract)
+    assert (
+        'owner&lt;b&gt;:<span class="markdown markdown-inline">**finance** [wiki](https://example.com)</span>' in html
+    )
+    assert "parseInline" in html

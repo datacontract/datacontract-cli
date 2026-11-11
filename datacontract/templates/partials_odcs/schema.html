@@ -70,7 +70,7 @@
                 {% endif %}
 
                 {% if schema_description %}
-                  <div class="text-sm font-normal text-gray-500 mt-1">{{ schema_description }}</div>
+                  <div class="markdown text-sm font-normal text-gray-500 mt-1">{{ schema_description }}</div>
                 {% else %}
                   <div class="text-sm font-normal text-gray-400 mt-1">No description</div>
                 {% endif %}
@@ -89,14 +89,14 @@
                     {% if schema_custom_properties is mapping %}
                       {% for key, value in schema_custom_properties.items() %}
                         <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                          {{ key }}:{{ value }}
+                          {{ key }}:<span class="markdown markdown-inline">{{ value }}</span>
                         </span>
                       {% endfor %}
                     {% elif schema_custom_properties is sequence and schema_custom_properties is not string %}
                       {% for cp in schema_custom_properties %}
                         {% if cp.property is defined and cp.value is defined %}
                           <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                            {{ cp.property }}:{{ cp.value }}
+                            {{ cp.property }}:<span class="markdown markdown-inline">{{ cp.value }}</span>
                           </span>
                         {% endif %}
                       {% endfor %}

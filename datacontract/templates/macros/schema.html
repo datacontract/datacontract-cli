@@ -118,7 +118,7 @@
 
       <td class="px-3 py-2 text-sm text-gray-500">
         {% if property_description %}
-          <div>{{ property_description }}</div>
+          <div class="markdown">{{ property_description }}</div>
         {% else %}
           <div class="text-gray-400">No description</div>
         {% endif %}
@@ -221,14 +221,14 @@
             {% if property_custom_properties is mapping %}
               {% for key, value in property_custom_properties.items() %}
                 <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                  {{ key }}:{{ value }}
+                  {{ key }}:<span class="markdown markdown-inline">{{ value }}</span>
                 </span>
               {% endfor %}
             {% elif property_custom_properties is sequence and property_custom_properties is not string %}
               {% for cp in property_custom_properties %}
                 {% if cp.property is defined and cp.value is defined %}
                   <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                    {{ cp.property }}:{{ cp.value }}
+                    {{ cp.property }}:<span class="markdown markdown-inline">{{ cp.value }}</span>
                   </span>
                 {% endif %}
               {% endfor %}

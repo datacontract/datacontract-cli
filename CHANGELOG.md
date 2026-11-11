@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
+- `datacontract export html` renders Markdown in `description` and `customProperties` values
 - `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
 
 ### Fixed
