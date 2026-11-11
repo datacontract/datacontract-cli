@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: test API servers whose schemas are served by different endpoints, with an `endpoint` custom property per schema, including relationships across endpoints (#1780)
 - `datacontract import openapi` imports several operations (repeat `--operation`, or pick them from a list in a terminal) (#1780)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
+- `datacontract export markdown --mermaid` adds a Mermaid entity relationship diagram after the servers
+- `datacontract catalog --format markdown` creates a Markdown catalog with an `index.md` instead of HTML pages, and `--mermaid` adds the entity relationship diagram to each page
+- `datacontract export html` links the diagram entities and the schema tables in both directions, and shows relationships, including references by id, as links to the referenced column
 - `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744 @lairdman7)
 
 ### Changed
@@ -65,6 +68,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: custom quality checks accept the files Entropy Data writes, with a `default` query and the argument type `any` (`ansi` and `value` still work) (#1773)
 - `datacontract export odcs`, `import odcs` and `import excel` write a `team` given as a list of members as a team object with `members` (this syntax is preferred by ODCS 3.2) (#1768)
 - `datacontract export excel`: the ODCS v3.2 template shows a tooltip with the field description on every field label (#1763)
+- `datacontract export markdown` shows `transformLogic` as inline code
+- `datacontract export mermaid` shows at most 5 attributes per entity, keys first, followed by `…`, and cuts entity names to 32 characters when the diagram exceeds Mermaid's size limit
+- `datacontract export mermaid` draws ODCS v3.2 relationships: schema-level and composite-key foreign keys, and references by id
+- `datacontract export mermaid` replaces `$` in table and column names with `dollar`
 
 ### Fixed
 - `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added (#1761)

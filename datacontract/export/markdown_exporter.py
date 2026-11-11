@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List, Optional
 
 from open_data_contract_standard.model import (
@@ -11,6 +12,7 @@ from open_data_contract_standard.model import (
 from pydantic import BaseModel
 
 from datacontract.export.exporter import Exporter
+from datacontract.export.mermaid_exporter import to_mermaid
 
 TAB = "&#x2007;"
 ARROW = "&#x21b3;"
@@ -28,19 +30,21 @@ class MarkdownExporter(Exporter):
         export_args: dict,
     ) -> str:
         """Exports a data contract to Markdown format."""
-        return to_markdown(data_contract)
+        return to_markdown(data_contract, mermaid=bool(export_args.get("mermaid")))
 
 
-def to_markdown(data_contract: OpenDataContractStandard) -> str:
+def to_markdown(data_contract: OpenDataContractStandard, mermaid: bool = False) -> str:
     """
     Convert a data contract to its Markdown representation.
 
     Args:
         data_contract (OpenDataContractStandard): The data contract to convert.
+        mermaid (bool): Add a Mermaid entity relationship diagram after the servers.
 
     Returns:
         str: The Markdown representation of the data contract.
     """
+    diagram = to_mermaid(data_contract) if mermaid else None
     markdown_parts = [
         f"# {data_contract.id}",
         "## Info",
@@ -52,6 +56,7 @@ def to_markdown(data_contract: OpenDataContractStandard) -> str:
         "## Servers",
         servers_to_markdown(data_contract.servers),
         "",
+        *(["## Entity Relationship Diagram", "```mermaid", diagram.rstrip("\n"), "```", ""] if diagram else []),
         "## Schema",
         schema_to_markdown(data_contract.schema_),
         "",
@@ -100,6 +105,16 @@ def terms_of_use_to_markdown(description: Optional[Description]) -> str:
     return "\n\n".join(parts)
 
 
+def _code_span(text: str, is_in_table_cell: bool) -> str:
+    """Render text as inline code, so quotes, underscores, asterisks and angle brackets stay literal."""
+    if is_in_table_cell:
+        # a table row is one line, and an unescaped pipe would end the cell
+        text = " ".join(text.split("\n")).replace("|", "\\|")
+    # the delimiter must be longer than any run of backticks in the text
+    delimiter = "`" * (max((len(run) for run in re.findall(r"`+", text)), default=0) + 1)
+    return f"{delimiter} {text} {delimiter}"
+
+
 def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_in_table_cell: bool = False) -> str:
     if not obj:
         return ""
@@ -112,6 +127,8 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
     model_attributes_to_include = set(obj.__class__.model_fields.keys())
     obj_model = obj.model_dump(exclude_unset=True, include=model_attributes_to_include, exclude=excluded_fields)
     description_value = obj_model.pop("description", None)
+    if isinstance(obj_model.get("transformLogic"), str):
+        obj_model["transformLogic"] = _code_span(obj_model["transformLogic"], is_in_table_cell)
     attributes = [
         (f"{bullet_char} `{attr}`" if value is True else f"{bullet_char} **{attr}:** {value}")
         for attr, value in obj_model.items()

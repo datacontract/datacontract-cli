@@ -155,6 +155,37 @@ schema:
     assert "&gt;" not in diagram_block
 
 
+def test_html_export_links_diagram_and_relationships(tmp_path: Path):
+    """Schema tables link back to the diagram, and relationships link to the target column's anchor."""
+    contract = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: legit
+name: Orders
+version: 1.0.0
+status: active
+schema:
+  - name: orders
+    logicalType: object
+    properties:
+      - name: customer_id
+        logicalType: string
+        relationships:
+          - to: customers.id
+  - name: customers
+    logicalType: object
+    properties:
+      - name: id
+        logicalType: string
+        primaryKey: true
+"""
+    html = _export_html(tmp_path, contract)
+    assert 'class="diagram-link' in html and 'data-entity="orders"' in html
+    assert 'data-entity="customers"' in html
+    assert 'id="customers.id"' in html
+    assert 'href="#customers.id"' in html
+
+
 def test_html_export_renders_array_items_recursively(tmp_path: Path):
     contract = """\
 apiVersion: v3.1.0
@@ -209,3 +240,62 @@ schema:
     assert 'href="#orders"' in html
     assert 'id="customers"' in html
     assert 'href="#customers"' in html
+
+
+def test_html_export_links_the_entity_as_drawn_in_the_diagram(tmp_path: Path, monkeypatch):
+    """Schema names rewritten by the Mermaid exporter (`$`) or cut in a reduced diagram still link to their entity."""
+    from datacontract.export import mermaid_exporter
+
+    contract = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: legit
+name: Orders
+version: 1.0.0
+status: active
+schema:
+  - name: sales$2024
+    logicalType: object
+    properties:
+      - name: id
+        logicalType: string
+"""
+    html = _export_html(tmp_path, contract)
+    assert 'data-entity="salesdollar2024"' in html
+    assert html.count('data-entity="salesdollar2024"') == 2  # the table and its "↑ Diagram" link
+    assert "normalize" not in html
+
+    monkeypatch.setattr(mermaid_exporter, "MAX_TEXT_SIZE", 10)
+    monkeypatch.setattr(mermaid_exporter, "MAX_ENTITY_NAME_LENGTH", 8)
+    html = _export_html(tmp_path, contract)
+    assert html.count('data-entity="salesdol"') == 2
+
+
+def test_html_export_resolves_relationships_by_id(tmp_path: Path):
+    """A reference by id shows as `schema.column` and links to that column, like in the diagram."""
+    contract = """\
+apiVersion: v3.2.0
+kind: DataContract
+id: legit
+name: Orders
+version: 1.0.0
+status: active
+schema:
+  - name: customers
+    id: customers_tbl
+    logicalType: object
+    properties:
+      - name: customer_id
+        id: cust_id
+        logicalType: string
+  - name: orders
+    logicalType: object
+    properties:
+      - name: customer_id
+        logicalType: string
+        relationships:
+          - to: schema/customers_tbl/properties/cust_id
+"""
+    html = _export_html(tmp_path, contract)
+    assert 'href="#customers.customer_id"' in html
+    assert ">customers.customer_id</a>" in html
