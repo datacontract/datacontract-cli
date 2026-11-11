@@ -288,7 +288,6 @@ def account_usage_lineage_query() -> str:
                     f.value:INSPECTED_COLUMN::STRING AS COLUMN_NAME,
                     ARRAY_AGG(DISTINCT f.value:UPSTREAM_SOURCE::STRING) AS UPSTREAM_SOURCES
                 FROM TABLE(FLATTEN(INPUT => :v_all_lineage)) AS f
-                WHERE f.value:DISTANCE::INTEGER = 1
                 GROUP BY 1, 2
             );
             RETURN TABLE(rs_final);
