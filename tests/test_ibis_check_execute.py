@@ -1,6 +1,6 @@
 import ibis
 
-from datacontract.engines.checks.check_spec import CheckSpec, MetricType
+from datacontract.engines.checks.check_spec import CheckSpec, FieldPath, Hop, MetricType
 from datacontract.engines.ibis.ibis_check_execute import _run_present
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -98,7 +98,7 @@ def test_run_present_matches_uppercase_nested_field_for_lowercase_contract_path(
         type="field_is_present",
         name="field is present",
         model="checks_testcase",
-        field="customer.name",
+        field=FieldPath(("customer", "name")),
         metric=MetricType.FIELD_PRESENT,
     )
     schema = ibis.memtable({"CUSTOMER": [{"NAME": "a"}]}).schema()
@@ -141,7 +141,9 @@ def test_physical_type_of_a_nested_path_is_skipped_rather_than_passed_on_the_fal
 
     run = Run.create_run()
     run.checks = [Check(type="field_physical_type", key="k")]
-    _run_physical_type(run, None, server, schema, native_types, _physical_type_spec("orders[].price"))
+    _run_physical_type(
+        run, None, server, schema, native_types, _physical_type_spec(FieldPath(("orders", Hop.ITEMS, "price")))
+    )
     assert run.checks[0].result == ResultEnum.warning
     assert "skipping the physical type check" in run.checks[0].reason
 

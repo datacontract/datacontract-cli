@@ -1,6 +1,7 @@
 from open_data_contract_standard.model import DataQuality, Server
 
 from datacontract.data_contract import DataContract
+from datacontract.engines.checks.check_spec import FieldPath
 from datacontract.engines.checks.create_checks import prepare_query
 
 
@@ -74,12 +75,12 @@ def test_a_plain_name_stays_bare_so_the_backend_resolves_its_case():
     )
 
 
-def test_each_part_of_a_dotted_name_is_quoted_on_its_own():
+def test_each_step_of_a_nested_property_path_is_quoted_on_its_own():
     quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM {model} WHERE {field} IS NULL")
     server = Server(type="databricks")
 
     assert (
-        prepare_query(quality.query, "analytics.my orders", "customer.home address", server)
+        prepare_query(quality.query, "analytics.my orders", FieldPath(("customer", "home address")), server)
         == "SELECT COUNT(*) FROM analytics.`my orders` WHERE customer.`home address` IS NULL"
     )
 
@@ -89,9 +90,19 @@ def test_a_nested_property_is_a_path_into_its_column_on_snowflake():
     server = Server(type="snowflake")
 
     assert (
-        prepare_query(quality.query, "analytics.orders", "customer.home address", server)
+        prepare_query(quality.query, "analytics.orders", FieldPath(("customer", "home address")), server)
         == 'SELECT COUNT(*) FROM analytics.orders WHERE customer:"home address" IS NULL'
     )
+
+
+def test_a_property_name_with_a_dot_is_one_quoted_name_on_every_dialect():
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM orders WHERE {property} < 0")
+
+    for server_type, quoted in (("duckdb", '"Rate.x"'), ("databricks", "`Rate.x`"), ("snowflake", '"Rate.x"')):
+        assert (
+            prepare_query(quality.query, "orders", "Rate.x", Server(type=server_type))
+            == f"SELECT COUNT(*) FROM orders WHERE {quoted} < 0"
+        ), server_type
 
 
 def test_quotes_around_a_placeholder_are_replaced_by_the_dialect_quoting():

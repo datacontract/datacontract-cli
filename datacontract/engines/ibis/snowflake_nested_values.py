@@ -9,6 +9,8 @@ from __future__ import annotations
 import ibis
 import ibis.expr.datatypes as dt
 
+from datacontract.engines.checks.check_spec import Hop
+
 
 @ibis.udf.scalar.builtin
 def to_variant(value) -> dt.json: ...
@@ -73,47 +75,42 @@ _CASTS = {
 }
 
 
-def row_predicate(column, field: str, build, value_type: str | None):
-    """Whether ``build`` marks the row bad at the nested ``field`` of ``column``."""
+def row_predicate(column, path: tuple[str | Hop, ...], build, value_type: str | None):
+    """Whether ``build`` marks the row bad at ``path``, the steps below ``column``."""
 
     def leaf(value):
         typed = _typed(value, value_type)
         return (~_missing(value) & typed.isnull()) | build(typed)
 
-    return _walk(to_variant(column), _steps(field)[1:], leaf)
+    return _walk(to_variant(column), _steps(path), leaf)
 
 
-def nested_value(column, field: str, value_type: str | None):
-    """The value at the nested ``field`` of ``column``, which holds no array hop."""
+def nested_value(column, names: list[str], value_type: str | None):
+    """The value at the field ``names`` below ``column``, which holds no array hop."""
     value = to_variant(column)
-    for key in _steps(field)[1:]:
+    for key in names:
         value = get_ignore_case(value, key)
     return _typed(value, value_type)
 
 
-def item_repeats(column, field: str, value_type: str | None):
-    array_path, _, leaf = field.rpartition("[]")
-    leaf_steps = _steps(leaf[1:]) if leaf else []
+def item_repeats(column, array_path: tuple[str | Hop, ...], leaf: tuple[str, ...], value_type: str | None):
+    """Whether the array at ``array_path`` below ``column`` repeats a value, at ``leaf`` inside its items."""
 
     def repeats(array):
         def item_value(item):
-            for key in leaf_steps:
+            for key in leaf:
                 item = get_ignore_case(item, key)
             return _typed(item, value_type)
 
         values = as_array(array).map(item_value).filter(lambda v: v.notnull())
         return ~_missing(array) & (~is_array(array) | (values.unique().length() < values.length()))
 
-    return _walk(to_variant(column), _steps(array_path)[1:], repeats)
+    return _walk(to_variant(column), _steps(array_path), repeats)
 
 
-def _steps(path: str) -> list[str | None]:
+def _steps(path: tuple[str | Hop, ...]) -> list[str | None]:
     """``names[].name`` as ``["names", None, "name"]``, where None steps into an array's items."""
-    steps = []
-    for part in path.split("."):
-        steps.append(part.split("[", 1)[0])
-        steps.extend([None] * part.count("[]"))
-    return steps
+    return [None if step is Hop.ITEMS else step for step in path]
 
 
 def _walk(value, steps: list[str | None], build, element: bool = False):
