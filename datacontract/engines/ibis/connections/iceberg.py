@@ -205,12 +205,19 @@ def read_iceberg_tables(
         run.log_info(f"Reading Iceberg table {identifier}" + (f" at {ref}" if ref else ""))
         try:
             table = load_iceberg_table(catalog, server, table_name, config)
-            snapshot_id = None
-            if ref:
-                # a tag or branch name wins over a snapshot ID, as a name may consist of digits
-                snapshot = table.snapshot_by_name(ref)
-                if snapshot is None and ref.isdigit():
+            if not ref:
+                scan = table.scan()
+            else:
+                # The ref is looked up as a tag or branch name first. Only when the table
+                # has no tag or branch by that name is a numeric ref read as a snapshot ID,
+                # so a tag or branch named "123" wins over the snapshot with the ID 123.
+                tag_or_branch = table.snapshot_by_name(ref)
+                if tag_or_branch is not None:
+                    snapshot = tag_or_branch
+                elif ref.isdigit():
                     snapshot = table.snapshot_by_id(int(ref))
+                else:
+                    snapshot = None
                 if snapshot is None:
                     raise DataContractException(
                         type="iceberg-connection",
@@ -218,8 +225,8 @@ def read_iceberg_tables(
                         reason=f"Table '{identifier}' has no tag, branch, or snapshot '{ref}' (DATACONTRACT_ICEBERG_REF).",
                         engine="datacontract-cli",
                     )
-                snapshot_id = snapshot.snapshot_id
-            arrow_table = table.scan(snapshot_id=snapshot_id).to_arrow()
+                scan = table.scan(snapshot_id=snapshot.snapshot_id)
+            arrow_table = scan.to_arrow()
         except DataContractException:
             raise
         except Exception as e:
