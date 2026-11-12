@@ -4,7 +4,7 @@ import math
 from typing import Any, Dict, List
 
 import fastjsonschema
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaObject, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -30,7 +30,10 @@ def import_jsonschema(source: str) -> OpenDataContractStandard:
 
     title = json_schema.get("title", "default_model")
     odcs = create_odcs(name=title)
-    odcs.schema_ = [to_schema_object(json_schema, title, json_schema.get("description"), business_name=title)]
+    schema_obj = to_schema_object(json_schema, title, json_schema.get("description"), business_name=title)
+    if json_schema.get("additionalProperties") is False:
+        schema_obj.customProperties = [CustomProperty(property="additionalProperties", value=False)]
+    odcs.schema_ = [schema_obj]
     return odcs
 
 

@@ -3,7 +3,7 @@ import os
 import sys
 
 import pytest
-from open_data_contract_standard.model import EnumValue, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import CustomProperty, EnumValue, SchemaObject, SchemaProperty
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -192,6 +192,17 @@ def test_to_jsonschema_uses_physical_name():
     assert set(result["properties"].keys()) == {"name", "location"}
     assert result["properties"]["name"]["type"] == "string"
     assert result["required"] == ["name"]
+
+
+@pytest.mark.parametrize("value, expected", [(False, False), (True, None)])
+def test_a_closed_schema_exports_additional_properties_false(value, expected):
+    schema = SchemaObject(
+        name="orders",
+        properties=[SchemaProperty(name="id", logicalType="string")],
+        customProperties=[CustomProperty(property="additionalProperties", value=value)],
+    )
+
+    assert to_jsonschema("orders", schema).get("additionalProperties") == expected
 
 
 def read_file(data_contract_file):
