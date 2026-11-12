@@ -92,7 +92,7 @@ schema:
         physicalName: order_total   # the real column
 ```
 
-Columns the contract does not declare are allowed, as many contracts describe only part of a table. To fail on them, declare `additionalProperties: false` (the JSON Schema term) as a custom property of the schema. The check names the undeclared columns; names compare case-insensitively.
+Columns the contract does not declare are allowed, as many contracts describe only part of a table. To fail on them, declare `additionalProperties: false` (the JSON Schema term) as a custom property of the schema. The check names the undeclared columns; names compare case-insensitively. It covers only the top-level columns, not the fields inside a struct or object column. On Kafka servers it is reported as a warning: messages are decoded into the contract's columns, which drops every other field.
 
 ```yaml
 schema:

@@ -90,3 +90,24 @@ def test_a_database_table_with_an_undeclared_column_fails(tmp_path):
         con.sql("INSERT INTO orders VALUES ('A1', 3, 'x')")
     run = DataContract(data_contract_str=_contract(f"type: duckdb\n    database: {database}")).test()
     assert _check(run).reason == "Fields not in the contract: note"
+
+
+def test_an_undeclared_key_after_the_records_duckdb_samples_fails_the_json_schema_validation(tmp_path):
+    data = tmp_path / "orders.json"
+    lines = ['{"order_id": "A1", "quantity": 3}'] * 20480 + ['{"order_id": "A2", "quantity": 3, "note": "x"}']
+    data.write_text("\n".join(lines))
+    server = f"type: local\n    format: json\n    delimiter: new_line\n    path: {data}"
+    run = DataContract(data_contract_str=_contract(server)).test()
+    assert run.result == ResultEnum.failed
+    assert [c.reason for c in run.checks if c.engine == "jsonschema" and c.result == ResultEnum.failed] == [
+        "data must not contain {'note'} properties"
+    ]
+
+
+def test_on_kafka_the_check_is_a_warning():
+    run = DataContract(
+        data_contract_str=_contract("type: kafka\n    host: localhost:9092\n    format: json"), dry_run=True
+    ).test()
+    check = _check(run)
+    assert check.result == ResultEnum.warning
+    assert check.reason == "Checking for fields the contract does not declare is not supported on kafka servers."
