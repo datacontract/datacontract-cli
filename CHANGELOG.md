@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` on an `iceberg` server reads the tables at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF`
+
 ## [1.2.6] - 2026-10-13
 
 ### Changed
