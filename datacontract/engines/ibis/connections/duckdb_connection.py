@@ -10,6 +10,7 @@ from datacontract.config.settings import DEFAULT_CONNECT_TIMEOUT
 from datacontract.engines.ibis.connections.aws_credentials import resolve_aws_credentials
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type, convert_to_duckdb_json_type
 from datacontract.export.sql_type_converter import convert_to_duckdb
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
 if TYPE_CHECKING:
@@ -55,7 +56,7 @@ def get_duckdb_connection(
         setup_gcs_connection(con, server, config)
     if server.type == "azure":
         path = server.location
-        setup_azure_connection(con, server, config)
+        setup_azure_connection(con, server, config, untrusted_contract)
 
     if server.format == "delta":
         # Updating an extension reaches the network and the extension directory,
@@ -68,6 +69,9 @@ def get_duckdb_connection(
             con.load_extension("webbed")
         except Exception as e:
             raise RuntimeError("Failed to install the 'webbed' DuckDB community extension to read XML files.") from e
+    if server.format == "xlsx":
+        check_xlsx_locations(data_contract, path)
+        _load_extension(con, "excel", "xlsx")
 
     model_paths = _model_paths(data_contract, path, schema_name)
     if untrusted_contract and own_connection:
@@ -122,6 +126,8 @@ def get_duckdb_connection(
                 con.sql(f"""CREATE VIEW "{model_name}" AS SELECT * FROM delta_scan('{model_path}');""")
             elif server.format == "xml":
                 create_xml_views(con, schema_obj, model_path)
+            elif server.format == "xlsx":
+                create_xlsx_views(con, schema_obj, model_path)
             table_info = con.sql(f"PRAGMA table_info({_quote(model_name)});").fetchall()
             if table_info:
                 run.log_info(f"DuckDB Table Info: {table_info}")
@@ -399,6 +405,181 @@ def _xml_name(prop: SchemaProperty) -> str:
     return prop.physicalName or prop.name
 
 
+# Day 0 of Excel's 1900 date system; not 1899-12-31, because Excel counts a 29 February 1900 that never was
+_EXCEL_EPOCH = "1899-12-30"
+_TEMPORAL_TYPES = ("DATE", "TIMESTAMP", "TIME")
+_MILLISECONDS_PER_DAY = 86_400_000
+
+
+def check_xlsx_locations(data_contract: OpenDataContractStandard, path: str) -> None:
+    """Refuse locations read_xlsx would read silently wrong.
+
+    read_xlsx reads the first file a glob matches and nothing else, and a model without a physicalName
+    reads the first sheet, so in a workbook shared by several models that sheet would be tested for each.
+    """
+    if _is_glob(path):
+        raise DataContractException(
+            type="xlsx-connection",
+            name="glob_path",
+            reason=f"The xlsx path '{path}' is a glob, but Excel workbooks are read one file at a time.",
+        )
+    by_workbook: dict[str, list[SchemaObject]] = {}
+    for schema_obj in data_contract.schema_ or []:
+        by_workbook.setdefault(_model_path(path, schema_obj.name), []).append(schema_obj)
+    for workbook, schema_objs in by_workbook.items():
+        unnamed = [s.name for s in schema_objs if not s.physicalName]
+        if len(schema_objs) > 1 and unnamed:
+            raise DataContractException(
+                type="xlsx-connection",
+                name="sheet_not_named",
+                reason=(
+                    f"The model(s) {', '.join(unnamed)} share the workbook '{workbook}' with other models, "
+                    "so each needs the name of its sheet as physicalName."
+                ),
+            )
+
+
+def create_xlsx_views(con, schema_obj: SchemaObject, model_path: str):
+    """Views over one sheet: the model with the contract's types, its raw text, and its cells of the wrong type.
+
+    The sheet is read twice, lined up row by row: typed, for the dates that only the cell format tells
+    apart from numbers, and as text, for the values that the type read_xlsx infers from the first row
+    turns into NULL. The checks address a schema by its physical name, quality SQL often by its name,
+    so both name the model view.
+    """
+    sheet = schema_obj.physicalName
+    view = sheet or schema_obj.name
+    # Without stop_at_empty=false, read_xlsx stops at the first empty row and the rows below go unchecked
+    options = f"'{_sql_literal(model_path)}', header=true, stop_at_empty=false"
+    if sheet:
+        options += f", sheet='{_sql_literal(sheet)}'"
+    cell_range = _xlsx_range(schema_obj)
+    if cell_range:
+        options += f", range='{_sql_literal(cell_range)}'"
+    typed = f"read_xlsx({options}, ignore_errors=true)"
+    text = f"read_xlsx({options}, all_varchar=true)"
+    cells = f"(SELECT * FROM {typed}) AS t POSITIONAL JOIN (SELECT * FROM {text}) AS r"
+
+    # Raw view without the contract's columns to check for absent columns (check_property_is_present)
+    con.sql(f"CREATE VIEW {_quote(view + '__raw__')} AS SELECT * FROM {text};")
+
+    # Like DuckDB's own identifiers, a header answers to its name in any case
+    headers = {row[0].lower(): row for row in con.sql(f"DESCRIBE SELECT * FROM {typed}").fetchall()}
+    check_xlsx_header_row(con, model_path, sheet, cell_range, len(headers))
+    # A row that is empty in every column is a spacer, not a record
+    not_empty = f"coalesce({', '.join(f'r.{_quote(row[0])}' for row in headers.values())}) IS NOT NULL"
+    columns, errors = [], []
+    for name, sql_type in (to_csv_types(schema_obj) or {}).items():
+        sql_type = sql_type or "VARCHAR"
+        if name.lower() not in headers:
+            columns.append(f"NULL::{sql_type} AS {_quote(name)}")
+            continue
+        header, inferred_type = headers[name.lower()][:2]
+        value = _cell_value(_quote(header), sql_type, inferred_type)
+        columns.append(f"{value} AS {_quote(name)}")
+        if sql_type != "VARCHAR":
+            errors.append(
+                f"SELECT '{_sql_literal(name)}' AS field, r.{_quote(header)} AS value FROM {cells} "
+                f"WHERE r.{_quote(header)} IS NOT NULL AND {value} IS NULL"
+            )
+    if columns:
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT {', '.join(columns)} FROM {cells} WHERE {not_empty};")
+    else:
+        con.sql(f"CREATE VIEW {_quote(view)} AS SELECT t.* FROM {cells} WHERE {not_empty};")
+    if not errors:
+        errors.append("SELECT NULL::VARCHAR AS field, NULL::VARCHAR AS value WHERE false")
+    con.sql(f"CREATE VIEW {_quote(view + '__type_errors__')} AS {' UNION ALL '.join(errors)};")
+    # DuckDB identifiers are case-insensitive, so sheet Orders already answers to orders
+    if schema_obj.name.lower() != view.lower():
+        con.sql(f"CREATE VIEW {_quote(schema_obj.name)} AS SELECT * FROM {_quote(view)};")
+
+
+# The first cell of a range, and the last column if it names one: A2:K, A2:K500, B3
+_RANGE_START = re.compile(r"([A-Za-z]+)(\d+)(?::([A-Za-z]+)\d*)?")
+
+
+def _column_number(letters: str) -> int:
+    number = 0
+    for letter in letters.upper():
+        number = number * 26 + ord(letter) - ord("A") + 1
+    return number
+
+
+def _column_letters(number: int) -> str:
+    letters = ""
+    while number:
+        number, remainder = divmod(number - 1, 26)
+        letters = chr(ord("A") + remainder) + letters
+    return letters
+
+
+def check_xlsx_header_row(con, model_path: str, sheet: Optional[str], cell_range: Optional[str], width: int) -> None:
+    """Refuse a sheet whose header row is empty.
+
+    read_xlsx skips empty rows before the header, even inside a range, so a sheet with an empty row
+    where its header should be would be read from the next row down and pass. The header row is the
+    first row of the sheet, or of the schema's xlsxRange; `width` is the number of columns read_xlsx
+    found, which bounds the first read (reading a whole row out to column XFD takes over a second).
+    Only the whole row can show it is empty, as read_xlsx also skips empty columns before the header.
+    """
+    match = _RANGE_START.fullmatch(cell_range or "A1")
+    if not match:
+        # read_xlsx reports a malformed range itself
+        return
+    first_column, row, last_column = match.groups()
+    width_bound = _column_letters(_column_number(first_column) + max(width, 1) - 1)
+    for last in [last_column] if last_column else [width_bound, "XFD"]:
+        options = (
+            f"'{_sql_literal(model_path)}', header=false, all_varchar=true, range='{first_column}{row}:{last}{row}'"
+        )
+        if sheet:
+            options += f", sheet='{_sql_literal(sheet)}'"
+        header = con.sql(f"SELECT * FROM read_xlsx({options})").fetchone()
+        if header is not None and any(cell is not None for cell in header):
+            return
+    where = f"row {row} of sheet '{sheet}'" if sheet else f"row {row} of the first sheet"
+    raise DataContractException(
+        type="xlsx-connection",
+        name="empty_header_row",
+        reason=(
+            f"The header should be on {where}, but that row is empty. "
+            "Set the schema's xlsxRange to start at the header row."
+        ),
+    )
+
+
+def _xlsx_range(schema_obj: SchemaObject) -> Optional[str]:
+    """The cells of the sheet to read, header row first, for a sheet whose header is not in its first row."""
+    return next((c.value for c in schema_obj.customProperties or [] if c.property == "xlsxRange"), None)
+
+
+def _cell_value(column: str, sql_type: str, inferred_type: str) -> str:
+    """The value of a cell as `sql_type`, NULL if it has none of that type.
+
+    A date read as a number is the Excel serial number of its days, with the time of day as fraction.
+    """
+    typed, text = f"t.{column}", f"r.{column}"
+    read_as_temporal = inferred_type in _TEMPORAL_TYPES
+    if sql_type == "VARCHAR":
+        return f"COALESCE(CAST({typed} AS VARCHAR), {text})" if read_as_temporal else text
+    if sql_type == "BIGINT":
+        # TRY_CAST rounds '1.5' to 2, which would hide a fraction in an integer column
+        number = f"TRY_CAST({text} AS DOUBLE)"
+        return f"CASE WHEN {number} = floor({number}) THEN TRY_CAST({number} AS BIGINT) END"
+    if sql_type not in _TEMPORAL_TYPES:
+        return f"TRY_CAST({text} AS {sql_type})"
+    serial = f"TRY_CAST({text} AS DOUBLE)"
+    since_epoch = f"to_milliseconds(CAST(round({serial} * {_MILLISECONDS_PER_DAY}) AS BIGINT))"
+    from_serial = {
+        "DATE": f"CAST(DATE '{_EXCEL_EPOCH}' + CAST(floor({serial}) AS INTEGER) AS DATE)",
+        "TIMESTAMP": f"TIMESTAMP '{_EXCEL_EPOCH}' + {since_epoch}",
+        "TIME": f"CAST(TIMESTAMP '{_EXCEL_EPOCH}' + {since_epoch} AS TIME)",
+    }[sql_type]
+    candidates = [f"TRY_CAST({typed} AS {sql_type})"] if read_as_temporal else []
+    candidates += [f"TRY_CAST({text} AS {sql_type})", from_serial]
+    return f"COALESCE({', '.join(candidates)})"
+
+
 def _quote(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
@@ -476,25 +657,18 @@ def add_nested_views(con: "duckdb.DuckDBPyConnection", model_name: str, properti
 
 
 def _load_extension(con, name: str, extra: str) -> None:
-    import gzip
     import importlib.resources
     import pathlib
-    import shutil
-    import tempfile
 
     # first try to use locally bundled wheel to support air-gapped environments
     try:
         ext_module = importlib.import_module(f"duckdb_extension_{name}")
         module_path = pathlib.Path(str(importlib.resources.files(ext_module)))
         duckdb_version = con.sql("PRAGMA version;").fetchone()[0]
-        extension_file_gz = module_path / "extensions" / duckdb_version / f"{name}.duckdb_extension.gz"
+        extension_file = module_path / "extensions" / duckdb_version / f"{name}.duckdb_extension"
 
-        if extension_file_gz.exists():
-            tmpdir = pathlib.Path(tempfile.mkdtemp(prefix=f"datacontract-{name}-"))
-            extension_file = tmpdir / f"{name}.duckdb_extension"
-            with gzip.open(extension_file_gz, "rb") as src, open(extension_file, "wb") as dst:
-                shutil.copyfileobj(src, dst)
-            con.sql(f"LOAD '{extension_file}'")
+        if extension_file.exists():
+            con.sql(f"LOAD '{_sql_literal(extension_file)}'")
             return
     except ImportError:
         pass
@@ -616,37 +790,49 @@ def setup_gcs_connection(con, server: Server, config: Config):
     """)
 
 
-def setup_azure_connection(con, server: Server, config: Config):
-    tenant_id = config.get_azure_tenant_id(required=True)
-    client_id = config.get_azure_client_id(required=True)
-    client_secret = config.get_azure_client_secret(required=True)
+def setup_azure_connection(con, server: Server, config: Config, untrusted_contract: bool = False):
+    tenant_id = config.get_azure_tenant_id()
+    client_id = config.get_azure_client_id()
+    client_secret = config.get_azure_client_secret()
+    use_service_principal = bool(tenant_id and client_id and client_secret)
+
+    if not use_service_principal and untrusted_contract:
+        # The credential chain would read with the host's own identity from any account an untrusted contract names
+        tenant_id = config.get_azure_tenant_id(required=True)
+        client_id = config.get_azure_client_id(required=True)
+        client_secret = config.get_azure_client_secret(required=True)
+
     storage_account = (
         to_azure_storage_account(server.location) if server.type == "azure" and "://" in server.location else None
     )
 
     _load_extension(con, "azure", "azure")
 
-    if storage_account is not None:
-        con.sql(f"""
-        CREATE SECRET azure_spn (
-            TYPE AZURE,
-            PROVIDER SERVICE_PRINCIPAL,
-            TENANT_ID '{_sql_literal(tenant_id)}',
-            CLIENT_ID '{_sql_literal(client_id)}',
-            CLIENT_SECRET '{_sql_literal(client_secret)}',
-            ACCOUNT_NAME '{_sql_literal(storage_account)}'
-        );
-        """)
+    if use_service_principal:
+        provider = "SERVICE_PRINCIPAL"
+        options = {"TENANT_ID": tenant_id, "CLIENT_ID": client_id, "CLIENT_SECRET": client_secret}
     else:
-        con.sql(f"""
-        CREATE SECRET azure_spn (
-            TYPE AZURE,
-            PROVIDER SERVICE_PRINCIPAL,
-            TENANT_ID '{_sql_literal(tenant_id)}',
-            CLIENT_ID '{_sql_literal(client_id)}',
-            CLIENT_SECRET '{_sql_literal(client_secret)}'
-        );
-        """)
+        # No service principal configured: resolve credentials through the Azure credential chain
+        # (az cli, env, managed identity, workload identity, ...).
+        missing = [
+            name
+            for name, value in [
+                ("DATACONTRACT_AZURE_TENANT_ID", tenant_id),
+                ("DATACONTRACT_AZURE_CLIENT_ID", client_id),
+                ("DATACONTRACT_AZURE_CLIENT_SECRET", client_secret),
+            ]
+            if not value
+        ]
+        if len(missing) == 3:
+            logger.info("Using the Azure credential chain")
+        else:
+            logger.info("Using the Azure credential chain: %s not set", " and ".join(missing))
+        provider = "CREDENTIAL_CHAIN"
+        options = {"CHAIN": config.get_azure_credential_chain()}
+
+    options["ACCOUNT_NAME"] = storage_account
+    clauses = [f"PROVIDER {provider}"] + [f"{name} '{_sql_literal(v)}'" for name, v in options.items() if v]
+    con.sql(f"CREATE OR REPLACE SECRET azure_spn (TYPE AZURE, {', '.join(clauses)});")
 
 
 def to_azure_storage_account(location: str) -> str | None:

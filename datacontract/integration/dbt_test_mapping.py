@@ -41,6 +41,7 @@ def field_to_data_tests(
     supports_constraints: bool = False,
     source_name: Optional[str] = None,
     include_dbt_expectations_bounds: bool = True,
+    include_quality_rule: bool = True,
 ) -> List[Any]:
     """Build the list of dbt data_tests for an ODCS property.
 
@@ -56,7 +57,7 @@ def field_to_data_tests(
         if prop.unique or (is_primary_key and is_single_pk):
             tests.append("unique")
 
-    enum_values = get_enum_values(prop)
+    enum_values = get_enum_values(prop, include_quality_rule)
     if enum_values and len(enum_values) > 0:
         tests.append({"accepted_values": {"arguments": {"values": enum_values}}})
 

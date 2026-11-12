@@ -4,6 +4,7 @@ from typing_extensions import Annotated
 from datacontract.cli import app, console, debug_option, enable_debug_logging, inline_references_option
 from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
+from datacontract.model.breaking import Perspective
 from datacontract.output.text_breaking_results import write_text_breaking_results
 
 
@@ -20,13 +21,20 @@ def breaking(
         str,
         typer.Argument(help="The location (url, s3 url, or local path) of the target (after) data contract YAML."),
     ],
+    perspective: Annotated[
+        Perspective,
+        typer.Option(
+            help="`consumer` flags changes that lead to unexpected data for consumers, `producer` flags changes that can make data contract tests fail."
+        ),
+    ] = Perspective.CONSUMER,
     inline_references: inline_references_option = True,
     debug: debug_option = None,
 ):
     """Show compatibility impact between two data contracts."""
     enable_debug_logging(debug)
     result = DataContract(config=cli_config(), data_contract_file=v1, inline_references=inline_references).breaking(
-        DataContract(config=cli_config(), data_contract_file=v2, inline_references=inline_references)
+        DataContract(config=cli_config(), data_contract_file=v2, inline_references=inline_references),
+        perspective=perspective,
     )
     write_text_breaking_results(result, console)
     if result.is_breaking:

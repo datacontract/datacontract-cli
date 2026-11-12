@@ -6,6 +6,86 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
+- `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
+- `datacontract test`: a schema with the custom property `additionalProperties: false` fails on columns it does not declare; `datacontract import jsonschema` and `export jsonschema` map it to and from the JSON Schema keyword (#1722, #1825 @markhm)
+
+### Fixed
+- Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
+- `datacontract catalog`: home links lead to the catalog's index when it is not hosted at the domain root (#1810)
+- `datacontract export sql` quotes MySQL table, view and column names, so reserved words like `order` no longer break the DDL
+
+- - `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765)
+
+### Added
+- `datacontract changelog --output-format json|yaml`: print the changelog as JSON or YAML to process it with other tools (#1792)
+- `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
+- `datacontract test`: test Excel sheets whose header is not in the first row, with an `xlsxRange` custom property per schema, and fail a sheet whose header row is empty (#1717 @nicolehazel)
+- Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
+- `datacontract lint` and `datacontract test` fail on duplicate schema, property, server and role names, and on duplicate `id`s within the same array; checks are skipped with a custom `--json-schema`
+- `datacontract test` and `datacontract import` authenticate to Azure through the Azure credential chain (e.g. `az login`) when no service principal is configured (@dmaresma)
+
+## [1.2.9] - 2026-10-30
+
+### Added
+- `datacontract test`:
+  - loads the custom quality checks a contract uses from Entropy Data when an Entropy Data API key is set, unless the local folder has them
+  - check constraints and quality rules on nested properties on Snowflake servers, in `VARIANT` columns as well as structured ones
+  - set the BigQuery query location and a Cloud KMS encryption key (CMEK) via `DATACONTRACT_BIGQUERY_LOCATION` / `DATACONTRACT_BIGQUERY_KMS_KEY_NAME` or the server `customProperties` `location` / `kmsKeyName` (#1728 @SabineGl @ezno12)
+  - log in to Snowflake with workload identity federation (AWS, Azure, GCP or OIDC) via `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER`, reading an OIDC token from `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH`
+- `datacontract export sql`: export a schema with `physicalType: view` as a view (#1031 @dmaresma @OGsiji)
+
+### Changed
+- The `snowflake` extra supports snowflake-connector-python 5.x and requires at least 3.17
+- `datacontract test` matches custom quality check IDs regardless of case
+- `datacontract test`: errors about custom quality checks name the folder searched, and the check and its arguments when the database rejects its query
+
+### Security
+- `datacontract api` refuses headers that name a file on the server or the server's own workload identity, and keeps Snowflake and Databricks credentials held in the server's environment from hosts a request chooses
+- `datacontract api` applies its credential and local file guards to servers declared as `type: custom` with a `customType`, or with an ODCS type synonym such as `postgresql`
+
+### Fixed
+- `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
+- `datacontract test` works without network access when the `xlsx`, `s3`, `gcs` or `azure` extra is installed
+
+## [1.2.8] - 2026-10-26
+
+### Added
+- `datacontract test`: test Excel workbooks (`format: xlsx`) (new `xlsx` extra) (#1717 @nicolehazel)
+- `datacontract test`: test API servers whose schemas are served by different endpoints, with an `endpoint` custom property per schema, including relationships across endpoints (#1780)
+- `datacontract import openapi` imports several operations (repeat `--operation`, or pick them from a list in a terminal) (#1780)
+- `datacontract edit --language` shows the editor in English, German, Swedish or French
+- `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744 @lairdman7)
+
+### Changed
+- The documentation moved from docs.datacontract.com to cli.datacontract.com
+- `datacontract lint` and `datacontract test`: reject duplicate keys in a data contract instead of silently keeping the last value (#1741 @kamathramu87)
+- `datacontract breaking` grades more changes to quality rules and to `minimum`/`maximum` bounds instead of warning (#1761)
+- `datacontract test`: a quality rule that can't use its custom quality check reports `error` instead of `warning` or `failed` (#1773)
+- `datacontract test`: custom quality checks accept the files Entropy Data writes, with a `default` query and the argument type `any` (`ansi` and `value` still work) (#1773)
+- `datacontract export odcs`, `import odcs` and `import excel` write a `team` given as a list of members as a team object with `members` (this syntax is preferred by ODCS 3.2) (#1768)
+- `datacontract export excel`: the ODCS v3.2 template shows a tooltip with the field description on every field label (#1763)
+
+### Fixed
+- `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added (#1761)
+- `datacontract breaking` no longer flags changes that `datacontract test` does not check (#1761)
+- Contracts whose `team` is the deprecated list of members no longer fail to export, `import odcs --owner` or `dbt sync` (#1768)
+- `datacontract export sql`: apostrophes and backslashes in descriptions no longer break ClickHouse and Snowflake `COMMENT` clauses (#1729 @banshee @ezno12)
+- `datacontract dbt sync`: library metrics (`nullValues`, `missingValues`, `invalidValues`, `duplicateValues`) generate tests that check the metric against its bound (#1767)
+
+## [1.2.7] - 2026-10-16
+
+### Changed
+- `datacontract breaking` consistently grades changes from the consumer's perspective by default (previously an inconsistent mix of consumer and producer perspective) (#1746)
+
+### Added
+- `datacontract test`: API servers send POST requests with query parameters and a JSON body, set by the `method`, `params` and `body` custom properties, and an `X-API-Key` header from `DATACONTRACT_API_HEADER_X_API_KEY` (also used by `datacontract import odata`) (#1747)
+- `datacontract breaking --perspective consumer|producer` (and `perspective` on `POST /breaking`) selects whose expectations changes are graded against, and the output shows whether each change tightens or loosens the contract (#1746)
+- `datacontract import openapi` imports POST operations, and writes required query parameters to the `params` custom property (#1747)
+
+### Security
+- `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` or `DATACONTRACT_API_HEADER_X_API_KEY` is set on the server (#1747)
 
 ### Added
 - `datacontract test` on an `iceberg` server reads the tables at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF`

@@ -1,7 +1,7 @@
 import sqlite3
 
 import pytest
-from open_data_contract_standard.model import DataQuality, SchemaObject, SchemaProperty
+from open_data_contract_standard.model import CustomProperty, DataQuality, SchemaObject, SchemaProperty
 
 from datacontract.engines.hana.hana_schema_check import (
     qualified_table_name,
@@ -148,6 +148,26 @@ def test_field_present_fail():
     checks = run_schema_checks(connection, "SALES", schema)
 
     assert check_by_type(checks, "field_is_present").result == ResultEnum.failed
+
+
+@pytest.mark.parametrize(
+    "columns, result, reason",
+    [
+        (["ID", "NOTE"], ResultEnum.failed, "Fields not in the contract: NOTE"),
+        (["ID"], ResultEnum.passed, None),
+    ],
+)
+def test_a_closed_schema_fails_on_undeclared_columns(columns, result, reason):
+    connection = FakeConnection(catalog_response([column(name) for name in columns]))
+    schema = SchemaObject(
+        name="ORDERS",
+        properties=[SchemaProperty(name="id")],
+        customProperties=[CustomProperty(property="additionalProperties", value=False)],
+    )
+
+    check = check_by_type(run_schema_checks(connection, "SALES", schema), "model_no_additional_fields")
+
+    assert (check.result, check.reason) == (result, reason)
 
 
 def test_field_type_match():

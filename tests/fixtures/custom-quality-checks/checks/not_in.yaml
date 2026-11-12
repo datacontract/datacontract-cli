@@ -2,5 +2,5 @@ description: ${column} is none of ${arguments.values}.
 arguments:
   values:
 queries:
-  ansi: SELECT COUNT(*) FROM ${table} WHERE ${column} IN (${arguments.values})
+  default: SELECT COUNT(*) FROM ${table} WHERE ${column} IN (${arguments.values})
 mustBe: 0

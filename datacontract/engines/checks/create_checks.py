@@ -28,17 +28,21 @@ from datacontract.engines.checks.check_spec import METADATA_METRICS, CheckSpec, 
 from datacontract.engines.checks.custom_quality_check import (
     COLUMN_PLACEHOLDERS,
     ENGINE,
+    CustomQualityChecks,
     CustomQualityCheckUnusable,
     Instance,
     instantiate,
     placeholder_pattern,
+    sql_literal,
 )
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason, sqlglot_dialect_by_name
 from datacontract.engines.checks.type_normalize import normalize_type_name
 from datacontract.engines.ibis.native_type import supports_native_type_introspection
+from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_key, get_map_value
+from datacontract.model.odcs import is_closed_schema
 from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
@@ -52,6 +56,7 @@ _NESTED_CHECK_SERVER_TYPES = {
     "kafka",
     "trino",
     "athena",
+    "snowflake",
 } | _FILE_SERVER_TYPES
 
 
@@ -68,7 +73,7 @@ def is_check_types(server: Optional[Server]) -> bool:
     """Type checks only make sense where the data source carries real types."""
     if server is None:
         return True
-    return server.format not in ("json", "csv", "avro", "xml")
+    return server.format not in ("json", "csv", "avro", "xml", "xlsx")
 
 
 def to_schema_name(schema_object: SchemaObject, server_type: Optional[str]) -> str:
@@ -210,10 +215,14 @@ def prepare_query(
         names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
 
     def identifier(name: str, forced: bool) -> str:
-        return ".".join(
+        parts = [
             exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
             for part in name.split(".")
-        )
+        ]
+        if dialect == "snowflake" and name == field_name:
+            # Snowflake reaches into a column's value with `:`; a dot would name a table's column
+            return parts[0] + "".join(f":{part}" for part in parts[1:])
+        return ".".join(parts)
 
     if instance is not None:
         return instance.render(dialect, names, identifier)
@@ -232,7 +241,7 @@ def create_checks(
     server: Optional[Server],
     schema_name: str = "all",
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     if data_contract.schema_ is None:
@@ -263,7 +272,7 @@ def _to_schema_checks(
     schema_object: SchemaObject,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     server_type = get_server_type(server) if server is not None else None
@@ -271,7 +280,9 @@ def _to_schema_checks(
     properties = schema_object.properties or []
     check_types = is_check_types(server)
     uses_raw_view = (
-        server is not None and server_type in _FILE_SERVER_TYPES and server.format in ("csv", "parquet", "json", "xml")
+        server is not None
+        and server_type in _FILE_SERVER_TYPES
+        and server.format in ("csv", "parquet", "json", "xml", "xlsx")
     )
 
     # A primary key is both not-null and unique. A composite key is unique as a
@@ -288,6 +299,7 @@ def _to_schema_checks(
     # of nested elements with children. The required top-level properties are still checked for presence.
     xml = server is not None and server.format == "xml"
     documents = server is not None and server.format in ("json", "xml")
+    xlsx = server is not None and server.format == "xlsx"
     if xml:
         # A record element that matches nothing would pass every other check
         checks.append(
@@ -319,6 +331,23 @@ def _to_schema_checks(
                     field=field,
                     metric=MetricType.FIELD_PRESENT,
                     uses_raw_view=uses_raw_view,
+                )
+            )
+
+        # A cell of the wrong type reads as NULL, so the checks of its column would miss it
+        if xlsx and not nested and convert_to_duckdb_csv_type(prop) != "VARCHAR":
+            type_errors = exp.to_identifier(f"{model}__type_errors__", quoted=True).sql(dialect="duckdb")
+            checks.append(
+                CheckSpec(
+                    key=f"{model}__{field}__field_type",
+                    category="schema",
+                    type="field_type",
+                    name=f"Check that field {field} has type {prop.logicalType or prop.physicalType}",
+                    model=model,
+                    field=field,
+                    metric=MetricType.CUSTOM_SQL,
+                    query=f"SELECT count(*) FROM {type_errors} WHERE field = {sql_literal(field, 'duckdb')}",
+                    threshold=Threshold(Op.EQ, 0),
                 )
             )
 
@@ -576,6 +605,7 @@ def _to_schema_checks(
 
         # A check the server cannot run is reported, not dropped.
         for check in checks[first_check:]:
+            check.value_type = prop_type
             if check.preset_result == "warning":
                 # An unrunnable rule keeps its own, more specific reason.
                 continue
@@ -596,6 +626,24 @@ def _to_schema_checks(
             check.metric = MetricType.UNSUPPORTED
             check.preset_result = "warning"
             check.preset_reason = reason
+
+    if is_closed_schema(schema_object):
+        check = CheckSpec(
+            key=f"{model}__no_additional_fields",
+            category="schema",
+            type="model_no_additional_fields",
+            name=f"Check that {model} has no fields the contract does not declare",
+            model=model,
+            metric=MetricType.FIELD_NAMES,
+            columns=[prop.physicalName or prop.name for prop in properties],
+            uses_raw_view=uses_raw_view,
+        )
+        if server_type == "kafka":
+            # Messages are decoded into the contract's columns, so the fields it does not declare are gone.
+            check.metric = MetricType.UNSUPPORTED
+            check.preset_result = "warning"
+            check.preset_reason = "Checking for fields the contract does not declare is not supported on kafka servers."
+        checks.append(check)
 
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]
@@ -809,7 +857,7 @@ def _quality_checks(
     quality_list: List[DataQuality],
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     checks: List[CheckSpec] = []
     for count, quality in enumerate(quality_list):
@@ -875,6 +923,7 @@ def _unexecuted_check(
     result: str = "warning",
     name: Optional[str] = None,
     dimension: Optional[str] = None,
+    warnings: Optional[List[str]] = None,
 ) -> List[CheckSpec]:
     """A rule the engine cannot run, reported rather than dropped."""
     return [
@@ -890,6 +939,7 @@ def _unexecuted_check(
             severity=quality.severity,
             preset_result=result,
             preset_reason=reason,
+            warnings=warnings,
         )
     ]
 
@@ -909,7 +959,7 @@ def _quality_rule_checks(
     count: int,
     server: Optional[Server],
     variables: Optional[Mapping[str, str]] = None,
-    custom_quality_checks: Optional[str] = None,
+    custom_quality_checks: Optional[CustomQualityChecks] = None,
 ) -> List[CheckSpec]:
     """The checks of a single ODCS quality rule (``count`` is its index in the list)."""
     if quality.type == "custom" and quality.engine == "soda" and quality.implementation:
@@ -938,20 +988,29 @@ def _quality_rule_checks(
             check_key = f"{model}__{field}__quality_custom_check_{count}"
             check_type = "field_quality_custom"
         if field is not None and "[]" in field:
-            return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field))
+            return _unexecuted_check(check_key, check_type, model, field, quality, _array_item_reason(field), "error")
         dialect = dialect_for_server_type(get_server_type(server))
         try:
             instance = instantiate(quality, model, field, dialect, custom_quality_checks)
             query = prepare_query(instance.query, model, field, server, instance)
         except CustomQualityCheckUnusable as e:
             return _unexecuted_check(
-                check_key, check_type, model, field, quality, e.reason, e.result, e.name, e.dimension
+                check_key, check_type, model, field, quality, e.reason, "error", e.name, e.dimension, e.warnings
             )
         rule = instance.quality
         refusal = refusal_reason(query, dialect)
         if refusal is not None:
             return _unexecuted_check(
-                check_key, check_type, model, field, rule, refusal, "failed", instance.name, rule.dimension
+                check_key,
+                check_type,
+                model,
+                field,
+                rule,
+                refusal,
+                "error",
+                instance.name,
+                rule.dimension,
+                instance.warnings,
             )
         return [
             CheckSpec(
@@ -967,6 +1026,8 @@ def _quality_rule_checks(
                 severity=rule.severity,
                 dimension=rule.dimension,
                 diagnostics=instance.diagnostics,
+                custom_quality_check=instance.call,
+                warnings=instance.warnings,
             )
         ]
     if quality.type == "sql":
@@ -1201,7 +1262,7 @@ def _freshness_check(
     model, field = resolved
 
     unit = (sla.unit or "d").lower() or "d"
-    seconds = _freshness_value_to_seconds(sla.value, unit)
+    seconds = freshness_value_to_seconds(sla.value, unit)
     if seconds is None:
         # A freshness the CLI cannot interpret is a contract error, reported as a failed
         # check. It must not raise: checks are created for the whole contract before any
@@ -1245,7 +1306,7 @@ _FRESHNESS_UNITS = (
 )
 
 
-def _freshness_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
+def freshness_value_to_seconds(value, unit: Optional[str]) -> Optional[int]:
     """The freshness threshold in seconds, or ``None`` when it cannot be interpreted.
 
     Accepts the same value forms as retention: a number qualified by ``unit``, or an

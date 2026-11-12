@@ -27,6 +27,36 @@ BUNDLED_EDITOR_ASSETS_DIR = Path(__file__).parent / "editor_assets"
 # construct Monaco's web workers from a cross-origin URL.
 EDITOR_ASSETS_PATH = "/editor"
 
+# The CLI's own strings on the editor page (toasts after save/reload), per UI language the
+# editor supports. The editor localizes everything else itself from the `locale` passed to init().
+EDITOR_PAGE_MESSAGES = {
+    "en": {
+        "reloaded": "Discarded changes, reloaded ",
+        "reload_failed": "Failed to reload ",
+        "saved": "Saved ",
+        "save_failed": "Failed to save ",
+    },
+    "de": {
+        "reloaded": "Änderungen verworfen, neu geladen: ",
+        "reload_failed": "Neu laden fehlgeschlagen: ",
+        "saved": "Gespeichert: ",
+        "save_failed": "Speichern fehlgeschlagen: ",
+    },
+    "sv": {
+        "reloaded": "Ändringarna har förkastats, laddade om ",
+        "reload_failed": "Kunde inte ladda om ",
+        "saved": "Sparade ",
+        "save_failed": "Kunde inte spara ",
+    },
+    "fr": {
+        "reloaded": "Modifications annulées, rechargé : ",
+        "reload_failed": "Échec du rechargement : ",
+        "saved": "Enregistré : ",
+        "save_failed": "Échec de l’enregistrement : ",
+    },
+}
+EDITOR_LANGUAGES = list(EDITOR_PAGE_MESSAGES)
+
 
 def resolve_editor_assets_url(editor_version: str | None, editor_assets_url: str | None) -> str | None:
     """Return the remote URL to load the editor assets from, or None to use the bundled assets."""
@@ -96,7 +126,7 @@ def editor_ai_config() -> dict | None:
     return ai
 
 
-def _generate_index_html(filename: str, ai_config: dict | None = None) -> str:
+def _generate_index_html(filename: str, ai_config: dict | None = None, language: str | None = None) -> str:
     """
     Generate the editor page: load the YAML from the local file API, write it back on
     save, and point the editor's test runner at this server's own /test endpoint.
@@ -104,13 +134,17 @@ def _generate_index_html(filename: str, ai_config: dict | None = None) -> str:
     The editor runs in EMBEDDED mode, since the file menu (New, Load Example, Open)
     makes no sense when the editor is bound to a single local file. The filename is
     shown in the header via titlePrefix, and Cancel reverts to the file on disk.
-    The AI assistant is configured if ai_config is given.
+    The AI assistant is configured if ai_config is given. If a language is given, the
+    editor UI is shown in it; otherwise the editor uses its own default (English, or the
+    language picked in its switcher).
     """
     filename_js = json.dumps(filename)
+    messages = {key: json.dumps(value) for key, value in EDITOR_PAGE_MESSAGES[language or "en"].items()}
+    locale_option = f"locale: {json.dumps(language)}," if language else ""
     ai_option = f"ai: {json.dumps(ai_config)}," if ai_config else ""
     file_api_path = f"/api/files/{quote(filename)}"
     return f"""<!doctype html>
-<html lang="en">
+<html lang="{language or "en"}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -161,6 +195,7 @@ def _generate_index_html(filename: str, ai_config: dict | None = None) -> str:
               dataContractCliApiServerUrl: window.location.origin,
             }},
             {ai_option}
+            {locale_option}
             onCancel: async () => {{
               try {{
                 const response = await fetch('{file_api_path}');
@@ -168,9 +203,9 @@ def _generate_index_html(filename: str, ai_config: dict | None = None) -> str:
                   throw new Error(response.statusText);
                 }}
                 editor.setYaml(await response.text());
-                notify({{ type: 'info', message: 'Discarded changes, reloaded ' + {filename_js} }});
+                notify({{ type: 'info', message: {messages["reloaded"]} + {filename_js} }});
               }} catch (error) {{
-                notify({{ type: 'error', message: 'Failed to reload ' + {filename_js} + ': ' + error.message, duration: 5000 }});
+                notify({{ type: 'error', message: {messages["reload_failed"]} + {filename_js} + ': ' + error.message, duration: 5000 }});
               }}
             }},
             onSave: async (yamlContent) => {{
@@ -183,9 +218,9 @@ def _generate_index_html(filename: str, ai_config: dict | None = None) -> str:
                 if (!saveResponse.ok) {{
                   throw new Error('Failed to save file');
                 }}
-                notify({{ type: 'success', message: 'Saved ' + {filename_js} }});
+                notify({{ type: 'success', message: {messages["saved"]} + {filename_js} }});
               }} catch (error) {{
-                notify({{ type: 'error', message: 'Failed to save ' + {filename_js} + ': ' + error.message, duration: 5000 }});
+                notify({{ type: 'error', message: {messages["save_failed"]} + {filename_js} + ': ' + error.message, duration: 5000 }});
                 throw error;
               }}
             }},
@@ -208,6 +243,7 @@ def create_app(
     editor_assets_url: str | None = None,
     editor_assets_dir: Path = BUNDLED_EDITOR_ASSETS_DIR,
     open_browser_url: str | None = None,
+    language: str | None = None,
 ):
     """
     Create the FastAPI app serving the Data Contract Editor for a single local file.
@@ -238,7 +274,7 @@ def create_app(
 
     @edit_app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def index():
-        return _generate_index_html(filename, editor_ai_config())
+        return _generate_index_html(filename, editor_ai_config(), language)
 
     @edit_app.get(EDITOR_ASSETS_PATH + "/{asset_path:path}", include_in_schema=False)
     def editor_asset(asset_path: str):
@@ -346,6 +382,13 @@ def edit(
             "e.g. a self-hosted editor build. Takes precedence over --editor-version."
         ),
     ] = None,
+    language: Annotated[
+        str | None,
+        typer.Option(
+            help=f"UI language of the editor, one of: {', '.join(EDITOR_LANGUAGES)}. "
+            "By default, the editor is shown in English, and the language can be switched in the editor."
+        ),
+    ] = None,
     open_browser: Annotated[
         bool, typer.Option("--open/--no-open", help="Open the editor in the default browser.")
     ] = True,
@@ -361,12 +404,18 @@ def edit(
     The server also acts as the editor's test runner: "Run test" in the editor executes
     the data contract tests locally against the servers defined in the data contract.
     Credentials for the data sources must be provided as environment variables, see
-    https://docs.datacontract.com/testing
+    https://cli.datacontract.com/testing
     The editor's AI assistant is enabled by setting DATACONTRACT_EDITOR_AI_ENDPOINT, together with
     DATACONTRACT_EDITOR_AI_API_KEY, DATACONTRACT_EDITOR_AI_MODEL, DATACONTRACT_EDITOR_AI_PROVIDER
     (openai or anthropic), and DATACONTRACT_EDITOR_AI_AUTH_HEADER (bearer, api-key, or x-api-key).
     """
     enable_debug_logging(debug)
+
+    if language is not None and language not in EDITOR_LANGUAGES:
+        console.print(
+            f"[red]Error: Unsupported language '{language}'. Use one of: {', '.join(EDITOR_LANGUAGES)}.[/red]"
+        )
+        raise typer.Exit(code=1)
 
     try:
         import uvicorn
@@ -406,5 +455,6 @@ def edit(
         file_path,
         editor_assets_url=assets_url,
         open_browser_url=url if open_browser else None,
+        language=language,
     )
     uvicorn.run(edit_app, port=port, host=host, log_level="warning")

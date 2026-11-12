@@ -32,7 +32,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _FILE_SERVER_TYPES = {"s3", "gcs", "azure", "local"}
-_SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta", "xml"}
+_SUPPORTED_FILE_FORMATS = {"json", "parquet", "csv", "delta", "xml", "xlsx"}
 
 
 def _import_ibis():
@@ -375,7 +375,23 @@ def _connect_bigquery(ibis, server: Server, config: Config):
     )
     if credentials:
         kwargs["credentials"] = credentials
-    return ibis.bigquery.connect(**kwargs)
+    location = config.get_bigquery_location() or _get_custom_property(server, "location")
+    if location:
+        kwargs["location"] = location
+    con = ibis.bigquery.connect(**kwargs)
+    # BigQuery requires a dataset on every table name, but the SQL of quality rules may name the table bare.
+    con.client.default_query_job_config.default_dataset = f"{con.data_project}.{con.dataset}"
+
+    kms_key_name = config.get_bigquery_kms_key_name() or _get_custom_property(server, "kmsKeyName")
+    if kms_key_name:
+        from google.cloud import bigquery
+
+        # Projects that enforce CMEK reject query jobs without a key. A dataset's default key does not
+        # cover the anonymous tables holding query results, so set it on the config every query uses.
+        con.client.default_query_job_config.destination_encryption_configuration = bigquery.EncryptionConfiguration(
+            kms_key_name=kms_key_name
+        )
+    return con
 
 
 _BIGQUERY_SCOPES = ["https://www.googleapis.com/auth/bigquery"]
@@ -507,8 +523,14 @@ def _snowflake_connection_kwargs(server: Server, run: Run, config: Config) -> di
     put("user", config.get_snowflake_username())
     put("password", config.get_snowflake_password())
     put("authenticator", config.get_snowflake_authenticator())
+    put("workload_identity_provider", config.get_snowflake_workload_identity_provider())
     put("role", config.get_snowflake_role())
     put("token", config.get_snowflake_token())
+    token_file_path = config.get_snowflake_token_file_path()
+    if token_file_path:
+        # Connectors before 5.0 send the file verbatim, and a trailing newline breaks the JWT.
+        with open(token_file_path) as f:
+            put("token", f.read().strip())
     put("passcode", config.get_snowflake_passcode())
     put("private_key", _snowflake_private_key(config.get_snowflake_private_key()))
     put("private_key_file", config.get_snowflake_private_key_file())
@@ -860,6 +882,9 @@ def _connect_trino(ibis, server: Server, config: Config):
         database=config.get_trino_catalog() or server.catalog,
         schema=config.get_trino_schema() or server.schema_,
     )
+    http_headers = config.get_trino_http_headers()
+    if http_headers is not None:
+        kwargs["http_headers"] = http_headers
 
     if authentication == "basic":
         user = config.get_trino_username(required=True)

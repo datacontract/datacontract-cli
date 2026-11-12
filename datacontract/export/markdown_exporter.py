@@ -72,7 +72,7 @@ def info_to_markdown(data_contract: OpenDataContractStandard) -> str:
         parts.append(f"- **version:** {data_contract.version}")
     if data_contract.status:
         parts.append(f"- **status:** {data_contract.status}")
-    if data_contract.team:
+    if data_contract.team and data_contract.team.name:
         parts.append(f"- **team:** {data_contract.team.name}")
     return "\n".join(parts)
 

@@ -8,11 +8,19 @@ servers:
 - server: production
   type: api
   description: Production
-  location: https://eu.api.example.com/v1/orders?limit=${limit:-100}
+  customProperties:
+  - property: params
+    value:
+      limit: ${limit:-100}
+  location: https://eu.api.example.com/v1/orders
 - server: staging
   type: api
   description: Staging
-  location: https://staging.api.example.com/v1/orders?limit=${limit:-100}
+  customProperties:
+  - property: params
+    value:
+      limit: ${limit:-100}
+  location: https://staging.api.example.com/v1/orders
 schema:
 - name: listOrders
   physicalType: object

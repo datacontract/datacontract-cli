@@ -12,6 +12,7 @@ import requests
 from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaObject
 
 from datacontract.config import Config
+from datacontract.engines.http_api import ApiSession, api_headers
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
     create_odcs,
@@ -160,21 +161,10 @@ def _read_file(path: str | Path, label: str) -> bytes:
         raise _schema_error(f"Failed to read OData {label} file {path}: {exc}") from exc
 
 
-class _ODataSession(requests.Session):
-    """Keep Requests' redirect policy without introducing .netrc credentials."""
-
-    def rebuild_auth(self, prepared_request: requests.PreparedRequest, response: requests.Response) -> None:
-        if self.should_strip_auth(response.request.url, prepared_request.url):
-            prepared_request.headers.pop("Authorization", None)
-
-
 def _fetch_document(url: str, label: str, accept: str, config: Config) -> requests.Response:
-    headers = {"Accept": accept}
-    authorization = config.get_api_header_authorization()
-    if authorization is not None:
-        headers["Authorization"] = authorization
+    headers = {"Accept": accept, **api_headers(config)}
     try:
-        with _ODataSession() as session:
+        with ApiSession() as session:
             response = session.get(
                 url,
                 headers=headers,
