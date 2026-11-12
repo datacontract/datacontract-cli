@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `datacontract test` on an `iceberg` server reads the tables at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF`
 - Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
 - `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
 - `datacontract test`: a schema with the custom property `additionalProperties: false` fails on columns it does not declare; `datacontract import jsonschema` and `export jsonschema` map it to and from the JSON Schema keyword (#1722, #1825 @markhm)
@@ -86,9 +87,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - `datacontract api`: a posted contract's `api` server may not reach private network addresses unless the server runs with `--allow-private-network`, and is refused while `DATACONTRACT_API_HEADER_AUTHORIZATION` or `DATACONTRACT_API_HEADER_X_API_KEY` is set on the server (#1747)
-
-### Added
-- `datacontract test` on an `iceberg` server reads the tables at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF`
 
 ## [1.2.6] - 2026-10-13
 
