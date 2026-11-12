@@ -117,3 +117,79 @@ team:
 """)
     )
     assert "**team:**" not in to_markdown(contract)
+
+
+def test_custom_properties_are_written_as_bullets_with_markdown_values():
+    contract = OpenDataContractStandard.model_validate(
+        yaml.safe_load("""
+id: test-custom-properties
+schema:
+  - name: orders
+    properties:
+      - name: status
+        logicalType: string
+        customProperties:
+          - property: confidence
+            value: ["Confirmed", "To confirm | SME"]
+          - property: note
+            value: "**bold**\\nsecond line"
+          - property: context
+            value: {system: MBA, flag: true}
+""")
+    )
+    result = to_markdown(contract)
+
+    row = next(line for line in result.split("\n") if line.startswith("|") and " status " in line)
+    assert "[{" not in row and "'property'" not in row
+    assert "• **customProperties:**" in row
+    assert "• **confidence:**<br />" in row and "• Confirmed" in row
+    assert "To confirm \\| SME" in row
+    assert "• **note:** **bold**<br />second line" in row
+    assert "• **system:** MBA" in row and "• **flag:** true" in row
+    # the escaped pipe and the line breaks keep the row as one table row (| field | type | attributes |)
+    assert row.count("|") - row.count("\\|") == 4
+
+
+def test_root_custom_properties_are_a_section_at_the_end_of_the_document():
+    contract = OpenDataContractStandard.model_validate(
+        yaml.safe_load("""
+id: test-root-custom-properties
+slaProperties:
+  - property: freshness
+    value: 1
+    unit: d
+customProperties:
+  - property: context
+    value:
+      system: "**MBA**\\nsecond line"
+      levels: [first, second]
+      flag: true
+  - property: owner
+    value: finance
+schema:
+  - name: orders
+    properties:
+      - name: id
+        logicalType: string
+""")
+    )
+    result = to_markdown(contract)
+
+    section = result.split("## Custom Properties\n")[1]
+    assert result.index("## SLA Properties") < result.index("## Custom Properties")
+    assert section == (
+        "- **context:**\n"
+        "  - **system:** **MBA**\n"
+        "    second line\n"
+        "  - **levels:**\n"
+        "    - first\n"
+        "    - second\n"
+        "  - **flag:** true\n"
+        "- **owner:** finance"
+    )
+
+
+def test_no_custom_properties_section_without_root_custom_properties():
+    contract = OpenDataContractStandard.model_validate(yaml.safe_load("id: no-custom-properties"))
+
+    assert "## Custom Properties" not in to_markdown(contract)

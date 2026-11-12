@@ -63,6 +63,9 @@ def to_markdown(data_contract: OpenDataContractStandard, mermaid: bool = False) 
         "## SLA Properties",
         sla_properties_to_markdown(data_contract.slaProperties),
     ]
+    custom_properties = custom_properties_section_to_markdown(data_contract)
+    if custom_properties:
+        markdown_parts += ["", "## Custom Properties", custom_properties]
     return "\n".join(markdown_parts)
 
 
@@ -115,6 +118,51 @@ def _code_span(text: str, is_in_table_cell: bool) -> str:
     return f"{delimiter} {text} {delimiter}"
 
 
+def _custom_properties_to_markdown(custom_properties, is_in_table_cell: bool, depth: int = 0) -> list[str]:
+    """Write the custom properties as nested bullets: the name in bold and the value as Markdown.
+
+    A text value is kept as written, so its Markdown is rendered by the viewer. Lists and objects become sub-bullets.
+    """
+    bullet_char = "•" if is_in_table_cell else "-"
+    newline_char = "<br />" if is_in_table_cell else "\n"
+
+    def indent_of(level: int) -> str:
+        return (TAB * 2 if is_in_table_cell else "  ") * level
+
+    def text(value, level: int) -> str:
+        value = "true" if value is True else "false" if value is False else str(value)
+        if is_in_table_cell:
+            # a table row is one line, and an unescaped pipe would end the cell
+            return value.replace("|", "\\|").replace("\n", newline_char)
+        # the next lines of a text stay in their bullet
+        return value.replace("\n", "\n" + indent_of(level) + "  ")
+
+    def lines(label, value, level: int) -> list[str]:
+        prefix = f"{indent_of(level)}{bullet_char}" + (f" **{label}:**" if label is not None else "")
+        if isinstance(value, dict):
+            return [prefix] + [line for key, item in value.items() for line in lines(key, item, level + 1)]
+        if isinstance(value, list):
+            return [prefix] + [line for item in value for line in lines(None, item, level + 1)]
+        return [f"{prefix} {text(value, level)}"]
+
+    if isinstance(custom_properties, dict):
+        entries = list(custom_properties.items())
+    else:
+        # {"property": name, "value": value, ...}: the other keys (description, ...) follow the value
+        entries = []
+        for item in custom_properties:
+            if isinstance(item, dict) and item.get("property"):
+                fields = {k: v for k, v in item.items() if k != "property" and v not in (None, "", [])}
+                entries.append((item["property"], fields["value"] if list(fields) == ["value"] else fields))
+    return [line for name, value in entries if value is not None for line in lines(name, value, depth)]
+
+
+def custom_properties_section_to_markdown(data_contract: OpenDataContractStandard) -> str:
+    """The custom properties of the data contract itself, for the end of the document."""
+    custom_properties = [cp.model_dump(exclude_unset=True) for cp in data_contract.customProperties or []]
+    return "\n".join(_custom_properties_to_markdown(custom_properties, False))
+
+
 def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_in_table_cell: bool = False) -> str:
     if not obj:
         return ""
@@ -130,7 +178,11 @@ def obj_attributes_to_markdown(obj: BaseModel, excluded_fields: set = set(), is_
     if isinstance(obj_model.get("transformLogic"), str):
         obj_model["transformLogic"] = _code_span(obj_model["transformLogic"], is_in_table_cell)
     attributes = [
-        (f"{bullet_char} `{attr}`" if value is True else f"{bullet_char} **{attr}:** {value}")
+        newline_char.join(
+            [f"{bullet_char} **customProperties:**", *_custom_properties_to_markdown(value, is_in_table_cell, 1)]
+        )
+        if attr == "customProperties" and isinstance(value, (list, dict))
+        else (f"{bullet_char} `{attr}`" if value is True else f"{bullet_char} **{attr}:** {value}")
         for attr, value in obj_model.items()
         if value
     ]
