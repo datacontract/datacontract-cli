@@ -107,7 +107,7 @@ def test_test_reads_the_tables_from_the_catalog(catalog):
     name, properties = catalog.load_catalog.call_args.args[0], catalog.load_catalog.call_args.kwargs
     assert name == "main"
     assert properties == {"type": "rest", "uri": "https://polaris.example.com/api/catalog"}
-    assert any(c.type == "field_nested_type" and c.result == ResultEnum.passed for c in run.checks)
+    assert any(c.field == "attributes" and c.type == "field_type" and c.result == ResultEnum.passed for c in run.checks)
 
 
 def test_a_missing_table_fails_with_the_identifier(catalog):

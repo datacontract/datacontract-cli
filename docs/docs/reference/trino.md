@@ -32,6 +32,16 @@ servers:
 
 `host`, `port`, `catalog`, and `schema` come from the contract's `servers` block, and can be overridden with `DATACONTRACT_TRINO_HOST`, `DATACONTRACT_TRINO_PORT`, `DATACONTRACT_TRINO_CATALOG`, and `DATACONTRACT_TRINO_SCHEMA`.
 
+## Custom HTTP headers
+
+Set `DATACONTRACT_TRINO_HTTP_HEADERS` to a JSON object or comma-separated `key=value` pairs:
+
+```bash
+export DATACONTRACT_TRINO_HTTP_HEADERS='{"X-Trino-Client-Info":"datacontract-cli","X-Trino-Routing-Group":"analytics"}'
+```
+
+Headers are passed to `trino.dbapi.connect(http_headers=...)` for both `datacontract test` and `datacontract import trino`. The JSON or `key=value` string is stored as a secret and masked in `Config` representations.
+
 ## Data types
 
 ### Importing

@@ -1,3 +1,5 @@
+import ibis
+
 from datacontract.engines.checks.check_spec import CheckSpec, MetricType
 from datacontract.engines.ibis.ibis_check_execute import _run_present
 from datacontract.model.run import Check, ResultEnum, Run
@@ -47,7 +49,7 @@ def test_run_present_uses_resolved_schema_without_extra_lookup():
         metric=MetricType.FIELD_PRESENT,
     )
 
-    _run_present(run, _NoLookupConnection(), "checks_testcase", {"ctc_id": "CTC_ID"}, {"CTC_ID": "int64"}, spec)
+    _run_present(run, _NoLookupConnection(), "checks_testcase", ibis.schema({"CTC_ID": "int64"}), spec)
 
     assert run.checks[0].result == ResultEnum.passed
 
@@ -64,9 +66,9 @@ def test_run_present_raw_view_falls_back_to_model_with_case_insensitive_resoluti
         metric=MetricType.FIELD_PRESENT,
         uses_raw_view=True,
     )
-    con = _CaseSensitiveConnection({"CHECKS_TESTCASE": _FakeTable({"CTC_ID": "int64"})})
+    con = _CaseSensitiveConnection({"CHECKS_TESTCASE": _FakeTable(ibis.schema({"CTC_ID": "int64"}))})
 
-    _run_present(run, con, "checks_testcase", {"ctc_id": "CTC_ID"}, {"IGNORED": "int64"}, spec)
+    _run_present(run, con, "checks_testcase", ibis.schema({"IGNORED": "int64"}), spec)
 
     assert run.checks[0].result == ResultEnum.passed
 
@@ -83,14 +85,12 @@ def test_run_present_matches_uppercase_column_for_lowercase_contract_field():
         metric=MetricType.FIELD_PRESENT,
     )
 
-    _run_present(run, _NoLookupConnection(), "checks_testcase", {"ctc_id": "CTC_ID"}, {"CTC_ID": "int64"}, spec)
+    _run_present(run, _NoLookupConnection(), "checks_testcase", ibis.schema({"CTC_ID": "int64"}), spec)
 
     assert run.checks[0].result == ResultEnum.passed
 
 
 def test_run_present_matches_uppercase_nested_field_for_lowercase_contract_path():
-    import ibis
-
     run = _run_with_stubbed_check()
     spec = CheckSpec(
         key="k",
@@ -103,7 +103,7 @@ def test_run_present_matches_uppercase_nested_field_for_lowercase_contract_path(
     )
     schema = ibis.memtable({"CUSTOMER": [{"NAME": "a"}]}).schema()
 
-    _run_present(run, _NoLookupConnection(), "checks_testcase", {"customer": "CUSTOMER"}, schema, spec)
+    _run_present(run, _NoLookupConnection(), "checks_testcase", schema, spec)
 
     assert run.checks[0].result == ResultEnum.passed
 

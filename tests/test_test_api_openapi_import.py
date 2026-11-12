@@ -1,9 +1,6 @@
-"""`datacontract test` against a GET endpoint, with the contract imported from its OpenAPI document."""
+"""`datacontract test` against a GET or POST endpoint, with the contract imported from its OpenAPI document."""
 
 import json
-import threading
-from dataclasses import dataclass, field
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
@@ -39,46 +36,6 @@ ORDERS_JSON = [
 ORDERS_JSON_MINIMAL = [
     {"order_id": "ORD-1003", "order_timestamp": "2024-01-03T10:00:00Z", "status": "placed"},
 ]
-
-
-@dataclass
-class Api:
-    """What the local API answers, and the paths it was asked for.
-
-    Attributes rather than one dict: what a request records must never end up in
-    the headers of a response.
-    """
-
-    url: str = ""
-    body: str = ""
-    content_type: str = "application/json"
-    paths: list = field(default_factory=list)
-
-
-@pytest.fixture
-def api():
-    """A local API that answers every GET with the body and content type set on it, and records the paths."""
-    api = Api()
-
-    class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            api.paths.append(self.path)
-            body = api.body.encode()
-            self.send_response(200)
-            self.send_header("Content-Type", api.content_type)
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        def log_message(self, *args):
-            pass
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    api.url = f"http://127.0.0.1:{server.server_port}"
-    yield api
-    server.shutdown()
-    server.server_close()
 
 
 def contract_for(api, operation):

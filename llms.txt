@@ -10,17 +10,17 @@ This page is the entry point for the project's GitHub repository and README. The
 
 ## Documentation
 
-- [Full documentation](https://docs.datacontract.com): every command, data source, importer, and exporter.
-- [Documentation as llms.txt](https://docs.datacontract.com/llms.txt): the same documentation as a link index for LLMs.
-- [Documentation as llms-full.txt](https://docs.datacontract.com/llms-full.txt): the full text of every documentation page in one file.
-- [Quickstart](https://docs.datacontract.com/quickstart): from installation to a tested data contract in a few minutes.
-- [Commands](https://docs.datacontract.com/commands): reference for every CLI command and its options.
-- [Test your Data](https://docs.datacontract.com/testing): connecting to Snowflake, Databricks, BigQuery, Redshift, Athena, Postgres, Kafka, S3, and 10+ more.
-- [Imports](https://docs.datacontract.com/imports): generating a data contract from SQL DDL, dbt, Avro, JSON Schema, Excel, Iceberg, Protobuf, and live catalogs.
-- [Exports](https://docs.datacontract.com/exports): converting a data contract to SQL DDL, dbt, Avro, JSON Schema, HTML, Protobuf, Pydantic, and 20+ more.
-- [Quality Rules](https://docs.datacontract.com/quality-rules): SQL, library, text, and custom quality rules.
-- [Scheduling and CI/CD](https://docs.datacontract.com/ci-cd): running contract tests on every change and on a schedule.
-- [Release Notes](https://docs.datacontract.com/release-notes): what changed in every release.
+- [Full documentation](https://cli.datacontract.com): every command, data source, importer, and exporter.
+- [Documentation as llms.txt](https://cli.datacontract.com/llms.txt): the same documentation as a link index for LLMs.
+- [Documentation as llms-full.txt](https://cli.datacontract.com/llms-full.txt): the full text of every documentation page in one file.
+- [Quickstart](https://cli.datacontract.com/quickstart): from installation to a tested data contract in a few minutes.
+- [Commands](https://cli.datacontract.com/commands): reference for every CLI command and its options.
+- [Test your Data](https://cli.datacontract.com/testing): connecting to Snowflake, Databricks, BigQuery, Redshift, Athena, Postgres, Kafka, S3, and 10+ more.
+- [Imports](https://cli.datacontract.com/imports): generating a data contract from SQL DDL, dbt, Avro, JSON Schema, Excel, Iceberg, Protobuf, and live catalogs.
+- [Exports](https://cli.datacontract.com/exports): converting a data contract to SQL DDL, dbt, Avro, JSON Schema, HTML, Protobuf, Pydantic, and 20+ more.
+- [Quality Rules](https://cli.datacontract.com/quality-rules): SQL, library, text, and custom quality rules.
+- [Scheduling and CI/CD](https://cli.datacontract.com/ci-cd): running contract tests on every change and on a schedule.
+- [Release Notes](https://cli.datacontract.com/release-notes): what changed in every release.
 
 ## Project
 
@@ -30,6 +30,7 @@ This page is the entry point for the project's GitHub repository and README. The
 - [PyPI package](https://pypi.org/project/datacontract-cli/): released versions and install instructions.
 - [Docker image](https://hub.docker.com/r/datacontract/cli): `datacontract/cli`.
 - [GitHub Action](https://github.com/datacontract/datacontract-action/): running the CLI in a GitHub workflow.
+- [Data Contract Skills](https://github.com/datacontract/datacontract-skills): agent skills for Claude Code, Codex, and GitHub Copilot to create, test, and evolve data contracts with the CLI.
 - [Community Slack](https://datacontract.com/slack): questions and discussion.
 
 ## Optional

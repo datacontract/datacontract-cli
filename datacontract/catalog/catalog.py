@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def _get_owner(odcs: OpenDataContractStandard) -> Optional[str]:
     """Get the owner from ODCS customProperties or team."""
-    if odcs.team and hasattr(odcs.team, "name") and odcs.team.name:
+    if odcs.team and odcs.team.name:
         return odcs.team.name
     if odcs.customProperties:
         for prop in odcs.customProperties:
@@ -31,7 +31,7 @@ def create_data_contract_html(contracts, file: Path, path: Path, schema: str):
     data_contract = DataContract(
         data_contract_file=f"{file.absolute()}", inline_references=True, schema_location=schema, config=cli_config()
     )
-    html = data_contract.export(export_format="html")
+    html = data_contract.export(export_format="html", home_href="../" * len(file.parent.parts) + "index.html")
     odcs = data_contract.get_data_contract()
     file_without_suffix = file.with_suffix(".html")
     html_filepath = path / file_without_suffix

@@ -84,6 +84,16 @@ def test_each_part_of_a_dotted_name_is_quoted_on_its_own():
     )
 
 
+def test_a_nested_property_is_a_path_into_its_column_on_snowflake():
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM {model} WHERE {property} IS NULL")
+    server = Server(type="snowflake")
+
+    assert (
+        prepare_query(quality.query, "analytics.orders", "customer.home address", server)
+        == 'SELECT COUNT(*) FROM analytics.orders WHERE customer:"home address" IS NULL'
+    )
+
+
 def test_quotes_around_a_placeholder_are_replaced_by_the_dialect_quoting():
     server = Server(type="databricks")
     expected = "SELECT COUNT(*) FROM orders WHERE `A B` IS NULL"

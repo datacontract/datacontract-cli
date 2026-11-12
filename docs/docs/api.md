@@ -100,12 +100,14 @@ curl -X POST "http://localhost:4242/breaking" \
       "path": "schema.orders.properties.order_id.logicalTypeOptions.pattern",
       "change_type": "updated",
       "level": "warning",
+      "direction": "undetermined",
       "message": "Changed validation constraint at schema.orders.properties.order_id.logicalTypeOptions.pattern from '^ORD-[0-9]+$' to '^ORD-[0-9]{4}$'",
       "rule_id": "validation-constraint-changed",
       "old_value": "^ORD-[0-9]+$",
       "new_value": "^ORD-[0-9]{4}$"
     }
   ],
+  "perspective": "consumer",
   "is_breaking": false
 }
 ```
@@ -142,10 +144,12 @@ Securing the API is highly recommended. Data contract tests may otherwise be sub
 A data contract carries SQL and names the hosts to connect to, so a contract that arrives over HTTP is treated as untrusted input, whether or not the API key is set:
 
 - a `quality.type: sql` rule must be a **read-only query** — DDL, DML, `COPY`, `ATTACH` and the like are reported as a failed check instead of being executed;
-- a credential held in the server's environment is **never sent to a host the contract names** (see [Configuration](./configuration.md));
+- a credential held in the server's environment is **never sent to a host the contract names** (see [Configuration](./configuration.md)), nor to one a request header names, such as `datacontract-snowflake-host`;
+- options that name a **file on the server's disk** or the **server's own identity**, such as `datacontract-snowflake-private-key-file` or `datacontract-snowflake-workload-identity-provider`, are refused as headers; send the key itself instead of its path (e.g. `datacontract-snowflake-private-key`);
 - a `publish_url` may only point at the **Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this, and other hosts are refused;
 - `authoritativeDefinitions` are **only resolved against the Entropy Data platform or the host set via `ENTROPY_DATA_HOST`** on the server — per-request `entropy-data-host` headers do not widen this; a URL on any other host, or a reference to a local file, is refused, and a failed lookup reports only the URL, never what the host answered. An API key goes only to the host it belongs to — the server's `ENTROPY_DATA_API_KEY` to exactly `ENTROPY_DATA_HOST`, an `entropy-data-api-key` sent to `/test` to that request's `entropy-data-host`, with all Entropy Data domains counting as one host;
 - `servers[].type: local` is **refused**, so a caller cannot read the files of the machine running the API;
+- an `api` server's requests **may not reach a private network address**, so a caller cannot read or write services in the server's own network; proxies and CA bundles from the environment (`HTTPS_PROXY`, `REQUESTS_CA_BUNDLE`) are not used for them;
 - a `${VAR}` reference in the contract resolves **only from the variables the operator allow-listed**, so a posted contract cannot read the server's environment;
 - for a file-based server type (`s3`, `gcs`, `azure`), the DuckDB connection is **confined to the data locations the contract declares**.
 
@@ -163,7 +167,13 @@ Likewise, a posted contract resolves no `${VAR}` references at all until you nam
 export DATACONTRACT_CLI_API_CONTRACT_VARIABLES='TABLE_*,CUTOFF_DATE'
 ```
 
-Both settings are also options on the command, which is the more visible place for them: `datacontract api --contract-variables 'TABLE_*' --allow-local-files`. The patterns are comma-separated fnmatch globs matched case-sensitively; a variable outside the list is indistinguishable from an unset one. `*` allows every variable, **including every credential in the server's environment**, so use it only where callers are trusted.
+If the APIs to test live in the server's own network, allow private network addresses for `api` servers:
+
+```bash
+export DATACONTRACT_CLI_API_ALLOW_PRIVATE_NETWORK=true
+```
+
+These settings are also options on the command: `datacontract api --contract-variables 'TABLE_*' --allow-local-files --allow-private-network`. The patterns are comma-separated fnmatch globs matched case-sensitively; a variable outside the list is indistinguishable from an unset one. `*` allows every variable, **including every credential in the server's environment**, so use it only where callers are trusted.
 
 ## Run as a Docker container
 

@@ -32,8 +32,6 @@ DEFAULT_DIMENSIONS: dict[str, str] = {
     "model_no_additional_fields": "conformity",
     "field_type": "conformity",
     "field_physical_type": "conformity",
-    "field_nested_type": "conformity",
-    "field_nested_physical_type": "conformity",
     "field_regex": "conformity",
     "field_enum": "conformity",
     "field_min_length": "conformity",

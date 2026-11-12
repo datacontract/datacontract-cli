@@ -5,7 +5,7 @@ arguments:
   min:
   max:
 queries:
-  ansi: |
+  default: |
     SELECT COUNT(*) FROM ${table}
     WHERE ${column} < ${arguments.min} OR ${column} > ${arguments.max}
 mustBe: 0

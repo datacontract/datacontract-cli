@@ -12,7 +12,7 @@ description: "Short answers to the questions that come up most often when workin
 
 ## I imported a contract and `test` immediately fails on types. Why?
 
-On the nine backends with catalog introspection, the declared `physicalType` is compared against the column's real native type — a stricter check than the portable `logicalType` used elsewhere. See [Types](./schema.md#types) and the [Data Source Reference](./reference/index.md#how-data-types-work).
+On the backends with catalog introspection, the declared `physicalType` is compared against the column's real native type — a stricter check than the portable `logicalType` used elsewhere. See [Types](./schema.md#types) and the [Data Source Reference](./reference/index.md#how-data-types-work).
 
 ## I set `isNullable: false` but nothing is checked.
 

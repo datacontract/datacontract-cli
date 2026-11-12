@@ -24,7 +24,10 @@ class ImporterFactory:
         if type(importers[name]) is tuple:
             importer_class = load_module_class(module_path=importers[name][0], class_name=importers[name][1])
         if not importer_class:
-            raise ValueError(f"Module {name} could not be loaded.")
+            raise ValueError(
+                f"The '{name}' importer could not be loaded, an optional dependency is probably missing. "
+                "See https://cli.datacontract.com/installation for the extras to install."
+            )
         return importer_class(name)
 
 

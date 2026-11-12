@@ -5,6 +5,8 @@ title: "What is Data Contract CLI?"
 description: "An open-source command-line tool for working with data contracts based on the Open Data Contract Standard (ODCS)."
 ---
 
+import {EntropyExplainsVideo, EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # What is Data Contract CLI?
 
 <p style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem'}}>
@@ -29,6 +31,8 @@ It natively supports the [Open Data Contract Standard (ODCS)](https://bitol-io.g
 - **Import** an existing schema (SQL, dbt, BigQuery, Glue, Excel, …) into a data contract.
 
 The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
+
+<EntropyExplainsVideo episode="data-contracts" />
 
 Three commands take you from an existing warehouse table to a tested data contract:
 
@@ -64,9 +68,11 @@ When you run `datacontract test`, the CLI connects to a data source and runs sch
 ## Next steps
 
 - New here? Start with the **[Quickstart](./quickstart.md)**.
+- Learn data contracts hands-on: **[Data Contracts in Practice](https://learn.datacontract.com/en/?utm_source=cli.datacontract.com&utm_medium=referral&utm_content=intro)** is a free, self-paced tutorial (about 6 hours, in English and German) where you write, test, evolve, and automate data contracts with the CLI.
 - Test your own warehouse in 5 minutes: **[Snowflake](./testing/snowflake.md)**, **[BigQuery](./testing/bigquery.md)**, **[Databricks](./testing/databricks.md)**, **[Amazon Redshift](./testing/redshift.md)**, or **[any other source](./testing/index.md)**.
 - Learn the underlying format in **[Open Data Contract Standard](./open-data-contract-standard.md)**.
 - Author contracts visually with the **[Data Contract Editor](./editor.md)**.
+- Let your coding agent (Claude Code, Codex, GitHub Copilot) create and test contracts with the **[Data Contract Skills](./ai-agents.md)**.
 - Run checks against real data with **[Test your Data](./testing/index.md)**, then keep them running with **[Scheduling](./scheduling/index.md)**.
 - Roll it out across a team with **[Adopting Data Contracts](./best-practices.md)**.
 - See every command in the **[Commands reference](./commands/index.md)**.
@@ -104,3 +110,4 @@ More answers — credentials, check selection, type failures, CI behaviour — a
 - Source code: [github.com/datacontract/datacontract-cli](https://github.com/datacontract/datacontract-cli)
 - Community Slack: [datacontract.com/slack](https://datacontract.com/slack)
 - GitHub Action: [datacontract/datacontract-action](https://github.com/datacontract/datacontract-action/)
+- Agent skills: [datacontract/datacontract-skills](https://github.com/datacontract/datacontract-skills)

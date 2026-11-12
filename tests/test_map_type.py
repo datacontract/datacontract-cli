@@ -164,7 +164,7 @@ def test_test_checks_map_key_and_value_types(orders_db):
 
     print(run.pretty())
     assert run.result == ResultEnum.passed
-    nested = [c for c in run.checks if c.type in ("field_nested_type", "field_type", "field_physical_type")]
+    nested = [c for c in run.checks if c.type in ("field_type", "field_physical_type")]
     assert nested, [c.type for c in run.checks]
 
 
@@ -178,7 +178,7 @@ def test_test_fails_on_a_wrong_map_value_type(orders_db):
     print(run.pretty())
     assert run.result == ResultEnum.failed
     failed = [c for c in run.checks if c.result == ResultEnum.failed]
-    assert any("[value]" in (c.reason or "") for c in failed), [c.reason for c in failed]
+    assert [c.field for c in failed] == ["attributes[value]"], [(c.field, c.reason) for c in failed]
 
 
 # --- exporters ---------------------------------------------------------------------------------
@@ -230,6 +230,9 @@ def test_exporters_read_the_map_block():
 
     spark = data_contract.export("spark")
     assert "MapType(" in spark and "StringType()" in spark and "LongType()" in spark
+
+    polars = data_contract.export("polars")
+    assert '"attributes": pl.List(' in polars and '"key": pl.String' in polars and '"value": pl.Int64' in polars
 
     protobuf = data_contract.export("protobuf")
     assert "map<string, int32> attributes" in protobuf

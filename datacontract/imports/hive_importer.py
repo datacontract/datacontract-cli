@@ -18,6 +18,7 @@ from datacontract.imports.odcs_helper import (
     create_odcs,
     create_schema_object,
     create_server,
+    declare_nested_types_per_level,
     property_from_type_string,
     report_unmapped_types,
 )
@@ -190,7 +191,7 @@ def _create_schema(table: str, describe_rows: list) -> SchemaObject:
 
 
 def _create_property(name: str, physical_type: str, comment: Optional[str]) -> SchemaProperty:
-    prop = property_from_type_string(name, physical_type)
+    prop = declare_nested_types_per_level(property_from_type_string(name, physical_type))
     if comment and comment.strip():
         prop.description = comment.strip()
     return prop

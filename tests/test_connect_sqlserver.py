@@ -8,6 +8,7 @@ driver, which is not loadable on every dev machine.
 """
 
 import logging
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -300,3 +301,17 @@ def test_cli_auth_reports_missing_az_login(env, monkeypatch):
     with pytest.raises(DataContractException, match="az login") as exc:
         _sqlserver_connection_kwargs(_server())
     assert exc.value.name == "azure_cli_login_required"
+
+
+def test_login_timeout_is_passed_to_pyodbc(env, monkeypatch):
+    env.setenv("DATACONTRACT_SQLSERVER_USERNAME", "sa")
+    env.setenv("DATACONTRACT_SQLSERVER_PASSWORD", "secret")
+    env.setenv("DATACONTRACT_CONNECT_TIMEOUT", "9")
+    seen = {}
+    # a stand-in module, so this runs without the ODBC driver manager installed
+    monkeypatch.setitem(sys.modules, "pyodbc", SimpleNamespace(connect=lambda **kwargs: seen.update(kwargs) or "con"))
+    ibis = SimpleNamespace(mssql=SimpleNamespace(from_connection=lambda con: con))
+
+    _connect_sqlserver(ibis, _server(), Config.resolve(None))
+
+    assert seen["timeout"] == 9

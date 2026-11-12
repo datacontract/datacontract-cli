@@ -30,23 +30,44 @@ def test_vector_requires_positive_integer_dimensions(options, all_errors):
     assert lint(prop, all_errors=all_errors).result == "failed"
 
 
-@pytest.mark.parametrize("nesting", ["property", "object", "array", "map_key", "map_value"])
-@pytest.mark.parametrize("value", ["a", 1, True, None])
-def test_duplicate_enum_values_fail_regardless_of_labels(nesting, value):
-    prop = {"logicalType": "string", "enum": [{"value": value, "label": "First"}, {"value": value, "label": "Second"}]}
+def nested(prop, nesting):
     if nesting == "object":
-        prop = {"logicalType": "object", "properties": [{"name": "inner", **prop}]}
-    elif nesting == "array":
-        prop = {"logicalType": "array", "items": prop}
-    elif nesting.startswith("map_"):
+        return {"logicalType": "object", "properties": [{"name": "inner", **prop}]}
+    if nesting == "array":
+        return {"logicalType": "array", "items": prop}
+    if nesting.startswith("map_"):
         side = nesting.removeprefix("map_")
-        prop = {
+        return {
             "logicalType": "map",
             "map": {"key": {"logicalType": "string"}, "value": {"logicalType": "string"}, side: prop},
         }
-    run = lint(prop)
+    return prop
+
+
+NESTINGS = ["property", "object", "array", "map_key", "map_value"]
+
+
+@pytest.mark.parametrize("nesting", NESTINGS)
+@pytest.mark.parametrize("value", ["a", 1, True, None])
+def test_duplicate_enum_values_fail_regardless_of_labels(nesting, value):
+    prop = {"logicalType": "string", "enum": [{"value": value, "label": "First"}, {"value": value, "label": "Second"}]}
+    run = lint(nested(prop, nesting))
     assert run.result == "failed"
     assert any("duplicates enum[0].value" in c.reason for c in run.checks if c.reason)
+
+
+@pytest.mark.parametrize("nesting", NESTINGS)
+def test_null_in_the_enum_of_a_required_property_fails(nesting):
+    prop = {"logicalType": "string", "required": True, "enum": [{"value": "a"}, {"value": None}]}
+    run = lint(nested(prop, nesting))
+    assert run.result == "failed"
+    assert any("enum[1].value is null, but the property is required" in c.reason for c in run.checks if c.reason)
+
+
+def test_null_in_the_enum_of_an_optional_property_is_valid():
+    assert (
+        lint({"logicalType": "string", "required": False, "enum": [{"value": "a"}, {"value": None}]}).result == "passed"
+    )
 
 
 def test_numeric_enum_values_compare_by_value():

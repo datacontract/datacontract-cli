@@ -57,8 +57,8 @@ Server: workspace (type=snowflake, host=..., port=443, database=ORDER_DB, schema
 │ Result │ Check                                               │ Field    │ Details │
 ├────────┼─────────────────────────────────────────────────────┼──────────┼─────────┤
 │  ...   │                                                     │          │         │
-│ passed │ Check that field 'order_id' is present              │ order_id │         │
-│ passed │ Check that field order_id has physical type VARCHAR │ order_id │         │
+│ passed │ Check that field 'ORDER_ID' is present              │ ORDER_ID │         │
+│ passed │ Check that field ORDER_ID has physical type VARCHAR │ ORDER_ID │         │
 │  ...   │                                                     │          │         │
 ╰────────┴─────────────────────────────────────────────────────┴──────────┴─────────╯
 🟢 Data contract is valid. Ran 24 checks. Took 5.2 seconds.

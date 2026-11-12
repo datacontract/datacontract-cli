@@ -111,8 +111,8 @@ def to_property(prop: SchemaProperty) -> dict:
         property_dict["pattern"] = pattern
 
     enum_values = get_enum_values(prop)
-    if enum_values:
-        property_dict["enum"] = enum_values
+    if enum_values is not None:
+        property_dict["enum"] = enum_values if prop.required else enum_values + [None]
 
     min_length = _get_logical_type_option(prop, "minLength")
     if min_length is not None:

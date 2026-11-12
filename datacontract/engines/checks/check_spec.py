@@ -31,7 +31,6 @@ class MetricType(str, Enum):
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"
     FIELD_PHYSICAL_TYPE = "field_physical_type"
-    FIELD_NESTED_TYPE = "field_nested_type"
     FIELD_NAMES = "field_names"
     FRESHNESS = "freshness"
     RETENTION = "retention"
@@ -46,7 +45,6 @@ METADATA_METRICS = {
     MetricType.FIELD_PRESENT,
     MetricType.FIELD_TYPE,
     MetricType.FIELD_PHYSICAL_TYPE,
-    MetricType.FIELD_NESTED_TYPE,
     MetricType.FIELD_NAMES,
 }
 
@@ -155,10 +153,12 @@ class CheckSpec:
     valid_min_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_max_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_unique_items: Optional[bool] = None  # INVALID_COUNT, array columns
+    value_type: Optional[str] = None  # the declared type a value stored untyped is cast to
 
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
     expected_schema_property: Optional["SchemaProperty"] = None  # FIELD_TYPE: structural comparison
+    implied_type: bool = False  # FIELD_TYPE: the type is implied by `properties`, `items` or `map`, not declared
     expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
     # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys; FIELD_NAMES the declared fields
@@ -170,6 +170,8 @@ class CheckSpec:
     query: Optional[str] = None  # CUSTOM_SQL (placeholders already substituted)
     dialect: Optional[str] = None  # CUSTOM_SQL input SQL dialect
     diagnostics: Optional[dict] = None  # CUSTOM_SQL: reported alongside the measured value
+    custom_quality_check: Optional[str] = None  # CUSTOM_SQL: the check's ID and arguments, as between(min=1, max=100)
+    warnings: Optional[List[str]] = None  # for the run's log
 
     seconds: Optional[int] = None  # FRESHNESS / RETENTION threshold in seconds
 

@@ -505,7 +505,7 @@ def import_support(workbook: Workbook) -> Optional[List[Support]]:
 
 
 def import_team(workbook: Workbook):
-    """The team: a list of members, or a Team block when the template's team cells are filled"""
+    """The team, or None when the workbook has neither members nor filled team cells"""
     members = []
     table = open_row_sheet(workbook, "Team", "team")
     if table:
@@ -533,9 +533,9 @@ def import_team(workbook: Workbook):
     team_description = get_cell_value_by_name(workbook, "team.description")
     team_tags = split_list(get_cell_value_by_name(workbook, "team.tags"))
     team_id = get_cell_value_by_name(workbook, "team.id")
-    if team_name or team_description or team_tags or team_id:
+    if members or team_name or team_description or team_tags or team_id:
         return Team(name=team_name, description=team_description, tags=team_tags, id=team_id, members=members or None)
-    return members or None
+    return None
 
 
 def import_roles(workbook: Workbook, servers: Optional[List[Server]] = None) -> Optional[List[Role]]:
@@ -765,8 +765,8 @@ def resolve_element(odcs: OpenDataContractStandard, row: Row, what: str):
     ref = row.text("scope name") or ""
     if kind == "Description" and odcs.description is None:
         odcs.description = Description()
-    if kind == "Team" and not isinstance(odcs.team, Team):
-        odcs.team = Team(members=odcs.team or None)
+    if kind == "Team" and odcs.team is None:
+        odcs.team = Team()
     element = element_index(odcs).get((kind, ref))
     if element is None:
         logger.warning(

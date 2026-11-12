@@ -11,14 +11,15 @@ import requests
 import yaml
 from jsonschema import validators
 from jsonschema.exceptions import best_match
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Team
 from pydantic import BaseModel, ConfigDict
 
 from datacontract.config import Config
 from datacontract.config.variables import contains_variables
-from datacontract.lint.constraints import enum_value_errors
+from datacontract.lint.constraints import duplicate_name_errors, enum_value_errors
 from datacontract.lint.resources import read_resource
 from datacontract.lint.schema import fetch_schema
+from datacontract.model.enum_values import get_enum_values
 from datacontract.model.exceptions import (
     DataContractException,
     DataContractValidationErrors,
@@ -54,7 +55,26 @@ class _LaxOpenDataContractStandard(OpenDataContractStandard):
 class _SafeLoaderNoTimestamp(yaml.SafeLoader):
     """SafeLoader that keeps dates/timestamps as strings instead of converting to datetime objects."""
 
-    pass
+    def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict[object, object]:
+        # Skip merge keys: overriding a value inherited from an anchor is valid YAML.
+        first_marks = {}
+        for key_node, _ in node.value:
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                continue
+            key = self.construct_object(key_node, deep=deep)
+            try:
+                first_mark = first_marks.get(key)
+            except TypeError:
+                return super().construct_mapping(node, deep=deep)
+            if first_mark is not None:
+                raise yaml.constructor.ConstructorError(
+                    f"found key {key!r}",
+                    first_mark,
+                    f"found duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+            first_marks[key] = key_node.start_mark
+        return super().construct_mapping(node, deep=deep)
 
 
 # Remove the timestamp implicit resolver so dates like 2022-01-15 stay as strings
@@ -183,7 +203,7 @@ def resolve_data_contract_with_lint_info(
             configured_host_only=configured_host_only,
         )
     elif data_contract is not None:
-        return data_contract, None, []
+        return convert_member_list_team(data_contract), None, []
     else:
         raise DataContractException(
             type="lint",
@@ -700,11 +720,21 @@ def _apply_definition_to_property(prop: SchemaProperty, definition: SchemaProper
     """Inline the definition's set fields where the property left them unset.
 
     "Set" follows pydantic's `model_fields_set`, so `description: ""`
-    counts as set and is preserved.
+    counts as set and is preserved. Two fields are read more carefully:
+    `logicalTypeOptions` merges key by key, as each key is a constraint of
+    its own, and `enum` counts as set when the author declared the allowed
+    values in one of the older places `get_enum_values` reads.
     """
     author_set = set(prop.model_fields_set)
+    if get_enum_values(prop) is not None:
+        author_set.add("enum")
     for field in definition.model_fields_set:
-        if field in _NON_MERGEABLE_FIELDS or field in author_set:
+        if field in _NON_MERGEABLE_FIELDS:
+            continue
+        if field == "logicalTypeOptions" and definition.logicalTypeOptions:
+            prop.logicalTypeOptions = {**definition.logicalTypeOptions, **(prop.logicalTypeOptions or {})}
+            continue
+        if field in author_set:
             continue
         setattr(prop, field, getattr(definition, field))
 
@@ -800,6 +830,7 @@ def _resolve_data_contract_from_str(
         except DataContractValidationErrors as e:
             errors.extend(e.errors)
         if not custom_schema:
+            errors.extend(duplicate_name_errors(yaml_dict))
             errors.extend(enum_value_errors(yaml_dict))
         if errors:
             if all_errors:
@@ -860,7 +891,7 @@ def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContrac
     """Parse ODCS from a dictionary."""
     cls = _LaxOpenDataContractStandard if lax else OpenDataContractStandard
     try:
-        return cls(**yaml_dict)
+        return convert_member_list_team(cls(**yaml_dict))
     except Exception as e:
         raise DataContractException(
             type="schema",
@@ -869,6 +900,13 @@ def _parse_odcs_from_dict(yaml_dict: dict, lax: bool = False) -> OpenDataContrac
             engine="datacontract-cli",
             original_exception=e,
         )
+
+
+def convert_member_list_team(odcs: OpenDataContractStandard) -> OpenDataContractStandard:
+    """Read the deprecated list-of-members `team` as a team object holding those members."""
+    if isinstance(odcs.team, list):
+        odcs.team = Team(members=odcs.team) if odcs.team else None
+    return odcs
 
 
 def _to_yaml(data_contract_str, location: str | None = None) -> dict:
@@ -940,7 +978,8 @@ def _validate_json_schema(
             json.dumps(schema), object_hook=lambda o: {k: v for k, v in o.items() if k != "unevaluatedProperties"}
         )
     validator_cls = validators.validator_for(schema)
-    validator_cls.check_schema(schema)
+    if custom_schema:
+        validator_cls.check_schema(schema)  # the bundled schemas are checked by the tests
     validator = validator_cls(schema=schema)
     # jsonschema can report the same error once per schema branch; keep one.
     errors = {(error.json_path, error.message): error for error in validator.iter_errors(yaml_str)}.values()

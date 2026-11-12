@@ -9,6 +9,8 @@ from open_data_contract_standard.model import (
     ServiceLevelAgreementProperty,
 )
 
+from datacontract.config import Config
+from datacontract.engines.checks.custom_quality_check import CustomQualityChecks
 from datacontract.engines.hana.hana_quality_check import (
     prepare_hana_query,
     run_quality_checks,
@@ -69,7 +71,7 @@ def test_sql_quality_fail():
     assert check_by_type(checks, "model_quality_sql").result == ResultEnum.failed
 
 
-def test_custom_quality_check_runs_its_ansi_query():
+def test_custom_quality_check_runs_its_default_query():
     connection = FakeConnection((2,))
     rule = DataQuality(
         type="custom",
@@ -79,7 +81,12 @@ def test_custom_quality_check_runs_its_ansi_query():
     schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="AMOUNT", quality=[rule])])
 
     checks = run_quality_checks(
-        connection, "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+        connection,
+        "SALES",
+        schema,
+        custom_quality_checks=CustomQualityChecks(
+            Config(custom_quality_checks="fixtures/custom-quality-checks/checks")
+        ),
     )
 
     check = check_by_type(checks, "field_quality_custom")
@@ -95,17 +102,39 @@ def test_placeholders_hana_has_no_value_for_fall_back_to_the_table():
     assert prepare_hana_query("SELECT COUNT(*) FROM {catalog}", "SALES", "ORDERS") == 'SELECT COUNT(*) FROM "ORDERS"'
 
 
-def test_custom_quality_check_without_an_ansi_query_warns_on_hana():
+def test_custom_quality_check_without_a_default_query_is_an_error_on_hana():
     rule = DataQuality(type="custom", engine="datacontract-cli", implementation={"check": "tsql_only"})
     schema = SchemaObject(name="ORDERS", quality=[rule])
 
     checks = run_quality_checks(
-        FakeConnection(), "SALES", schema, custom_quality_checks="fixtures/custom-quality-checks/checks"
+        FakeConnection(),
+        "SALES",
+        schema,
+        custom_quality_checks=CustomQualityChecks(
+            Config(custom_quality_checks="fixtures/custom-quality-checks/checks")
+        ),
     )
 
     check = check_by_type(checks, "model_quality_custom")
-    assert check.result == ResultEnum.warning
-    assert "no query for this server and no ansi query" in check.reason
+    assert check.result == ResultEnum.error
+    assert "no query for this server and no default query" in check.reason
+
+
+def test_custom_quality_check_collects_its_warnings_for_the_run_log_on_hana(tmp_path):
+    (tmp_path / "rows.yaml").write_text("version: 2\nqueries:\n  default: SELECT COUNT(*) FROM ${table}\nmustBe: 0\n")
+    rule = DataQuality(type="custom", engine="datacontract-cli", implementation={"check": "rows"})
+    warnings = []
+
+    checks = run_quality_checks(
+        FakeConnection((0,)),
+        "SALES",
+        SchemaObject(name="ORDERS", quality=[rule]),
+        custom_quality_checks=CustomQualityChecks(Config(custom_quality_checks=str(tmp_path))),
+        warnings=warnings,
+    )
+
+    assert check_by_type(checks, "model_quality_custom").result == ResultEnum.passed
+    assert warnings == ["Custom quality check 'rows': Unknown key 'version' is ignored."]
 
 
 @pytest.mark.parametrize("query", ["DELETE FROM {model}", "SELECT 1 FROM {model}; DROP TABLE ORDERS"])
@@ -381,6 +410,18 @@ def test_invalid_values():
 
     assert check_by_type(checks, "field_invalid_values").result == ResultEnum.passed
     assert connection.executed[0][1] == ["OPEN", "PAID"]
+
+
+@pytest.mark.parametrize("valid_values, invalid", [(["OK", None], 1), ([None], 2)])
+def test_a_null_among_the_valid_values_does_not_let_other_values_through(percent_connection, valid_values, invalid):
+    percent_connection.executemany("INSERT INTO SALES.ORDERS VALUES (?)", [("OK",), ("BAD",), (None,)])
+    quality = DataQuality(metric="invalidValues", arguments={"validValues": valid_values}, mustBe=0)
+    schema = SchemaObject(name="ORDERS", properties=[SchemaProperty(name="STATUS", quality=[quality])])
+
+    check = check_by_type(run_quality_checks(percent_connection, "SALES", schema), "field_invalid_values")
+
+    assert check.result == ResultEnum.failed
+    assert check.diagnostics["value"] == invalid
 
 
 def test_missing_values():

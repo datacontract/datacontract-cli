@@ -25,6 +25,7 @@ GROUPS = {
     "api_header": "General",
     "custom_quality_checks": "General",
     "max_errors": "General",
+    "connect_timeout": "General",
     "athena": "Athena",
     "azure": "Azure",
     "bigquery": "BigQuery",

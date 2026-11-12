@@ -142,6 +142,26 @@ def test_index_serves_editor_page(client, contract_file):
     assert "type: 'error'" in response.text
 
 
+def test_index_without_language_leaves_the_editor_default(client):
+    response = client.get("/")
+    assert "locale: " not in response.text
+    assert '<html lang="en">' in response.text
+    assert '"Saved " + ' in response.text
+
+
+def test_index_with_language_passes_the_locale_to_the_editor(contract_file):
+    response = TestClient(create_app(contract_file, language="sv")).get("/")
+    assert 'locale: "sv",' in response.text
+    assert '<html lang="sv">' in response.text
+    assert '"Sparade " + ' in response.text
+
+
+def test_edit_rejects_an_unsupported_language(contract_file):
+    result = CliRunner().invoke(app, ["edit", str(contract_file), "--language", "xx", "--no-open"])
+    assert result.exit_code == 1
+    assert "Unsupported language 'xx'" in result.stdout
+
+
 def test_index_without_ai_config(client, monkeypatch):
     monkeypatch.delenv("DATACONTRACT_EDITOR_AI_ENDPOINT", raising=False)
     assert "ai: " not in client.get("/").text

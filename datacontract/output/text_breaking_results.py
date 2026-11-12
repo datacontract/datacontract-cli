@@ -22,6 +22,7 @@ def write_text_breaking_results(result: BreakingChangeResult, console: Console):
     if not result.entries:
         console.print("No changes.")
         return
+    console.print(f"Perspective: {result.perspective.value}")
     _print_summary(result, console)
     _print_table(result, console)
 
@@ -56,6 +57,7 @@ def _print_table(result: BreakingChangeResult, console: Console):
     table = Table(box=box.ROUNDED)
     table.add_column("Severity", no_wrap=True)
     table.add_column("Change", no_wrap=True)
+    table.add_column("Direction", no_wrap=True)
     table.add_column("Path", no_wrap=True)
     table.add_column("Old Value", max_width=_VAL_W, no_wrap=True)
     table.add_column("New Value", max_width=_VAL_W, no_wrap=True)
@@ -64,6 +66,7 @@ def _print_table(result: BreakingChangeResult, console: Console):
         table.add_row(
             _severity_markup(entry.level),
             entry.change_type.value.capitalize(),
+            entry.direction.value if entry.direction else "",
             Text(entry.path),
             Text(_wrap(entry.old_value or "", _VAL_W)),
             Text(_wrap(entry.new_value or "", _VAL_W)),

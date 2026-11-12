@@ -99,3 +99,13 @@ def test_env_variables_override_the_contract_server_details(env, captured_connec
     assert captured_connect["port"] == 5440
     assert captured_connect["database"] == "env_db"
     assert captured_connect["schema"] == "env_schema"
+
+
+def test_connect_timeout_is_set(env, captured_connect):
+    env.setenv("DATACONTRACT_REDSHIFT_USERNAME", "awsuser")
+    env.setenv("DATACONTRACT_REDSHIFT_PASSWORD", "mysecret")
+    env.setenv("DATACONTRACT_CONNECT_TIMEOUT", "7")
+
+    connect_ibis(Run.create_run(), None, _server())
+
+    assert captured_connect["connect_timeout"] == 7

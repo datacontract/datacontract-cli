@@ -5,6 +5,9 @@ connection string; the failed-attach test points the real extension at a closed 
 """
 
 import os
+import socket
+import threading
+import time
 import traceback
 
 import duckdb
@@ -12,7 +15,9 @@ import ibis
 import pytest
 from open_data_contract_standard.model import OpenDataContractStandard, Server
 
+from datacontract.engines.ibis.connections import duckdb_connection
 from datacontract.engines.ibis.connections.connect import connect_ibis
+from datacontract.model.exceptions import DataContractException
 from datacontract.model.run import Run
 
 
@@ -25,6 +30,19 @@ def env(monkeypatch):
     monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", "reader")
     monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", "secret")
     return monkeypatch
+
+
+# captured before the autouse fixture below replaces it
+wait_for_mysql_greeting = duckdb_connection._wait_for_mysql_greeting
+
+
+@pytest.fixture(autouse=True)
+def no_handshake_probe(monkeypatch):
+    """The probe opens a real socket; test_wait_for_mysql_greeting covers it on its own."""
+    monkeypatch.setattr(
+        "datacontract.engines.ibis.connections.duckdb_connection._wait_for_mysql_greeting",
+        lambda host, port, timeout: None,
+    )
 
 
 @pytest.fixture
@@ -87,3 +105,69 @@ def test_a_failed_attach_does_not_show_the_password(env):
         _connect()
 
     assert "s3cret-pw" not in "".join(traceback.format_exception(exc_info.value))
+
+
+@pytest.fixture
+def tcp_server():
+    """A local TCP server; ``greeting`` is sent on accept, ``None`` keeps the connection silent."""
+    servers = []
+
+    def start(greeting):
+        sock = socket.socket()
+        sock.bind(("127.0.0.1", 0))
+        sock.listen(8)
+        accepted = []
+
+        def serve():
+            while True:
+                try:
+                    conn, _ = sock.accept()
+                except OSError:
+                    return
+                accepted.append(conn)
+                if greeting is not None:
+                    conn.sendall(greeting)
+
+        threading.Thread(target=serve, daemon=True).start()
+        servers.append((sock, accepted))
+        return sock.getsockname()[1]
+
+    yield start
+    for sock, accepted in servers:
+        sock.close()
+        for conn in accepted:
+            conn.close()
+
+
+def test_wait_for_mysql_greeting_accepts_a_server_that_greets(tcp_server):
+    port = tcp_server(b"\x4a\x00\x00\x00\x0a8.0.36")
+
+    wait_for_mysql_greeting("127.0.0.1", port, timeout=5)
+
+
+def test_wait_for_mysql_greeting_fails_fast_on_a_silent_server(tcp_server):
+    port = tcp_server(None)
+
+    started = time.monotonic()
+    with pytest.raises(DataContractException) as exc_info:
+        wait_for_mysql_greeting("127.0.0.1", port, timeout=1)
+
+    assert time.monotonic() - started < 5
+    assert "did not answer within 1 seconds" in exc_info.value.reason
+
+
+def test_wait_for_mysql_greeting_reports_a_refused_connection():
+    unused = socket.socket()
+    unused.bind(("127.0.0.1", 0))
+    closed_port = unused.getsockname()[1]
+    unused.close()
+
+    with pytest.raises(DataContractException) as exc_info:
+        wait_for_mysql_greeting("127.0.0.1", closed_port, timeout=1)
+
+    assert exc_info.value.reason.startswith(f"Could not connect to MySQL server 127.0.0.1:{closed_port}")
+
+
+def test_wait_for_mysql_greeting_skips_localhost():
+    # the MySQL client uses the Unix socket for localhost, so there is no TCP port to probe
+    wait_for_mysql_greeting("localhost", 1, timeout=1)

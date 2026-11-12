@@ -3,6 +3,7 @@ import sys
 
 from rdflib.compare import to_isomorphic
 from rdflib.graph import Graph
+from rdflib.term import URIRef
 from typer.testing import CliRunner
 
 from datacontract.cli import app
@@ -186,6 +187,23 @@ def test_to_rdf_complex():
     iso_result = to_isomorphic(Graph().parse(data=result.serialize()))
 
     assert iso_g1 == iso_result
+
+
+def test_team_without_name_is_left_out():
+    data_contract = resolve_data_contract(
+        data_contract_str="""
+apiVersion: v3.2.0
+kind: DataContract
+id: orders
+version: 1.0.0
+status: active
+team:
+  members:
+    - username: alice
+"""
+    )
+    graph = to_rdf(data_contract, base="http://test.com/")
+    assert (None, URIRef("https://github.com/bitol-io/open-data-contract-standard/team"), None) not in graph
 
 
 def read_file(data_contract_file):

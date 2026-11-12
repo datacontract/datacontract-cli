@@ -42,6 +42,36 @@ paths:
       responses:
         "201":
           description: Created.
+  /orders/search:
+    post:
+      operationId: searchOrders
+      summary: Orders matching a query.
+      parameters:
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            examples:
+              shipped:
+                value:
+                  status: shipped
+      responses:
+        "200":
+          description: The matching orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
   /orders/{orderId}:
     parameters:
       - $ref: "#/components/parameters/OrderId"

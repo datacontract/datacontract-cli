@@ -131,7 +131,7 @@ def test_checks_on_array_items_compile_for_athena(env):
     columns = {"items": "items"}
 
     missing = t.filter(_row_predicate(t, columns, "items[].sku", lambda sku: sku.isnull())).count()
-    duplicated = t.filter(_item_duplicate_predicate(t, columns, "items[].sku")).count()
+    duplicated = t.filter(_item_duplicate_predicate(t, columns, "items[].sku", None)).count()
 
     assert "FILTER(" in con.compiler.to_sqlglot(missing).sql("athena")
     assert "TRANSFORM(" in con.compiler.to_sqlglot(duplicated).sql("athena")

@@ -344,6 +344,18 @@ def split_type_arguments(arguments: str) -> List[str]:
     return [part.strip() for part in parts if part.strip()]
 
 
+def declare_nested_types_per_level(prop: SchemaProperty) -> SchemaProperty:
+    """Reduce an array's, struct's or map's physicalType to its base type, so that each nested type
+    is declared once, by its own items, property, key or value."""
+    children = [*(prop.properties or []), prop.items, *((prop.map.key, prop.map.value) if prop.map else ())]
+    children = [child for child in children if child is not None]
+    if prop.physicalType and children:
+        prop.physicalType = re.split(r"\s*[<(]", prop.physicalType.strip(), maxsplit=1)[0]
+    for child in children:
+        declare_nested_types_per_level(child)
+    return prop
+
+
 def property_from_type_string(name: str, type_string: str) -> SchemaProperty:
     """A property for a native type string such as ``map<string,array<int>>`` or ``STRUCT<a: INT>``.
 
@@ -377,7 +389,13 @@ def property_from_type_string(name: str, type_string: str) -> SchemaProperty:
             for argument in arguments:
                 field_name, _, field_type = argument.partition(":")
                 if not field_type:
-                    field_name, _, field_type = argument.partition(" ")
+                    # Trino reports a name with spaces unquoted: `row(first name varchar(20))`
+                    match = re.fullmatch(
+                        r"(.+?)\s+((?:\w+\s*[(<].*[)>]|interval\s+\w+\s+to\s+\w+|\w+)(?:\s+with(?:out)?\s+time\s+zone)?)",
+                        argument,
+                        re.S,
+                    )
+                    field_name, field_type = match.groups() if match else (argument, "")
                 properties.append(property_from_type_string(field_name.strip().strip('`"'), field_type.strip()))
             return create_property(name=name, logical_type="object", physical_type=text, properties=properties)
     return create_property(name=name, logical_type=map_sql_type_to_logical(text), physical_type=text)

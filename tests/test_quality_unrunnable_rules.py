@@ -204,7 +204,7 @@ def test_rules_on_nested_properties_warn_where_nested_properties_are_not_checked
         )
     ).get_data_contract()
     checks = create_checks(odcs, Server(type="postgres"))
-    nested = [c for c in checks if c.field == "meta.source"]
+    nested = [c for c in checks if c.field == "meta.source" and c.category == "quality"]
     assert [c.preset_result for c in nested] == ["warning", "warning"]
     assert nested[0].preset_reason == "Checks on nested properties are not supported on postgres servers."
 

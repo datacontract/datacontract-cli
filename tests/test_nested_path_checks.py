@@ -1,9 +1,17 @@
 """Array hops in a check's field path, and the predicates they compile to."""
 
 import ibis
+import ibis.expr.operations as ops
 import pytest
+from ibis.backends.snowflake import Backend as SnowflakeBackend
 
-from datacontract.engines.ibis.ibis_check_execute import _missing_expr, _resolve_dtype, _row_predicate
+from datacontract.engines.ibis.ibis_check_execute import (
+    _item_duplicate_predicate,
+    _missing_expr,
+    _resolve_dtype,
+    _resolve_expr,
+    _row_predicate,
+)
 
 TABLE = ibis.table(
     {
@@ -132,3 +140,37 @@ def test_a_path_to_items_inside_an_array_of_objects_checks_every_level():
     predicate = _row_predicate(t, {c: c for c in t.columns}, "orders[].codes[]", lambda c: _missing_expr(c, None))
 
     assert t.filter(predicate).id.to_list() == ["bad"]
+
+
+SNOWFLAKE = ops.DatabaseTable(
+    "ORDERS",
+    ibis.schema({"CUSTOMER": "json", "ITEMS": "array<json>"}),
+    source=SnowflakeBackend(),
+    namespace=ops.Namespace(),
+).to_expr()
+SNOWFLAKE_COLUMNS = {"customer": "CUSTOMER", "items": "ITEMS"}
+
+
+def _snowflake_sql(predicate):
+    return SNOWFLAKE.get_backend().compiler.to_sqlglot(SNOWFLAKE.filter(predicate).count()).sql("snowflake")
+
+
+def test_a_deep_path_on_snowflake_looks_up_each_key_once():
+    # every step reads its value several times and ibis inlines each read, so the SQL could grow exponentially
+    predicate = _row_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, "customer.a.b.c.d", lambda c: c.isnull(), "string")
+
+    assert _snowflake_sql(predicate).count("GET_IGNORE_CASE(") == 4
+
+
+def test_checks_on_array_items_compile_for_snowflake():
+    missing = _row_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, "items[].sku", lambda c: c.isnull(), "string")
+    repeated = _item_duplicate_predicate(SNOWFLAKE, SNOWFLAKE_COLUMNS, "items[].sku", "string")
+
+    assert "TRANSFORM(AS_ARRAY(" in _snowflake_sql(missing)
+    assert "ARRAY_DISTINCT(" in _snowflake_sql(repeated)
+
+
+def test_a_duplicate_check_on_a_nested_property_on_snowflake_groups_by_a_short_name():
+    key = _resolve_expr(SNOWFLAKE, SNOWFLAKE_COLUMNS, "customer.email", "string")
+
+    assert SNOWFLAKE.group_by([key]).aggregate(n=SNOWFLAKE.count()).columns[0] == "customer.email"

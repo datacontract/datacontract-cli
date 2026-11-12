@@ -99,18 +99,11 @@
   margin-right: 0.5rem;
 }
 
-/* GitHub icon in the navbar (theme-adaptive via mask) */
-.navbar-github-link::before {
-  content: '';
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  margin-right: 6px;
-  vertical-align: text-bottom;
-  background-color: var(--ifm-navbar-link-color);
-  -webkit-mask: url('/img/icons/github.svg') center / contain no-repeat;
-  mask: url('/img/icons/github.svg') center / contain no-repeat;
+/* GitHub star button with count in the navbar */
+.navbar-github-star {
+  display: flex;
+  align-items: center;
 }
-.navbar-github-link:hover::before {
-  background-color: var(--ifm-navbar-link-hover-color);
+.navbar-github-star img {
+  display: block;
 }
