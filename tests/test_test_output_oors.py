@@ -6,6 +6,8 @@ from jsonschema import Draft201909Validator, FormatChecker
 from typer.testing import CliRunner
 
 from datacontract.cli import app
+from datacontract.model.run import Check, ResultEnum, Run
+from datacontract.output.oors_test_results import to_oors
 
 runner = CliRunner()
 
@@ -66,3 +68,31 @@ def test_output_oors_lint(tmp_path):
     document = json.loads(output.read_text())
     oors_validator.validate(document)
     assert document["source"]["process"] == "datacontract lint"
+
+
+def test_output_oors_freshness_measures_age_in_seconds():
+    run = Run.create_run()
+    run.checks = [
+        Check(
+            type="servicelevel_freshness",
+            category="servicelevel",
+            result=ResultEnum.failed,
+            diagnostics={
+                "metric": "freshness",
+                "field": "updated_at",
+                "age_seconds": 259201,
+                "threshold_seconds": 86400,
+            },
+        )
+    ]
+    run.finish()
+
+    document = to_oors(run, "datacontract test")
+
+    oors_validator.validate(document)
+    assert document["results"][0]["measure"] == {
+        "metric": "freshness",
+        "value": 259201,
+        "threshold": {"mustBeLessThan": 86400},
+        "unit": "seconds",
+    }

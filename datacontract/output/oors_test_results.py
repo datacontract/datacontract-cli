@@ -131,14 +131,21 @@ def _measure(diagnostics: dict) -> dict | None:
     if metric is None:
         return None
     counts = row_counts(diagnostics)
-    is_percent = diagnostics.get("unit") == "percent"
+    if metric in ("freshness", "retention"):
+        value = diagnostics.get("age_seconds")
+        threshold = {"mustBeLessThan": diagnostics["threshold_seconds"]}
+        unit = "seconds"
+    else:
+        # A percent threshold compares the failed percentage, not the count.
+        value = diagnostics.get("percent") if diagnostics.get("unit") == "percent" else diagnostics.get("value")
+        threshold = diagnostics.get("odcs_threshold")
+        unit = diagnostics.get("unit")
     measure = _without_none(
         {
             "metric": _ODCS_METRICS.get(metric, metric),
-            # A percent threshold compares the failed percentage, not the count.
-            "value": diagnostics.get("percent") if is_percent else diagnostics.get("value"),
-            "threshold": diagnostics.get("odcs_threshold"),
-            "unit": diagnostics.get("unit"),
+            "value": value,
+            "threshold": threshold,
+            "unit": unit,
             "rowCount": counts.get("totalNumber"),
             "failedRowCount": counts.get("failedNumber"),
         }
