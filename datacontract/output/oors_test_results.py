@@ -4,7 +4,6 @@ from pathlib import Path
 
 import yaml
 
-from datacontract.integration.entropy_data import row_counts
 from datacontract.model.run import Check, ResultEnum, Run
 
 # The Open Observability Results Standard (OORS) version written. Experimental until OORS v1.0.0.
@@ -28,6 +27,10 @@ _ODCS_METRICS = {
     "invalid_count": "invalidValues",
     "duplicate_count": "duplicateValues",
 }
+
+# The metrics whose value counts bad rows. `custom_sql` is not one: its value is
+# whatever the author's query returned.
+_FAILED_ROW_METRICS = ("missing_count", "invalid_count", "duplicate_count")
 
 
 def write_oors_test_results(run: Run, output_path: Path, process: str):
@@ -154,3 +157,20 @@ def _custom_properties(**properties) -> list[dict] | None:
 
 def _without_none(values: dict) -> dict:
     return {name: value for name, value in values.items() if value is not None}
+
+
+def row_counts(diagnostics: dict) -> dict:
+    """The failed and total row counts a check measured, both in rows or neither.
+
+    A count in any other unit -- duplicated keys, an author's own query result -- is left out,
+    as OORS `rowCount` and `failedRowCount` count rows only.
+    """
+    metric = diagnostics.get("metric")
+    if metric in _FAILED_ROW_METRICS:
+        return {
+            "failedNumber": diagnostics.get("failed_rows", diagnostics.get("value")),
+            "totalNumber": diagnostics.get("row_count"),
+        }
+    if metric == "row_count":
+        return {"totalNumber": diagnostics.get("value")}
+    return {}
