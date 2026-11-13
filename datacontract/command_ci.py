@@ -62,9 +62,7 @@ def ci(
     ] = None,
     output_format: Annotated[
         OutputFormat,
-        typer.Option(
-            help="The target format for the test results. Accepted values: json, junit, oors (Open Observability Results Standard v0.8.1, experimental)."
-        ),
+        typer.Option(help="The target format for the test results. Accepted values: json, junit, oors (experimental)."),
     ] = None,
     metadata_only: Annotated[
         bool,
