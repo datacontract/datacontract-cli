@@ -41,13 +41,13 @@ _ODCS_OPERATORS = {
 }
 
 
-def write_oors_test_results(run: Run, output_path: Path):
+def write_oors_test_results(run: Run, output_path: Path, process: str):
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
     except FileExistsError:
         if not output_path.parent.is_dir():
             raise
-    document = to_oors(run)
+    document = to_oors(run, process)
     with open(output_path, "w", encoding="utf-8") as f:
         if output_path.suffix.lower() in (".yaml", ".yml"):
             yaml.safe_dump(document, f, sort_keys=False, allow_unicode=True)
@@ -55,14 +55,14 @@ def write_oors_test_results(run: Run, output_path: Path):
             f.write(json.dumps(document, indent=2, ensure_ascii=False))
 
 
-def to_oors(run: Run) -> dict:
-    """The test results of `run` as an OORS document."""
+def to_oors(run: Run, process: str) -> dict:
+    """The results of `run`, made by the CLI command `process`, as an OORS document."""
     document = {
         "apiVersion": OORS_API_VERSION,
         "kind": "ObservabilityResults",
         "id": str(run.runId),
         "observedAt": (run.timestampEnd or datetime.now(timezone.utc)).isoformat(),
-        "source": {"process": "datacontract test", "runId": str(run.runId), "vendor": VENDOR},
+        "source": {"process": process, "runId": str(run.runId), "vendor": VENDOR},
     }
     if run.timestampStart:
         document["run"] = {"state": "completed", "startedAt": run.timestampStart.isoformat()}

@@ -56,3 +56,13 @@ def test_output_oors_json_with_output_format(tmp_path):
     oors_validator.validate(document)
     assert document["kind"] == "ObservabilityResults"
     assert len(document["results"]) > 0
+
+
+def test_output_oors_lint(tmp_path):
+    output = tmp_path / "results.oors.json"
+    result = runner.invoke(app, ["lint", "--output", str(output), "./fixtures/lint/valid.odcs.yaml"])
+
+    assert output.exists(), result.output
+    document = json.loads(output.read_text())
+    oors_validator.validate(document)
+    assert document["source"]["process"] == "datacontract lint"

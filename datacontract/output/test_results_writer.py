@@ -21,6 +21,7 @@ def write_test_result(
     output_format: Optional[OutputFormat],
     output_path: Optional[Path],
     data_contract: Optional[OpenDataContractStandard] = None,
+    process: str = "datacontract test",
 ):
     if output_format is not None and not output_path:
         console.print(f"No output path specified for {output_format.value} test results. Skip writing test results.")
@@ -31,7 +32,7 @@ def write_test_result(
         write_junit_test_results(run, output_path)
         console.print(f"Written {output_format.value} test results to {output_path}")
     elif output_format == OutputFormat.oors:
-        write_oors_test_results(run, output_path)
+        write_oors_test_results(run, output_path, process)
         console.print(f"Written {output_format.value} test results to {output_path}")
 
     if run.server and data_contract and data_contract.servers:

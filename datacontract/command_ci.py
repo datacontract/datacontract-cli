@@ -134,7 +134,7 @@ def ci(
         results.append((location, run))
         write_ci_output(run, location, json_mode=json_output)
         try:
-            write_test_result(run, out, output_format, output)
+            write_test_result(run, out, output_format, output, process="datacontract ci")
         except typer.Exit:
             pass
         if run.publish_succeeded is False:

@@ -65,4 +65,4 @@ def lint(
         all_errors=all_errors,
         inline_references=inline_references,
     ).lint()
-    write_test_result(run, console, output_format, output)
+    write_test_result(run, console, output_format, output, process="datacontract lint")
