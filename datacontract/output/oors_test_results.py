@@ -1,5 +1,4 @@
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -28,16 +27,6 @@ _ODCS_METRICS = {
     "missing_count": "missingValues",
     "invalid_count": "invalidValues",
     "duplicate_count": "duplicateValues",
-}
-
-# Threshold.describe() operators and their ODCS equivalents.
-_ODCS_OPERATORS = {
-    "=": "mustBe",
-    "!=": "mustNotBe",
-    ">": "mustBeGreaterThan",
-    ">=": "mustBeGreaterOrEqualTo",
-    "<": "mustBeLessThan",
-    "<=": "mustBeLessOrEqualTo",
 }
 
 
@@ -145,7 +134,7 @@ def _measure(diagnostics: dict) -> dict | None:
             "metric": _ODCS_METRICS.get(metric, metric),
             # A percent threshold compares the failed percentage, not the count.
             "value": diagnostics.get("percent") if is_percent else diagnostics.get("value"),
-            "threshold": _threshold(diagnostics.get("threshold")),
+            "threshold": diagnostics.get("odcs_threshold"),
             "unit": diagnostics.get("unit"),
             "rowCount": counts.get("totalNumber"),
             "failedRowCount": counts.get("failedNumber"),
@@ -155,28 +144,6 @@ def _measure(diagnostics: dict) -> dict | None:
     if not isinstance(measure.get("value"), (int, float, str)):
         measure.pop("value", None)
     return measure
-
-
-def _threshold(expression) -> dict | None:
-    """The ODCS operator for a threshold written by Threshold.describe(), e.g. `= 0` or `between 1 and 5`."""
-    if not isinstance(expression, str):
-        return None
-    between = re.fullmatch(r"(not )?between (\S+) and (\S+)", expression)
-    if between:
-        operator = "mustNotBeBetween" if between[1] else "mustBeBetween"
-        return {operator: [_number(between[2]), _number(between[3])]}
-    symbol, _, value = expression.partition(" ")
-    operator = _ODCS_OPERATORS.get(symbol)
-    return {operator: _number(value)} if operator and value else None
-
-
-def _number(value: str):
-    for convert in (int, float):
-        try:
-            return convert(value)
-        except ValueError:
-            pass
-    return value
 
 
 def _custom_properties(**properties) -> list[dict] | None:
