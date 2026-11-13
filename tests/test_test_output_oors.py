@@ -45,6 +45,9 @@ def test_output_oors_yaml_inferred_from_file_name(tmp_path):
         "customProperties"
     ]
 
+    required = next(r for r in document["results"] if r["id"] == "orders__order_id__field_required")
+    assert required["measure"]["metric"] == "nullValues"
+
 
 def test_output_oors_json_with_output_format(tmp_path):
     output = tmp_path / "results.json"

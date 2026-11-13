@@ -23,7 +23,6 @@ _STATUS = {
 # Our metric names that have an ODCS library metric equivalent.
 _ODCS_METRICS = {
     "row_count": "rowCount",
-    "missing_count": "missingValues",
     "invalid_count": "invalidValues",
     "duplicate_count": "duplicateValues",
 }
@@ -99,7 +98,7 @@ def _to_result(run: Run, check: Check, index: int) -> dict:
                 "filter": (run.filters or {}).get(check.model),
             }
         )
-    measure = _measure(diagnostics)
+    measure = _measure(check.type, diagnostics)
     if measure:
         result["measure"] = measure
     result["message"] = check.reason
@@ -126,11 +125,16 @@ def _relates_to(check: Check) -> str | None:
     return path
 
 
-def _measure(diagnostics: dict) -> dict | None:
+def _measure(check_type: str, diagnostics: dict) -> dict | None:
     metric = diagnostics.get("metric")
     if metric is None:
         return None
     counts = row_counts(diagnostics)
+    if metric == "missing_count":
+        # The engine also counts the nulls of `required` and `nullValues` checks as `missing_count`.
+        odcs_metric = "missingValues" if check_type == "field_missing_values" else "nullValues"
+    else:
+        odcs_metric = _ODCS_METRICS.get(metric, metric)
     if metric in ("freshness", "retention"):
         value = diagnostics.get("age_seconds")
         threshold = {"mustBeLessThan": diagnostics["threshold_seconds"]}
@@ -142,7 +146,7 @@ def _measure(diagnostics: dict) -> dict | None:
         unit = diagnostics.get("unit")
     measure = _without_none(
         {
-            "metric": _ODCS_METRICS.get(metric, metric),
+            "metric": odcs_metric,
             "value": value,
             "threshold": threshold,
             "unit": unit,
