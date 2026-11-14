@@ -194,13 +194,12 @@ def test_mermaid_truncates_entity_names_when_diagram_is_too_large(monkeypatch):
         ],
     )
 
-    diagram, reduced, _ = mermaid_exporter.to_mermaid_and_entities(contract)
-    assert not reduced and prefix + "one" in diagram
+    diagram, _ = mermaid_exporter.to_mermaid_and_entities(contract)
+    assert f'"**{prefix}one**"' in diagram
 
     monkeypatch.setattr(mermaid_exporter, "MAX_TEXT_SIZE", len(diagram) - 1)
-    diagram, reduced, entities = mermaid_exporter.to_mermaid_and_entities(contract)
+    diagram, entities = mermaid_exporter.to_mermaid_and_entities(contract)
 
-    assert reduced
     assert entities[prefix + "one"] == "a_very_long_entity_name_prefix_o"
     assert '"**a_very_long_entity_name_prefix_o**"' in diagram
     # a second name with the same 32 first characters stays distinct

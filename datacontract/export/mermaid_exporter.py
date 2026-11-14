@@ -23,24 +23,23 @@ def to_mermaid(data_contract: OpenDataContractStandard) -> str | None:
     return to_mermaid_and_entities(data_contract)[0]
 
 
-def to_mermaid_and_entities(data_contract: OpenDataContractStandard) -> tuple[str | None, bool, dict[str, str]]:
-    """Convert to a Mermaid ER diagram, tell whether it had to be reduced because it was too large, and map each
-    schema name to the entity name drawn in the diagram.
+def to_mermaid_and_entities(data_contract: OpenDataContractStandard) -> tuple[str | None, dict[str, str]]:
+    """Convert to a Mermaid ER diagram, and map each schema name to the entity name drawn in the diagram.
 
-    A reduced diagram has at most MAX_ATTRIBUTES per entity and entity names cut to MAX_ENTITY_NAME_LENGTH.
+    A diagram too large for Mermaid is reduced: at most MAX_ATTRIBUTES per entity and entity names cut to
+    MAX_ENTITY_NAME_LENGTH.
     """
     try:
         if not data_contract.schema_:
-            return None, False, {}
+            return None, {}
         diagram, entities = _build_diagram(data_contract)
         if len(diagram) > MAX_TEXT_SIZE:
             diagram, entities = _build_diagram(data_contract, reduced=True)
-            return diagram, True, entities
-        return diagram, False, entities
+        return diagram, entities
 
     except Exception as e:
         print(f"Error generating ODCS mermaid diagram: {e}")
-        return None, False, {}
+        return None, {}
 
 
 def _build_diagram(data_contract: OpenDataContractStandard, reduced: bool = False) -> tuple[str, dict[str, str]]:

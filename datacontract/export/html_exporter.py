@@ -43,7 +43,7 @@ def to_html(data_contract: OpenDataContractStandard, home_href: str) -> str:
 
     # Get the mermaid diagram
     # the templates link the schema tables to the entities as drawn (sanitized, and cut in a reduced diagram)
-    mermaid_diagram, _, mermaid_entities = to_mermaid_and_entities(data_contract)
+    mermaid_diagram, mermaid_entities = to_mermaid_and_entities(data_contract)
 
     # references by id (`schema/<id>/properties/<id>`) resolve to `schema.column`, like in the diagram
     ids = collect_ids(data_contract)
