@@ -39,12 +39,8 @@ def non_utf8_default_encoding(monkeypatch):
 # text rather than on a marker, because these modules construct their container
 # at import time (`postgres = PostgresContainer("postgres:16")`) — so the call
 # has to be made before collection imports the module, which rules out anything
-# written inside it. `Container` additionally catches test_import_trino.py,
-# which imports its container class from a sibling test module rather than from
-# testcontainers directly.
-_NEEDS_DOCKER = re.compile(r"testcontainers|Container")
-
-_ignored_for_docker: list[str] = []
+# written inside it.
+_NEEDS_DOCKER = re.compile(r"testcontainers")
 
 
 @functools.cache
@@ -81,16 +77,20 @@ def pytest_ignore_collect(collection_path: Path, config) -> bool | None:
         return None
     if _docker_is_available():
         return None
-    _ignored_for_docker.append(collection_path.name)
     return True
 
 
-def pytest_report_collectionfinish(config, items) -> str | None:
-    """Say out loud which tests did not run, so the pass is not misread as full."""
-    if not _ignored_for_docker:
+def pytest_report_header() -> str | None:
+    """Say out loud which tests do not run, so the pass is not misread as full.
+
+    A header, not a collection report: under pytest-xdist the workers collect, so the controller would report nothing.
+    """
+    if _docker_is_available():
         return None
-    files = ", ".join(sorted(_ignored_for_docker))
-    return f"no Docker daemon: not collecting {len(_ignored_for_docker)} container test files ({files})"
+    files = sorted(
+        p.name for p in Path(__file__).parent.glob("test_*.py") if _NEEDS_DOCKER.search(p.read_text(encoding="utf-8"))
+    )
+    return f"no Docker daemon: not collecting {len(files)} container test files ({', '.join(files)})"
 
 
 def _generate(command: list[str]) -> None:
