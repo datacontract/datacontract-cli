@@ -79,9 +79,10 @@ jobs:
         run: uv sync --all-extras --dev
       - name: Run tests
         # Without a reachable Docker daemon, tests/conftest.py leaves the container tests uncollected.
+        # The container tests mostly wait on their containers, so they get more workers than the runner has cores.
         run: |
-          if [ "$CONTAINER_TESTS" != true ]; then export DOCKER_HOST=unix:///dev/null; fi
-          uv run pytest -n auto --dist loadfile
+          if [ "$CONTAINER_TESTS" = true ]; then WORKERS=4; else WORKERS=auto; export DOCKER_HOST=unix:///dev/null; fi
+          uv run pytest -n "$WORKERS" --dist loadfile
 
   slow-tests:
     name: "Slow tests (testcontainers)"
