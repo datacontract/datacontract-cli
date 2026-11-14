@@ -1,0 +1,36 @@
+<script type="module">
+  // Descriptions and custom property values are Markdown. The server escapes them like any other value, and the
+  // browser renders them (sanitized) when the page loads, with the bundled marked and DOMPurify.
+  try {
+    // as JSON strings: the libraries contain HTML comment openers, which break the parsing of an inline script
+    for (const library of [{{ marked_js | tojson }}, {{ dompurify_js | tojson }}]) {
+      const script = document.createElement('script');
+      script.textContent = library;
+      document.head.append(script);
+    }
+    const { marked, DOMPurify } = window;
+    // raw HTML written in a text is shown as text, not rendered (DOMPurify then sanitizes what Markdown produces)
+    const escapeHtml = (text) =>
+      text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    marked.use({ renderer: { html: ({ text }) => escapeHtml(text) } });
+    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+      if (node.tagName === 'A' && node.hasAttribute('href')) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+    document.querySelectorAll('.markdown').forEach((element) => {
+      const text = element.textContent.trim();
+      // a value inside a tag is rendered inline, without paragraphs
+      // `markdown-breaks` keeps the line breaks of the text
+      const options = { breaks: element.classList.contains('markdown-breaks') };
+      const html = element.classList.contains('markdown-inline')
+        ? marked.parseInline(text, options)
+        : marked.parse(text, options);
+      element.innerHTML = DOMPurify.sanitize(html);
+      element.classList.add('rendered');
+    });
+  } catch (error) {
+    console.warn('Markdown rendering is not available:', error);
+  }
+</script>

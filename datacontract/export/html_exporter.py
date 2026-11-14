@@ -38,6 +38,8 @@ def to_html(data_contract: OpenDataContractStandard, home_href: str) -> str:
     template = env.get_template(template_file)
 
     style_content, _, _ = package_loader.get_source(env, "style/output.css")
+    marked_js, _, _ = package_loader.get_source(env, "vendor/marked.umd.js")
+    dompurify_js, _, _ = package_loader.get_source(env, "vendor/purify.min.js")
 
     datacontract_yaml = data_contract.to_yaml()
 
@@ -55,6 +57,8 @@ def to_html(data_contract: OpenDataContractStandard, home_href: str) -> str:
         home_href=home_href,
         quality_specification=None,  # ODCS doesn't have the deprecated quality.specification
         style=style_content,
+        marked_js=marked_js,
+        dompurify_js=dompurify_js,
         datacontract_yaml=datacontract_yaml,
         formatted_date=_formatted_date(),
         datacontract_cli_version=get_version(),

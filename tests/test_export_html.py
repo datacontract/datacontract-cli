@@ -263,7 +263,7 @@ schema:
     html = _export_html(tmp_path, contract)
     assert 'data-entity="salesdollar2024"' in html
     assert html.count('data-entity="salesdollar2024"') == 2  # the table and its "↑ Diagram" link
-    assert "normalize" not in html
+    assert "function normalize" not in html
 
     monkeypatch.setattr(mermaid_exporter, "MAX_TEXT_SIZE", 10)
     monkeypatch.setattr(mermaid_exporter, "MAX_ENTITY_NAME_LENGTH", 8)
