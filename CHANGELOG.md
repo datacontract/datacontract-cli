@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `datacontract test` on an `iceberg` server reads the tables at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF`
+- `datacontract test`, `ci` and `lint`: `--output-format oors` writes the results as an Open Observability Results Standard (OORS) v0.8.1 document (experimental)
 - Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
 - `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
 - `datacontract test`: a schema with the custom property `additionalProperties: false` fails on columns it does not declare; `datacontract import jsonschema` and `export jsonschema` map it to and from the JSON Schema keyword (#1722, #1825 @markhm)
