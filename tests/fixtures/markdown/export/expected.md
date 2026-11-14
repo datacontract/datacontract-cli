@@ -30,6 +30,26 @@ Max data processing per day: 10 TiB
 | production | s3 | *One folder per model. One file per day.*<br />• **environment:** prod<br />• **roles:** [{'role': 'analyst_us', 'description': 'Access to the data for US region'}, {'role': 'analyst_cn', 'description': 'Access to the data for China region'}]<br />• **delimiter:** new_line<br />• **format:** json<br />• **location:** s3://datacontract-example-orders-latest/v2/{model}/*.json |
 | development | s3 | *One folder per model. One file per day.*<br />• **environment:** dev<br />• **roles:** [{'role': 'analyst_us', 'description': 'Access to the data for US region'}, {'role': 'analyst_cn', 'description': 'Access to the data for China region'}]<br />• **delimiter:** new_line<br />• **format:** json<br />• **location:** s3://datacontract-example-orders-latest/v2/{model}/*.json |
 
+## Entity Relationship Diagram
+```mermaid
+erDiagram
+	"**orders**" {
+	order_id🔑🆔 string
+	order_timestamp timestamp
+	order_total integer
+	customer_id string
+	customer_email_address string
+	processed_timestamp timestamp
+}
+	"**line_items**" {
+	line_item_id🔑 string
+	order_id🔑🔗 string
+	sku string
+}
+
+"**orders**" ||--o{ "**line_items**" : "order_id → order_id"
+```
+
 ## Schema
 ### orders
 *One record per order. Includes cancelled and deleted orders.*

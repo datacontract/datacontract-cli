@@ -34,9 +34,10 @@ def catalog(
     mermaid: Annotated[
         bool,
         typer.Option(
-            "--mermaid", help="Add a Mermaid entity relationship diagram to each page. Requires --format markdown."
+            "--mermaid/--no-mermaid",
+            help="Add a Mermaid entity relationship diagram to each Markdown page. The HTML pages always include it.",
         ),
-    ] = False,
+    ] = True,
     schema: Annotated[
         str,
         typer.Option("--json-schema", help="The location (url or path) of the ODCS JSON Schema"),
@@ -48,8 +49,8 @@ def catalog(
     """
     enable_debug_logging(debug)
     markdown = format == CatalogFormat.markdown
-    if mermaid and not markdown:
-        raise typer.BadParameter("--mermaid requires --format markdown (the HTML pages always include the diagram).")
+    if not mermaid and not markdown:
+        raise typer.BadParameter("--no-mermaid requires --format markdown (the HTML pages always include the diagram).")
 
     path = Path(output)
     try:

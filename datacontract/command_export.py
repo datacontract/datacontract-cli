@@ -443,8 +443,9 @@ def export_markdown(
     schema: schema_option = None,
     inline_references: inline_references_option = True,
     mermaid: Annotated[
-        bool, typer.Option("--mermaid", help="Add a Mermaid entity relationship diagram after the servers.")
-    ] = False,
+        bool,
+        typer.Option("--mermaid/--no-mermaid", help="Add a Mermaid entity relationship diagram after the servers."),
+    ] = True,
     debug: debug_option = None,
 ):
     """Export a data contract to Markdown."""

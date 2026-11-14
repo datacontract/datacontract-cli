@@ -50,29 +50,20 @@ def test_markdown_format(tmp_path: PosixPath):
     assert "(fixtures/catalog/datacontract-2.odcs.md)" in content
 
 
-def test_markdown_format_with_mermaid(tmp_path: PosixPath):
-    runner = CliRunner()
-    result = runner.invoke(
-        app,
-        [
-            "catalog",
-            "--files",
-            "fixtures/catalog/datacontract-1.yaml",
-            "--format",
-            "markdown",
-            "--mermaid",
-            "--output",
-            tmp_path,
-        ],
-    )
-    assert result.exit_code == 0
-    with open(tmp_path / "fixtures/catalog/datacontract-1.md") as page:
-        assert "```mermaid" in page.read()
+def test_markdown_format_has_a_diagram_unless_disabled(tmp_path: PosixPath):
+    def page(*options):
+        args = ["catalog", "--files", "fixtures/catalog/datacontract-1.yaml", "--format", "markdown", *options]
+        result = CliRunner().invoke(app, [*args, "--output", tmp_path])
+        assert result.exit_code == 0
+        return (tmp_path / "fixtures/catalog/datacontract-1.md").read_text()
+
+    assert "```mermaid" in page()
+    assert "```mermaid" not in page("--no-mermaid")
 
 
-def test_mermaid_requires_markdown(tmp_path: PosixPath):
+def test_no_mermaid_requires_markdown(tmp_path: PosixPath):
     runner = CliRunner()
-    result = runner.invoke(app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--mermaid", "--output", tmp_path])
+    result = runner.invoke(app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--no-mermaid", "--output", tmp_path])
     assert result.exit_code != 0
 
 

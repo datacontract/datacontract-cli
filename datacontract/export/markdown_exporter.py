@@ -30,10 +30,10 @@ class MarkdownExporter(Exporter):
         export_args: dict,
     ) -> str:
         """Exports a data contract to Markdown format."""
-        return to_markdown(data_contract, mermaid=bool(export_args.get("mermaid")))
+        return to_markdown(data_contract, mermaid=export_args.get("mermaid", True))
 
 
-def to_markdown(data_contract: OpenDataContractStandard, mermaid: bool = False) -> str:
+def to_markdown(data_contract: OpenDataContractStandard, mermaid: bool = True) -> str:
     """
     Convert a data contract to its Markdown representation.
 

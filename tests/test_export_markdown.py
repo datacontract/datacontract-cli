@@ -75,7 +75,7 @@ schema:
     assert row.count("|") - row.count("\\|") == 4
 
 
-def test_mermaid_diagram_after_servers_only_when_requested():
+def test_mermaid_diagram_after_servers_unless_disabled():
     contract = OpenDataContractStandard.model_validate(
         yaml.safe_load(
             """
@@ -93,18 +93,18 @@ schema:
         )
     )
 
-    assert "```mermaid" not in to_markdown(contract)
+    assert "```mermaid" not in to_markdown(contract, mermaid=False)
 
-    result = to_markdown(contract, mermaid=True)
+    result = to_markdown(contract)
     assert "## Entity Relationship Diagram\n```mermaid\nerDiagram\n" in result
     assert result.index("## Servers") < result.index("## Entity Relationship Diagram") < result.index("## Schema")
 
 
-def test_cli_mermaid_option():
+def test_cli_no_mermaid_option():
     runner = CliRunner()
-    result = runner.invoke(app, ["export", "markdown", "./fixtures/markdown/export/datacontract.yaml", "--mermaid"])
+    result = runner.invoke(app, ["export", "markdown", "./fixtures/markdown/export/datacontract.yaml", "--no-mermaid"])
     assert result.exit_code == 0
-    assert "```mermaid" in result.stdout
+    assert "```mermaid" not in result.stdout
 
 
 def test_team_without_name_is_left_out():
