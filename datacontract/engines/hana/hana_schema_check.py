@@ -8,6 +8,7 @@ from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.engines.hana.hana_check_selection import SELECT_ALL, CheckSelection
 from datacontract.engines.hana.hana_type_mapping import types_match
 from datacontract.model.enum_values import get_enum_values
+from datacontract.model.odcs import is_closed_schema
 from datacontract.model.run import Check, ResultEnum
 
 DRY_RUN_REASON = "Dry run: check not executed"
@@ -100,6 +101,23 @@ def run_schema_checks(
     # above kept the check that says so.
     if not column_metadata and not dry_run:
         return checks
+
+    if is_closed_schema(schema_object) and selects(selection, "model_no_additional_fields"):
+        declared = {_property_name(prop).lower() for prop in schema_object.properties or []}
+        additional = [column.name for column in column_metadata if column.name.lower() not in declared]
+        checks.append(
+            _result_check(
+                check_type="model_no_additional_fields",
+                key=f"{table_name}__no_additional_fields",
+                name=f"Check that {table_name} has no fields the contract does not declare",
+                model=table_name,
+                field=None,
+                implementation="Catalog lookup in SYS.TABLE_COLUMNS and SYS.VIEW_COLUMNS",
+                result=ResultEnum.failed if additional else ResultEnum.passed,
+                reason=f"Fields not in the contract: {', '.join(additional)}" if additional else None,
+                dry_run=dry_run,
+            )
+        )
 
     columns_by_name = {column.name: column for column in column_metadata}
     primary_key_props = sorted(

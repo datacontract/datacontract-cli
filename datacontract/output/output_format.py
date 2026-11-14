@@ -6,6 +6,7 @@ from typing import Optional
 class OutputFormat(str, Enum):
     json = "json"
     junit = "junit"
+    oors = "oors"
 
     @classmethod
     def get_supported_formats(cls):
@@ -13,6 +14,8 @@ class OutputFormat(str, Enum):
 
     @classmethod
     def infer_from_output_path(cls, output_path: Path) -> Optional["OutputFormat"]:
+        if output_path.name.lower().endswith((".oors.json", ".oors.yaml", ".oors.yml")):
+            return cls.oors
         suffix = output_path.suffix.lower()
         if suffix == ".json":
             return cls.json

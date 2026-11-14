@@ -42,6 +42,7 @@ from datacontract.engines.ibis.native_type import supports_native_type_introspec
 from datacontract.export.duckdb_type_converter import convert_to_duckdb_csv_type
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_key, get_map_value
+from datacontract.model.odcs import is_closed_schema
 from datacontract.model.server import get_server_type
 
 logger = logging.getLogger(__name__)
@@ -625,6 +626,24 @@ def _to_schema_checks(
             check.metric = MetricType.UNSUPPORTED
             check.preset_result = "warning"
             check.preset_reason = reason
+
+    if is_closed_schema(schema_object):
+        check = CheckSpec(
+            key=f"{model}__no_additional_fields",
+            category="schema",
+            type="model_no_additional_fields",
+            name=f"Check that {model} has no fields the contract does not declare",
+            model=model,
+            metric=MetricType.FIELD_NAMES,
+            columns=[prop.physicalName or prop.name for prop in properties],
+            uses_raw_view=uses_raw_view,
+        )
+        if server_type == "kafka":
+            # Messages are decoded into the contract's columns, so the fields it does not declare are gone.
+            check.metric = MetricType.UNSUPPORTED
+            check.preset_result = "warning"
+            check.preset_reason = "Checking for fields the contract does not declare is not supported on kafka servers."
+        checks.append(check)
 
     if primary_key_is_composite:
         primary_key_fields = [prop.physicalName or prop.name for prop in primary_key_props]

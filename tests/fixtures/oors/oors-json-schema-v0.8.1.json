@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$id": "https://github.com/bitol-io/open-observability-results-standard/blob/main/schema/oors-json-schema-v0.8.1.json",
+  "title": "Open Observability Results Standard (OORS)",
+  "description": "A lightweight, tool-agnostic format to exchange data quality and data observability results.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "id",
+    "observedAt",
+    "source",
+    "results"
+  ],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "default": "v0.8.1",
+      "description": "Version of the OORS schema used. Indicates the version of the standard, e.g., `v0.8.1`."
+    },
+    "kind": {
+      "type": "string",
+      "const": "ObservabilityResults",
+      "description": "The type of OORS object. For OORS, always `ObservabilityResults`."
+    },
+    "id": {
+      "type": "string",
+      "description": "A unique identifier (could be a UUID) identifying the specific observability results."
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The moment in time when the observations were done (ISO 8601 format)."
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Object describing the source from where the results come (e.g., job, pipeline, etc.).",
+      "required": [
+        "process"
+      ],
+      "properties": {
+        "process": {
+          "type": "string",
+          "description": "The name of the process (job, pipeline, etc.) that made the observations."
+        },
+        "runId": {
+          "type": "string",
+          "description": "An optional unique identifier for the specific run/execution of the process (e.g., build ID, run ID, etc.)."
+        },
+        "vendor": {
+          "type": "string",
+          "description": "An optional field indicating the vendor or tool that produced the observations (e.g., `soda`, `dbt`, `inhouse-build`, etc.)."
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional run lifecycle object. When absent, the document is terminal: the authoritative record of a run. When present with `state: running`, the document is an interim snapshot of a run still in progress.",
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "running",
+            "completed",
+            "aborted"
+          ],
+          "description": "The lifecycle state of the run this document reports on. `running`: interim snapshot, more documents will follow for this `source.runId`. `completed`: terminal, the run finished and this document is its authoritative record. `aborted`: terminal, the run ended before producing its full results."
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional moment in time when the run started (ISO 8601 format). Together with `observedAt`, it gives the duration of the run."
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional monotonically increasing ordinal of this document within the run (per `source.runId`). Consumers SHOULD order documents by `sequence` when present, falling back to `observedAt`."
+        },
+        "progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "current"
+          ],
+          "description": "Optional progress indicator for the run.",
+          "properties": {
+            "current": {
+              "type": "number",
+              "minimum": 0,
+              "description": "The amount of progress made so far, e.g., steps completed."
+            },
+            "total": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Optional total amount expected, e.g., total steps. Omit when unknown."
+            },
+            "unit": {
+              "type": "string",
+              "description": "Optional unit of progress, e.g., `steps`, `tables`, `files`, `percent`."
+            }
+          }
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Object describing the contract that provided the specifications for the observations. Optional but highly recommended for traceability and context. When provided, all observations in `results` are expected to be based on the specifications defined in that contract.",
+      "properties": {
+        "contractId": {
+          "type": "string",
+          "description": "A unique identifier (could be a UUID) identifying the specific contract (ODCS/ODPS) that provided the specifications for the observations."
+        },
+        "standard": {
+          "type": "string",
+          "description": "The standard followed by the contract, e.g., `ODCS`, `ODPS`, etc."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of the contract (not the standard), e.g., `1.0.0`, `2.0.0`, etc."
+        },
+        "server": {
+          "type": "string",
+          "description": "The identifier of the server, as defined in the referenced contract (e.g., the `server` name in the ODCS `servers` section), against which the observations were made, e.g., `production`. A contract can be served on multiple servers; this field records which one the results apply to."
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "description": "An array of results. Each result object carries the details of a specific observation (check or metric). May be empty when the run made no observations, e.g. no checks were defined or all were filtered out.",
+      "items": {
+        "$ref": "#/$defs/Result"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "warn",
+        "error",
+        "skip",
+        "unknown"
+      ],
+      "description": "Optional overall outcome of the observations in this document, so consumers do not need to aggregate `results` themselves. When present, it SHOULD equal the outcome derived from `results`: the first of `error`, `fail`, `warn`, `pass`, `skip` that occurs as a result status, or `unknown` when none does (including when `results` is empty). On an interim snapshot (`run.state: running`), it covers only the results reported so far."
+    },
+    "customProperties": {
+      "$ref": "#/$defs/CustomProperties"
+    },
+    "tags": {
+      "$ref": "#/$defs/Tags"
+    }
+  },
+  "$defs": {
+    "Result": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A single result object carrying the details of a specific observation.",
+      "required": [
+        "id",
+        "type",
+        "name",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "A unique identifier for the specific check/metric."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "check",
+            "metric"
+          ],
+          "description": "The type of observation: `check` (for pass/fail checks) or `metric` (for measured values)."
+        },
+        "name": {
+          "type": "string",
+          "description": "A human-readable name for the check/metric."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail",
+            "warn",
+            "error",
+            "skip",
+            "unknown"
+          ],
+          "description": "The outcome of the observation: `pass` (executed, met expectation), `fail` (executed, breached a hard threshold), `warn` (executed, breached a soft/warning threshold), `error` (could not be evaluated - verdict unknown; e.g. the query failed or the source was unreachable), `skip` (intentionally not run), or `unknown` (the producer cannot tell the outcome; e.g. it relays a result from another tool whose status it does not recognize). `error` is distinct from `fail`: a failure is a known-bad verdict, an error is the absence of a verdict and must not be counted as a failure. `unknown` is distinct from `error`: nothing broke that needs fixing, and it must be counted neither as a pass nor as a failure."
+        },
+        "relatesTo": {
+          "type": "string",
+          "description": "Optional reference to the element this result relates to in the linked contract, e.g., a path to a data quality rule or property in the ODCS/ODPS contract referenced by the top-level `contract` object."
+        },
+        "severity": {
+          "type": "string",
+          "description": "The severity level of the observation, e.g., `critical`, `high`, `medium`, `low`, `warning`, etc. Severity is orthogonal to `status`: `status` is the runtime outcome, `severity` is the definition-time importance of the check."
+        },
+        "dimension": {
+          "type": "string",
+          "description": "The dimension of data quality being observed, e.g., `accuracy`, `completeness`, `consistency`, `timeliness`, `validity`, `uniqueness`, etc. (following ODCS data quality dimensions)."
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Object describing the resource being observed.",
+          "properties": {
+            "resourceType": {
+              "type": "string",
+              "description": "The type of resource, e.g., `table`, `column`, `dataset`, etc."
+            },
+            "resourceIdentifier": {
+              "type": [
+                "string",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "The identifier(s) of the resource, e.g., table name, column name, etc. May be a single string or an array of strings."
+            },
+            "filter": {
+              "type": "string",
+              "description": "Optional condition that restricted the observed data to a subset of the resource, e.g., a partition or a where clause such as `order_date >= '2026-10-01'`. When present, the result applies only to that subset, not to the whole resource."
+            }
+          }
+        },
+        "measure": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Object describing the measurement details.",
+          "properties": {
+            "metric": {
+              "type": "string",
+              "description": "The name of the metric being measured, e.g., `rowCount`, `age`, `latency`, etc. For data quality metrics, use the ODCS library metric names where one applies: `rowCount`, `nullValues`, `missingValues`, `invalidValues`, `duplicateValues`."
+            },
+            "value": {
+              "type": [
+                "number",
+                "string"
+              ],
+              "description": "The observed value of the metric."
+            },
+            "threshold": {
+              "type": "object",
+              "description": "Object describing the threshold criteria, e.g., `mustBe`, `mustBeLowerOrEqual`, etc. (following ODCS operator definitions)."
+            },
+            "unit": {
+              "type": "string",
+              "description": "The unit of measurement, e.g., `rows`, `seconds`, `percent`, etc."
+            },
+            "rowCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Optional number of rows the observation evaluated."
+            },
+            "failedRowCount": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Optional number of evaluated rows that did not meet the expectation. Together with `rowCount`, it gives the share of failing rows, independent of the metric in `value`."
+            }
+          }
+        },
+        "message": {
+          "type": "string",
+          "description": "A human-readable message providing additional context about the observation."
+        },
+        "customProperties": {
+          "$ref": "#/$defs/CustomProperties"
+        },
+        "tags": {
+          "$ref": "#/$defs/Tags"
+        }
+      }
+    },
+    "CustomProperties": {
+      "type": "array",
+      "description": "A list of key/value pairs for custom properties. Shared structure across the Bitol standards.",
+      "items": {
+        "$ref": "#/$defs/CustomProperty"
+      }
+    },
+    "CustomProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "property",
+        "value"
+      ],
+      "properties": {
+        "property": {
+          "type": "string",
+          "description": "The name of the key. Names should be in camel case\u2014the same as if they were permanent properties in the standard."
+        },
+        "value": {
+          "description": "The value of the key."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description of the custom property."
+        },
+        "id": {
+          "type": "string",
+          "description": "Optional unique identifier for the custom property, for stable references."
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Identifies the vendor, provider, or external system associated with this custom property. SHOULD be a stable, lowercase identifier matching ^[a-z0-9][a-z0-9-]*$ (e.g. confluent, zeenea, atlan, soda). Tools MUST preserve unknown vendor values.",
+          "examples": [
+            "confluent",
+            "zeenea",
+            "atlan",
+            "soda"
+          ]
+        }
+      }
+    },
+    "Tags": {
+      "type": "array",
+      "description": "A list of tags that may be assigned to the elements (object or property); the tags keyword may appear at any level. Tags may be used to better categorize an element. For example, `finance`, `sensitive`, `employee_record`.",
+      "examples": [
+        "finance",
+        "sensitive",
+        "employee_record"
+      ],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "if": {
+    "type": "object",
+    "properties": {
+      "run": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "const": "running"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      }
+    },
+    "required": [
+      "run"
+    ]
+  },
+  "then": {
+    "type": "object",
+    "properties": {
+      "source": {
+        "type": "object",
+        "required": [
+          "process",
+          "runId"
+        ]
+      }
+    }
+  }
+}

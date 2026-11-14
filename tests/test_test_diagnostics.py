@@ -31,6 +31,7 @@ def test_diagnostics_invalid_count_failed_fraction_and_constraint():
         "field": "email",
         "value": 1,
         "threshold": "= 0",
+        "odcs_threshold": {"mustBe": 0},
         "row_count": 5,
         "failed_fraction": 0.2,
         "constraint": {"max_length": 20},
@@ -69,6 +70,7 @@ def test_diagnostics_duplicate_and_present():
         "field": "order_id",
         "value": 1,
         "threshold": "= 0",
+        "odcs_threshold": {"mustBe": 0},
         "row_count": 5,
         "failed_rows": 2,
     }
