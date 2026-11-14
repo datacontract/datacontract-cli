@@ -10,13 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` on an `iceberg` server reads the tables at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF`
 - `datacontract test`, `ci` and `lint`: `--output-format oors` writes the results as an Open Observability Results Standard (OORS) v0.8.1 document (experimental)
 - Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
-- `datacontract export html` renders Markdown in `description` and `customProperties` values
-- `datacontract export markdown` writes `customProperties` as bullets with their values as Markdown, instead of a Python dump
-- `datacontract export markdown` adds the `customProperties` of the data contract in a section at the end
 - `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
 - `datacontract test`: a schema with the custom property `additionalProperties: false` fails on columns it does not declare; `datacontract import jsonschema` and `export jsonschema` map it to and from the JSON Schema keyword (#1722, #1825 @markhm)
+- `datacontract catalog --format markdown`, and a Mermaid diagram in Markdown exports (`--no-mermaid` leaves it out) (#1775 @dmaresma)
+- `datacontract export html` renders Markdown in descriptions and links the diagram to the schema tables (#1775,#1826 @dmaresma)
+- `datacontract export mermaid` draws ODCS v3.2 relationships and shrinks diagrams too large to render (#1775 @dmaresma)
 
 ### Fixed
+- `datacontract export markdown` writes `customProperties` as bullets, not a Python dump (#1775 @dmaresma)
 - Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
 - `datacontract catalog`: home links lead to the catalog's index when it is not hosted at the domain root (#1810)
 - `datacontract export sql` quotes MySQL table, view and column names, so reserved words like `order` no longer break the DDL
@@ -61,9 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: test API servers whose schemas are served by different endpoints, with an `endpoint` custom property per schema, including relationships across endpoints (#1780)
 - `datacontract import openapi` imports several operations (repeat `--operation`, or pick them from a list in a terminal) (#1780)
 - `datacontract edit --language` shows the editor in English, German, Swedish or French
-- `datacontract export markdown --mermaid` adds a Mermaid entity relationship diagram after the servers
-- `datacontract catalog --format markdown` creates a Markdown catalog with an `index.md` instead of HTML pages, and `--mermaid` adds the entity relationship diagram to each page
-- `datacontract export html` links the diagram entities and the schema tables in both directions, and shows relationships, including references by id, as links to the referenced column
 - `datacontract import avro` and `export avro` keep the `aliases` of fields and of the top-level record (#1744 @lairdman7)
 
 ### Changed
@@ -74,10 +72,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test`: custom quality checks accept the files Entropy Data writes, with a `default` query and the argument type `any` (`ansi` and `value` still work) (#1773)
 - `datacontract export odcs`, `import odcs` and `import excel` write a `team` given as a list of members as a team object with `members` (this syntax is preferred by ODCS 3.2) (#1768)
 - `datacontract export excel`: the ODCS v3.2 template shows a tooltip with the field description on every field label (#1763)
-- `datacontract export markdown` shows `transformLogic` as inline code
-- `datacontract export mermaid` shows at most 5 attributes per entity, keys first, followed by `…`, and cuts entity names to 32 characters when the diagram exceeds Mermaid's size limit
-- `datacontract export mermaid` draws ODCS v3.2 relationships: schema-level and composite-key foreign keys, and references by id
-- `datacontract export mermaid` replaces `$` in table and column names with `dollar`
 
 ### Fixed
 - `datacontract changelog` and `datacontract breaking` recognize a quality rule that was named, renamed or moved, instead of reporting it as removed and added (#1761)
