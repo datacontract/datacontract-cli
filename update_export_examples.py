@@ -38,7 +38,7 @@ EXPORTS = {
     # rdf is intentionally not managed here: its Turtle serialization orders
     # triples non-deterministically, so a regenerated example would churn on
     # every run. exports/rdf.md keeps a committed, hand-checked example.
-    "markdown": ("datacontract export markdown orders.odcs.yaml --output orders.md", "markdown", 34),
+    "markdown": ("datacontract export markdown orders.odcs.yaml --output orders.md", "markdown", 54),
     "mermaid": ("datacontract export mermaid orders.odcs.yaml", "mermaid", None),
     "bigquery": (
         "datacontract export bigquery orders.odcs.yaml --schema-name orders --server bigquery --output orders.bigquery.json",

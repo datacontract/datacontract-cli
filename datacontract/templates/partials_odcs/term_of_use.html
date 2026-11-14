@@ -39,21 +39,21 @@
           {% if description.purpose %}
           <div id="description-purpose">
             <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Purpose</div>
-            <div class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ description.purpose }}</div>
+            <div class="markdown markdown-breaks mt-1 text-sm text-gray-700">{{ description.purpose }}</div>
           </div>
           {% endif %}
 
           {% if description.usage %}
           <div id="description-usage">
             <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Usage</div>
-            <div class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ description.usage }}</div>
+            <div class="markdown markdown-breaks mt-1 text-sm text-gray-700">{{ description.usage }}</div>
           </div>
           {% endif %}
 
           {% if description.limitations %}
           <div id="description-limitations">
             <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Limitations</div>
-            <div class="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{{ description.limitations }}</div>
+            <div class="markdown markdown-breaks mt-1 text-sm text-gray-700">{{ description.limitations }}</div>
           </div>
           {% endif %}
 
@@ -65,11 +65,11 @@
                 {% for key, value in description.customProperties.items() %}
                 <div class="min-w-0">
                   <div class="text-xs font-medium text-gray-500 uppercase tracking-wide inline-flex items-center gap-1">{{ key }}</div>
-                  <div class="text-sm text-gray-900 whitespace-pre-wrap">
+                  <div class="text-sm text-gray-900">
                     {% if value is mapping or (value is sequence and value is not string) %}
                       {{ value | tojson }}
                     {% else %}
-                      {{ value }}
+                      <div class="markdown markdown-breaks">{{ value }}</div>
                     {% endif %}
                   </div>
                 </div>
@@ -80,11 +80,11 @@
                   <div class="text-xs font-medium text-gray-500 uppercase tracking-wide inline-flex items-center gap-1">
                     {{ custom_property.property }}
                   </div>
-                  <div class="text-sm text-gray-900 whitespace-pre-wrap">
+                  <div class="text-sm text-gray-900">
                     {% if custom_property.value is mapping or (custom_property.value is sequence and custom_property.value is not string) %}
                       {{ custom_property.value | tojson }}
                     {% else %}
-                      {{ custom_property.value }}
+                      <div class="markdown markdown-breaks">{{ custom_property.value }}</div>
                     {% endif %}
                   </div>
                 </div>

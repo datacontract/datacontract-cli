@@ -1,3 +1,7 @@
+<style>
+  {% if mermaid_links %}.diagram-container .node { cursor: pointer; }{% endif %}
+  .diagram-container .entity-highlight { filter: drop-shadow(0 0 6px #4f46e5) drop-shadow(0 0 2px #4f46e5); }
+</style>
 <section id="diagram">
   <div class="px-4 sm:px-0">
     <h1 class="text-base font-semibold leading-6 text-gray-900">Entity Relationship Diagram</h1>
@@ -37,5 +41,36 @@
         }
       }
     });
+
+    {% if mermaid_links %}
+    // Entity name as drawn by Mermaid (`entity-**name**-<index>`); the schema tables and links carry that same name.
+    const entities = {};
+    document.querySelectorAll('#diagram-container g.node[id*="entity-"]').forEach((node) => {
+      const match = node.id.match(/entity-\*\*(.+)\*\*-\d+$/);
+      if (match) entities[match[1]] = node;
+    });
+
+    // Entity in the diagram -> its table in the schema section
+    document.querySelectorAll('#schema div[data-entity]').forEach((table) => {
+      const node = entities[table.dataset.entity];
+      if (!node) return;
+      node.addEventListener('click', () => {
+        history.replaceState(null, '', '#' + table.id);
+        table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Link in a schema table -> its entity in the diagram
+    document.querySelectorAll('a.diagram-link').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        const node = entities[link.dataset.entity];
+        if (!node) return;
+        event.preventDefault();
+        document.getElementById('diagram').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        node.classList.add('entity-highlight');
+        setTimeout(() => node.classList.remove('entity-highlight'), 2500);
+      });
+    });
+    {% endif %}
   </script>
 </section>

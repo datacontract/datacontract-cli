@@ -18,7 +18,7 @@ from datacontract.model.exceptions import DataContractException
 EDITOR_ASSETS_URL_TEMPLATE = "https://cdn.jsdelivr.net/npm/datacontract-editor@{version}/dist"
 
 # The Data Contract Editor assets are bundled with the package (vendored from the
-# datacontract-editor npm package via update_editor_assets.py), so the editor
+# datacontract-editor npm package via update_vendored_assets.py), so the editor
 # works offline without any CDN access.
 BUNDLED_EDITOR_ASSETS_DIR = Path(__file__).parent / "editor_assets"
 

@@ -12,8 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
 - `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
 - `datacontract test`: a schema with the custom property `additionalProperties: false` fails on columns it does not declare; `datacontract import jsonschema` and `export jsonschema` map it to and from the JSON Schema keyword (#1722, #1825 @markhm)
+- `datacontract catalog --format markdown`, and a Mermaid diagram in Markdown exports (`--no-mermaid` leaves it out) (#1775 @dmaresma)
+- `datacontract export html` renders Markdown in descriptions and links the diagram to the schema tables (#1775,#1826 @dmaresma)
+- `datacontract export mermaid` draws ODCS v3.2 relationships and shrinks diagrams too large to render (#1775 @dmaresma)
 
 ### Fixed
+- `datacontract export markdown` writes `customProperties` as bullets, not a Python dump (#1775 @dmaresma)
 - Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
 - `datacontract catalog`: home links lead to the catalog's index when it is not hosted at the domain root (#1810)
 - `datacontract export sql` quotes MySQL table, view and column names, so reserved words like `order` no longer break the DDL

@@ -8,7 +8,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from open_data_contract_standard.model import OpenDataContractStandard
 
 from datacontract.export.exporter import Exporter
-from datacontract.export.mermaid_exporter import to_mermaid
+from datacontract.export.mermaid_exporter import collect_ids, parse_reference, to_mermaid_and_entities
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +38,18 @@ def to_html(data_contract: OpenDataContractStandard, home_href: str) -> str:
     template = env.get_template(template_file)
 
     style_content, _, _ = package_loader.get_source(env, "style/output.css")
+    marked_js, _, _ = package_loader.get_source(env, "vendor/marked.umd.js")
+    dompurify_js, _, _ = package_loader.get_source(env, "vendor/purify.min.js")
 
     datacontract_yaml = data_contract.to_yaml()
 
     # Get the mermaid diagram
-    mermaid_diagram = to_mermaid(data_contract)
+    # the templates link the schema tables to the entities as drawn (sanitized, and cut in a reduced diagram)
+    mermaid_diagram, mermaid_entities = to_mermaid_and_entities(data_contract)
+
+    # references by id (`schema/<id>/properties/<id>`) resolve to `schema.column`, like in the diagram
+    ids = collect_ids(data_contract)
+    env.globals["resolve_reference"] = lambda ref: parse_reference(ref, ids) if isinstance(ref, str) else None
 
     # Render the template with necessary data
     html_string = template.render(
@@ -50,10 +57,14 @@ def to_html(data_contract: OpenDataContractStandard, home_href: str) -> str:
         home_href=home_href,
         quality_specification=None,  # ODCS doesn't have the deprecated quality.specification
         style=style_content,
+        marked_js=marked_js,
+        dompurify_js=dompurify_js,
         datacontract_yaml=datacontract_yaml,
         formatted_date=_formatted_date(),
         datacontract_cli_version=get_version(),
         mermaid_diagram=mermaid_diagram,
+        mermaid_links=bool(mermaid_diagram),
+        mermaid_entities=mermaid_entities,
     )
 
     return html_string

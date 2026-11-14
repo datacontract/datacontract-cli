@@ -3,6 +3,7 @@ from pathlib import PosixPath
 
 from typer.testing import CliRunner
 
+from datacontract.catalog.catalog import create_data_contract_page, create_index_md
 from datacontract.cli import app
 
 # logging.basicConfig(level=logging.DEBUG, force=True)
@@ -32,6 +33,54 @@ def test_with_tags(tmp_path: PosixPath):
         assert 'data-tag="expected-tag"' in content
 
 
+def test_markdown_format(tmp_path: PosixPath):
+    runner = CliRunner()
+    result = runner.invoke(
+        app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--format", "markdown", "--output", tmp_path]
+    )
+    assert result.exit_code == 0
+    assert not os.path.exists(tmp_path / "index.html")
+    assert os.path.exists(tmp_path / "fixtures/catalog/datacontract-1.md")
+    assert os.path.exists(tmp_path / "fixtures/catalog/datacontract-2.odcs.md")
+
+    with open(tmp_path / "index.md") as index:
+        content = index.read()
+    assert "| Data Contract | Version | Owner | Description |" in content
+    assert "(fixtures/catalog/datacontract-1.md)" in content
+    assert "(fixtures/catalog/datacontract-2.odcs.md)" in content
+
+
+def test_markdown_format_has_a_diagram_unless_disabled(tmp_path: PosixPath):
+    def page(*options):
+        args = ["catalog", "--files", "fixtures/catalog/datacontract-1.yaml", "--format", "markdown", *options]
+        result = CliRunner().invoke(app, [*args, "--output", tmp_path])
+        assert result.exit_code == 0
+        return (tmp_path / "fixtures/catalog/datacontract-1.md").read_text()
+
+    assert "```mermaid" in page()
+    assert "```mermaid" not in page("--no-mermaid")
+
+
+def test_no_mermaid_requires_markdown(tmp_path: PosixPath):
+    runner = CliRunner()
+    result = runner.invoke(app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--no-mermaid", "--output", tmp_path])
+    assert result.exit_code != 0
+
+
+def test_markdown_index_escapes_the_title_of_the_link(tmp_path: PosixPath):
+    contract = tmp_path / "contracts" / "orders.yaml"
+    contract.parent.mkdir()
+    contract.write_text(
+        "apiVersion: v3.1.0\nkind: DataContract\nid: orders\nname: 'Orders [v2] \\ draft'\nversion: 1.0.0\nstatus: active\n"
+        "schema:\n  - name: orders\n    properties:\n      - name: id\n        logicalType: string\n"
+    )
+    contracts = []
+    create_data_contract_page(contracts, contract, tmp_path, None, "markdown")
+    create_index_md(contracts, tmp_path)
+
+    assert "[Orders \\[v2\\] \\\\ draft](" in (tmp_path / "index.md").read_text()
+
+
 def test_home_links_point_to_the_catalog_index(tmp_path: PosixPath):
     runner = CliRunner()
     result = runner.invoke(app, ["catalog", "--files", "fixtures/catalog/*.yaml", "--output", tmp_path])
@@ -40,3 +89,22 @@ def test_home_links_point_to_the_catalog_index(tmp_path: PosixPath):
     assert 'font-semibold" href="index.html"' in (tmp_path / "index.html").read_text()
     contract_page = tmp_path / "fixtures/catalog/datacontract-2.odcs.html"
     assert 'font-semibold" href="../../index.html"' in contract_page.read_text()
+
+
+def test_index_marks_the_description_for_markdown_rendering(tmp_path: PosixPath, monkeypatch):
+    (tmp_path / "orders.odcs.yaml").write_text("""apiVersion: v3.1.0
+kind: DataContract
+id: orders
+name: Orders
+version: 1.0.0
+status: active
+description:
+  purpose: Orders **purpose** <b>x</b>
+""")
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(app, ["catalog", "--files", "*.yaml", "--output", "catalog"])
+    assert result.exit_code == 0
+    index = (tmp_path / "catalog" / "index.html").read_text()
+    assert '<p class="markdown markdown-inline text-sm text-gray-500 line-clamp-3">' in index
+    assert "Orders **purpose** &lt;b&gt;x&lt;/b&gt;" in index
+    assert "DOMPurify.sanitize(" in index
