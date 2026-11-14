@@ -399,3 +399,14 @@ schema:
     assert "flag:</div>" in html
     # no JSON dump of the value any more
     assert '{"system"' not in html and "&#34;system&#34;" not in html
+
+
+def test_html_export_without_schema(tmp_path: Path):
+    contract = """apiVersion: v3.1.0
+kind: DataContract
+id: no-schema
+name: No schema
+version: 1.0.0
+status: draft
+"""
+    assert "No schema" in _export_html(tmp_path, contract)

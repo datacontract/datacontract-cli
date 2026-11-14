@@ -125,7 +125,7 @@ def _build_diagram(data_contract: OpenDataContractStandard, reduced: bool = Fals
 def collect_ids(data_contract: OpenDataContractStandard) -> dict[str, str]:
     """Map schema/property ids to names, to resolve fully qualified references (`schema/<id>/properties/<id>`)."""
     ids = {}
-    for schema in data_contract.schema_:
+    for schema in data_contract.schema_ or []:
         if schema.id:
             ids[schema.id] = schema.name or schema.physicalName
         for prop in schema.properties or []:
