@@ -4,6 +4,8 @@ title: "Sync with dbt"
 description: "Sync a data contract's schema and tests into your dbt project with datacontract dbt sync, then run them with datacontract dbt test."
 ---
 
+import {EntropyExplainsVideo} from '@site/src/components/EntropyExplains';
+
 # Sync with dbt
 
 The Data Contract CLI integrates with [dbt](https://www.getdbt.com/) in multiple ways:
@@ -14,6 +16,8 @@ The Data Contract CLI integrates with [dbt](https://www.getdbt.com/) in multiple
   `datacontract dbt test`)
 - **Export**: Do a one-time export from a data contract into a dbt model schema, a sources YAML, or a staging SQL file (`datacontract export`)
 - **Import**: Create a data contract from a dbt manifest file (`datacontract import dbt`)
+
+<EntropyExplainsVideo episode="dbt" />
 
 The tests that `dbt sync`, `dbt-models` and `dbt-sources` generate need dbt 1.10 or later. `datacontract dbt test`
 and `dbt sync --run-tests` stop with an error on an older dbt.

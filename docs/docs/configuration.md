@@ -167,6 +167,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_AZURE_TENANT_ID` | `azure_tenant_id` | string |  |
 | `DATACONTRACT_AZURE_CLIENT_ID` | `azure_client_id` | string |  |
 | `DATACONTRACT_AZURE_CLIENT_SECRET` | `azure_client_secret` | string (secret) |  |
+| `DATACONTRACT_AZURE_CREDENTIAL_CHAIN` | `azure_credential_chain` | string |  |
 
 ### BigQuery
 
@@ -354,8 +355,10 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_SNOWFLAKE_USERNAME` | `snowflake_username` | string |  |
 | `DATACONTRACT_SNOWFLAKE_PASSWORD` | `snowflake_password` | string (secret) |  |
 | `DATACONTRACT_SNOWFLAKE_AUTHENTICATOR` | `snowflake_authenticator` | string |  |
+| `DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER` | `snowflake_workload_identity_provider` | string |  |
 | `DATACONTRACT_SNOWFLAKE_ROLE` | `snowflake_role` | string |  |
 | `DATACONTRACT_SNOWFLAKE_TOKEN` | `snowflake_token` | string (secret) |  |
+| `DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH` | `snowflake_token_file_path` | string |  |
 | `DATACONTRACT_SNOWFLAKE_PASSCODE` | `snowflake_passcode` | string (secret) |  |
 | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY` | `snowflake_private_key` | string (secret) |  |
 | `DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE` | `snowflake_private_key_file` | string |  |
@@ -414,6 +417,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_TRINO_USERNAME` | `trino_username` | string |  |
 | `DATACONTRACT_TRINO_PASSWORD` | `trino_password` | string (secret) |  |
 | `DATACONTRACT_TRINO_JWT_TOKEN` | `trino_jwt_token` | string (secret) |  |
+| `DATACONTRACT_TRINO_HTTP_HEADERS` | `trino_http_headers` | string (secret) |  |
 | `DATACONTRACT_TRINO_HOST` | `trino_host` | string | Overrides `host` from the contract's `servers` block |
 | `DATACONTRACT_TRINO_PORT` | `trino_port` | integer | Overrides `port` from the contract's `servers` block |
 | `DATACONTRACT_TRINO_CATALOG` | `trino_catalog` | string | Overrides `catalog` from the contract's `servers` block |

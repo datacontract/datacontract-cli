@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 class HtmlExporter(Exporter):
     def export(self, data_contract, schema_name, server, sql_server_type, export_args) -> str:
-        return to_html(data_contract)
+        return to_html(data_contract, export_args.get("home_href", "/"))
 
 
-def to_html(data_contract: OpenDataContractStandard) -> str:
+def to_html(data_contract: OpenDataContractStandard, home_href: str) -> str:
     # Load templates from templates folder
     package_loader = PackageLoader("datacontract", "templates")
     env = Environment(
@@ -47,6 +47,7 @@ def to_html(data_contract: OpenDataContractStandard) -> str:
     # Render the template with necessary data
     html_string = template.render(
         datacontract=data_contract,
+        home_href=home_href,
         quality_specification=None,  # ODCS doesn't have the deprecated quality.specification
         style=style_content,
         datacontract_yaml=datacontract_yaml,

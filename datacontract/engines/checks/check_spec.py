@@ -31,6 +31,7 @@ class MetricType(str, Enum):
     FIELD_PRESENT = "field_present"
     FIELD_TYPE = "field_type"
     FIELD_PHYSICAL_TYPE = "field_physical_type"
+    FIELD_NAMES = "field_names"
     FRESHNESS = "freshness"
     RETENTION = "retention"
     CUSTOM_SQL = "custom_sql"
@@ -44,6 +45,7 @@ METADATA_METRICS = {
     MetricType.FIELD_PRESENT,
     MetricType.FIELD_TYPE,
     MetricType.FIELD_PHYSICAL_TYPE,
+    MetricType.FIELD_NAMES,
 }
 
 
@@ -151,6 +153,7 @@ class CheckSpec:
     valid_min_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_max_items: Optional[int] = None  # INVALID_COUNT, array columns
     valid_unique_items: Optional[bool] = None  # INVALID_COUNT, array columns
+    value_type: Optional[str] = None  # the declared type a value stored untyped is cast to
 
     expected_category: Optional[str] = None  # FIELD_TYPE: human-readable label (display only)
     expected_type_label: Optional[str] = None  # FIELD_TYPE: human-readable expected type
@@ -158,7 +161,8 @@ class CheckSpec:
     implied_type: bool = False  # FIELD_TYPE: the type is implied by `properties`, `items` or `map`, not declared
     expected_physical_type: Optional[str] = None  # FIELD_PHYSICAL_TYPE: contract physicalType
 
-    columns: Optional[List[str]] = None  # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys
+    # DUPLICATE_COUNT across multiple columns; MISSING_REFERENCE_COUNT keys; FIELD_NAMES the declared fields
+    columns: Optional[List[str]] = None
 
     referenced_model: Optional[str] = None  # MISSING_REFERENCE_COUNT
     referenced_columns: Optional[List[str]] = None  # MISSING_REFERENCE_COUNT, pairwise with `columns`
@@ -171,7 +175,7 @@ class CheckSpec:
 
     seconds: Optional[int] = None  # FRESHNESS / RETENTION threshold in seconds
 
-    uses_raw_view: bool = False  # FIELD_PRESENT against the duckdb {model}__raw__ view
+    uses_raw_view: bool = False  # FIELD_PRESENT / FIELD_NAMES against the duckdb {model}__raw__ view
 
     # Preset result/reason for checks that are not executed (UNSUPPORTED).
     preset_result: Optional[str] = None

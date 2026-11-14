@@ -91,8 +91,13 @@ const config: Config = {
       src: 'https://cloud.umami.is/script.js',
       defer: true,
       'data-website-id': '3cc8a904-405b-4d1a-b3ef-bd4b484d8645',
+      // Only report from production, so local `docusaurus start` and preview builds don't skew the stats.
+      'data-domains': 'cli.datacontract.com',
     },
   ],
+
+  // Umami click tracking (important links, code copies) + UTM on links to Entropy Data.
+  clientModules: [require.resolve('./src/clientModules/umamiAutoTrack.js')],
 
   presets: [
     [
@@ -142,6 +147,8 @@ const config: Config = {
         // Emit a raw-markdown file for each page so the .md links in llms.txt
         // resolve to served files instead of 404ing.
         generateMarkdownFiles: true,
+        // MDX imports (e.g. the Entropy Explains video component) are not content
+        excludeImports: true,
         docsDir: 'docs',
         title: 'Data Contract CLI',
         description:
@@ -189,6 +196,7 @@ const config: Config = {
           'extending.md',
           'migrate-dcs-to-odcs.md',
           'comparison.md',
+          'recognition.md',
           'entropy-data.md',
           'release-notes.md',
           'contributing.md',
@@ -249,11 +257,13 @@ const config: Config = {
           'aria-label': 'Join the community on Slack',
         },
         {
-          href: 'https://github.com/datacontract/datacontract-cli',
-          label: 'GitHub',
+          type: 'html',
           position: 'right',
-          className: 'navbar-github-link',
-          'aria-label': 'GitHub repository',
+          className: 'navbar-github-star',
+          value:
+            '<a href="https://github.com/datacontract/datacontract-cli" target="_blank" rel="noopener noreferrer" aria-label="Star Data Contract CLI on GitHub">' +
+            '<img src="https://img.shields.io/github/stars/datacontract/datacontract-cli?style=social&logo=github&label=Star" alt="Star on GitHub" height="20" />' +
+            '</a>',
         },
       ],
     },

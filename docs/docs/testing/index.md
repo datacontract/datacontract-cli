@@ -5,9 +5,13 @@ slug: /testing
 description: "Run schema and quality tests against your data source — Snowflake, BigQuery, Databricks, S3, Postgres, Kafka, and more."
 ---
 
+import {EntropyExplainsVideo, EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # Test your Data
 
 `datacontract test` connects to the data source defined in the contract's `servers` block and runs **schema** and **quality** tests to verify that the actual data complies with the data contract.
+
+<EntropyExplainsVideo episode="data-quality" />
 
 ```bash
 datacontract test --server production datacontract.yaml

@@ -231,6 +231,9 @@ def test_exporters_read_the_map_block():
     spark = data_contract.export("spark")
     assert "MapType(" in spark and "StringType()" in spark and "LongType()" in spark
 
+    polars = data_contract.export("polars")
+    assert '"attributes": pl.List(' in polars and '"key": pl.String' in polars and '"value": pl.Int64' in polars
+
     protobuf = data_contract.export("protobuf")
     assert "map<string, int32> attributes" in protobuf
 

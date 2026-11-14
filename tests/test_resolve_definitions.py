@@ -22,6 +22,7 @@ from datacontract.lint.resolve import (
     clear_definition_cache,
     inline_definitions_into_data_contract,
 )
+from datacontract.model.enum_values import get_enum_values
 from datacontract.model.exceptions import DataContractException, DefinitionResolutionError
 
 _HOST = "https://api.entropy-data.com"
@@ -207,6 +208,50 @@ def test_author_inline_values_win_over_definition(env):
 
     assert prop.logicalType == "string"
     assert prop.description == ""
+
+
+@responses.activate
+def test_logical_type_options_are_merged_per_key(env):
+    """`logicalTypeOptions` is a bag of independent constraints: a maxLength the
+    author wrote must not discard the pattern the definition declares."""
+    responses.add(
+        responses.GET,
+        f"{_HOST}/d",
+        body=_definition_body(logicalTypeOptions={"pattern": "^[A-Z]+$", "maxLength": 100}),
+        status=200,
+    )
+
+    prop = _prop_referencing("/d", logicalTypeOptions={"maxLength": 50})
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert prop.logicalTypeOptions == {"pattern": "^[A-Z]+$", "maxLength": 50}
+
+
+@responses.activate
+@pytest.mark.parametrize(
+    "inline",
+    [
+        {"logicalTypeOptions": {"enum": ["X"]}},
+        {"customProperties": [{"property": "enum", "value": ["X"]}]},
+        {"quality": [{"metric": "invalidValues", "arguments": {"validValues": ["X"]}}]},
+    ],
+    ids=["logicalTypeOptions.enum", "enum custom property", "invalidValues quality rule"],
+)
+def test_author_legacy_enum_wins_over_definition_enum(env, inline):
+    """The author's allowed values win whichever place the contract declares
+    them in, so an inherited `enum` never shadows an older representation."""
+    responses.add(
+        responses.GET,
+        f"{_HOST}/d",
+        body=_definition_body(enum=[{"value": "A"}, {"value": "B"}]),
+        status=200,
+    )
+
+    prop = _prop_referencing("/d", **inline)
+    inline_definitions_into_data_contract(_contract(prop))
+
+    assert prop.enum is None
+    assert get_enum_values(prop) == ["X"]
 
 
 @responses.activate

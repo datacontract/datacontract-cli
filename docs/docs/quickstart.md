@@ -4,6 +4,8 @@ title: "Quickstart"
 description: "Install the Data Contract CLI and test, export, and import your first data contract."
 ---
 
+import {EntropyExplainsVideo, EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # Quickstart
 
 This guide gets you from zero to a tested data contract in a few minutes — first against a hosted demo database (60 seconds, nothing to set up), then against your own data warehouse (about 5 minutes).
@@ -56,6 +58,8 @@ Server: production (type=postgres, host=..., port=6543, database=postgres, schem
 The CLI verified that the YAML itself is valid, that all records comply with the schema, and that all quality attributes are met.
 
 ## Test your own data (5 minutes)
+
+<EntropyExplainsVideo episode="under-contract" />
 
 The real magic moment is when a contract catches drift in *your* data. Import a contract straight from an existing table — the import generates the schema and a ready-to-test `servers` block — then test the actual data against it:
 
@@ -153,9 +157,12 @@ if not run.has_passed():
 
 ## Next steps
 
+- Learn data contracts hands-on: **[Data Contracts in Practice](https://learn.datacontract.com/en/?utm_source=cli.datacontract.com&utm_medium=referral&utm_content=quickstart)** is a free, self-paced tutorial (about 6 hours, in English and German). You write a contract for a real PostgreSQL database, test it, release a breaking change, and block breaking changes in CI/CD.
 - Keep the tests running automatically: **[Scheduling](./scheduling/index.md)** with GitHub Actions, Airflow, cron, or your orchestrator.
 - Roll data contracts out across a team: **[Adopting Data Contracts](./best-practices.md)**.
 - Browse everything the CLI can do: **[Commands](./commands/index.md)**.
+
+Worked for you? **[Star us on GitHub](https://github.com/datacontract/datacontract-cli)** ⭐
 
 ## Installation options
 

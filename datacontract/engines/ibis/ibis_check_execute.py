@@ -93,6 +93,8 @@ def _describe(spec: CheckSpec) -> str:
         return f"physical_type({spec.field}) == {spec.expected_physical_type}"
     if spec.metric == MetricType.FIELD_PRESENT:
         return f"present({spec.field})"
+    if spec.metric == MetricType.FIELD_NAMES:
+        return f"fields({spec.model}) in ({', '.join(spec.columns or [])})"
     if spec.threshold is not None:
         target = spec.field or spec.model
         return f"{spec.metric.value}({target}) {spec.threshold.describe()}"
@@ -307,11 +309,15 @@ def _run_model(
             if spec.metric == MetricType.ROW_COUNT:
                 named = t.count().name(spec.key)
             elif spec.metric == MetricType.MISSING_COUNT:
-                predicate = _row_predicate(t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values))
+                predicate = _row_predicate(
+                    t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
+                )
                 named = _count_true(predicate).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 dtype = _resolve_dtype(schema, spec.field)
-                if _has_array_constraints(spec) and not dtype.is_array():
+                # ibis reports no type inside a nested Snowflake column, where a value has the type it is cast to
+                cast = _is_nested_path(spec.field) and _backend_name(t) == "snowflake"
+                if _has_array_constraints(spec) and not cast and not dtype.is_array():
                     # Silently dropping the constraint would report the check as
                     # passed, which is worse than saying it could not be run.
                     _set_impl(run, spec.key, _describe(spec), None)
@@ -324,16 +330,16 @@ def _run_model(
                     continue
                 unconstrained = []
 
-                def _invalid(c, _t=t, _dtype=dtype, _spec=spec, _flag=unconstrained):
+                def _invalid(c, _t=t, _dtype=dtype, _spec=spec, _flag=unconstrained, _cast=cast):
                     import ibis
 
-                    built = _invalid_expr(_t, c, _dtype, _spec)
+                    built = _invalid_expr(_t, c, c.type() if _cast else _dtype, _spec)
                     if built is None:
                         _flag.append(True)
                         return ibis.literal(False)
                     return built
 
-                expr = _row_predicate(t, columns, spec.field, _invalid)
+                expr = _row_predicate(t, columns, spec.field, _invalid, spec.value_type)
                 if unconstrained:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
@@ -346,6 +352,8 @@ def _run_model(
                 _run_missing_reference(run, con, server, t, columns, spec, schema_name)
             elif spec.metric == MetricType.FIELD_PRESENT:
                 _run_present(run, con, model, schema, spec, structured_types)
+            elif spec.metric == MetricType.FIELD_NAMES:
+                _run_field_names(run, con, model, t, spec)
             elif spec.metric == MetricType.FIELD_TYPE:
                 _run_type(run, schema, columns, spec, structured_types, native_types)
             elif spec.metric == MetricType.FIELD_PHYSICAL_TYPE:
@@ -513,28 +521,31 @@ def _samples_for(t, columns, schema, spec: CheckSpec, identifiers, sensitive):
     if spec.metric == MetricType.DUPLICATE_COUNT:
         if not _is_item_duplicate(spec):
             return _duplicate_samples(t, columns, sensitive, spec)
-        predicate = _item_duplicate_predicate(t, columns, spec.field)
+        predicate = _item_duplicate_predicate(t, columns, spec.field, spec.value_type)
     elif spec.metric == MetricType.MISSING_COUNT:
-        predicate = _row_predicate(t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values))
+        predicate = _row_predicate(
+            t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
+        )
     else:  # INVALID_COUNT
         dtype = _resolve_dtype(schema, spec.field)
+        cast = _is_nested_path(spec.field) and _backend_name(t) == "snowflake"
         unconstrained = []
 
         def _invalid(c, _flag=unconstrained):
             import ibis
 
-            built = _invalid_expr(t, c, dtype, spec)
+            built = _invalid_expr(t, c, c.type() if cast else dtype, spec)
             if built is None:
                 _flag.append(True)
                 return ibis.literal(False)
             return built
 
-        predicate = _row_predicate(t, columns, spec.field, _invalid)
+        predicate = _row_predicate(t, columns, spec.field, _invalid, spec.value_type)
         if unconstrained:
             return None
 
     # A nested path is not a column; show the one it starts from.
-    root = spec.field.split("[]")[0].split(".")[0] if spec.field else None
+    root = _root(spec.field) if spec.field else None
     select_cols = _select_columns(columns, sensitive, [*identifiers, root])
     rows = t.filter(predicate)
     rows = rows.select(select_cols) if select_cols else rows
@@ -804,10 +815,15 @@ def _duplicate_scope(t, unfiltered_t, columns, spec: CheckSpec):
         return t
     fields = spec.columns or [spec.field]
     if unfiltered_t is None:
-        return t.filter([_resolve_expr(t, columns, f).notnull() for f in fields])
-    rows = unfiltered_t.filter([_resolve_expr(unfiltered_t, columns, f).notnull() for f in fields])
-    window = t.select([_resolve_expr(t, columns, f).name(f"_key{i}") for i, f in enumerate(fields)]).distinct()
-    return rows.semi_join(window, [_resolve_expr(rows, columns, f) == window[f"_key{i}"] for i, f in enumerate(fields)])
+        return t.filter([_resolve_expr(t, columns, f, spec.value_type).notnull() for f in fields])
+    rows = unfiltered_t.filter([_resolve_expr(unfiltered_t, columns, f, spec.value_type).notnull() for f in fields])
+    window = t.select(
+        [_resolve_expr(t, columns, f, spec.value_type).name(f"_key{i}") for i, f in enumerate(fields)]
+    ).distinct()
+    return rows.semi_join(
+        window,
+        [_resolve_expr(rows, columns, f, spec.value_type) == window[f"_key{i}"] for i, f in enumerate(fields)],
+    )
 
 
 def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_count: int):
@@ -820,7 +836,7 @@ def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_coun
         return
 
     t = _duplicate_scope(t, unfiltered_t, columns, spec)
-    cols = [_resolve_expr(t, columns, c) for c in (spec.columns or [spec.field])]
+    cols = [_resolve_expr(t, columns, c, spec.value_type) for c in (spec.columns or [spec.field])]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
@@ -870,8 +886,12 @@ def _is_item_duplicate(spec: CheckSpec) -> bool:
     return any("[]" in c for c in (spec.columns or [spec.field]) if c)
 
 
-def _item_duplicate_predicate(t, columns, field: str):
+def _item_duplicate_predicate(t, columns, field: str, value_type: Optional[str]):
     """Parent rows whose array repeats a value in the item property ``field``."""
+    if _backend_name(t) == "snowflake":
+        from datacontract.engines.ibis.snowflake_nested_values import item_repeats
+
+        return item_repeats(t[_resolve_col(columns, _root(field))], field, value_type)
     if field.endswith("[]"):
         # the items of an array of plain values are the values themselves
         array_path, leaf = field[:-2], None
@@ -890,7 +910,7 @@ def _run_item_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
 
     Counted in parent rows.
     """
-    bad = t.filter(_item_duplicate_predicate(t, columns, spec.field))
+    bad = t.filter(_item_duplicate_predicate(t, columns, spec.field, spec.value_type))
     _record_sql(run, spec, bad)
     repeats = int(bad.count().execute())
     _evaluate(run, spec, repeats, row_count=row_count)
@@ -921,6 +941,21 @@ def _run_present(run: Run, con, model: str, schema, spec: CheckSpec, structured_
         spec.key,
         ResultEnum.passed if ok else ResultEnum.failed,
         None if ok else f"Required column '{spec.field}' is missing",
+    )
+
+
+def _run_field_names(run: Run, con, model: str, t, spec: CheckSpec):
+    """The fields of the data that the contract does not declare; names compare case-insensitively."""
+    table = _resolve_table(con, f"{model}__raw__") if spec.uses_raw_view else t
+    _set_impl(run, spec.key, _describe(spec), "introspection")
+    declared = {name.lower() for name in spec.columns or []}
+    additional = [name for name in table.columns if name.lower() not in declared]
+    _set_diagnostics(run, spec.key, _diag(metric="field_names", additional_fields=additional))
+    set_result(
+        run,
+        spec.key,
+        ResultEnum.failed if additional else ResultEnum.passed,
+        f"Fields not in the contract: {', '.join(additional)}" if additional else None,
     )
 
 
@@ -1317,11 +1352,16 @@ def _resolve_col(columns: dict, field: str) -> str:
     return actual
 
 
-def _resolve_expr(t, columns: dict, field: str):
+def _resolve_expr(t, columns: dict, field: str, value_type: Optional[str] = None):
     if field is None:
         raise _ColumnNotFound("Column 'None' not found")
     if "." not in field:
         return t[_resolve_col(columns, field)]
+    if _backend_name(t) == "snowflake":
+        from datacontract.engines.ibis.snowflake_nested_values import nested_value
+
+        # unnamed, ibis would name a grouped value after its whole expression, past Snowflake's 255 characters
+        return nested_value(t[_resolve_col(columns, _root(field))], field, value_type).name(field)
     return _resolve_nested_expr(t, field, columns)
 
 
@@ -1330,12 +1370,16 @@ def _resolve_nested_expr(t, field: str, columns: dict):
     return _struct_path(t[_resolve_col(columns, head)], tail)
 
 
-def _row_predicate(t, columns: dict, field: str, build):
+def _row_predicate(t, columns: dict, field: str, build, value_type: Optional[str] = None):
     """A boolean over *parent* rows for ``build`` applied at ``field``.
 
     An array hop (``items[].sku``) becomes "some element satisfies build", so the
     row count never changes and an empty array is never a violation.
     """
+    if _is_nested_path(field) and _backend_name(t) == "snowflake":
+        from datacontract.engines.ibis.snowflake_nested_values import row_predicate
+
+        return row_predicate(t[_resolve_col(columns, _root(field))], field, build, value_type)
     if field.endswith("[]"):
         # The items of an array of plain values: the row breaks the rule when one of its items does
         return _row_predicate(t, columns, field[:-2], lambda array: array.filter(build).length() > 0)
@@ -1493,6 +1537,11 @@ def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: s
 
 # The hops of a path segment: `[]` into an array's items, `[key]` and `[value]` into a map's
 _HOP = re.compile(r"\[(\w*)\]")
+
+
+def _root(field: str) -> str:
+    """The column a nested path starts from."""
+    return field.split("[")[0].split(".")[0]
 
 
 def _is_nested_path(field: Optional[str]) -> bool:

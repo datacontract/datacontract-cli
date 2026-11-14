@@ -22,6 +22,8 @@ It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a P
 
 > 📖 **Full documentation: [cli.datacontract.com](https://cli.datacontract.com)**
 >
+> 🎓 **Learn it hands-on: [Data Contracts in Practice](https://learn.datacontract.com/en/?utm_source=github&utm_medium=referral&utm_campaign=datacontract-cli-readme)**, a free, self-paced tutorial (about 6 hours, in English and German)
+>
 > Quick links: [Quickstart](https://cli.datacontract.com/quickstart) · [Commands](https://cli.datacontract.com/commands) · [Best Practices](https://cli.datacontract.com/best-practices) · [Custom Export and Import](https://cli.datacontract.com/extending) · [Release Notes](https://cli.datacontract.com/release-notes) · [Development Setup](#development-setup)
 >
 > For LLMs: [cli.datacontract.com/llms.txt](https://cli.datacontract.com/llms.txt) · [cli.datacontract.com/llms-full.txt](https://cli.datacontract.com/llms-full.txt) · [Data Contract Skills](https://github.com/datacontract/datacontract-skills) for coding agents
@@ -311,6 +313,7 @@ A list of available extras:
 It covers everything in depth, including the complete command reference:
 
 - [Quickstart](https://cli.datacontract.com/quickstart) — install and run your first test
+- [Data Contracts in Practice](https://learn.datacontract.com/en/?utm_source=github&utm_medium=referral&utm_campaign=datacontract-cli-readme) — free hands-on tutorial: write, test, evolve, and automate data contracts
 - [Open Data Contract Standard](https://cli.datacontract.com/open-data-contract-standard) — the contract format
 - [Test your Data](https://cli.datacontract.com/testing) — schema & quality tests against 18+ data sources
 - [Define your Quality Rules](https://cli.datacontract.com/quality-rules) — SQL, library, text, and custom checks
