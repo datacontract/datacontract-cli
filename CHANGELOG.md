@@ -6,31 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.2.10] - 2026-11-14
+
 ### Added
-- `datacontract test` on an `iceberg` server reads the tables at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF`
-- `datacontract test`, `ci` and `lint`: `--output-format oors` writes the results as an Open Observability Results Standard (OORS) v0.8.1 document (experimental)
-- Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS`
-- `datacontract export sql` writes MySQL table and column descriptions as `COMMENT`s (#1811)
-- `datacontract test`: a schema with the custom property `additionalProperties: false` fails on columns it does not declare; `datacontract import jsonschema` and `export jsonschema` map it to and from the JSON Schema keyword (#1722, #1825 @markhm)
-- `datacontract catalog --format markdown`, and a Mermaid diagram in Markdown exports (`--no-mermaid` leaves it out) (#1775 @dmaresma)
-- `datacontract export html` renders Markdown in descriptions and links the diagram to the schema tables (#1775,#1826 @dmaresma)
-- `datacontract export mermaid` draws ODCS v3.2 relationships and shrinks diagrams too large to render (#1775 @dmaresma)
+- `datacontract export`:
+  - `polars`: export the schemas as Polars `pl.Schema` definitions (#1552 @DariusHQ @Sruthi-23)
+  - `html` renders Markdown in descriptions and links the diagram to the schema tables (#1775,#1826 @dmaresma)
+  - `mermaid` draws ODCS v3.2 relationships, shrinks diagrams too large to render, and handles `$` in names (#1775 @dmaresma)
+  - `sql` writes MySQL table and column descriptions as `COMMENT`s (#1811 @ReguiguiMohamed @justinmcgowanlsi)
+- `datacontract test`, `ci` and `lint`: `--output-format oors` writes the results as an Open Observability Results Standard (OORS) v0.8.1 document (experimental) (#1796)
+- `datacontract test`:
+  - a schema with the custom property `additionalProperties: false` fails on columns it does not declare; `datacontract import jsonschema` and `export jsonschema` map it to and from the JSON Schema keyword (#1722,#1825 @markhm @lairdman7)
+  - reads the tables of an `iceberg` server at a tag, branch, or snapshot ID set with `DATACONTRACT_ICEBERG_REF` (#1828 @JdataNich)
+  - test Excel sheets whose header is not in the first row, with an `xlsxRange` custom property per schema, and fail a sheet whose header row is empty (#1793 @nicolehazel)
+- `datacontract catalog --format markdown` writes the catalog as Markdown pages with an `index.md` (#1775 @dmaresma)
+- `datacontract changelog --output-format json|yaml`: print the changelog as JSON or YAML to process it with other tools (#1792 @eugen-goebel)
+- `datacontract test` and `datacontract import` authenticate to Azure through the Azure credential chain (e.g. `az login`) when no service principal is configured (#1797 @dmaresma)
+- Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
+- Trino connections support custom HTTP headers via `DATACONTRACT_TRINO_HTTP_HEADERS` (#1809 @starhel)
+
+### Changed
+- `datacontract lint` and `datacontract test` fail on duplicate schema, property, server and role names, and on duplicate `id`s within the same array; checks are skipped with a custom `--json-schema` (#1771 @gkoenig)
+- `datacontract export markdown` includes a Mermaid entity relationship diagram; `--no-mermaid` leaves it out (#1775 @dmaresma)
+
+### Security
+- `datacontract api` keeps a Trino JWT token held in the server's environment from hosts a request chooses (#1809)
 
 ### Fixed
+- `datacontract test` works without network access when the `xlsx`, `s3`, `gcs` or `azure` extra is installed (#1800 @nicolehazel)
+- Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum` (#1812)
+- `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765 @bonamim)
 - `datacontract export markdown` writes `customProperties` as bullets, not a Python dump (#1775 @dmaresma)
-- Inlining a linked definition merges `logicalTypeOptions` key by key, and allowed values the contract declares in an older form (`logicalTypeOptions.enum`, the `enum` custom property, the `invalidValues` quality rule) win over the definition's `enum`
-- `datacontract catalog`: home links lead to the catalog's index when it is not hosted at the domain root (#1810)
+- `datacontract catalog`: home links lead to the catalog's index when it is not hosted at the domain root (#1810 @jpartyka-gemius)
 - `datacontract export sql` quotes MySQL table, view and column names, so reserved words like `order` no longer break the DDL
-
-- - `datacontract dbt sync` inlines the definitions a contract's properties link to, like `lint`, `test` and `export` (#1765)
-
-### Added
-- `datacontract changelog --output-format json|yaml`: print the changelog as JSON or YAML to process it with other tools (#1792)
-- `datacontract export polars`: export the schemas as Polars `pl.Schema` definitions (#1552)
-- `datacontract test`: test Excel sheets whose header is not in the first row, with an `xlsxRange` custom property per schema, and fail a sheet whose header row is empty (#1717 @nicolehazel)
-- Error messages link to the matching docs page: the server type's reference page when `datacontract test` fails, the format's guide when `import` or `export` fails, and the installation page when an optional dependency is missing
-- `datacontract lint` and `datacontract test` fail on duplicate schema, property, server and role names, and on duplicate `id`s within the same array; checks are skipped with a custom `--json-schema`
-- `datacontract test` and `datacontract import` authenticate to Azure through the Azure credential chain (e.g. `az login`) when no service principal is configured (@dmaresma)
 
 ## [1.2.9] - 2026-10-30
 
@@ -53,7 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` on BigQuery: SQL quality rules and custom quality checks can name the table without its dataset again (#1770)
-- `datacontract test` works without network access when the `xlsx`, `s3`, `gcs` or `azure` extra is installed
 
 ## [1.2.8] - 2026-10-26
 
