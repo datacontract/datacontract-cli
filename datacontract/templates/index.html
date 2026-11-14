@@ -8,6 +8,7 @@
   <style>
     {{style | safe }}
   </style>
+  {% include 'partials_odcs/markdown_style.html' %}
 </head>
 <body class="h-full">
 
@@ -116,7 +117,7 @@
                     </div>
                   </div>
                   <div class="flex w-full items-center justify-between px-6 pb-6">
-                    <p class="text-sm text-gray-500  line-clamp-3">
+                    <p class="markdown markdown-inline text-sm text-gray-500 line-clamp-3">
                       {{contract.spec.info.description}}
                     </p>
                   </div>
@@ -259,5 +260,6 @@
   });
 </script>
 
+{% include 'partials_odcs/markdown_script.html' %}
 </body>
 </html>

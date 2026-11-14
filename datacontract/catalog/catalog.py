@@ -142,6 +142,8 @@ def create_index_html(contracts, path):
 
         # needs to be included in /MANIFEST.in
         style_content, _, _ = package_loader.get_source(env, "style/output.css")
+        marked_js, _, _ = package_loader.get_source(env, "vendor/marked.umd.js")
+        dompurify_js, _, _ = package_loader.get_source(env, "vendor/purify.min.js")
 
         tz = pytz.timezone("UTC")
         now = datetime.now(tz)
@@ -151,6 +153,8 @@ def create_index_html(contracts, path):
         # Render the template with necessary data
         html_string = template.render(
             style=style_content,
+            marked_js=marked_js,
+            dompurify_js=dompurify_js,
             formatted_date=formatted_date,
             datacontract_cli_version=datacontract_cli_version,
             contracts=contracts,

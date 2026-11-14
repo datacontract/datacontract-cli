@@ -98,3 +98,22 @@ def test_home_links_point_to_the_catalog_index(tmp_path: PosixPath):
     assert 'font-semibold" href="index.html"' in (tmp_path / "index.html").read_text()
     contract_page = tmp_path / "fixtures/catalog/datacontract-2.odcs.html"
     assert 'font-semibold" href="../../index.html"' in contract_page.read_text()
+
+
+def test_index_marks_the_description_for_markdown_rendering(tmp_path: PosixPath, monkeypatch):
+    (tmp_path / "orders.odcs.yaml").write_text("""apiVersion: v3.1.0
+kind: DataContract
+id: orders
+name: Orders
+version: 1.0.0
+status: active
+description:
+  purpose: Orders **purpose** <b>x</b>
+""")
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(app, ["catalog", "--files", "*.yaml", "--output", "catalog"])
+    assert result.exit_code == 0
+    index = (tmp_path / "catalog" / "index.html").read_text()
+    assert '<p class="markdown markdown-inline text-sm text-gray-500 line-clamp-3">' in index
+    assert "Orders **purpose** &lt;b&gt;x&lt;/b&gt;" in index
+    assert "DOMPurify.sanitize(" in index
