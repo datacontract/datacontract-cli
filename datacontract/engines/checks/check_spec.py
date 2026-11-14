@@ -28,27 +28,15 @@ class Hop(Enum):
     VALUE = "[value]"
 
 
-class FieldPath(str):
-    """Where a property sits below its column.
+def path_text(path: tuple[str | Hop, ...]) -> str:
+    """The steps of a path as text, ``items[].sku``, for the names of checks and messages.
 
-    As text it reads ``items[].sku``, which names the checks and messages. ``steps`` holds what it is made of,
-    names and hops, so a name is never split or cut: a column called ``Rate.x`` or ``Amount [A]`` is one step.
+    Never read it back into steps: a name may hold a dot or a bracket, so the text does not tell where one step ends.
     """
-
-    steps: tuple[str | Hop, ...]
-
-    def __new__(cls, steps: tuple[str | Hop, ...]):
-        text = ""
-        for step in steps:
-            text += step.value if isinstance(step, Hop) else f".{step}" if text else step
-        path = super().__new__(cls, text)
-        path.steps = steps
-        return path
-
-
-def path_steps(field: str) -> tuple[str | Hop, ...]:
-    """The steps of a check's field. A plain string is the name of one column."""
-    return field.steps if isinstance(field, FieldPath) else (field,)
+    text = ""
+    for step in path:
+        text += step.value if isinstance(step, Hop) else f".{step}" if text else step
+    return text
 
 
 class MetricType(str, Enum):
@@ -138,7 +126,10 @@ class CheckSpec:
     name: str
     model: str
     metric: MetricType
-    field: Optional[str] = None
+    field: Optional[str] = None  # plain text, for the names of checks and messages
+    # What `field` is made of, names and hops, so that a name holding a dot or a bracket is one step. Left empty,
+    # the field is the name of one column. Read the steps from here, never by splitting `field`.
+    path: tuple[str | Hop, ...] = ()
     threshold: Optional[Threshold] = None
 
     # The threshold compares a percentage of rows (ODCS quality.unit: percent)
@@ -208,6 +199,11 @@ class CheckSpec:
     # Preset result/reason for checks that are not executed (UNSUPPORTED).
     preset_result: Optional[str] = None
     preset_reason: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        # A property's name is one name, even where it holds a dot: without steps, the field is one column.
+        if not self.path and self.field is not None:
+            self.path = (self.field,)
 
     @property
     def requires_data_read(self) -> bool:

@@ -1,7 +1,6 @@
 from open_data_contract_standard.model import DataQuality, Server
 
 from datacontract.data_contract import DataContract
-from datacontract.engines.checks.check_spec import FieldPath
 from datacontract.engines.checks.create_checks import prepare_query
 
 
@@ -80,7 +79,13 @@ def test_each_step_of_a_nested_property_path_is_quoted_on_its_own():
     server = Server(type="databricks")
 
     assert (
-        prepare_query(quality.query, "analytics.my orders", FieldPath(("customer", "home address")), server)
+        prepare_query(
+            quality.query,
+            "analytics.my orders",
+            "customer.home address",
+            server,
+            field_path=("customer", "home address"),
+        )
         == "SELECT COUNT(*) FROM analytics.`my orders` WHERE customer.`home address` IS NULL"
     )
 
@@ -90,7 +95,9 @@ def test_a_nested_property_is_a_path_into_its_column_on_snowflake():
     server = Server(type="snowflake")
 
     assert (
-        prepare_query(quality.query, "analytics.orders", FieldPath(("customer", "home address")), server)
+        prepare_query(
+            quality.query, "analytics.orders", "customer.home address", server, field_path=("customer", "home address")
+        )
         == 'SELECT COUNT(*) FROM analytics.orders WHERE customer:"home address" IS NULL'
     )
 

@@ -1,6 +1,6 @@
 import ibis
 
-from datacontract.engines.checks.check_spec import CheckSpec, FieldPath, Hop, MetricType
+from datacontract.engines.checks.check_spec import CheckSpec, Hop, MetricType
 from datacontract.engines.ibis.ibis_check_execute import _run_present
 from datacontract.model.run import Check, ResultEnum, Run
 
@@ -98,7 +98,8 @@ def test_run_present_matches_uppercase_nested_field_for_lowercase_contract_path(
         type="field_is_present",
         name="field is present",
         model="checks_testcase",
-        field=FieldPath(("customer", "name")),
+        field="customer.name",
+        path=("customer", "name"),
         metric=MetricType.FIELD_PRESENT,
     )
     schema = ibis.memtable({"CUSTOMER": [{"NAME": "a"}]}).schema()
@@ -108,7 +109,7 @@ def test_run_present_matches_uppercase_nested_field_for_lowercase_contract_path(
     assert run.checks[0].result == ResultEnum.passed
 
 
-def _physical_type_spec(field: str) -> CheckSpec:
+def _physical_type_spec(field: str, path: tuple = ()) -> CheckSpec:
     from open_data_contract_standard.model import SchemaProperty
 
     return CheckSpec(
@@ -118,6 +119,7 @@ def _physical_type_spec(field: str) -> CheckSpec:
         name="physical type",
         model="orders",
         field=field,
+        path=path,
         metric=MetricType.FIELD_PHYSICAL_TYPE,
         expected_category="DECIMAL(10,2)",
         expected_physical_type="DECIMAL(10,2)",
@@ -142,7 +144,7 @@ def test_physical_type_of_a_nested_path_is_skipped_rather_than_passed_on_the_fal
     run = Run.create_run()
     run.checks = [Check(type="field_physical_type", key="k")]
     _run_physical_type(
-        run, None, server, schema, native_types, _physical_type_spec(FieldPath(("orders", Hop.ITEMS, "price")))
+        run, None, server, schema, native_types, _physical_type_spec("orders[].price", ("orders", Hop.ITEMS, "price"))
     )
     assert run.checks[0].result == ResultEnum.warning
     assert "skipping the physical type check" in run.checks[0].reason
@@ -152,3 +154,38 @@ def test_physical_type_of_a_nested_path_is_skipped_rather_than_passed_on_the_fal
     run.checks = [Check(type="field_physical_type", key="k")]
     _run_physical_type(run, None, server, schema, native_types, _physical_type_spec("price"))
     assert run.checks[0].result == ResultEnum.failed
+
+
+def test_the_steps_of_a_field_come_from_its_path_not_from_its_text():
+    # The field's text only names the check: a name holding a dot or a bracket is one step, so no string
+    # operation on it may change where the check looks.
+    run = _run_with_stubbed_check()
+    spec = CheckSpec(
+        key="k",
+        category="schema",
+        type="field_is_present",
+        name="field is present",
+        model="checks_testcase",
+        field="customer.name",
+        path=("customer", "name"),
+        metric=MetricType.FIELD_PRESENT,
+    )
+
+    spec.field = spec.field.replace(".name", "[]")  # reads as an array item, were it parsed as text
+    _run_present(run, _NoLookupConnection(), "checks_testcase", ibis.schema({"customer": "struct<name: string>"}), spec)
+
+    assert run.checks[0].result == ResultEnum.passed
+
+
+def test_a_field_without_steps_is_the_name_of_one_column():
+    spec = CheckSpec(
+        key="k",
+        category="schema",
+        type="field_is_present",
+        name="field is present",
+        model="checks_testcase",
+        field="Rate.x",
+        metric=MetricType.FIELD_PRESENT,
+    )
+
+    assert spec.path == ("Rate.x",)

@@ -11,7 +11,7 @@ import ibis
 import pytest
 from open_data_contract_standard.model import Server
 
-from datacontract.engines.checks.check_spec import FieldPath, Hop
+from datacontract.engines.checks.check_spec import Hop
 from datacontract.engines.ibis.connections.connect import connect_ibis
 from datacontract.engines.ibis.ibis_check_execute import _item_duplicate_predicate, _row_predicate
 from datacontract.model.exceptions import DataContractException
@@ -130,7 +130,7 @@ def test_checks_on_array_items_compile_for_athena(env):
         con = connect_ibis(Run.create_run(), None, _server())
     t = ibis.table({"items": "array<struct<sku: string>>"}, name="orders")
     columns = {"items": "items"}
-    items_sku = FieldPath(("items", Hop.ITEMS, "sku"))
+    items_sku = ("items", Hop.ITEMS, "sku")
 
     missing = t.filter(_row_predicate(t, columns, items_sku, lambda sku: sku.isnull())).count()
     duplicated = t.filter(_item_duplicate_predicate(t, columns, items_sku, None)).count()

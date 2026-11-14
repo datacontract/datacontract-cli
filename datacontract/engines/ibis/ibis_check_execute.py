@@ -18,7 +18,7 @@ from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
 
-from datacontract.engines.checks.check_spec import CheckSpec, FieldPath, Hop, MetricType, path_steps
+from datacontract.engines.checks.check_spec import CheckSpec, Hop, MetricType, path_text
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.type_normalize import (
@@ -254,7 +254,7 @@ def _run_model(
     structured_types = None
     if get_server_type(server) == "snowflake" and any(
         spec.metric in (MetricType.FIELD_TYPE, MetricType.FIELD_PHYSICAL_TYPE)
-        or (spec.metric == MetricType.FIELD_PRESENT and _is_nested_path(spec.field))
+        or (spec.metric == MetricType.FIELD_PRESENT and _is_nested_path(spec.path))
         for spec in specs
     ):
         structured_types = fetch_structured_types(con, server, t.get_name())
@@ -300,7 +300,7 @@ def _run_model(
         try:
             named = None  # set for count-style metrics that get batched
             if spec.metric in (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT, MetricType.DUPLICATE_COUNT):
-                dtype = _walk_dtype(schema, spec.field)
+                dtype = _walk_dtype(schema, spec.path)
                 if isinstance(dtype, _Unchecked) and dtype.mismatched:
                     set_result(run, spec.key, ResultEnum.warning, dtype)
                     continue
@@ -308,13 +308,13 @@ def _run_model(
                 named = t.count().name(spec.key)
             elif spec.metric == MetricType.MISSING_COUNT:
                 predicate = _row_predicate(
-                    t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
+                    t, columns, spec.path, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
                 )
                 named = _count_true(predicate).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
-                dtype = _resolve_dtype(schema, spec.field)
+                dtype = _resolve_dtype(schema, spec.path)
                 # ibis reports no type inside a nested Snowflake column, where a value has the type it is cast to
-                cast = _is_nested_path(spec.field) and _backend_name(t) == "snowflake"
+                cast = _is_nested_path(spec.path) and _backend_name(t) == "snowflake"
                 if _has_array_constraints(spec) and not cast and not dtype.is_array():
                     # Silently dropping the constraint would report the check as
                     # passed, which is worse than saying it could not be run.
@@ -337,7 +337,7 @@ def _run_model(
                         return ibis.literal(False)
                     return built
 
-                expr = _row_predicate(t, columns, spec.field, _invalid, spec.value_type)
+                expr = _row_predicate(t, columns, spec.path, _invalid, spec.value_type)
                 if unconstrained:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
@@ -517,14 +517,14 @@ def _samples_for(t, columns, schema, spec: CheckSpec, identifiers, sensitive):
     if spec.metric == MetricType.DUPLICATE_COUNT:
         if not _is_item_duplicate(spec):
             return _duplicate_samples(t, columns, sensitive, spec)
-        predicate = _item_duplicate_predicate(t, columns, spec.field, spec.value_type)
+        predicate = _item_duplicate_predicate(t, columns, spec.path, spec.value_type)
     elif spec.metric == MetricType.MISSING_COUNT:
         predicate = _row_predicate(
-            t, columns, spec.field, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
+            t, columns, spec.path, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
         )
     else:  # INVALID_COUNT
-        dtype = _resolve_dtype(schema, spec.field)
-        cast = _is_nested_path(spec.field) and _backend_name(t) == "snowflake"
+        dtype = _resolve_dtype(schema, spec.path)
+        cast = _is_nested_path(spec.path) and _backend_name(t) == "snowflake"
         unconstrained = []
 
         def _invalid(c, _flag=unconstrained):
@@ -536,12 +536,12 @@ def _samples_for(t, columns, schema, spec: CheckSpec, identifiers, sensitive):
                 return ibis.literal(False)
             return built
 
-        predicate = _row_predicate(t, columns, spec.field, _invalid, spec.value_type)
+        predicate = _row_predicate(t, columns, spec.path, _invalid, spec.value_type)
         if unconstrained:
             return None
 
     # A nested path is not a column; show the one it starts from.
-    root = _root(spec.field) if spec.field else None
+    root = _root(spec.path) if spec.path else None
     select_cols = _select_columns(columns, sensitive, [*identifiers, root])
     rows = t.filter(predicate)
     rows = rows.select(select_cols) if select_cols else rows
@@ -809,7 +809,7 @@ def _duplicate_scope(t, unfiltered_t, columns, spec: CheckSpec):
     """
     if _is_item_duplicate(spec):
         return t
-    fields = spec.columns or [spec.field]
+    fields = _key_paths(spec)
     if unfiltered_t is None:
         return t.filter([_resolve_expr(t, columns, f, spec.value_type).notnull() for f in fields])
     rows = unfiltered_t.filter([_resolve_expr(unfiltered_t, columns, f, spec.value_type).notnull() for f in fields])
@@ -832,7 +832,7 @@ def _run_duplicate(run: Run, t, unfiltered_t, columns, spec: CheckSpec, row_coun
         return
 
     t = _duplicate_scope(t, unfiltered_t, columns, spec)
-    cols = [_resolve_expr(t, columns, c, spec.value_type) for c in (spec.columns or [spec.field])]
+    cols = [_resolve_expr(t, columns, c, spec.value_type) for c in _key_paths(spec)]
     grouped = t.group_by(cols).aggregate(_dup_n=t.count())
     dup_groups = grouped.filter(grouped["_dup_n"] > 1)
     _record_sql(run, spec, dup_groups)
@@ -878,27 +878,33 @@ def _run_missing_reference(run: Run, con, server, t, columns, spec: CheckSpec, s
     _evaluate(run, spec, 0 if value is None else int(value))
 
 
+def _key_paths(spec: CheckSpec) -> list[tuple[str | Hop, ...]]:
+    """The paths a duplicate check keys on: a field's own path, or the columns a model-level rule lists."""
+    if spec.field is not None:
+        return [spec.path]
+    return [(column,) for column in spec.columns or []]
+
+
 def _is_item_duplicate(spec: CheckSpec) -> bool:
-    return any(Hop.ITEMS in path_steps(c) for c in (spec.columns or [spec.field]) if c)
+    return any(Hop.ITEMS in path for path in _key_paths(spec))
 
 
-def _item_duplicate_predicate(t, columns, field: str, value_type: Optional[str]):
-    """Parent rows whose array repeats a value in the item property ``field``."""
-    steps = path_steps(field)
+def _item_duplicate_predicate(t, columns, path: tuple[str | Hop, ...], value_type: Optional[str]):
+    """Parent rows whose array repeats a value in the item property at ``path``."""
     # the array is the last one on the path; what follows it, if anything, is a path inside its items
-    array = max(index for index, step in enumerate(steps) if step is Hop.ITEMS)
-    array_steps, leaf = steps[:array], steps[array + 1 :]
+    array = max(index for index, step in enumerate(path) if step is Hop.ITEMS)
+    array_steps, leaf = path[:array], path[array + 1 :]
     if _backend_name(t) == "snowflake":
         from datacontract.engines.ibis.snowflake_nested_values import item_repeats
 
-        return item_repeats(t[_resolve_col(columns, steps[0])], array_steps[1:], leaf, value_type)
+        return item_repeats(t[_resolve_col(columns, path[0])], array_steps[1:], leaf, value_type)
 
     def _repeats(array):
         # without a leaf, the items of an array of plain values are the values themselves
         values = array.map(lambda element: _struct_path(element, leaf)) if leaf else array
         return values.unique().length() < values.length()
 
-    return _row_predicate(t, columns, FieldPath(array_steps), _repeats)
+    return _row_predicate(t, columns, array_steps, _repeats)
 
 
 def _run_item_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
@@ -906,7 +912,7 @@ def _run_item_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
 
     Counted in parent rows.
     """
-    bad = t.filter(_item_duplicate_predicate(t, columns, spec.field, spec.value_type))
+    bad = t.filter(_item_duplicate_predicate(t, columns, spec.path, spec.value_type))
     _record_sql(run, spec, bad)
     repeats = int(bad.count().execute())
     _evaluate(run, spec, repeats, row_count=row_count)
@@ -925,22 +931,24 @@ def _run_present(run: Run, con, model: str, schema, spec: CheckSpec, structured_
         schema, structured_types = table.schema(), None
     # Otherwise reuse the already-resolved model schema to avoid an extra lookup that
     # can fail on case-sensitive backends (for example Oracle).
-    located = _locate(schema, structured_types, spec.field)
+    located = _locate(schema, structured_types, spec.path)
     if isinstance(located, _Unchecked):
         set_result(run, spec.key, ResultEnum.warning, located)
         return
     ok = located is not None
     reason = None if ok else f"Required column '{spec.field}' is missing"
-    if not ok and "." in spec.field and len(path_steps(spec.field)) == 1:
+    if not ok and "." in spec.field and len(spec.path) == 1:
         # A property name is a whole name, so `a.b` is the column of that name and no field of `a`.
         # Declared that way before, it is worth a hint where such a field exists.
         root, _, rest = spec.field.partition(".")
-        in_struct = _locate(schema, structured_types, FieldPath((root, *rest.split("."))))
+        in_struct = _locate(schema, structured_types, (root, *rest.split(".")))
         if in_struct is not None and not isinstance(in_struct, _Unchecked):
-            reason += (
-                f", but '{root}' has a field '{rest}'. "
-                f"To check that field, declare it under the properties of '{root}'."
+            names = spec.field.split(".")
+            fields = " with a field ".join(f"'{name}'" for name in names[1:])
+            nesting = ", and ".join(
+                f"'{child}' under the properties of '{parent}'" for parent, child in zip(names, names[1:])
             )
+            reason += f", but '{root}' has a field {fields}. To check it, declare {nesting}."
     _set_diagnostics(run, spec.key, _diag(metric="field_present", field=spec.field, present=ok))
     set_result(run, spec.key, ResultEnum.passed if ok else ResultEnum.failed, reason)
 
@@ -961,11 +969,11 @@ def _run_type(
     )
     # Here the catalog's native types are not read, but a declared json is still what ibis reports
     if (spec.expected_schema_property.physicalType or "").lower() in ("json", "jsonb", "variant"):
-        dtype = _walk_dtype(schema, spec.field)
+        dtype = _walk_dtype(schema, spec.path)
         if dtype is not None and not isinstance(dtype, _Unchecked) and dtype.is_json():
             set_result(run, spec.key, ResultEnum.passed, None)
             return
-    located = _locate(schema, structured_types, spec.field)
+    located = _locate(schema, structured_types, spec.path)
     if isinstance(located, _Unchecked):
         set_result(run, spec.key, ResultEnum.warning, located)
         return
@@ -1026,7 +1034,7 @@ def _run_physical_type(
         f"physical type of '{spec.field}' is '{spec.expected_physical_type}'",
         "introspection",
     )
-    located = _locate(schema, native_trees, spec.field)
+    located = _locate(schema, native_trees, spec.path)
     if isinstance(located, _Unchecked):
         set_result(run, spec.key, ResultEnum.warning, located)
         return
@@ -1040,7 +1048,7 @@ def _run_physical_type(
 
     # Snowflake's catalog reports a structured OBJECT/ARRAY as its bare token, dropping
     # the nested types; the tree recovered from SHOW COLUMNS renders the real native type.
-    nested_path = _is_nested_path(spec.field)
+    nested_path = _is_nested_path(spec.path)
     structured_prop = native_trees.get(spec.field.lower()) if native_trees and not nested_path else None
     if nested_path:
         actual_native = actual_prop.physicalType
@@ -1106,7 +1114,7 @@ def _run_physical_type(
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
     import pandas as pd
 
-    col = _resolve_expr(t, columns, spec.field)
+    col = _resolve_expr(t, columns, spec.path)
     reduction = col.min() if spec.metric == MetricType.RETENTION else col.max()
     _record_sql(run, spec, t.aggregate(value=reduction))
     raw = reduction.execute()
@@ -1318,42 +1326,41 @@ def _resolve_col(columns: dict, field: str) -> str:
     return actual
 
 
-def _resolve_expr(t, columns: dict, field: str, value_type: Optional[str] = None):
-    if field is None:
-        raise _ColumnNotFound("Column 'None' not found")
-    column, *path = path_steps(field)
+def _resolve_expr(t, columns: dict, path: tuple[str | Hop, ...], value_type: Optional[str] = None):
     if not path:
+        raise _ColumnNotFound("Column 'None' not found")
+    column, *names = path
+    if not names:
         return t[_resolve_col(columns, column)]
     if _backend_name(t) == "snowflake":
         from datacontract.engines.ibis.snowflake_nested_values import nested_value
 
         # unnamed, ibis would name a grouped value after its whole expression, past Snowflake's 255 characters
-        return nested_value(t[_resolve_col(columns, column)], path, value_type).name(field)
-    return _struct_path(t[_resolve_col(columns, column)], path)
+        return nested_value(t[_resolve_col(columns, column)], names, value_type).name(path_text(path))
+    return _struct_path(t[_resolve_col(columns, column)], names)
 
 
-def _row_predicate(t, columns: dict, field: str, build, value_type: Optional[str] = None):
-    """A boolean over *parent* rows for ``build`` applied at ``field``.
+def _row_predicate(t, columns: dict, path: tuple[str | Hop, ...], build, value_type: Optional[str] = None):
+    """A boolean over *parent* rows for ``build`` applied at ``path``.
 
     An array hop (``items[].sku``) becomes "some element satisfies build", so the
     row count never changes and an empty array is never a violation.
     """
-    steps = path_steps(field)
-    if _is_nested_path(field) and _backend_name(t) == "snowflake":
+    if _is_nested_path(path) and _backend_name(t) == "snowflake":
         from datacontract.engines.ibis.snowflake_nested_values import row_predicate
 
-        return row_predicate(t[_resolve_col(columns, _root(field))], steps[1:], build, value_type)
-    if steps[-1] is Hop.ITEMS:
+        return row_predicate(t[_resolve_col(columns, _root(path))], path[1:], build, value_type)
+    if path[-1] is Hop.ITEMS:
         # The items of an array of plain values: the row breaks the rule when one of its items does
-        return _row_predicate(t, columns, FieldPath(steps[:-1]), lambda array: array.filter(build).length() > 0)
-    if Hop.ITEMS not in steps:
-        column, *path = steps
-        if not path:
-            return build(_resolve_expr(t, columns, field))
-        return _path_predicate(t[_resolve_col(columns, column)], path, build)
-    array = steps.index(Hop.ITEMS)
-    items = _resolve_expr(t, columns, FieldPath(steps[:array]))
-    return items.filter(lambda i: _element_predicate(i, steps[array + 1 :], build)).length() > 0
+        return _row_predicate(t, columns, path[:-1], lambda array: array.filter(build).length() > 0)
+    if Hop.ITEMS not in path:
+        column, *names = path
+        if not names:
+            return build(_resolve_expr(t, columns, path))
+        return _path_predicate(t[_resolve_col(columns, column)], names, build)
+    array = path.index(Hop.ITEMS)
+    items = _resolve_expr(t, columns, path[:array])
+    return items.filter(lambda i: _element_predicate(i, path[array + 1 :], build)).length() > 0
 
 
 def _element_predicate(element, steps, build):
@@ -1408,35 +1415,33 @@ class _Unchecked(str):
     mismatch: Optional[str] = None
 
 
-def _resolve_dtype(schema, field: str):
-    dtype = _walk_dtype(schema, field)
+def _resolve_dtype(schema, path: tuple[str | Hop, ...]):
+    dtype = _walk_dtype(schema, path)
     return None if isinstance(dtype, _Unchecked) else dtype
 
 
-def _walk_dtype(schema, field: str):
-    """The ibis dtype at ``field``; ``None`` when it does not exist, ``_Unchecked`` when it is
+def _walk_dtype(schema, path: tuple[str | Hop, ...]):
+    """The ibis dtype at ``path``; ``None`` when it does not exist, ``_Unchecked`` when it is
     inside untyped data (json, an unknown type, or a map standing in for an untyped object) or
     under a parent that is not the object, array or map the path steps through."""
-    if field is None:
+    if not path:
         return None
     dtype = None
-    steps = path_steps(field)
-    for index, step in enumerate(steps):
+    for index, step in enumerate(path):
+        parent = path_text(path[:index])
         if isinstance(step, Hop):
             # `items[]` names the element type, `attrs[key]` the key type, not the array's or map's own type.
-            path = FieldPath(steps[:index])
             if dtype.is_json() or dtype.is_unknown():
-                return _untyped_data(path)
+                return _untyped_data(parent)
             if step is Hop.ITEMS:
                 if not dtype.is_array():
-                    return _structure_mismatch(path, "is not an array")
+                    return _structure_mismatch(parent, "is not an array")
                 dtype = dtype.value_type
             else:
                 if not dtype.is_map():
-                    return _structure_mismatch(path, "is not a map")
+                    return _structure_mismatch(parent, "is not a map")
                 dtype = dtype.key_type if step is Hop.KEY else dtype.value_type
             continue
-        parent = FieldPath(steps[:index])
         if index == 0:
             fields = schema
         elif dtype.is_struct():
@@ -1456,21 +1461,20 @@ def _walk_dtype(schema, field: str):
     return dtype
 
 
-def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: str):
-    """The real type at ``field`` as ``(property, label)``, from the catalog's nested native types
+def _locate(schema, structured_types: dict[str, SchemaProperty] | None, path: tuple[str | Hop, ...]):
+    """The real type at ``path`` as ``(property, label)``, from the catalog's nested native types
     where there are some, else from ibis; ``None`` or ``_Unchecked`` as for ``_walk_dtype``."""
-    steps = path_steps(field)
-    node = structured_types.get(steps[0].lower()) if structured_types else None
+    node = structured_types.get(path[0].lower()) if structured_types else None
     if node is None:
-        dtype = _walk_dtype(schema, field)
+        dtype = _walk_dtype(schema, path)
         if dtype is None or isinstance(dtype, _Unchecked):
             return dtype
-        if isinstance(steps[-1], Hop) and dtype.is_json():
+        if isinstance(path[-1], Hop) and dtype.is_json():
             # an array whose element type the backend does not report, e.g. Snowflake's ARRAY
-            return _untyped_data(FieldPath(steps[:-1]))
+            return _untyped_data(path_text(path[:-1]))
         return ibis_dtype_to_schema_property(dtype), str(dtype)
-    for index, step in enumerate(steps):
-        path = FieldPath(steps[:index])
+    for index, step in enumerate(path):
+        parent = path_text(path[:index])
         if isinstance(step, Hop):
             if step is Hop.ITEMS:
                 child = node.items
@@ -1478,31 +1482,31 @@ def _locate(schema, structured_types: dict[str, SchemaProperty] | None, field: s
                 child = (node.map.key if step is Hop.KEY else node.map.value) if node.map else None
             if child is None:
                 return (
-                    _untyped_data(path)
+                    _untyped_data(parent)
                     if _untyped(node)
-                    else _structure_mismatch(path, "is not an array" if step is Hop.ITEMS else "is not a map")
+                    else _structure_mismatch(parent, "is not an array" if step is Hop.ITEMS else "is not a map")
                 )
             node = child
         elif index:
             if not node.properties:
                 if _untyped(node):
-                    return _untyped_data(path)
+                    return _untyped_data(parent)
                 if normalize_type_name(node.logicalType) == "map":
-                    return _map_declared_as_object(path)
-                return _structure_mismatch(path, "is not an object")
+                    return _map_declared_as_object(parent)
+                return _structure_mismatch(parent, "is not an object")
             node = next((child for child in node.properties if (child.name or "").lower() == step.lower()), None)
             if node is None:
                 return None
     return node, node.physicalType
 
 
-def _root(field: str) -> str:
+def _root(path: tuple[str | Hop, ...]) -> str:
     """The column a nested path starts from."""
-    return path_steps(field)[0]
+    return path[0]
 
 
-def _is_nested_path(field: Optional[str]) -> bool:
-    return bool(field) and len(path_steps(field)) > 1
+def _is_nested_path(path: tuple[str | Hop, ...]) -> bool:
+    return len(path) > 1
 
 
 def _untyped(prop: SchemaProperty) -> bool:

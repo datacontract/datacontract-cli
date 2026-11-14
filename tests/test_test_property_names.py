@@ -123,27 +123,49 @@ def test_a_field_with_a_dot_inside_a_struct_is_found_and_checked(tmp_path):
     assert results[("s.x.y", "field_quality_sql")] == ResultEnum.passed
 
 
-STRUCT_PROPERTIES = """      - name: customer.name
+def _struct_properties(name):
+    return f"""      - name: {name}
         logicalType: string
         required: true"""
 
 
-def _presence(run):
-    return next(c for c in run.checks if (c.field, c.type) == ("customer.name", "field_is_present"))
+def _presence(run, field):
+    return next(c for c in run.checks if (c.field, c.type) == (field, "field_is_present"))
 
 
-def test_a_name_written_like_a_struct_path_is_a_missing_column_and_the_reason_points_to_the_struct(tmp_path):
-    run = _test(tmp_path, "CREATE TABLE t (customer STRUCT(name VARCHAR))", "({'name': 'a'})", STRUCT_PROPERTIES)
+@pytest.mark.parametrize(
+    "field,ddl,row,reason",
+    [
+        (
+            "customer.name",
+            "customer STRUCT(name VARCHAR)",
+            "({'name': 'a'})",
+            "Required column 'customer.name' is missing, but 'customer' has a field 'name'. "
+            "To check it, declare 'name' under the properties of 'customer'.",
+        ),
+        (
+            "customer.address.city",
+            "customer STRUCT(address STRUCT(city VARCHAR))",
+            "({'address': {'city': 'a'}})",
+            "Required column 'customer.address.city' is missing, but 'customer' has a field 'address' with a field "
+            "'city'. To check it, declare 'address' under the properties of 'customer', and 'city' under the "
+            "properties of 'address'.",
+        ),
+    ],
+)
+def test_a_name_written_like_a_struct_path_is_a_missing_column_and_the_reason_points_to_the_struct(
+    tmp_path, field, ddl, row, reason
+):
+    run = _test(tmp_path, f"CREATE TABLE t ({ddl})", row, _struct_properties(field))
 
-    presence = _presence(run)
+    presence = _presence(run, field)
     assert presence.result == ResultEnum.failed
-    assert "'customer' has a field 'name'" in presence.reason
-    assert "declare it under the properties of 'customer'" in presence.reason
+    assert presence.reason == reason
 
 
 def test_a_missing_column_with_a_dot_in_its_name_has_no_hint_without_a_matching_struct_field(tmp_path):
-    run = _test(tmp_path, "CREATE TABLE t (customer VARCHAR)", "('a')", STRUCT_PROPERTIES)
+    run = _test(tmp_path, "CREATE TABLE t (customer VARCHAR)", "('a')", _struct_properties("customer.name"))
 
-    presence = _presence(run)
+    presence = _presence(run, "customer.name")
     assert presence.result == ResultEnum.failed
     assert presence.reason == "Required column 'customer.name' is missing"
