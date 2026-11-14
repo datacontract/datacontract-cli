@@ -61,6 +61,8 @@ datacontract test datacontract.yaml
 
 Each schema object is one table in the namespace. A `physicalName` on the schema object names the table when it differs from the schema name; a name with a dot is used as the full identifier.
 
+To test a tag, a branch, or a snapshot ID instead of the current state of the tables, set [`DATACONTRACT_ICEBERG_REF`](../reference/iceberg.md#testing-a-point-in-time).
+
 ## 5. Let it catch a violation
 
 Add a `quality` rule to the contract and run the test again:
