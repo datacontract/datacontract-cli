@@ -39,10 +39,8 @@ def non_utf8_default_encoding(monkeypatch):
 # text rather than on a marker, because these modules construct their container
 # at import time (`postgres = PostgresContainer("postgres:16")`) — so the call
 # has to be made before collection imports the module, which rules out anything
-# written inside it. `import …Container` additionally catches test_import_trino.py,
-# which imports its container class from a sibling test module rather than from
-# testcontainers directly.
-_NEEDS_DOCKER = re.compile(r"testcontainers|import \w*Container\b")
+# written inside it.
+_NEEDS_DOCKER = re.compile(r"testcontainers")
 
 
 @functools.cache
