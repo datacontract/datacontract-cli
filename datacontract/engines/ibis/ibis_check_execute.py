@@ -18,7 +18,7 @@ from typing import List, Optional
 
 from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
 
-from datacontract.engines.checks.check_spec import CheckSpec, MetricType
+from datacontract.engines.checks.check_spec import CheckSpec, MetricType, Op
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.type_normalize import (
@@ -1197,6 +1197,18 @@ def _run_scalar(con, query: str, dialect: Optional[str]):
 # ---------------------------------------------------------------------------
 # result helpers
 # ---------------------------------------------------------------------------
+_ODCS_OPERATORS = {
+    Op.EQ: "mustBe",
+    Op.NE: "mustNotBe",
+    Op.GT: "mustBeGreaterThan",
+    Op.GE: "mustBeGreaterOrEqualTo",
+    Op.LT: "mustBeLessThan",
+    Op.LE: "mustBeLessOrEqualTo",
+    Op.BETWEEN: "mustBeBetween",
+    Op.NOT_BETWEEN: "mustNotBeBetween",
+}
+
+
 def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None):
     is_bad_row = spec.metric in (MetricType.MISSING_COUNT, MetricType.INVALID_COUNT)
     # A percent threshold (ODCS quality.unit: percent) compares the failed
@@ -1205,6 +1217,13 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
     is_percent = bool(spec.threshold_is_percent) and is_bad_row
     percent = (round(value / row_count * 100, 6) if row_count else 0.0) if is_percent else None
     compare_value = percent if is_percent else value
+    threshold = spec.threshold
+    odcs_threshold = None
+    if threshold is not None:
+        is_range = threshold.op in (Op.BETWEEN, Op.NOT_BETWEEN)
+        odcs_threshold = {
+            _ODCS_OPERATORS[threshold.op]: [threshold.value, threshold.value2] if is_range else threshold.value
+        }
 
     diag = _diag(
         metric=spec.metric.value,
@@ -1212,7 +1231,8 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
         value=value,
         unit="percent" if is_percent else None,
         severity=spec.severity,
-        threshold=spec.threshold.describe() if spec.threshold is not None else None,
+        threshold=threshold.describe() if threshold is not None else None,
+        odcs_threshold=odcs_threshold,
     )
     if row_count is not None:
         diag["row_count"] = row_count
