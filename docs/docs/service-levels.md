@@ -97,15 +97,7 @@ To reach a field inside a struct (an `object` property), continue the path throu
 element: orders.audit.revision_ts   # property "revision_ts" of the struct "audit"
 ```
 
-To read the first value that is not null of several properties, wrap them in `coalesce`. Every property must be in the same schema:
-
-```yaml
-element: coalesce(orders.audit.revision_ts, orders.audit.creation_ts)
-```
-
-> Freshness then passes when `now − MAX(COALESCE(revision_ts, creation_ts)) < threshold`: a row that was never revised counts by its creation time.
-
-Each part of the path is the contract name of the property; the CLI reads it by its `physicalName` where one is set. `coalesce` runs on every server. Struct fields can be read on the servers that run checks on nested properties (Databricks, DuckDB, local and object storage files, Kafka, Iceberg, Trino, Athena, and dataframes); on any other server, the check is reported as a warning.
+Each part of the path is the contract name of the property; the CLI reads it by its `physicalName` where one is set. Struct fields can be read on the servers that run checks on nested properties (Databricks, DuckDB, local and object storage files, Kafka, Iceberg, Trino, Athena, and dataframes); on any other server, the check is reported as a warning.
 
 Timestamps without a timezone are interpreted as UTC, and the age is measured against the current UTC time.
 
@@ -119,7 +111,7 @@ A service level is skipped — without failing the run — when:
 
 - the `property` is anything other than `freshness` or `retention` (for example `latency`, `frequency`, or `timeOfAvailability`, which are documentation only),
 - `element` or `value` is missing,
-- `element` is not a `schema.property` reference or a `coalesce` of references to the same schema,
+- `element` is not a single `schema.property` reference (or a path into a struct), for example several elements separated by commas,
 - the referenced schema is not in the contract,
 - the `unit` is not one of the values listed above, or
 - the `value` is a string that is not a supported ISO 8601 duration.
@@ -129,7 +121,7 @@ Run with `--debug` to see the reasons. If the check *does* run but the column is
 ## Where service levels are used
 
 - **[`test`](./commands/test.md)** — `freshness` and `retention` run as `slaProperties` checks.
-- **[SodaCL export](./exports/sodacl.md)** — both become Soda freshness and retention checks, for an `element` that is a single `schema.property`; struct fields and `coalesce` are skipped.
+- **[SodaCL export](./exports/sodacl.md)** — both become Soda freshness and retention checks, for an `element` that is a single `schema.property`; struct fields are skipped.
 - **[Markdown](./exports/markdown.md)**, **[HTML](./exports/html.md)**, and **[Excel](./exports/excel.md)** exports render the full `slaProperties` block, including the properties that are documentation only, and the `customProperties` and `authoritativeDefinitions` an entry may carry since ODCS v3.2.0.
 - **[`changelog`](./commands/changelog.md)** reports added, removed, and changed service levels between two versions.
 
