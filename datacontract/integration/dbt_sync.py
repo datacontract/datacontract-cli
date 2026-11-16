@@ -715,8 +715,12 @@ def _column_sql(name: str, quoted_columns: frozenset[str]) -> str:
     """A column as generated SQL references it: through `adapter.quote` exactly where dbt would quote it."""
     if name.lower() not in quoted_columns and not _is_must_quote_name(name):
         return name
-    escaped = name.replace("\\", "\\\\").replace("'", "\\'")
-    return f"{{{{ adapter.quote('{escaped}') }}}}"
+    return f"{{{{ adapter.quote('{_jinja_escaped(name)}') }}}}"
+
+
+def _jinja_escaped(text: str) -> str:
+    """`text` escaped for a single-quoted Jinja string literal."""
+    return text.replace("\\", "\\\\").replace("'", "\\'")
 
 
 def _build_singular_sql(
@@ -914,7 +918,6 @@ def _regex_violation_jinja(column: str, name: str, pattern: str) -> str:
     Unfortunately, regex syntax is one of the least-portable parts of SQL.
     """
     escaped = pattern.replace("'", "''")
-    jinja_name = name.replace("\\", "\\\\").replace("'", "\\'")
     return (
         "{% if target.type == 'bigquery' %}"
         f"NOT REGEXP_CONTAINS(CAST({column} AS STRING), '{escaped}')"
@@ -934,7 +937,7 @@ def _regex_violation_jinja(column: str, name: str, pattern: str) -> str:
         f"REGEXP_SIMILAR(CAST({column} AS VARCHAR(32000)), '{escaped}') = 0"
         "{% elif target.type in ['sqlserver', 'fabric', 'synapse'] %}"
         "{{ exceptions.warn("
-        f"'datacontract: pattern of column {jinja_name} not checked, "
+        f"'datacontract: pattern of column {_jinja_escaped(name)} not checked, "
         "' ~ target.type ~ ' has no regex support.') }}"
         "1 = 0"
         "{% else %}"
@@ -3014,23 +3017,21 @@ def generate_dbt_tests(
                     ),
                     engine="datacontract-cli",
                 )
-        # The quoting dbt applies to this version: a version's own column entry, if it sets `quote`, wins.
+        # The quoting dbt applies to this version: a version's own column entry replaces the top-level one.
         entry = located[1] if located is not None else {}
         versions = entry.get("versions")
         bullet = _find_bullet(versions, model_version) if model_version is not None and versions else None
-        quoted_columns: set[str] = set()
-        for col in entry.get("columns") or []:
-            if not isinstance(col, dict):
-                continue
-            override = _bullet_column_override(bullet, str(col.get("name", ""))) if bullet is not None else None
-            if (override if override is not None and "quote" in override else col).get("quote"):
-                quoted_columns.add(str(col.get("name", "")).lower())
-        for element in (bullet or {}).get("columns") or []:
-            if isinstance(element, dict) and "name" in element and element.get("quote"):
-                quoted_columns.add(str(element["name"]).lower())
+        overrides = [e for e in (bullet or {}).get("columns") or [] if isinstance(e, dict) and "name" in e]
+        overridden = {str(e["name"]).lower() for e in overrides}
+        top_columns = [
+            c
+            for c in entry.get("columns") or []
+            if isinstance(c, dict) and str(c.get("name", "")).lower() not in overridden
+        ]
+        quoted_columns = frozenset(str(c.get("name", "")).lower() for c in top_columns + overrides if c.get("quote"))
         schema_obj = schemas_by_name[schema_name_key]
         model_dict, singulars = generate_dbt_tests_for_schema(
-            odcs, schema_obj, effective, run, model_version, frozenset(quoted_columns)
+            odcs, schema_obj, effective, run, model_version, quoted_columns
         )
         plans.append(_ModelPlan(effective, schema_obj, model_dict, singulars, sql_path))
 
