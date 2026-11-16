@@ -8,58 +8,56 @@ def test_schema_placeholder():
     quality = DataQuality(type="sql", query="SELECT * FROM {schema}.{model}")
     server = Server(**{"type": "postgres", "schema": "my_schema"})
 
-    assert prepare_query(quality.query, "my_table", None, server) == "SELECT * FROM my_schema.my_table"
+    assert prepare_query(quality.query, "my_table", (), server) == "SELECT * FROM my_schema.my_table"
 
 
 def test_schema_placeholder_falls_back_to_model_name():
     quality = DataQuality(type="sql", query="SELECT * FROM {schema}")
     server = Server(type="postgres")
 
-    assert prepare_query(quality.query, "my_table", None, server) == "SELECT * FROM my_table"
+    assert prepare_query(quality.query, "my_table", (), server) == "SELECT * FROM my_table"
 
 
 def test_dataset_and_project_placeholders():
     quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM ${project}.${dataset}.${table}")
     server = Server(type="bigquery", project="my_project", dataset="my_dataset")
 
-    assert (
-        prepare_query(quality.query, "my_table", None, server) == "SELECT COUNT(*) FROM my_project.my_dataset.my_table"
-    )
+    assert prepare_query(quality.query, "my_table", (), server) == "SELECT COUNT(*) FROM my_project.my_dataset.my_table"
 
 
 def test_catalog_and_database_placeholders():
     quality = DataQuality(type="sql", query="SELECT * FROM {catalog}.{database}.{model}")
     server = Server(**{"type": "databricks", "catalog": "my_catalog", "database": "my_database"})
 
-    assert prepare_query(quality.query, "my_table", None, server) == "SELECT * FROM my_catalog.my_database.my_table"
+    assert prepare_query(quality.query, "my_table", (), server) == "SELECT * FROM my_catalog.my_database.my_table"
 
 
 def test_dataset_placeholder_falls_back_to_model_name():
     quality = DataQuality(type="sql", query="SELECT * FROM {dataset}")
     server = Server(**{"type": "postgres", "schema": "my_schema"})
 
-    assert prepare_query(quality.query, "my_table", None, server) == "SELECT * FROM my_table"
+    assert prepare_query(quality.query, "my_table", (), server) == "SELECT * FROM my_table"
 
 
 def test_placeholders_without_server():
     quality = DataQuality(type="sql", query="SELECT {column} FROM {dataset}.{table}")
 
-    assert prepare_query(quality.query, "my_table", "my_field", None) == "SELECT my_field FROM my_table.my_table"
+    assert prepare_query(quality.query, "my_table", ("my_field",), None) == "SELECT my_field FROM my_table.my_table"
 
 
 def test_a_name_that_cannot_be_read_bare_is_quoted_in_the_server_dialect():
     quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM {object} WHERE {property} IS NULL")
 
     assert (
-        prepare_query(quality.query, "my orders", "A B", Server(type="local"))
+        prepare_query(quality.query, "my orders", ("A B",), Server(type="local"))
         == 'SELECT COUNT(*) FROM "my orders" WHERE "A B" IS NULL'
     )
     assert (
-        prepare_query(quality.query, "my orders", "A B", Server(type="databricks"))
+        prepare_query(quality.query, "my orders", ("A B",), Server(type="databricks"))
         == "SELECT COUNT(*) FROM `my orders` WHERE `A B` IS NULL"
     )
     assert (
-        prepare_query(quality.query, "my orders", "A B", Server(type="sqlserver"))
+        prepare_query(quality.query, "my orders", ("A B",), Server(type="sqlserver"))
         == "SELECT COUNT(*) FROM [my orders] WHERE [A B] IS NULL"
     )
 
@@ -69,7 +67,7 @@ def test_a_plain_name_stays_bare_so_the_backend_resolves_its_case():
     server = Server(type="snowflake")
 
     assert (
-        prepare_query(quality.query, "Orders", "order_id", server)
+        prepare_query(quality.query, "Orders", ("order_id",), server)
         == "SELECT COUNT(*) FROM Orders WHERE order_id IS NULL"
     )
 
@@ -82,9 +80,8 @@ def test_each_step_of_a_nested_property_path_is_quoted_on_its_own():
         prepare_query(
             quality.query,
             "analytics.my orders",
-            "customer.home address",
+            ("customer", "home address"),
             server,
-            field_path=("customer", "home address"),
         )
         == "SELECT COUNT(*) FROM analytics.`my orders` WHERE customer.`home address` IS NULL"
     )
@@ -95,9 +92,7 @@ def test_a_nested_property_is_a_path_into_its_column_on_snowflake():
     server = Server(type="snowflake")
 
     assert (
-        prepare_query(
-            quality.query, "analytics.orders", "customer.home address", server, field_path=("customer", "home address")
-        )
+        prepare_query(quality.query, "analytics.orders", ("customer", "home address"), server)
         == 'SELECT COUNT(*) FROM analytics.orders WHERE customer:"home address" IS NULL'
     )
 
@@ -107,7 +102,7 @@ def test_a_property_name_with_a_dot_is_one_quoted_name_on_every_dialect():
 
     for server_type, quoted in (("duckdb", '"Rate.x"'), ("databricks", "`Rate.x`"), ("snowflake", '"Rate.x"')):
         assert (
-            prepare_query(quality.query, "orders", "Rate.x", Server(type=server_type))
+            prepare_query(quality.query, "orders", ("Rate.x",), Server(type=server_type))
             == f"SELECT COUNT(*) FROM orders WHERE {quoted} < 0"
         ), server_type
 
@@ -118,7 +113,7 @@ def test_quotes_around_a_placeholder_are_replaced_by_the_dialect_quoting():
 
     for written in ('"{property}"', "'{property}'", "`{property}`"):
         quality = DataQuality(type="sql", query=f"SELECT COUNT(*) FROM orders WHERE {written} IS NULL")
-        assert prepare_query(quality.query, "orders", "A B", server) == expected, written
+        assert prepare_query(quality.query, "orders", ("A B",), server) == expected, written
 
 
 def test_backticks_around_a_placeholder_force_quoting():
@@ -128,7 +123,7 @@ def test_backticks_around_a_placeholder_force_quoting():
     server = Server(type="databricks", catalog="main", schema="sales")
 
     assert (
-        prepare_query(quality.query, "orders", "join", server)
+        prepare_query(quality.query, "orders", ("join",), server)
         == "SELECT COUNT(*) FROM `main`.sales.`orders` WHERE `join` IS NULL"
     )
 
@@ -137,11 +132,11 @@ def test_a_name_the_dialect_reads_bare_stays_bare():
     quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM orders WHERE {property} IS NULL")
 
     assert (
-        prepare_query(quality.query, "orders", "amount$usd", Server(type="snowflake"))
+        prepare_query(quality.query, "orders", ("amount$usd",), Server(type="snowflake"))
         == "SELECT COUNT(*) FROM orders WHERE amount$usd IS NULL"
     )
     assert (
-        prepare_query(quality.query, "orders", "amount$usd", Server(type="databricks"))
+        prepare_query(quality.query, "orders", ("amount$usd",), Server(type="databricks"))
         == "SELECT COUNT(*) FROM orders WHERE `amount$usd` IS NULL"
     )
 
@@ -150,7 +145,7 @@ def test_a_mysql_rule_quotes_for_duckdb_which_runs_it():
     quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM orders WHERE {property} IS NULL")
 
     assert (
-        prepare_query(quality.query, "orders", "A B", Server(type="mysql"))
+        prepare_query(quality.query, "orders", ("A B",), Server(type="mysql"))
         == 'SELECT COUNT(*) FROM orders WHERE "A B" IS NULL'
     )
 
@@ -190,4 +185,4 @@ def test_a_substituted_name_is_not_searched_for_placeholders():
     quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM {model}")
     server = Server(type="postgres", schema="sales")
 
-    assert prepare_query(quality.query, "t{schema}", None, server) == 'SELECT COUNT(*) FROM "t{schema}"'
+    assert prepare_query(quality.query, "t{schema}", (), server) == 'SELECT COUNT(*) FROM "t{schema}"'

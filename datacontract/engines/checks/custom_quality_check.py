@@ -21,6 +21,7 @@ from sqlglot.tokens import TokenType
 
 from datacontract.config import Config
 from datacontract.config.variables import _ENUM_VALUES
+from datacontract.engines.checks.check_spec import Hop
 from datacontract.engines.checks.sql_guard import _DIALECT_BY_SERVER_TYPE
 from datacontract.integration.entropy_data import _get_api_key_or_none, _get_host
 from datacontract.lint.resolve import _api_key_for, _SafeLoaderNoTimestamp
@@ -304,11 +305,16 @@ class Instance:
     diagnostics: dict
     warnings: list[str]
 
-    def render(self, dialect, names: Mapping[str, str], identifier: Callable[[str, bool], str]) -> str:
+    def render(
+        self,
+        dialect,
+        names: Mapping[str, str | tuple[str | Hop, ...]],
+        identifier: Callable[[str | tuple[str | Hop, ...], bool], str],
+    ) -> str:
         """The query with each placeholder and argument substituted by where it stands in the query.
 
-        ``names`` maps the placeholders to the names they stand for, and ``identifier(name, forced)``
-        renders a name, ``forced`` when the author wrote backticks around it.
+        ``names`` maps the placeholders to the names they stand for, a column's as its path, and
+        ``identifier(name, forced)`` renders a name, ``forced`` when the author wrote backticks around it.
         """
         check = self.diagnostics["custom_quality_check"]
         where = f"queries.{self.diagnostics['query']}"

@@ -199,18 +199,15 @@ def to_threshold(quality: DataQuality) -> Optional[Threshold]:
 def prepare_query(
     query: Optional[str],
     model_name: str,
-    field_name: Optional[str],
+    field_path: tuple[str | Hop, ...],
     server: Optional[Server],
     instance: Optional[Instance] = None,
-    field_path: tuple[str | Hop, ...] = (),
 ) -> Optional[str]:
     """Substitute placeholders in a user SQL query.
 
     Each dot-separated part of a model name, and each step of a nested property's
     path, is quoted only where the server's dialect cannot read it bare, so a plain
-    name keeps the backend's case-insensitive resolution. A property's name is one
-    name, even where it holds a dot: ``field_path`` holds the steps where the caller
-    knows them, and a column placeholder holding ``field_name`` is rendered from them.
+    name keeps the backend's case-insensitive resolution.
     Quotes the author wrote around a placeholder are dropped, except that backticks
     force the name to be quoted (e.g. a reserved word on Spark).
     For a custom quality check ``instance``, its arguments are substituted too.
@@ -218,7 +215,6 @@ def prepare_query(
     if not query:
         return None
 
-    field_path = field_path or ((field_name,) if field_name is not None else ())
     dialect = sqlglot_dialect_by_name(dialect_for_server_type(get_server_type(server)))
     # the dialect's extra name characters, e.g. `$` in Snowflake's `amount$usd`
     name_chars = re.escape("".join(Dialect.get_or_raise(dialect).tokenizer_class.VAR_SINGLE_TOKENS))
@@ -228,19 +224,17 @@ def prepare_query(
     names["schema"] = server.schema_ if server and server.schema_ else model_name
     for placeholder in ("dataset", "project", "catalog", "database"):
         names[placeholder] = (getattr(server, placeholder, None) if server else None) or model_name
-    if field_name is not None:
-        names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_name)
+    if field_path:
+        names |= dict.fromkeys(COLUMN_PLACEHOLDERS, field_path)
 
-    def identifier(name: str, forced: bool) -> str:
-        # A column placeholder holds the field's name; `field_path` says where it sits, which its text does not.
-        # The model placeholders may hold the same text, e.g. a table named like its one column, and split as before.
-        steps = field_path if path_text(field_path) == name else name.split(".")
+    def identifier(name: str | tuple[str | Hop, ...], forced: bool) -> str:
+        steps = name if isinstance(name, tuple) else name.split(".")
         parts = [
             exp.to_identifier(part, quoted=forced or not bare.fullmatch(part)).sql(dialect=dialect)
             for part in steps
             if isinstance(part, str)  # a map's key or value is no part of a name
         ]
-        if dialect == "snowflake" and path_text(field_path) == name:
+        if dialect == "snowflake" and isinstance(name, tuple):
             # Snowflake reaches into a column's value with `:`; a dot would name a table's column
             return parts[0] + "".join(f":{part}" for part in parts[1:])
         return ".".join(parts)
@@ -1017,7 +1011,7 @@ def _quality_rule_checks(
         dialect = dialect_for_server_type(get_server_type(server))
         try:
             instance = instantiate(quality, model, field, dialect, custom_quality_checks)
-            query = prepare_query(instance.query, model, field, server, instance, path)
+            query = prepare_query(instance.query, model, path, server, instance)
         except CustomQualityCheckUnusable as e:
             return _unexecuted_check(
                 check_key, check_type, model, field, quality, e.reason, "error", e.name, e.dimension, e.warnings
@@ -1079,7 +1073,7 @@ def _quality_rule_checks(
                 )
             ]
         threshold = to_threshold(quality)
-        query = prepare_query(quality.query, model, field, server, field_path=path)
+        query = prepare_query(quality.query, model, path, server)
         if query is None:
             return _unexecuted_check(check_key, check_type, model, field, quality, "The rule has no query.")
         if threshold is None:

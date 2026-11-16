@@ -890,7 +890,7 @@ def _key_paths(spec: CheckSpec) -> list[tuple[str | Hop, ...]]:
 
 
 def _is_item_duplicate(spec: CheckSpec) -> bool:
-    return any(Hop.ITEMS in path for path in _key_paths(spec))
+    return Hop.ITEMS in spec.path
 
 
 def _item_duplicate_predicate(t, columns, path: tuple[str | Hop, ...], value_type: Optional[str]):
