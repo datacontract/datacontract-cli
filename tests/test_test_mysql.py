@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import mysql.connector
 import pytest
 from testcontainers.mysql import MySqlContainer
@@ -9,7 +11,7 @@ from tests.dcs_deprecation import assert_dcs_deprecation_is_the_only_warning, wi
 mysql_container = MySqlContainer("mysql:8")
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def start_mysql_container(request):
     mysql_container.start()
 
@@ -17,12 +19,12 @@ def start_mysql_container(request):
         mysql_container.stop()
 
     request.addfinalizer(remove_container)
+    _init_sql(Path(__file__).parent / "fixtures/mysql/data/data.sql")
 
 
 def test_test_mysql(start_mysql_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", mysql_container.username)
     monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", mysql_container.password)
-    _init_sql("fixtures/mysql/data/data.sql")
 
     datacontract_file = "fixtures/mysql/datacontract.yaml"
     data_contract_str = _setup_datacontract(datacontract_file)
@@ -38,7 +40,6 @@ def test_test_mysql(start_mysql_container, monkeypatch):
 def test_test_mysql_odcs(start_mysql_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", mysql_container.username)
     monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", mysql_container.password)
-    _init_sql("fixtures/mysql/data/data.sql")
 
     datacontract_file = "fixtures/mysql/odcs.yaml"
     data_contract_str = _setup_datacontract(datacontract_file)

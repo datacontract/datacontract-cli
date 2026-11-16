@@ -13,6 +13,7 @@ if sys.version_info >= (3, 12, 1):
     sys.modules["kafka.vendor.six.moves"] = six.moves
 
 
+import pytest
 from kafka import KafkaProducer
 from open_data_contract_standard.model import OpenDataContractStandard
 from testcontainers.kafka import KafkaContainer
@@ -43,26 +44,31 @@ CONFLUENT_WRITER_SCHEMA = json.dumps(
 )
 
 
-def test_test_kafka(monkeypatch):
+@pytest.fixture(scope="module")
+def kafka():
+    """One broker for the module, so each test writes to a topic of its own."""
+    with KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka:
+        yield kafka
+
+
+def test_test_kafka(kafka, monkeypatch):
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
 
-    with KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka:
-        send_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", "inventory-events")
-        data_contract_str = _setup_datacontract(kafka)
-        data_contract = DataContract(data_contract_str=data_contract_str)
-        run = data_contract.test()
+    send_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", "inventory-events")
+    data_contract_str = _setup_datacontract(kafka)
+    data_contract = DataContract(data_contract_str=data_contract_str)
+    run = data_contract.test()
 
     print(run.pretty())
     assert run.result == "passed"
 
 
-def test_test_kafka_nested(monkeypatch):
+def test_test_kafka_nested(kafka, monkeypatch):
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
 
-    with KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka:
-        send_messages_to_topic(kafka, "fixtures/kafka/data/messages_nested.json", "order-events")
-        data_contract_str = _setup_datacontract(kafka, "fixtures/kafka/datacontract_nested.yaml")
-        run = DataContract(data_contract_str=data_contract_str).test()
+    send_messages_to_topic(kafka, "fixtures/kafka/data/messages_nested.json", "order-events")
+    data_contract_str = _setup_datacontract(kafka, "fixtures/kafka/datacontract_nested.yaml")
+    run = DataContract(data_contract_str=data_contract_str).test()
 
     print(run.pretty())
     # the second message violates every nested rule once
@@ -73,35 +79,32 @@ def test_test_kafka_nested(monkeypatch):
     }
 
 
-def test_test_kafka_avro_plain(monkeypatch):
+def test_test_kafka_avro_plain(kafka, monkeypatch):
     """Plain Avro messages (no Confluent Schema Registry framing) must decode without
     being corrupted by the 5-byte magic-byte/schema-id strip. Regression for #1344,
     where every field was reported as null (missing_count == row count)."""
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
 
-    with KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka:
-        send_avro_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", "inventory-events-avro")
-        data_contract_str = _setup_datacontract(kafka, datacontract_avro)
-        data_contract = DataContract(data_contract_str=data_contract_str)
-        run = data_contract.test()
+    send_avro_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", "inventory-events-avro")
+    data_contract_str = _setup_datacontract(kafka, datacontract_avro)
+    data_contract = DataContract(data_contract_str=data_contract_str)
+    run = data_contract.test()
 
     print(run.pretty())
     assert run.result == "passed"
 
 
-def test_test_kafka_avro_confluent_schema_registry(monkeypatch):
+def test_test_kafka_avro_confluent_schema_registry(kafka, monkeypatch):
     """Confluent-framed Avro messages must be decoded with the writer schema from the schema
     registry, not with the schema derived from the data contract. Regression for #1347, where
     every field of every message was reported as null."""
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
 
-    with (
-        KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka,
-        schema_registry_stub({CONFLUENT_SCHEMA_ID: CONFLUENT_WRITER_SCHEMA}) as registry_url,
-    ):
+    with schema_registry_stub({CONFLUENT_SCHEMA_ID: CONFLUENT_WRITER_SCHEMA}) as registry_url:
         monkeypatch.setenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL", registry_url)
-        send_confluent_avro_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", "inventory-events-avro")
-        data_contract_str = _setup_datacontract(kafka, datacontract_avro)
+        topic = "inventory-events-avro-confluent"
+        send_confluent_avro_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", topic)
+        data_contract_str = _setup_datacontract(kafka, datacontract_avro).replace("inventory-events-avro", topic)
         data_contract = DataContract(data_contract_str=data_contract_str)
         run = data_contract.test()
 
@@ -109,18 +112,18 @@ def test_test_kafka_avro_confluent_schema_registry(monkeypatch):
     assert run.result == "passed"
 
 
-def test_test_kafka_avro_confluent_without_schema_registry(monkeypatch):
+def test_test_kafka_avro_confluent_without_schema_registry(kafka, monkeypatch):
     """Without a configured registry the writer schema of Confluent-framed messages is unknown.
     That must be reported as an undecodable topic rather than silently decoding every message
     into a record of nulls, which looked like missing values on data that is not null (#1347)."""
     monkeypatch.delenv("DATACONTRACT_KAFKA_SASL_USERNAME", raising=False)
     monkeypatch.delenv("DATACONTRACT_KAFKA_SCHEMA_REGISTRY_URL", raising=False)
 
-    with KafkaContainer("confluentinc/cp-kafka:7.7.0").with_kraft() as kafka:
-        send_confluent_avro_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", "inventory-events-avro")
-        data_contract_str = _setup_datacontract(kafka, datacontract_avro)
-        data_contract = DataContract(data_contract_str=data_contract_str)
-        run = data_contract.test()
+    topic = "inventory-events-avro-unregistered"
+    send_confluent_avro_messages_to_topic(kafka, "fixtures/kafka/data/messages.json", topic)
+    data_contract_str = _setup_datacontract(kafka, datacontract_avro).replace("inventory-events-avro", topic)
+    data_contract = DataContract(data_contract_str=data_contract_str)
+    run = data_contract.test()
 
     print(run.pretty())
     assert run.result == "failed"
