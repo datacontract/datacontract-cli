@@ -1133,6 +1133,7 @@ def _run_physical_type(
 def _run_freshness(run: Run, t, columns, spec: CheckSpec):
     import pandas as pd
 
+    # Not cast to the declared type: Snowflake's timestamp cast drops a nested value's UTC offset
     col = _resolve_expr(t, columns, spec.path)
     reduction = col.min() if spec.metric == MetricType.RETENTION else col.max()
     _record_sql(run, spec, t.aggregate(value=reduction))
