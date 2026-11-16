@@ -628,6 +628,7 @@ def _singular_tests_for_qualities(
     label_prefix: str = "",
     field: Optional[str] = None,
     model_version: Optional[str] = None,
+    quoted_columns: frozenset[str] = frozenset(),
 ) -> list[SingularTest]:
     """Generate singular tests for ODCS quality entries that have an associated `query` and bound."""
     out: list[SingularTest] = []
@@ -646,7 +647,13 @@ def _singular_tests_for_qualities(
         # engine also resolves) has no clean dbt equivalent and is intentionally left untouched.
         query = re.sub(r'["\']?\$?\{(model|table|object)}["\']?', model_ref, quality.query)
         if field is not None:
-            query = re.sub(r'["\']?\$?\{(field|column|property)}["\']?', field, query)
+            # Backticks around the placeholder force quoting, as in `datacontract test`.
+            forced = quoted_columns | {field.lower()}
+            query = re.sub(
+                r'[`"\']?\$?\{(field|column|property)}[`"\']?',
+                lambda m: _column_sql(field, forced if "`" in m.group(0) else quoted_columns),
+                query,
+            )
         severity = _normalize_severity(quality.severity)
         filename = f"{_slugify(contract_id)}__{_slugify(contract_version)}__{_slugify(model)}__{_slugify(test_label)}"
         out.append(
@@ -697,6 +704,23 @@ def _model_ref(model: str, model_version: Optional[str]) -> str:
     if model_version is None:
         return f"{{{{ ref('{model}') }}}}"
     return f"{{{{ ref('{model}', version={int(model_version)}) }}}}"
+
+
+def _is_must_quote_name(name: str) -> bool:
+    """A name no supported platform reads unquoted; reserved words and case are left to the user."""
+    return not re.fullmatch(r"[^\W\d][\w$#@]*", name)
+
+
+def _column_sql(name: str, quoted_columns: frozenset[str]) -> str:
+    """A column as generated SQL references it: through `adapter.quote` exactly where dbt would quote it."""
+    if name.lower() not in quoted_columns and not _is_must_quote_name(name):
+        return name
+    return f"{{{{ adapter.quote('{_jinja_escaped(name)}') }}}}"
+
+
+def _jinja_escaped(text: str) -> str:
+    """`text` escaped for a single-quoted Jinja string literal."""
+    return text.replace("\\", "\\\\").replace("'", "\\'")
 
 
 def _build_singular_sql(
@@ -756,6 +780,8 @@ def _library_metric_singular_test(
     model: str,
     model_version: Optional[str] = None,
     field: Optional[str] = None,
+    *,
+    quoted_columns: frozenset[str],
 ) -> SingularTest:
     """Singular SQL test for a library metric, counted the way `datacontract test` counts it."""
     metric = quality.metric
@@ -763,8 +789,8 @@ def _library_metric_singular_test(
     model_ref = _model_ref(model, model_version)
     if metric == "duplicateValues":
         columns = [field] if field else quality.arguments["properties"]
-        key = ", ".join(columns)
-        key_present = " AND ".join(f"{c} IS NOT NULL" for c in columns)
+        key = ", ".join(_column_sql(c, quoted_columns) for c in columns)
+        key_present = " AND ".join(f"{_column_sql(c, quoted_columns)} IS NOT NULL" for c in columns)
         query = (
             f"SELECT COUNT(*) AS metric_value FROM (SELECT {key} FROM {model_ref} WHERE {key_present} "
             f"GROUP BY {key} HAVING COUNT(*) > 1) _dc_duplicates"
@@ -772,20 +798,21 @@ def _library_metric_singular_test(
         count_name = "duplicate_count"
     else:
         args = quality.arguments or {}
+        column = _column_sql(field, quoted_columns)
         if metric == "invalidValues":
             violations = []
             if args.get("validValues") is not None:
                 valid = [_sql_literal(v) for v in args["validValues"] if v is not None]
-                violations.append(f"{field} NOT IN ({', '.join(valid)})" if valid else "1 = 1")
+                violations.append(f"{column} NOT IN ({', '.join(valid)})" if valid else "1 = 1")
             if args.get("pattern") is not None:
-                violations.append(_regex_violation_jinja(field, args["pattern"]))
-            bad_row = f"{field} IS NOT NULL AND ({' OR '.join(violations)})"
+                violations.append(_regex_violation_jinja(column, field, args["pattern"]))
+            bad_row = f"{column} IS NOT NULL AND ({' OR '.join(violations)})"
             count_name = "invalid_count"
         else:
             missing = [_sql_literal(v) for v in (args.get("missingValues") or []) if v is not None]
-            bad_row = f"{field} IS NULL"
+            bad_row = f"{column} IS NULL"
             if metric == "missingValues" and missing:
-                bad_row += f" OR {field} IN ({', '.join(missing)})"
+                bad_row += f" OR {column} IN ({', '.join(missing)})"
             count_name = "missing_count"
         if percent:
             # An empty table is 0 %, as in `datacontract test`; a NULL would fail the bound predicate.
@@ -827,10 +854,15 @@ def _library_metric_singular_test(
 
 
 def _composite_pk_singular_test(
-    pk_cols: list[str], contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
+    pk_cols: list[str],
+    contract_id: str,
+    contract_version: str,
+    model: str,
+    model_version: Optional[str],
+    quoted_columns: frozenset[str],
 ) -> SingularTest:
     """Dep-free singular SQL asserting a composite primary key is unique (no `dbt_utils`)."""
-    col_list = ", ".join(pk_cols)
+    col_list = ", ".join(_column_sql(c, quoted_columns) for c in pk_cols)
     description = f"Check that model {model} has a unique combination of columns {', '.join(pk_cols)}"
     label = "unique_combination"
     sql = (
@@ -880,7 +912,7 @@ def _describe_row_count_quality(quality: DataQuality, model: str) -> Optional[st
 # ---------------------------------------------------------------------------
 
 
-def _regex_violation_jinja(column: str, pattern: str) -> str:
+def _regex_violation_jinja(column: str, name: str, pattern: str) -> str:
     """Adapter-portable 'col does NOT match pattern' fragment.
 
     Unfortunately, regex syntax is one of the least-portable parts of SQL.
@@ -905,7 +937,7 @@ def _regex_violation_jinja(column: str, pattern: str) -> str:
         f"REGEXP_SIMILAR(CAST({column} AS VARCHAR(32000)), '{escaped}') = 0"
         "{% elif target.type in ['sqlserver', 'fabric', 'synapse'] %}"
         "{{ exceptions.warn("
-        f"'datacontract: pattern of column {column} not checked, "
+        f"'datacontract: pattern of column {_jinja_escaped(name)} not checked, "
         "' ~ target.type ~ ' has no regex support.') }}"
         "1 = 0"
         "{% else %}"
@@ -914,7 +946,7 @@ def _regex_violation_jinja(column: str, pattern: str) -> str:
     )
 
 
-def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
+def _field_bound_predicates(prop: SchemaProperty, column: str) -> list[tuple[str, str]]:
     """For `prop`, yield `(kind, sql_predicate)` for each declared bound, where `kind` is one of `"length"` / `"pattern"` / `"range"`.
 
     `sql_predicate` is TRUE only for rows that violate the bound. Length checks
@@ -930,14 +962,14 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     if min_length is not None or max_length is not None:
         parts: list[str] = []
         if min_length is not None:
-            parts.append(f"LENGTH({prop.name}) < {min_length}")
+            parts.append(f"LENGTH({column}) < {min_length}")
         if max_length is not None:
-            parts.append(f"LENGTH({prop.name}) > {max_length}")
+            parts.append(f"LENGTH({column}) > {max_length}")
         pairs.append(("length", " OR ".join(parts)))
 
     pattern = get_logical_type_option(prop, "pattern")
     if pattern is not None:
-        pairs.append(("pattern", _regex_violation_jinja(prop.name, pattern)))
+        pairs.append(("pattern", _regex_violation_jinja(column, prop.name, pattern)))
 
     minimum = get_logical_type_option(prop, "minimum")
     maximum = get_logical_type_option(prop, "maximum")
@@ -945,13 +977,13 @@ def _field_bound_predicates(prop: SchemaProperty) -> list[tuple[str, str]]:
     exclusive_maximum = get_logical_type_option(prop, "exclusiveMaximum")
     range_parts: list[str] = []
     if minimum is not None:
-        range_parts.append(f"{prop.name} < {_sql_literal(minimum)}")
+        range_parts.append(f"{column} < {_sql_literal(minimum)}")
     if maximum is not None:
-        range_parts.append(f"{prop.name} > {_sql_literal(maximum)}")
+        range_parts.append(f"{column} > {_sql_literal(maximum)}")
     if exclusive_minimum is not None:
-        range_parts.append(f"{prop.name} <= {_sql_literal(exclusive_minimum)}")
+        range_parts.append(f"{column} <= {_sql_literal(exclusive_minimum)}")
     if exclusive_maximum is not None:
-        range_parts.append(f"{prop.name} >= {_sql_literal(exclusive_maximum)}")
+        range_parts.append(f"{column} >= {_sql_literal(exclusive_maximum)}")
     if range_parts:
         pairs.append(("range", " OR ".join(range_parts)))
 
@@ -962,6 +994,7 @@ def _build_row_violation_sql(
     *,
     model: str,
     field: str,
+    column: str,
     violation_predicate: str,
     severity: Optional[str] = None,
     contract_id: str,
@@ -977,17 +1010,23 @@ def _build_row_violation_sql(
         + f"{{{{ config({severity_arg}{_format_dc_meta(model, field, description, check_type, contract_version)}) }}}}\n"
         f"SELECT *\n"
         f"FROM {_model_ref(model, model_version)}\n"
-        f"WHERE {field} IS NOT NULL\n"
+        f"WHERE {column} IS NOT NULL\n"
         f"  AND ({violation_predicate})\n"
     )
 
 
 def _field_singular_tests(
-    prop: SchemaProperty, contract_id: str, contract_version: str, model: str, model_version: Optional[str] = None
+    prop: SchemaProperty,
+    contract_id: str,
+    contract_version: str,
+    model: str,
+    model_version: Optional[str],
+    quoted_columns: frozenset[str],
 ) -> list[SingularTest]:
     """Singular SQL tests for `logicalTypeOptions` bounds on `prop` (length / regex / range)."""
     out: list[SingularTest] = []
-    for kind, predicate in _field_bound_predicates(prop):
+    column = _column_sql(prop.name, quoted_columns)
+    for kind, predicate in _field_bound_predicates(prop, column):
         label = f"{prop.name}__{kind}"
         description = _describe_field_bound(prop, kind)
         out.append(
@@ -996,6 +1035,7 @@ def _field_singular_tests(
                 sql=_build_row_violation_sql(
                     model=model,
                     field=prop.name,
+                    column=column,
                     violation_predicate=predicate,
                     contract_id=contract_id,
                     contract_version=contract_version,
@@ -1016,7 +1056,8 @@ def _model_data_tests(
     contract_id: str,
     contract_version: str,
     model: str,
-    model_version: Optional[str] = None,
+    model_version: Optional[str],
+    quoted_columns: frozenset[str],
 ) -> list[SingularTest]:
     """Model-level singular SQL tests: composite-PK uniqueness + table-level rowCount and duplicateValues.
 
@@ -1026,7 +1067,9 @@ def _model_data_tests(
     singular_tests: list[SingularTest] = []
     pk_cols = [p.name for p in (schema_obj.properties or []) if p.primaryKey]
     if len(pk_cols) > 1:
-        singular_tests.append(_composite_pk_singular_test(pk_cols, contract_id, contract_version, model, model_version))
+        singular_tests.append(
+            _composite_pk_singular_test(pk_cols, contract_id, contract_version, model, model_version, quoted_columns)
+        )
     for q in schema_obj.quality or []:
         if q.query:
             continue  # singular SQL handles it via _singular_tests_for_qualities
@@ -1052,7 +1095,11 @@ def _model_data_tests(
         elif q.mustBe == 0 and len(pk_cols) > 1 and set(properties) == set(pk_cols):
             continue  # the composite primary key test already fails on any duplicate
         else:
-            singular_tests.append(_library_metric_singular_test(q, contract_id, contract_version, model, model_version))
+            singular_tests.append(
+                _library_metric_singular_test(
+                    q, contract_id, contract_version, model, model_version, quoted_columns=quoted_columns
+                )
+            )
     return singular_tests
 
 
@@ -1128,6 +1175,7 @@ def _column_dict(
     contract_id: str,
     contract_version: str,
     model_version: Optional[str],
+    quoted_columns: frozenset[str],
 ) -> tuple[dict, list[SingularTest]]:
     """The column's YAML entry with its generic tests, plus the singular tests its library metrics need."""
     column: dict = {"name": prop.name}
@@ -1197,7 +1245,13 @@ def _column_dict(
 
         singulars.append(
             _library_metric_singular_test(
-                data_quality, contract_id, contract_version, model_name, model_version, field=prop.name
+                data_quality,
+                contract_id,
+                contract_version,
+                model_name,
+                model_version,
+                field=prop.name,
+                quoted_columns=quoted_columns,
             )
         )
 
@@ -1212,11 +1266,13 @@ def generate_dbt_tests_for_schema(
     model_name: str,
     run: Run,
     model_version: Optional[str] = None,
+    quoted_columns: frozenset[str] = frozenset(),
 ) -> tuple[dict, list[SingularTest]]:
     """Build the YAML model dict + list of singular SQL tests for one schema.
 
     `model_version` (set for a versioned model) makes ref-using singular tests target this version's
-    relation via `ref(model, version=N)`.
+    relation via `ref(model, version=N)`. `quoted_columns` holds the lower-cased names of the columns
+    the dbt YAML marks `quote: true`.
     """
     pk_cols = [p.name for p in (schema_obj.properties or []) if p.primaryKey]
     single_pk_name = pk_cols[0] if len(pk_cols) == 1 else None
@@ -1227,13 +1283,15 @@ def generate_dbt_tests_for_schema(
 
     contract_id = odcs.id or "contract"
     contract_version = odcs.version or "no_version"
-    model_singulars = _model_data_tests(schema_obj, run, contract_id, contract_version, model_name, model_version)
+    model_singulars = _model_data_tests(
+        schema_obj, run, contract_id, contract_version, model_name, model_version, quoted_columns
+    )
 
     columns: list = []
     singulars: list[SingularTest] = list(model_singulars)
     for prop in schema_obj.properties or []:
         column, column_singulars = _column_dict(
-            prop, odcs, single_pk_name, model_name, run, contract_id, contract_version, model_version
+            prop, odcs, single_pk_name, model_name, run, contract_id, contract_version, model_version, quoted_columns
         )
         columns.append(column)
         singulars.extend(column_singulars)
@@ -1242,7 +1300,9 @@ def generate_dbt_tests_for_schema(
 
     # Field-level bounds (length / regex / numeric range) → singular SQL
     for prop in schema_obj.properties or []:
-        singulars.extend(_field_singular_tests(prop, contract_id, contract_version, model_name, model_version))
+        singulars.extend(
+            _field_singular_tests(prop, contract_id, contract_version, model_name, model_version, quoted_columns)
+        )
     # Existing `quality.query` singular tests (one CTE per scalar metric)
     for prop in schema_obj.properties or []:
         singulars.extend(
@@ -1255,6 +1315,7 @@ def generate_dbt_tests_for_schema(
                 label_prefix=f"{prop.name}__",
                 field=prop.name,
                 model_version=model_version,
+                quoted_columns=quoted_columns,
             )
         )
     singulars.extend(
@@ -1981,21 +2042,14 @@ def _managed_tests_list(container: dict) -> list:
     return [t for t in (container.get("data_tests") or []) if _meta_block_for_test(t)]
 
 
-def _set_override_tests(bullet: dict, col_name: str, test_entries: list, contract_version: str) -> None:
+def _set_override_tests(
+    bullet: dict, col_name: str, test_entries: list, contract_version: str, top_col: Optional[dict]
+) -> None:
     """Put `col_name`'s full test set into `bullet` as a per-version override, stamped with just
     `contract_version`. dbt combines a version override with the (test-free) top-level column, so a
     divergent column must live entirely in overrides — never split across top level and a bullet."""
     _bullet_include_element(bullet)  # an override must ride alongside `include: '*'` (dbt idiom)
-    cols = bullet["columns"]
-    override = None
-    for element in cols:
-        if isinstance(element, dict) and str(element.get("name", "")).lower() == col_name.lower():
-            override = element
-            break
-    if override is None:
-        override = CommentedMap()
-        override["name"] = col_name
-        cols.append(override)
+    override = _bullet_column_override(bullet, col_name, create=True, top_col=top_col)
     override.pop("data_tests", None)
     tests = CommentedSeq()
     for test in test_entries:
@@ -2028,8 +2082,12 @@ def _desired_test_args(desired_tests: list) -> dict[str, dict]:
     return out
 
 
-def _bullet_column_override(bullet: dict, col_name: str, *, create: bool = False) -> Optional[dict]:
-    """The per-version `{name, ...}` column override element on a bullet (not the `include` element)."""
+def _bullet_column_override(
+    bullet: dict, col_name: str, *, create: bool = False, top_col: Optional[dict] = None
+) -> Optional[dict]:
+    """The per-version `{name, ...}` column override element on a bullet (not the `include` element).
+
+    A created override takes the top-level column's `quote`, as dbt doesn't inherit it."""
     target = col_name.lower()
     for element in bullet.get("columns") or []:
         if isinstance(element, dict) and "name" in element and str(element.get("name", "")).lower() == target:
@@ -2039,6 +2097,8 @@ def _bullet_column_override(bullet: dict, col_name: str, *, create: bool = False
     _bullet_include_element(bullet)  # an override must ride alongside `include: '*'` (dbt idiom)
     element = CommentedMap()
     element["name"] = col_name
+    if isinstance(top_col, dict) and "quote" in top_col:
+        element["quote"] = top_col["quote"]
     bullet["columns"].append(element)
     return element
 
@@ -2076,7 +2136,7 @@ def _reconcile_versioned_data_types(
                 override = _bullet_column_override(this_bullet, col_name)
                 if override is not None:
                     override.pop("data_type", None)
-                    _collapse_bare_override(this_bullet, override)
+                    _collapse_bare_override(this_bullet, override, top_col)
                 if str(this_version) == latest and top_col is not None:
                     top_col.pop("data_type", None)
             continue
@@ -2106,19 +2166,19 @@ def _reconcile_versioned_data_types(
                     override = _bullet_column_override(b, col_name)
                     if override is not None and not override.get("data_tests"):
                         override.pop("data_type", None)
-                        _collapse_bare_override(b, override)
+                        _collapse_bare_override(b, override, top_col)
                     elif override is not None:
                         # Override survives for divergent tests → keep data_type; dbt doesn't
                         # inherit it into an existing override entry (breaks `contract.enforced`).
                         override["data_type"] = t
                 else:
-                    override = _bullet_column_override(b, col_name, create=True)
+                    override = _bullet_column_override(b, col_name, create=True, top_col=top_col)
                     override["data_type"] = t
                     _set_override_description(override, top_col)
         else:
             # Some sibling's type is still unknown (e.g. synced before types existed). Don't impose a
             # top-level type on it — put this version's type in its own bullet only.
-            override = _bullet_column_override(this_bullet, col_name, create=True)
+            override = _bullet_column_override(this_bullet, col_name, create=True, top_col=top_col)
             override["data_type"] = this_type
             _set_override_description(override, top_col)
 
@@ -2132,9 +2192,13 @@ def _set_override_description(override: dict, top_col: Optional[dict]) -> None:
         override["description"] = desc
 
 
-def _collapse_bare_override(bullet: dict, override: dict) -> None:
-    """Drop an override element that's decayed to just `{name}`, then collapse a now-bare `columns`."""
-    if set(override.keys()) == {"name"}:
+def _collapse_bare_override(bullet: dict, override: dict, top_col: Optional[dict]) -> None:
+    """Drop an override element that's decayed to just `{name}` (plus the top-level column's own
+    `quote`), then collapse a now-bare `columns`."""
+    top_quote = top_col.get("quote") if isinstance(top_col, dict) else None
+    if set(override.keys()) == {"name"} or (
+        set(override.keys()) == {"name", "quote"} and bool(override["quote"]) == bool(top_quote)
+    ):
         cols = bullet.get("columns")
         if isinstance(cols, list) and override in cols:
             cols.remove(override)
@@ -2195,6 +2259,8 @@ def _merge_versioned_model_entry(
             top_cols.append(target)
             newly_created.append(col_name)
             _mark_managed_column(target)
+        if _is_must_quote_name(col_name):
+            target["quote"] = True
         if prop is not None and prop.description:
             target["description"] = prop.description.strip().replace("\n", " ")
         elif prune:
@@ -2210,7 +2276,7 @@ def _merge_versioned_model_entry(
         elif _column_has_override(versions, col_name) or not top_managed:
             # Already divergent, or top level has no shared tests to combine with → our bullet only.
             if desired_tests:
-                _set_override_tests(bullet, col_name, desired_tests, contract_version)
+                _set_override_tests(bullet, col_name, desired_tests, contract_version, target)
         elif _managed_test_args(target) == _desired_test_args(desired_tests):
             # Agrees with the shared definition → union this version into it, stay at top level.
             _reconcile_data_tests(target, desired_tests, contract_version, versioned=True)
@@ -2224,10 +2290,12 @@ def _merge_versioned_model_entry(
             for other_version in shared_versions:
                 sibling = _find_bullet_by_odcs(versions, other_version)
                 if sibling is not None:
-                    _set_override_tests(sibling, col_name, [copy.deepcopy(t) for t in top_managed], other_version)
+                    _set_override_tests(
+                        sibling, col_name, [copy.deepcopy(t) for t in top_managed], other_version, target
+                    )
             target.pop("data_tests", None)
             if desired_tests:
-                _set_override_tests(bullet, col_name, desired_tests, contract_version)
+                _set_override_tests(bullet, col_name, desired_tests, contract_version, target)
 
     # Excludes: this version drops the top-level columns it doesn't declare; new columns are dropped
     # from every sibling bullet so their effective set is unchanged.
@@ -2241,6 +2309,12 @@ def _merge_versioned_model_entry(
     _reconcile_versioned_data_types(
         entry, versions, model_dict, props_by_name, dialect, model_version, run, prune=prune
     )
+    for desired_col in model_dict.get("columns") or []:
+        if _is_must_quote_name(desired_col["name"]):
+            for b in versions:
+                override = _bullet_column_override(b, desired_col["name"]) if isinstance(b, dict) else None
+                if override is not None:
+                    override["quote"] = True
 
     if prune:
         _prune_versioned_entry(entry, model_dict, contract_version, apply=True)
@@ -2368,6 +2442,8 @@ def _merge_model_entry(
                 cols = CommentedSeq()
                 entry["columns"] = cols
             cols.append(target)
+        if _is_must_quote_name(col_name):
+            target["quote"] = True
 
         if _apply_column_data_type(target, prop, dialect, prune=prune) == "unresolvable":
             unresolved_types.append(col_name)
@@ -2512,7 +2588,7 @@ def _clean_model_entry(
             if isinstance(config, dict):
                 config.pop("tags", None)
             _remove_our_meta(col)
-            if set(col.keys()) <= {"name", "description", "data_type"}:
+            if set(col.keys()) <= {"name", "description", "data_type", "quote"}:
                 del cols[i]  # nothing user-authored left; a column the user built on keeps its type/description
         if not cols:
             entry.pop("columns", None)
@@ -2925,10 +3001,10 @@ def generate_dbt_tests(
             )
             skipped_schemas.append(schema_name_key)
             continue
+        located = _locate_entry(session, effective)
         # A non-versioned sync onto a versioned model (entry has a `versions:` block) can't merge safely:
         # it would strip the block and strand the `<model>_v*.sql` files.
         if model_version is None:
-            located = _locate_entry(session, effective)
             versions = located[1].get("versions") if located is not None else None
             if isinstance(versions, list) and versions:
                 raise DataContractException(
@@ -2941,8 +3017,22 @@ def generate_dbt_tests(
                     ),
                     engine="datacontract-cli",
                 )
+        # The quoting dbt applies to this version: a version's own column entry replaces the top-level one.
+        entry = located[1] if located is not None else {}
+        versions = entry.get("versions")
+        bullet = _find_bullet(versions, model_version) if model_version is not None and versions else None
+        overrides = [e for e in (bullet or {}).get("columns") or [] if isinstance(e, dict) and "name" in e]
+        overridden = {str(e["name"]).lower() for e in overrides}
+        top_columns = [
+            c
+            for c in entry.get("columns") or []
+            if isinstance(c, dict) and str(c.get("name", "")).lower() not in overridden
+        ]
+        quoted_columns = frozenset(str(c.get("name", "")).lower() for c in top_columns + overrides if c.get("quote"))
         schema_obj = schemas_by_name[schema_name_key]
-        model_dict, singulars = generate_dbt_tests_for_schema(odcs, schema_obj, effective, run, model_version)
+        model_dict, singulars = generate_dbt_tests_for_schema(
+            odcs, schema_obj, effective, run, model_version, quoted_columns
+        )
         plans.append(_ModelPlan(effective, schema_obj, model_dict, singulars, sql_path))
 
     singular_tests: list[SingularTest] = [s for p in plans for s in p.singular_tests]

@@ -170,6 +170,8 @@ WHERE customer_email IS NOT NULL
   AND (LENGTH(customer_email) > 320)
 ```
 
+Generated tests quote a column exactly where dbt quotes it in its own tests: when its column entry has `quote: true`. `dbt sync` sets that itself on names no platform reads unquoted, such as `order date`; mark reserved words (`order`) and case-sensitive names yourself. On a versioned model, a version's own entry for a column needs its own `quote: true`, as dbt doesn't carry it over from the top-level entry. In a SQL quality rule, backticks around the placeholder (`` `{field}` ``) also quote the column.
+
 ### Versioned models
 
 `dbt sync` works natively with [dbt model versions](https://docs.getdbt.com/docs/mesh/govern/model-versions). To specify multiple versions using data contracts, create one contract file per version. Their filename must include an integer version number with a preceding `v`, e.g. `orders-v01.odcs.yaml`.
