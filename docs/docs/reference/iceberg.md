@@ -33,6 +33,7 @@ servers:
 | `DATACONTRACT_ICEBERG_S3_ENDPOINT` | Endpoint of an S3-compatible store (MinIO, Ceph) holding the data files |
 | `DATACONTRACT_ICEBERG_SIGNING_NAME` | Sign catalog requests with SigV4 for this AWS service (`s3tables`, `glue`); detected from `catalogUrl` for the AWS endpoints, so only needed behind a proxy |
 | `DATACONTRACT_ICEBERG_PROPERTIES` | Extra pyiceberg catalog properties, as a JSON object or `key=value,key=value` |
+| `DATACONTRACT_ICEBERG_REF` | Test the tables at a tag, branch, or snapshot ID instead of their current snapshot; see [Testing a point in time](#testing-a-point-in-time) |
 
 ## Amazon S3 Tables
 
@@ -93,6 +94,17 @@ The Iceberg type is kept as `physicalType`, and the field id as the `icebergFiel
 The table is scanned to Arrow and registered in DuckDB, so the type checks compare the declared `logicalType` against the DuckDB type of the Arrow column: structs become `STRUCT`, lists `LIST`, and maps `MAP`, so nested properties are type-checked too. `physicalType` checks against the catalog's declared type are not run for Iceberg; the logical type check runs instead. Binary fields still get presence and applicable quality checks, but no logical type check.
 
 SQL quality queries address the schema object's logical `name`, even when `physicalName` points to a different or qualified catalog table. The CLI reads the full selected tables into memory before checking them; use tables that fit in available memory. SQL rules and `--filters` do not reduce the Iceberg scan.
+
+### Testing a point in time
+
+Set `DATACONTRACT_ICEBERG_REF` to test the tables as of a tag, the head of a branch, or a snapshot ID instead of the current snapshot of the main branch:
+
+```bash
+DATACONTRACT_ICEBERG_REF=release-2026-11 datacontract test datacontract.yaml   # a tag or branch
+DATACONTRACT_ICEBERG_REF=4358109269873137077 datacontract test datacontract.yaml   # a snapshot ID
+```
+
+The value applies to every table of the run and each table must have it, otherwise the test fails with the table and the reference in the message. A tag or branch can carry the same name on several tables; a snapshot ID belongs to one table, so select that table with `--schema-name` when the contract has more than one. A tag or branch whose name consists of digits wins over a snapshot ID. The table is read with the schema it had at that snapshot.
 
 ### Exporting
 

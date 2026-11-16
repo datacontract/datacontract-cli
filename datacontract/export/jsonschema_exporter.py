@@ -7,6 +7,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.model.enum_values import get_enum_values
 from datacontract.model.map_type import get_map_value
+from datacontract.model.odcs import is_closed_schema
 from datacontract.model.vector_type import vector_dimensions
 
 
@@ -223,6 +224,8 @@ def to_jsonschema(model_key: str, model_value: SchemaObject) -> dict:
         "properties": to_properties(properties),
         "required": to_required(properties),
     }
+    if is_closed_schema(model_value):
+        model["additionalProperties"] = False
     if model_value.businessName:
         model["title"] = model_value.businessName
     if model_value.description:

@@ -29,7 +29,7 @@
     {% set schema_synonyms = schema.synonyms if schema.synonyms is defined and schema.synonyms else none %}
     {% set schema_context = schema.context if schema.context is defined and schema.context else none %}
 
-    <div class="mt-2 print:block" id="{{ schema_name }}">
+    <div class="mt-2 print:block" id="{{ schema_name }}" data-entity="{{ mermaid_entities.get(schema_name, schema_name) }}">
       <div class="overflow-x-auto shadow ring-1 ring-black/5 sm:rounded-lg">
         <table class="min-w-full divide-y divide-gray-300 print:relative print:break-inside-auto">
           <thead class="bg-gray-50 print:table-header-group">
@@ -46,6 +46,10 @@
                   <span class="ml-1 text-gray-400 cursor-help" title="{{ schema_physical_name }}">ⓘ</span>
                 {% endif %}
 
+                {% if mermaid_links %}
+                  <a href="#diagram" class="diagram-link ml-2 text-xs font-normal text-indigo-600 hover:underline" data-entity="{{ mermaid_entities.get(schema_name, schema_name) }}" title="Show in the entity relationship diagram">↑ Diagram</a>
+                {% endif %}
+
                 {% if schema_type %}
                   <span class="ml-2 inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
                     {{ schema_type }}
@@ -56,8 +60,17 @@
                   <span class="ml-2 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-700/10">deprecated</span>
                 {% endif %}
 
+                {% set schema_relationships = schema.relationships if schema.relationships is defined and schema.relationships else [] %}
+                {% if schema_relationships %}
+                  <div class="mt-2 flex flex-wrap gap-1 font-normal">
+                    {% for rel in schema_relationships %}
+                      {{ schema_macros.render_relationship(rel) }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
                 {% if schema_description %}
-                  <div class="text-sm font-normal text-gray-500 mt-1">{{ schema_description }}</div>
+                  <div class="markdown text-sm font-normal text-gray-500 mt-1">{{ schema_description }}</div>
                 {% else %}
                   <div class="text-sm font-normal text-gray-400 mt-1">No description</div>
                 {% endif %}
@@ -75,15 +88,15 @@
                   <div class="mt-2 flex flex-wrap gap-1">
                     {% if schema_custom_properties is mapping %}
                       {% for key, value in schema_custom_properties.items() %}
-                        <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                          {{ key }}:{{ value }}
+                        <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                          {{ key }}:<span class="markdown markdown-inline markdown-breaks">{{ value }}</span>
                         </span>
                       {% endfor %}
                     {% elif schema_custom_properties is sequence and schema_custom_properties is not string %}
                       {% for cp in schema_custom_properties %}
                         {% if cp.property is defined and cp.value is defined %}
-                          <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                            {{ cp.property }}:{{ cp.value }}
+                          <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                            {{ cp.property }}:<span class="markdown markdown-inline markdown-breaks">{{ cp.value }}</span>
                           </span>
                         {% endif %}
                       {% endfor %}

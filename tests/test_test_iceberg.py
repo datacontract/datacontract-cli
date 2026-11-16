@@ -78,7 +78,9 @@ class FakeCatalog:
         if identifier not in self.tables:
             raise NoSuchTableError(identifier)
         arrow = self.tables[identifier]
-        return SimpleNamespace(scan=lambda: SimpleNamespace(to_arrow=lambda: arrow), schema=lambda: ORDERS_SCHEMA)
+        return SimpleNamespace(
+            scan=lambda snapshot_id=None: SimpleNamespace(to_arrow=lambda: arrow), schema=lambda: ORDERS_SCHEMA
+        )
 
 
 @pytest.fixture
@@ -90,6 +92,7 @@ def catalog(monkeypatch):
         "DATACONTRACT_ICEBERG_WAREHOUSE",
         "DATACONTRACT_ICEBERG_TOKEN",
         "DATACONTRACT_ICEBERG_CREDENTIAL",
+        "DATACONTRACT_ICEBERG_REF",
     ]:
         monkeypatch.delenv(name, raising=False)
     fake = FakeCatalog({"sales.orders": ORDERS})
@@ -223,7 +226,7 @@ def sql_catalog(tmp_path, monkeypatch):
     catalog.create_namespace("sales")
     catalog.create_table("sales.orders", schema=ORDERS.schema).append(ORDERS)
     monkeypatch.setenv("DATACONTRACT_ICEBERG_CATALOG_TYPE", "sql")
-    for name in ["DATACONTRACT_ICEBERG_TOKEN", "DATACONTRACT_ICEBERG_CREDENTIAL"]:
+    for name in ["DATACONTRACT_ICEBERG_TOKEN", "DATACONTRACT_ICEBERG_CREDENTIAL", "DATACONTRACT_ICEBERG_REF"]:
         monkeypatch.delenv(name, raising=False)
     return uri, warehouse
 
@@ -239,6 +242,49 @@ def test_test_against_a_real_iceberg_table(sql_catalog):
 
     print(run.pretty())
     assert run.result == ResultEnum.passed, [c.reason for c in run.checks if c.reason]
+
+
+@pytest.fixture
+def sql_contract_with_history(sql_catalog):
+    """The contract for the real table, after a second append that duplicates every order.
+
+    The first snapshot is tagged ``v1`` and is the head of the branch ``audit``.
+    """
+    from pyiceberg.catalog import load_catalog
+
+    uri, warehouse = sql_catalog
+    table = load_catalog("test", type="sql", uri=uri, warehouse=warehouse).load_table("sales.orders")
+    first_snapshot_id = table.current_snapshot().snapshot_id
+    table.manage_snapshots().create_tag(first_snapshot_id, "v1").create_branch(first_snapshot_id, "audit").commit()
+    table.append(ORDERS)
+    contract = CONTRACT.replace(
+        "    catalogUrl: https://polaris.example.com/api/catalog\n",
+        f"    catalogUrl: {uri}\n    warehouse: {warehouse}\n",
+    ).replace("    catalog: main\n", "    catalog: test\n")
+    return contract, first_snapshot_id
+
+
+@pytest.mark.parametrize("ref", ["v1", "audit", "snapshot_id"])
+def test_ref_tests_the_table_at_a_tag_branch_or_snapshot_id(sql_contract_with_history, monkeypatch, ref):
+    contract, first_snapshot_id = sql_contract_with_history
+    assert DataContract(data_contract_str=contract).test().result == ResultEnum.failed
+
+    monkeypatch.setenv("DATACONTRACT_ICEBERG_REF", str(first_snapshot_id) if ref == "snapshot_id" else ref)
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == ResultEnum.passed, [c.reason for c in run.checks if c.reason]
+
+
+@pytest.mark.parametrize("ref", ["v2", "42"])
+def test_an_unknown_ref_fails_with_the_table_and_the_ref(sql_contract_with_history, monkeypatch, ref):
+    contract, _ = sql_contract_with_history
+    monkeypatch.setenv("DATACONTRACT_ICEBERG_REF", ref)
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == ResultEnum.failed
+    reason = next(c.reason for c in run.checks if c.result == ResultEnum.failed)
+    assert "sales.orders" in reason and f"'{ref}'" in reason
 
 
 def test_import_from_a_real_iceberg_table(sql_catalog):

@@ -7,6 +7,7 @@ from urllib3.util import parse_url
 
 from datacontract.config import Config
 from datacontract.model.run import ResultEnum, Run
+from datacontract.output.oors_test_results import row_counts
 
 # used to retrieve the HTML location of the published data contract or test results
 RESPONSE_HEADER_LOCATION_HTML = "location-html"
@@ -68,10 +69,6 @@ _CHECK_RENAMED = {
     "qualityDefinition": "qualityCheckDefinition",
 }
 
-# The metrics whose value counts bad rows. `custom_sql` is not one: its value is
-# whatever the author's query returned.
-_FAILED_ROW_METRICS = ("missing_count", "invalid_count", "duplicate_count")
-
 
 def to_test_results_payload(run: Run) -> dict:
     """`run` as the `/api/test-results` API expects it: the renamed check fields and the
@@ -87,25 +84,8 @@ def _to_check_payload(check: dict) -> dict:
     published.update({name: check[old] for old, name in _CHECK_RENAMED.items() if old in check})
     if check.get("failedSamples"):
         published["failedSamples"] = [json.dumps(row) for row in check["failedSamples"]]
-    published.update(_row_counts(check.get("diagnostics") or {}))
+    published.update(row_counts(check.get("diagnostics") or {}))
     return {name: value for name, value in published.items() if value is not None}
-
-
-def _row_counts(diagnostics: dict) -> dict:
-    """The failed and total row counts a check measured, both in rows or neither.
-
-    The API sums them across checks into a row-level quality score, so a count in any
-    other unit -- duplicated keys, an author's own query result -- is left out.
-    """
-    metric = diagnostics.get("metric")
-    if metric in _FAILED_ROW_METRICS:
-        return {
-            "failedNumber": diagnostics.get("failed_rows", diagnostics.get("value")),
-            "totalNumber": diagnostics.get("row_count"),
-        }
-    if metric == "row_count":
-        return {"totalNumber": diagnostics.get("value")}
-    return {}
 
 
 def publish_test_results_to_entropy_data(

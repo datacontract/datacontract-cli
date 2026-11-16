@@ -80,8 +80,8 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
     # Import formats where `--schema` still means the database schema, so it must
     # not be rewritten to the v0.12.0 `--json-schema`.
     DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver", "oracle", "trino"}
-    # Import formats where `--format` is the file format (json, csv, parquet, delta),
-    # not the removed v0.12.0 importer selector.
+    # Import formats where `--format` is the file format (json, csv, parquet, delta), and the catalog command
+    # where it is the page format (html, markdown), not the removed v0.12.0 importer selector.
     FILE_FORMAT_IMPORTS = {"s3", "gcs", "adls"}
 
     RENAMED_FLAGS = {
@@ -107,7 +107,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
         else:
             import_format = subcommand
         takes_database_schema = import_format in self.DATABASE_SCHEMA_IMPORTS
-        takes_file_format = import_format in self.FILE_FORMAT_IMPORTS
+        takes_file_format = import_format in self.FILE_FORMAT_IMPORTS or subcommand == "catalog"
 
         rewritten_args = []
         for arg in args:
@@ -275,7 +275,9 @@ def resolve_output_format(output_format: Optional[OutputFormat], output: Optiona
     inferred = OutputFormat.infer_from_output_path(output)
     if inferred is None:
         detail = f" from extension '{output.suffix}'" if output.suffix else ""
-        console.print(f"Error: Cannot infer output format{detail}. Please specify --output-format (json or junit).")
+        console.print(
+            f"Error: Cannot infer output format{detail}. Please specify --output-format (json, junit or oors)."
+        )
         raise typer.Exit(code=1)
 
     return inferred

@@ -165,6 +165,31 @@ def test_import_boolean_schemas(tmp_path):
     assert properties["list"].items is not None
 
 
+def test_import_additional_properties_false_at_the_root(tmp_path):
+    source = tmp_path / "schema.json"
+    source.write_text(
+        json.dumps(
+            {
+                "properties": {
+                    "id": {"type": "string"},
+                    "customer": {
+                        "type": "object",
+                        "properties": {"id": {"type": "string"}},
+                        "additionalProperties": False,
+                    },
+                },
+                "additionalProperties": False,
+            }
+        )
+    )
+
+    result = DataContract.import_from_source("jsonschema", str(source))
+
+    schema = result.schema_[0]
+    assert [(c.property, c.value) for c in schema.customProperties] == [("additionalProperties", False)]
+    assert next(p for p in schema.properties if p.name == "customer").customProperties is None
+
+
 def test_import_an_infinite_bound_as_no_bound(tmp_path):
     source = tmp_path / "schema.json"
     source.write_text(

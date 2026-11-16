@@ -84,8 +84,9 @@ datacontract changelog datacontract-v1.yaml datacontract-v2.yaml
 
 ```bash
 # Update the bundled Data Contract Editor (datacontract/editor_assets/, used by `datacontract edit`)
-# to a specific version of the datacontract-editor npm package (latest if omitted)
-python update_editor_assets.py 0.1.10
+# to a specific version of the datacontract-editor npm package (latest if omitted), and the
+# Markdown libraries the HTML export inlines (datacontract/templates/vendor/) to the latest marked and DOMPurify
+python update_vendored_assets.py 0.1.10
 
 # Update the bundled ODCS Excel template (datacontract/templates/excel/, used by `datacontract export excel`)
 # from the open-data-contract-standard-excel-template repository

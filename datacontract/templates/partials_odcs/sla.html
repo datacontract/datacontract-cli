@@ -83,7 +83,7 @@
           <div class="flex items-center gap-x-4">
             <div class="flex flex-col">
               <div class="text-sm font-medium text-gray-500">Description</div>
-              <div class="mt-1 text-sm text-gray-900">{{ sla.description }}</div>
+              <div class="markdown mt-1 text-sm text-gray-900">{{ sla.description }}</div>
             </div>
           </div>
           {% endif %}
@@ -110,7 +110,7 @@
               <div class="mt-1 flex flex-wrap gap-1">
                 {% for cp in sla.customProperties %}
                   {% if cp.property is defined and cp.value is defined %}
-                    <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">{{ cp.property }}:{{ cp.value }}</span>
+                    <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">{{ cp.property }}:<span class="markdown markdown-inline markdown-breaks">{{ cp.value }}</span></span>
                   {% endif %}
                 {% endfor %}
               </div>

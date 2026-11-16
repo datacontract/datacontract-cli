@@ -1,3 +1,25 @@
+{# Structured values are laid out as nested lists, and the texts in them are rendered as Markdown. #}
+{% macro render_value(value) -%}
+  {% if value is mapping %}
+    <div class="flex flex-col gap-1">
+      {% for key, item in value.items() %}
+        <div class="flex gap-2">
+          <div class="shrink-0 font-medium text-gray-900">{{ key }}:</div>
+          <div class="min-w-0">{{ render_value(item) }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% elif value is sequence and value is not string %}
+    <ul class="list-disc ml-4">
+      {% for item in value %}<li>{{ render_value(item) }}</li>{% endfor %}
+    </ul>
+  {% elif value is sameas true %}true
+  {% elif value is sameas false %}false
+  {% elif value is none %}
+  {% else %}<div class="markdown markdown-breaks">{{ value }}</div>
+  {%- endif %}
+{%- endmacro %}
+
 {% set custom_props = datacontract.customProperties if datacontract.customProperties is defined and datacontract.customProperties is not callable else [] %}
 {% if custom_props is mapping %}
   {% set custom_props = custom_props.items() | list %}
@@ -23,15 +45,7 @@
           <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
             <dt class="text-sm font-medium text-gray-900">{{ key }}</dt>
             <dd class="mt-1 break-all text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-              {% if value is mapping or (value is sequence and value is not string) %}
-                {{ value | tojson }}
-              {% elif value is sameas true %}
-                true
-              {% elif value is sameas false %}
-                false
-              {% else %}
-                {{ value }}
-              {% endif %}
+              {{ render_value(value) }}
             </dd>
           </div>
           {% endfor %}
@@ -49,17 +63,7 @@
                 {% endif %}
               </dt>
               <dd class="mt-1 break-all text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-                {% if prop.value is defined %}
-                  {% if prop.value is mapping or (prop.value is sequence and prop.value is not string) %}
-                    {{ prop.value | tojson }}
-                  {% elif prop.value is sameas true %}
-                    true
-                  {% elif prop.value is sameas false %}
-                    false
-                  {% else %}
-                    {{ prop.value }}
-                  {% endif %}
-                {% endif %}
+                {% if prop.value is defined %}{{ render_value(prop.value) }}{% endif %}
               </dd>
             </div>
             {% endif %}

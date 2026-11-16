@@ -53,7 +53,10 @@ def fence(lang: str, body: str, max_lines: int | None) -> str:
     lines = body.split("\n")
     if max_lines and len(lines) > max_lines:
         lines = lines[:max_lines] + [COMMENT.get(lang, "…")]
-    return f"```{lang}\n" + "\n".join(lines) + "\n```"
+    ticks = "```"
+    while ticks in body:  # e.g. Markdown with a ```mermaid block
+        ticks += "`"
+    return f"{ticks}{lang}\n" + "\n".join(lines) + f"\n{ticks}"
 
 
 def upsert(page: Path, block: str, fallback: re.Pattern) -> None:

@@ -51,7 +51,7 @@
           {% if team_description %}
           <div>
             <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Description</div>
-            <div class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ team_description }}</div>
+            <div class="markdown markdown-breaks mt-1 text-sm text-gray-900">{{ team_description }}</div>
           </div>
           {% endif %}
 
@@ -112,7 +112,7 @@
                       {% elif cp.value is sameas false %}
                         false
                       {% else %}
-                        {{ cp.value }}
+                        <div class="markdown markdown-breaks">{{ cp.value }}</div>
                       {% endif %}
                     </div>
                   </div>
@@ -157,7 +157,7 @@
                     </div>
 
                     {% if m_description %}
-                      <p class="text-sm text-gray-500 mt-1">{{ m_description }}</p>
+                      <div class="markdown text-sm text-gray-500 mt-1">{{ m_description }}</div>
                     {% endif %}
 
                     {% if m_date_in or m_date_out or m_replaced_by %}
@@ -206,15 +206,15 @@
                       {% if has_member_cp %}
                         {% if m_custom_props is mapping %}
                           {% for key, value in m_custom_props.items() %}
-                          <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                            {{ key }}:{% if value is sameas true %}true{% elif value is sameas false %}false{% elif value is mapping or (value is sequence and value is not string) %}{{ value|tojson }}{% else %}{{ value }}{% endif %}
+                          <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                            {{ key }}:{% if value is sameas true %}true{% elif value is sameas false %}false{% elif value is mapping or (value is sequence and value is not string) %}{{ value|tojson }}{% else %}<span class="markdown markdown-inline markdown-breaks">{{ value }}</span>{% endif %}
                           </span>
                           {% endfor %}
                         {% elif m_custom_props is sequence and m_custom_props is not string %}
                           {% for cp in m_custom_props %}
                             {% if cp.property is defined and cp.value is defined %}
-                            <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                              {{ cp.property }}:{% if cp.value is sameas true %}true{% elif cp.value is sameas false %}false{% elif cp.value is mapping or (cp.value is sequence and cp.value is not string) %}{{ cp.value|tojson }}{% else %}{{ cp.value }}{% endif %}
+                            <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                              {{ cp.property }}:{% if cp.value is sameas true %}true{% elif cp.value is sameas false %}false{% elif cp.value is mapping or (cp.value is sequence and cp.value is not string) %}{{ cp.value|tojson }}{% else %}<span class="markdown markdown-inline markdown-breaks">{{ cp.value }}</span>{% endif %}
                             </span>
                             {% endif %}
                           {% endfor %}

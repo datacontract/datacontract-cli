@@ -29,7 +29,8 @@ def test_html_renders_the_metadata_fields():
     # custom property vendor, SLA extras
     assert ">acme<" in html
     assert 'href="https://example.com/sla-policy"' in html
-    assert "sla_source:contract-2024" in html
+    # the value of a custom property tag is wrapped to be rendered as Markdown
+    assert 'sla_source:<span class="markdown markdown-inline markdown-breaks">contract-2024</span>' in html
 
 
 def test_rdf_writes_the_new_fields_as_literals():

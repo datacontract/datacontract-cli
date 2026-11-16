@@ -66,15 +66,15 @@
               <div class="mt-1 flex flex-wrap gap-1">
                 {% if custom_properties is mapping %}
                   {% for key, value in custom_properties.items() %}
-                    <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                      {{ key }}:{% if value is sameas true %}true{% elif value is sameas false %}false{% elif value is mapping or (value is sequence and value is not string) %}{{ value|tojson }}{% else %}{{ value }}{% endif %}
+                    <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                      {{ key }}:{% if value is sameas true %}true{% elif value is sameas false %}false{% elif value is mapping or (value is sequence and value is not string) %}{{ value|tojson }}{% else %}<span class="markdown markdown-inline markdown-breaks">{{ value }}</span>{% endif %}
                     </span>
                   {% endfor %}
                 {% elif custom_properties is sequence and custom_properties is not string %}
                   {% for cp in custom_properties %}
                     {% if cp.property is defined and cp.value is defined %}
-                      <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
-                        {{ cp.property }}:{% if cp.value is sameas true %}true{% elif cp.value is sameas false %}false{% elif cp.value is mapping or (cp.value is sequence and cp.value is not string) %}{{ cp.value|tojson }}{% else %}{{ cp.value }}{% endif %}
+                      <span class="inline-flex items-start text-left rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                        {{ cp.property }}:{% if cp.value is sameas true %}true{% elif cp.value is sameas false %}false{% elif cp.value is mapping or (cp.value is sequence and cp.value is not string) %}{{ cp.value|tojson }}{% else %}<span class="markdown markdown-inline markdown-breaks">{{ cp.value }}</span>{% endif %}
                       </span>
                     {% endif %}
                   {% endfor %}

@@ -126,7 +126,7 @@ def test(
     ] = None,
     output_format: Annotated[
         OutputFormat,
-        typer.Option(help="The target format for the test results. Accepted values: json, junit."),
+        typer.Option(help="The target format for the test results. Accepted values: json, junit, oors (experimental)."),
     ] = None,
     checks: Annotated[
         str,
