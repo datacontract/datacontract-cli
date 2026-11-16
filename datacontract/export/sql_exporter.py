@@ -138,7 +138,7 @@ def _to_sql_table(
     foreign_keys = []
     if server_type == "mysql":
         for prop in properties:
-            for rel in (prop.relationships or []):
+            for rel in prop.relationships or []:
                 if (rel.type or "foreignKey") != "foreignKey" or not rel.to:
                     continue
                 ref_table, _, ref_field = rel.to.partition(".")
