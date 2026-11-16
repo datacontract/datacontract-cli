@@ -4,6 +4,8 @@ title: "Adopting Data Contracts"
 description: "Best practices for rolling out data contracts across a team: the data-first and contract-first approaches."
 ---
 
+import {EntropyExplainsVideo} from '@site/src/components/EntropyExplains';
+
 # Adopting Data Contracts
 
 There are two proven ways to introduce data contracts with the Data Contract CLI. Pick the one that matches your situation.
@@ -70,3 +72,9 @@ Create a data contract based on the **requirements** from use cases, before the 
    ```bash
    datacontract test
    ```
+
+## Best practises
+
+How to structure, store, and version data contracts once they are in place:
+
+<EntropyExplainsVideo episode="best-practices" />

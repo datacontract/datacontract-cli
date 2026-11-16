@@ -8,7 +8,7 @@ import styles from './styles.module.css';
 // in Umami as "play-entropy-explains". <EntropyExplainsLink episode="..." /> is the one-line variant.
 // Both link to the episode page on entropy-data.com (slides and video) with UTM parameters.
 const EPISODES = {
-  'data-contracts': {n: 1, youtube: 'agUJ5gqBTtk', image: '01-data-contracts.png', title: 'Data Contracts'},
+  'data-contracts': {n: 1, youtube: 'Vr5Rq_CLtPQ', image: '01-data-contracts.png', title: 'Data Contracts'},
   'data-products': {n: 2, youtube: 'np_U1lowwoc', image: '02-data-products.png', title: 'Data Contracts and Data Products'},
   'semantics': {n: 3, youtube: 'roXo8AU0yWA', image: '03-semantics.png', title: 'Data Contracts and Semantics'},
   'building-with-ai': {n: 4, youtube: 'dq72KvRs7OA', image: '04-building-with-ai.png', title: 'Building Data Products with AI'},
@@ -16,6 +16,7 @@ const EPISODES = {
   'ci-cd': {n: 6, youtube: 'W3bBe-yFvXo', image: '06-ci-cd.png', title: 'Data Contracts and CI/CD'},
   'data-quality': {n: 9, youtube: 'qkC6nw4KzzI', image: '09-data-quality.png', title: 'Data Contracts and Data Quality'},
   'dbt': {n: 10, youtube: 'Ms73kS1OkV4', image: '10-dbt.png', title: 'Data Contracts with dbt'},
+  'best-practices': {n: 11, youtube: 'Hi-gVQuM2x4', image: '11-best-practices.png', title: 'Data Contract Best Practices'},
 };
 
 function useEpisode(episode) {
