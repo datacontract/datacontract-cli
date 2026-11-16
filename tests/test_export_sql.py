@@ -149,6 +149,49 @@ FROM orders;
     assert actual == expected
 
 
+def test_to_sql_ddl_mysql_foreign_keys():
+    """A property relationship of type foreignKey should emit a FOREIGN KEY ... REFERENCES constraint."""
+    actual = DataContract(
+        data_contract_str="""
+apiVersion: v3.1.0
+kind: DataContract
+id: mysql-foreign-keys
+name: MySQL Foreign Keys
+version: 1.0.0
+status: active
+schema:
+- name: orders
+  properties:
+  - name: order_id
+    logicalType: integer
+    primaryKey: true
+  - name: customer_id
+    logicalType: integer
+    relationships:
+    - to: customers.customer_id
+      type: foreignKey
+- name: customers
+  properties:
+  - name: customer_id
+    logicalType: integer
+    primaryKey: true
+"""
+    ).export("sql", sql_server_type="mysql")
+    expected = """
+-- Data Contract: mysql-foreign-keys
+-- SQL Dialect: mysql
+CREATE TABLE `orders` (
+  `order_id` int primary key,
+  `customer_id` int,
+  CONSTRAINT fk_orders_customer_id FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`)
+);
+CREATE TABLE `customers` (
+  `customer_id` int primary key
+);
+""".strip()
+    assert actual == expected
+
+
 def test_to_sql_ddl_mysql_truncates_long_comments():
     actual = DataContract(
         data_contract_str=f"""

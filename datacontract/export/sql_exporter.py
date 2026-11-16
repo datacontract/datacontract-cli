@@ -134,8 +134,18 @@ def _to_sql_table(
     pk_props = [p for p in properties if p.primaryKey]
     composite_pk = len(pk_props) > 1
     fields = len(properties)
-    # When using a table-level composite PK constraint, we need an extra line for it
-    total_lines = fields + (1 if composite_pk and server_type != "clickhouse" else 0)
+    # MySQL emits FOREIGN KEY ... REFERENCES from property relationships of type foreignKey.
+    foreign_keys = []
+    if server_type == "mysql":
+        for prop in properties:
+            for rel in (prop.relationships or []):
+                if (rel.type or "foreignKey") != "foreignKey" or not rel.to:
+                    continue
+                ref_table, _, ref_field = rel.to.partition(".")
+                foreign_keys.append((prop.physicalName or prop.name, ref_table, ref_field))
+    # Table-level constraints (composite PK and foreign keys) each add a line.
+    extra_constraints = (1 if composite_pk and server_type != "clickhouse" else 0) + len(foreign_keys)
+    total_lines = fields + extra_constraints
     current_line = 1
 
     for prop in properties:
@@ -169,13 +179,22 @@ def _to_sql_table(
         result += col
         current_line += 1
 
+    # Use the bare table name (strip schema prefix) for constraint names.
+    constraint_name = model_name.split(".")[-1]
+
     if composite_pk and server_type != "clickhouse":
         # Sort by primaryKeyPosition (treat None as infinity so un-positioned cols go last)
         sorted_pk = sorted(pk_props, key=lambda p: (p.primaryKeyPosition is None, p.primaryKeyPosition))
         pk_columns = ", ".join(f"{quote}{p.physicalName or p.name}{quote}" for p in sorted_pk)
-        # Use the bare table name (strip schema prefix) for the constraint name
-        constraint_name = model_name.split(".")[-1]
         result += f"  CONSTRAINT pk_{constraint_name} PRIMARY KEY ({pk_columns})\n"
+
+    for column, ref_table, ref_field in foreign_keys:
+        ref_field = ref_field or column
+        result += (
+            f"  CONSTRAINT fk_{constraint_name}_{column} "
+            f"FOREIGN KEY ({quote}{column}{quote}) "
+            f"REFERENCES {quote}{ref_table}{quote} ({quote}{ref_field}{quote})\n"
+        )
 
     result += ")"
     if server_type == "clickhouse":
