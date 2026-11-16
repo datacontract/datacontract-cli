@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `datacontract test` finds columns whose name contains `.` or `[`, also in `{property}` of SQL rules, and no longer reads a name like `a.b` as field `b` of struct `a` (#1760)
+
 ## [1.2.10] - 2026-11-14
 
 ### Added

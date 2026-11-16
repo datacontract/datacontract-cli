@@ -18,7 +18,7 @@ from open_data_contract_standard.model import (
 )
 
 from datacontract.data_contract import DataContract
-from datacontract.engines.checks.check_spec import MetricType
+from datacontract.engines.checks.check_spec import Hop, MetricType
 from datacontract.engines.checks.create_checks import create_checks
 from datacontract.engines.ibis.ibis_check_execute import (
     _run_physical_type,
@@ -678,3 +678,18 @@ def test_data_rules_inside_json_still_run(tmp_path):
 
     assert checks[("payload", "field_type")].result == ResultEnum.passed
     assert checks[("payload.code", "field_required")].result == ResultEnum.failed
+
+
+def test_a_nested_property_keeps_its_name_as_text_and_its_steps_as_a_path():
+    orders = SchemaProperty(
+        name="orders",
+        logicalType="array",
+        items=SchemaProperty(
+            name="item", logicalType="object", properties=[SchemaProperty(name="sku", logicalType="string")]
+        ),
+    )
+
+    checks = {check.field: check for check in _checks(orders, "duckdb")}
+
+    assert checks["orders[].sku"].field == "orders[].sku"
+    assert checks["orders[].sku"].path == ("orders", Hop.ITEMS, "sku")

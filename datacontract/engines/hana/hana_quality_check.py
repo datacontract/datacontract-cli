@@ -54,7 +54,7 @@ def run_quality_checks(
     table_name = schema_object.physicalName or schema_object.name
     checks: list[Check] = []
 
-    for field_name, prop, nested in _iter_property_paths(schema_object.properties):
+    for field_name, _, prop, nested in _iter_property_paths(schema_object.properties):
         for index, quality in enumerate(prop.quality or []):
             if nested:
                 if quality.type == "sql":
