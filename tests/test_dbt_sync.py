@@ -581,6 +581,41 @@ def test_retired_managed_column_with_user_residue_is_handed_over(tmp_path: Path)
     assert col == {"name": "order_status", "data_type": "text", "data_tests": ["unique"], "quote": True}
 
 
+def test_sync_quotes_must_quote_names_and_columns_the_user_marked(tmp_path: Path):
+    """Sync marks a name no platform reads unquoted `quote: true` itself; the generated tests follow
+    every `quote: true`, the user's too; a managed column's quoting does not keep it from being retired."""
+    project = _copy_dbt_project(tmp_path)
+    _orders_model_sql(project)
+    contract = yaml.safe_load(CONTRACT_PATH.read_text())
+    contract["schema"][0]["properties"].append(
+        {"name": "order date", "logicalType": "string", "logicalTypeOptions": {"maxLength": 10}}
+    )
+    with_date = tmp_path / "orders-date.odcs.yaml"
+    with_date.write_text(yaml.safe_dump(contract))
+    sync(contract=str(with_date), project_dir=project, skip_tests=True)
+
+    schema = project / "models" / "orders.yml"
+    cols = {c["name"]: c for c in _model_entry(schema)["columns"]}
+    assert cols["order date"]["quote"] is True
+    assert "quote" not in cols["order_id"]
+
+    doc = yaml.safe_load(schema.read_text())
+    next(c for c in doc["models"][0]["columns"] if c["name"] == "order_id")["quote"] = True
+    schema.write_text(yaml.safe_dump(doc))
+    sync(contract=str(with_date), project_dir=project, skip_tests=True)
+
+    sql = {
+        p.name.removeprefix("orders_sync_test__1_0_0__orders__"): p.read_text()
+        for p in (project / GENERATED_TESTS_DIR).rglob("*.sql")
+    }
+    assert "LENGTH({{ adapter.quote('order date') }}) > 10" in sql["order_date__length.sql"]
+    assert "LENGTH({{ adapter.quote('order_id') }}) < 8" in sql["order_id__length.sql"]
+    assert "order_total < 0" in sql["order_total__range.sql"]
+
+    sync(contract=str(CONTRACT_PATH), project_dir=project, skip_tests=True)
+    assert "order date" not in {c["name"] for c in _model_entry(schema)["columns"]}
+
+
 def test_sync_skips_model_with_no_sql_or_entry(tmp_path: Path):
     """A contract model with neither a `.sql` nor a YAML entry can't be tested — warn and skip."""
     project = _copy_dbt_project(tmp_path)  # empty models dir, no orders.sql
@@ -1036,6 +1071,57 @@ def test_singular_query_placeholder_resolves_versioned_ref():
     qualities = [DataQuality(query="SELECT COUNT(*) FROM {model}", mustBe=0, name="rc")]
     out = _singular_tests_for_qualities(qualities, "c", "1.0.0", "MY_TABLE", run, model_version="2")
     assert "{{ ref('MY_TABLE', version=2) }}" in out[0].sql
+
+
+@pytest.mark.parametrize(
+    "query, quoted_columns, expected",
+    [
+        ("WHERE {field} IS NULL", frozenset(), "WHERE order IS NULL"),
+        ('WHERE "{field}" IS NULL', frozenset(), "WHERE order IS NULL"),
+        ("WHERE {field} IS NULL", frozenset({"order"}), "WHERE {{ adapter.quote('order') }} IS NULL"),
+        ("WHERE `{field}` IS NULL", frozenset(), "WHERE {{ adapter.quote('order') }} IS NULL"),
+    ],
+)
+def test_singular_query_field_placeholder_quoted_like_dbt(query: str, quoted_columns: frozenset, expected: str):
+    """`{field}` is quoted where the dbt column is `quote: true`, and backticks force it, as in `datacontract test`."""
+    qualities = [DataQuality(query=f"SELECT COUNT(*) FROM {{model}} {query}", mustBe=0, name="q")]
+    out = _singular_tests_for_qualities(
+        qualities, "c", "1.0.0", "orders", Run.create_run(), field="order", quoted_columns=quoted_columns
+    )
+    assert expected in out[0].sql
+
+
+def test_generated_sql_quotes_the_columns_dbt_quotes():
+    """Columns marked `quote: true`, and names no platform reads unquoted, go through `adapter.quote` in
+    every generated test, as dbt quotes them in its own; other columns stay bare."""
+    odcs = resolve_data_contract(str(CONTRACT_PATH))
+    schema_obj = odcs.schema_[0]
+    null_count = [DataQuality(metric="nullValues", mustBeLessThan=5)]
+    schema_obj.properties = [
+        SchemaProperty(name="order", primaryKey=True, primaryKeyPosition=1, logicalTypeOptions={"minLength": 2}),
+        SchemaProperty(name="CUST_ID", primaryKey=True, primaryKeyPosition=2),
+        SchemaProperty(name="order date", quality=null_count),
+        SchemaProperty(name="1st_order", quality=null_count),
+        SchemaProperty(name="note", quality=null_count),
+    ]
+    schema_obj.quality = [
+        DataQuality(metric="duplicateValues", mustBeLessThan=3, arguments={"properties": ["order", "note"]})
+    ]
+    _, singulars = generate_dbt_tests_for_schema(
+        odcs, schema_obj, "orders", Run.create_run(), quoted_columns=frozenset({"order", "cust_id"})
+    )
+    by_label = {
+        s.filename.removeprefix("orders_sync_test__1_0_0__orders__").removesuffix(".sql"): s.sql for s in singulars
+    }
+
+    assert "GROUP BY {{ adapter.quote('order') }}, {{ adapter.quote('CUST_ID') }}" in by_label["unique_combination"]
+    assert "LENGTH({{ adapter.quote('order') }}) < 2" in by_label["order__length"]
+    assert "WHERE {{ adapter.quote('order') }} IS NOT NULL" in by_label["order__length"]
+    assert "WHERE {{ adapter.quote('order date') }} IS NULL" in by_label["order_date__nullvalues"]
+    assert '"field": "order date"' in by_label["order_date__nullvalues"]
+    assert "WHERE {{ adapter.quote('1st_order') }} IS NULL" in by_label["1st_order__nullvalues"]
+    assert "WHERE note IS NULL" in by_label["note__nullvalues"]
+    assert "GROUP BY {{ adapter.quote('order') }}, note HAVING" in by_label["duplicatevalues"]
 
 
 def test_generate_outputs_warns_on_unsupported_model_qualities():
@@ -3153,6 +3239,22 @@ def test_versioned_sync_divergent_column_goes_to_override(tmp_path: Path):
     # Each override must ride alongside an `include: '*'` element, else dbt reads the version as having only `status`.
     for v in (1, 2):
         assert [e for e in _bullet(entry, v)["columns"] if "include" in e][0]["include"] == "*"
+
+
+def test_versioned_override_takes_the_top_level_quote(tmp_path: Path):
+    """dbt quotes an override's tests by the override's own `quote`, so a created override copies it."""
+    project = _versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    schema = project / "models" / "customers.yml"
+    doc = yaml.safe_load(schema.read_text())
+    next(c for c in doc["models"][0]["columns"] if c["name"] == "status")["quote"] = True
+    schema.write_text(yaml.safe_dump(doc))
+
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    assert _override(entry, 1, "status")["quote"] is True
+    assert _override(entry, 2, "status")["quote"] is True
 
 
 def _effective(entry: dict) -> dict:
