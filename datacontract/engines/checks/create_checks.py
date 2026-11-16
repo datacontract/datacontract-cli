@@ -1243,7 +1243,7 @@ def _to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opt
         if check is None:
             continue
         # A struct field the server cannot read is reported, not dropped; an unreadable value keeps its failure.
-        if "." in check.field and server_type not in _NESTED_CHECK_SERVER_TYPES and check.preset_result is None:
+        if len(check.path) > 1 and server_type not in _NESTED_CHECK_SERVER_TYPES and check.preset_result is None:
             check.metric = MetricType.UNSUPPORTED
             check.preset_result = "warning"
             check.preset_reason = nested_not_run_reason(server_type)
@@ -1251,37 +1251,45 @@ def _to_servicelevel_checks(data_contract: OpenDataContractStandard, server: Opt
     return checks
 
 
-def _split_element(element: Optional[str]) -> Optional[tuple[str, List[str]]]:
-    """The model and the property path of ``model.field``, or of ``model.struct.field`` for a field in a struct."""
+def sla_element_path(
+    data_contract: OpenDataContractStandard, element: Optional[str]
+) -> Optional[tuple[SchemaObject, tuple[str, ...], Optional[SchemaProperty]]]:
+    """The schema object an sla element names, the physical steps to its property, and that property.
+
+    The element is the ODCS shorthand ``object.property``, and ``object.struct.property`` for a field in a struct.
+    """
     # Commas separate several elements, which no single check can read
     if element is None or "," in element:
         return None
-    model, *path = element.split(".")
-    if not path or "" in (model, *path):
+    model, _, rest = element.partition(".")
+    schema_object = _get_schema_by_name(data_contract, model)
+    names = rest.split(".")
+    if schema_object is None or "" in names:
         return None
-    return model, path
+    steps, properties, prop = [], schema_object.properties, None
+    while names:
+        # A property's name may hold a dot itself, so the longest name declared at this level is one step
+        for length in range(len(names), 0, -1):
+            prop = next((p for p in properties or [] if p.name == ".".join(names[:length])), None)
+            if prop is not None:
+                break
+        steps.append((prop.physicalName or prop.name) if prop is not None else names[0])
+        properties = prop.properties if prop is not None else None
+        names = names[length:]
+    return schema_object, tuple(steps), prop
 
 
 def _resolve_sla_element(
     data_contract: OpenDataContractStandard, element: Optional[str], server: Optional[Server]
-) -> Optional[tuple[str, str]]:
-    """The (model, field) a contract-language sla element points at, in warehouse terms."""
-    parts = _split_element(element)
-    if parts is None:
-        logger.info(f"sla element {element!r} is not a single model.field, skipping")
+) -> Optional[tuple[str, tuple[str, ...], Optional[str]]]:
+    """The model, path and declared type a contract-language sla element points at, in warehouse terms."""
+    resolved = sla_element_path(data_contract, element)
+    if resolved is None:
+        logger.info(f"sla element {element!r} names no single property of the contract, skipping")
         return None
-    model, path = parts
-    schema_object = _get_schema_by_name(data_contract, model)
-    if schema_object is None:
-        return None
+    schema_object, path, prop = resolved
     server_type = server.type if server and server.type else None
-    # Each part of the path is read by its physicalName, descending into the struct it names
-    properties, names = schema_object.properties, []
-    for name in path:
-        prop = next((p for p in properties or [] if p.name == name), None)
-        names.append((prop.physicalName or prop.name) if prop is not None else name)
-        properties = prop.properties if prop is not None else None
-    return to_schema_name(schema_object, server_type), ".".join(names)
+    return to_schema_name(schema_object, server_type), path, _property_type(prop) if prop is not None else None
 
 
 def _freshness_check(
@@ -1292,7 +1300,8 @@ def _freshness_check(
     resolved = _resolve_sla_element(data_contract, sla.element, server)
     if resolved is None:
         return None
-    model, field = resolved
+    model, path, value_type = resolved
+    field = path_text(path)
 
     unit = (sla.unit or "d").lower() or "d"
     seconds = freshness_value_to_seconds(sla.value, unit)
@@ -1326,6 +1335,8 @@ def _freshness_check(
         name=f"Freshness of {model}.{field} < {threshold}",
         model=model,
         field=field,
+        path=path,
+        value_type=value_type,
         metric=MetricType.FRESHNESS,
         quality_id=sla.id,
         seconds=seconds,
@@ -1370,7 +1381,8 @@ def _retention_check(
     resolved = _resolve_sla_element(data_contract, sla.element, server)
     if resolved is None:
         return None
-    model, field = resolved
+    model, path, value_type = resolved
+    field = path_text(path)
     seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
         return None
@@ -1381,6 +1393,8 @@ def _retention_check(
         name=f"Retention of {model}.{field} < {seconds}s",
         model=model,
         field=field,
+        path=path,
+        value_type=value_type,
         metric=MetricType.RETENTION,
         quality_id=sla.id,
         seconds=seconds,

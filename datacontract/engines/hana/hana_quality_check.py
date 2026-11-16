@@ -4,12 +4,14 @@ from typing import Any
 
 from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 
+from datacontract.engines.checks.check_spec import path_text
 from datacontract.engines.checks.create_checks import (
     _iter_property_paths,
     _retention_value_to_seconds,
     is_percent_unit,
     nested_not_run_reason,
     quality_definition_yaml,
+    sla_element_path,
     unexecuted_check_name,
     unrunnable_reason,
 )
@@ -132,10 +134,10 @@ def run_sla_checks(
     for sla in data_contract.slaProperties or []:
         if sla.property not in ("freshness", "retention"):
             continue
-        resolved = _resolve_sla_element(data_contract, sla.element)
-        if resolved is None:
+        resolved = sla_element_path(data_contract, sla.element)
+        if resolved is None or resolved[2] is None:
             continue
-        schema_object, field_name = resolved
+        schema_object, path, _ = resolved
         if schema_filter != "all" and schema_object.name != schema_filter:
             continue
         table_name = schema_object.physicalName or schema_object.name
@@ -143,6 +145,24 @@ def run_sla_checks(
         # A service level property declares no dimension of its own, but it does
         # carry an id, so --quality-id selects it like a quality rule does.
         if not selection.selects(dimension=default_dimension(check_type), quality_id=sla.id):
+            continue
+        field_name = path_text(path)
+        if len(path) > 1:
+            # A field inside a struct is reported, not dropped
+            checks.append(
+                _check(
+                    check_type=check_type,
+                    key=f"{table_name}__{field_name}__{check_type}",
+                    name=f"{sla.property.capitalize()} of {table_name}.{field_name}",
+                    model=table_name,
+                    field=field_name,
+                    implementation=None,
+                    result=ResultEnum.warning,
+                    reason=nested_not_run_reason("hana"),
+                    category="servicelevel",
+                    quality_id=sla.id,
+                )
+            )
             continue
         row_filter = (model_filters or {}).get(table_name)
         if sla.property == "freshness":
@@ -767,19 +787,6 @@ def _freshness_value_to_seconds(value, unit: str | None) -> int | None:
         return numeric_value * 60
     if unit_lower in ("s", "sec", "second", "seconds"):
         return numeric_value
-    return None
-
-
-def _resolve_sla_element(data_contract: OpenDataContractStandard, element: str | None):
-    if element is None or element.count(".") != 1:
-        return None
-    model_name, field_name = element.split(".")
-    for schema_object in data_contract.schema_ or []:
-        if schema_object.name != model_name:
-            continue
-        for prop in schema_object.properties or []:
-            if prop.name == field_name:
-                return schema_object, prop.physicalName or prop.name
     return None
 
 

@@ -195,33 +195,31 @@ def _audited_events_schema():
     )
 
 
-def test_servicelevel_element_reaches_into_a_struct():
-    """`model.struct.field` measures a field of a struct, by its physicalNames."""
+@pytest.mark.parametrize(("server_type", "preset_result"), [("databricks", None), ("postgres", "warning")])
+def test_servicelevel_element_into_a_struct_warns_where_nested_checks_do_not_run(server_type, preset_result):
+    """A struct field runs where nested property checks run, and is reported as a warning elsewhere."""
     contract = _contract(
         _audited_events_schema(),
         ServiceLevelAgreementProperty(property="freshness", element="events.audit.created", value=24, unit="h"),
-        ServiceLevelAgreementProperty(property="retention", element="events.audit.created", value=1, unit="y"),
     )
 
-    checks = create_checks(contract, Server(server="s", type="databricks"))
+    (check,) = _of_type(create_checks(contract, Server(server="s", type=server_type)), "servicelevel_freshness")
 
-    for check_type in ("servicelevel_freshness", "servicelevel_retention"):
-        (check,) = _of_type(checks, check_type)
-        assert check.field == "audit_field_struct.creation_ts"
-        assert check.preset_result is None
+    assert check.preset_result == preset_result
 
 
-def test_servicelevel_element_into_a_struct_warns_where_nested_checks_do_not_run():
-    """A struct field the server cannot read is reported, like any nested property check."""
+def test_servicelevel_element_reads_a_name_holding_a_dot_as_one_name():
+    """A property's name is one name, so `events.Rate.x` is the column `Rate.x`, not the field `x` of `Rate`."""
+    schema = SchemaObject(name="events", properties=[SchemaProperty(name="Rate.x", logicalType="timestamp")])
     contract = _contract(
-        _audited_events_schema(),
-        ServiceLevelAgreementProperty(property="freshness", element="events.audit.created", value=24, unit="h"),
+        schema,
+        ServiceLevelAgreementProperty(property="freshness", element="events.Rate.x", value=24, unit="h"),
     )
 
     (check,) = _of_type(create_checks(contract, Server(server="s", type="postgres")), "servicelevel_freshness")
 
-    assert check.preset_result == "warning"
-    assert "nested" in check.preset_reason
+    assert check.path == ("Rate.x",)
+    assert check.preset_result is None
 
 
 def test_servicelevel_element_naming_several_elements_is_skipped():

@@ -97,7 +97,7 @@ To reach a field inside a struct (an `object` property), continue the path throu
 element: orders.audit.revision_ts   # property "revision_ts" of the struct "audit"
 ```
 
-Each part of the path is the contract name of the property; the CLI reads it by its `physicalName` where one is set. Struct fields can be read on the servers that run checks on nested properties (Databricks, DuckDB, local and object storage files, Kafka, Iceberg, Trino, Athena, and dataframes); on any other server, the check is reported as a warning.
+Each part of the path is the contract name of the property; the CLI reads it by its `physicalName` where one is set. Struct fields can be read on the servers that [run checks on nested properties](./schema.md#what-is-not-checked); on any other server, the check is reported as a warning. SAP HANA tables hold no structs, so on SAP HANA a struct path is always reported as a warning.
 
 Timestamps without a timezone are interpreted as UTC, and the age is measured against the current UTC time.
 

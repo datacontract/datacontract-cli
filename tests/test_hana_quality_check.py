@@ -462,6 +462,27 @@ def test_freshness_check():
     assert "SECONDS_BETWEEN(MAX" in connection.executed[0][0]
 
 
+def test_freshness_check_on_a_struct_field_warns():
+    """HANA tables hold no structs: a struct path is reported, not run and not dropped."""
+    connection = FakeConnection((60,))
+    audit = SchemaProperty(name="AUDIT", logicalType="object", properties=[SchemaProperty(name="UPDATED_AT")])
+    contract = OpenDataContractStandard(
+        id="hana-test",
+        schema=[SchemaObject(name="ORDERS", properties=[audit])],
+        slaProperties=[
+            ServiceLevelAgreementProperty(property="freshness", element="ORDERS.AUDIT.UPDATED_AT", value=5, unit="m")
+        ],
+    )
+
+    checks = run_sla_checks(connection, "SALES", contract)
+
+    check = check_by_type(checks, "servicelevel_freshness")
+    assert check.result == ResultEnum.warning
+    assert check.field == "AUDIT.UPDATED_AT"
+    assert "nested" in check.reason
+    assert connection.executed == []
+
+
 def test_retention_check():
     connection = FakeConnection((4000,))
     contract = OpenDataContractStandard(
