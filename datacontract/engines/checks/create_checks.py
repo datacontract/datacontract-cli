@@ -1281,15 +1281,15 @@ def sla_element_path(
 
 def _resolve_sla_element(
     data_contract: OpenDataContractStandard, element: Optional[str], server: Optional[Server]
-) -> Optional[tuple[str, tuple[str, ...], Optional[str]]]:
-    """The model, path and declared type a contract-language sla element points at, in warehouse terms."""
+) -> Optional[tuple[str, tuple[str, ...]]]:
+    """The model and path a contract-language sla element points at, in warehouse terms."""
     resolved = sla_element_path(data_contract, element)
     if resolved is None:
         logger.info(f"sla element {element!r} names no single property of the contract, skipping")
         return None
-    schema_object, path, prop = resolved
+    schema_object, path, _ = resolved
     server_type = server.type if server and server.type else None
-    return to_schema_name(schema_object, server_type), path, _property_type(prop) if prop is not None else None
+    return to_schema_name(schema_object, server_type), path
 
 
 def _freshness_check(
@@ -1300,7 +1300,7 @@ def _freshness_check(
     resolved = _resolve_sla_element(data_contract, sla.element, server)
     if resolved is None:
         return None
-    model, path, value_type = resolved
+    model, path = resolved
     field = path_text(path)
 
     unit = (sla.unit or "d").lower() or "d"
@@ -1336,7 +1336,6 @@ def _freshness_check(
         model=model,
         field=field,
         path=path,
-        value_type=value_type,
         metric=MetricType.FRESHNESS,
         quality_id=sla.id,
         seconds=seconds,
@@ -1381,7 +1380,7 @@ def _retention_check(
     resolved = _resolve_sla_element(data_contract, sla.element, server)
     if resolved is None:
         return None
-    model, path, value_type = resolved
+    model, path = resolved
     field = path_text(path)
     seconds = _retention_value_to_seconds(sla.value, sla.unit)
     if seconds is None:
@@ -1394,7 +1393,6 @@ def _retention_check(
         model=model,
         field=field,
         path=path,
-        value_type=value_type,
         metric=MetricType.RETENTION,
         quality_id=sla.id,
         seconds=seconds,
