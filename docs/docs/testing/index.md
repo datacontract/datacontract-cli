@@ -80,6 +80,10 @@ datacontract test --server production datacontract.yaml
     <img src="/img/icons/clickhouse.svg" alt="" />
     <span><span className="doc-card-title">ClickHouse</span><span className="doc-card-desc">ClickHouse databases</span></span>
   </a>
+  <a className="doc-card" href="/testing/dremio">
+    <img src="/img/icons/database.svg" alt="" />
+    <span><span className="doc-card-title">Dremio</span><span className="doc-card-desc">Tables and views in Dremio sources, spaces and folders</span></span>
+  </a>
   <a className="doc-card" href="/testing/exasol">
     <img src="/img/icons/exasol.svg" alt="" />
     <span><span className="doc-card-title">Exasol</span><span className="doc-card-desc">Exasol databases</span></span>

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 title: "Exasol Reference"
 sidebar_label: "Exasol"
 description: "All Exasol authentication options and data type handling."

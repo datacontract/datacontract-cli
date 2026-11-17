@@ -173,6 +173,11 @@ importer_factory.register_lazy_importer(
     class_name="HiveImporter",
 )
 importer_factory.register_lazy_importer(
+    name=ImportFormat.dremio,
+    module_path="datacontract.imports.dremio_importer",
+    class_name="DremioImporter",
+)
+importer_factory.register_lazy_importer(
     name=ImportFormat.oracle,
     module_path="datacontract.imports.oracle_importer",
     class_name="OracleImporter",

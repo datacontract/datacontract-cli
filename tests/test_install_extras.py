@@ -32,6 +32,7 @@ SERVER_TYPES = sorted(
         "clickhouse",
         "databricks",
         "dataframe",
+        "dremio",
         "exasol",
         "hana",
         "hive",

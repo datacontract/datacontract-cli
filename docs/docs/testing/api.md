@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 16
 title: "HTTP API"
 description: "Test the JSON or YAML responses of a REST API's GET or POST endpoints against a data contract, created from its OpenAPI document or a sample response."
 ---

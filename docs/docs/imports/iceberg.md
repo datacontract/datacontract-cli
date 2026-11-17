@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 17
 title: "Import: Iceberg"
 description: "Create a data contract from an Apache Iceberg schema."
 ---

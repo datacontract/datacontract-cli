@@ -922,6 +922,45 @@ def import_hive(
 
 
 @import_app.command(
+    name="dremio",
+    epilog="Example: datacontract import dremio --source localhost --schema lake.sales.marts --output datacontract.yaml",
+)
+def import_dremio(
+    source: Annotated[Optional[str], typer.Option(help="The host of the Dremio web console and REST API.")] = None,
+    port: Annotated[Optional[int], typer.Option(help="The port of the Dremio REST API (default 9047).")] = None,
+    schema: Annotated[
+        Optional[str],
+        typer.Option(
+            "--schema",
+            help="The path of the source, space or folder, its names separated by periods, e.g. lake.sales.marts. "
+            'A name with a period of its own goes in double quotes: $scratch."bucket.v1".raw',
+        ),
+    ] = None,
+    table: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Name of a table or view to import (repeat for multiple, omit for all in the path)."),
+    ] = None,
+    output: output_option = None,
+    owner: owner_option = None,
+    id: id_option = None,
+    debug: debug_option = None,
+):
+    """Import a data contract from the tables and views in a Dremio source, space or folder."""
+    enable_debug_logging(debug)
+    result = DataContract.import_from_source(
+        config=cli_config(),
+        format="dremio",
+        source=source,
+        port=port,
+        schema=schema,
+        dremio_table=table,
+        owner=owner,
+        id=id,
+    )
+    _write_result(result, output)
+
+
+@import_app.command(
     name="s3",
     epilog="Example: datacontract import s3 --source s3://my-bucket/orders/*.json --output datacontract.yaml",
 )

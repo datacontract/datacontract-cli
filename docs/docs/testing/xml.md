@@ -1,5 +1,5 @@
 ---
-sidebar_position: 26
+sidebar_position: 27
 title: "XML files"
 description: "Test XML documents against a data contract, starting from their XML Schema."
 ---

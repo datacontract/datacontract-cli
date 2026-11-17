@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 # that does not exist (`local`) or to an unrelated one (`api` installs the web
 # server dependencies, not a test backend).
 _INSTALL_EXTRAS = {"local": "duckdb", "api": "duckdb", "iceberg": "iceberg"}
-_FULL_TYPE_STRING_SERVERS = {"athena", "trino", "databricks", "bigquery", "clickhouse", "hive"}
+_FULL_TYPE_STRING_SERVERS = {"athena", "trino", "databricks", "bigquery", "clickhouse", "hive", "dremio"}
 
 
 def install_extra_for(server_type: Optional[str]) -> str:

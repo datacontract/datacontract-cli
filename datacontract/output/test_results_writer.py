@@ -24,6 +24,7 @@ REFERENCE_DOCS_SERVER_TYPES = {
     "clickhouse",
     "databricks",
     "dataframe",
+    "dremio",
     "exasol",
     "gcs",
     "hive",

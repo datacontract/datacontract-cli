@@ -151,6 +151,7 @@ TESTABLE_SERVER_TYPES = {
     "bigquery",
     "clickhouse",
     "databricks",
+    "dremio",
     "duckdb",
     "exasol",
     "hana",

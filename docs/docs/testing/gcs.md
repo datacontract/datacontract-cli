@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 15
 title: "Google Cloud Storage"
 description: "Create a data contract from files on Google Cloud Storage and test them against it."
 ---

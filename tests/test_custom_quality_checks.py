@@ -623,7 +623,7 @@ def test_ignored_and_deprecated_parts_of_a_check_are_logged_once_and_the_check_s
         "Custom quality check 'between': Unknown key 'version' is ignored.",
         "Custom quality check 'between': Unknown key 'arguments.min.description' is ignored.",
         "Custom quality check 'between': The dialect 'trin' is not supported by datacontract-cli. Use one of: "
-        "athena, bigquery, clickhouse, databricks, duckdb, exasol, hive, oracle, postgres, redshift, snowflake, "
+        "athena, bigquery, clickhouse, databricks, dremio, duckdb, exasol, hive, oracle, postgres, redshift, snowflake, "
         "spark, trino, tsql.",
         "Custom quality check 'between' on orders.amount: Unknown key 'implementation.strict' is ignored.",
     ]

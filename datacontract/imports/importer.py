@@ -65,6 +65,7 @@ class ImportFormat(str, Enum):
     trino = "trino"
     clickhouse = "clickhouse"
     hive = "hive"
+    dremio = "dremio"
     xsd = "xsd"
 
     @classmethod

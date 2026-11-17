@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract test` tests Dremio servers (new `dremio` extra): the checks run as jobs over Dremio's REST API, in the path the server's `schema` names, so tables and views in nested folders of a source or space are found by their name; a user and password or a personal access token sign in, and the declared `physicalType` is checked against the column types Dremio reports
+- `datacontract import dremio` creates a data contract from the tables and views in a Dremio source, space or folder (`--schema lake.sales.marts`), with the full column types Dremio reports, including the element types of lists and the fields of structs, and a ready-to-test `servers` block
 - `datacontract test`: freshness and retention service levels read fields inside a struct (`orders.audit.revision_ts`) (#1778 @travishofmeister)
 - `datacontract test` checks the metadata of files on S3, Google Cloud Storage and local servers (size, content type, last modified, user-defined metadata, …) on servers with `format: metadata`
 

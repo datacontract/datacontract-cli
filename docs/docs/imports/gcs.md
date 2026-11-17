@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 15
 title: "Import: Google Cloud Storage"
 description: "Create a data contract from files in Google Cloud Storage."
 ---

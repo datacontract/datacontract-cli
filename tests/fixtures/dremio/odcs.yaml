@@ -1,0 +1,111 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: dremio-orders-test
+name: Dremio orders
+version: 1.0.0
+status: active
+servers:
+  - server: dremio
+    type: dremio
+    host: localhost
+    port: __PORT__
+    schema: __SCHEMA__
+schema:
+  - name: orders
+    physicalName: orders
+    physicalType: table
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        unique: true
+        logicalTypeOptions:
+          pattern: '^ORD-\d{4}$'
+          maxLength: 8
+      - name: customer_id
+        logicalType: string
+        physicalType: VARCHAR(10)
+        quality:
+          - type: library
+            metric: nullValues
+            mustBeLessThan: 2
+      - name: order_status
+        logicalType: string
+        physicalType: VARCHAR
+        quality:
+          - type: library
+            metric: invalidValues
+            arguments:
+              validValues: ['open', 'shipped', 'cancelled']
+            mustBe: 0
+      - name: currency
+        logicalType: string
+        physicalType: CHAR(3)
+        logicalTypeOptions:
+          minLength: 3
+      - name: order_total
+        logicalType: number
+        physicalType: DECIMAL(10,2)
+        logicalTypeOptions:
+          minimum: 0
+          maximum: 10000
+      - name: quantity
+        logicalType: integer
+        physicalType: INTEGER
+        logicalTypeOptions:
+          minimum: 1
+      - name: line_count
+        logicalType: integer
+        physicalType: BIGINT
+      - name: discount
+        logicalType: number
+        physicalType: DOUBLE
+      - name: is_gift
+        logicalType: boolean
+        physicalType: BOOLEAN
+      - name: order_date
+        logicalType: date
+        physicalType: DATE
+      - name: order_timestamp
+        logicalType: timestamp
+        physicalType: TIMESTAMP
+      - name: tags
+        logicalType: array
+        physicalType: LIST<VARCHAR>
+        items:
+          name: tag
+          logicalType: string
+      - name: shipping
+        logicalType: object
+        physicalType: STRUCT<city VARCHAR, zip VARCHAR>
+        properties:
+          - name: city
+            logicalType: string
+          - name: zip
+            logicalType: string
+      - name: region
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+    quality:
+      - type: library
+        metric: rowCount
+        mustBeGreaterThan: 0
+      - type: library
+        metric: duplicateValues
+        arguments:
+          properties: ['order_id']
+        mustBe: 0
+      - type: sql
+        description: No order has a negative total
+        query: SELECT COUNT(*) FROM ${model} WHERE order_total < 0
+        mustBe: 0
+      - type: sql
+        description: The 95th percentile of order totals stays below 10000
+        query: SELECT APPROX_PERCENTILE(CAST(order_total AS DOUBLE), 0.95) FROM ${model}
+        mustBeLessThan: 10000
+      - type: sql
+        description: Every order id follows the ORD-nnnn scheme
+        query: SELECT COUNT(*) FROM ${model} WHERE NOT REGEXP_LIKE(order_id, '^ORD-[0-9]{4}$')
+        mustBe: 0

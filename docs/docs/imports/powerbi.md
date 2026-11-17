@@ -1,5 +1,5 @@
 ---
-sidebar_position: 26
+sidebar_position: 27
 title: "Import: Power BI"
 description: "Create a data contract from a Power BI semantic model (.pbit, .bim, or .json)."
 ---

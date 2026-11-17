@@ -269,6 +269,22 @@ hive = [
   "packaging>=21.3,<27.0",
 ]
 
+# ibis has no Dremio backend; the SQL of ibis's Trino compiler, written in sqlglot's
+# Dremio dialect, runs as jobs over Dremio's REST API (see connections/dremio.py),
+# which needs no driver beyond requests.
+dremio = [
+  "ibis-framework>=10.0.0,<13.0.0",
+  "numpy>=1.23.2,<3",
+  # ibis loads its datafusion compiler (needs packaging) but omits it from its base wheel.
+  "packaging>=21.3,<27.0",
+  "pandas>=1.5.3,<4",
+  "pyarrow>=10.0.1",
+  "pyarrow-hotfix>=0.4",
+  # sqlglot's Dremio dialect, which the SQL and the physical types are written in, arrived in
+  # 26.32.0, a release ibis cannot load its compilers with.
+  "sqlglot>=26.33.0",
+]
+
 dbml = [
   "pydbml>=1.1.1"
 ]
@@ -310,7 +326,7 @@ xml = [
 # the `all` meta-extra would pull a proprietary package into a default-ish
 # install, so HANA support must be opted into explicitly via `datacontract-cli[hana]`.
 all = [
-  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,clickhouse,hive,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle,xml,xlsx]"
+  "datacontract-cli[avro,kafka,bigquery,csv,excel,snowflake,postgres,redshift,mysql,dataframe,databricks,sqlserver,s3,gcs,azure,athena,trino,exasol,impala,clickhouse,hive,dremio,dbml,duckdb,iceberg,parquet,rdf,api,protobuf,oracle,xml,xlsx]"
 ]
 
 # for development, we pin all libraries to an exact version

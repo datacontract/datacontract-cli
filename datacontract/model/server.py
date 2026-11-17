@@ -30,7 +30,6 @@ LINT_ONLY_SERVER_TYPES = {
     "cloudsql",
     "db2",
     "denodo",
-    "dremio",
     "glue",
     "informix",
     "ingres",

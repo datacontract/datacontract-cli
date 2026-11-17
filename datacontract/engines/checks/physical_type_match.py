@@ -145,6 +145,23 @@ def _clickhouse_time_zone_omitted(exp_dt: exp.DataType, act_dt: exp.DataType) ->
     )
 
 
+# Dremio stores a string without a length (VARCHAR(10) is VARCHAR), and its own
+# spellings LIST and ROW name what sqlglot parses as ARRAY and STRUCT; ROW is
+# how its INFORMATION_SCHEMA reports a struct column.
+_DREMIO_STRING_PATTERN = re.compile(
+    r"\b(?:character varying|varchar|char|character|nvarchar|nchar|string|text)(?:\s*\(\s*\d+\s*\))?(?![\w(])",
+    re.IGNORECASE,
+)
+_DREMIO_LIST_PATTERN = re.compile(r"\blist\b(?=\s*(?:<|$|,|>))", re.IGNORECASE)
+_DREMIO_ROW_PATTERN = re.compile(r"\brow\b(?=\s*(?:<|$|,|>))", re.IGNORECASE)
+
+
+def _normalize_dremio_declared(expected: str) -> str:
+    declared = _DREMIO_STRING_PATTERN.sub("VARCHAR", expected.strip())
+    declared = _DREMIO_LIST_PATTERN.sub("ARRAY", declared)
+    return _DREMIO_ROW_PATTERN.sub("STRUCT", declared)
+
+
 def _parse(type_str: str, dialect) -> Optional[exp.DataType]:
     """Parse a type string into an ``exp.DataType`` for ``dialect``, or ``None``."""
     if not type_str or not type_str.strip():
@@ -297,6 +314,8 @@ def physical_type_matches(
         declared = _normalize_exasol_declared(expected)
     elif _dialect_name(dialect) == "clickhouse":
         declared = _normalize_clickhouse_declared(expected)
+    elif _dialect_name(dialect) == "dremio":
+        declared = _normalize_dremio_declared(expected)
     exp_dt = _parse(declared, dialect)
     act_dt = _parse(actual, dialect)
 

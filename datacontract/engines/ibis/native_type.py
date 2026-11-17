@@ -52,6 +52,7 @@ _CATALOG_STRATEGY = {
     "exasol": "exasol",
     "clickhouse": "clickhouse",
     "hive": "hive",
+    "dremio": "dremio",
 }
 
 
@@ -385,6 +386,26 @@ def _read_hive(con, server: Server, model: str) -> Optional[dict[str, str]]:
     return result or None
 
 
+def _read_dremio(con, server: Server, model: str) -> Optional[dict[str, str]]:
+    """Dremio's ``INFORMATION_SCHEMA.COLUMNS`` reports a list or struct column as a bare
+    ``ARRAY`` or ``ROW``; the schema of a query's results names the element and field types.
+    The table resolves in the server's path, which the connection pins."""
+    from datacontract.engines.ibis.connections.dremio import native_type
+
+    table = '"' + model.replace('"', '""') + '"'
+    try:
+        cursor = con.raw_sql(f"SELECT * FROM {table} LIMIT 0")
+    except Exception as e:
+        logger.debug("could not read the Dremio column types of %s: %s", model, e)
+        return None
+    result = {
+        str(column["name"]).lower(): native
+        for column in getattr(cursor, "schema", None) or []
+        if (native := native_type(column.get("type")))
+    }
+    return result or None
+
+
 _READERS = {
     "information_schema": _read_information_schema,
     "oracle": _read_oracle,
@@ -394,6 +415,7 @@ _READERS = {
     "exasol": _read_exasol,
     "clickhouse": _read_clickhouse,
     "hive": _read_hive,
+    "dremio": _read_dremio,
 }
 
 

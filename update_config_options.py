@@ -31,6 +31,7 @@ GROUPS = {
     "bigquery": "BigQuery",
     "clickhouse": "ClickHouse",
     "databricks": "Databricks",
+    "dremio": "Dremio",
     "duckdb": "DuckDB",
     "exasol": "Exasol",
     "gcs": "GCS",

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 22
+sidebar_position: 23
 title: "Import: OpenAPI"
 description: "Create a data contract from the responses of GET or POST operations in an OpenAPI 3.x document."
 ---

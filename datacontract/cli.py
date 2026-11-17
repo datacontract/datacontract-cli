@@ -79,7 +79,7 @@ class OrderedCommandsWithMigrationHints(OrderedCommands):
 
     # Import formats where `--schema` still means the database schema, so it must
     # not be rewritten to the v0.12.0 `--json-schema`.
-    DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver", "oracle", "trino"}
+    DATABASE_SCHEMA_IMPORTS = {"snowflake", "redshift", "postgres", "athena", "sqlserver", "oracle", "trino", "dremio"}
     # Import formats where `--format` is the file format (json, csv, parquet, delta), and the catalog command
     # where it is the page format (html, markdown), not the removed v0.12.0 importer selector.
     FILE_FORMAT_IMPORTS = {"s3", "gcs", "adls"}

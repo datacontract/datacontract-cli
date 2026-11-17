@@ -206,6 +206,19 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_DATABRICKS_CATALOG` | `databricks_catalog` | string | Overrides `catalog` from the contract's `servers` block |
 | `DATACONTRACT_DATABRICKS_SCHEMA` | `databricks_schema` | string | Overrides `schema` from the contract's `servers` block |
 
+### Dremio
+
+| Environment variable | `Config` field | Type | Notes |
+|---|---|---|---|
+| `DATACONTRACT_DREMIO_USERNAME` | `dremio_username` | string |  |
+| `DATACONTRACT_DREMIO_PASSWORD` | `dremio_password` | string (secret) |  |
+| `DATACONTRACT_DREMIO_TOKEN` | `dremio_token` | string (secret) |  |
+| `DATACONTRACT_DREMIO_USE_SSL` | `dremio_use_ssl` | boolean |  |
+| `DATACONTRACT_DREMIO_VALIDATE_CERTIFICATE` | `dremio_validate_certificate` | boolean |  |
+| `DATACONTRACT_DREMIO_HOST` | `dremio_host` | string | Overrides `host` from the contract's `servers` block |
+| `DATACONTRACT_DREMIO_PORT` | `dremio_port` | integer | Overrides `port` from the contract's `servers` block |
+| `DATACONTRACT_DREMIO_SCHEMA` | `dremio_schema` | string | Overrides `schema` from the contract's `servers` block |
+
 ### DuckDB
 
 | Environment variable | `Config` field | Type | Notes |

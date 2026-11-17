@@ -1,5 +1,5 @@
 ---
-sidebar_position: 18
+sidebar_position: 19
 title: "Microsoft SQL Server"
 description: "Create a data contract from your SQL Server tables and test the actual data against it."
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 15
+sidebar_position: 16
 title: "Import: Hive"
 description: "Create a data contract from a Hive database."
 ---

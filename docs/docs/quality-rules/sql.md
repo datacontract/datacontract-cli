@@ -111,6 +111,7 @@ There is no `dialect` field on a quality rule. The dialect is **derived from the
 | `exasol` | `exasol` |
 | `impala`, `hive` | `hive` |
 | `clickhouse` | `clickhouse` |
+| `dremio` | `dremio` |
 | `dataframe` | `spark` |
 
 The ODCS synonyms resolve to the spelling above before the dialect is looked up, so `postgresql` is read as `postgres`. A server declared as `type: custom` with `customType: mssql` is read as `tsql`, like `sqlserver`.

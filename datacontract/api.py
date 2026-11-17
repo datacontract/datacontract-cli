@@ -529,6 +529,7 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "exasol": ("host", "exasol_host", ("exasol_password",)),
     "clickhouse": ("host", "clickhouse_host", ("clickhouse_password",)),
     "hive": ("host", "hive_host", ("hive_password",)),
+    "dremio": ("host", "dremio_host", ("dremio_password", "dremio_token")),
     "redshift": ("host", "redshift_host", ("redshift_password",)),
     "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
     "mssql": ("host", "sqlserver_host", ("sqlserver_password",)),

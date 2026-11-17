@@ -45,6 +45,9 @@ SERVER_OVERRIDE_OPTIONS = {
     "databricks_server_hostname": "host",
     "databricks_catalog": "catalog",
     "databricks_schema": "schema",
+    "dremio_host": "host",
+    "dremio_port": "port",
+    "dremio_schema": "schema",
     "duckdb_database": "database",
     "duckdb_schema": "schema",
     "exasol_host": "host",
@@ -164,6 +167,17 @@ class Config(BaseSettings):
     # overrides for the contract's servers block
     databricks_catalog: str | None = None
     databricks_schema: str | None = None
+
+    # dremio (REST API of the web console)
+    dremio_username: str | None = None
+    dremio_password: SecretStr | None = None
+    dremio_token: SecretStr | None = None
+    dremio_use_ssl: bool | None = None
+    dremio_validate_certificate: bool | None = None
+    # overrides for the contract's servers block
+    dremio_host: str | None = None
+    dremio_port: int | None = None
+    dremio_schema: str | None = None
 
     # duckdb
     # overrides for the contract's servers block
@@ -857,6 +871,31 @@ class Config(BaseSettings):
 
     def get_postgres_password(self, required: bool = False) -> str | None:
         return self._str_option("postgres_password", required)
+
+    # --- dremio ---
+    def get_dremio_username(self, required: bool = False) -> str | None:
+        return self._str_option("dremio_username", required)
+
+    def get_dremio_password(self, required: bool = False) -> str | None:
+        return self._str_option("dremio_password", required)
+
+    def get_dremio_token(self, required: bool = False) -> str | None:
+        return self._str_option("dremio_token", required)
+
+    def get_dremio_use_ssl(self, default: bool = False) -> bool:
+        return self._bool_option("dremio_use_ssl", default)
+
+    def get_dremio_validate_certificate(self, default: bool = True) -> bool:
+        return self._bool_option("dremio_validate_certificate", default)
+
+    def get_dremio_host(self, required: bool = False) -> str | None:
+        return self._str_option("dremio_host", required)
+
+    def get_dremio_port(self) -> int | None:
+        return self._int_option("dremio_port")
+
+    def get_dremio_schema(self, required: bool = False) -> str | None:
+        return self._str_option("dremio_schema", required)
 
     def get_duckdb_database(self, required: bool = False) -> str | None:
         return self._str_option("duckdb_database", required)

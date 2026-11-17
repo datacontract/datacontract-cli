@@ -1,0 +1,48 @@
+apiVersion: v3.2.0
+kind: DataContract
+id: orders-quality-dremio
+name: Orders quality rules (dremio)
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    Custom SQL quality rules written in the dialect of a dremio server. Used by
+    tests/test_quality_sql_dialects.py to keep the read-only SQL guard from
+    refusing SQL that a real data source accepts.
+servers:
+  - server: production
+    type: dremio
+    host: localhost
+    port: 9047
+    schema: lake.sales.marts
+schema:
+  - name: orders
+    properties:
+      - name: order_id
+        logicalType: string
+        physicalType: VARCHAR
+      - name: order_total
+        logicalType: number
+        physicalType: DECIMAL(10,2)
+      - name: order_status
+        logicalType: string
+        physicalType: VARCHAR
+      - name: order_timestamp
+        logicalType: timestamp
+        physicalType: TIMESTAMP
+    quality:
+      - type: sql
+        description: "Every order has a known status"
+        query: |
+          SELECT COUNT(*) FROM ${model} WHERE NOT REGEXP_LIKE(order_status, '^(open|shipped)$')
+        mustBe: 0
+      - type: sql
+        description: "95th percentile of the order total"
+        query: |
+          SELECT APPROX_PERCENTILE(CAST(order_total AS DOUBLE), 0.95) FROM ${model}
+        mustBeLessThan: 100000
+      - type: sql
+        description: "No order is older than a year"
+        query: |
+          SELECT COUNT(*) FROM ${model} WHERE order_timestamp < TIMESTAMPADD(DAY, -365, CURRENT_TIMESTAMP)
+        mustBe: 0

@@ -45,6 +45,7 @@ _DIALECT_BY_SERVER_TYPE = {
     "bigquery": "bigquery",
     "clickhouse": "clickhouse",
     "databricks": "databricks",
+    "dremio": "dremio",
     "exasol": "exasol",
     "hive": "hive",
     "oracle": "oracle",
