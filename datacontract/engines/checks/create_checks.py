@@ -59,6 +59,7 @@ _FILE_SERVER_TYPES = {"local", "s3", "gcs", "azure"}
 _NESTED_CHECK_SERVER_TYPES = {
     "dataframe",
     "databricks",
+    "dremio",
     "duckdb",
     "iceberg",
     "kafka",
@@ -237,6 +238,10 @@ def prepare_query(
         if dialect == "snowflake" and isinstance(name, tuple):
             # Snowflake reaches into a column's value with `:`; a dot would name a table's column
             return parts[0] + "".join(f":{part}" for part in parts[1:])
+        if dialect == "dremio" and isinstance(name, tuple):
+            # Without a table alias, Dremio reads `customer.email` as the column email of a table customer
+            fields = [part for part in steps[1:] if isinstance(part, str)]
+            return parts[0] + "".join(f"[{exp.Literal.string(field).sql(dialect=dialect)}]" for field in fields)
         return ".".join(parts)
 
     if instance is not None:

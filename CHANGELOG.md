@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `datacontract test` checks the constraints and quality rules of nested properties (struct fields and array items) on Dremio servers
+
 ## [1.2.11] - 2026-11-17
 
 ### Added

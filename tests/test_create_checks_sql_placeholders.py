@@ -97,6 +97,16 @@ def test_a_nested_property_is_a_path_into_its_column_on_snowflake():
     )
 
 
+def test_a_nested_property_is_a_path_into_its_column_on_dremio():
+    quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM {model} WHERE {property} IS NULL")
+    server = Server(type="dremio")
+
+    assert (
+        prepare_query(quality.query, "orders", ("customer", "home address", "city"), server)
+        == "SELECT COUNT(*) FROM orders WHERE customer['home address']['city'] IS NULL"
+    )
+
+
 def test_a_property_name_with_a_dot_is_one_quoted_name_on_every_dialect():
     quality = DataQuality(type="sql", query="SELECT COUNT(*) FROM orders WHERE {property} < 0")
 
