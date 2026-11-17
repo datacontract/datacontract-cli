@@ -39,8 +39,9 @@ def non_utf8_default_encoding(monkeypatch):
 # text rather than on a marker, because these modules construct their container
 # at import time (`postgres = PostgresContainer("postgres:16")`) — so the call
 # has to be made before collection imports the module, which rules out anything
-# written inside it.
-_NEEDS_DOCKER = re.compile(r"testcontainers")
+# written inside it. A container class shared by several test files lives in a
+# `tests/*_container.py` helper, which the test files import instead.
+_NEEDS_DOCKER = re.compile(r"testcontainers|from tests\.\w+_container import")
 
 
 @functools.cache
