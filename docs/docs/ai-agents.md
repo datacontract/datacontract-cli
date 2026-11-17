@@ -4,9 +4,13 @@ title: "Use with AI Coding Agents"
 description: "Let Claude Code, Codex, GitHub Copilot, and other coding agents create, test, and evolve data contracts with the Data Contract Skills."
 ---
 
+import {EntropyExplainsVideo} from '@site/src/components/EntropyExplains';
+
 # Use with AI Coding Agents
 
 The [Data Contract Skills](https://github.com/datacontract/datacontract-skills) teach coding agents such as Claude Code, OpenAI Codex, and GitHub Copilot CLI to work with data contracts. The agent uses the Data Contract CLI and the [Data Contract Editor](./editor.md) under the hood: it imports schemas, writes descriptions and quality rules, lints until the contract is valid, runs the tests, and explains failing checks.
+
+<EntropyExplainsVideo episode="building-with-ai" />
 
 | Skill | What the agent does |
 |---|---|

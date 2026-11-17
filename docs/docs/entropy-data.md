@@ -4,9 +4,13 @@ title: "Integrate with Entropy Data"
 description: "Publish data contract test results to Entropy Data, a commercial platform for managing data contracts."
 ---
 
+import {EntropyExplainsLink} from '@site/src/components/EntropyExplains';
+
 # Integrate with Entropy Data
 
 [Entropy Data](https://entropy-data.com/) is a commercial platform to manage data contracts. It provides a web UI, access management, and data governance for a data product marketplace based on data contracts.
+
+<EntropyExplainsLink episode="data-products" />
 
 The Data Contract CLI integrates with Entropy Data through the `--publish` option: it runs the tests and pushes the **full results** to the [Entropy Data API](https://api.entropy-data.com/swagger/index.html), where they are displayed and tracked over time.
 
