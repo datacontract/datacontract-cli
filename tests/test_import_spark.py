@@ -1,4 +1,4 @@
-import importlib
+import importlib.util
 import sys
 from types import ModuleType
 
@@ -20,9 +20,9 @@ def test_geometry_type_is_imported_as_object(monkeypatch):
     monkeypatch.setitem(sys.modules, "pyspark.sql", sql)
     monkeypatch.setitem(sys.modules, "pyspark.sql.types", types)
 
-    spark_importer = importlib.import_module("datacontract.imports.spark_importer")
-    try:
-        assert spark_importer._data_type_from_spark(geometry_type()) == "object"
-    finally:
-        monkeypatch.delitem(sys.modules, "datacontract.imports.spark_importer", raising=False)
-        monkeypatch.delattr(sys.modules["datacontract.imports"], "spark_importer", raising=False)
+    # loaded without registering it, so the copy bound to the fake pyspark never outlives the test
+    spec = importlib.util.find_spec("datacontract.imports.spark_importer")
+    spark_importer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(spark_importer)
+
+    assert spark_importer._data_type_from_spark(geometry_type()) == "object"
