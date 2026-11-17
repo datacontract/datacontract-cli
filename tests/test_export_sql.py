@@ -150,7 +150,7 @@ FROM orders;
 
 
 def test_to_sql_ddl_mysql_foreign_keys():
-    """A property relationship of type foreignKey should emit a FOREIGN KEY ... REFERENCES constraint."""
+    """A foreign key is emitted after all CREATE TABLE statements, as ALTER TABLE."""
     actual = DataContract(
         data_contract_str="""
 apiVersion: v3.1.0
@@ -182,12 +182,12 @@ schema:
 -- SQL Dialect: mysql
 CREATE TABLE `orders` (
   `order_id` int primary key,
-  `customer_id` int,
-  CONSTRAINT fk_orders_customer_id FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`)
+  `customer_id` int
 );
 CREATE TABLE `customers` (
   `customer_id` int primary key
 );
+ALTER TABLE `orders` ADD CONSTRAINT fk_orders_customer_id FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`);
 """.strip()
     assert actual == expected
 

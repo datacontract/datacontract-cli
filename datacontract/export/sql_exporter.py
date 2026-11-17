@@ -100,12 +100,27 @@ def to_sql_ddl(
     result += f"-- Data Contract: {data_contract.id}\n"
     result += f"-- SQL Dialect: {server_type}\n"
 
+    foreign_keys = []
     for schema_obj in data_contract.schema_:
-        result += _to_sql_table(
+        table_sql, table_foreign_keys = _to_sql_table(
             table_prefix + schema_obj.name,
             schema_obj,
             server_type,
             **kwargs,
+        )
+        result += table_sql
+        foreign_keys.extend(table_foreign_keys)
+
+    # A foreign key references a table that must already exist, so emit every
+    # one after all CREATE TABLE statements as an ALTER TABLE ... ADD CONSTRAINT.
+    quote = "`" if server_type == "mysql" else ""
+    for table, column, ref_table, ref_field in foreign_keys:
+        ref_field = ref_field or column
+        result += (
+            f"ALTER TABLE {quote}{table}{quote} "
+            f"ADD CONSTRAINT fk_{table}_{column} "
+            f"FOREIGN KEY ({quote}{column}{quote}) "
+            f"REFERENCES {quote}{ref_table}{quote} ({quote}{ref_field}{quote});\n"
         )
 
     return result.strip()
@@ -116,9 +131,9 @@ def _to_sql_table(
     model: SchemaObject,
     server_type: str = "snowflake",
     **kwargs,
-) -> str:
+) -> tuple[str, list]:
     if (model.physicalType or "").lower() == "view":
-        return _to_sql_view(model_name, model, server_type)
+        return _to_sql_view(model_name, model, server_type), []
 
     quote = "`" if server_type == "mysql" else ""
     if server_type == "databricks":
@@ -134,7 +149,8 @@ def _to_sql_table(
     pk_props = [p for p in properties if p.primaryKey]
     composite_pk = len(pk_props) > 1
     fields = len(properties)
-    # MySQL emits FOREIGN KEY ... REFERENCES from property relationships of type foreignKey.
+    # A foreign key references a table that must already exist, so for MySQL we
+    # collect it here and emit it after all CREATE TABLE statements.
     foreign_keys = []
     if server_type == "mysql":
         for prop in properties:
@@ -142,9 +158,10 @@ def _to_sql_table(
                 if (rel.type or "foreignKey") != "foreignKey" or not rel.to:
                     continue
                 ref_table, _, ref_field = rel.to.partition(".")
-                foreign_keys.append((prop.physicalName or prop.name, ref_table, ref_field))
-    # Table-level constraints (composite PK and foreign keys) each add a line.
-    extra_constraints = (1 if composite_pk and server_type != "clickhouse" else 0) + len(foreign_keys)
+                foreign_keys.append((model_name, prop.physicalName or prop.name, ref_table, ref_field))
+    # Table-level constraint (composite PK) adds a line; foreign keys are emitted
+    # separately after the table, so they do not count towards the column list.
+    extra_constraints = 1 if composite_pk and server_type != "clickhouse" else 0
     total_lines = fields + extra_constraints
     current_line = 1
 
@@ -188,14 +205,6 @@ def _to_sql_table(
         pk_columns = ", ".join(f"{quote}{p.physicalName or p.name}{quote}" for p in sorted_pk)
         result += f"  CONSTRAINT pk_{constraint_name} PRIMARY KEY ({pk_columns})\n"
 
-    for column, ref_table, ref_field in foreign_keys:
-        ref_field = ref_field or column
-        result += (
-            f"  CONSTRAINT fk_{constraint_name}_{column} "
-            f"FOREIGN KEY ({quote}{column}{quote}) "
-            f"REFERENCES {quote}{ref_table}{quote} ({quote}{ref_field}{quote})\n"
-        )
-
     result += ")"
     if server_type == "clickhouse":
         engine = kwargs.get("clickhouse_engine") or "MergeTree()"
@@ -212,7 +221,7 @@ def _to_sql_table(
     elif server_type == "mysql" and model.description is not None:
         result += f" COMMENT='{_escape_single_quoted(_truncate_mysql_comment(model.description, 2048))}'"
     result += ";\n"
-    return result
+    return result, foreign_keys
 
 
 def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:
