@@ -7,20 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.11] - 2026-11-17
+
 ### Added
-- `datacontract test` tests Dremio servers (new `dremio` extra): the checks run as jobs over Dremio's REST API, in the path the server's `schema` names, so tables and views in nested folders of a source or space are found by their name; a user and password or a personal access token sign in, and the declared `physicalType` is checked against the column types Dremio reports
-- `datacontract import dremio` creates a data contract from the tables and views in a Dremio source, space or folder (`--schema lake.sales.marts`), with the full column types Dremio reports, including the element types of lists and the fields of structs, and a ready-to-test `servers` block
-- `datacontract test`: freshness and retention service levels read fields inside a struct (`orders.audit.revision_ts`) (#1778 @travishofmeister)
-- `datacontract test` checks the metadata of files on S3, Google Cloud Storage and local servers (size, content type, last modified, user-defined metadata, …) on servers with `format: metadata`
+- Dremio (new `dremio` extra):
+  - `datacontract test` tests Dremio servers: the checks run as jobs over Dremio's REST API, in the path the server's `schema` names, so tables and views in nested folders of a source or space are found by their name; a user and password or a personal access token sign in, and the declared `physicalType` is checked against the column types Dremio reports
+  - `datacontract import dremio` creates a data contract from the tables and views in a Dremio source, space or folder (`--schema lake.sales.marts`), with the full column types Dremio reports, including the element types of lists and the fields of structs, and a ready-to-test `servers` block
+- `datacontract test`:
+  - checks the metadata of files on S3, Google Cloud Storage and local servers (size, content type, last modified, user-defined metadata, …) on servers with `format: metadata` (#1823)
+  - freshness and retention service levels read fields inside a struct (`orders.audit.revision_ts`) (#1778 @travishofmeister)
 
 ### Changed
-- `datacontract test`: Azure Blob metadata checks are enabled with the server `format: metadata` instead of the non-standard schema `logicalType: blob`
+- `datacontract test`: Azure Blob metadata checks are enabled with the server `format: metadata` instead of the non-standard schema `logicalType: blob` (#1823)
+- The bundled Data Contract Editor (`datacontract edit`) is updated to 0.1.19
 
 ### Fixed
-- `datacontract test` reads tables named `tables`, `databases`, `schemas` or `variables` on DuckDB-backed servers, such as MySQL's `information_schema.TABLES`
-- `datacontract import spark` maps Spark `GeometryType` and `GeographyType` columns to the logical type `object`
-- `datacontract test` finds columns whose name contains `.` or `[`, also in `{property}` of SQL rules, and no longer reads a name like `a.b` as field `b` of struct `a` (#1760)
-- `datacontract dbt sync`: generated tests quote the columns marked `quote: true`, and sync marks names that need quoting on every platform
+- `datacontract test`:
+  - finds columns whose name contains `.` or `[`, also in `{property}` of SQL rules, and no longer reads a name like `a.b` as field `b` of struct `a` (#1760,#1824 @eugen-goebel)
+  - reads tables named `tables`, `databases`, `schemas` or `variables` on DuckDB-backed servers, such as MySQL's `information_schema.TABLES` (#1823)
+- `datacontract import spark` maps Spark `GeometryType` and `GeographyType` columns to the logical type `object` (#1836 @IchEssBlumen)
+- `datacontract dbt sync`: generated tests quote the columns marked `quote: true`, and sync marks names that need quoting on every platform (#1835 @jschoedl)
 
 ## [1.2.10] - 2026-11-14
 
