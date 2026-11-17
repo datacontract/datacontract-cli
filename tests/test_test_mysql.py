@@ -83,7 +83,6 @@ def _init_sql(file_path):
 def test_catalog_views_are_checked_like_tables(start_mysql_container, monkeypatch):
     monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", mysql_container.username)
     monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", mysql_container.password)
-    _init_sql("fixtures/mysql/data/data.sql")
     contract = f"""apiVersion: v3.1.0
 kind: DataContract
 id: mysql-catalog
