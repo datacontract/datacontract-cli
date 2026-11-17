@@ -158,3 +158,94 @@ def test_an_unknown_table_fails_its_checks_with_dremios_message(valid_orders):
 
     assert run.result in (ResultEnum.failed, ResultEnum.error)
     assert any("not found" in (check.reason or "") for check in run.checks)
+
+
+NESTED_CONTRACT = """apiVersion: v3.1.0
+kind: DataContract
+id: dremio-nested
+version: 1.0.0
+status: active
+servers:
+  - server: dremio
+    type: dremio
+    host: localhost
+    port: __PORT__
+    schema: __SCHEMA__
+schema:
+  - name: orders
+    physicalName: orders
+    properties:
+      - name: order_id
+        logicalType: integer
+        primaryKey: true
+      - name: items
+        logicalType: array
+        items:
+          logicalType: object
+          properties:
+            - name: sku
+              logicalType: string
+              required: true
+              unique: true
+            - name: discounts
+              logicalType: array
+              items:
+                logicalType: object
+                properties:
+                  - name: code
+                    logicalType: string
+                    unique: true
+                  - name: amount
+                    logicalType: number
+                    logicalTypeOptions:
+                      minimum: 0
+      - name: tags
+        logicalType: array
+        items:
+          logicalType: string
+          quality:
+            - metric: invalidValues
+              arguments:
+                validValues: [new, vip]
+              mustBe: 0
+      - name: customer
+        logicalType: object
+        properties:
+          - name: email
+            logicalType: string
+            required: true
+            quality:
+              - type: sql
+                query: SELECT COUNT(*) FROM {model} WHERE {property} NOT LIKE '%@%'
+                mustBe: 0
+"""
+
+
+@pytest.fixture(scope="module")
+def nested_orders():
+    return load('"$scratch".lake.nested', "nested_orders.sql")
+
+
+def nested_contract(schema: str) -> str:
+    return NESTED_CONTRACT.replace("__PORT__", str(dremio.port())).replace("__SCHEMA__", f"'{schema}'")
+
+
+def test_nested_rules_fail_on_the_parent_rows_that_violate_them(nested_orders):
+    run = DataContract(data_contract_str=nested_contract(nested_orders), include_failed_samples=True).test()
+
+    print(run.pretty())
+    failed = [c for c in run.checks if c.result != ResultEnum.passed]
+    assert {(c.field, c.type) for c in failed} == {
+        ("items[].sku", "field_required"),
+        ("items[].sku", "field_unique"),
+        ("items[].discounts[].code", "field_unique"),
+        ("items[].discounts[].amount", "field_minimum"),
+        ("tags[]", "field_invalid_values"),
+        ("customer.email", "field_required"),
+        ("customer.email", "field_quality_sql"),
+    }
+    assert all(c.result == ResultEnum.failed and c.diagnostics["value"] == 1 for c in failed)
+    samples = {(c.field, c.type): [sample["order_id"] for sample in c.failedSamples or []] for c in failed}
+    assert samples[("items[].sku", "field_required")] == [2]
+    # one sample for each order, however many of its tags break the rule
+    assert samples[("tags[]", "field_invalid_values")] == [3]

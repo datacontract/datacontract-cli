@@ -309,10 +309,15 @@ def _run_model(
             if spec.metric == MetricType.ROW_COUNT:
                 named = t.count().name(spec.key)
             elif spec.metric == MetricType.MISSING_COUNT:
-                predicate = _row_predicate(
-                    t, columns, spec.path, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
-                )
-                named = _count_true(predicate).name(spec.key)
+
+                def _missing(c, _spec=spec):
+                    return _missing_expr(c, _spec.missing_values)
+
+                if _flattens_items(t, spec.path):
+                    _run_item_count(run, spec, _matching_items(t, columns, spec.path, _missing), model_row_count())
+                else:
+                    predicate = _row_predicate(t, columns, spec.path, _missing, spec.value_type)
+                    named = _count_true(predicate).name(spec.key)
             elif spec.metric == MetricType.INVALID_COUNT:
                 dtype = _resolve_dtype(schema, spec.path)
                 # ibis reports no type inside a nested Snowflake column, where a value has the type it is cast to
@@ -339,11 +344,17 @@ def _run_model(
                         return ibis.literal(False)
                     return built
 
-                expr = _row_predicate(t, columns, spec.path, _invalid, spec.value_type)
+                flattened = _flattens_items(t, spec.path)
+                if flattened:
+                    expr = _matching_items(t, columns, spec.path, _invalid)
+                else:
+                    expr = _row_predicate(t, columns, spec.path, _invalid, spec.value_type)
                 if unconstrained:
                     # No validity constraints => nothing can be invalid.
                     _set_impl(run, spec.key, "invalid_count = 0 (no validity constraints configured)", None)
                     _evaluate(run, spec, 0, row_count=model_row_count())
+                elif flattened:
+                    _run_item_count(run, spec, expr, model_row_count())
                 else:
                     named = _count_true(expr).name(spec.key)
             elif spec.metric == MetricType.DUPLICATE_COUNT:
@@ -518,37 +529,50 @@ def _select_columns(columns, sensitive, wanted):
 
 
 def _samples_for(t, columns, schema, spec: CheckSpec, identifiers, sensitive):
-    if spec.metric == MetricType.DUPLICATE_COUNT:
-        if not _is_item_duplicate(spec):
-            return _duplicate_samples(t, columns, sensitive, spec)
-        predicate = _item_duplicate_predicate(t, columns, spec.path, spec.value_type)
-    elif spec.metric == MetricType.MISSING_COUNT:
-        predicate = _row_predicate(
-            t, columns, spec.path, lambda c: _missing_expr(c, spec.missing_values), spec.value_type
-        )
-    else:  # INVALID_COUNT
-        dtype = _resolve_dtype(schema, spec.path)
-        cast = _is_nested_path(spec.path) and _backend_name(t) == "snowflake"
-        unconstrained = []
-
-        def _invalid(c, _flag=unconstrained):
-            import ibis
-
-            built = _invalid_expr(t, c, c.type() if cast else dtype, spec)
-            if built is None:
-                _flag.append(True)
-                return ibis.literal(False)
-            return built
-
-        predicate = _row_predicate(t, columns, spec.path, _invalid, spec.value_type)
-        if unconstrained:
-            return None
-
     # A nested path is not a column; show the one it starts from.
     root = _root(spec.path) if spec.path else None
     select_cols = _select_columns(columns, sensitive, [*identifiers, root])
-    rows = t.filter(predicate)
-    rows = rows.select(select_cols) if select_cols else rows
+    flattened = _flattens_items(t, spec.path)
+    if spec.metric == MetricType.DUPLICATE_COUNT:
+        if not _is_item_duplicate(spec):
+            return _duplicate_samples(t, columns, sensitive, spec)
+        if flattened:
+            # the repeats are counted per array, in groups that keep no column of the row
+            return None
+        rows = t.filter(_item_duplicate_predicate(t, columns, spec.path, spec.value_type))
+    else:
+        if spec.metric == MetricType.MISSING_COUNT:
+
+            def build(c):
+                return _missing_expr(c, spec.missing_values)
+
+        else:  # INVALID_COUNT
+            dtype = _resolve_dtype(schema, spec.path)
+            cast = _is_nested_path(spec.path) and _backend_name(t) == "snowflake"
+            unconstrained = []
+
+            def build(c, _flag=unconstrained):
+                import ibis
+
+                built = _invalid_expr(t, c, c.type() if cast else dtype, spec)
+                if built is None:
+                    _flag.append(True)
+                    return ibis.literal(False)
+                return built
+
+        if flattened:
+            import ibis
+
+            items = _matching_items(t, columns, spec.path, build, select_cols or t.columns)
+            # one sample for each row, however many of its items break the rule
+            items = items.mutate(__dc_first__=ibis.row_number().over(group_by=_ROW_NUMBER.format(0)))
+            rows = items.filter(items["__dc_first__"] == 0)
+        else:
+            rows = t.filter(_row_predicate(t, columns, spec.path, build, spec.value_type))
+        if spec.metric == MetricType.INVALID_COUNT and unconstrained:
+            return None
+
+    rows = rows.select(select_cols or t.columns)
     return _df_to_records(rows.limit(_FAILED_SAMPLE_LIMIT).execute())
 
 
@@ -916,9 +940,19 @@ def _run_item_duplicate(run: Run, t, columns, spec: CheckSpec, row_count: int):
 
     Counted in parent rows.
     """
-    bad = t.filter(_item_duplicate_predicate(t, columns, spec.path, spec.value_type))
+    if _flattens_items(t, spec.path):
+        rows, item, steps = _flattened_items(t, columns, spec.path)
+        value = _struct_path(item, steps)
+        # each array on its own: the items of other arrays in the same row are no repeats
+        numbers = dict.fromkeys(_ROW_NUMBER.format(level) for level in (0, spec.path.count(Hop.ITEMS) - 1))
+        arrays = rows.group_by(list(numbers)).aggregate(__dc_values__=value.count(), __dc_distinct__=value.nunique())
+        bad = arrays.filter(arrays["__dc_values__"] > arrays["__dc_distinct__"])
+        repeating = bad[_ROW_NUMBER.format(0)].nunique()
+    else:
+        bad = t.filter(_item_duplicate_predicate(t, columns, spec.path, spec.value_type))
+        repeating = bad.count()
     _record_sql(run, spec, bad)
-    repeats = int(bad.count().execute())
+    repeats = int(repeating.execute())
     _evaluate(run, spec, repeats, row_count=row_count)
     _update_diagnostics(run, spec.key, {"failed_rows": repeats})
 
@@ -1401,6 +1435,54 @@ def _row_predicate(t, columns: dict, path: tuple[str | Hop, ...], build, value_t
     array = path.index(Hop.ITEMS)
     items = _resolve_expr(t, columns, path[:array])
     return items.filter(lambda i: _element_predicate(i, path[array + 1 :], build)).length() > 0
+
+
+def _flattens_items(t, path: tuple[str | Hop, ...]) -> bool:
+    """Whether a rule at ``path`` reads array items flattened into rows of their own, as on Dremio.
+
+    Dremio has no lambda to filter an array with (``FILTER(array, x -> ...)``), and flattens an
+    array only in a select list (``FLATTEN(array)``, not ``UNNEST``), so such a rule runs a query of its own.
+    """
+    return Hop.ITEMS in path and _backend_name(t) == "dremio"
+
+
+# The number of a row of the table, and of a row each array but the last is flattened into
+_ROW_NUMBER = "__dc_row_{}__"
+
+
+def _flattened_items(t, columns, path: tuple[str | Hop, ...], keep=()):
+    """One row per item of the arrays on ``path``, as ``(rows, item, steps)``: the last array's item
+    and the struct fields ``steps`` below it.
+
+    Each array is flattened in a subquery of its own, after its rows are numbered, so the rows keep
+    the number of the row of ``t`` they come from (``__dc_row_0__``) and of each array's row.
+    ``keep`` names columns of ``t`` the rows carry along.
+    """
+    import ibis
+
+    rows, item, steps, numbers = t, _resolve_col(columns, path[0]), path[1:], []
+    while Hop.ITEMS in steps:
+        array = steps.index(Hop.ITEMS)
+        numbers.append(_ROW_NUMBER.format(len(numbers)))
+        rows = rows.mutate(**{numbers[-1]: ibis.row_number()})
+        items = _struct_path(rows[item], steps[:array]).unnest()
+        item = f"__dc_item_{len(numbers)}__"
+        rows = rows.select(*numbers, *keep, **{item: items})
+        steps = steps[array + 1 :]
+    return rows, rows[item], steps
+
+
+def _matching_items(t, columns, path: tuple[str | Hop, ...], build, keep=()):
+    """The flattened items at ``path`` that satisfy ``build``; see ``_flattened_items``."""
+    rows, item, steps = _flattened_items(t, columns, path, keep)
+    return rows.filter(_element_predicate(item, steps, build))
+
+
+def _run_item_count(run: Run, spec: CheckSpec, items, row_count: int):
+    """A missing or invalid count over flattened ``items``: the rows with an item that breaks the rule."""
+    counted = items[_ROW_NUMBER.format(0)].nunique()
+    _record_sql(run, spec, counted)
+    _evaluate(run, spec, int(counted.execute()), row_count=row_count)
 
 
 def _element_predicate(element, steps, build):

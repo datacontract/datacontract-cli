@@ -326,6 +326,9 @@ def _backend_class():
         dialect = Dremio
         type_mapper = DremioType
 
+        def visit_Unnest(self, op, *, arg):
+            return self.f.flatten(arg)
+
     class Backend(SQLBackend, NoExampleLoader):
         name = "dremio"
         compiler = DremioCompiler()
