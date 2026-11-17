@@ -146,8 +146,9 @@ def _type_to_property(
 
 def _data_type_from_spark(spark_type: types.DataType) -> str:
     """Maps Spark data types to ODCS logical types."""
-    geometry_type = getattr(types, "GeometryType", None)
-    if geometry_type is not None and isinstance(spark_type, geometry_type):
+    # pyspark < 4.1 has neither class
+    spatial_types = tuple(filter(None, (getattr(types, "GeometryType", None), getattr(types, "GeographyType", None))))
+    if isinstance(spark_type, spatial_types):
         return "object"
     elif isinstance(spark_type, types.StringType):
         return "string"
