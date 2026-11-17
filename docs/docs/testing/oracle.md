@@ -80,6 +80,37 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
+## Metadata checks
+
+Instead of the data, you can check what Oracle records about it. Point a server at the catalog (`schema: SYS`); its schemas then name the catalog views, and every check works on them as on a table:
+
+```yaml
+servers:
+  - server: catalog
+    type: oracle
+    host: localhost
+    port: 1521
+    serviceName: FREEPDB1
+    schema: SYS
+schema:
+  - name: ALL_TABLES
+    quality:
+      - type: sql
+        description: The ORDERS table has statistics from the last week
+        query: |
+          SELECT COUNT(*) FROM ALL_TABLES
+          WHERE OWNER = 'SALES' AND TABLE_NAME = 'ORDERS' AND (LAST_ANALYZED IS NULL OR LAST_ANALYZED < SYSDATE - 7)
+        mustBe: 0
+    properties:
+      - name: TABLE_NAME
+        logicalType: string
+        required: true
+      - name: NUM_ROWS
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 100000000
+```
+
 ## Reference
 
 All authentication options and the data type mappings: **[Oracle Reference](../reference/oracle.md)**.

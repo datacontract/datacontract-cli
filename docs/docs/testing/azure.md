@@ -92,9 +92,19 @@ All authentication options (service principal, credential chain, connection stri
 ## Metadata checks
 
 Instead of reading the file contents, you can validate the metadata of the blobs themselves
-(size, content type, last modified, file count, …). Each ODCS schema object with
-`physicalType: file` represents a **unique folder/prefix** in Azure Blob storage or ADLS Gen2.
-Its `properties` map directly to `BlobProperties` attributes from the Azure SDK: for every
+(size, content type, last modified, file count, …). Set the server's `format` to
+`metadata`; each of its schema objects then represents the blobs under the server `location`
+in Azure Blob storage or ADLS Gen2.
+
+```yaml
+servers:
+  - server: production
+    type: azure
+    location: https://myaccount.blob.core.windows.net/mycontainer/raw/orders/
+    format: metadata
+```
+
+The `properties` of a schema map directly to `BlobProperties` attributes from the Azure SDK: for every
 declared property the engine extracts the corresponding attribute from each blob and validates
 it against the quality constraints declared on that property.
 

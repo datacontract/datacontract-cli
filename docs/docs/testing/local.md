@@ -74,6 +74,48 @@ duplicate_count(status) was 1, expected = 0
 
 The command exits with code `1`, so the same call works as a gate in [CI/CD pipelines](../scheduling/index.md).
 
+## Metadata checks
+
+Instead of reading the file contents, you can check the files themselves: their size, age, naming, and number, as in a landing folder. Set the server's `format` to `metadata`; each of its schemas then describes the files at the server `path`, one row per file:
+
+```yaml
+servers:
+  - server: landing
+    type: local
+    path: ./landing/  # a directory, listed recursively, a glob like ./landing/*/*.png, or a single file
+    format: metadata
+
+schema:
+  - name: landing_files
+    quality:
+      - metric: rowCount
+        mustBeGreaterThan: 0
+    properties:
+      - name: name
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "\\.png$"
+      - name: size
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 5242880  # 5 MiB
+
+slaProperties:
+  - property: freshness
+    value: 24
+    unit: h
+    element: landing_files.lastModified
+```
+
+| Property | Type | File attribute |
+|---|---|---|
+| `name` | `string` | the file path, as matched by the server `path` |
+| `size` | `integer` | size in bytes |
+| `lastModified` | `timestamp` | when the file was last written |
+| `created` | `timestamp` | when the file was created; empty on systems that do not record it, such as most Linux file systems |
+
+Every check works on these properties as on the columns of a table, including the freshness and retention service levels. No file is read.
+
 ## Excel workbooks
 
 Excel workbooks (`format: xlsx`) need `pip install 'datacontract-cli[xlsx]'`. Each schema is one sheet: its `physicalName` is the sheet's name, matched case-sensitively, and a contract with a single schema may leave it out to read the first sheet. The first row of a sheet holds the column names, unless the schema sets an `xlsxRange`. Columns before the first and after the last header cell are not read, and a column with an empty header cell between them gets a generated name. Rows that are empty in every column are skipped.
@@ -119,7 +161,7 @@ JSON files (`.json`, `.jsonl`, `.ndjson`) are also validated against a JSON Sche
 ## Troubleshooting
 
 - **`No files found that match the pattern`** — the `path` is a glob over file paths, not a directory, and it is resolved relative to the working directory rather than to the contract.
-- **No checks run at all** — the `format` in the `servers` block must be one of `csv`, `json`, `parquet`, `xml`, `xlsx`, or `delta`. It is never guessed at test time (only `datacontract import` infers it from the file suffix), so a missing or misspelled `format` leaves the table unreadable.
+- **No checks run at all** — the `format` in the `servers` block must be one of `csv`, `json`, `parquet`, `xml`, `xlsx`, `delta`, or `metadata`. It is never guessed at test time (only `datacontract import` infers it from the file suffix), so a missing or misspelled `format` leaves the table unreadable.
 - **Every schema reads the same files** — with more than one schema in the contract, put the `{model}` placeholder in the `path` (e.g. `./data/{model}/*.parquet`); it is substituted with each schema's name.
 - **A CSV or XML value fails as a read error instead of a type check** — CSV and XML files are read *as* the contract's types, so a value that cannot be coerced surfaces while reading. See [Data types](../reference/local.md#data-types).
 

@@ -369,3 +369,45 @@ def test_import_trino_requires_a_host():
         DataContract.import_from_source("trino", None, catalog="c", schema="s")
 
     assert "host is required" in exc_info.value.reason
+
+
+def test_catalog_views_are_checked_like_tables(trino_container, monkeypatch):
+    conn = connect(host="localhost", port=trino.get_exposed_port(8080), user="my_user", catalog="memory")
+    cursor = conn.cursor()
+    cursor.execute("CREATE SCHEMA IF NOT EXISTS my_schema")
+    cursor.execute("CREATE TABLE my_schema.documented (field_one varchar, field_two integer, field_three date)")
+    monkeypatch.setenv("DATACONTRACT_TRINO_USERNAME", "my_user")
+    monkeypatch.setenv("DATACONTRACT_TRINO_PASSWORD", "")
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: trino-catalog
+name: Trino catalog
+version: 1.0.0
+status: active
+servers:
+  - server: catalog
+    type: trino
+    host: localhost
+    port: {trino.get_exposed_port(8080)}
+    catalog: memory
+    schema: information_schema
+schema:
+  - name: columns
+    quality:
+      - type: sql
+        description: Every column of my_schema.documented is listed in the contract
+        query: SELECT COUNT(*) FROM columns WHERE table_schema = 'my_schema' AND table_name = 'documented'
+        mustBe: 3
+    properties:
+      - name: column_name
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: "^[a-z_]+$"
+      - name: data_type
+        logicalType: string
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == ResultEnum.passed, [(c.name, c.reason) for c in run.checks if c.result != "passed"]

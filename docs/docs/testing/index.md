@@ -157,6 +157,40 @@ Use `--metadata-only` to skip these value-level checks: only the schema-reading 
 
 `--quality-id` and `--tag` go the other way and narrow the run to individual [quality rules](../quality-rules/index.md#identifying-rules): `--quality-id` runs the one rule declaring that `id`, `--tag` runs every rule declaring that tag, and neither runs any schema or service level check.
 
+### Metadata checks
+
+On [S3](./s3.md#metadata-checks), [Google Cloud Storage](./gcs.md#metadata-checks), [Azure](./azure.md#metadata-checks), and [local files](./local.md#metadata-checks), a server with `format: metadata` is tested against the metadata of its files (size, content type, last modified, …) instead of their contents.
+
+On databases, point the server's `schema` (or `database`) at the catalog instead, and the schemas name its views. Every check works on them as on a table:
+
+| Server type | Catalog | Example views |
+|---|---|---|
+| [Postgres](./postgres.md#metadata-checks) | `schema: pg_catalog` | `pg_stat_user_tables`, `pg_tables`, `pg_class` |
+| [ClickHouse](./clickhouse.md#metadata-checks) | `database: system` | `tables`, `parts` |
+| [DuckDB](./duckdb.md#metadata-checks) | `schema: information_schema` | `tables`, `columns` |
+| [Exasol](./exasol.md#metadata-checks) | any `schema`: the system views are global | `EXA_ALL_OBJECTS`, `EXA_ALL_TABLES` |
+| [MySQL](./mysql.md#metadata-checks) | `database: information_schema` | `TABLES`, `COLUMNS` |
+| [Oracle](./oracle.md#metadata-checks) | `schema: SYS` | `ALL_TABLES`, `ALL_TAB_COLUMNS` |
+| [Trino](./trino.md#metadata-checks) | `schema: information_schema` | `tables`, `columns` |
+
+The catalog views cover the whole database; narrow them to the data with `--filter` or a SQL rule, such as `database = 'default'`.
+
+```yaml
+servers:
+  - server: catalog
+    type: clickhouse
+    host: localhost
+    port: 8123
+    database: system
+schema:
+  - name: tables
+    properties:
+      - name: total_bytes
+        logicalType: integer
+        logicalTypeOptions:
+          maximum: 1000000000000
+```
+
 ## Dry Run
 
 `--dry-run` reports the checks a run would execute and stops there. No data is read from the server, so every reported check has the result
@@ -175,7 +209,7 @@ A dry run is not offline in general: a contract that references [external semant
 :::
 
 :::caution
-Contracts with `logicalType: blob` schemas on Azure do not support dry runs.
+Azure servers with `format: metadata` do not support dry runs.
 :::
 
 ## Configuring the connection

@@ -11,11 +11,10 @@ servers:
   - server: production
     type: azure
     location: https://myaccount.blob.core.windows.net/mycontainer/raw/orders/
-    format: json
+    format: metadata
 
 schema:
   - name: orders_files
-    logicalType: blob
     description: Nightly order exports — one JSON file per batch run.
     # Schema-level quality: expect at least 1 file in the prefix
     quality:

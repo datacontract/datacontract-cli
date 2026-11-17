@@ -83,6 +83,33 @@ schema:
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
+## Metadata checks
+
+Instead of the data, you can check what Trino records about it. Point a server at the catalog (`schema: information_schema` of the server's `catalog`); its schemas then name the catalog views, and every check works on them as on a table:
+
+```yaml
+servers:
+  - server: catalog
+    type: trino
+    host: localhost
+    port: 8080
+    catalog: memory
+    schema: information_schema
+schema:
+  - name: columns
+    quality:
+      - type: sql
+        description: my_schema.my_table has exactly three columns
+        query: SELECT COUNT(*) FROM columns WHERE table_schema = 'my_schema' AND table_name = 'my_table'
+        mustBe: 3
+    properties:
+      - name: column_name
+        logicalType: string
+        required: true
+        logicalTypeOptions:
+          pattern: "^[a-z_]+$"
+```
+
 ## Reference
 
 All authentication options (basic, JWT, OAuth2) and the data type handling: **[Trino Reference](../reference/trino.md)**.
