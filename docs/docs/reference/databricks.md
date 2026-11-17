@@ -54,7 +54,7 @@ The authentication method is selected from the variables you set, in this order:
 | `STRUCT<...>` | `object` (nested `properties` when pyspark is available) |
 | `MAP<...>`, `INTERVAL`, `VARIANT` | *(unset)* — `physicalType` is still written |
 
-`datacontract import spark` maps Spark session types the same way, with two caveats: `TimestampType` and `TimestampNTZType` are currently imported as `date`, and `BinaryType` as `array`.
+`datacontract import spark` maps Spark session types differently; see the [Spark DataFrame reference](./dataframe.md#importing).
 
 ### Testing
 

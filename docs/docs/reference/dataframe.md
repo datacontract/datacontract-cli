@@ -22,10 +22,11 @@ Data type handling for [Spark DataFrame connections](../testing/dataframe.md). N
 | `FloatType`, `DoubleType`, `DecimalType` | `number` |
 | `BooleanType` | `boolean` |
 | `DateType` | `date` |
-| `TimestampType`, `TimestampNTZType` | `date` |
+| `TimestampType`, `TimestampNTZType` | `timestamp` |
 | `StructType` | `object` with nested `properties` |
 | `ArrayType` | `array` with typed `items` |
-| `MapType`, `VariantType` | `object` |
+| `MapType` | `map` |
+| `VariantType`, `GeometryType`, `GeographyType` | `object` |
 | `BinaryType` | `array` |
 
 ### Testing
