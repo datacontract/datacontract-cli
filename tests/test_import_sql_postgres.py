@@ -206,3 +206,12 @@ def test_map_type_from_sql_uuid():
     from datacontract.imports.sql_importer import map_type_from_sql
 
     assert map_type_from_sql("uuid") == ("string", "uuid")
+
+
+def test_map_type_from_sql_bit_strings_are_not_booleans():
+    from datacontract.imports.sql_importer import map_type_from_sql
+
+    assert map_type_from_sql("bit") == ("boolean", None)
+    assert map_type_from_sql("bit(1)") == ("boolean", None)
+    assert map_type_from_sql("bit(8)") == (None, None)
+    assert map_type_from_sql("bit varying(16)") == (None, None)

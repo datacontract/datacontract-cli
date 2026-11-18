@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `datacontract test` checks the constraints and quality rules of nested properties (struct fields and array items) on Dremio servers
+- `datacontract test` finds tables in Postgres schemas with upper case letters, such as `"Reporting"`
+- `datacontract test` checks the other columns of a Postgres table with a column of a type ibis cannot read, such as `regclass`
+- `datacontract import postgres` and `import sql` no longer map bit strings of more than one bit (`bit(8)`, `bit varying`) to `boolean`
 
 ## [1.2.11] - 2026-11-17
 

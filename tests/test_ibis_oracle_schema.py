@@ -45,10 +45,17 @@ def test_table_database_none_for_oracle_without_schema():
 
 
 def test_table_database_none_for_non_oracle_backend():
-    # Postgres/snowflake pin the schema at connect time, so no qualifier is added.
-    server = Server(type="postgres", schema="public")
-    con = _FakeBackend("postgres", {})
+    # Snowflake pins the schema at connect time, so no qualifier is added.
+    server = Server(type="snowflake", schema="public")
+    con = _FakeBackend("snowflake", {})
     assert _table_database(con, server) is None
+
+
+def test_table_database_uses_server_schema_for_postgres():
+    # ibis sets the search_path without quotes, so a mixed-case schema is not found unqualified.
+    server = Server(type="postgres", schema="Reporting")
+    con = _FakeBackend("postgres", {})
+    assert _table_database(con, server) == "Reporting"
 
 
 def test_table_database_uses_server_schema_for_redshift():

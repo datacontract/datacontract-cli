@@ -45,11 +45,13 @@ logger = logging.getLogger(__name__)
 
 # to_regclass() yields NULL instead of raising for objects the user cannot see,
 # so a missing comment never fails the whole import.
+# Entropy Data's Postgres asset import runs the same queries (PostgresCatalog.kt);
+# keep the two in sync so both give the same types, descriptions and keys.
 _TABLES_QUERY = """
     SELECT table_name,
            lower(replace(table_type, 'BASE ', '')) AS table_type,
            obj_description(
-               to_regclass(quote_ident(table_schema) || '.' || quote_ident(table_name))
+               to_regclass(quote_ident(table_schema) || '.' || quote_ident(table_name)), 'pg_class'
            ) AS remarks
     FROM information_schema.tables
     WHERE table_schema = %s

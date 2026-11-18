@@ -461,7 +461,8 @@ def map_type_from_sql(sql_type: str) -> tuple[str | None, str | None]:
         return ("number", None)
     elif sql_type_normed.startswith("bool"):
         return ("boolean", None)
-    elif sql_type_normed.startswith("bit"):
+    elif sql_type_normed in ("bit", "bit(1)"):
+        # A string of more bits (bit(8), bit varying) is not a boolean
         return ("boolean", None)
     elif sql_type_normed.startswith("binary"):
         return ("string", "binary")

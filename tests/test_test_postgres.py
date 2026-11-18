@@ -262,3 +262,55 @@ schema:
     run = DataContract(data_contract_str=contract).test()
 
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+def test_mixed_case_schema_and_a_column_type_ibis_cannot_map(postgres_container, monkeypatch):
+    """A schema created with quotes, such as "Reporting", is found, and a column ibis
+    cannot type (regclass) does not stop the other columns from being checked."""
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_USERNAME", postgres.username)
+    monkeypatch.setenv("DATACONTRACT_POSTGRES_PASSWORD", postgres.password)
+    import psycopg2
+
+    with psycopg2.connect(
+        database=postgres.dbname,
+        user=postgres.username,
+        password=postgres.password,
+        host=postgres.get_container_host_ip(),
+        port=postgres.get_exposed_port(5432),
+    ) as connection:
+        connection.cursor().execute(
+            'CREATE SCHEMA "Reporting";'
+            'CREATE TABLE "Reporting"."MonthlyRevenue" ("Month" date NOT NULL, "RevenueEUR" numeric(14,2), source regclass);'
+            """INSERT INTO "Reporting"."MonthlyRevenue" VALUES ('2026-10-01', 1200.50, 'pg_class');"""
+        )
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: postgres-mixed-case
+name: Postgres mixed case
+version: 1.0.0
+status: active
+servers:
+  - server: production
+    type: postgres
+    host: localhost
+    port: {postgres.get_exposed_port(5432)}
+    database: {postgres.dbname}
+    schema: Reporting
+schema:
+  - name: MonthlyRevenue
+    quality:
+      - metric: rowCount
+        mustBe: 1
+    properties:
+      - name: Month
+        logicalType: date
+        physicalType: date
+        required: true
+      - name: RevenueEUR
+        logicalType: number
+        physicalType: numeric(14,2)
+"""
+
+    run = DataContract(data_contract_str=contract).test()
+
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
