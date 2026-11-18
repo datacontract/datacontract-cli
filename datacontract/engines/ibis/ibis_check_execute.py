@@ -1667,6 +1667,9 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     - **SQL Server** (``mssql`` backend) has no ``schema`` kwarg on
       ``do_connect()`` either, so it has the same limitation as Oracle: an
       unqualified lookup falls back to the login's default schema.
+    - **Postgres** sets the ``search_path`` to the schema without quoting it,
+      so a mixed-case schema such as ``Reporting`` is read as ``reporting``
+      and an unqualified lookup raises ``TableNotFound``.
     - **Redshift** has no dedicated ibis backend and goes through the Postgres
       backend (``con.name == "postgres"``). When no schema is passed, ibis's
       Postgres introspection resolves the active schema with ``SELECT
@@ -1685,9 +1688,8 @@ def _table_database(con, server: Optional[Server]) -> Optional[str]:
     # so a table outside `main` has to be qualified at lookup.
     if get_server_type(server) == "duckdb":
         return server.schema_
-    # Redshift rides the Postgres backend, so detect it by the contract's server
-    # type rather than con.name.
-    if get_server_type(server) == "redshift":
+    # Redshift rides the Postgres backend, so this covers both.
+    if getattr(con, "name", None) == "postgres":
         return server.schema_
     return None
 
@@ -1721,10 +1723,14 @@ def _resolve_table(con, model: str, database: Optional[str] = None):
     # duckdb reads `DESCRIBE "tables"` as `SHOW TABLES` however it is quoted, unless the name is qualified
     if getattr(con, "name", None) == "duckdb" and not database and model.lower() in _DUCKDB_SHOW_NAMES:
         database = "main"
+    from ibis.common.exceptions import TableNotFound
+
     kwargs = {"database": database} if database else {}
     try:
         return con.table(model, **kwargs)
-    except Exception:
+    except Exception as e:
+        if getattr(con, "name", None) == "postgres" and not isinstance(e, TableNotFound):
+            return _postgres_table_unmappable_as_unknown(con, model, database)
         try:
             available = con.list_tables(**kwargs)
         except Exception:
@@ -1733,6 +1739,47 @@ def _resolve_table(con, model: str, database: Optional[str] = None):
         if match is None:
             raise
         return con.table(match, **kwargs)
+
+
+def _postgres_table_unmappable_as_unknown(con, name: str, database: Optional[str]):
+    """Reflect a postgres table, typing any column whose type ibis cannot map
+    (e.g. `regclass`) as `Unknown`, so the other columns can still be checked.
+    """
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+    import ibis.expr.schema as sch
+    from ibis.common.exceptions import TableNotFound
+
+    # The query ibis's get_schema() runs, including its reading of enums
+    query = """
+        SELECT a.attname,
+               CASE WHEN t.typtype = 'e' THEN 'enum' ELSE pg_catalog.format_type(a.atttypid, a.atttypmod) END,
+               NOT a.attnotnull
+        FROM pg_catalog.pg_attribute a
+        JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
+        JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+        JOIN pg_catalog.pg_type t ON t.oid = a.atttypid
+        WHERE a.attnum > 0 AND NOT a.attisdropped AND n.nspname = %(schema)s AND c.relname = %(name)s
+        ORDER BY a.attnum
+    """
+    with con.con.cursor() as cursor:
+        rows = cursor.execute(query, {"schema": database or con.current_database, "name": name}).fetchall()
+    if not rows:
+        raise TableNotFound(name)
+    fields, unknown_columns = {}, []
+    for column, type_name, nullable in rows:
+        try:
+            fields[column] = con.compiler.type_mapper.from_string(type_name, nullable=nullable)
+        except Exception:
+            fields[column] = dt.unknown
+            unknown_columns.append(f"{column} ({type_name})")
+    logger.warning(
+        f"Model '{name}': column(s) {', '.join(unknown_columns)} have a type ibis cannot represent. "
+        f"Type checks for these columns will fail."
+    )
+    return ops.DatabaseTable(
+        name, schema=sch.Schema(fields), source=con, namespace=ops.Namespace(database=database)
+    ).to_expr()
 
 
 def _pyspark_table_unconvertible_as_unknown(con, name: str):
