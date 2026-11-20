@@ -3678,6 +3678,81 @@ def test_versioned_sync_data_type_is_order_independent(tmp_path: Path):
     assert types(forward) == types(reverse) == {"top": "bigint", "v1_override": "integer"}
 
 
+def _described_versioned_contract(version: str, description: str) -> str:
+    return (
+        _typed_versioned_contract(version, "integer")
+        .replace("the amount column", f"amount {description}")
+        .replace("  - name: customers\n", f"  - name: customers\n    description: customers {description}\n")
+    )
+
+
+def _described_versioned_project(tmp_path: Path) -> Path:
+    project = _typed_versioned_project(tmp_path)
+    (project / "customers-v1.odcs.yaml").write_text(_described_versioned_contract("1.0.0", "v1"))
+    (project / "customers-v2.odcs.yaml").write_text(_described_versioned_contract("2.0.0", "v2"))
+    return project
+
+
+@pytest.mark.parametrize("order", [("1", "2"), ("2", "1")])
+def test_versioned_sync_keeps_per_version_descriptions(tmp_path: Path, order: tuple):
+    """Each version keeps its own contract's table and column descriptions, whatever the sync order:
+    the latest's at top level, an older version's on its bullet and in a column override."""
+    project = _described_versioned_project(tmp_path)
+    for v in order:
+        _sync_versioned(project, f"customers-v{v}.odcs.yaml", v)
+    entry = _versioned_entry(project)
+
+    assert entry["description"] == "customers v2"
+    assert _bullet(entry, 1)["description"] == "customers v1"
+    assert "description" not in _bullet(entry, 2)
+    assert _col(entry, "amount")["description"] == "amount v2"
+    # dbt drops the top-level column's `data_type` for a version that overrides it, so the override
+    # repeats that, but not the top-level tests, which dbt still runs (repeating them duplicates the node).
+    assert _override(entry, 1, "amount") == {"name": "amount", "data_type": "integer", "description": "amount v1"}
+    assert "columns" not in _bullet(entry, 2)
+
+
+def test_versioned_sync_drops_per_version_descriptions_once_they_agree(tmp_path: Path):
+    project = _described_versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    first = (project / "models" / "customers.yml").read_text()
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    assert (project / "models" / "customers.yml").read_text() == first
+
+    (project / "customers-v1.odcs.yaml").write_text(_described_versioned_contract("1.0.0", "v2"))
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    entry = _versioned_entry(project)
+    assert "description" not in _bullet(entry, 1)
+    assert "columns" not in _bullet(entry, 1)
+    assert entry["description"] == "customers v2"
+    assert _col(entry, "amount")["description"] == "amount v2"
+
+
+@pytest.mark.parametrize("own_amount", [False, True])
+def test_versioned_descriptions_respect_an_include_list(tmp_path: Path, own_amount: bool):
+    """A version with `include: [id]` doesn't get the top-level `amount`: syncing a new `amount`
+    description neither adds an `amount` entry to it, nor drops the `amount` entry it declares itself."""
+    project = _described_versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    schema = project / "models" / "customers.yml"
+    doc = yaml.safe_load(schema.read_text())
+    v1_columns = [{"include": ["id"]}]
+    if own_amount:
+        v1_columns.append({"name": "amount", "data_type": "integer", "description": "amount v3"})
+    _bullet(doc["models"][0], 1)["columns"] = v1_columns
+    schema.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    (project / "customers-v2.odcs.yaml").write_text(_described_versioned_contract("2.0.0", "v3"))
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    assert _col(entry, "amount")["description"] == "amount v3"
+    assert _bullet(entry, 1)["columns"] == v1_columns
+
+
 def test_sync_rejects_empty_contract(tmp_path: Path):
     """An empty contract file errors cleanly instead of leaking a raw `NoneType` AttributeError."""
     project = _copy_dbt_project(tmp_path)
