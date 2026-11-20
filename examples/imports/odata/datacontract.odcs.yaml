@@ -10,19 +10,15 @@ servers:
   customProperties:
   - property: apiType
     value: odata
-  - property: odataVersion
+  - property: protocolVersion
     value: '4.0'
   - property: format
     value: json
-  - property: odataMetadataUrl
-    value: https://xmart-api-public-uat.who.int/refmart/$metadata
   location: https://xmart-api-public-uat.who.int/refmart/
 schema:
 - name: REF_COUNTRY
-  physicalType: object
+  physicalType: entitySet
   customProperties:
-  - property: odataEntitySet
-    value: REF_COUNTRY
   - property: odataEntitySetUrl
     value: https://xmart-api-public-uat.who.int/refmart/REF_COUNTRY
   logicalType: object

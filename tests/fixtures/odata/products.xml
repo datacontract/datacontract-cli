@@ -20,6 +20,7 @@
     </Schema>
     <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Catalog.Service">
       <EntityContainer Name="Store">
+        <Singleton Name="FeaturedProduct" Type="Catalog.Product"/>
         <EntitySet Name="Products" EntityType="Catalog.Product"/>
         <EntitySet Name="Orders" EntityType="Catalog.Order"/>
         <EntitySet Name="ArchivedProducts" EntityType="Catalog.Product" IncludeInServiceDocument="false"/>

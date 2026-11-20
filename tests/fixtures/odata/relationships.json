@@ -1,0 +1,50 @@
+{
+  "$Version": "4.01",
+  "$EntityContainer": "Catalog.Service.Store",
+  "Catalog.Model": {
+    "$Alias": "Catalog",
+    "Country": {
+      "$Kind": "EntityType",
+      "$Key": ["Code", "Region"],
+      "Code": {},
+      "Region": {},
+      "Cities": {"$Kind": "NavigationProperty", "$Type": "Catalog.City", "$Collection": true}
+    },
+    "City": {
+      "$Kind": "EntityType",
+      "$Key": ["Id"],
+      "Id": {"$Type": "Edm.Int32"},
+      "CountryCode": {"$Nullable": true},
+      "CountryRegion": {"$Nullable": true},
+      "Country": {
+        "$Kind": "NavigationProperty",
+        "$Type": "Catalog.Model.Country",
+        "$ReferentialConstraint": {
+          "CountryCode": "Code",
+          "CountryRegion": "Region",
+          "CountryCode@Example.Note": "annotation"
+        }
+      }
+    }
+  },
+  "Catalog.Service": {
+    "$Alias": "Service",
+    "Store": {
+      "$Kind": "EntityContainer",
+      "Cities": {
+        "$Collection": true,
+        "$Type": "Catalog.City",
+        "$NavigationPropertyBinding": {"Country": "Catalog.Service.Store/Countries"}
+      },
+      "CapitalCity": {
+        "$Type": "Catalog.City",
+        "$NavigationPropertyBinding": {"Country": "PreferredCountry"}
+      },
+      "Countries": {"$Collection": true, "$Type": "Catalog.Country"},
+      "ArchivedCountries": {"$Collection": true, "$Type": "Catalog.Country"},
+      "PreferredCountry": {"$Type": "Catalog.Country"},
+      "FindCity": {"$Function": "Catalog.FindCity"},
+      "Reset": {"$Action": "Catalog.Reset"}
+    }
+  }
+}

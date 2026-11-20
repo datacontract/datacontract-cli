@@ -24,6 +24,7 @@
   "Catalog.Service": {
     "Store": {
       "$Kind": "EntityContainer",
+      "FeaturedProduct": {"$Type": "Catalog.Product"},
       "Products": {"$Collection": true, "$Type": "Catalog.Product"},
       "Orders": {"$Collection": true, "$Type": "Catalog.Order"},
       "ArchivedProducts": {"$Collection": true, "$Type": "Catalog.Product", "$IncludeInServiceDocument": false}
