@@ -1,7 +1,6 @@
 """Tests for the OData importer, using local CSDL fixtures and mocked HTTP responses."""
 
 import json
-import re
 import traceback
 from io import BytesIO
 from pathlib import Path
