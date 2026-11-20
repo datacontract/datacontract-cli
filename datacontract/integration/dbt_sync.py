@@ -1982,6 +1982,18 @@ def _bullet_exclude_names(bullet: dict) -> list[str]:
     return []
 
 
+def _inherits_top_column(bullet: dict, column_name: str) -> bool:
+    """Whether dbt gives this version the top-level column, by the bullet's `include`/`exclude` (as dbt
+    matches them: exact names, `include: '*'` when there's no selector)."""
+    for element in bullet.get("columns") or []:
+        if isinstance(element, dict) and "include" in element:
+            include = element["include"]
+            exclude = element.get("exclude") or []
+            included = include in ("*", "all") or (isinstance(include, list) and column_name in include)
+            return included and column_name not in exclude
+    return True
+
+
 def _bullet_remove_exclude(bullet: dict, name: str) -> None:
     _bullet_set_exclude(bullet, [n for n in _bullet_exclude_names(bullet) if n.lower() != name.lower()])
 
@@ -2228,7 +2240,7 @@ def _reconcile_versioned_descriptions(
             override = _bullet_column_override(b, col_name)
             if override is not None and "description" in override:
                 col_descs[str(b.get("v"))] = override["description"]
-            elif override is not None or col_name.lower() not in {n.lower() for n in _bullet_exclude_names(b)}:
+            elif override is not None or _inherits_top_column(b, top_col["name"]):
                 col_descs[str(b.get("v"))] = top_col.get("description")
         prop = props_by_name.get(col_name.lower())
         this_desc = prop.description.strip().replace("\n", " ") if prop is not None and prop.description else None
@@ -2259,8 +2271,8 @@ def _reconcile_versioned_descriptions(
 
 def _collapse_bare_override(bullet: dict, override: dict, top_col: Optional[dict]) -> None:
     """Drop an override element that adds nothing to the top-level column: just its `name`, plus a
-    `quote`, `data_type` or `description` equal to the top-level column's. Then collapse a now-bare
-    `columns`."""
+    `quote`, `data_type` or `description` equal to the top-level column's, and only when the version
+    inherits that column. Then collapse a now-bare `columns`."""
     top = top_col if isinstance(top_col, dict) else {}
     for key, value in override.items():
         if key == "name":
@@ -2270,6 +2282,8 @@ def _collapse_bare_override(bullet: dict, override: dict, top_col: Optional[dict
         if key in ("data_type", "description") and value == top.get(key):
             continue
         return
+    if not top or not _inherits_top_column(bullet, top["name"]):
+        return  # the override is what gives this version the column
     cols = bullet.get("columns")
     if isinstance(cols, list) and override in cols:
         cols.remove(override)

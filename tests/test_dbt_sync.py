@@ -3730,6 +3730,29 @@ def test_versioned_sync_drops_per_version_descriptions_once_they_agree(tmp_path:
     assert _col(entry, "amount")["description"] == "amount v2"
 
 
+@pytest.mark.parametrize("own_amount", [False, True])
+def test_versioned_descriptions_respect_an_include_list(tmp_path: Path, own_amount: bool):
+    """A version with `include: [id]` doesn't get the top-level `amount`: syncing a new `amount`
+    description neither adds an `amount` entry to it, nor drops the `amount` entry it declares itself."""
+    project = _described_versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    schema = project / "models" / "customers.yml"
+    doc = yaml.safe_load(schema.read_text())
+    v1_columns = [{"include": ["id"]}]
+    if own_amount:
+        v1_columns.append({"name": "amount", "data_type": "integer", "description": "amount v3"})
+    _bullet(doc["models"][0], 1)["columns"] = v1_columns
+    schema.write_text(yaml.safe_dump(doc, sort_keys=False))
+
+    (project / "customers-v2.odcs.yaml").write_text(_described_versioned_contract("2.0.0", "v3"))
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    assert _col(entry, "amount")["description"] == "amount v3"
+    assert _bullet(entry, 1)["columns"] == v1_columns
+
+
 def test_sync_rejects_empty_contract(tmp_path: Path):
     """An empty contract file errors cleanly instead of leaking a raw `NoneType` AttributeError."""
     project = _copy_dbt_project(tmp_path)
