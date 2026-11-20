@@ -1,12 +1,12 @@
 ---
 sidebar_position: 21
 title: "Import: OData"
-description: "Create a data contract from one or more OData 4.x EntitySets using CSDL XML or JSON."
+description: "Create a data contract from OData 4.x entity sets and singletons using CSDL XML or JSON."
 ---
 
 # <img className="page-icon" src="/img/icons/odata.svg" alt="" /> Import: OData
 
-Creates a data contract from OData 4.x CSDL XML or JSON metadata. Select individual EntitySets, or automatically import all EntitySets advertised in the service document. Both public and authenticated services are supported.
+Creates a data contract from OData 4.x CSDL XML or JSON metadata. Select individual entity sets and singletons, or automatically import all of them advertised in the service document. Both public and authenticated services are supported.
 
 ```bash
 datacontract import odata \
@@ -17,13 +17,25 @@ datacontract import odata \
 
 This example imports the WHO [country endpoint](https://xmart-api-public-uat.who.int/refmart/ref_country). `--service-root-url` is always required and is stored with a trailing `/` as the server's `location`. Metadata is read from `$metadata` under that root unless you supply `--metadata-url` or `--metadata-file`.
 
-Repeat `--entity-set` to select several EntitySets. An explicit selection skips the service document. Without `--entity-set`, the importer reads the JSON service document from the root URL and imports every EntitySet listed there into the same contract.
+Repeat `--entity-set` to select several entity sets, or `--singleton` to select singletons. The options can be combined:
 
-For offline import, supply a local CSDL XML or JSON file through `--metadata-file`. Also supply `--service-document-file` or `--entity-set`.
+```bash
+datacontract import odata \
+  --service-root-url 'https://example.com/odata/' \
+  --entity-set Products \
+  --singleton FeaturedProduct \
+  --output datacontract.yaml
+```
 
-For authentication, set `DATACONTRACT_API_HEADER_AUTHORIZATION` to the complete header value, such as `Bearer <token>` or a precomputed `Basic <base64-encoded username:password>`.
+An explicit selection skips the service document. Without either selection option, the importer reads the JSON service document from the root URL and imports every entity set and singleton listed there into the same contract. Functions and linked services are skipped.
 
-The importer reads metadata only; no data records are fetched. It preserves primitive field types, nullability, declared keys and constraints. Primitive types without a logical type mapping are imported with their original `physicalType` and produce a warning. Complex types, collection-valued fields, enums, type definitions and inheritance cause errors when used by a selected schema. Navigation properties are omitted, and external metadata references are not downloaded.
+For offline import, supply a local CSDL XML or JSON file through `--metadata-file`. Also supply `--service-document-file` or select resources with `--entity-set` / `--singleton`.
+
+For authentication, set `DATACONTRACT_API_HEADER_AUTHORIZATION` to the complete header value, such as `Bearer <token>` or a precomputed `Basic <base64-encoded username:password>`. Set `DATACONTRACT_API_HEADER_X_API_KEY` for services that require an `X-API-Key` header.
+
+The importer reads metadata only; no data records are fetched. It preserves primitive field types, nullability, declared keys and constraints. Primitive types without a logical type mapping are imported with their original `physicalType` and produce a warning. Complex types, collection-valued fields, enums, type definitions and inheritance cause errors when used by a selected schema. External metadata references are not downloaded.
+
+Navigation properties with referential constraints produce `foreignKey` relationships on the referencing properties. Navigation bindings identify the target entity set or singleton, which must also be selected.
 
 OData support currently covers import only. Support for `datacontract test` is planned to compare the contract's schema with `$metadata`, without fetching data records.
 

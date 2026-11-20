@@ -1044,13 +1044,17 @@ def import_odata(
     service_root_url: Annotated[str, typer.Option(help="HTTP(S) root URL of the OData service.")],
     service_document_file: Annotated[
         Optional[Path],
-        typer.Option(help="Local JSON service document. Ignored when --entity-set is supplied."),
+        typer.Option(help="Local JSON service document. Ignored when --entity-set or --singleton is supplied."),
     ] = None,
     entity_set: Annotated[
         Optional[List[str]],
         typer.Option(
-            help="EntitySet to import (repeat for multiple sets). If omitted, will import all sets from the service document."
+            help="EntitySet to import (repeat for multiple sets). Without a selection, import all advertised sets and singletons."
         ),
+    ] = None,
+    singleton: Annotated[
+        Optional[List[str]],
+        typer.Option(help="Singleton to import (repeat for multiple singletons). Can be combined with --entity-set."),
     ] = None,
     metadata_url: Annotated[
         Optional[str],
@@ -1069,7 +1073,7 @@ def import_odata(
     id: id_option = None,
     debug: debug_option = None,
 ):
-    """Import a data contract from OData 4.x CSDL XML or JSON metadata, using a URL or local file."""
+    """Import entity sets and singletons from OData 4.x CSDL XML or JSON metadata, using a URL or local file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
         config=cli_config(),
@@ -1077,6 +1081,7 @@ def import_odata(
         source=service_root_url,
         odata_service_document_file=service_document_file,
         odata_entity_set=entity_set,
+        odata_singleton=singleton,
         odata_metadata_url=metadata_url,
         odata_metadata_file=metadata_file,
         owner=owner,
