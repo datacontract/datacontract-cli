@@ -295,7 +295,7 @@ def _odata_version(document_version: object) -> str:
         raise _schema_error(
             f"Unsupported OData version {document_version!r}; expected an OData 4.x version in the form 4.[0-9]+."
         )
-    return "4.0" # The OData 4.x protocol is backward compatible with 4.0, so select the lowest supported version for the ODCS server's protocolVersion property.
+    return "4.0"  # The OData 4.x protocol is backward compatible with 4.0, so select the lowest supported version for the ODCS server's protocolVersion property.
 
 
 def _read_xml(content: bytes) -> dict:
