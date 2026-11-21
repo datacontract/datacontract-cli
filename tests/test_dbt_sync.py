@@ -3678,6 +3678,25 @@ def test_versioned_sync_data_type_is_order_independent(tmp_path: Path):
     assert types(forward) == types(reverse) == {"top": "bigint", "v1_override": "integer"}
 
 
+def test_versioned_sync_type_change_leaves_a_version_without_the_column_alone(tmp_path: Path):
+    """A version that dropped `amount` (so excludes it) doesn't get it back when another version
+    changes `amount`'s type."""
+    project = _typed_versioned_project(tmp_path)
+    (project / "customers-v2.odcs.yaml").write_text(_typed_versioned_contract("2.0.0", "integer"))
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    v1_without_amount = _typed_versioned_contract("1.0.0", "integer").split("      - name: amount")[0]
+    (project / "customers-v1.odcs.yaml").write_text(v1_without_amount)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+
+    (project / "customers-v2.odcs.yaml").write_text(_typed_versioned_contract("2.0.0", "bigint"))
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+
+    entry = _versioned_entry(project)
+    assert _col(entry, "amount")["data_type"] == "bigint"
+    assert _bullet(entry, 1)["columns"] == [{"include": "*", "exclude": ["amount"]}]
+
+
 def _described_versioned_contract(version: str, description: str) -> str:
     return (
         _typed_versioned_contract(version, "integer")

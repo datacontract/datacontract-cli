@@ -2153,13 +2153,16 @@ def _reconcile_versioned_data_types(
                     top_col.pop("data_type", None)
             continue
 
-        # Resolved. Build the {dbt version -> type} map from the current YAML + this sync.
+        # Resolved. Build the {dbt version -> type} map from the current YAML + this sync, leaving out
+        # the versions that don't have the column.
         top_type = top_col.get("data_type") if top_col else None
         type_by_version: dict[str, Optional[str]] = {}
         for b in versions:
             if not isinstance(b, dict):
                 continue
             override = _bullet_column_override(b, col_name)
+            if override is None and top_col is not None and not _inherits_top_column(b, top_col["name"]):
+                continue
             ov_type = override.get("data_type") if override else None
             type_by_version[str(b.get("v"))] = ov_type if ov_type is not None else top_type
         type_by_version[str(this_version)] = this_type
