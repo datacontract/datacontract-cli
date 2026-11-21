@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` checks the other columns of a Postgres table with a column of a type ibis cannot read, such as `regclass`
 - `datacontract import postgres` and `import sql` no longer map bit strings of more than one bit (`bit(8)`, `bit varying`) to `boolean`
 - `datacontract dbt sync` keeps each version's own table and column descriptions on a versioned model (#1840)
+- `datacontract dbt sync` no longer adds a column back to a version that excludes it when another version changes the column's type
 
 ## [1.2.11] - 2026-11-17
 
