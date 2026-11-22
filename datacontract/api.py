@@ -451,6 +451,7 @@ _SERVER_ONLY_OPTIONS = frozenset(
         "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_FILE",
         "DATACONTRACT_SNOWFLAKE_PRIVATE_KEY_PATH",
         "DATACONTRACT_SNOWFLAKE_TOKEN_FILE_PATH",
+        "DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH",
         "DATACONTRACT_SNOWFLAKE_WORKLOAD_IDENTITY_PROVIDER",
         "DATACONTRACT_BIGQUERY_ACCOUNT_INFO_JSON_PATH",
         "DATACONTRACT_DATABRICKS_PROFILE",
@@ -531,8 +532,8 @@ _ENVIRONMENT_CREDENTIAL_TARGETS: dict[str, tuple[str, str | None, tuple[str, ...
     "hive": ("host", "hive_host", ("hive_password",)),
     "dremio": ("host", "dremio_host", ("dremio_password", "dremio_token")),
     "redshift": ("host", "redshift_host", ("redshift_password",)),
-    "sqlserver": ("host", "sqlserver_host", ("sqlserver_password",)),
-    "mssql": ("host", "sqlserver_host", ("sqlserver_password",)),
+    "sqlserver": ("host", "sqlserver_host", ("sqlserver_password", "sqlserver_token_file_path")),
+    "mssql": ("host", "sqlserver_host", ("sqlserver_password", "sqlserver_token_file_path")),
     "snowflake": (
         "account",
         "snowflake_account",

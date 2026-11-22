@@ -723,12 +723,13 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     - ``ActiveDirectoryServicePrincipal`` — Entra ID with ``CLIENT_ID`` / ``CLIENT_SECRET``
     - ``ActiveDirectoryInteractive`` — Entra ID browser login (``USERNAME`` as a hint), Windows only
     - ``cli`` — reuse an ``az login`` session (token passed as a pre-connect attribute)
+    - ``token`` — an Entra ID access token read from ``TOKEN_FILE_PATH`` (passed like ``cli``)
 
     The legacy ``DATACONTRACT_SQLSERVER_TRUSTED_CONNECTION=true`` is equivalent to
     ``windows``, and applies only when ``DATACONTRACT_SQLSERVER_AUTHENTICATION`` is
     unset — an explicitly chosen mode always wins. Extra keys (``Authentication``,
     ``Trusted_Connection``, ``Encrypt``, ``TrustServerCertificate``) become
-    connection-string attributes, so they use the ODBC spellings. ``cli`` sets
+    connection-string attributes, so they use the ODBC spellings. ``cli`` and ``token`` set
     ``attrs_before``, a pre-connect attribute rather than a connection-string keyword.
     """
     driver = _get_custom_property(server, "driver") or config.get_sqlserver_driver()
@@ -773,7 +774,12 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     elif authentication == "cli":
         # The ODBC driver has no Azure-CLI mode: pass an `az login` token as a
         # pre-connect attribute (must not be combined with UID/PWD/Trusted_Connection).
-        kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _azure_cli_access_token()}
+        kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _sqlserver_access_token(_azure_cli_access_token())}
+    elif authentication == "token":
+        # Read on every connection, so a token the caller rotates in the file keeps working.
+        with open(config.get_sqlserver_token_file_path(required=True)) as f:
+            token = f.read().strip()
+        kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _sqlserver_access_token(token)}
     elif authentication == "activedirectoryserviceprincipal":
         kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
         kwargs["user"] = config.get_sqlserver_client_id(required=True)
@@ -806,7 +812,7 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
     return kwargs
 
 
-def _azure_cli_access_token() -> bytes:
+def _azure_cli_access_token() -> str:
     try:
         from azure.core.exceptions import ClientAuthenticationError
         from azure.identity import AzureCliCredential
@@ -819,7 +825,7 @@ def _azure_cli_access_token() -> bytes:
             original_exception=exc,
         )
     try:
-        token = AzureCliCredential().get_token("https://database.windows.net/.default").token
+        return AzureCliCredential().get_token("https://database.windows.net/.default").token
     except ClientAuthenticationError as exc:
         raise DataContractException(
             type="sqlserver-connection",
@@ -828,6 +834,9 @@ def _azure_cli_access_token() -> bytes:
             engine="datacontract-cli",
             original_exception=exc,
         )
+
+
+def _sqlserver_access_token(token: str) -> bytes:
     # The driver expects UTF-16LE bytes prefixed with their 4-byte little-endian length.
     raw = token.encode("utf-16-le")
     return struct.pack("<i", len(raw)) + raw

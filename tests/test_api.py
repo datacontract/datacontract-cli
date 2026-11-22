@@ -536,6 +536,7 @@ def test_unknown_config_header_is_rejected():
         "datacontract-oracle-client-dir",
         "datacontract-duckdb-database",
         "datacontract-snowflake-token-file-path",
+        "datacontract-sqlserver-token-file-path",
         "datacontract-snowflake-workload-identity-provider",
     ],
 )
@@ -905,6 +906,17 @@ def test_guard_blocks_env_trino_secrets(monkeypatch, secret):
         )
     assert exc.value.status_code == 422
     assert secret in exc.value.detail
+
+
+def test_guard_blocks_env_sqlserver_token_file_without_pinned_host(monkeypatch):
+    monkeypatch.setenv("DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH", "/var/run/secrets/tokens/sqlserver-token")
+    monkeypatch.delenv("DATACONTRACT_SQLSERVER_HOST", raising=False)
+
+    with pytest.raises(HTTPException) as exc:
+        _reject_environment_credentials_to_untrusted_host(
+            _POSTGRES_CONTRACT.replace("type: postgres", "type: sqlserver"), "production", None
+        )
+    assert "DATACONTRACT_SQLSERVER_HOST" in exc.value.detail
 
 
 def test_test_endpoint_blocks_credential_exfiltration(monkeypatch):
