@@ -52,11 +52,21 @@ def _from_swagger_2(spec: dict) -> dict:
         if host
         else [{"url": base_path or "/"}]
     )
-    _swagger_2_content(spec.get("responses"), spec.get("produces"))
     lookup = SchemaResolver(spec).lookup
     parameters = list((spec.get("parameters") or {}).values())
     for _, path_item, _, operation in operations(spec):
-        _swagger_2_content(operation.get("responses"), operation.get("produces") or spec.get("produces"))
+        # a response at the root is shared, so each operation gets its own copy for the media types it produces
+        produces = _swagger_2_media_types(operation.get("produces") or spec.get("produces"))
+        responses = {}
+        for code, response in (operation.get("responses") or {}).items():
+            if isinstance(response, dict) and str(response.get("$ref", "")).startswith("#"):
+                response = lookup(response["$ref"]) or response
+            if isinstance(response, dict) and "schema" in response:
+                response = {key: value for key, value in response.items() if key != "schema"} | {
+                    "content": {media_type: {"schema": response["schema"]} for media_type in produces}
+                }
+            responses[code] = response
+        operation["responses"] = responses
         # the operation's own parameters first, as they replace those of its path
         declared = [
             lookup(p["$ref"]) if isinstance(p, dict) and str(p.get("$ref", "")).startswith("#") else p
@@ -64,7 +74,7 @@ def _from_swagger_2(spec: dict) -> dict:
         ]
         body = next((p for p in declared if isinstance(p, dict) and p.get("in") == "body"), None)
         if body is not None and "requestBody" not in operation:
-            media_types = operation.get("consumes") or spec.get("consumes") or ["application/json"]
+            media_types = _swagger_2_media_types(operation.get("consumes") or spec.get("consumes"))
             operation["requestBody"] = {
                 "required": bool(body.get("required")),
                 "content": {media_type: {"schema": body.get("schema") or {}} for media_type in media_types},
@@ -80,24 +90,24 @@ def _from_swagger_2(spec: dict) -> dict:
     return spec
 
 
-def _swagger_2_content(responses, media_types) -> None:
-    """Each response's schema as the content of the media types the operation produces, JSON if it names none."""
-    for response in (responses or {}).values():
-        if isinstance(response, dict) and "schema" in response:
-            schema = response.pop("schema")
-            response["content"] = {media_type: {"schema": schema} for media_type in media_types or ["application/json"]}
+def _swagger_2_media_types(media_types) -> list[str]:
+    """The media types without parameters such as charset, with `*/*` (Springfox's default) as JSON, and JSON if
+    there are none."""
+    types = [media_type.split(";")[0].strip() for media_type in media_types or [] if isinstance(media_type, str)]
+    return ["application/json" if media_type == "*/*" else media_type for media_type in types] or ["application/json"]
 
 
-def _x_nullable(node) -> None:
-    """Swagger 2.0 has no `nullable`; the common `x-nullable` extension stands for it."""
-    if isinstance(node, dict):
-        if "x-nullable" in node:
-            node.setdefault("nullable", node["x-nullable"])
-        for child in node.values():
-            _x_nullable(child)
-    elif isinstance(node, list):
-        for child in node:
-            _x_nullable(child)
+def _x_nullable(node, seen: set | None = None) -> None:
+    """Swagger 2.0 has no `nullable`; the common `x-nullable` extension stands for it. A node that YAML aliases is
+    visited once, so an anchor that contains itself ends the walk."""
+    seen = set() if seen is None else seen
+    if not isinstance(node, (dict, list)) or id(node) in seen:
+        return
+    seen.add(id(node))
+    if isinstance(node, dict) and "x-nullable" in node:
+        node.setdefault("nullable", node["x-nullable"])
+    for child in node.values() if isinstance(node, dict) else node:
+        _x_nullable(child, seen)
 
 
 def operations(spec: dict) -> list[tuple[str, dict, str, dict]]:

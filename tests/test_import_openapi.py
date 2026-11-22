@@ -251,6 +251,13 @@ def test_swagger_2_servers_from_host_base_path_and_schemes(tmp_path: Path):
     ]
 
 
+def test_swagger_2_servers_default_to_https(tmp_path: Path):
+    paths = {"/orders": swagger_get({"type": "object", "properties": {"id": {"type": "integer"}}})}
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths})
+
+    assert [s.location for s in import_openapi(source).servers] == ["https://api.example.com/orders"]
+
+
 def test_swagger_2_without_host_has_no_server_to_test(tmp_path: Path, caplog):
     paths = {"/orders": swagger_get({"type": "object", "properties": {"id": {"type": "integer"}}})}
     source = write_swagger(tmp_path, {"basePath": "/v1", "paths": paths})
@@ -262,9 +269,16 @@ def test_swagger_2_without_host_has_no_server_to_test(tmp_path: Path, caplog):
     assert "Skipped the server '/v1'" in caplog.text
 
 
-def test_swagger_2_response_needs_a_json_or_yaml_media_type(tmp_path: Path):
-    paths = {"/orders": swagger_get({"type": "object"}, produces=["application/xml"])}
-    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths})
+@pytest.mark.parametrize(
+    "root, operation",
+    [
+        pytest.param({}, {"produces": ["application/xml"]}, id="operation-produces"),
+        pytest.param({"produces": ["application/xml"]}, {}, id="root-produces"),
+    ],
+)
+def test_swagger_2_response_needs_a_json_or_yaml_media_type(tmp_path: Path, root, operation):
+    paths = {"/orders": swagger_get({"type": "object"}, **operation)}
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths, **root})
 
     with pytest.raises(DataContractException) as e:
         import_openapi(source)
@@ -272,17 +286,118 @@ def test_swagger_2_response_needs_a_json_or_yaml_media_type(tmp_path: Path):
     assert "no success response with a JSON or YAML schema" in e.value.reason
 
 
+@pytest.mark.parametrize("produces", ["*/*", "application/json;charset=UTF-8"])
+def test_swagger_2_reads_springfox_media_types_as_json(tmp_path: Path, produces):
+    paths = {"/orders": swagger_get({"type": "object", "properties": {"id": {"type": "integer"}}}, produces=[produces])}
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths})
+
+    assert [p.name for p in import_openapi(source).schema_[0].properties] == ["id"]
+
+
+def test_swagger_2_shared_response_takes_the_media_types_of_each_operation(tmp_path: Path):
+    response = {"$ref": "#/responses/Order"}
+    paths = {
+        "/json": {"get": {"operationId": "json", "produces": ["application/json"], "responses": {"200": response}}},
+        "/xml": {"get": {"operationId": "xml", "responses": {"200": response}}},
+    }
+    shared = {"Order": {"description": "OK", "schema": {"type": "object", "properties": {"id": {"type": "integer"}}}}}
+    source = write_swagger(
+        tmp_path, {"host": "api.example.com", "produces": ["application/xml"], "paths": paths, "responses": shared}
+    )
+
+    assert [p.name for p in import_openapi(source, "json").schema_[0].properties] == ["id"]
+    with pytest.raises(DataContractException) as e:
+        import_openapi(source, "xml")
+    assert "no success response with a JSON or YAML schema" in e.value.reason
+
+
+def swagger_post(body: dict, path_parameters=(), **operation) -> dict:
+    responses = {"200": {"description": "OK", "schema": {"type": "object", "properties": {"id": {"type": "integer"}}}}}
+    return {
+        "parameters": list(path_parameters),
+        "post": {"responses": responses, "parameters": [{"name": "query", "in": "body", **body}], **operation},
+    }
+
+
+@pytest.mark.parametrize(
+    "root, operation, body",
+    [
+        pytest.param({}, {}, {"status": "shipped"}, id="json-by-default"),
+        pytest.param({}, {"consumes": ["application/xml"]}, None, id="operation-consumes"),
+        pytest.param({"consumes": ["application/xml"]}, {}, None, id="root-consumes"),
+    ],
+)
+def test_swagger_2_body_parameter_is_the_request_body(tmp_path: Path, root, operation, body):
+    paths = {"/search": swagger_post({"schema": {"type": "object", "example": {"status": "shipped"}}}, **operation)}
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths, **root})
+
+    result = import_openapi(source, "POST /search")
+
+    assert {p.property: p.value for p in result.servers[0].customProperties}.get("body") == body
+
+
+def test_swagger_2_required_body_parameter_without_example_warns(tmp_path: Path, caplog):
+    paths = {"/search": swagger_post({"required": True, "schema": {"type": "object"}})}
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths})
+
+    with caplog.at_level(logging.WARNING):
+        import_openapi(source, "POST /search")
+
+    assert "The request body of POST /search has no JSON example" in caplog.text
+
+
+def test_swagger_2_path_parameters_and_the_operations_own_body(tmp_path: Path):
+    path_parameters = [
+        {"name": "region", "in": "path", "required": True, "type": "string", "default": "eu"},
+        {"name": "query", "in": "body", "schema": {"type": "object", "example": {"from": "path"}}},
+    ]
+    paths = {
+        "/{region}/search": swagger_post(
+            {"schema": {"type": "object", "example": {"from": "operation"}}}, path_parameters
+        )
+    }
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths})
+
+    result = import_openapi(source, "POST /{region}/search")
+
+    assert result.servers[0].location == "https://api.example.com/${region:-eu}/search"
+    assert {p.property: p.value for p in result.servers[0].customProperties}["body"] == {"from": "operation"}
+
+
+def test_swagger_2_self_referencing_yaml_anchor(tmp_path: Path):
+    """An anchor that contains itself is a cyclic structure once loaded; the import must not walk it forever."""
+    source = tmp_path / "swagger.yaml"
+    source.write_text(
+        "swagger: '2.0'\ninfo: {title: API, version: '1'}\nhost: api.example.com\n"
+        "paths:\n  /nodes:\n    get:\n      responses:\n        '200':\n          description: OK\n"
+        "          schema: {type: object, properties: {id: {type: integer}}}\n"
+        "definitions:\n  Tree: &tree\n    type: object\n    properties:\n"
+        "      children: {type: array, items: *tree}\n"
+    )
+
+    assert [p.name for p in import_openapi(source).schema_[0].properties] == ["id"]
+
+
 def test_swagger_2_x_nullable_properties_are_not_required(tmp_path: Path):
     schema = {
-        "type": "object",
-        "required": ["note", "id"],
-        "properties": {"note": {"type": "string", "x-nullable": True}, "id": {"type": "string"}},
+        "allOf": [
+            {"$ref": "#/definitions/Thing"},
+            {"required": ["note"], "properties": {"note": {"type": "string", "x-nullable": True}}},
+        ]
     }
-    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": {"/things": swagger_get(schema)}})
+    thing = {
+        "type": "object",
+        "required": ["id", "code"],
+        "properties": {"id": {"type": "string", "x-nullable": False}, "code": {"type": "string", "x-nullable": True}},
+    }
+    source = write_swagger(
+        tmp_path,
+        {"host": "api.example.com", "paths": {"/things": swagger_get(schema)}, "definitions": {"Thing": thing}},
+    )
 
     result = import_openapi(source)
 
-    assert {p.name: p.required for p in result.schema_[0].properties} == {"note": None, "id": True}
+    assert {p.name: p.required for p in result.schema_[0].properties} == {"id": True, "code": None, "note": None}
 
 
 SHOP = "fixtures/import/openapi/shop.yaml"
