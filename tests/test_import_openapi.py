@@ -205,7 +205,7 @@ def test_operation_without_json_or_yaml_response():
 
 def test_other_versions_are_rejected(tmp_path: Path):
     source = tmp_path / "swagger.yaml"
-    source.write_text("swagger: '1.2'\ninfo: {title: API, version: '1'}\npaths: {}\n")
+    source.write_text("swaggerVersion: '1.2'\napis: []\n")
 
     with pytest.raises(DataContractException) as e:
         import_openapi(source)
@@ -286,14 +286,6 @@ def test_swagger_2_response_needs_a_json_or_yaml_media_type(tmp_path: Path, root
     assert "no success response with a JSON or YAML schema" in e.value.reason
 
 
-@pytest.mark.parametrize("produces", ["*/*", "application/json;charset=UTF-8"])
-def test_swagger_2_reads_springfox_media_types_as_json(tmp_path: Path, produces):
-    paths = {"/orders": swagger_get({"type": "object", "properties": {"id": {"type": "integer"}}}, produces=[produces])}
-    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths})
-
-    assert [p.name for p in import_openapi(source).schema_[0].properties] == ["id"]
-
-
 def test_swagger_2_shared_response_takes_the_media_types_of_each_operation(tmp_path: Path):
     response = {"$ref": "#/responses/Order"}
     paths = {
@@ -362,20 +354,6 @@ def test_swagger_2_path_parameters_and_the_operations_own_body(tmp_path: Path):
 
     assert result.servers[0].location == "https://api.example.com/${region:-eu}/search"
     assert {p.property: p.value for p in result.servers[0].customProperties}["body"] == {"from": "operation"}
-
-
-def test_swagger_2_self_referencing_yaml_anchor(tmp_path: Path):
-    """An anchor that contains itself is a cyclic structure once loaded; the import must not walk it forever."""
-    source = tmp_path / "swagger.yaml"
-    source.write_text(
-        "swagger: '2.0'\ninfo: {title: API, version: '1'}\nhost: api.example.com\n"
-        "paths:\n  /nodes:\n    get:\n      responses:\n        '200':\n          description: OK\n"
-        "          schema: {type: object, properties: {id: {type: integer}}}\n"
-        "definitions:\n  Tree: &tree\n    type: object\n    properties:\n"
-        "      children: {type: array, items: *tree}\n"
-    )
-
-    assert [p.name for p in import_openapi(source).schema_[0].properties] == ["id"]
 
 
 def test_swagger_2_x_nullable_properties_are_not_required(tmp_path: Path):

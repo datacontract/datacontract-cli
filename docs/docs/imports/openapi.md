@@ -22,7 +22,7 @@ datacontract import openapi --source openapi.yaml --operation listOrders
 - **Parameters**: path parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location` (with several operations, in the schema's `endpoint`), and required query parameters variables in the `params` custom property, defaulting to the parameter's `example` or `default`. For example, `/orders/{orderId}` with `example: ORD-1001` becomes `/orders/${orderId:-ORD-1001}`. Set `orderId` in the environment to test another order.
 - **Request body**: for a POST operation, the server (with several operations, the schema) gets `method: POST` and a `body` custom property with the request body's JSON example: the media type's `example`, else its first entry in `examples`, else the schema's `example`. Without one, the contract has no `body` and a warning asks you to add it.
 
-A Swagger 2.0 document is read like the same API in OpenAPI 3.0: `host`, `basePath` and `schemes` become the servers, a response `schema` is read for the media types in `produces` (JSON if it names none, and for `*/*`), a `body` parameter is the request body, and `x-nullable: true` stands for `nullable: true`. `$ref`s to other files are not followed.
+A Swagger 2.0 document is read like the same API in OpenAPI 3.0: `host`, `basePath` and `schemes` become the servers (`https` if there are no `schemes`; without a `host` the server is relative and skipped, as above), a response `schema` is read for the media types in `produces` (JSON if it names none), a `body` parameter is the request body, and `x-nullable: true` stands for `nullable: true`. `$ref`s to other files are not followed.
 
 ## Example
 

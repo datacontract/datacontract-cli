@@ -56,7 +56,7 @@ def _from_swagger_2(spec: dict) -> dict:
     parameters = list((spec.get("parameters") or {}).values())
     for _, path_item, _, operation in operations(spec):
         # a response at the root is shared, so each operation gets its own copy for the media types it produces
-        produces = _swagger_2_media_types(operation.get("produces") or spec.get("produces"))
+        produces = operation.get("produces") or spec.get("produces") or ["application/json"]
         responses = {}
         for code, response in (operation.get("responses") or {}).items():
             if isinstance(response, dict) and str(response.get("$ref", "")).startswith("#"):
@@ -74,7 +74,7 @@ def _from_swagger_2(spec: dict) -> dict:
         ]
         body = next((p for p in declared if isinstance(p, dict) and p.get("in") == "body"), None)
         if body is not None and "requestBody" not in operation:
-            media_types = _swagger_2_media_types(operation.get("consumes") or spec.get("consumes"))
+            media_types = operation.get("consumes") or spec.get("consumes") or ["application/json"]
             operation["requestBody"] = {
                 "required": bool(body.get("required")),
                 "content": {media_type: {"schema": body.get("schema") or {}} for media_type in media_types},
@@ -86,28 +86,7 @@ def _from_swagger_2(spec: dict) -> dict:
             parameter["schema"] = {
                 key: parameter.pop(key) for key in ("type", "format", "items", "enum", "default") if key in parameter
             }
-    _x_nullable(spec)
     return spec
-
-
-def _swagger_2_media_types(media_types) -> list[str]:
-    """The media types without parameters such as charset, with `*/*` (Springfox's default) as JSON, and JSON if
-    there are none."""
-    types = [media_type.split(";")[0].strip() for media_type in media_types or [] if isinstance(media_type, str)]
-    return ["application/json" if media_type == "*/*" else media_type for media_type in types] or ["application/json"]
-
-
-def _x_nullable(node, seen: set | None = None) -> None:
-    """Swagger 2.0 has no `nullable`; the common `x-nullable` extension stands for it. A node that YAML aliases is
-    visited once, so an anchor that contains itself ends the walk."""
-    seen = set() if seen is None else seen
-    if not isinstance(node, (dict, list)) or id(node) in seen:
-        return
-    seen.add(id(node))
-    if isinstance(node, dict) and "x-nullable" in node:
-        node.setdefault("nullable", node["x-nullable"])
-    for child in node.values() if isinstance(node, dict) else node:
-        _x_nullable(child, seen)
 
 
 def operations(spec: dict) -> list[tuple[str, dict, str, dict]]:
@@ -237,14 +216,14 @@ def _response_schema(resolver: SchemaResolver, label: str, operation: dict) -> d
 
 
 def _to_json_schema(schema):
-    """The schema with OpenAPI 3.0's `example` and `nullable` as JSON Schema, and nullable properties optional,
-    as ODCS's `required` means not null."""
+    """The schema with OpenAPI 3.0's `example` and `nullable` (Swagger 2.0's `x-nullable`) as JSON Schema, and
+    nullable properties optional, as ODCS's `required` means not null."""
     if not isinstance(schema, dict):
         return schema
     schema = dict(schema)
     if "example" in schema and "examples" not in schema:
         schema["examples"] = [schema["example"]]
-    if schema.get("nullable") is True and isinstance(schema.get("type"), str):
+    if schema.get("nullable", schema.get("x-nullable")) is True and isinstance(schema.get("type"), str):
         schema["type"] = [schema["type"], "null"]
     if isinstance(schema.get("properties"), dict):
         schema["properties"] = {name: _to_json_schema(child) for name, child in schema["properties"].items()}
