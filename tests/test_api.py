@@ -536,8 +536,8 @@ def test_unknown_config_header_is_rejected():
         "datacontract-oracle-client-dir",
         "datacontract-duckdb-database",
         "datacontract-snowflake-token-file-path",
-        "datacontract-sqlserver-token-file-path",
         "datacontract-snowflake-workload-identity-provider",
+        "datacontract-sqlserver-token-file-path",
     ],
 )
 def test_server_only_header_is_rejected(header):
