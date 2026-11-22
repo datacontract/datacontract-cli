@@ -1,4 +1,4 @@
-"""Import the responses of GET or POST operations of an OpenAPI 3.x document."""
+"""Import the responses of GET or POST operations of an OpenAPI 3.x or Swagger 2.0 document."""
 
 import logging
 import re
@@ -35,9 +35,69 @@ def read_openapi(source: str) -> dict:
             spec = yaml.load(file, Loader=_SafeLoaderNoTimestamp)
     except (OSError, yaml.YAMLError) as e:
         raise _schema_error(f"Failed to read OpenAPI document {source}: {e}") from e
+    if isinstance(spec, dict) and str(spec.get("swagger", "")) == "2.0":
+        return _from_swagger_2(spec)
     if not isinstance(spec, dict) or not str(spec.get("openapi", "")).startswith("3."):
-        raise _schema_error(f"{source} is not an OpenAPI 3.x document.")
+        raise _schema_error(f"{source} is not an OpenAPI 3.x or Swagger 2.0 document.")
     return spec
+
+
+def _from_swagger_2(spec: dict) -> dict:
+    """The Swagger 2.0 document in the OpenAPI 3.0 shape the importer reads. Its local $refs, such as
+    #/definitions/Order or #/parameters/OrderId, stay as they are, as they point into the same document."""
+    host, base_path = spec.get("host"), spec.get("basePath") or ""
+    # without a host, the API is served by the host of the document, like a relative OpenAPI 3 server URL
+    spec["servers"] = (
+        [{"url": f"{scheme}://{host}{base_path}"} for scheme in spec.get("schemes") or ["https"]]
+        if host
+        else [{"url": base_path or "/"}]
+    )
+    _swagger_2_content(spec.get("responses"), spec.get("produces"))
+    lookup = SchemaResolver(spec).lookup
+    parameters = list((spec.get("parameters") or {}).values())
+    for _, path_item, _, operation in operations(spec):
+        _swagger_2_content(operation.get("responses"), operation.get("produces") or spec.get("produces"))
+        # the operation's own parameters first, as they replace those of its path
+        declared = [
+            lookup(p["$ref"]) if isinstance(p, dict) and str(p.get("$ref", "")).startswith("#") else p
+            for p in (operation.get("parameters") or []) + (path_item.get("parameters") or [])
+        ]
+        body = next((p for p in declared if isinstance(p, dict) and p.get("in") == "body"), None)
+        if body is not None and "requestBody" not in operation:
+            media_types = operation.get("consumes") or spec.get("consumes") or ["application/json"]
+            operation["requestBody"] = {
+                "required": bool(body.get("required")),
+                "content": {media_type: {"schema": body.get("schema") or {}} for media_type in media_types},
+            }
+        parameters += declared
+    # the other parameters declare their type and default next to their name, OpenAPI 3 in a schema
+    for parameter in parameters:
+        if isinstance(parameter, dict) and parameter.get("in") != "body" and "schema" not in parameter:
+            parameter["schema"] = {
+                key: parameter.pop(key) for key in ("type", "format", "items", "enum", "default") if key in parameter
+            }
+    _x_nullable(spec)
+    return spec
+
+
+def _swagger_2_content(responses, media_types) -> None:
+    """Each response's schema as the content of the media types the operation produces, JSON if it names none."""
+    for response in (responses or {}).values():
+        if isinstance(response, dict) and "schema" in response:
+            schema = response.pop("schema")
+            response["content"] = {media_type: {"schema": schema} for media_type in media_types or ["application/json"]}
+
+
+def _x_nullable(node) -> None:
+    """Swagger 2.0 has no `nullable`; the common `x-nullable` extension stands for it."""
+    if isinstance(node, dict):
+        if "x-nullable" in node:
+            node.setdefault("nullable", node["x-nullable"])
+        for child in node.values():
+            _x_nullable(child)
+    elif isinstance(node, list):
+        for child in node:
+            _x_nullable(child)
 
 
 def operations(spec: dict) -> list[tuple[str, dict, str, dict]]:

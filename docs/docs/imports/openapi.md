@@ -1,12 +1,12 @@
 ---
 sidebar_position: 23
 title: "Import: OpenAPI"
-description: "Create a data contract from the responses of GET or POST operations in an OpenAPI 3.x document."
+description: "Create a data contract from the responses of GET or POST operations in an OpenAPI 3.x or Swagger 2.0 document."
 ---
 
 # <img className="page-icon" src="/img/icons/api.svg" alt="" /> Import: OpenAPI
 
-Creates a data contract from the responses of GET or POST operations in an [OpenAPI](https://www.openapis.org/) 3.0 or 3.1 document, in YAML or JSON. You can then [test the endpoints](../testing/api.md) against the contract.
+Creates a data contract from the responses of GET or POST operations in an [OpenAPI](https://www.openapis.org/) 3.0 or 3.1 document, or a Swagger 2.0 document, in YAML or JSON. You can then [test the endpoints](../testing/api.md) against the contract.
 
 ```bash
 datacontract import openapi --source openapi.yaml --operation listOrders
@@ -22,7 +22,7 @@ datacontract import openapi --source openapi.yaml --operation listOrders
 - **Parameters**: path parameters become [variables](../configuration.md#variables-in-the-data-contract) in the `location` (with several operations, in the schema's `endpoint`), and required query parameters variables in the `params` custom property, defaulting to the parameter's `example` or `default`. For example, `/orders/{orderId}` with `example: ORD-1001` becomes `/orders/${orderId:-ORD-1001}`. Set `orderId` in the environment to test another order.
 - **Request body**: for a POST operation, the server (with several operations, the schema) gets `method: POST` and a `body` custom property with the request body's JSON example: the media type's `example`, else its first entry in `examples`, else the schema's `example`. Without one, the contract has no `body` and a warning asks you to add it.
 
-Swagger 2.0 documents are not supported, and `$ref`s to other files are not followed.
+A Swagger 2.0 document is read like the same API in OpenAPI 3.0: `host`, `basePath` and `schemes` become the servers, a response `schema` is read for the media types in `produces` (JSON if it names none), a `body` parameter is the request body, and `x-nullable: true` stands for `nullable: true`. `$ref`s to other files are not followed.
 
 ## Example
 

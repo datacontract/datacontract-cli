@@ -1091,7 +1091,9 @@ def import_odata(
     "--operation listOrders --output datacontract.yaml",
 )
 def import_openapi(
-    source: Annotated[Optional[str], typer.Option(help="Path to the OpenAPI 3.x document (YAML or JSON).")] = None,
+    source: Annotated[
+        Optional[str], typer.Option(help="Path to the OpenAPI 3.x or Swagger 2.0 document (YAML or JSON).")
+    ] = None,
     operation: Annotated[
         Optional[List[str]],
         typer.Option(
@@ -1106,7 +1108,7 @@ def import_openapi(
     id: id_option = None,
     debug: debug_option = None,
 ):
-    """Import a data contract from the responses of GET or POST operations in an OpenAPI 3.x document."""
+    """Import a data contract from the responses of GET or POST operations in an OpenAPI 3.x or Swagger 2.0 document."""
     enable_debug_logging(debug)
     if not operation and source is not None and _interactive():
         operation = _ask_openapi_operations(source)

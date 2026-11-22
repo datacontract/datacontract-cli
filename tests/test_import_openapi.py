@@ -203,14 +203,86 @@ def test_operation_without_json_or_yaml_response():
     assert "no success response with a JSON or YAML schema" in e.value.reason
 
 
-def test_swagger_2_is_rejected(tmp_path: Path):
+def test_other_versions_are_rejected(tmp_path: Path):
     source = tmp_path / "swagger.yaml"
-    source.write_text("swagger: '2.0'\ninfo: {title: API, version: '1'}\npaths: {}\n")
+    source.write_text("swagger: '1.2'\ninfo: {title: API, version: '1'}\npaths: {}\n")
 
     with pytest.raises(DataContractException) as e:
         import_openapi(source)
 
-    assert "is not an OpenAPI 3.x document" in e.value.reason
+    assert "is not an OpenAPI 3.x or Swagger 2.0 document" in e.value.reason
+
+
+ORDERS_SWAGGER = "fixtures/import/openapi/orders.swagger.yaml"
+
+
+def write_swagger(tmp_path: Path, spec: dict) -> Path:
+    source = tmp_path / "swagger.yaml"
+    source.write_text(yaml.safe_dump({"swagger": "2.0", "info": {"title": "API", "version": "1"}, **spec}))
+    return source
+
+
+def swagger_get(schema: dict, **operation) -> dict:
+    return {"get": {"responses": {"200": {"description": "OK", "schema": schema}}, **operation}}
+
+
+@pytest.mark.parametrize("operation", ["listOrders", "searchOrders", "getOrder"])
+def test_swagger_2_imports_like_the_same_api_in_openapi_3(operation):
+    """orders.swagger.yaml is orders.yaml in Swagger 2.0: definitions, a body parameter, parameters and a response
+    at the root, and x-nullable."""
+    swagger, openapi = import_openapi(ORDERS_SWAGGER, operation), import_openapi(ORDERS, operation)
+
+    assert swagger.schema_ == openapi.schema_
+    assert swagger.servers[0].location == openapi.servers[0].location
+    assert swagger.servers[0].customProperties == openapi.servers[0].customProperties
+
+
+def test_swagger_2_servers_from_host_base_path_and_schemes(tmp_path: Path):
+    paths = {"/orders": swagger_get({"type": "object", "properties": {"id": {"type": "integer"}}})}
+    source = write_swagger(
+        tmp_path, {"host": "api.example.com", "basePath": "/v1", "schemes": ["https", "http"], "paths": paths}
+    )
+
+    result = import_openapi(source)
+
+    assert [s.location for s in result.servers] == [
+        "https://api.example.com/v1/orders",
+        "http://api.example.com/v1/orders",
+    ]
+
+
+def test_swagger_2_without_host_has_no_server_to_test(tmp_path: Path, caplog):
+    paths = {"/orders": swagger_get({"type": "object", "properties": {"id": {"type": "integer"}}})}
+    source = write_swagger(tmp_path, {"basePath": "/v1", "paths": paths})
+
+    with caplog.at_level(logging.WARNING):
+        result = import_openapi(source)
+
+    assert result.servers is None
+    assert "Skipped the server '/v1'" in caplog.text
+
+
+def test_swagger_2_response_needs_a_json_or_yaml_media_type(tmp_path: Path):
+    paths = {"/orders": swagger_get({"type": "object"}, produces=["application/xml"])}
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": paths})
+
+    with pytest.raises(DataContractException) as e:
+        import_openapi(source)
+
+    assert "no success response with a JSON or YAML schema" in e.value.reason
+
+
+def test_swagger_2_x_nullable_properties_are_not_required(tmp_path: Path):
+    schema = {
+        "type": "object",
+        "required": ["note", "id"],
+        "properties": {"note": {"type": "string", "x-nullable": True}, "id": {"type": "string"}},
+    }
+    source = write_swagger(tmp_path, {"host": "api.example.com", "paths": {"/things": swagger_get(schema)}})
+
+    result = import_openapi(source)
+
+    assert {p.name: p.required for p in result.schema_[0].properties} == {"note": None, "id": True}
 
 
 SHOP = "fixtures/import/openapi/shop.yaml"

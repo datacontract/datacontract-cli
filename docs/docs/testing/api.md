@@ -34,7 +34,7 @@ For public endpoints, skip this step.
 
 ### From the OpenAPI document
 
-If the API has an OpenAPI 3.x document, import the operation you want to test, by its `operationId` or its method and path (`POST /orders/search`):
+If the API has an OpenAPI 3.x or Swagger 2.0 document, import the operation you want to test, by its `operationId` or its method and path (`POST /orders/search`):
 
 ```bash
 datacontract import openapi --source openapi.yaml --operation listOrders --output datacontract.yaml
