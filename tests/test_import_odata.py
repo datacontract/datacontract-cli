@@ -237,11 +237,15 @@ def test_navigation_and_unrelated_types_are_omitted(caplog):
     "field_type",
     ["D.Address", "Collection(Edm.String)", "Collection(D.Address)", "D.Status"],
 )
-def test_unsupported_types_fail_with_field_and_type(field_type):
-    with pytest.raises(DataContractException) as error:
-        xml_schema(f'<Property Name="Value" Type="{field_type}" />')
-    assert "REF_COUNTRY.Value" in str(error.value)
-    assert field_type in str(error.value)
+def test_unmapped_xml_types_warn(metadata_response, caplog, field_type):
+    response, _ = metadata_response
+    response.content = metadata_xml(f'<Property Name="Value" Type="{field_type}" />')
+    contract = import_contract()
+    prop = yaml.safe_load(contract.to_yaml())["schema"][0]["properties"][0]
+    assert prop["physicalType"] == field_type
+    assert "logicalType" not in prop
+    assert "without a logicalType" in caplog.text
+    assert f"Value ({field_type})" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -504,7 +508,6 @@ def test_json_alias_and_navigation(metadata_response, json_metadata, caplog, typ
         (("Catalog.Model", "Product", "Price", "$Type"), None, "Unsupported OData type"),
         (("Catalog.Model", "Product", "Price", "$Nullable"), "false", "Invalid Nullable"),
         (("Catalog.Model", "Product", "Price", "$Collection"), 1, "Invalid .*Collection"),
-        (("Catalog.Model", "Product", "Price", "$Collection"), True, "collection"),
         (("Catalog.Model", "Product", "Price", "$Precision"), "10", "Invalid Precision"),
         (("Catalog.Model", "Product", "Price", "$Scale"), True, "Invalid Scale"),
         (("Catalog.Model", "Product", "Sku", "$MaxLength"), -1, "Invalid MaxLength"),
@@ -521,11 +524,33 @@ def test_json_invalid_csdl(json_metadata, path, value, error):
 
 
 @pytest.mark.parametrize("kind", ["ComplexType", "EnumType", "TypeDefinition"])
-def test_json_unsupported_selected_type(json_metadata, kind):
+def test_json_unmapped_selected_type_warns(metadata_response, json_metadata, caplog, kind):
+    response, _ = metadata_response
     json_metadata["Catalog.Model"]["Special"] = {"$Kind": kind}
     json_metadata["Catalog.Model"]["Product"]["Price"]["$Type"] = "Catalog.Special"
-    with pytest.raises(DataContractException, match="Catalog.Special.*Products.Price"):
-        _odata_4_schema(_read_json(json.dumps(json_metadata).encode()), "Products")
+    response.content = json.dumps(json_metadata).encode()
+    contract = import_contract("Products")
+    properties = yaml.safe_load(contract.to_yaml())["schema"][0]["properties"]
+    prop = next(prop for prop in properties if prop["name"] == "Price")
+    assert prop["physicalType"] == "Catalog.Special"
+    assert "logicalType" not in prop
+    assert "without a logicalType" in caplog.text
+    assert "Price (Catalog.Special)" in caplog.text
+
+
+def test_json_collection_warns(metadata_response, json_metadata, caplog, odcs_schema):
+    response, _ = metadata_response
+    json_metadata["Catalog.Model"]["Product"]["TrackingId"]["$Collection"] = True
+    response.content = json.dumps(json_metadata).encode()
+    contract = import_contract("Products")
+    actual = yaml.safe_load(contract.to_yaml())
+    jsonschema.validate(actual, odcs_schema)
+    prop = next(prop for prop in actual["schema"][0]["properties"] if prop["name"] == "TrackingId")
+    assert prop["physicalType"] == "Collection(Edm.Guid)"
+    assert "logicalType" not in prop
+    assert "logicalTypeOptions" not in prop
+    assert "without a logicalType" in caplog.text
+    assert "TrackingId (Collection(Edm.Guid))" in caplog.text
 
 
 # Version validation and format detection

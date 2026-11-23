@@ -27,7 +27,7 @@ For offline import, supply a local CSDL XML or JSON file through `--metadata-fil
 
 For authentication, set `DATACONTRACT_API_HEADER_AUTHORIZATION` to the complete header value, such as `Bearer <token>` or a precomputed `Basic <base64-encoded username:password>`. Set `DATACONTRACT_API_HEADER_X_API_KEY` for services that require an `X-API-Key` header.
 
-The importer reads metadata only; no data records are fetched. It preserves primitive field types, nullability, declared keys and constraints. Primitive types without a logical type mapping are imported with their original `physicalType` and produce a warning. Complex types, collection-valued fields, enums, type definitions and inheritance cause errors when used by a selected schema. External metadata references are not downloaded.
+The importer reads metadata only; no data records are fetched. It preserves field types, nullability, declared keys and constraints. Types without a logical type mapping, including complex types, collection-valued fields, enums and type definitions, are imported with their `physicalType` but without `logicalType` and produce a warning. Collections use `Collection(...)` as their `physicalType`. Inheritance causes errors when used by a selected schema. External metadata references are not downloaded.
 
 Navigation properties with referential constraints produce `foreignKey` relationships. Single-property constraints are stored on the referencing property; composite constraints are stored as one schema-level relationship with matching `from` and `to` arrays. Navigation bindings identify the target entity set or singleton, which must also be selected.
 

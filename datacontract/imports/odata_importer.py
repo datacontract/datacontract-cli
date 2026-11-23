@@ -575,12 +575,10 @@ def _odata_4_schema(document: dict, requested_name: str, kind: str | None = None
             raise _schema_error(f"Unsupported $Kind for field {name}.{field_name}: {field['kind']!r}.")
         if type(field["collection"]) is not bool:
             raise _schema_error(f"Invalid $Collection for field {name}.{field_name}: expected a boolean.")
-        if not isinstance(field_type, str) or not field_type.startswith("Edm.") or field["collection"]:
-            raise _schema_error(
-                f"Unsupported OData type {field_type!r} for field {name}.{field_name}. "
-                "Only primitive types can be imported; complex, collection, enum types and type definitions "
-                "are not supported."
-            )
+        if not isinstance(field_type, str) or not field_type:
+            raise _schema_error(f"Unsupported OData type {field_type!r} for field {name}.{field_name}.")
+        if field["collection"]:
+            field_type = f"Collection({field_type})"
         nullable = field["nullable"]
         if type(nullable) is not bool:
             raise _schema_error(f"Invalid Nullable value {nullable!r} for field {name}.{field_name}.")
