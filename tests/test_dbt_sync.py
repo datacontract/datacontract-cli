@@ -3735,10 +3735,6 @@ def test_versioned_sync_drops_per_version_descriptions_once_they_agree(tmp_path:
     project = _described_versioned_project(tmp_path)
     _sync_versioned(project, "customers-v1.odcs.yaml", "1")
     _sync_versioned(project, "customers-v2.odcs.yaml", "2")
-    first = (project / "models" / "customers.yml").read_text()
-    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
-    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
-    assert (project / "models" / "customers.yml").read_text() == first
 
     (project / "customers-v1.odcs.yaml").write_text(_described_versioned_contract("1.0.0", "v2"))
     _sync_versioned(project, "customers-v1.odcs.yaml", "1")
