@@ -2203,6 +2203,7 @@ def _reconcile_versioned_descriptions(
     model_dict: dict,
     props_by_name: dict,
     this_version: str,
+    top_description: Optional[str],
     *,
     prune: bool,
 ) -> None:
@@ -2210,7 +2211,7 @@ def _reconcile_versioned_descriptions(
     latest = str(entry.get("latest_version"))
     bullets = [b for b in versions if isinstance(b, dict)]
 
-    descs = {str(b.get("v")): b.get("description") or entry.get("description") for b in bullets}
+    descs = {str(b.get("v")): b.get("description") or top_description for b in bullets}
     if model_dict.get("description") or prune:
         descs[this_version] = model_dict.get("description")
     top = descs.get(latest, descs.get(this_version))
@@ -2319,6 +2320,7 @@ def _merge_versioned_model_entry(
     props_by_name = {p.name.lower(): p for p in (schema_obj.properties or []) if p.name}
     contract_version = odcs.version or "no_version"
 
+    top_description = entry.get("description")  # what the other versions show, before this sync writes it
     if model_dict.get("description") and "description" not in entry:
         entry["description"] = model_dict["description"]
     _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
@@ -2397,7 +2399,9 @@ def _merge_versioned_model_entry(
     _reconcile_versioned_data_types(
         entry, versions, model_dict, props_by_name, dialect, model_version, run, prune=prune
     )
-    _reconcile_versioned_descriptions(entry, versions, model_dict, props_by_name, model_version, prune=prune)
+    _reconcile_versioned_descriptions(
+        entry, versions, model_dict, props_by_name, model_version, top_description, prune=prune
+    )
     for desired_col in model_dict.get("columns") or []:
         if _is_must_quote_name(desired_col["name"]):
             for b in versions:

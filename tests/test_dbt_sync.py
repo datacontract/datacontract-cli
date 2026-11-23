@@ -3795,6 +3795,23 @@ def test_versioned_override_carries_the_column_tags_and_meta(tmp_path: Path):
     assert _override(entry, 1, "amount")["config"] == _col(entry, "amount")["config"]
 
 
+def test_versioned_model_description_added_to_an_older_version_stays_on_it(tmp_path: Path):
+    """A model without a description: a description that only v1 gains goes on v1's bullet, not the top
+    level, which the latest version (v2) shows."""
+    project = _typed_versioned_project(tmp_path)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    described = _typed_versioned_contract("1.0.0", "integer").replace(
+        "  - name: customers\n", "  - name: customers\n    description: customers v1\n"
+    )
+    (project / "customers-v1.odcs.yaml").write_text(described)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+
+    entry = _versioned_entry(project)
+    assert "description" not in entry
+    assert _bullet(entry, 1)["description"] == "customers v1"
+
+
 def test_versioned_sync_with_divergent_tests_and_descriptions_is_idempotent(tmp_path: Path):
     """Re-syncing unchanged contracts doesn't reorder an override holding both divergent tests and a description."""
     project = _described_versioned_project(tmp_path)
