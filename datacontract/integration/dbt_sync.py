@@ -2068,7 +2068,7 @@ def _set_override_tests(
         _ensure_membership(entry, dc_check, generated=True, contract_version=contract_version, versioned=False)
         tests.append(entry)
     if tests:
-        override["data_tests"] = tests  # an existing key keeps its place, so a re-sync doesn't reorder
+        override["data_tests"] = tests
     else:
         override.pop("data_tests", None)
 
@@ -2320,7 +2320,7 @@ def _merge_versioned_model_entry(
     props_by_name = {p.name.lower(): p for p in (schema_obj.properties or []) if p.name}
     contract_version = odcs.version or "no_version"
 
-    top_description = entry.get("description")  # what the other versions show, before this sync writes it
+    top_description = entry.get("description")
     if model_dict.get("description") and "description" not in entry:
         entry["description"] = model_dict["description"]
     _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
@@ -2416,7 +2416,7 @@ def _merge_versioned_model_entry(
             override = _bullet_column_override(b, top_col["name"]) if isinstance(b, dict) else None
             if override is None:
                 continue
-            tags_and_meta = _column_tags_and_meta(top_col)  # a copy per override, else YAML anchors
+            tags_and_meta = _column_tags_and_meta(top_col)
             config = override.get("config")
             config = config if isinstance(config, dict) else CommentedMap()
             for key in ("tags", "meta"):

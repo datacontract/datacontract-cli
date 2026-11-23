@@ -3822,7 +3822,7 @@ def test_versioned_sync_with_divergent_tests_and_descriptions_is_idempotent(tmp_
     _sync_versioned(project, "customers-v2.odcs.yaml", "2")
     assert _override(_versioned_entry(project), 1, "amount")["data_tests"]
     first = (project / "models" / "customers.yml").read_text()
-    assert "&id" not in first  # each override has its own copy of the column's meta, not a YAML alias
+    assert "&id" not in first
 
     _sync_versioned(project, "customers-v1.odcs.yaml", "1")
     _sync_versioned(project, "customers-v2.odcs.yaml", "2")
