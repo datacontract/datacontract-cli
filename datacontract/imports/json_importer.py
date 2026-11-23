@@ -34,7 +34,7 @@ def is_ndjson(file_path: str) -> bool:
     return False
 
 
-def import_json(source: str, include_examples: bool = False) -> OpenDataContractStandard:
+def import_json(source: str) -> OpenDataContractStandard:
     """Import a JSON file and create an ODCS data contract."""
     base_model_name = os.path.splitext(os.path.basename(source))[0]
 

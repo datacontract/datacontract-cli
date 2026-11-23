@@ -18,7 +18,7 @@ class CsvImporter(Importer):
         return import_csv(source)
 
 
-def import_csv(source: str, include_examples: bool = False) -> OpenDataContractStandard:
+def import_csv(source: str) -> OpenDataContractStandard:
     """Import a CSV file and create an ODCS data contract."""
     try:
         import duckdb
