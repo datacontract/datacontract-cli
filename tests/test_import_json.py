@@ -74,11 +74,11 @@ def _has_examples(node) -> bool:
 @pytest.mark.parametrize(
     "source", ["fixtures/import/json/product_detail.json", "fixtures/import/json/inventory_ndjson.json"]
 )
-def test_cli_no_examples(source):
+def test_cli_examples_are_on_unless_no_examples(source):
     """Nested properties and NDJSON records leave out their examples too."""
+    default = CliRunner().invoke(app, ["import", "json", "--source", source])
     result = CliRunner().invoke(app, ["import", "json", "--source", source, "--no-examples"])
 
-    assert result.exit_code == 0, result.output
-    contract = yaml.safe_load(result.stdout)
-    assert _has_examples(yaml.safe_load(DataContract.import_from_source("json", source).to_yaml()))
-    assert not _has_examples(contract)
+    assert default.exit_code == 0 and result.exit_code == 0, result.output
+    assert _has_examples(yaml.safe_load(default.stdout))
+    assert not _has_examples(yaml.safe_load(result.stdout))

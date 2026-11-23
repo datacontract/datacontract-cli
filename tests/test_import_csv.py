@@ -103,10 +103,12 @@ schema:
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
 
 
-def test_cli_no_examples():
+def test_cli_examples_are_on_unless_no_examples():
     """Sensitive data must not be copied into the contract as examples."""
+    default = CliRunner().invoke(app, ["import", "csv", "--source", csv_file_path])
     result = CliRunner().invoke(app, ["import", "csv", "--source", csv_file_path, "--no-examples"])
 
-    assert result.exit_code == 0, result.output
+    assert default.exit_code == 0 and result.exit_code == 0, result.output
+    assert any("examples" in p for p in yaml.safe_load(default.stdout)["schema"][0]["properties"])
     properties = yaml.safe_load(result.stdout)["schema"][0]["properties"]
     assert properties and not any("examples" in p for p in properties)
