@@ -64,18 +64,16 @@ class ODataImporter(Importer):
         metadata_url = import_args.get("odata_metadata_url")
         metadata_file = import_args.get("odata_metadata_file")
         service_file = import_args.get("odata_service_document_file")
-        selected_names = import_args.get("odata_entity_set")
-        selected_singletons = import_args.get("odata_singleton")
+        selected_names = import_args.get("odata_resource")
         if metadata_url is not None and metadata_file is not None:
             raise _schema_error("--metadata-url and --metadata-file are mutually exclusive.")
         _validate_http_url(source, "service-root-url", root=True)
-        for option, names in (("entity-set", selected_names), ("singleton", selected_singletons)):
-            if names is not None and (
-                not isinstance(names, list)
-                or not names
-                or any(not isinstance(name, str) or not name.strip() for name in names)
-            ):
-                raise _schema_error(f"--{option} must be a non-empty list of resource names.")
+        if selected_names is not None and (
+            not isinstance(selected_names, list)
+            or not selected_names
+            or any(not isinstance(name, str) or not name.strip() for name in selected_names)
+        ):
+            raise _schema_error("--resource must be a non-empty list of resource names.")
         root_url = source.rstrip("/") + "/"
         if metadata_file is not None:
             content = _read_file(metadata_file, "metadata")
@@ -90,10 +88,9 @@ class ODataImporter(Importer):
         prefix = content.decode(json.detect_encoding(content), errors="ignore").lstrip("\ufeff \t\r\n")
         document = _read_xml(content) if prefix.startswith("<") else _read_json(content)
         protocol_version = _odata_version(document["version"])
-        explicit_selection = selected_names is not None or selected_singletons is not None
+        explicit_selection = bool(selected_names)
         if explicit_selection:
-            selections = [(name, "entitySet", None) for name in selected_names or []]
-            selections.extend((name, "singleton", None) for name in selected_singletons or [])
+            selections = [(name, None, None) for name in selected_names]
         else:
             document_base = root_url
             if service_file is not None:
@@ -169,11 +166,22 @@ class ODataImporter(Importer):
                         navigation["name"],
                     )
                     continue
-                for source, target in constraints:
+                if len(constraints) == 1:
+                    source, target = constraints[0]
                     prop = properties[source]
                     relationship = Relationship(type="foreignKey", to=f"{target_schema.name}.{target}")
                     if relationship not in (prop.relationships or []):
                         prop.relationships = [*(prop.relationships or []), relationship]
+                else:
+                    relationship = Relationship(
+                        type="foreignKey",
+                        **{
+                            "from": [f"{schema.name}.{source}" for source, _ in constraints],
+                            "to": [f"{target_schema.name}.{target}" for _, target in constraints],
+                        },
+                    )
+                    if relationship not in (schema.relationships or []):
+                        schema.relationships = [*(schema.relationships or []), relationship]
         contract = create_odcs(name=schemas[0].name if len(schemas) == 1 else document["container_name"])
         contract.schema_ = schemas
         server = create_server(name="source", server_type="api", location=root_url)
@@ -520,7 +528,7 @@ def _read_json(content: bytes) -> dict:
     return document
 
 
-def _odata_4_schema(document: dict, requested_name: str, kind: str = "entitySet") -> SchemaObject:
+def _odata_4_schema(document: dict, requested_name: str, kind: str | None = None) -> SchemaObject:
     resources = document["resources"]
     matches = [resource for resource in resources if resource["name"] == requested_name]
     if not matches:
@@ -528,10 +536,13 @@ def _odata_4_schema(document: dict, requested_name: str, kind: str = "entitySet"
             resource for resource in resources if (resource["name"] or "").casefold() == requested_name.casefold()
         ]
     if len(matches) != 1:
-        raise _schema_error(f"{kind} {requested_name!r} is {'ambiguous' if matches else 'not found'} in the metadata.")
+        raise _schema_error(
+            f"Resource {requested_name!r} is {'ambiguous' if matches else 'not found'} in the metadata."
+        )
     resource = matches[0]
-    if resource["kind"] != kind:
+    if kind is not None and resource["kind"] != kind:
         raise _schema_error(f"Resource {requested_name!r} is a {resource['kind']}, not the requested {kind}.")
+    kind = resource["kind"]
     name, type_name = resource["name"], resource["type"]
     if resource["extends"]:
         raise _schema_error(f"{kind} {name!r} uses unsupported container inheritance (Extends).")

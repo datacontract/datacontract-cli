@@ -1038,23 +1038,23 @@ def import_athena(
 
 @import_app.command(
     name="odata",
-    epilog="Example: datacontract import odata --service-root-url https://example.com/odata/ --entity-set Products --output datacontract.yaml",
+    epilog="Example: datacontract import odata --service-root-url https://example.com/odata/ --resource Products --output datacontract.yaml",
 )
 def import_odata(
     service_root_url: Annotated[str, typer.Option(help="HTTP(S) root URL of the OData service.")],
     service_document_file: Annotated[
         Optional[Path],
-        typer.Option(help="Local JSON service document. Ignored when --entity-set or --singleton is supplied."),
+        typer.Option(help="Local JSON service document. Ignored when --resource is supplied."),
+    ] = None,
+    resource: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="Entity set or singleton to import (repeat for multiple resources). Without a selection, import all advertised sets and singletons."
+        ),
     ] = None,
     entity_set: Annotated[
         Optional[List[str]],
-        typer.Option(
-            help="EntitySet to import (repeat for multiple sets). Without a selection, import all advertised sets and singletons."
-        ),
-    ] = None,
-    singleton: Annotated[
-        Optional[List[str]],
-        typer.Option(help="Singleton to import (repeat for multiple singletons). Can be combined with --entity-set."),
+        typer.Option(hidden=True, help="Compatibility alias for --resource."),
     ] = None,
     metadata_url: Annotated[
         Optional[str],
@@ -1080,8 +1080,7 @@ def import_odata(
         format="odata",
         source=service_root_url,
         odata_service_document_file=service_document_file,
-        odata_entity_set=entity_set,
-        odata_singleton=singleton,
+        odata_resource=(resource or []) + (entity_set or []) or None,
         odata_metadata_url=metadata_url,
         odata_metadata_file=metadata_file,
         owner=owner,

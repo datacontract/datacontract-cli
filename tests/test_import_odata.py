@@ -64,7 +64,7 @@ def metadata_response(monkeypatch):
 
 def import_contract(entity_set="ref_country", *, source=ROOT, **kwargs):
     return DataContract.import_from_source(
-        "odata", source=source, odata_entity_set=[entity_set], odata_metadata_url=METADATA, **kwargs
+        "odata", source=source, odata_resource=[entity_set], odata_metadata_url=METADATA, **kwargs
     )
 
 
@@ -309,7 +309,7 @@ def test_metadata_sources_are_mutually_exclusive_for_python_api(metadata_respons
         DataContract.import_from_source(
             "odata",
             source=ROOT,
-            odata_entity_set=["ref_country"],
+            odata_resource=["ref_country"],
             odata_metadata_url=METADATA,
             odata_metadata_file=FIXTURES / "who-metadata.xml",
         )
@@ -338,7 +338,7 @@ def test_http_errors(metadata_response, status):
 
 
 def test_cli_stdout_and_output(metadata_response, tmp_path):
-    args = ["--entity-set", "ref_country", "--metadata-url", METADATA]
+    args = ["--resource", "ref_country", "--metadata-url", METADATA]
     stdout = run_cli(*args, source=ROOT)
     assert stdout.exit_code == 0, stdout.output
     assert yaml.safe_load(stdout.stdout) == yaml.safe_load(EXPECTED_CONTRACT.read_text())
@@ -381,7 +381,7 @@ def test_local_who_metadata_matches_url_import(metadata_response, path_type):
     _, get = metadata_response
     path = path_type(FIXTURES / "who-metadata.xml")
     contract = DataContract.import_from_source(
-        "odata", source=ROOT, odata_entity_set=["ref_country"], odata_metadata_file=path
+        "odata", source=ROOT, odata_resource=["ref_country"], odata_metadata_file=path
     )
     actual = yaml.safe_load(contract.to_yaml())
     expected = yaml.safe_load(EXPECTED_CONTRACT.read_text())
@@ -411,7 +411,7 @@ def test_xml_json_equivalent_contracts(metadata_response, tmp_path, odcs_schema,
             path = tmp_path / "metadata.txt"
             path.write_bytes(content)
             contract = DataContract.import_from_source(
-                "odata", source=SERVICE_ROOT, odata_entity_set=["Products"], odata_metadata_file=path
+                "odata", source=SERVICE_ROOT, odata_resource=["Products"], odata_metadata_file=path
             )
             get.assert_not_called()
         else:
@@ -490,7 +490,6 @@ def test_json_alias_and_navigation(metadata_response, json_metadata, caplog, typ
         (("Catalog.Service", "Store", "$Kind"), "EntityType", "EntityContainer"),
         (("Catalog.Service", "Store", "$Extends"), "Other.Store", "inheritance"),
         (("Catalog.Service", "Store", "Products", "$Collection"), "true", "Invalid .*Collection"),
-        (("Catalog.Service", "Store", "Products", "$Collection"), False, "singleton.*requested entitySet"),
         (("Catalog.Service", "Store", "Products", "$Type"), [], "qualified type name"),
         (("Catalog.Service", "Store", "Products", "$Type"), "External.Product", "External metadata references"),
         (("Catalog.Model", "Product", "$BaseType"), "Catalog.Base", "inheritance"),
@@ -650,17 +649,17 @@ def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_pat
 @pytest.mark.parametrize("include_set", [False, True])
 def test_cli_singletons_and_mixed_selection(metadata_response, odcs_schema, format, include_set):
     _, get = metadata_response
-    args = ["--entity-set", "Products"] if include_set else []
+    args = ["--resource", "Products"] if include_set else []
     result = run_cli(
         "--metadata-file",
         FIXTURES / f"products.{format}",
         "--service-document-file",
         "does-not-exist.json",
-        "--singleton",
-        "featuredproduct",
-        "--singleton",
-        "FeaturedProduct",
         *args,
+        "--resource",
+        "featuredproduct",
+        "--resource",
+        "FeaturedProduct",
     )
     assert result.exit_code == 0, result.output
     contract = yaml.safe_load(result.stdout)
@@ -683,8 +682,7 @@ def test_relationships_xml_json_equivalent(odcs_schema):
             "odata",
             source=SERVICE_ROOT,
             odata_metadata_file=FIXTURES / f"relationships.{format}",
-            odata_entity_set=["Cities", "Countries", "ArchivedCountries"],
-            odata_singleton=["CapitalCity", "PreferredCountry"],
+            odata_resource=["Cities", "Countries", "ArchivedCountries", "CapitalCity", "PreferredCountry"],
         )
         actual = yaml.safe_load(contract.to_yaml())
         jsonschema.validate(actual, odcs_schema)
@@ -694,10 +692,32 @@ def test_relationships_xml_json_equivalent(odcs_schema):
     for source, target in (("Cities", "Countries"), ("CapitalCity", "PreferredCountry")):
         properties = {prop["name"]: prop for prop in schemas[source]["properties"]}
         assert set(properties) == {"Id", "CountryCode", "CountryRegion"}
-        assert "relationships" not in properties["Id"]
-        for field in ("Code", "Region"):
-            assert properties[f"Country{field}"]["relationships"] == [{"type": "foreignKey", "to": f"{target}.{field}"}]
+        assert all("relationships" not in prop for prop in properties.values())
+        assert schemas[source]["relationships"] == [
+            {
+                "type": "foreignKey",
+                "from": [f"{source}.CountryCode", f"{source}.CountryRegion"],
+                "to": [f"{target}.Code", f"{target}.Region"],
+            }
+        ]
     assert all("relationships" not in prop for prop in schemas["Countries"]["properties"])
+
+
+def test_single_field_relationship_json(metadata_response, odcs_schema):
+    response, _ = metadata_response
+    document = json.loads((FIXTURES / "relationships.json").read_text())
+    document["Catalog.Model"]["Country"]["$Key"] = ["Code"]
+    document["Catalog.Model"]["City"]["Country"]["$ReferentialConstraint"] = {"CountryCode": "Code"}
+    response.content = json.dumps(document).encode()
+    contract = DataContract.import_from_source("odata", source=SERVICE_ROOT, odata_resource=["Cities", "Countries"])
+    actual = yaml.safe_load(contract.to_yaml())
+    jsonschema.validate(actual, odcs_schema)
+    schemas = {schema["name"]: schema for schema in actual["schema"]}
+    properties = {prop["name"]: prop for prop in schemas["Cities"]["properties"]}
+    assert properties["CountryCode"]["relationships"] == [{"type": "foreignKey", "to": "Countries.Code"}]
+    assert "relationships" not in schemas["Cities"]
+    assert "relationships" not in properties["Id"]
+    assert "relationships" not in properties["CountryRegion"]
 
 
 @pytest.mark.parametrize("root", [SERVICE_ROOT, SERVICE_ROOT.rstrip("/")])
@@ -705,7 +725,7 @@ def test_derived_metadata_url_with_explicit_selection(metadata_response, root):
     metadata, get = metadata_response
     metadata.content = (FIXTURES / "products.json").read_bytes()
     metadata.headers = {}
-    contract = DataContract.import_from_source("odata", source=root, odata_entity_set=["Products", "Orders"])
+    contract = DataContract.import_from_source("odata", source=root, odata_resource=["Products", "Orders"])
     get.assert_called_once()
     assert get.call_args.args == (SERVICE_ROOT + "$metadata",)
     assert contract.servers[0].location == root.rstrip("/") + "/"
