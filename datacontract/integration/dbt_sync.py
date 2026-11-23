@@ -2265,9 +2265,20 @@ def _reconcile_versioned_descriptions(
             _collapse_bare_override(b, override, top_col)
 
 
+def _column_tags_and_meta(top_col: dict) -> CommentedMap:
+    """A copy of the top-level column's `config.tags` and `config.meta`, which dbt drops for a version
+    with its own entry for the column."""
+    config = top_col.get("config")
+    out = CommentedMap()
+    for key, value in config.items() if isinstance(config, dict) else []:
+        if key in ("tags", "meta"):
+            out[key] = copy.deepcopy(value)
+    return out
+
+
 def _collapse_bare_override(bullet: dict, override: dict, top_col: Optional[dict]) -> None:
     """Drop an override element that adds nothing to the top-level column: just its `name`, plus a
-    `quote`, `data_type` or `description` equal to the top-level column's. Then collapse a now-bare `columns`."""
+    `quote`, `data_type`, `description` or `config` equal to the top-level column's. Then collapse a now-bare `columns`."""
     top = top_col if isinstance(top_col, dict) else {}
     for key, value in override.items():
         if key == "name":
@@ -2275,6 +2286,8 @@ def _collapse_bare_override(bullet: dict, override: dict, top_col: Optional[dict
         if key == "quote" and bool(value) == bool(top.get("quote")):
             continue
         if key in ("data_type", "description") and value == top.get(key):
+            continue
+        if key == "config" and isinstance(value, dict) and dict(value) == dict(_column_tags_and_meta(top)):
             continue
         return
     if not top or not _inherits_top_column(bullet, top["name"]):
@@ -2391,6 +2404,25 @@ def _merge_versioned_model_entry(
                 override = _bullet_column_override(b, desired_col["name"]) if isinstance(b, dict) else None
                 if override is not None:
                     override["quote"] = True
+    # Overrides carry the top-level column's tags and meta, which dbt doesn't pass on to them.
+    for top_col in entry.get("columns") or []:
+        if not isinstance(top_col, dict) or not top_col.get("name"):
+            continue
+        for b in versions:
+            override = _bullet_column_override(b, top_col["name"]) if isinstance(b, dict) else None
+            if override is None:
+                continue
+            tags_and_meta = _column_tags_and_meta(top_col)  # a copy per override, else YAML anchors
+            config = override.get("config")
+            config = config if isinstance(config, dict) else CommentedMap()
+            for key in ("tags", "meta"):
+                if key not in tags_and_meta:
+                    config.pop(key, None)
+            config.update(tags_and_meta)
+            if config:
+                override["config"] = config
+            else:
+                override.pop("config", None)
 
     if prune:
         _prune_versioned_entry(entry, model_dict, contract_version, apply=True)

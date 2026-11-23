@@ -3725,9 +3725,14 @@ def test_versioned_sync_keeps_per_version_descriptions(tmp_path: Path, order: tu
     assert _bullet(entry, 1)["description"] == "customers v1"
     assert "description" not in _bullet(entry, 2)
     assert _col(entry, "amount")["description"] == "amount v2"
-    # dbt drops the top-level column's `data_type` for a version that overrides it, so the override
-    # repeats that, but not the top-level tests, which dbt still runs (repeating them duplicates the node).
-    assert _override(entry, 1, "amount") == {"name": "amount", "data_type": "integer", "description": "amount v1"}
+    # dbt drops the top-level column's `data_type` and `config` for a version that overrides it, so the
+    # override repeats those, but not the top-level tests, which dbt still runs (repeating them duplicates the node).
+    assert _override(entry, 1, "amount") == {
+        "name": "amount",
+        "data_type": "integer",
+        "description": "amount v1",
+        "config": _col(entry, "amount")["config"],
+    }
     assert "columns" not in _bullet(entry, 2)
 
 
@@ -3765,7 +3770,29 @@ def test_versioned_descriptions_respect_an_include_list(tmp_path: Path, own_amou
 
     entry = _versioned_entry(project)
     assert _col(entry, "amount")["description"] == "amount v3"
-    assert _bullet(entry, 1)["columns"] == v1_columns
+    assert [{k: v for k, v in c.items() if k != "config"} for c in _bullet(entry, 1)["columns"]] == v1_columns
+
+
+def test_versioned_override_carries_the_column_tags_and_meta(tmp_path: Path):
+    """dbt doesn't pass the top-level column's tags and meta on to a version's override, so the override
+    carries a copy, which follows the top level when the tags change."""
+    project = _described_versioned_project(tmp_path)
+
+    def tagged(text: str) -> str:
+        return text.replace("        description: amount", "        tags: [pii]\n        description: amount")
+
+    for v in ("1", "2"):
+        (project / f"customers-v{v}.odcs.yaml").write_text(tagged(_described_versioned_contract(f"{v}.0.0", f"v{v}")))
+        _sync_versioned(project, f"customers-v{v}.odcs.yaml", v)
+    entry = _versioned_entry(project)
+    assert _override(entry, 1, "amount")["config"]["tags"] == ["pii"]
+    assert _override(entry, 1, "amount")["config"] == _col(entry, "amount")["config"]
+
+    (project / "customers-v2.odcs.yaml").write_text(_described_versioned_contract("2.0.0", "v2"))
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    entry = _versioned_entry(project)
+    assert "tags" not in _override(entry, 1, "amount")["config"]
+    assert _override(entry, 1, "amount")["config"] == _col(entry, "amount")["config"]
 
 
 def test_versioned_sync_with_divergent_tests_and_descriptions_is_idempotent(tmp_path: Path):
@@ -3778,6 +3805,7 @@ def test_versioned_sync_with_divergent_tests_and_descriptions_is_idempotent(tmp_
     _sync_versioned(project, "customers-v2.odcs.yaml", "2")
     assert _override(_versioned_entry(project), 1, "amount")["data_tests"]
     first = (project / "models" / "customers.yml").read_text()
+    assert "&id" not in first  # each override has its own copy of the column's meta, not a YAML alias
 
     _sync_versioned(project, "customers-v1.odcs.yaml", "1")
     _sync_versioned(project, "customers-v2.odcs.yaml", "2")
