@@ -2061,7 +2061,6 @@ def _set_override_tests(
     divergent column must live entirely in overrides — never split across top level and a bullet."""
     _bullet_include_element(bullet)  # an override must ride alongside `include: '*'` (dbt idiom)
     override = _bullet_column_override(bullet, col_name, create=True, top_col=top_col)
-    override.pop("data_tests", None)
     tests = CommentedSeq()
     for test in test_entries:
         entry = CommentedMap(test) if not isinstance(test, CommentedMap) else test
@@ -2069,7 +2068,9 @@ def _set_override_tests(
         _ensure_membership(entry, dc_check, generated=True, contract_version=contract_version, versioned=False)
         tests.append(entry)
     if tests:
-        override["data_tests"] = tests
+        override["data_tests"] = tests  # an existing key keeps its place, so a re-sync doesn't reorder
+    else:
+        override.pop("data_tests", None)
 
 
 def _managed_test_args(container: dict) -> dict[str, dict]:

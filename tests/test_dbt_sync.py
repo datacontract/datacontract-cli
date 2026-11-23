@@ -3768,6 +3768,22 @@ def test_versioned_descriptions_respect_an_include_list(tmp_path: Path, own_amou
     assert _bullet(entry, 1)["columns"] == v1_columns
 
 
+def test_versioned_sync_with_divergent_tests_and_descriptions_is_idempotent(tmp_path: Path):
+    """Re-syncing unchanged contracts doesn't reorder an override holding both divergent tests and a description."""
+    project = _described_versioned_project(tmp_path)
+    enum = "        customProperties:\n          - property: enum\n            value: [1, 2, 3]\n"
+    v2 = _described_versioned_contract("2.0.0", "v2").replace("amount v2\n", "amount v2\n" + enum)
+    (project / "customers-v2.odcs.yaml").write_text(v2)
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    assert _override(_versioned_entry(project), 1, "amount")["data_tests"]
+    first = (project / "models" / "customers.yml").read_text()
+
+    _sync_versioned(project, "customers-v1.odcs.yaml", "1")
+    _sync_versioned(project, "customers-v2.odcs.yaml", "2")
+    assert (project / "models" / "customers.yml").read_text() == first
+
+
 def test_sync_rejects_empty_contract(tmp_path: Path):
     """An empty contract file errors cleanly instead of leaking a raw `NoneType` AttributeError."""
     project = _copy_dbt_project(tmp_path)
