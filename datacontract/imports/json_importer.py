@@ -16,7 +16,7 @@ from datacontract.imports.odcs_helper import (
 
 class JsonImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_json(source)
+        return import_json(source, import_args.get("include_examples", True))
 
 
 def is_ndjson(file_path: str) -> bool:
@@ -34,7 +34,7 @@ def is_ndjson(file_path: str) -> bool:
     return False
 
 
-def import_json(source: str, include_examples: bool = False) -> OpenDataContractStandard:
+def import_json(source: str, include_examples: bool = True) -> OpenDataContractStandard:
     """Import a JSON file and create an ODCS data contract."""
     base_model_name = os.path.splitext(os.path.basename(source))[0]
 
@@ -69,7 +69,7 @@ def import_json(source: str, include_examples: bool = False) -> OpenDataContract
                     else:
                         field_defs[key] = field_def
 
-            properties = [dict_to_property(name, field_def) for name, field_def in field_defs.items()]
+            properties = [dict_to_property(name, field_def, include_examples) for name, field_def in field_defs.items()]
 
             schema_obj = create_schema_object(
                 name=base_model_name,
@@ -89,7 +89,7 @@ def import_json(source: str, include_examples: bool = False) -> OpenDataContract
         properties = []
         for key, value in json_data.items():
             field_def = generate_field_definition(value, key)
-            properties.append(dict_to_property(key, field_def))
+            properties.append(dict_to_property(key, field_def, include_examples))
 
         schema_obj = create_schema_object(
             name=base_model_name,
@@ -109,19 +109,19 @@ def import_json(source: str, include_examples: bool = False) -> OpenDataContract
     return odcs
 
 
-def dict_to_property(name: str, field_def: Dict[str, Any]) -> SchemaProperty:
+def dict_to_property(name: str, field_def: Dict[str, Any], include_examples: bool) -> SchemaProperty:
     """Convert a field definition dict to an ODCS SchemaProperty."""
     logical_type = map_json_type_to_odcs(field_def.get("type", "string"))
 
     nested_properties = None
     if field_def.get("type") == "object" and "fields" in field_def:
-        nested_properties = [dict_to_property(k, v) for k, v in field_def["fields"].items()]
+        nested_properties = [dict_to_property(k, v, include_examples) for k, v in field_def["fields"].items()]
 
     items_prop = None
     if field_def.get("type") == "array" and "items" in field_def:
-        items_prop = dict_to_property("items", field_def["items"])
+        items_prop = dict_to_property("items", field_def["items"], include_examples)
 
-    examples = field_def.get("examples")
+    examples = field_def.get("examples") if include_examples else None
 
     return create_property(
         name=name,

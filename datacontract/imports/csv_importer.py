@@ -15,10 +15,10 @@ from datacontract.imports.odcs_helper import (
 
 class CsvImporter(Importer):
     def import_source(self, source: str, import_args: dict) -> OpenDataContractStandard:
-        return import_csv(source)
+        return import_csv(source, import_args.get("include_examples", True))
 
 
-def import_csv(source: str, include_examples: bool = False) -> OpenDataContractStandard:
+def import_csv(source: str, include_examples: bool = True) -> OpenDataContractStandard:
     """Import a CSV file and create an ODCS data contract."""
     try:
         import duckdb
@@ -72,7 +72,7 @@ def import_csv(source: str, include_examples: bool = False) -> OpenDataContractS
     samples: Dict[str, List] = dict()
     for i in range(tbl.shape[1]):
         field_name = tbl.columns[i]
-        if tallies[("count", field_name)] > 0 and tbl.dtypes[i] not in ["BOOLEAN", "BLOB"]:
+        if include_examples and tallies[("count", field_name)] > 0 and tbl.dtypes[i] not in ["BOOLEAN", "BLOB"]:
             sql = f"""SELECT DISTINCT "{field_name}" FROM "{table_name}" WHERE "{field_name}" IS NOT NULL USING SAMPLE 5 ROWS;"""
             samples[field_name] = [x[0] for x in con.sql(sql).fetchall()]
 

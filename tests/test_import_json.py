@@ -1,3 +1,4 @@
+import pytest
 import yaml
 from typer.testing import CliRunner
 
@@ -62,3 +63,22 @@ def test_ndjson():
 
     # compare the normalized dictionaries
     assert actual_dict == expected_dict
+
+
+def _has_examples(node) -> bool:
+    if isinstance(node, dict):
+        return "examples" in node or any(_has_examples(v) for v in node.values())
+    return isinstance(node, list) and any(_has_examples(v) for v in node)
+
+
+@pytest.mark.parametrize(
+    "source", ["fixtures/import/json/product_detail.json", "fixtures/import/json/inventory_ndjson.json"]
+)
+def test_cli_no_examples(source):
+    """Nested properties and NDJSON records leave out their examples too."""
+    result = CliRunner().invoke(app, ["import", "json", "--source", source, "--no-examples"])
+
+    assert result.exit_code == 0, result.output
+    contract = yaml.safe_load(result.stdout)
+    assert _has_examples(yaml.safe_load(DataContract.import_from_source("json", source).to_yaml()))
+    assert not _has_examples(contract)

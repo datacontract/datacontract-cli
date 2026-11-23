@@ -101,3 +101,12 @@ schema:
     """
     print("Result", result.to_yaml())
     assert yaml.safe_load(result.to_yaml()) == yaml.safe_load(expected)
+
+
+def test_cli_no_examples():
+    """Sensitive data must not be copied into the contract as examples."""
+    result = CliRunner().invoke(app, ["import", "csv", "--source", csv_file_path, "--no-examples"])
+
+    assert result.exit_code == 0, result.output
+    properties = yaml.safe_load(result.stdout)["schema"][0]["properties"]
+    assert properties and not any("examples" in p for p in properties)

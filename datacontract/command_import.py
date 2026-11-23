@@ -37,6 +37,13 @@ owner_option = Annotated[
     Optional[str], typer.Option(help="The owner or team responsible for managing the data contract.")
 ]
 id_option = Annotated[Optional[str], typer.Option(help="The identifier for the data contract.")]
+examples_option = Annotated[
+    bool,
+    typer.Option(
+        "--examples/--no-examples",
+        help="Take example values from the data into the contract. Use --no-examples when the data is sensitive.",
+    ),
+]
 
 
 def _write_result(result, output: Optional[Path]):
@@ -348,12 +355,19 @@ def import_json(
     schema: schema_option = None,
     owner: owner_option = None,
     id: id_option = None,
+    examples: examples_option = True,
     debug: debug_option = None,
 ):
     """Import a data contract from a JSON file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="json", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(),
+        format="json",
+        source=source,
+        schema=schema,
+        owner=owner,
+        id=id,
+        include_examples=examples,
     )
     _write_result(result, output)
 
@@ -408,12 +422,19 @@ def import_csv(
     schema: schema_option = None,
     owner: owner_option = None,
     id: id_option = None,
+    examples: examples_option = True,
     debug: debug_option = None,
 ):
     """Import a data contract from a CSV file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="csv", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(),
+        format="csv",
+        source=source,
+        schema=schema,
+        owner=owner,
+        id=id,
+        include_examples=examples,
     )
     _write_result(result, output)
 
