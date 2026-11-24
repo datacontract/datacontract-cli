@@ -30,6 +30,7 @@ SQLSERVER_ENV_VARS = [
     "DATACONTRACT_SQLSERVER_PASSWORD",
     "DATACONTRACT_SQLSERVER_CLIENT_ID",
     "DATACONTRACT_SQLSERVER_CLIENT_SECRET",
+    "DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH",
     "DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE",
     "DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION",
     "DATACONTRACT_SQLSERVER_DRIVER",
@@ -208,6 +209,43 @@ def test_cli_auth_passes_az_login_token_as_pre_connect_attribute(env, monkeypatc
     assert kwargs["user"] is None
     assert kwargs["password"] is None
     assert "Trusted_Connection" not in kwargs
+
+
+def test_token_auth_passes_the_token_file_as_pre_connect_attribute(env, tmp_path):
+    token_file = tmp_path / "sqlserver-token"
+    token_file.write_text("tok\n")
+    env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "token")
+    env.setenv("DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH", str(token_file))
+
+    kwargs = _sqlserver_connection_kwargs(_server())
+
+    # same packing as cli, without the trailing newline; no Authentication keyword or credentials
+    assert kwargs["attrs_before"] == {1256: b"\x06\x00\x00\x00t\x00o\x00k\x00"}
+    assert "Authentication" not in kwargs
+    assert kwargs["user"] is None
+    assert kwargs["password"] is None
+    assert "Trusted_Connection" not in kwargs
+
+
+def test_token_auth_rereads_the_token_file_on_each_connection(env, tmp_path):
+    token_file = tmp_path / "sqlserver-token"
+    env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "token")
+    env.setenv("DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH", str(token_file))
+
+    token_file.write_text("old")
+    first = _sqlserver_connection_kwargs(_server())
+    token_file.write_text("new")
+    second = _sqlserver_connection_kwargs(_server())
+
+    assert first["attrs_before"][1256].endswith("old".encode("utf-16-le"))
+    assert second["attrs_before"][1256].endswith("new".encode("utf-16-le"))
+
+
+def test_token_auth_requires_token_file_path(env):
+    env.setenv("DATACONTRACT_SQLSERVER_AUTHENTICATION", "token")
+    with pytest.raises(DataContractException) as exc:
+        _sqlserver_connection_kwargs(_server())
+    assert "DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH" in exc.value.reason
 
 
 def test_ssl_options(env):

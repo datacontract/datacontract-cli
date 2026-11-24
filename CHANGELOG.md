@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract test` and `datacontract import sqlserver` sign in to SQL Server with an Entra ID access token read from a file (`DATACONTRACT_SQLSERVER_AUTHENTICATION=token`, `DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH`) (#1830 @SreeramaYeshwanthGowd)
+
 ### Fixed
 - `datacontract test` checks the constraints and quality rules of nested properties (struct fields and array items) on Dremio servers
 - `datacontract test` finds tables in Postgres schemas with upper case letters, such as `"Reporting"`
