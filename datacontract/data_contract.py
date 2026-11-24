@@ -410,6 +410,7 @@ class DataContract:
 
         All imports now return OpenDataContractStandard (ODCS) format.
         Credentials and connection options can be passed via ``config``.
+        ``examples=False`` leaves out the ``examples`` of all properties.
         """
         id = kwargs.get("id")
         owner = kwargs.get("owner")
@@ -424,6 +425,17 @@ class DataContract:
 
         cls._overwrite_id_in_odcs(odcs_imported, id)
         cls._overwrite_owner_in_odcs(odcs_imported, owner)
+
+        if not kwargs.get("examples", True):
+            remaining = [prop for schema in odcs_imported.schema_ or [] for prop in schema.properties or []]
+            while remaining:
+                prop = remaining.pop()
+                prop.examples = None
+                remaining += prop.properties or []
+                if prop.items:
+                    remaining.append(prop.items)
+                if prop.map:
+                    remaining += [side for side in (prop.map.key, prop.map.value) if side]
 
         return odcs_imported
 

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `datacontract import` commands that produce `examples` accept `--no-examples` to leave them out (#1843)
+
 ### Fixed
 - `datacontract test` checks the constraints and quality rules of nested properties (struct fields and array items) on Dremio servers
 - `datacontract test` finds tables in Postgres schemas with upper case letters, such as `"Reporting"`

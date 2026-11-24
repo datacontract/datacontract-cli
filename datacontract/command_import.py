@@ -37,6 +37,10 @@ owner_option = Annotated[
     Optional[str], typer.Option(help="The owner or team responsible for managing the data contract.")
 ]
 id_option = Annotated[Optional[str], typer.Option(help="The identifier for the data contract.")]
+examples_option = Annotated[
+    bool,
+    typer.Option("--examples/--no-examples", help="Include example values in the data contract."),
+]
 
 
 def _write_result(result, output: Optional[Path]):
@@ -304,6 +308,7 @@ def import_unity(
 )
 def import_jsonschema(
     source: Annotated[Optional[str], typer.Option(help="Path to the JSON Schema file.")] = None,
+    examples: examples_option = True,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -313,7 +318,7 @@ def import_jsonschema(
     """Import a data contract from a JSON Schema file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="jsonschema", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(), format="jsonschema", source=source, schema=schema, owner=owner, id=id, examples=examples
     )
     _write_result(result, output)
 
@@ -344,6 +349,7 @@ def import_xsd(
 )
 def import_json(
     source: Annotated[Optional[str], typer.Option(help="Path to the JSON data file.")] = None,
+    examples: examples_option = True,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -353,7 +359,7 @@ def import_json(
     """Import a data contract from a JSON file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="json", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(), format="json", source=source, schema=schema, owner=owner, id=id, examples=examples
     )
     _write_result(result, output)
 
@@ -364,6 +370,7 @@ def import_json(
 )
 def import_odcs(
     source: Annotated[Optional[str], typer.Option(help="Path to the ODCS data contract file.")] = None,
+    examples: examples_option = True,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -373,7 +380,7 @@ def import_odcs(
     """Import a data contract from an ODCS file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="odcs", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(), format="odcs", source=source, schema=schema, owner=owner, id=id, examples=examples
     )
     _write_result(result, output)
 
@@ -404,6 +411,7 @@ def import_parquet(
 )
 def import_csv(
     source: Annotated[Optional[str], typer.Option(help="Path to the CSV file.")] = None,
+    examples: examples_option = True,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -413,7 +421,7 @@ def import_csv(
     """Import a data contract from a CSV file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="csv", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(), format="csv", source=source, schema=schema, owner=owner, id=id, examples=examples
     )
     _write_result(result, output)
 
@@ -444,6 +452,7 @@ def import_protobuf(
 )
 def import_pydantic_model(
     source: Annotated[Optional[str], typer.Option(help="Path to the Python file defining the Pydantic models.")] = None,
+    examples: examples_option = True,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -453,7 +462,13 @@ def import_pydantic_model(
     """Import a data contract from Pydantic models."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="pydantic-model", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(),
+        format="pydantic-model",
+        source=source,
+        schema=schema,
+        owner=owner,
+        id=id,
+        examples=examples,
     )
     _write_result(result, output)
 
@@ -537,6 +552,7 @@ def import_iceberg(
 )
 def import_excel(
     source: Annotated[Optional[str], typer.Option(help="Path to the Excel file.")] = None,
+    examples: examples_option = True,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -546,7 +562,7 @@ def import_excel(
     """Import a data contract from an Excel file."""
     enable_debug_logging(debug)
     result = DataContract.import_from_source(
-        config=cli_config(), format="excel", source=source, schema=schema, owner=owner, id=id
+        config=cli_config(), format="excel", source=source, schema=schema, owner=owner, id=id, examples=examples
     )
     _write_result(result, output)
 
@@ -1101,6 +1117,7 @@ def import_openapi(
             "it is required unless the document has exactly one GET operation."
         ),
     ] = None,
+    examples: examples_option = True,
     output: output_option = None,
     owner: owner_option = None,
     id: id_option = None,
@@ -1111,7 +1128,13 @@ def import_openapi(
     if not operation and source is not None and _interactive():
         operation = _ask_openapi_operations(source)
     result = DataContract.import_from_source(
-        config=cli_config(), format="openapi", source=source, openapi_operation=operation, owner=owner, id=id
+        config=cli_config(),
+        format="openapi",
+        source=source,
+        openapi_operation=operation,
+        owner=owner,
+        id=id,
+        examples=examples,
     )
     _write_result(result, output)
 
