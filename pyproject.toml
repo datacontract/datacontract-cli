@@ -60,7 +60,7 @@ dependencies = [
   "pytz>=2024.1",
   "python-multipart>=0.0.20,<1.0.0",
   "rich>=13.7,<16.0",
-  "sqlglot>=26.6.0,<31.0.0",
+  "sqlglot>=26.6.0,!=30.34.0,<31.0.0",
   "python-dotenv>=1.0.0,<2.0.0",
   "boto3>=1.34.41,<2.0.0",
   "Jinja2>=3.1.5,<4.0.0",
@@ -132,7 +132,7 @@ dataframe = [
 databricks = [
   "ibis-framework[databricks]>=10.0.0,<13.0.0",
   "databricks-sql-connector>=3.7.0,<4.10.0",
-  "databricks-sdk<0.167.0",
+  "databricks-sdk<0.170.0",
   # ibis's pyspark backend imports packaging, which ibis declares only in its
   # `pyspark` extra — the one deliberately left out above.
   "packaging>=21.3,<27.0",
@@ -348,7 +348,7 @@ dev = [
   # psycopg v3 and DuckDB's mysql extension respectively).
   "psycopg2-binary>=2.9,<3.0",
   "mysql-connector-python>=8.0.30,<26.11.0",
-  "ruff==0.17.5",
+  "ruff==0.17.6",
   "testcontainers[minio,postgres,kafka,mssql,mysql]==4.15.0",
   "trino==0.340.0",
 ]
