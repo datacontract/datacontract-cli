@@ -777,8 +777,20 @@ def _sqlserver_connection_kwargs(server: Server, config: Config) -> dict:
         kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _sqlserver_access_token(_azure_cli_access_token())}
     elif authentication == "token":
         # Read on every connection, so a token the caller rotates in the file keeps working.
-        with open(config.get_sqlserver_token_file_path(required=True)) as f:
-            token = f.read().strip()
+        token_file_path = config.get_sqlserver_token_file_path(required=True)
+        try:
+            with open(token_file_path) as f:
+                token = f.read().strip()
+            problem = None if token else "is empty"
+        except OSError as e:
+            problem = f"could not be read: {e.strerror}"
+        if problem:
+            raise DataContractException(
+                type="sqlserver-connection",
+                name="invalid_token_file",
+                reason=f"DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH points to {token_file_path}, which {problem}",
+                engine="datacontract-cli",
+            )
         kwargs["attrs_before"] = {SQL_COPT_SS_ACCESS_TOKEN: _sqlserver_access_token(token)}
     elif authentication == "activedirectoryserviceprincipal":
         kwargs["Authentication"] = "ActiveDirectoryServicePrincipal"
