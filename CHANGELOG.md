@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `datacontract test` and `datacontract import sqlserver` sign in to SQL Server with an Entra ID access token read from a file (`DATACONTRACT_SQLSERVER_AUTHENTICATION=token`, `DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH`) (#1830 @SreeramaYeshwanthGowd)
 - `datacontract import openapi` imports Swagger 2.0 documents (#1844 @SreeramaYeshwanthGowd)
 
 ### Fixed

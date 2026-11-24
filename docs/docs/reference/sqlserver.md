@@ -26,16 +26,17 @@ servers:
 
 | Variable | Example | Description |
 |---|---|---|
-| `DATACONTRACT_SQLSERVER_AUTHENTICATION` | `sql` | `sql` (default), `cli` (uses `az login`), `windows`, `ActiveDirectoryPassword`, `ActiveDirectoryServicePrincipal`, `ActiveDirectoryInteractive` (Windows only) |
+| `DATACONTRACT_SQLSERVER_AUTHENTICATION` | `sql` | `sql` (default), `cli` (uses `az login`), `token` (reads an access token from a file), `windows`, `ActiveDirectoryPassword`, `ActiveDirectoryServicePrincipal`, `ActiveDirectoryInteractive` (Windows only) |
 | `DATACONTRACT_SQLSERVER_USERNAME` | `root` | Username (for `sql`, `ActiveDirectoryPassword`, `ActiveDirectoryInteractive`) |
 | `DATACONTRACT_SQLSERVER_PASSWORD` | `toor` | Password (for `sql` and `ActiveDirectoryPassword`) |
 | `DATACONTRACT_SQLSERVER_CLIENT_ID` | `a3cf5d29-...` | Client ID (for `ActiveDirectoryServicePrincipal`) |
 | `DATACONTRACT_SQLSERVER_CLIENT_SECRET` | `kX9~Qr2Lm...` | Client secret (for `ActiveDirectoryServicePrincipal`) |
+| `DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH` | `/var/run/secrets/tokens/sqlserver-token` | File holding an Entra ID access token for `https://database.windows.net/` (for `token`) |
 | `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `True` | Trust self-signed certificate |
 | `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `True` | Use SSL |
 | `DATACONTRACT_SQLSERVER_DRIVER` | `ODBC Driver 18 for SQL Server` | ODBC driver name |
 
-The `cli` mode reuses an `az login` session: the CLI fetches an Entra ID access token and hands it to the ODBC driver, so it works on macOS and Linux too; it needs the `azure` extra (`datacontract-cli[sqlserver,azure]`). `ActiveDirectoryInteractive` is only offered by the Microsoft ODBC driver on Windows. `host`, `port`, `database`, `schema`, and `driver` come from the contract's `servers` block; `host`, `port`, and `database` can be overridden with `DATACONTRACT_SQLSERVER_HOST`, `DATACONTRACT_SQLSERVER_PORT`, and `DATACONTRACT_SQLSERVER_DATABASE`.
+The `cli` mode reuses an `az login` session: the CLI fetches an Entra ID access token and hands it to the ODBC driver, so it works on macOS and Linux too; it needs the `azure` extra (`datacontract-cli[sqlserver,azure]`). The `token` mode hands over an access token you already hold, for example one a credential service writes: the file is read again on every connection, so a rotated token keeps working. `ActiveDirectoryInteractive` is only offered by the Microsoft ODBC driver on Windows. `host`, `port`, `database`, `schema`, and `driver` come from the contract's `servers` block; `host`, `port`, and `database` can be overridden with `DATACONTRACT_SQLSERVER_HOST`, `DATACONTRACT_SQLSERVER_PORT`, and `DATACONTRACT_SQLSERVER_DATABASE`.
 
 ### Deprecated variables
 
