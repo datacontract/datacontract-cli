@@ -1,4 +1,5 @@
 import io
+import json
 import sys
 from pathlib import Path
 
@@ -726,6 +727,20 @@ def test_cli_missing_file_exits_nonzero():
 def test_cli_exits_nonzero_for_mixed_changes():
     result = runner.invoke(app, ["breaking", V1, V2])
     assert result.exit_code == 1
+
+
+def test_cli_json_output_matches_breaking_result():
+    expected = DataContract(data_contract_file=V1).breaking(DataContract(data_contract_file=V2)).model_dump(mode="json")
+    result = runner.invoke(app, ["breaking", V1, V2, "--output-format", "json"])
+    assert result.exit_code == 1
+    assert json.loads(result.output) == expected
+
+
+def test_cli_yaml_output_matches_breaking_result():
+    expected = DataContract(data_contract_file=V1).breaking(DataContract(data_contract_file=V2)).model_dump(mode="json")
+    result = runner.invoke(app, ["breaking", V1, V2, "--output-format", "yaml"])
+    assert result.exit_code == 1
+    assert yaml.safe_load(result.output) == expected
 
 
 def test_contract_strings_are_not_parsed_as_markup(capsys):

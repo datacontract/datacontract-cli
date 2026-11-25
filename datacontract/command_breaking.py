@@ -1,4 +1,7 @@
+from enum import Enum
+
 import typer
+import yaml
 from typing_extensions import Annotated
 
 from datacontract.cli import app, console, debug_option, enable_debug_logging, inline_references_option
@@ -6,6 +9,12 @@ from datacontract.config import cli_config
 from datacontract.data_contract import DataContract
 from datacontract.model.breaking import Perspective
 from datacontract.output.text_breaking_results import write_text_breaking_results
+
+
+class BreakingOutputFormat(str, Enum):
+    text = "text"
+    json = "json"
+    yaml = "yaml"
 
 
 @app.command(
@@ -28,6 +37,12 @@ def breaking(
         ),
     ] = Perspective.CONSUMER,
     inline_references: inline_references_option = True,
+    output_format: Annotated[
+        BreakingOutputFormat,
+        typer.Option(
+            help="Output format. Accepted values: text, json, yaml. Use json or yaml to process breaking changes with other tools."
+        ),
+    ] = BreakingOutputFormat.text,
     debug: debug_option = None,
 ):
     """Show compatibility impact between two data contracts."""
@@ -36,6 +51,11 @@ def breaking(
         DataContract(config=cli_config(), data_contract_file=v2, inline_references=inline_references),
         perspective=perspective,
     )
-    write_text_breaking_results(result, console)
+    if output_format == BreakingOutputFormat.json:
+        typer.echo(result.pretty())
+    elif output_format == BreakingOutputFormat.yaml:
+        typer.echo(yaml.safe_dump(result.model_dump(mode="json"), sort_keys=False, allow_unicode=True), nl=False)
+    else:
+        write_text_breaking_results(result, console)
     if result.is_breaking:
         raise typer.Exit(code=1)
