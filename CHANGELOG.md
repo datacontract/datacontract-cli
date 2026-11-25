@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- BigQuery table functions can be imported with `datacontract import bigquery --table-valued-function`, tested with `datacontract test`, and exported with `datacontract export bigquery` and `export sql` (#1855)
 - `datacontract test` and `datacontract import sqlserver` sign in to SQL Server with an Entra ID access token read from a file (`DATACONTRACT_SQLSERVER_AUTHENTICATION=token`, `DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH`) (#1830 @SreeramaYeshwanthGowd)
 
 ### Fixed

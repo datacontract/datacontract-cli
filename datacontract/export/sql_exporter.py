@@ -4,6 +4,7 @@ from open_data_contract_standard.model import OpenDataContractStandard, SchemaOb
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export, _determine_sql_server_type
 from datacontract.export.sql_type_converter import convert_to_sql_type
+from datacontract.model.odcs import TABLE_VALUED_FUNCTION, table_function_arguments
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,8 @@ def _to_sql_table(
 ) -> str:
     if (model.physicalType or "").lower() == "view":
         return _to_sql_view(model_name, model, server_type)
+    if model.physicalType == TABLE_VALUED_FUNCTION:
+        return _to_sql_table_valued_function(model_name, model, server_type)
 
     quote = "`" if server_type == "mysql" else ""
     if server_type == "databricks":
@@ -194,6 +197,15 @@ def _to_sql_table(
         result += f" COMMENT='{_escape_single_quoted(_truncate_mysql_comment(model.description, 2048))}'"
     result += ";\n"
     return result
+
+
+def _to_sql_table_valued_function(model_name: str, model: SchemaObject, server_type: str) -> str:
+    """A draft: the arguments and columns are known, the body is a TODO."""
+    arguments = ", ".join(f"{a['name']} {a['physicalType']}" for a in table_function_arguments(model))
+    columns = ", ".join(
+        f"{p.physicalName or p.name} {convert_to_sql_type(p, server_type)}" for p in model.properties or []
+    )
+    return f"CREATE OR REPLACE TABLE FUNCTION {model_name}({arguments})\nRETURNS TABLE<{columns}>\nAS (\n  <TODO: function body>\n);\n"
 
 
 def _to_sql_view(model_name: str, model: SchemaObject, server_type: str) -> str:

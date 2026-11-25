@@ -1,5 +1,17 @@
 from open_data_contract_standard.model import SchemaObject
 
+TABLE_VALUED_FUNCTION = "table_valued_function"
+BIGQUERY_TABLE_VALUED_FUNCTION = "TABLE_VALUED_FUNCTION"  # the type BigQuery gives the routine
+ARGUMENTS_PROPERTY = "arguments"
+
+
+def table_function_arguments(schema_object: SchemaObject) -> list[dict]:
+    """The arguments of a table function (`name`, `physicalType`, optional `value`), in call order."""
+    for custom_property in schema_object.customProperties or []:
+        if custom_property.property == ARGUMENTS_PROPERTY:
+            return custom_property.value
+    return []
+
 
 def is_open_data_contract_standard(odcs: dict) -> bool:
     """

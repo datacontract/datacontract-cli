@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty
+from open_data_contract_standard.model import CustomProperty, OpenDataContractStandard, SchemaProperty
 
 from datacontract.imports.importer import Importer
 from datacontract.imports.odcs_helper import (
@@ -12,6 +12,7 @@ from datacontract.imports.odcs_helper import (
     create_server,
 )
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.odcs import ARGUMENTS_PROPERTY, BIGQUERY_TABLE_VALUED_FUNCTION, TABLE_VALUED_FUNCTION
 
 
 class BigQueryImporter(Importer):
@@ -23,6 +24,7 @@ class BigQueryImporter(Importer):
                 import_args.get("bigquery_table"),
                 import_args.get("bigquery_project"),
                 import_args.get("bigquery_dataset"),
+                import_args.get("bigquery_table_valued_function"),
             )
 
 
@@ -45,6 +47,7 @@ def import_bigquery_from_api(
     bigquery_tables: List[str],
     bigquery_project: str,
     bigquery_dataset: str,
+    bigquery_table_valued_functions: List[str] = None,
 ) -> OpenDataContractStandard:
     try:
         from google.cloud import bigquery
@@ -60,14 +63,14 @@ def import_bigquery_from_api(
 
     client = bigquery.Client(project=bigquery_project)
 
-    if bigquery_tables is None:
+    if bigquery_tables is None and bigquery_table_valued_functions is None:
         bigquery_tables = fetch_table_names(client, bigquery_dataset)
 
     odcs = create_odcs()
     odcs.servers = create_bigquery_servers(bigquery_project, bigquery_dataset)
     odcs.schema_ = []
 
-    for table in bigquery_tables:
+    for table in bigquery_tables or []:
         try:
             api_table = client.get_table("{}.{}.{}".format(bigquery_project, bigquery_dataset, table))
 
@@ -92,6 +95,21 @@ def import_bigquery_from_api(
 
         schema_obj = convert_bigquery_table_to_schema(api_table.to_api_repr())
         odcs.schema_.append(schema_obj)
+
+    for function in bigquery_table_valued_functions or []:
+        routine = client.get_routine("{}.{}.{}".format(bigquery_project, bigquery_dataset, function)).to_api_repr()
+        columns = routine.get("returnTableType", {}).get("columns", [])
+        odcs.schema_.append(
+            convert_bigquery_table_to_schema(
+                {
+                    "tableReference": {"tableId": function},
+                    "description": routine.get("description"),
+                    "type": BIGQUERY_TABLE_VALUED_FUNCTION,
+                    "arguments": routine.get("arguments", []),
+                    "schema": {"fields": [{"name": c["name"], "type": c["type"]["typeKind"]} for c in columns]},
+                }
+            )
+        )
 
     return odcs
 
@@ -139,6 +157,13 @@ def convert_bigquery_table_to_schema(bigquery_schema: dict):
 
     if title:
         schema_obj.businessName = title
+
+    if "arguments" in bigquery_schema:
+        arguments = [
+            {"name": a["name"], "physicalType": a.get("dataType", {}).get("typeKind", "ANY TYPE")}
+            for a in bigquery_schema["arguments"]
+        ]
+        schema_obj.customProperties = [CustomProperty(property=ARGUMENTS_PROPERTY, value=arguments)]
 
     return schema_obj
 
@@ -302,6 +327,8 @@ def map_type_from_bigquery(bigquery_type_str: str) -> str:
 
 def map_bigquery_type(bigquery_type: str) -> str:
     """Map BigQuery table type to ODCS physical type."""
+    if bigquery_type == BIGQUERY_TABLE_VALUED_FUNCTION:
+        return TABLE_VALUED_FUNCTION
     if bigquery_type in ("TABLE", "EXTERNAL", "SNAPSHOT"):
         return "table"
     elif bigquery_type in ("VIEW", "MATERIALIZED_VIEW"):

@@ -16,9 +16,10 @@ from collections import defaultdict
 from functools import cache
 from typing import List, Optional
 
-from open_data_contract_standard.model import OpenDataContractStandard, SchemaProperty, Server
+from open_data_contract_standard.model import OpenDataContractStandard, SchemaObject, SchemaProperty, Server
 
 from datacontract.engines.checks.check_spec import CheckSpec, Hop, MetricType, Op, path_text
+from datacontract.engines.checks.create_checks import to_schema_name
 from datacontract.engines.checks.physical_type_match import physical_type_matches
 from datacontract.engines.checks.severity import failure_result
 from datacontract.engines.checks.type_normalize import (
@@ -37,6 +38,7 @@ from datacontract.engines.ibis.native_type import (
 from datacontract.engines.ibis.snowflake_structured_types import fetch_structured_types, has_nesting
 from datacontract.imports.odcs_helper import property_from_type_string
 from datacontract.model.exceptions import DataContractException
+from datacontract.model.odcs import TABLE_VALUED_FUNCTION, table_function_arguments
 from datacontract.model.run import Check, ResultEnum, Run
 from datacontract.model.server import get_server_type
 
@@ -180,6 +182,7 @@ def execute_ibis_checks(
     for spec in executable:
         by_model[spec.model].append(spec)
 
+    schema_objects = {to_schema_name(s, get_server_type(server)): s for s in data_contract.schema_ or []}
     try:
         for model, model_specs in by_model.items():
             _run_model(
@@ -192,6 +195,7 @@ def execute_ibis_checks(
                 include_failed_samples,
                 row_filter=(model_filters or {}).get(model),
                 schema_name=schema_name,
+                schema_object=schema_objects.get(model),
             )
     finally:
         _maybe_disconnect(con, spark, duckdb_connection)
@@ -227,9 +231,10 @@ def _run_model(
     include_failed_samples: bool = False,
     row_filter: Optional[str] = None,
     schema_name: str = "all",
+    schema_object: Optional[SchemaObject] = None,
 ):
     try:
-        t = _resolve_table(con, model, _table_database(con, server))
+        t = _resolve_model(con, server, model, schema_object)
     except Exception as e:
         logger.warning("Could not read model '%s': %s", model, e)
         _fail_all(run, specs, ResultEnum.failed, f"Could not read model '{model}': {e}")
@@ -1739,6 +1744,19 @@ def _resolve_table(con, model: str, database: Optional[str] = None):
         if match is None:
             raise
         return con.table(match, **kwargs)
+
+
+def _resolve_function(con, server: Server, model: str, schema_object: SchemaObject):
+    """Call a BigQuery table function; the value of each argument is a SQL literal, an argument without one is NULL."""
+    values = ", ".join(str(a.get("value", "NULL")) for a in table_function_arguments(schema_object))
+    return con.sql(f"SELECT * FROM `{server.project}.{server.dataset}.{model}`({values})")
+
+
+def _resolve_model(con, server: Optional[Server], model: str, schema_object: Optional[SchemaObject] = None):
+    """The model as an ibis table: a table function is called, any other model is read as a table."""
+    if schema_object is not None and schema_object.physicalType == TABLE_VALUED_FUNCTION:
+        return _resolve_function(con, server, model, schema_object)
+    return _resolve_table(con, model, _table_database(con, server))
 
 
 def _postgres_table_unmappable_as_unknown(con, name: str, database: Optional[str]):

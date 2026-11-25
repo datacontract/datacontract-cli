@@ -217,6 +217,12 @@ def import_bigquery(
             help="List of table ids to import from the BigQuery API (repeat for multiple table ids, leave empty for all tables in the dataset)."
         ),
     ] = None,
+    table_valued_function: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of table function ids to import from the BigQuery API (repeat for multiple table function ids)."
+        ),
+    ] = None,
     output: output_option = None,
     schema: schema_option = None,
     owner: owner_option = None,
@@ -233,6 +239,7 @@ def import_bigquery(
         bigquery_project=project,
         bigquery_dataset=dataset,
         bigquery_table=table,
+        bigquery_table_valued_function=table_valued_function,
         owner=owner,
         id=id,
     )
