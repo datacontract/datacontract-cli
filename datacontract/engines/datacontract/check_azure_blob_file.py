@@ -282,7 +282,7 @@ def _check_property(
             if not passed:
                 violations.append((blob.name, reason))
 
-        constraint_desc = _describe_quality_constraint(quality)
+        constraint_desc = _describe_quality_constraint(quality, prop_name)
         check_name = f"Check schema[{schema_name}].properties[{prop_name}] has {constraint_desc}"
 
         if violations:
@@ -297,7 +297,7 @@ def _check_property(
                 model=schema_name,
                 field=prop_name,
                 result=ResultEnum.failed,
-                reason=f"{len(violations)} blob(s) violate '{prop_name} {constraint_desc}'.",
+                reason=f"{len(violations)} blob(s) violate '{constraint_desc}'.",
                 details=details,
                 check_filter=check_filter,
                 quality=quality,
@@ -311,7 +311,7 @@ def _check_property(
                 model=schema_name,
                 field=prop_name,
                 result=ResultEnum.passed,
-                reason=f"All {len(blobs)} blob(s) satisfy '{prop_name} {constraint_desc}'.",
+                reason=f"All {len(blobs)} blob(s) satisfy '{constraint_desc}'.",
                 check_filter=check_filter,
                 quality=quality,
             )
@@ -372,10 +372,10 @@ def _evaluate_quality_constraint(quality: DataQuality, value: Any, prop_name: st
     return not violated, f"value is {value!r}; {' and '.join(requirements)}"
 
 
-def _describe_quality_constraint(quality: DataQuality) -> str:
-    """Return a short human-readable description of a quality constraint."""
+def _describe_quality_constraint(quality: DataQuality, subject: str) -> str:
+    """Return a short human-readable description of a quality constraint, e.g. `size > 0 and size < 10`."""
     parts = [
-        f"{symbol} {threshold!r}"
+        f"{subject} {symbol} {threshold!r}"
         for symbol, threshold in (
             ("=", quality.mustBe),
             ("!=", quality.mustNotBe),
@@ -387,9 +387,9 @@ def _describe_quality_constraint(quality: DataQuality) -> str:
         if threshold is not None
     ]
     if quality.mustBeBetween is not None:
-        parts.append(f"between {quality.mustBeBetween[0]!r} and {quality.mustBeBetween[1]!r}")
+        parts.append(f"{subject} between {quality.mustBeBetween[0]!r} and {quality.mustBeBetween[1]!r}")
     if quality.mustNotBeBetween is not None:
-        parts.append(f"not between {quality.mustNotBeBetween[0]!r} and {quality.mustNotBeBetween[1]!r}")
+        parts.append(f"{subject} not between {quality.mustNotBeBetween[0]!r} and {quality.mustNotBeBetween[1]!r}")
     return " and ".join(parts) or "(no constraint)"
 
 
@@ -410,12 +410,12 @@ def _check_file_count_quality(
         if getattr(quality, "metric", None) not in _FILE_COUNT_METRICS:
             continue
         passed, reason = _evaluate_quality_constraint(quality, file_count, "fileCount")
-        constraint_desc = _describe_quality_constraint(quality)
+        constraint_desc = _describe_quality_constraint(quality, quality.metric)
         _append_check(
             run,
             check_type="azure_file_count_quality",
             category="quality",
-            name=f"Check schema[{schema_name}] has {quality.metric} {constraint_desc}",
+            name=f"Check schema[{schema_name}] has {constraint_desc}",
             model=schema_name,
             result=ResultEnum.passed if passed else ResultEnum.failed,
             reason=reason,

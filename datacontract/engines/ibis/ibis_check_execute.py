@@ -97,7 +97,7 @@ def _describe(spec: CheckSpec) -> str:
         return f"fields({spec.model}) in ({', '.join(spec.columns or [])})"
     if spec.threshold is not None:
         target = spec.field or spec.model
-        return f"{spec.metric.value}({target}) {spec.threshold.describe()}"
+        return spec.threshold.describe(f"{spec.metric.value}({target})", "%" if spec.threshold_is_percent else "")
     return spec.metric.value
 
 
@@ -1308,7 +1308,7 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
     elif is_percent:
         reason = (
             f"Actual {spec.metric.value}({target}) was {percent}% ({value} of {row_count} rows), "
-            f"expected {spec.threshold.describe()}%"
+            f"expected {spec.threshold.describe(unit='%')}"
         )
     else:
         reason = f"Actual {spec.metric.value}({target}) was {value}, expected {spec.threshold.describe()}"

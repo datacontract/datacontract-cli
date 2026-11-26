@@ -620,9 +620,7 @@ def _metric_quality_check(
     failure_reason = f"Actual value {value} does not satisfy threshold {threshold.describe()}."
     if is_percent:
         diagnostics.update(unit="percent", percent=percent, row_count=row_count)
-        failure_reason = (
-            f"Actual value {percent}% ({value} of {row_count} rows) does not satisfy threshold {threshold.describe()}%."
-        )
+        failure_reason = f"Actual value {percent}% ({value} of {row_count} rows) does not satisfy threshold {threshold.describe(unit='%')}."
     return _check(
         check_type=check_type,
         key=key,

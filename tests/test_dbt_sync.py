@@ -1284,7 +1284,7 @@ def test_invalid_values_with_valid_values_and_zero_bound():
         ),
         (
             DataQuality(metric="nullValues", mustBe=0, mustBeGreaterThan=0),
-            ["metric_value <> 0 OR metric_value <= 0", "has missing_count = 0 and > 0"],
+            ["metric_value <> 0 OR metric_value <= 0", "has missing_count = 0 and missing_count > 0"],
         ),
     ],
 )

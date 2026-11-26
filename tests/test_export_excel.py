@@ -335,7 +335,7 @@ support:
     assert [c.value for c in workbook["Custom Properties"][5]][:4] == ["Schema", "orders", "a", 1]
 
 
-def test_export_warns_about_further_threshold_operators(caplog):
+def test_export_warns_about_quality_rules_with_several_operators(caplog):
     odcs = OpenDataContractStandard(
         apiVersion="v3.2.0",
         schema=[
@@ -346,7 +346,7 @@ def test_export_warns_about_further_threshold_operators(caplog):
     with caplog.at_level(logging.WARNING):
         export_to_excel_bytes(odcs)
 
-    assert "further threshold operators (1)" in caplog.text
+    assert "quality rules with more than one operator (1)" in caplog.text
     assert "Consider raising the apiVersion" not in caplog.text
 
 

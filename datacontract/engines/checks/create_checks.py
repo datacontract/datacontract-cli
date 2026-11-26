@@ -856,7 +856,7 @@ def _row_count_check(model, threshold: Threshold, severity=None, dimension=None)
         key=f"{model}__row_count",
         category="quality",
         type="row_count",
-        name=f"Check that model {model} has row_count {threshold.describe()}",
+        name=f"Check that model {model} has {threshold.describe('row_count')}",
         model=model,
         field=None,
         metric=MetricType.ROW_COUNT,
@@ -1134,6 +1134,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
     severity = quality.severity
     dimension = quality.dimension
     is_percent = is_percent_unit(quality)
+    unit = "%" if is_percent else ""
 
     if metric == "rowCount":
         return [_row_count_check(model, threshold, severity=severity, dimension=dimension)]
@@ -1146,7 +1147,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                     key=f"{model}__model_duplicate_values",
                     category="quality",
                     type="model_duplicate_values",
-                    name=f"Check that model {model} has duplicate_count {threshold.describe()} for columns {col_joined}",
+                    name=f"Check that model {model} has {threshold.describe('duplicate_count')} for columns {col_joined}",
                     model=model,
                     field=None,
                     metric=MetricType.DUPLICATE_COUNT,
@@ -1162,7 +1163,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 field,
                 "field_duplicate_values",
                 threshold,
-                name=f"Check that field {field} has duplicate_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('duplicate_count')}",
                 severity=severity,
                 dimension=dimension,
             )
@@ -1174,7 +1175,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 field,
                 "field_null_values",
                 threshold,
-                name=f"Check that field {field} has missing_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('missing_count', unit)}",
                 threshold_is_percent=is_percent,
                 severity=severity,
                 dimension=dimension,
@@ -1191,7 +1192,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 model,
                 field,
                 "field_invalid_values",
-                name=f"Check that field {field} has invalid_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('invalid_count', unit)}",
                 threshold=threshold,
                 category="quality",
                 valid_values=valid_values,
@@ -1211,7 +1212,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 field,
                 "field_missing_values",
                 threshold,
-                name=f"Check that field {field} has missing_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('missing_count', unit)}",
                 missing_values=missing_values or None,
                 threshold_is_percent=is_percent,
                 severity=severity,

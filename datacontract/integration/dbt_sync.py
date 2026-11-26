@@ -827,7 +827,7 @@ def _library_metric_singular_test(
         else:
             query = f"SELECT COUNT(*) AS metric_value FROM {model_ref} WHERE {bad_row}"
 
-    bound = f"{count_name} {to_threshold(quality).describe()}{'%' if percent else ''}"
+    bound = to_threshold(quality).describe(count_name, "%" if percent else "")
     if field:
         label = f"{field}__{metric}"
         check_type = {

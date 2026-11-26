@@ -194,7 +194,7 @@ class TestCheckAzureBlobFile:
 
         check = next(c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "size")
         assert check.result == ResultEnum.failed
-        assert check.reason == "1 blob(s) violate 'size > 0 and < 10 and not between 20 and 30'."
+        assert check.reason == "1 blob(s) violate 'size > 0 and size < 10 and size not between 20 and 30'."
 
     # ── Property: contentType (MIME normalisation) ──────────────────────────
 

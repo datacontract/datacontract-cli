@@ -533,7 +533,7 @@ def quality_values(
 ) -> dict:
     operators = [operator for operator in THRESHOLD_OPERATORS if getattr(quality, operator, None) is not None]
     if len(operators) > 1:
-        export.unsupported["further threshold operators"] += len(operators) - 1
+        export.unsupported["quality rules with more than one operator"] += 1
     return {
         "schema": schema_name,
         "property": property_name,
