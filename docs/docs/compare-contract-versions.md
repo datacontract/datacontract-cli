@@ -33,6 +33,13 @@ Use `datacontract breaking` when a contract change must be checked for compatibi
 datacontract breaking v1.odcs.yaml v2.odcs.yaml
 ```
 
+To process compatibility results with other tools, print them as JSON or YAML:
+
+```bash
+datacontract breaking v1.odcs.yaml v2.odcs.yaml --output-format json > breaking.json
+datacontract breaking v1.odcs.yaml v2.odcs.yaml --output-format yaml > breaking.yaml
+```
+
 See the generated [breaking command reference](./commands/breaking.md) for all options.
 
 ### Perspectives
