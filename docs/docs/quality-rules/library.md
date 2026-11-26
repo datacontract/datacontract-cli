@@ -15,7 +15,7 @@ quality:
     mustBe: 0
 ```
 
-Each rule combines a **metric**, optional **arguments**, and exactly one **comparator** (`mustBe`, `mustBeBetween`, …).
+Each rule combines a **metric**, optional **arguments**, and one or more **comparators** (`mustBe`, `mustBeBetween`, …).
 
 ## Supported metrics
 
@@ -90,7 +90,7 @@ schema:
 
 ## Comparators
 
-Use exactly one comparator to define the threshold:
+Comparators define the threshold. A rule with several, such as `mustBeGreaterThan: 0` and `mustBeLessThan: 100`, passes only when all of them hold.
 
 | Comparator | Passes when the metric… |
 |---|---|

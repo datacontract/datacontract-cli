@@ -8,7 +8,7 @@ from pathlib import Path
 import openpyxl
 import pytest
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 from typer.testing import CliRunner
 
 import datacontract
@@ -259,20 +259,9 @@ slaProperties:
 
 def test_schema_logical_type_round_trips(tmp_path):
     """A schema object keeps its logical type, and an unset one stays unset"""
-    odcs = _contract(
-        "schema:\n- name: files\n  logicalType: blob\n- name: rows\n- name: table\n  logicalType: object\n"
-    )
+    odcs = _contract("schema:\n- name: rows\n- name: table\n  logicalType: object\n")
     imported, _ = _roundtrip(odcs, tmp_path)
-    assert [schema.logicalType for schema in imported.schema_] == ["blob", None, "object"]
-
-
-def test_schema_logical_type_a_template_cannot_hold_warns(tmp_path, caplog):
-    """The v3.0 template has no cell for it, so a blob schema object is reported as dropped rather than read back as an object"""
-    odcs = _contract("schema:\n- name: files\n  logicalType: blob\n")
-    with caplog.at_level(logging.WARNING):
-        imported, _ = _roundtrip(odcs, tmp_path, template=str(BUNDLED_TEMPLATE_DIR / "odcs-template-v3.0.xlsx"))
-    assert imported.schema_[0].logicalType == "object"
-    assert "schema logical types (1)" in caplog.records[0].message
+    assert [schema.logicalType for schema in imported.schema_] == [None, "object"]
 
 
 def test_more_custom_properties_than_the_template_has_columns(tmp_path):
@@ -344,6 +333,21 @@ support:
     assert [servers.cell(row=r, column=3).value for r in range(label + 1, label + 5)] == [1, 2, 3, 4]
     # schema-level custom properties have no inline home
     assert [c.value for c in workbook["Custom Properties"][5]][:4] == ["Schema", "orders", "a", 1]
+
+
+def test_export_warns_about_quality_rules_with_several_operators(caplog):
+    odcs = OpenDataContractStandard(
+        apiVersion="v3.2.0",
+        schema=[
+            SchemaObject(name="orders", quality=[DataQuality(metric="rowCount", mustBeGreaterThan=0, mustBeLessThan=9)])
+        ],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        export_to_excel_bytes(odcs)
+
+    assert "quality rules with more than one operator (1)" in caplog.text
+    assert "Consider raising the apiVersion" not in caplog.text
 
 
 def test_old_template_export_warns_exactly_once(tmp_path, caplog):

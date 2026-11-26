@@ -127,6 +127,16 @@ def test_the_rule_overrides_the_expected_result_and_the_dimension():
     assert "mustBe: 0" not in check.qualityDefinition
 
 
+def test_every_comparator_of_the_rule_must_hold():
+    rule = BETWEEN + "  mustBeGreaterThan: 0\n  mustBeLessThan: 2\n"
+    run = _test(_contract(property_quality=_amount_rule(rule)))
+
+    check = next(c for c in run.checks if c.type == "field_quality_custom")
+    assert check.result == ResultEnum.failed
+    assert check.reason.endswith("was 2, expected > 0 and < 2")
+    assert check.diagnostics["odcs_threshold"] == {"mustBeGreaterThan": 0, "mustBeLessThan": 2}
+
+
 def test_an_identifier_argument_becomes_a_name_and_the_call_form_names_the_check():
     rule = """
 - type: custom

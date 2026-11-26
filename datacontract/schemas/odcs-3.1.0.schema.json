@@ -51,7 +51,8 @@
     },
     "dataProduct": {
       "type": "string",
-      "description": "The name of the data product."
+      "description": "The name of the data product. DEPRECATED since v3.1.0.",
+      "deprecated": true
     },
     "description": {
       "type": "object",
@@ -149,17 +150,17 @@
     "ShorthandReference": {
       "type": "string",
       "description": "Shorthand notation using name fields (table_name.column_name)",
-      "pattern": "^[A-Za-z_][A-Za-z0-9_]*\\.[A-Za-z_][A-Za-z0-9_]*$"
+      "pattern": "^[A-Za-z_][A-Za-z0-9_\\-]*(\\.[A-Za-z_][A-Za-z0-9_\\-]*)+$"
     },
     "FullyQualifiedReference": {
       "type": "string",
       "description": "Fully qualified notation using id fields (section/id/properties/id), optionally prefixed with external file reference",
-      "pattern": "^(?:(?:https?:\\/\\/)?[A-Za-z0-9._\\-\\/]+\\.yaml#)?\\/?[A-Za-z_][A-Za-z0-9_]*\\/[A-Za-z0-9_-]+(?:\\/[A-Za-z_][A-Za-z0-9_]*\\/[A-Za-z0-9_-]+)*$"
+      "pattern": "^(?:(?:https?:\\/\\/)?[A-Za-z0-9._\\-\\/]+\\.yaml#)?\\/?[A-Za-z_][A-Za-z0-9_]*\\/[^\\s.#/\\\\@!%&^]+(?:\\/[A-Za-z_][A-Za-z0-9_]*\\/[^\\s.#/\\\\@!%&^]+)*$"
     },
     "StableId": {
       "type": "string",
-      "description": "Stable technical identifier for references. Must be unique within its containing array. Cannot contain special characters ('-', '_' allowed).",
-      "pattern": "^[A-Za-z0-9_-]+$"
+      "description": "Stable technical identifier for references. Must be unique within its containing array. Per RFC-0026a an id cannot contain '.', '#', '/', '\\', '@', '!', '%', '&' or '^', nor whitespace.",
+      "pattern": "^[^\\s.#/\\\\@!%&^]+$"
     },
     "Server": {
       "type": "object",
@@ -652,7 +653,7 @@
     "ServerSource": {
       "ApiServer": {
         "type": "object",
-        "title": "AthenaServer",
+        "title": "ApiServer",
         "properties": {
           "location": {
             "type": "string",
@@ -1638,7 +1639,7 @@
         "logicalType": {
           "type": "string",
           "description": "The logical element data type.",
-          "enum": ["object", "blob"]
+          "enum": ["object"]
         },
         "physicalName": {
           "type": "string",
@@ -2264,7 +2265,7 @@
     "DataQualityOperators": {
       "type": "object",
       "description": "Common comparison operators for data quality checks.",
-      "oneOf": [
+      "anyOf": [
         {
           "properties": {
             "mustBe": {

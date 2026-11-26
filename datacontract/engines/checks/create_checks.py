@@ -27,6 +27,7 @@ from datacontract.config.variables import VariableError, contains_variables, res
 from datacontract.engines.checks.check_spec import (
     METADATA_METRICS,
     CheckSpec,
+    Comparison,
     Hop,
     MetricType,
     Op,
@@ -172,29 +173,29 @@ def is_percent_unit(quality: DataQuality) -> bool:
 
 
 def to_threshold(quality: DataQuality) -> Optional[Threshold]:
-    if quality.mustBe is not None:
-        return Threshold(Op.EQ, quality.mustBe)
-    if quality.mustNotBe is not None:
-        return Threshold(Op.NE, quality.mustNotBe)
-    if quality.mustBeGreaterThan is not None:
-        return Threshold(Op.GT, quality.mustBeGreaterThan)
-    if quality.mustBeGreaterOrEqualTo is not None:
-        return Threshold(Op.GE, quality.mustBeGreaterOrEqualTo)
-    if quality.mustBeLessThan is not None:
-        return Threshold(Op.LT, quality.mustBeLessThan)
-    if quality.mustBeLessOrEqualTo is not None:
-        return Threshold(Op.LE, quality.mustBeLessOrEqualTo)
+    comparisons = [
+        Comparison(op, value)
+        for op, value in (
+            (Op.EQ, quality.mustBe),
+            (Op.NE, quality.mustNotBe),
+            (Op.GT, quality.mustBeGreaterThan),
+            (Op.GE, quality.mustBeGreaterOrEqualTo),
+            (Op.LT, quality.mustBeLessThan),
+            (Op.LE, quality.mustBeLessOrEqualTo),
+        )
+        if value is not None
+    ]
     if quality.mustBeBetween is not None:
         if len(quality.mustBeBetween) != 2:
             logger.warning(f"Quality check has invalid mustBeBetween (need 2 values): {quality.mustBeBetween}")
             return None
-        return Threshold(Op.BETWEEN, quality.mustBeBetween[0], quality.mustBeBetween[1])
+        comparisons.append(Comparison(Op.BETWEEN, quality.mustBeBetween[0], quality.mustBeBetween[1]))
     if quality.mustNotBeBetween is not None:
         if len(quality.mustNotBeBetween) != 2:
             logger.warning(f"Quality check has invalid mustNotBeBetween (need 2 values): {quality.mustNotBeBetween}")
             return None
-        return Threshold(Op.NOT_BETWEEN, quality.mustNotBeBetween[0], quality.mustNotBeBetween[1])
-    return None
+        comparisons.append(Comparison(Op.NOT_BETWEEN, quality.mustNotBeBetween[0], quality.mustNotBeBetween[1]))
+    return Threshold(comparisons) if comparisons else None
 
 
 def prepare_query(
@@ -327,7 +328,7 @@ def _to_schema_checks(
                 model=model,
                 field=None,
                 metric=MetricType.ROW_COUNT,
-                threshold=Threshold(Op.GT, 0),
+                threshold=Threshold([Comparison(Op.GT, 0)]),
             )
         )
 
@@ -363,7 +364,7 @@ def _to_schema_checks(
                     field=field,
                     metric=MetricType.CUSTOM_SQL,
                     query=f"SELECT count(*) FROM {type_errors} WHERE field = {sql_literal(field, 'duckdb')}",
-                    threshold=Threshold(Op.EQ, 0),
+                    threshold=Threshold([Comparison(Op.EQ, 0)]),
                 )
             )
 
@@ -423,7 +424,7 @@ def _to_schema_checks(
                     model,
                     field,
                     "field_required",
-                    Threshold(Op.EQ, 0),
+                    Threshold([Comparison(Op.EQ, 0)]),
                     name=f"Check that field {field} has no missing values",
                     category="schema",
                 )
@@ -434,7 +435,7 @@ def _to_schema_checks(
                     model,
                     field,
                     "field_unique",
-                    Threshold(Op.EQ, 0),
+                    Threshold([Comparison(Op.EQ, 0)]),
                     name=f"Check that unique field {field} has no duplicate values",
                     category="schema",
                 )
@@ -448,7 +449,7 @@ def _to_schema_checks(
                         model,
                         field,
                         "field_primary_key_required",
-                        Threshold(Op.EQ, 0),
+                        Threshold([Comparison(Op.EQ, 0)]),
                         name=f"Check that primary key field {field} has no missing values",
                         category="schema",
                     )
@@ -459,7 +460,7 @@ def _to_schema_checks(
                         model,
                         field,
                         "field_primary_key_unique",
-                        Threshold(Op.EQ, 0),
+                        Threshold([Comparison(Op.EQ, 0)]),
                         name=f"Check that primary key field {field} has no duplicate values",
                         category="schema",
                     )
@@ -673,7 +674,7 @@ def _to_schema_checks(
                 model=model,
                 field=None,
                 metric=MetricType.DUPLICATE_COUNT,
-                threshold=Threshold(Op.EQ, 0),
+                threshold=Threshold([Comparison(Op.EQ, 0)]),
                 columns=primary_key_fields,
             )
         )
@@ -764,7 +765,7 @@ def _relationship_checks(
                 model=model,
                 field=columns[0] if len(columns) == 1 else None,
                 metric=MetricType.MISSING_REFERENCE_COUNT,
-                threshold=Threshold(Op.EQ, 0),
+                threshold=Threshold([Comparison(Op.EQ, 0)]),
                 columns=columns,
                 referenced_model=referenced_model,
                 referenced_columns=referenced,
@@ -842,7 +843,7 @@ def _invalid_count_check(
         model=model,
         field=field,
         metric=MetricType.INVALID_COUNT,
-        threshold=threshold or Threshold(Op.EQ, 0),
+        threshold=threshold or Threshold([Comparison(Op.EQ, 0)]),
         threshold_is_percent=threshold_is_percent,
         severity=severity,
         dimension=dimension,
@@ -855,7 +856,7 @@ def _row_count_check(model, threshold: Threshold, severity=None, dimension=None)
         key=f"{model}__row_count",
         category="quality",
         type="row_count",
-        name=f"Check that model {model} has row_count {threshold.describe()}",
+        name=f"Check that model {model} has {threshold.describe('row_count')}",
         model=model,
         field=None,
         metric=MetricType.ROW_COUNT,
@@ -1133,6 +1134,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
     severity = quality.severity
     dimension = quality.dimension
     is_percent = is_percent_unit(quality)
+    unit = "%" if is_percent else ""
 
     if metric == "rowCount":
         return [_row_count_check(model, threshold, severity=severity, dimension=dimension)]
@@ -1145,7 +1147,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                     key=f"{model}__model_duplicate_values",
                     category="quality",
                     type="model_duplicate_values",
-                    name=f"Check that model {model} has duplicate_count {threshold.describe()} for columns {col_joined}",
+                    name=f"Check that model {model} has {threshold.describe('duplicate_count')} for columns {col_joined}",
                     model=model,
                     field=None,
                     metric=MetricType.DUPLICATE_COUNT,
@@ -1161,7 +1163,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 field,
                 "field_duplicate_values",
                 threshold,
-                name=f"Check that field {field} has duplicate_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('duplicate_count')}",
                 severity=severity,
                 dimension=dimension,
             )
@@ -1173,7 +1175,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 field,
                 "field_null_values",
                 threshold,
-                name=f"Check that field {field} has missing_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('missing_count', unit)}",
                 threshold_is_percent=is_percent,
                 severity=severity,
                 dimension=dimension,
@@ -1190,7 +1192,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 model,
                 field,
                 "field_invalid_values",
-                name=f"Check that field {field} has invalid_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('invalid_count', unit)}",
                 threshold=threshold,
                 category="quality",
                 valid_values=valid_values,
@@ -1210,7 +1212,7 @@ def _quality_metric_check(model, field, quality: DataQuality, threshold: Thresho
                 field,
                 "field_missing_values",
                 threshold,
-                name=f"Check that field {field} has missing_count {threshold.describe()}",
+                name=f"Check that field {field} has {threshold.describe('missing_count', unit)}",
                 missing_values=missing_values or None,
                 threshold_is_percent=is_percent,
                 severity=severity,

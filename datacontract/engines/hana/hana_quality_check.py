@@ -12,6 +12,7 @@ from datacontract.engines.checks.create_checks import (
     nested_not_run_reason,
     quality_definition_yaml,
     sla_element_path,
+    to_threshold,
     unexecuted_check_name,
     unrunnable_reason,
 )
@@ -34,7 +35,6 @@ from datacontract.engines.hana.hana_schema_check import (
     quote_identifier,
     table_reference,
 )
-from datacontract.export.sodacl_check_builder import to_sodacl_threshold
 from datacontract.model.run import Check, ResultEnum
 
 logger = logging.getLogger(__name__)
@@ -574,7 +574,7 @@ def _metric_quality_check(
     if not selects(selection, quality, check_type):
         return None
 
-    threshold = to_sodacl_threshold(quality)
+    threshold = to_threshold(quality)
     if threshold is None:
         return None
 
@@ -613,16 +613,14 @@ def _metric_quality_check(
             quality=quality,
         )
 
-    passed = _evaluate_threshold(percent if is_percent else value, quality)
-    diagnostics = {"value": value, "threshold": threshold}
+    passed = threshold.passes(percent if is_percent else value)
+    diagnostics = {"value": value, "threshold": threshold.describe()}
     if quality.severity is not None:
         diagnostics["severity"] = quality.severity
-    failure_reason = f"Actual value {value} does not satisfy threshold {threshold}."
+    failure_reason = f"Actual value {value} does not satisfy threshold {threshold.describe()}."
     if is_percent:
         diagnostics.update(unit="percent", percent=percent, row_count=row_count)
-        failure_reason = (
-            f"Actual value {percent}% ({value} of {row_count} rows) does not satisfy threshold {threshold}%."
-        )
+        failure_reason = f"Actual value {percent}% ({value} of {row_count} rows) does not satisfy threshold {threshold.describe(unit='%')}."
     return _check(
         check_type=check_type,
         key=key,
@@ -752,26 +750,6 @@ def _servicelevel_check(
         category="servicelevel",
         quality_id=quality_id,
     )
-
-
-def _evaluate_threshold(value: Any, quality: DataQuality) -> bool:
-    if quality.mustBe is not None:
-        return value == quality.mustBe
-    if quality.mustNotBe is not None:
-        return value != quality.mustNotBe
-    if quality.mustBeGreaterThan is not None:
-        return value > quality.mustBeGreaterThan
-    if quality.mustBeGreaterOrEqualTo is not None:
-        return value >= quality.mustBeGreaterOrEqualTo
-    if quality.mustBeLessThan is not None:
-        return value < quality.mustBeLessThan
-    if quality.mustBeLessOrEqualTo is not None:
-        return value <= quality.mustBeLessOrEqualTo
-    if quality.mustBeBetween is not None:
-        return quality.mustBeBetween[0] <= value <= quality.mustBeBetween[1]
-    if quality.mustNotBeBetween is not None:
-        return value < quality.mustNotBeBetween[0] or value > quality.mustNotBeBetween[1]
-    return False
 
 
 def _freshness_value_to_seconds(value, unit: str | None) -> int | None:

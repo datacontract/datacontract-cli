@@ -189,9 +189,13 @@ def warn_unsupported(export: Export):
         return
     dropped = ", ".join(f"{feature} ({count})" for feature, count in export.unsupported.items())
     if (version := export.template_version) is not None:
-        logger.warning(
-            f"The {version} Excel template cannot hold the following contract features: {dropped}. Consider raising the apiVersion field of the contract (supported: 3.0.2, 3.1.0, 3.2.0)."
+        is_newest = str(version).startswith(f"v{NEWEST_BUNDLED_TEMPLATE}.")
+        hint = (
+            ""
+            if is_newest
+            else " Consider raising the apiVersion field of the contract (supported: 3.0.2, 3.1.0, 3.2.0)."
         )
+        logger.warning(f"The {version} Excel template cannot hold the following contract features: {dropped}.{hint}")
     else:
         logger.warning(f"The custom Excel template cannot hold the following contract features: {dropped}.")
 
@@ -317,9 +321,6 @@ def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
     logical_type_cell = find_cell_by_name_in_sheet(sheet, "schema.logicalType")
     if logical_type_cell is not None:
         set_cell_value_direct(logical_type_cell, schema.logicalType)
-    elif schema.logicalType not in (None, "object"):
-        # a template without the cell reads every schema object back as an object
-        export.unsupported["schema logical types"] += 1
 
     export.sheet_authoritative_definitions(schema)
     export.inline_custom_properties(schema, inline=False)  # the schema block has no inline columns
@@ -497,7 +498,7 @@ def fill_quality(export: Export):
     row_index = header_row + 1
     for schema in export.odcs.schema_ or []:
         for quality in schema.quality or []:
-            values = quality_values(schema.name, None, quality, metric_header)
+            values = quality_values(export, schema.name, None, quality, metric_header)
             write_row(export, sheet, header_row, row_index, values, quality)
             row_index += 1
         row_index = fill_properties_quality(
@@ -508,7 +509,7 @@ def fill_quality(export: Export):
 def fill_properties_quality(export, sheet, header_row, schema_name, properties, row_index, metric_header) -> int:
     for path, prop in walk_properties(properties):
         for quality in prop.quality or []:
-            values = quality_values(schema_name, path, quality, metric_header)
+            values = quality_values(export, schema_name, path, quality, metric_header)
             write_row(export, sheet, header_row, row_index, values, quality)
             row_index += 1
     return row_index
@@ -527,7 +528,12 @@ def walk_properties(properties, prefix=""):
             yield from walk_properties(prop.items.properties, f"{path}.items")
 
 
-def quality_values(schema_name: str, property_name: Optional[str], quality: DataQuality, metric_header: str) -> dict:
+def quality_values(
+    export: Export, schema_name: str, property_name: Optional[str], quality: DataQuality, metric_header: str
+) -> dict:
+    operators = [operator for operator in THRESHOLD_OPERATORS if getattr(quality, operator, None) is not None]
+    if len(operators) > 1:
+        export.unsupported["quality rules with more than one operator"] += 1
     return {
         "schema": schema_name,
         "property": property_name,

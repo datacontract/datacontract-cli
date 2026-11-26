@@ -919,12 +919,12 @@ def check_quality_list(
             else:
                 check_key = f"{schema_name}__{property_name}__quality_sql_{count}"
                 check_type = "field_quality_sql"
-            threshold = to_sodacl_threshold(quality)
+            thresholds = to_sodacl_thresholds(quality)
             query = prepare_query(quality, schema_name, property_name, quoting_config, server)
             if query is None:
                 logger.warning(f"Quality check {check_key} has no query")
                 continue
-            if threshold is None:
+            if not thresholds:
                 logger.warning(f"Quality check {check_key} has no valid threshold")
                 continue
 
@@ -940,6 +940,7 @@ def check_quality_list(
                             "name": check_key,
                         },
                     }
+                    for threshold in thresholds
                 ]
             }
             checks.append(
@@ -957,53 +958,54 @@ def check_quality_list(
                 )
             )
         elif quality.metric is not None:
-            threshold = to_sodacl_threshold(quality)
+            thresholds = to_sodacl_thresholds(quality)
 
-            if threshold is None:
+            if not thresholds:
                 logger.warning(f"Quality metric {quality.metric} has no valid threshold")
                 continue
 
-            if quality.metric == "rowCount":
-                checks.append(check_row_count(schema_name, threshold, quoting_config))
-            elif quality.metric == "duplicateValues":
-                if property_name is None:
-                    checks.append(
-                        check_model_duplicate_values(
-                            schema_name, quality.arguments.get("properties"), threshold, quoting_config
+            for threshold in thresholds:
+                if quality.metric == "rowCount":
+                    checks.append(check_row_count(schema_name, threshold, quoting_config))
+                elif quality.metric == "duplicateValues":
+                    if property_name is None:
+                        checks.append(
+                            check_model_duplicate_values(
+                                schema_name, quality.arguments.get("properties"), threshold, quoting_config
+                            )
                         )
-                    )
-                else:
-                    checks.append(
-                        check_property_duplicate_values(schema_name, property_name, threshold, quoting_config)
-                    )
-            elif quality.metric == "nullValues":
-                if property_name is not None:
-                    checks.append(check_property_null_values(schema_name, property_name, threshold, quoting_config))
-                else:
-                    logger.warning("Quality check nullValues is only supported at field level")
-            elif quality.metric == "invalidValues":
-                if property_name is not None:
-                    valid_values = quality.arguments.get("validValues") if quality.arguments else None
-                    valid_values = [value for value in valid_values or [] if value is not None] or None
-                    checks.append(
-                        check_property_invalid_values(
-                            schema_name, property_name, threshold, valid_values, quoting_config
+                    else:
+                        checks.append(
+                            check_property_duplicate_values(schema_name, property_name, threshold, quoting_config)
                         )
-                    )
-                else:
-                    logger.warning("Quality check invalidValues is only supported at field level")
-            elif quality.metric == "missingValues":
-                if property_name is not None:
-                    missing_values = quality.arguments.get("missingValues") if quality.arguments else None
-                    checks.append(
-                        check_property_missing_values(
-                            schema_name, property_name, threshold, missing_values, quoting_config
+                elif quality.metric == "nullValues":
+                    if property_name is not None:
+                        checks.append(check_property_null_values(schema_name, property_name, threshold, quoting_config))
+                    else:
+                        logger.warning("Quality check nullValues is only supported at field level")
+                elif quality.metric == "invalidValues":
+                    if property_name is not None:
+                        valid_values = quality.arguments.get("validValues") if quality.arguments else None
+                        valid_values = [value for value in valid_values or [] if value is not None] or None
+                        checks.append(
+                            check_property_invalid_values(
+                                schema_name, property_name, threshold, valid_values, quoting_config
+                            )
                         )
-                    )
+                    else:
+                        logger.warning("Quality check invalidValues is only supported at field level")
+                elif quality.metric == "missingValues":
+                    if property_name is not None:
+                        missing_values = quality.arguments.get("missingValues") if quality.arguments else None
+                        checks.append(
+                            check_property_missing_values(
+                                schema_name, property_name, threshold, missing_values, quoting_config
+                            )
+                        )
+                    else:
+                        logger.warning("Quality check missingValues is only supported at field level")
                 else:
-                    logger.warning("Quality check missingValues is only supported at field level")
-            else:
-                logger.warning(f"Quality check {quality.metric} is not yet supported")
+                    logger.warning(f"Quality check {quality.metric} is not yet supported")
 
         count += 1
 
@@ -1050,34 +1052,35 @@ def prepare_query(
     return query
 
 
-def to_sodacl_threshold(quality: DataQuality) -> str | None:
-    if quality.mustBe is not None:
-        return f"= {quality.mustBe}"
-    if quality.mustNotBe is not None:
-        return f"!= {quality.mustNotBe}"
-    if quality.mustBeGreaterThan is not None:
-        return f"> {quality.mustBeGreaterThan}"
-    if quality.mustBeGreaterOrEqualTo is not None:
-        return f">= {quality.mustBeGreaterOrEqualTo}"
-    if quality.mustBeLessThan is not None:
-        return f"< {quality.mustBeLessThan}"
-    if quality.mustBeLessOrEqualTo is not None:
-        return f"<= {quality.mustBeLessOrEqualTo}"
+def to_sodacl_thresholds(quality: DataQuality) -> List[str]:
+    """One SodaCL threshold per operator, as a SodaCL check takes only one."""
+    thresholds = [
+        f"{symbol} {value}"
+        for symbol, value in (
+            ("=", quality.mustBe),
+            ("!=", quality.mustNotBe),
+            (">", quality.mustBeGreaterThan),
+            (">=", quality.mustBeGreaterOrEqualTo),
+            ("<", quality.mustBeLessThan),
+            ("<=", quality.mustBeLessOrEqualTo),
+        )
+        if value is not None
+    ]
     if quality.mustBeBetween is not None:
         if len(quality.mustBeBetween) != 2:
             logger.warning(
                 f"Quality check has invalid mustBeBetween, must have exactly 2 integers in an array: {quality.mustBeBetween}"
             )
-            return None
-        return f"between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]}"
+            return []
+        thresholds.append(f"between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]}")
     if quality.mustNotBeBetween is not None:
         if len(quality.mustNotBeBetween) != 2:
             logger.warning(
                 f"Quality check has invalid mustNotBeBetween, must have exactly 2 integers in an array: {quality.mustNotBeBetween}"
             )
-            return None
-        return f"not between {quality.mustNotBeBetween[0]} and {quality.mustNotBeBetween[1]}"
-    return None
+            return []
+        thresholds.append(f"not between {quality.mustNotBeBetween[0]} and {quality.mustNotBeBetween[1]}")
+    return thresholds
 
 
 def _get_schema_by_name(data_contract: OpenDataContractStandard, name: str) -> Optional[SchemaObject]:
