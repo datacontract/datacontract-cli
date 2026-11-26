@@ -331,6 +331,7 @@ class Config(BaseSettings):
     sqlserver_password: SecretStr | None = None
     sqlserver_client_id: str | None = None
     sqlserver_client_secret: SecretStr | None = None
+    sqlserver_token_file_path: str | None = None
     sqlserver_driver: str | None = None
     sqlserver_encrypted_connection: bool | None = None
     sqlserver_trust_server_certificate: bool | None = None
@@ -1071,6 +1072,9 @@ class Config(BaseSettings):
 
     def get_sqlserver_client_secret(self, required: bool = False) -> str | None:
         return self._str_option("sqlserver_client_secret", required)
+
+    def get_sqlserver_token_file_path(self, required: bool = False) -> str | None:
+        return self._str_option("sqlserver_token_file_path", required)
 
     def get_sqlserver_driver(self, required: bool = False) -> str | None:
         return self._str_option("sqlserver_driver", required)

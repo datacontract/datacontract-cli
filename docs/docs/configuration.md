@@ -403,6 +403,7 @@ Every option, by its environment variable name and the matching `Config` field. 
 | `DATACONTRACT_SQLSERVER_PASSWORD` | `sqlserver_password` | string (secret) |  |
 | `DATACONTRACT_SQLSERVER_CLIENT_ID` | `sqlserver_client_id` | string |  |
 | `DATACONTRACT_SQLSERVER_CLIENT_SECRET` | `sqlserver_client_secret` | string (secret) |  |
+| `DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH` | `sqlserver_token_file_path` | string |  |
 | `DATACONTRACT_SQLSERVER_DRIVER` | `sqlserver_driver` | string |  |
 | `DATACONTRACT_SQLSERVER_ENCRYPTED_CONNECTION` | `sqlserver_encrypted_connection` | boolean |  |
 | `DATACONTRACT_SQLSERVER_TRUST_SERVER_CERTIFICATE` | `sqlserver_trust_server_certificate` | boolean |  |
