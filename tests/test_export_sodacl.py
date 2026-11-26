@@ -72,6 +72,8 @@ checks for orders:
         SELECT quantile_cont(order_total, 0.95) AS percentile_95
         FROM orders
   - row_count > 10
+  - row_count > 0:
+      name: orders__row_count
   - orders_servicelevel_retention < 31536000:
       name: orders__processed_timestamp__servicelevel_retention
       orders_servicelevel_retention expression: TIMESTAMPDIFF(SECOND, MIN(processed_timestamp), CURRENT_TIMESTAMP)

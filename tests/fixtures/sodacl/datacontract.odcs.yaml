@@ -37,6 +37,9 @@ schema:
     implementation: |
       checks for orders:
         - row_count > 10
+  - type: library
+    metric: rowCount
+    mustBeGreaterThan: 0
 - name: line_items
   quality:
   - type: custom
