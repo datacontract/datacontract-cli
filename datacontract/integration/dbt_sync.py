@@ -1982,6 +1982,17 @@ def _bullet_exclude_names(bullet: dict) -> list[str]:
     return []
 
 
+def _inherits_top_column(bullet: dict, column_name: str) -> bool:
+    """Whether dbt gives this version the top-level column, by the bullet's `include`/`exclude`."""
+    for element in bullet.get("columns") or []:
+        if isinstance(element, dict) and "include" in element:
+            include = element["include"]
+            exclude = element.get("exclude") or []
+            included = include in ("*", "all") or (isinstance(include, list) and column_name in include)
+            return included and column_name not in exclude
+    return True
+
+
 def _bullet_remove_exclude(bullet: dict, name: str) -> None:
     _bullet_set_exclude(bullet, [n for n in _bullet_exclude_names(bullet) if n.lower() != name.lower()])
 
@@ -2050,7 +2061,6 @@ def _set_override_tests(
     divergent column must live entirely in overrides — never split across top level and a bullet."""
     _bullet_include_element(bullet)  # an override must ride alongside `include: '*'` (dbt idiom)
     override = _bullet_column_override(bullet, col_name, create=True, top_col=top_col)
-    override.pop("data_tests", None)
     tests = CommentedSeq()
     for test in test_entries:
         entry = CommentedMap(test) if not isinstance(test, CommentedMap) else test
@@ -2059,6 +2069,8 @@ def _set_override_tests(
         tests.append(entry)
     if tests:
         override["data_tests"] = tests
+    else:
+        override.pop("data_tests", None)
 
 
 def _managed_test_args(container: dict) -> dict[str, dict]:
@@ -2117,7 +2129,7 @@ def _reconcile_versioned_data_types(
     """Maintain per-version `data_type` on a versioned model.
 
     Top-level carries the *latest* version's type; every version whose type differs gets a
-    minimal `{name, data_type, description}` override.
+    minimal `{name, data_type}` override.
     """
     latest = str(entry.get("latest_version"))
     unresolved: list[str] = []
@@ -2148,6 +2160,8 @@ def _reconcile_versioned_data_types(
             if not isinstance(b, dict):
                 continue
             override = _bullet_column_override(b, col_name)
+            if override is None and top_col is not None and not _inherits_top_column(b, top_col["name"]):
+                continue
             ov_type = override.get("data_type") if override else None
             type_by_version[str(b.get("v"))] = ov_type if ov_type is not None else top_type
         type_by_version[str(this_version)] = this_type
@@ -2164,45 +2178,125 @@ def _reconcile_versioned_data_types(
                     continue
                 if t == new_top:
                     override = _bullet_column_override(b, col_name)
-                    if override is not None and not override.get("data_tests"):
+                    if override is not None and not override.get("data_tests") and "description" not in override:
                         override.pop("data_type", None)
                         _collapse_bare_override(b, override, top_col)
                     elif override is not None:
-                        # Override survives for divergent tests → keep data_type; dbt doesn't
-                        # inherit it into an existing override entry (breaks `contract.enforced`).
+                        # Override survives for divergent tests or a description → keep data_type; dbt
+                        # doesn't inherit it into an existing override entry (breaks `contract.enforced`).
                         override["data_type"] = t
                 else:
                     override = _bullet_column_override(b, col_name, create=True, top_col=top_col)
                     override["data_type"] = t
-                    _set_override_description(override, top_col)
         else:
             # Some sibling's type is still unknown (e.g. synced before types existed). Don't impose a
             # top-level type on it — put this version's type in its own bullet only.
             override = _bullet_column_override(this_bullet, col_name, create=True, top_col=top_col)
             override["data_type"] = this_type
-            _set_override_description(override, top_col)
 
     _warn_unresolved_types(run, model_dict.get("name"), unresolved)
 
 
-def _set_override_description(override: dict, top_col: Optional[dict]) -> None:
-    """Stamp the top-level column's description onto an override (dbt doesn't inherit it)."""
-    desc = top_col.get("description") if isinstance(top_col, dict) else None
-    if desc:
-        override["description"] = desc
+def _reconcile_versioned_descriptions(
+    entry: dict,
+    versions: CommentedSeq,
+    model_dict: dict,
+    props_by_name: dict,
+    this_version: str,
+    top_description: Optional[str],
+    *,
+    prune: bool,
+) -> None:
+    """The latest version's descriptions go on top level, a differing version's on its bullet or override."""
+    latest = str(entry.get("latest_version"))
+    bullets = [b for b in versions if isinstance(b, dict)]
+
+    descs = {str(b.get("v")): b.get("description") or top_description for b in bullets}
+    if model_dict.get("description") or prune:
+        descs[this_version] = model_dict.get("description")
+    top = descs.get(latest, descs.get(this_version))
+    if top:
+        entry["description"] = top
+    else:
+        entry.pop("description", None)
+    for b in bullets:
+        desc = descs[str(b.get("v"))]
+        if desc and desc != top:
+            b["description"] = desc
+        else:
+            b.pop("description", None)
+
+    for desired_col in model_dict.get("columns") or []:
+        col_name = desired_col["name"]
+        top_col = _find_column(entry, col_name)
+        if top_col is None:
+            continue
+        col_descs: dict[str, Optional[str]] = {}
+        for b in bullets:
+            override = _bullet_column_override(b, col_name)
+            if override is not None and "description" in override:
+                col_descs[str(b.get("v"))] = override["description"]
+            elif override is not None or _inherits_top_column(b, top_col["name"]):
+                col_descs[str(b.get("v"))] = top_col.get("description")
+        prop = props_by_name.get(col_name.lower())
+        this_desc = prop.description.strip().replace("\n", " ") if prop is not None and prop.description else None
+        if this_desc or prune:
+            col_descs[this_version] = this_desc
+        top = col_descs.get(latest, col_descs.get(this_version))
+        if top:
+            top_col["description"] = top
+        else:
+            top_col.pop("description", None)
+        for b in bullets:
+            if str(b.get("v")) not in col_descs:
+                continue
+            desc = col_descs[str(b.get("v"))]
+            override = _bullet_column_override(b, col_name)
+            if override is None:
+                if not desc or desc == top:
+                    continue
+                override = _bullet_column_override(b, col_name, create=True, top_col=top_col)
+                # dbt drops the top-level column's properties for an overriding version, but still runs its tests
+                if top_col.get("data_type"):
+                    override["data_type"] = top_col["data_type"]
+            if desc:
+                override["description"] = desc
+            else:
+                override.pop("description", None)
+            _collapse_bare_override(b, override, top_col)
+
+
+def _column_tags_and_meta(top_col: dict) -> CommentedMap:
+    """A copy of the top-level column's `config.tags` and `config.meta`, which dbt drops for a version
+    with its own entry for the column."""
+    config = top_col.get("config")
+    out = CommentedMap()
+    for key, value in config.items() if isinstance(config, dict) else []:
+        if key in ("tags", "meta"):
+            out[key] = copy.deepcopy(value)
+    return out
 
 
 def _collapse_bare_override(bullet: dict, override: dict, top_col: Optional[dict]) -> None:
-    """Drop an override element that's decayed to just `{name}` (plus the top-level column's own
-    `quote`), then collapse a now-bare `columns`."""
-    top_quote = top_col.get("quote") if isinstance(top_col, dict) else None
-    if set(override.keys()) == {"name"} or (
-        set(override.keys()) == {"name", "quote"} and bool(override["quote"]) == bool(top_quote)
-    ):
-        cols = bullet.get("columns")
-        if isinstance(cols, list) and override in cols:
-            cols.remove(override)
-        _bullet_set_exclude(bullet, _bullet_exclude_names(bullet))  # collapse `columns` if bare
+    """Drop an override element that adds nothing to the top-level column: just its `name`, plus a
+    `quote`, `data_type`, `description` or `config` equal to the top-level column's. Then collapse a now-bare `columns`."""
+    top = top_col if isinstance(top_col, dict) else {}
+    for key, value in override.items():
+        if key == "name":
+            continue
+        if key == "quote" and bool(value) == bool(top.get("quote")):
+            continue
+        if key in ("data_type", "description") and value == top.get(key):
+            continue
+        if key == "config" and isinstance(value, dict) and dict(value) == dict(_column_tags_and_meta(top)):
+            continue
+        return
+    if not top or not _inherits_top_column(bullet, top["name"]):
+        return  # the override is what gives this version the column
+    cols = bullet.get("columns")
+    if isinstance(cols, list) and override in cols:
+        cols.remove(override)
+    _bullet_set_exclude(bullet, _bullet_exclude_names(bullet))  # collapse `columns` if bare
 
 
 def _merge_versioned_model_entry(
@@ -2226,11 +2320,9 @@ def _merge_versioned_model_entry(
     props_by_name = {p.name.lower(): p for p in (schema_obj.properties or []) if p.name}
     contract_version = odcs.version or "no_version"
 
-    desc = model_dict.get("description")
-    if desc:
-        entry["description"] = desc
-    elif prune:
-        entry.pop("description", None)
+    top_description = entry.get("description")
+    if model_dict.get("description") and "description" not in entry:
+        entry["description"] = model_dict["description"]
     _set_meta_keys(entry, data_contract=odcs.id, owner=(odcs.team.name if odcs.team else None))
     _union_tags(entry, list(schema_obj.tags or []), reconcile=False, prune=prune)
 
@@ -2261,10 +2353,8 @@ def _merge_versioned_model_entry(
             _mark_managed_column(target)
         if _is_must_quote_name(col_name):
             target["quote"] = True
-        if prop is not None and prop.description:
+        if created and prop is not None and prop.description:
             target["description"] = prop.description.strip().replace("\n", " ")
-        elif prune:
-            target.pop("description", None)
         col_tags = list(prop.tags or []) if prop else []
         _union_tags(target, col_tags, reconcile=(created or _is_managed_column(target)), prune=prune)
 
@@ -2309,12 +2399,34 @@ def _merge_versioned_model_entry(
     _reconcile_versioned_data_types(
         entry, versions, model_dict, props_by_name, dialect, model_version, run, prune=prune
     )
+    _reconcile_versioned_descriptions(
+        entry, versions, model_dict, props_by_name, model_version, top_description, prune=prune
+    )
     for desired_col in model_dict.get("columns") or []:
         if _is_must_quote_name(desired_col["name"]):
             for b in versions:
                 override = _bullet_column_override(b, desired_col["name"]) if isinstance(b, dict) else None
                 if override is not None:
                     override["quote"] = True
+    # Overrides carry the top-level column's tags and meta, which dbt doesn't pass on to them.
+    for top_col in entry.get("columns") or []:
+        if not isinstance(top_col, dict) or not top_col.get("name"):
+            continue
+        for b in versions:
+            override = _bullet_column_override(b, top_col["name"]) if isinstance(b, dict) else None
+            if override is None:
+                continue
+            tags_and_meta = _column_tags_and_meta(top_col)
+            config = override.get("config")
+            config = config if isinstance(config, dict) else CommentedMap()
+            for key in ("tags", "meta"):
+                if key not in tags_and_meta:
+                    config.pop(key, None)
+            config.update(tags_and_meta)
+            if config:
+                override["config"] = config
+            else:
+                override.pop("config", None)
 
     if prune:
         _prune_versioned_entry(entry, model_dict, contract_version, apply=True)

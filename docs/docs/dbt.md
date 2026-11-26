@@ -178,6 +178,8 @@ Generated tests quote a column exactly where dbt quotes it in its own tests: whe
 
 If `dbt sync` is fed with a subset of the versioned contracts, the other versions remain unchanged.
 
+Each version keeps the table and column descriptions of its own contract. The model and its top-level columns carry the latest version's descriptions. When another version's description differs, `dbt sync` writes it on that version's entry, and for a column in that version's own entry for the column.
+
 ## `datacontract dbt test`
 
 Runs the contract-managed tests that `dbt sync` generated, reports the results, and optionally publishes them. Like `dbt sync`, the command accepts multiple contracts.
