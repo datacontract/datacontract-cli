@@ -947,11 +947,12 @@ def test_field_singular_tests_emit_portable_violation_predicates():
 
 def test_row_count_singular_test_wraps_count_with_bound_predicate():
     """Declarative `rowCount` bound → `SELECT COUNT(*)` wrapped with a bound-violation predicate."""
-    quality = DataQuality(metric="rowCount", mustBeGreaterThan=1000)
+    quality = DataQuality(metric="rowCount", mustBeGreaterThan=1000, mustBeLessThan=5000)
     test = _row_count_singular_test(quality, contract_id="orders_sync_test", contract_version="1.0.0", model="orders")
     assert test is not None
     assert "SELECT COUNT(*) AS metric_value FROM {{ ref('orders') }}" in test.sql
-    assert "metric_value <= 1000" in test.sql
+    assert "metric_value <= 1000 OR metric_value >= 5000" in test.sql
+    assert test.description == "Check that model orders has more than 1000 rows and has fewer than 5000 rows"
 
 
 def test_generate_outputs_singular_sql_carries_severity_and_meta():
@@ -1280,6 +1281,10 @@ def test_invalid_values_with_valid_values_and_zero_bound():
         (
             DataQuality(metric="invalidValues", arguments={"validValues": [None]}, mustBe=0),
             ["WHERE amount IS NOT NULL AND (1 = 1)"],
+        ),
+        (
+            DataQuality(metric="nullValues", mustBe=0, mustBeGreaterThan=0),
+            ["metric_value <> 0 OR metric_value <= 0", "has missing_count = 0 and > 0"],
         ),
     ],
 )

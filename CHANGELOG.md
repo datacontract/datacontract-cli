@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` finds tables in Postgres schemas with upper case letters, such as `"Reporting"`
 - `datacontract test` checks the other columns of a Postgres table with a column of a type ibis cannot read, such as `regclass`
 - `datacontract import postgres` and `import sql` no longer map bit strings of more than one bit (`bit(8)`, `bit varying`) to `boolean`
+- `datacontract test`, `breaking`, `dbt sync` and `export sodacl` apply every operator of a quality rule that combines several, such as `mustBeGreaterThan` with `mustBeLessThan`; `export excel` warns about the ones it cannot hold
 
 ## [1.2.11] - 2026-11-17
 

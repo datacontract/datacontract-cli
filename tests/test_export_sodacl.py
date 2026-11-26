@@ -2,6 +2,7 @@ import logging
 
 import yaml
 from open_data_contract_standard.model import (
+    DataQuality,
     OpenDataContractStandard,
     SchemaObject,
     SchemaProperty,
@@ -117,6 +118,30 @@ def test_multiple_servicelevel_promises_get_distinct_check_keys():
     retention_keys = [c.key for c in checks if c.type == "servicelevel_retention"]
     assert freshness_keys == ["events__ts__servicelevel_freshness", "events__updated__servicelevel_freshness"]
     assert retention_keys == ["events__ts__servicelevel_retention", "events__updated__servicelevel_retention"]
+
+
+def test_a_rule_with_several_operators_becomes_one_check_per_operator():
+    operators = {"mustBeGreaterThan": 0, "mustBeLessThan": 100}
+    contract = OpenDataContractStandard(
+        schema=[
+            SchemaObject(
+                name="orders",
+                quality=[
+                    DataQuality(metric="rowCount", **operators),
+                    DataQuality(type="sql", query="SELECT 1", **operators),
+                ],
+            )
+        ],
+    )
+
+    exported = yaml.safe_load(SodaExporter(export_format="sodacl").export(contract, "all", None, "auto", None))
+
+    assert [key for check in exported["checks for orders"] for key in check] == [
+        "row_count > 0",
+        "row_count < 100",
+        "orders__quality_sql_1 > 0",
+        "orders__quality_sql_1 < 100",
+    ]
 
 
 def test_export_sodacl_numeric_retention():

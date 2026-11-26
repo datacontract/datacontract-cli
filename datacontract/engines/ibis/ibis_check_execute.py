@@ -1268,9 +1268,9 @@ def _evaluate(run: Run, spec: CheckSpec, value, row_count: Optional[int] = None)
     threshold = spec.threshold
     odcs_threshold = None
     if threshold is not None:
-        is_range = threshold.op in (Op.BETWEEN, Op.NOT_BETWEEN)
         odcs_threshold = {
-            _ODCS_OPERATORS[threshold.op]: [threshold.value, threshold.value2] if is_range else threshold.value
+            _ODCS_OPERATORS[c.op]: [c.value, c.value2] if c.op in (Op.BETWEEN, Op.NOT_BETWEEN) else c.value
+            for c in threshold.comparisons
         }
 
     diag = _diag(

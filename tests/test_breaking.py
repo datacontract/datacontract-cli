@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from open_data_contract_standard.model import OpenDataContractStandard
 from rich.console import Console
 from typer.testing import CliRunner
 
@@ -664,6 +665,25 @@ def _keyed(*names):
 )
 def test_change_direction(v1, v2, directions):
     assert _directions(v1, v2) == directions
+
+
+@pytest.mark.parametrize(
+    "old,new,direction",
+    [
+        (dict(mustBeLessThan=100), dict(mustBeLessThan=200), Direction.LOOSENS),
+        (dict(mustBeLessThan=100), dict(mustBeLessThan=50), Direction.TIGHTENS),
+        (dict(), dict(mustBeLessThan=50), Direction.TIGHTENS),
+        (dict(mustBeLessThan=100), dict(mustBeLessThan=100, mustBe="abc"), Direction.UNDETERMINED),
+    ],
+)
+def test_every_threshold_of_a_rule_counts(old, new, direction):
+    v1, v2 = (
+        DataContract(
+            data_contract=OpenDataContractStandard.model_validate(_contract(_quality(mustBeGreaterThan=0, **t)))
+        )
+        for t in (old, new)
+    )
+    assert [entry.direction for entry in v1.breaking(v2).entries] == [direction]
 
 
 def test_replaced_threshold_is_graded_once():

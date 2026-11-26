@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from unittest.mock import MagicMock, patch
 
+from open_data_contract_standard.model import DataQuality
+
 from datacontract.engines.datacontract.check_azure_blob_file import (
     _account_url_from_location,
     _parse_location,
@@ -178,6 +180,21 @@ class TestCheckAzureBlobFile:
         run = self._run_with_blobs(blobs)
         checks = [c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "size"]
         assert checks and checks[0].result == ResultEnum.passed
+
+    def test_every_operator_of_a_rule_must_hold(self):
+        data_contract = _load_contract()
+        size = next(p for p in data_contract.schema_[0].properties if p.name == "size")
+        size.quality = [DataQuality(mustBeGreaterThan=0, mustBeLessThan=10, mustNotBeBetween=[20, 30])]
+        run = _make_run()
+        with patch(
+            "datacontract.engines.datacontract.check_azure_blob_file._build_blob_service_client",
+            return_value=_patched_client([_make_blob("raw/orders/a.json", size=25)]),
+        ):
+            check_azure_blob_file(run, data_contract, data_contract.servers[0])
+
+        check = next(c for c in _checks_by_type(run, "azure_file_property_quality") if c.field == "size")
+        assert check.result == ResultEnum.failed
+        assert check.reason == "1 blob(s) violate 'size > 0 and < 10 and not between 20 and 30'."
 
     # ── Property: contentType (MIME normalisation) ──────────────────────────
 

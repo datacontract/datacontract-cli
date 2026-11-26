@@ -8,7 +8,7 @@ from pathlib import Path
 import openpyxl
 import pytest
 import yaml
-from open_data_contract_standard.model import OpenDataContractStandard
+from open_data_contract_standard.model import DataQuality, OpenDataContractStandard, SchemaObject
 from typer.testing import CliRunner
 
 import datacontract
@@ -344,6 +344,21 @@ support:
     assert [servers.cell(row=r, column=3).value for r in range(label + 1, label + 5)] == [1, 2, 3, 4]
     # schema-level custom properties have no inline home
     assert [c.value for c in workbook["Custom Properties"][5]][:4] == ["Schema", "orders", "a", 1]
+
+
+def test_export_warns_about_further_threshold_operators(caplog):
+    odcs = OpenDataContractStandard(
+        apiVersion="v3.2.0",
+        schema=[
+            SchemaObject(name="orders", quality=[DataQuality(metric="rowCount", mustBeGreaterThan=0, mustBeLessThan=9)])
+        ],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        export_to_excel_bytes(odcs)
+
+    assert "further threshold operators (1)" in caplog.text
+    assert "Consider raising the apiVersion" not in caplog.text
 
 
 def test_old_template_export_warns_exactly_once(tmp_path, caplog):

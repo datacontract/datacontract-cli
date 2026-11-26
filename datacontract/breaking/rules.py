@@ -18,7 +18,6 @@ from datacontract.model.breaking import Direction
 from datacontract.model.changelog import ChangelogEntry, ChangelogType
 from datacontract.model.run import ResultEnum
 
-# In the order to_threshold reads them.
 _THRESHOLDS = (
     "mustBe",
     "mustNotBe",
@@ -408,7 +407,7 @@ class QualityConstraintRule(BreakingChangeRule):
                 direction = Direction.UNDETERMINED
             else:
                 probes = _probes(
-                    [bound for t in (old, new) for bound in (t.value, t.value2) if bound is not None],
+                    [bound for t in (old, new) for c in t.comparisons for bound in (c.value, c.value2)],
                     # A library metric counts rows, unless it is a percentage of them.
                     integers=not percent.pop() and new_rule.get("type") not in ("sql", "custom"),
                 )
@@ -529,9 +528,10 @@ def _carrier(old: dict, new: dict, keys: tuple[str, ...]) -> str | None:
 def _count_direction(rule: dict, more: bool) -> Direction:
     """How counting more (or fewer) bad rows moves a quality rule, judged by the threshold it is checked against."""
     threshold = to_threshold(_threshold_quality(rule))
-    probes = (
-        None if threshold is None else _probes([0, threshold.value, threshold.value2], integers=not _is_percent(rule))
-    )
+    if threshold is None:
+        return Direction.UNDETERMINED
+    bounds = [bound for c in threshold.comparisons for bound in (c.value, c.value2)]
+    probes = _probes([0, *bounds], integers=not _is_percent(rule))
     if probes is None:
         return Direction.UNDETERMINED
     accepted = [threshold.passes(p) for p in probes if p >= 0]
@@ -547,9 +547,10 @@ def _count_direction(rule: dict, more: bool) -> Direction:
 
 def _probes(bounds: list, integers: bool) -> list[float] | None:
     """Values that tell apart predicates that change their answer only at ``bounds``; None if not numbers."""
-    bounds = sorted({bound for bound in bounds if bound is not None})
+    bounds = {bound for bound in bounds if bound is not None}
     if not all(isinstance(bound, (int, float)) and not isinstance(bound, bool) for bound in bounds):
         return None
+    bounds = sorted(bounds)
     if integers:
         return sorted({n for bound in bounds for n in range(math.floor(bound) - 1, math.ceil(bound) + 2)})
     return sorted(bounds + [(a + b) / 2 for a, b in zip(bounds, bounds[1:])] + [bounds[0] - 1, bounds[-1] + 1])
