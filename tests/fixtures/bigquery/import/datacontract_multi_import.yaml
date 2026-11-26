@@ -60,3 +60,22 @@ schema:
     physicalType: STRING
     description: A simple String field
     logicalType: string
+- name: BQ_Table_Function
+  physicalType: table_valued_function
+  description: This is a test table
+  customProperties:
+  - property: arguments
+    value:
+    - name: start_ts
+      physicalType: TIMESTAMP
+    - name: ids
+      physicalType: ARRAY
+  logicalType: object
+  physicalName: BQ_Table_Function
+  properties:
+  - name: id
+    physicalType: STRING
+    logicalType: string
+  - name: created
+    physicalType: TIMESTAMP
+    logicalType: timestamp

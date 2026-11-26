@@ -418,3 +418,55 @@ FROM orders;
 GO
 """.strip()
     assert actual == expected
+
+
+TABLE_VALUED_FUNCTION_CONTRACT = """
+apiVersion: v3.1.0
+kind: DataContract
+id: orders-function
+name: orders-function
+version: 1.0.0
+status: active
+schema:
+  - name: orders_in_window
+    physicalType: table_valued_function
+    customProperties:
+      - property: arguments
+        value:
+          - name: start_ts
+            physicalType: TIMESTAMP
+    properties:
+      - name: order_id
+        logicalType: string
+      - name: created
+        logicalType: timestamp
+"""
+
+
+def test_to_sql_ddl_table_valued_function_bigquery():
+    actual = DataContract(data_contract_str=TABLE_VALUED_FUNCTION_CONTRACT).export("sql", sql_server_type="bigquery")
+    expected = """
+-- Data Contract: orders-function
+-- SQL Dialect: bigquery
+CREATE OR REPLACE TABLE FUNCTION orders_in_window(start_ts TIMESTAMP)
+RETURNS TABLE<order_id STRING, created TIMESTAMP>
+AS (
+  <TODO: function body>
+);
+""".strip()
+    assert actual == expected
+
+
+def test_to_sql_ddl_table_valued_function_without_arguments():
+    contract = TABLE_VALUED_FUNCTION_CONTRACT.replace(
+        """    customProperties:
+      - property: arguments
+        value:
+          - name: start_ts
+            physicalType: TIMESTAMP
+""",
+        "",
+    )
+    actual = DataContract(data_contract_str=contract).export("sql", sql_server_type="bigquery")
+
+    assert "CREATE OR REPLACE TABLE FUNCTION orders_in_window()\nRETURNS TABLE<" in actual

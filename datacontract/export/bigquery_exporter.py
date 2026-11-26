@@ -5,6 +5,7 @@ from open_data_contract_standard.model import SchemaObject, SchemaProperty, Serv
 
 from datacontract.export.exporter import Exporter, _check_schema_name_for_export
 from datacontract.export.sql_type_converter import map_type_to_bigquery
+from datacontract.model.odcs import BIGQUERY_TABLE_VALUED_FUNCTION, TABLE_VALUED_FUNCTION, table_function_arguments
 
 
 class BigQueryExporter(Exporter):
@@ -34,7 +35,7 @@ def to_bigquery_json(schema_name: str, schema_object: SchemaObject, server: Serv
 
 
 def to_bigquery_schema(schema_object: SchemaObject, server: Server) -> dict:
-    return {
+    bigquery_schema = {
         "kind": "bigquery#table",
         "tableReference": {
             "datasetId": server.dataset,
@@ -44,6 +45,13 @@ def to_bigquery_schema(schema_object: SchemaObject, server: Server) -> dict:
         "description": schema_object.description,
         "schema": {"fields": to_bigquery_fields_array(schema_object.properties or [])},
     }
+    if schema_object.physicalType == TABLE_VALUED_FUNCTION:
+        bigquery_schema["type"] = BIGQUERY_TABLE_VALUED_FUNCTION
+        bigquery_schema["arguments"] = [
+            {"name": a["name"], "dataType": {"typeKind": a["physicalType"]}}
+            for a in table_function_arguments(schema_object)
+        ]
+    return bigquery_schema
 
 
 def to_bigquery_fields_array(properties: List[SchemaProperty]) -> List[Dict]:

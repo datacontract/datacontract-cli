@@ -1,7 +1,8 @@
 import ibis
+from open_data_contract_standard.model import CustomProperty, SchemaObject, Server
 
 from datacontract.engines.checks.check_spec import CheckSpec, Hop, MetricType
-from datacontract.engines.ibis.ibis_check_execute import _run_present
+from datacontract.engines.ibis.ibis_check_execute import _resolve_function, _run_present
 from datacontract.model.run import Check, ResultEnum, Run
 
 
@@ -189,3 +190,32 @@ def test_a_field_without_steps_is_the_name_of_one_column():
     )
 
     assert spec.path == ("Rate.x",)
+
+
+def test_resolve_function_calls_the_function_with_the_argument_values():
+    class _SqlConnection:
+        def sql(self, query):
+            return query
+
+    server = Server(server="bigquery", type="bigquery", project="p", dataset="d")
+    arguments = [{"name": "start_ts", "physicalType": "TIMESTAMP", "value": "TIMESTAMP '2024-01-01'"}, {"name": "ids"}]
+    schema_object = SchemaObject(
+        name="fn",
+        physicalType="table_valued_function",
+        customProperties=[CustomProperty(property="arguments", value=arguments)],
+    )
+
+    assert _resolve_function(_SqlConnection(), server, "fn", schema_object) == (
+        "SELECT * FROM `p.d.fn`(TIMESTAMP '2024-01-01', NULL)"
+    )
+
+
+def test_resolve_function_without_arguments_calls_the_function_with_empty_parentheses():
+    class _SqlConnection:
+        def sql(self, query):
+            return query
+
+    server = Server(server="bigquery", type="bigquery", project="p", dataset="d")
+    schema_object = SchemaObject(name="fn", physicalType="table_valued_function")
+
+    assert _resolve_function(_SqlConnection(), server, "fn", schema_object) == "SELECT * FROM `p.d.fn`()"

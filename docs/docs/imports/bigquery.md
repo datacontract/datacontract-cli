@@ -20,6 +20,18 @@ datacontract import bigquery \
 
 Repeat `--table` for multiple tables, or omit it to import every table in the dataset. Authentication uses Application Default Credentials (`gcloud auth application-default login`, or `GOOGLE_APPLICATION_CREDENTIALS`).
 
+Table functions are imported with `--table-valued-function` (repeatable):
+
+```bash
+datacontract import bigquery \
+  --project my-project \
+  --dataset my_dataset \
+  --table-valued-function orders_in_window \
+  --output datacontract.yaml
+```
+
+The schema gets `physicalType: table_valued_function`, with the columns declared in the function's `RETURNS TABLE` and its arguments (`name`, `physicalType`) in the `arguments` custom property.
+
 The generated contract includes a ready-to-test `servers` block, so you can run `datacontract test datacontract.yaml` immediately afterwards — see the **[BigQuery connection guide](../testing/bigquery.md)** for the full 5-minute walkthrough and troubleshooting.
 
 ## From an exported JSON file
