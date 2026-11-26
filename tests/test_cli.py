@@ -1,7 +1,9 @@
 import json
 import os
 import re
+import subprocess
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -233,3 +235,20 @@ def test_changelog_yaml_and_json_output_hold_the_same_changes():
     as_json = json.loads(runner.invoke(app, args + ["json"]).stdout)
     as_yaml = yaml.safe_load(runner.invoke(app, args + ["yaml"]).stdout)
     assert as_yaml == as_json
+
+
+def test_test_output_is_utf8_when_console_encoding_has_no_emoji():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from datacontract.cli import main; main()",
+            "test",
+            "tests/fixtures/csv/data/datacontract.yaml",
+        ],
+        cwd=Path(__file__).parent.parent,
+        env={**os.environ, "PYTHONIOENCODING": "cp1252"},
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
+    assert any(emoji in result.stdout.decode("utf-8") for emoji in "🟢🟠")

@@ -1,3 +1,4 @@
+import codecs
 import logging
 import os
 import sys
@@ -387,6 +388,10 @@ app.add_typer(
 
 
 def main():
+    # Before Python 3.15, piped output on Windows uses the ANSI code page, which cannot encode emoji.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure") and codecs.lookup(stream.encoding).name != "utf-8":
+            stream.reconfigure(encoding="utf-8")
     try:
         app()
     except Exception as e:
