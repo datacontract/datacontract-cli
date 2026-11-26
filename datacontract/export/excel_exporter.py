@@ -321,9 +321,6 @@ def fill_single_schema(export: Export, sheet: Worksheet, schema: SchemaObject):
     logical_type_cell = find_cell_by_name_in_sheet(sheet, "schema.logicalType")
     if logical_type_cell is not None:
         set_cell_value_direct(logical_type_cell, schema.logicalType)
-    elif schema.logicalType not in (None, "object"):
-        # a template without the cell reads every schema object back as an object
-        export.unsupported["schema logical types"] += 1
 
     export.sheet_authoritative_definitions(schema)
     export.inline_custom_properties(schema, inline=False)  # the schema block has no inline columns

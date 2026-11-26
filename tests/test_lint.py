@@ -152,7 +152,7 @@ team:
     assert run.checks[0].reason == "data.team[0]: Additional properties are not allowed ('rol' was unexpected)"
 
 
-def test_lint_says_when_several_one_of_branches_match():
+def test_lint_accepts_a_rule_that_combines_operators():
     contract = """
 apiVersion: v3.1.0
 kind: DataContract
@@ -164,14 +164,25 @@ schema:
     quality:
       - type: library
         metric: rowCount
-        mustBe: 0
-        mustBeGreaterThan: 1
+        mustBeGreaterThan: 0
+        mustBeLessThan: 100
 """
-    run = DataContract(data_contract_str=contract).lint()
+    assert DataContract(data_contract_str=contract).lint().result == "passed"
 
-    assert run.checks[0].reason == (
-        "data.schema.orders.quality[0]: must match exactly one of 8 definitions, but matches several"
-    )
+
+def test_lint_says_when_several_one_of_branches_match(tmp_path):
+    schema = tmp_path / "schema.json"
+    schema.write_text('{"properties": {"status": {"oneOf": [{"type": "string"}, {"minLength": 1}]}}}')
+    contract = """
+apiVersion: v3.1.0
+kind: DataContract
+id: overlapping-branches
+version: "1"
+status: active
+"""
+    run = DataContract(data_contract_str=contract, schema_location=str(schema)).lint()
+
+    assert run.checks[0].reason == "data.status: must match exactly one of 2 definitions, but matches several"
 
 
 def test_lint_invalid_odcs_schema_all_errors_api():

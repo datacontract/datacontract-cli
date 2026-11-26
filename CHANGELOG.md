@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `datacontract lint` rejects the schema `logicalType: blob`, which ODCS does not allow; Azure Blob metadata checks are enabled with the server `format: metadata`
+
 ### Fixed
 - `datacontract test` checks the constraints and quality rules of nested properties (struct fields and array items) on Dremio servers
 - `datacontract test` finds tables in Postgres schemas with upper case letters, such as `"Reporting"`
 - `datacontract test` checks the other columns of a Postgres table with a column of a type ibis cannot read, such as `regclass`
 - `datacontract import postgres` and `import sql` no longer map bit strings of more than one bit (`bit(8)`, `bit varying`) to `boolean`
-- `datacontract test`, `breaking`, `dbt sync` and `export sodacl` apply every operator of a quality rule that combines several, such as `mustBeGreaterThan` with `mustBeLessThan`; `export excel` warns about the ones it cannot hold
+- `datacontract lint` accepts the ids and references the current ODCS v3.1.0 schema allows, such as ids with `:` and shorthand references with `-`
+- `datacontract lint` accepts quality rules that combine several operators, such as `mustBeGreaterThan` with `mustBeLessThan`, and `test`, `breaking`, `dbt sync` and `export sodacl` apply every one of them; `export excel` warns about the ones it cannot hold
 
 ## [1.2.11] - 2026-11-17
 
