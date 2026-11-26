@@ -1,4 +1,4 @@
-"""Import the responses of GET or POST operations of an OpenAPI 3.x document."""
+"""Import the responses of GET or POST operations of an OpenAPI 3.x or Swagger 2.0 document."""
 
 import logging
 import re
@@ -35,8 +35,57 @@ def read_openapi(source: str) -> dict:
             spec = yaml.load(file, Loader=_SafeLoaderNoTimestamp)
     except (OSError, yaml.YAMLError) as e:
         raise _schema_error(f"Failed to read OpenAPI document {source}: {e}") from e
+    if isinstance(spec, dict) and str(spec.get("swagger", "")) == "2.0":
+        return _from_swagger_2(spec)
     if not isinstance(spec, dict) or not str(spec.get("openapi", "")).startswith("3."):
-        raise _schema_error(f"{source} is not an OpenAPI 3.x document.")
+        raise _schema_error(f"{source} is not an OpenAPI 3.x or Swagger 2.0 document.")
+    return spec
+
+
+def _from_swagger_2(spec: dict) -> dict:
+    """The Swagger 2.0 document in the OpenAPI 3.0 shape the importer reads. Its local $refs, such as
+    #/definitions/Order or #/parameters/OrderId, stay as they are, as they point into the same document."""
+    host, base_path = spec.get("host"), spec.get("basePath") or ""
+    # without a host, the API is served by the host of the document, like a relative OpenAPI 3 server URL
+    spec["servers"] = (
+        [{"url": f"{scheme}://{host}{base_path}"} for scheme in spec.get("schemes") or ["https"]]
+        if host
+        else [{"url": base_path or "/"}]
+    )
+    lookup = SchemaResolver(spec).lookup
+    parameters = list((spec.get("parameters") or {}).values())
+    for _, path_item, _, operation in operations(spec):
+        # a response at the root is shared, so each operation gets its own copy for the media types it produces
+        produces = operation.get("produces") or spec.get("produces") or ["application/json"]
+        responses = {}
+        for code, response in (operation.get("responses") or {}).items():
+            if isinstance(response, dict) and str(response.get("$ref", "")).startswith("#"):
+                response = lookup(response["$ref"]) or response
+            if isinstance(response, dict) and "schema" in response:
+                response = {key: value for key, value in response.items() if key != "schema"} | {
+                    "content": {media_type: {"schema": response["schema"]} for media_type in produces}
+                }
+            responses[code] = response
+        operation["responses"] = responses
+        # the operation's own parameters first, as they replace those of its path
+        declared = [
+            lookup(p["$ref"]) if isinstance(p, dict) and str(p.get("$ref", "")).startswith("#") else p
+            for p in (operation.get("parameters") or []) + (path_item.get("parameters") or [])
+        ]
+        body = next((p for p in declared if isinstance(p, dict) and p.get("in") == "body"), None)
+        if body is not None and "requestBody" not in operation:
+            media_types = operation.get("consumes") or spec.get("consumes") or ["application/json"]
+            operation["requestBody"] = {
+                "required": bool(body.get("required")),
+                "content": {media_type: {"schema": body.get("schema") or {}} for media_type in media_types},
+            }
+        parameters += declared
+    # the other parameters declare their type and default next to their name, OpenAPI 3 in a schema
+    for parameter in parameters:
+        if isinstance(parameter, dict) and parameter.get("in") != "body" and "schema" not in parameter:
+            parameter["schema"] = {
+                key: parameter.pop(key) for key in ("type", "format", "items", "enum", "default") if key in parameter
+            }
     return spec
 
 
@@ -167,14 +216,14 @@ def _response_schema(resolver: SchemaResolver, label: str, operation: dict) -> d
 
 
 def _to_json_schema(schema):
-    """The schema with OpenAPI 3.0's `example` and `nullable` as JSON Schema, and nullable properties optional,
-    as ODCS's `required` means not null."""
+    """The schema with OpenAPI 3.0's `example` and `nullable` (Swagger 2.0's `x-nullable`) as JSON Schema, and
+    nullable properties optional, as ODCS's `required` means not null."""
     if not isinstance(schema, dict):
         return schema
     schema = dict(schema)
     if "example" in schema and "examples" not in schema:
         schema["examples"] = [schema["example"]]
-    if schema.get("nullable") is True and isinstance(schema.get("type"), str):
+    if schema.get("nullable", schema.get("x-nullable")) is True and isinstance(schema.get("type"), str):
         schema["type"] = [schema["type"], "null"]
     if isinstance(schema.get("properties"), dict):
         schema["properties"] = {name: _to_json_schema(child) for name, child in schema["properties"].items()}
