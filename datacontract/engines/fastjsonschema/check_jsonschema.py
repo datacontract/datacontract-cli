@@ -273,6 +273,7 @@ def check_jsonschema(
     schema_name: str = "all",
     config: Config | None = None,
     dry_run: bool = False,
+    tags: set[str] | None = None,
 ):
     run.log_info("Running engine jsonschema")
 
@@ -297,6 +298,9 @@ def check_jsonschema(
 
     for schema_obj in data_contract.schema_:
         if schema_name != "all" and schema_obj.name != schema_name:
+            continue
+        # The validation covers whole documents, so only the tags of the schema select it
+        if tags is not None and tags.isdisjoint(schema_obj.tags or []):
             continue
         model_name = schema_obj.name
         # Process the model

@@ -321,6 +321,7 @@ def _filter_contract() -> str:
                         name="status",
                         physicalName="STATUS",
                         logicalType="string",
+                        tags=["pii"],
                         quality=[
                             DataQuality(
                                 metric="nullValues",
@@ -384,6 +385,13 @@ def test_hana_tag_selects_only_tagged_rules(orders_connection):
     run = DataContract(data_contract_str=_filter_contract(), tags={"smoke"}).test()
 
     assert [(c.type, c.tags) for c in run.checks] == [("row_count", ["smoke"])]
+
+
+def test_hana_tag_of_a_property_selects_every_check_of_that_property(orders_connection):
+    run = DataContract(data_contract_str=_filter_contract(), tags={"pii"}).test()
+
+    assert {c.field for c in run.checks} == {"STATUS"}
+    assert {c.type for c in run.checks} == {"field_is_present", "field_type", "field_null_values"}
 
 
 def test_hana_dimension_selects_built_in_checks_and_matching_rules(orders_connection):

@@ -163,14 +163,16 @@ def execute_data_contract_test(
         specs = [s for s in specs if s.dimension in dimensions]
         if not specs:
             run.log_warn(f"No checks found for dimensions: {', '.join(sorted(dimensions))}")
-    # Only quality rules carry an id and tags, so these filters exclude the
-    # built-in schema and service level checks entirely.
+    # Only quality rules carry an id, so --quality-id excludes the built-in schema
+    # and service level checks entirely. --tag also selects the schema and quality
+    # checks of a tagged schema or property, but no service level check: those are
+    # declared outside the schema.
     if quality_ids is not None:
         specs = [s for s in specs if s.quality_id in quality_ids]
         if not specs:
             run.log_warn(f"No checks found for quality rule ids: {', '.join(sorted(quality_ids))}")
     if tags is not None:
-        specs = [s for s in specs if s.tags and not tags.isdisjoint(s.tags)]
+        specs = [s for s in specs if not tags.isdisjoint([*(s.tags or []), *(s.scope_tags or [])])]
         if not specs:
             run.log_warn(f"No checks found for tags: {', '.join(sorted(tags))}")
     for warning in dict.fromkeys(warning for spec in specs for warning in spec.warnings or []):
@@ -203,8 +205,8 @@ def execute_data_contract_test(
 
     # TODO check server is supported type for nicer error messages
     # TODO check server credentials are complete for nicer error messages
-    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
-        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config)
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, tags=tags)
     # Azure Blob / ADLS Gen2 file-metadata checks (servers with format: metadata)
     if server.type == "azure" and server.format == "metadata":
         check_azure_blob_file(
@@ -376,13 +378,13 @@ def _runs_jsonschema_checks(
     check_categories: set[str] | None,
     dimensions: set[str] | None,
     quality_ids: set[str] | None,
-    tags: set[str] | None,
 ) -> bool:
     """Whether the JSON Schema validation applies to this run.
 
     Shared by the execution path and the dry run so a plan cannot disagree with
     what actually runs. The JSON Schema validation emits checks of type "schema"
-    throughout, so it is out of scope once a quality rule is selected by id or tag.
+    throughout, so it is out of scope once a quality rule is selected by id;
+    --tag selects it for the tagged schemas (see check_jsonschema).
     """
     if server.format != "json" or server.type == "kafka":
         return False
@@ -390,7 +392,6 @@ def _runs_jsonschema_checks(
         (check_categories is None or "schema" in check_categories)
         and (dimensions is None or default_dimension("schema") in dimensions)
         and quality_ids is None
-        and tags is None
     )
 
 
@@ -422,8 +423,8 @@ def _report_dry_run(
         else:
             set_result(run, spec.key, ResultEnum.skipped, "Dry run: check not executed")
 
-    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids, tags):
-        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, dry_run=True)
+    if _runs_jsonschema_checks(server, check_categories, dimensions, quality_ids):
+        check_jsonschema(run, data_contract, server, schema_name=schema_name, config=config, dry_run=True, tags=tags)
 
     # The blob checks read file metadata to decide which checks exist at all,
     # so they cannot be planned without reading. Say so rather than reporting a

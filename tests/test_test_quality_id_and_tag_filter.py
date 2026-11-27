@@ -7,7 +7,7 @@ from datacontract.data_contract import DataContract
 runner = CliRunner()
 
 CONTRACT = """
-apiVersion: v3.0.2
+apiVersion: v3.2.0
 kind: DataContract
 id: quality_id_filter_test
 version: 1.0.0
@@ -19,6 +19,7 @@ servers:
     format: csv
 schema:
   - name: orders
+    tags: ["finance"]
     quality:
       # Passes: the fixture has 5 rows.
       - id: orders_not_empty
@@ -45,6 +46,7 @@ schema:
             tags: ["critical"]
       - name: email
         logicalType: string
+        tags: ["pii"]
         quality:
           # No id, no tags: only reachable without a filter.
           - type: library
@@ -121,6 +123,74 @@ def test_a_run_that_executes_no_check_is_not_published(monkeypatch, selection):
 def test_rules_without_id_or_tags_are_never_matched():
     run = DataContract(data_contract_str=CONTRACT, tags={"critical"}).test()
     assert not [check for check in run.checks if check.type == "field_null_values"]
+
+
+def test_tag_of_a_schema_runs_every_check_of_that_schema():
+    run = DataContract(data_contract_str=CONTRACT, tags={"finance"}).test()
+    everything = DataContract(data_contract_str=CONTRACT).test()
+    print(run.pretty())
+    assert sorted(check.key for check in run.checks) == sorted(check.key for check in everything.checks)
+
+
+def test_tag_of_a_property_runs_every_check_of_that_property():
+    run = DataContract(data_contract_str=CONTRACT, tags={"pii"}).test()
+    print(run.pretty())
+    assert {check.field for check in run.checks} == {"email"}
+    assert sorted(check.type for check in run.checks) == ["field_is_present", "field_null_values"]
+
+
+def test_tag_of_a_schema_with_metadata_only_runs_its_schema_checks():
+    run = DataContract(data_contract_str=CONTRACT, tags={"finance"}, metadata_only=True).test()
+    print(run.pretty())
+    present = [check for check in run.checks if check.type == "field_is_present"]
+    assert {check.field for check in present} == {"order_id", "email"}
+    assert all(check.result == "passed" for check in present)
+
+
+JSON_CONTRACT = """
+apiVersion: v3.2.0
+kind: DataContract
+id: json_tag_filter_test
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    path: {path}
+    format: json
+schema:
+  - name: orders
+    tags: ["finance"]
+    properties:
+      - name: id
+        logicalType: string
+        required: true
+      - name: amount
+        logicalType: integer
+      - name: customer
+        logicalType: object
+        tags: ["pii"]
+        properties:
+          - name: email
+            logicalType: string
+            required: true
+"""
+
+
+def test_tag_of_a_property_selects_the_properties_nested_in_it(tmp_path):
+    contract = JSON_CONTRACT.format(path=tmp_path / "orders.json")
+    run = DataContract(data_contract_str=contract, tags={"pii"}, dry_run=True).test()
+    print(run.pretty())
+    assert {check.field for check in run.checks} == {"customer.email"}
+
+
+def test_tag_of_a_json_schema_runs_its_json_schema_validation(tmp_path):
+    (tmp_path / "orders.json").write_text('{"id": "1", "amount": "ten", "customer": {"email": "a@b.c"}}')
+    contract = JSON_CONTRACT.format(path=tmp_path / "orders.json")
+    run = DataContract(data_contract_str=contract, tags={"finance"}).test()
+    print(run.pretty())
+    assert run.result == "failed"
+    assert [check.result for check in run.checks if check.type == "schema"] == ["failed"]
 
 
 def test_quality_id_and_tag_combine():

@@ -10,7 +10,7 @@ An unset (``None``) criterion selects everything; the criteria that are set all 
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Iterable, Optional
 
 from datacontract.engines.checks.dimensions import default_dimension
@@ -42,9 +42,19 @@ class CheckFilter:
             if (dimension if dimension is not None else default_dimension(check_type)) not in self.dimensions:
                 return False
         # Only quality rules carry an id and tags, so these criteria exclude the
-        # built-in schema and service level checks entirely.
+        # built-in schema and service level checks; see `inherit_tags` for --tag.
         if self.quality_ids is not None and quality_id not in self.quality_ids:
             return False
         if self.tags is not None and (tags is None or self.tags.isdisjoint(tags)):
             return False
         return True
+
+    def inherit_tags(self, tags: Optional[Iterable[str]]) -> CheckFilter:
+        """The filter for the checks of a schema or property with these ``tags``.
+
+        A schema or property that ``--tag`` names selects all of its checks, so the
+        tag criterion no longer applies to them.
+        """
+        if self.tags is not None and tags and not self.tags.isdisjoint(tags):
+            return replace(self, tags=None)
+        return self

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract test` and `datacontract import sqlserver` sign in to SQL Server with an Entra ID access token read from a file (`DATACONTRACT_SQLSERVER_AUTHENTICATION=token`, `DATACONTRACT_SQLSERVER_TOKEN_FILE_PATH`) (#1830 @SreeramaYeshwanthGowd)
 
 ### Changed
+- `datacontract test --tag` also selects the schema and quality checks of a schema or property with a matching tag
 - `datacontract lint` and `test` reject the schema `logicalType: blob`, which ODCS does not allow (#1859)
 
 ### Fixed

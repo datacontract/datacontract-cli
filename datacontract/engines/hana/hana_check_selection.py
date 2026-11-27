@@ -9,16 +9,17 @@ the run did not ask for must not cost a round trip.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)
 class CheckSelection:
     """The ``--dimension``, ``--quality-id`` and ``--tag`` filters of a test run.
 
-    A filter left at ``None`` selects everything. ``--quality-id`` and ``--tag``
-    address ODCS quality rules, so they exclude the built-in schema checks
-    entirely, exactly as they do for the other engines.
+    A filter left at ``None`` selects everything. ``--quality-id`` addresses ODCS
+    quality rules, so it excludes the built-in schema checks entirely. ``--tag``
+    matches the tags of quality rules, and of the schema or property a check
+    belongs to (see :meth:`inherit_tags`), exactly as for the other engines.
     """
 
     dimensions: frozenset[str] | None = None
@@ -52,6 +53,16 @@ class CheckSelection:
         if self.tags is not None and (not tags or self.tags.isdisjoint(tags)):
             return False
         return True
+
+    def inherit_tags(self, tags: Iterable[str] | None) -> CheckSelection:
+        """The selection for the checks of a schema or property with these ``tags``.
+
+        A schema or property that ``--tag`` names selects all of its checks, so the
+        tag criterion no longer applies to them.
+        """
+        if self.tags is not None and tags and not self.tags.isdisjoint(tags):
+            return replace(self, tags=None)
+        return self
 
     def selects_builtin(self, dimension: str | None) -> bool:
         """Whether a check the contract did not declare as a quality rule is selected."""
