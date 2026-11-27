@@ -61,8 +61,9 @@ def duplicate_count_query(schema: str, table: str, fields: list[str], row_filter
 def selects(selection: CheckSelection, check_type: str) -> bool:
     """Whether the run asked for a built-in check of this type.
 
-    Built-in checks carry no ODCS quality rule, so only ``--dimension`` can
-    select them: ``--quality-id`` and ``--tag`` exclude them entirely.
+    Built-in checks carry no ODCS quality rule, so ``--quality-id`` excludes them
+    entirely, and ``--tag`` selects them only through the tags of their schema or
+    property (see ``CheckSelection.inherit_tags``).
     """
     return selection.selects_builtin(default_dimension(check_type))
 
@@ -82,6 +83,7 @@ def run_schema_checks(
     checks: list[Check] = []
     column_metadata = [] if dry_run else _get_column_metadata(connection, schema_name, table_name)
     skip_reason = METADATA_ONLY_REASON if metadata_only else DRY_RUN_REASON if dry_run else None
+    selection = selection.inherit_tags(schema_object.tags)
 
     if selects(selection, "model_exists"):
         checks.append(
@@ -129,7 +131,8 @@ def run_schema_checks(
     for prop in schema_object.properties or []:
         field_name = _property_name(prop)
         column = columns_by_name.get(field_name)
-        if selects(selection, "field_is_present"):
+        prop_selection = selection.inherit_tags(prop.tags)
+        if selects(prop_selection, "field_is_present"):
             checks.append(
                 _result_check(
                     check_type="field_is_present",
@@ -147,12 +150,12 @@ def run_schema_checks(
             continue
 
         expected_type = prop.physicalType or prop.logicalType
-        if expected_type and selects(selection, "field_type"):
+        if expected_type and selects(prop_selection, "field_type"):
             checks.append(_field_type_check(table_name, field_name, expected_type, column))
 
         if prop.required or prop.primaryKey:
             check_type = "field_required" if prop.required else "field_primary_key_required"
-            if selects(selection, check_type):
+            if selects(prop_selection, check_type):
                 checks.append(
                     _zero_violations_check(
                         connection,
@@ -173,7 +176,7 @@ def run_schema_checks(
 
         if prop.unique or (prop.primaryKey and len(primary_key_fields) == 1):
             check_type = "field_unique" if prop.unique else "field_primary_key_unique"
-            if selects(selection, check_type):
+            if selects(prop_selection, check_type):
                 checks.append(
                     _zero_violations_check(
                         connection,
@@ -198,7 +201,7 @@ def run_schema_checks(
                 prop,
                 skip_reason,
                 row_filter=row_filter,
-                selection=selection,
+                selection=prop_selection,
             )
         )
 

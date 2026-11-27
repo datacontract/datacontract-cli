@@ -431,6 +431,7 @@ class TestQualityIdAndTagFilter:
         size_prop = next(p for p in schema.properties if p.name == "size")
         size_prop.quality[0].id = "file_size"
         size_prop.quality[0].tags = ["critical", "cheap"]
+        size_prop.tags = ["storage"]
 
         run = _make_run()
         with patch(
@@ -448,6 +449,11 @@ class TestQualityIdAndTagFilter:
     def test_tag_selects_every_rule_carrying_it(self):
         run = self._run(tags={"critical"})
         assert sorted(c.type for c in run.checks) == ["azure_file_count_quality", "azure_file_property_quality"]
+
+    def test_tag_of_a_property_selects_every_check_of_that_property(self):
+        run = self._run(tags={"storage"})
+        assert {c.field for c in run.checks} == {"size"}
+        assert sorted(c.type for c in run.checks) == ["azure_file_property_quality", "azure_file_property_required"]
 
     def test_tag_excludes_the_rules_without_it(self):
         run = self._run(tags={"cheap"})

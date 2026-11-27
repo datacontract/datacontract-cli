@@ -140,9 +140,9 @@ datacontract test --tag critical datacontract.yaml
 datacontract test --tag critical,cheap datacontract.yaml
 ```
 
-Both select quality rules only — no schema or service level checks run alongside them. This makes it possible to spread the rules of one contract over a data pipeline: run the cheap rules on ingest, the expensive ones after the nightly load, without splitting the contract into several files.
+`--quality-id` selects quality rules only — no schema or service level checks run alongside them. `--tag` also matches the `tags` of a schema or property: a tagged schema runs all of its schema and quality checks, JSON Schema validation included, and a tagged property those of that column and of the properties nested in it. Service levels are declared outside the schema, so `--tag` never selects them. This makes it possible to spread the rules of one contract over a data pipeline: run the cheap rules on ingest, the expensive ones after the nightly load, without splitting the contract into several files.
 
-`--quality-id` matches the `id` of the rule, and fails the run if no rule in the contract declares it — a mistyped id must not pass by testing nothing. `--tag` matches the `tags` of the rule (not the `tags` of a schema or property), and reports no checks when nothing matches. Options combine: `--tag critical --checks quality --server production` runs the critical rules on production.
+`--quality-id` matches the `id` of the rule, and fails the run if no rule in the contract declares it — a mistyped id must not pass by testing nothing. `--tag` matches the `tags` of the rule, schema or property, and reports no checks when nothing matches. Options combine: `--tag critical --checks quality --server production` runs the critical rules on production.
 
 ### Dimensions of the built-in checks
 

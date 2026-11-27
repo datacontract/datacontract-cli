@@ -168,6 +168,7 @@ def _check_schema(
     check_filter: CheckFilter = CheckFilter(),
 ) -> None:
     schema_name = schema.name or "unknown"
+    check_filter = check_filter.inherit_tags(schema.tags)
 
     # List all blobs under the resolved prefix for this schema
     try:
@@ -231,6 +232,7 @@ def _check_property(
 ) -> None:
     """Run required + quality checks for one declared schema property across all blobs."""
     prop_name = prop.name
+    check_filter = check_filter.inherit_tags(prop.tags)
     extractor = _BLOB_EXTRACTORS.get(prop_name)
 
     if extractor is None:

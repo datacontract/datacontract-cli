@@ -55,8 +55,10 @@ def run_quality_checks(
         warnings = []
     table_name = schema_object.physicalName or schema_object.name
     checks: list[Check] = []
+    selection = selection.inherit_tags(schema_object.tags)
 
-    for field_name, _, prop, nested in _iter_property_paths(schema_object.properties):
+    for field_name, _, prop, nested, prop_tags in _iter_property_paths(schema_object.properties):
+        prop_selection = selection.inherit_tags(prop_tags)
         for index, quality in enumerate(prop.quality or []):
             if nested:
                 if quality.type == "sql":
@@ -67,7 +69,7 @@ def run_quality_checks(
                     kind, suffix = "library", "quality_library"
                 else:
                     continue
-                if not selects(selection, quality, f"field_quality_{kind}"):
+                if not selects(prop_selection, quality, f"field_quality_{kind}"):
                     continue
                 checks.append(
                     _check(
@@ -92,7 +94,7 @@ def run_quality_checks(
                 index,
                 skip_reason,
                 row_filter=row_filter,
-                selection=selection,
+                selection=prop_selection,
                 custom_quality_checks=custom_quality_checks,
                 warnings=warnings,
             )

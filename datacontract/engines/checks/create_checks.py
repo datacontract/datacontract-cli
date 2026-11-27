@@ -120,35 +120,41 @@ def _implied_type(prop: SchemaProperty) -> str | None:
 def _iter_property_paths(
     properties: list[SchemaProperty] | None,
     steps: tuple[str | Hop, ...] = (),
+    tags: tuple[str, ...] = (),
 ):
-    """Yield ``(field, path, property, nested)`` for every property, descending into objects, array items and maps.
+    """Yield ``(field, path, property, nested, tags)`` for every property, descending into objects, array items and
+    maps.
 
-    ``field`` is the property's name as text, ``path`` the steps it is made of.
+    ``field`` is the property's name as text, ``path`` the steps it is made of, and ``tags`` the ODCS tags of the
+    property and of the properties it sits in.
     """
     for prop in properties or []:
         path = (*steps, prop.physicalName or prop.name)
-        yield path_text(path), path, prop, bool(steps)
-        yield from _iter_nested_paths(prop, path)
+        prop_tags = (*tags, *(prop.tags or []))
+        yield path_text(path), path, prop, bool(steps), prop_tags
+        yield from _iter_nested_paths(prop, path, prop_tags)
 
 
-def _iter_nested_paths(prop: SchemaProperty, path: tuple[str | Hop, ...]):
+def _iter_nested_paths(prop: SchemaProperty, path: tuple[str | Hop, ...], tags: tuple[str, ...]):
     prop_type = _property_type(prop)
     if prop_type == "array" and prop.items is not None:
         # The executor turns the array hop into a predicate over the elements
         # instead of a column lookup.
         items = prop.items
         items_path = (*path, Hop.ITEMS)
+        items_tags = (*tags, *(items.tags or []))
         if items.logicalType or items.physicalType or items.properties or _constrains_values(items):
-            yield path_text(items_path), items_path, items, True
-        yield from _iter_nested_paths(items, items_path)
+            yield path_text(items_path), items_path, items, True, items_tags
+        yield from _iter_nested_paths(items, items_path, items_tags)
     elif prop_type == "map":
         for hop, definition in ((Hop.KEY, get_map_key(prop)), (Hop.VALUE, get_map_value(prop))):
             if definition is not None:
                 hop_path = (*path, hop)
-                yield path_text(hop_path), hop_path, definition, True
-                yield from _iter_nested_paths(definition, hop_path)
+                hop_tags = (*tags, *(definition.tags or []))
+                yield path_text(hop_path), hop_path, definition, True, hop_tags
+                yield from _iter_nested_paths(definition, hop_path, hop_tags)
     elif prop.properties and prop_type in ("object", None):
-        yield from _iter_property_paths(prop.properties, path)
+        yield from _iter_property_paths(prop.properties, path, tags)
 
 
 def _constrains_values(prop: SchemaProperty) -> bool:
@@ -332,7 +338,7 @@ def _to_schema_checks(
             )
         )
 
-    for field, path, prop, nested in _iter_property_paths(properties):
+    for field, path, prop, nested, prop_tags in _iter_property_paths(properties):
         first_check = len(checks)
         # ODCS physicalName is the real column; mirror to_schema_name at field level.
 
@@ -624,6 +630,7 @@ def _to_schema_checks(
         for check in checks[first_check:]:
             check.path = path
             check.value_type = prop_type
+            check.scope_tags = list(prop_tags)
             if check.preset_result == "warning":
                 # An unrunnable rule keeps its own, more specific reason.
                 continue
@@ -682,6 +689,8 @@ def _to_schema_checks(
     if schema_object.quality:
         checks.extend(_quality_checks(model, None, schema_object.quality, server, variables, custom_quality_checks))
 
+    for check in checks:
+        check.scope_tags = [*(schema_object.tags or []), *(check.scope_tags or [])] or None
     return checks
 
 
@@ -711,6 +720,10 @@ def _relationship_checks(
             return None if prop is None else prop.physicalName or prop.name
 
         columns = [physical(properties, name) for name in source_names]
+        scope_tags = [
+            *(schema_object.tags or []),
+            *(tag for prop in properties if prop.name in source_names for tag in prop.tags or []),
+        ] or None
         referenced = [
             physical(target_schema.properties, part[-1])
             if target_schema is not None and part[0] == target_schema.name
@@ -744,6 +757,7 @@ def _relationship_checks(
                     metric=MetricType.UNSUPPORTED,
                     preset_result="warning",
                     preset_reason=f"The relationship from {label} to {target_label} is not checked: {cause}.",
+                    scope_tags=scope_tags,
                 )
             )
             continue
@@ -769,6 +783,7 @@ def _relationship_checks(
                 columns=columns,
                 referenced_model=referenced_model,
                 referenced_columns=referenced,
+                scope_tags=scope_tags,
             )
         )
     return checks

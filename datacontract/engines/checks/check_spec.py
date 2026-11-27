@@ -174,6 +174,11 @@ class CheckSpec:
     # check comes from. `test --tag` selects rules by them.
     tags: Optional[List[str]] = None
 
+    # The ODCS tags of the schema and the property this check belongs to, and of
+    # the properties a nested one sits in. `test --tag` selects the schema and
+    # quality checks of a tagged schema or property by them.
+    scope_tags: Optional[List[str]] = None
+
     # The ODCS quality rule this check comes from, rendered as YAML.
     # None for schema and service level checks, which no rule declared.
     quality_definition: Optional[str] = None

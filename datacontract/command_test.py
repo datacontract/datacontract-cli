@@ -156,7 +156,8 @@ def test(
         str,
         typer.Option(
             help="Comma-separated list of tags to run. Runs the quality rules declaring a matching "
-            "tag in their `tags`, no schema or service level checks. Omit to run everything."
+            "tag in their `tags`, and the schema and quality checks of a schema or property "
+            "declaring one; service level checks are not selected. Omit to run everything."
         ),
     ] = None,
     filter: Annotated[
