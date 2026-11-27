@@ -64,7 +64,7 @@ def metadata_response(monkeypatch):
 
 def import_contract(entity_set="ref_country", *, source=ROOT, **kwargs):
     return DataContract.import_from_source(
-        "odata", source=source, odata_entity_set=[entity_set], odata_metadata_url=METADATA, **kwargs
+        "odata", source=source, odata_resource=[entity_set], odata_metadata_url=METADATA, **kwargs
     )
 
 
@@ -113,7 +113,11 @@ def test_document_versions(metadata_response, version, format):
     response.content = (FIXTURES / f"products.{format}").read_bytes().replace(b"4.01", version.encode())
     response.headers = {}
     contract = import_contract("Products")
-    assert contract.servers[0].customProperties[1].value == version
+    assert {p.property: p.value for p in contract.servers[0].customProperties} == {
+        "apiType": "odata",
+        "protocolVersion": "4.0",
+        "format": "json",
+    }
     assert contract.schema_[0].properties[0].name == "Sku"
 
 
@@ -134,6 +138,8 @@ def test_document_versions(metadata_response, version, format):
         ("Date", "date"),
         ("DateTimeOffset", "timestamp"),
         ("TimeOfDay", "time"),
+        ("Duration", "string"),
+        ("Binary", "string"),
     ],
 )
 @pytest.mark.parametrize("format", ["xml", "json"])
@@ -153,6 +159,8 @@ def test_primitive_types(edm_type, logical_type, format):
     assert prop.required is False
     if edm_type == "Guid":
         assert prop.logicalTypeOptions == {"format": "uuid"}
+    elif edm_type == "Binary":
+        assert prop.logicalTypeOptions == {"format": "byte"}
     facets = {p.property: p.value for p in prop.customProperties or []}
     if edm_type == "Decimal":
         assert facets == {"scale": 0 if format == "xml" else "variable"}
@@ -163,14 +171,14 @@ def test_primitive_types(edm_type, logical_type, format):
 @pytest.mark.parametrize("format", ["xml", "json"])
 def test_unmapped_primitive_type_warns(metadata_response, caplog, format):
     response, _ = metadata_response
-    response.content = (FIXTURES / f"products.{format}").read_bytes().replace(b"Edm.Guid", b"Edm.Binary")
+    response.content = (FIXTURES / f"products.{format}").read_bytes().replace(b"Edm.Guid", b"Edm.GeographyPoint")
     contract = import_contract("Products")
     properties = yaml.safe_load(contract.to_yaml())["schema"][0]["properties"]
     prop = next(prop for prop in properties if prop["name"] == "TrackingId")
-    assert prop["physicalType"] == "Edm.Binary"
+    assert prop["physicalType"] == "Edm.GeographyPoint"
     assert "logicalType" not in prop
     assert "without a logicalType" in caplog.text
-    assert "TrackingId (Edm.Binary)" in caplog.text
+    assert "TrackingId (Edm.GeographyPoint)" in caplog.text
 
 
 def test_keys_nullability_and_facets():
@@ -203,7 +211,6 @@ def test_entity_set_matching_normalizes_root(metadata_response, entity_set, root
     assert contract.schema_[0].name == "REF_COUNTRY"
     assert contract.servers[0].location == root.rstrip("/") + "/"
     assert {p.property: p.value for p in contract.schema_[0].customProperties} == {
-        "odataEntitySet": "REF_COUNTRY",
         "odataEntitySetUrl": root.rstrip("/") + "/REF_COUNTRY",
     }
 
@@ -230,11 +237,15 @@ def test_navigation_and_unrelated_types_are_omitted(caplog):
     "field_type",
     ["D.Address", "Collection(Edm.String)", "Collection(D.Address)", "D.Status"],
 )
-def test_unsupported_types_fail_with_field_and_type(field_type):
-    with pytest.raises(DataContractException) as error:
-        xml_schema(f'<Property Name="Value" Type="{field_type}" />')
-    assert "REF_COUNTRY.Value" in str(error.value)
-    assert field_type in str(error.value)
+def test_unmapped_xml_types_warn(metadata_response, caplog, field_type):
+    response, _ = metadata_response
+    response.content = metadata_xml(f'<Property Name="Value" Type="{field_type}" />')
+    contract = import_contract()
+    prop = yaml.safe_load(contract.to_yaml())["schema"][0]["properties"][0]
+    assert prop["physicalType"] == field_type
+    assert "logicalType" not in prop
+    assert "without a logicalType" in caplog.text
+    assert f"Value ({field_type})" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -302,7 +313,7 @@ def test_metadata_sources_are_mutually_exclusive_for_python_api(metadata_respons
         DataContract.import_from_source(
             "odata",
             source=ROOT,
-            odata_entity_set=["ref_country"],
+            odata_resource=["ref_country"],
             odata_metadata_url=METADATA,
             odata_metadata_file=FIXTURES / "who-metadata.xml",
         )
@@ -331,7 +342,7 @@ def test_http_errors(metadata_response, status):
 
 
 def test_cli_stdout_and_output(metadata_response, tmp_path):
-    args = ["--entity-set", "ref_country", "--metadata-url", METADATA]
+    args = ["--resource", "ref_country", "--metadata-url", METADATA]
     stdout = run_cli(*args, source=ROOT)
     assert stdout.exit_code == 0, stdout.output
     assert yaml.safe_load(stdout.stdout) == yaml.safe_load(EXPECTED_CONTRACT.read_text())
@@ -374,13 +385,10 @@ def test_local_who_metadata_matches_url_import(metadata_response, path_type):
     _, get = metadata_response
     path = path_type(FIXTURES / "who-metadata.xml")
     contract = DataContract.import_from_source(
-        "odata", source=ROOT, odata_entity_set=["ref_country"], odata_metadata_file=path
+        "odata", source=ROOT, odata_resource=["ref_country"], odata_metadata_file=path
     )
     actual = yaml.safe_load(contract.to_yaml())
     expected = yaml.safe_load(EXPECTED_CONTRACT.read_text())
-    expected["servers"][0]["customProperties"] = [
-        prop for prop in expected["servers"][0]["customProperties"] if prop["property"] != "odataMetadataUrl"
-    ]
     assert actual == expected
     get.assert_not_called()
 
@@ -407,7 +415,7 @@ def test_xml_json_equivalent_contracts(metadata_response, tmp_path, odcs_schema,
             path = tmp_path / "metadata.txt"
             path.write_bytes(content)
             contract = DataContract.import_from_source(
-                "odata", source=SERVICE_ROOT, odata_entity_set=["Products"], odata_metadata_file=path
+                "odata", source=SERVICE_ROOT, odata_resource=["Products"], odata_metadata_file=path
             )
             get.assert_not_called()
         else:
@@ -486,7 +494,6 @@ def test_json_alias_and_navigation(metadata_response, json_metadata, caplog, typ
         (("Catalog.Service", "Store", "$Kind"), "EntityType", "EntityContainer"),
         (("Catalog.Service", "Store", "$Extends"), "Other.Store", "inheritance"),
         (("Catalog.Service", "Store", "Products", "$Collection"), "true", "Invalid .*Collection"),
-        (("Catalog.Service", "Store", "Products", "$Collection"), False, "not found"),
         (("Catalog.Service", "Store", "Products", "$Type"), [], "qualified type name"),
         (("Catalog.Service", "Store", "Products", "$Type"), "External.Product", "External metadata references"),
         (("Catalog.Model", "Product", "$BaseType"), "Catalog.Base", "inheritance"),
@@ -501,7 +508,6 @@ def test_json_alias_and_navigation(metadata_response, json_metadata, caplog, typ
         (("Catalog.Model", "Product", "Price", "$Type"), None, "Unsupported OData type"),
         (("Catalog.Model", "Product", "Price", "$Nullable"), "false", "Invalid Nullable"),
         (("Catalog.Model", "Product", "Price", "$Collection"), 1, "Invalid .*Collection"),
-        (("Catalog.Model", "Product", "Price", "$Collection"), True, "collection"),
         (("Catalog.Model", "Product", "Price", "$Precision"), "10", "Invalid Precision"),
         (("Catalog.Model", "Product", "Price", "$Scale"), True, "Invalid Scale"),
         (("Catalog.Model", "Product", "Sku", "$MaxLength"), -1, "Invalid MaxLength"),
@@ -518,11 +524,33 @@ def test_json_invalid_csdl(json_metadata, path, value, error):
 
 
 @pytest.mark.parametrize("kind", ["ComplexType", "EnumType", "TypeDefinition"])
-def test_json_unsupported_selected_type(json_metadata, kind):
+def test_json_unmapped_selected_type_warns(metadata_response, json_metadata, caplog, kind):
+    response, _ = metadata_response
     json_metadata["Catalog.Model"]["Special"] = {"$Kind": kind}
     json_metadata["Catalog.Model"]["Product"]["Price"]["$Type"] = "Catalog.Special"
-    with pytest.raises(DataContractException, match="Catalog.Special.*Products.Price"):
-        _odata_4_schema(_read_json(json.dumps(json_metadata).encode()), "Products")
+    response.content = json.dumps(json_metadata).encode()
+    contract = import_contract("Products")
+    properties = yaml.safe_load(contract.to_yaml())["schema"][0]["properties"]
+    prop = next(prop for prop in properties if prop["name"] == "Price")
+    assert prop["physicalType"] == "Catalog.Special"
+    assert "logicalType" not in prop
+    assert "without a logicalType" in caplog.text
+    assert "Price (Catalog.Special)" in caplog.text
+
+
+def test_json_collection_warns(metadata_response, json_metadata, caplog, odcs_schema):
+    response, _ = metadata_response
+    json_metadata["Catalog.Model"]["Product"]["TrackingId"]["$Collection"] = True
+    response.content = json.dumps(json_metadata).encode()
+    contract = import_contract("Products")
+    actual = yaml.safe_load(contract.to_yaml())
+    jsonschema.validate(actual, odcs_schema)
+    prop = next(prop for prop in actual["schema"][0]["properties"] if prop["name"] == "TrackingId")
+    assert prop["physicalType"] == "Collection(Edm.Guid)"
+    assert "logicalType" not in prop
+    assert "logicalTypeOptions" not in prop
+    assert "without a logicalType" in caplog.text
+    assert "TrackingId (Collection(Edm.Guid))" in caplog.text
 
 
 # Version validation and format detection
@@ -592,18 +620,17 @@ def test_import_all_advertised_sets(
     contract = DataContract.import_from_source("odata", source=root, **options)
     assert contract.name == "Store"
     assert contract.servers[0].location == SERVICE_ROOT
-    assert [s.name for s in contract.schema_] == ["Products", "Orders"]
-    assert [s.physicalName for s in contract.schema_] == ["Products", "Orders"]
-    assert all(s.logicalType == s.physicalType == "object" for s in contract.schema_)
+    assert [s.name for s in contract.schema_] == ["Products", "Orders", "FeaturedProduct"]
+    assert [s.physicalName for s in contract.schema_] == ["Products", "Orders", "FeaturedProduct"]
+    assert all(s.logicalType == "object" for s in contract.schema_)
+    assert [s.physicalType for s in contract.schema_] == ["entitySet", "entitySet", "singleton"]
     assert [{p.property: p.value for p in s.customProperties} for s in contract.schema_] == [
-        {"odataEntitySet": "Products", "odataEntitySetUrl": SERVICE_ROOT + "products"},
-        {"odataEntitySet": "Orders", "odataEntitySetUrl": "https://example.com/fulfilment/orders"},
+        {"odataEntitySetUrl": SERVICE_ROOT + "products"},
+        {"odataEntitySetUrl": "https://example.com/fulfilment/orders"},
+        {"odataEntitySetUrl": "https://example.com/special/featured"},
     ]
     server_properties = {p.property: p.value for p in contract.servers[0].customProperties}
-    assert "odataEntitySet" not in server_properties
-    assert server_properties["odataVersion"] == "4.01"
-    if metadata_source != "file":
-        assert server_properties["odataMetadataUrl"] == expected_requests[0]
+    assert server_properties == {"apiType": "odata", "protocolVersion": "4.0", "format": "json"}
     jsonschema.validate(yaml.safe_load(contract.to_yaml()), odcs_schema)
     assert [call.args[0] for call in get.call_args_list] == expected_requests
     if service_source == "url":
@@ -643,12 +670,87 @@ def test_cli_multiple_sets_offline_skips_service_file(metadata_response, tmp_pat
     get.assert_not_called()
 
 
+@pytest.mark.parametrize("format", ["xml", "json"])
+@pytest.mark.parametrize("include_set", [False, True])
+def test_cli_singletons_and_mixed_selection(metadata_response, odcs_schema, format, include_set):
+    _, get = metadata_response
+    args = ["--resource", "Products"] if include_set else []
+    result = run_cli(
+        "--metadata-file",
+        FIXTURES / f"products.{format}",
+        "--service-document-file",
+        "does-not-exist.json",
+        *args,
+        "--resource",
+        "featuredproduct",
+        "--resource",
+        "FeaturedProduct",
+    )
+    assert result.exit_code == 0, result.output
+    contract = yaml.safe_load(result.stdout)
+    assert [s["physicalType"] for s in contract["schema"]] == (["entitySet"] if include_set else []) + ["singleton"]
+    singleton = contract["schema"][-1]
+    assert singleton["physicalName"] == singleton["name"] == "FeaturedProduct"
+    assert singleton["logicalType"] == "object"
+    assert singleton["customProperties"] == [
+        {"property": "odataEntitySetUrl", "value": SERVICE_ROOT + "FeaturedProduct"}
+    ]
+    assert contract["name"] == ("Store" if include_set else "FeaturedProduct")
+    jsonschema.validate(contract, odcs_schema)
+    get.assert_not_called()
+
+
+def test_relationships_xml_json_equivalent(odcs_schema):
+    contracts = []
+    for format in ("xml", "json"):
+        contract = DataContract.import_from_source(
+            "odata",
+            source=SERVICE_ROOT,
+            odata_metadata_file=FIXTURES / f"relationships.{format}",
+            odata_resource=["Cities", "Countries", "ArchivedCountries", "CapitalCity", "PreferredCountry"],
+        )
+        actual = yaml.safe_load(contract.to_yaml())
+        jsonschema.validate(actual, odcs_schema)
+        contracts.append(actual)
+    assert contracts[0] == contracts[1]
+    schemas = {schema["name"]: schema for schema in contracts[0]["schema"]}
+    for source, target in (("Cities", "Countries"), ("CapitalCity", "PreferredCountry")):
+        properties = {prop["name"]: prop for prop in schemas[source]["properties"]}
+        assert set(properties) == {"Id", "CountryCode", "CountryRegion"}
+        assert all("relationships" not in prop for prop in properties.values())
+        assert schemas[source]["relationships"] == [
+            {
+                "type": "foreignKey",
+                "from": [f"{source}.CountryCode", f"{source}.CountryRegion"],
+                "to": [f"{target}.Code", f"{target}.Region"],
+            }
+        ]
+    assert all("relationships" not in prop for prop in schemas["Countries"]["properties"])
+
+
+def test_single_field_relationship_json(metadata_response, odcs_schema):
+    response, _ = metadata_response
+    document = json.loads((FIXTURES / "relationships.json").read_text())
+    document["Catalog.Model"]["Country"]["$Key"] = ["Code"]
+    document["Catalog.Model"]["City"]["Country"]["$ReferentialConstraint"] = {"CountryCode": "Code"}
+    response.content = json.dumps(document).encode()
+    contract = DataContract.import_from_source("odata", source=SERVICE_ROOT, odata_resource=["Cities", "Countries"])
+    actual = yaml.safe_load(contract.to_yaml())
+    jsonschema.validate(actual, odcs_schema)
+    schemas = {schema["name"]: schema for schema in actual["schema"]}
+    properties = {prop["name"]: prop for prop in schemas["Cities"]["properties"]}
+    assert properties["CountryCode"]["relationships"] == [{"type": "foreignKey", "to": "Countries.Code"}]
+    assert "relationships" not in schemas["Cities"]
+    assert "relationships" not in properties["Id"]
+    assert "relationships" not in properties["CountryRegion"]
+
+
 @pytest.mark.parametrize("root", [SERVICE_ROOT, SERVICE_ROOT.rstrip("/")])
 def test_derived_metadata_url_with_explicit_selection(metadata_response, root):
     metadata, get = metadata_response
     metadata.content = (FIXTURES / "products.json").read_bytes()
     metadata.headers = {}
-    contract = DataContract.import_from_source("odata", source=root, odata_entity_set=["Products", "Orders"])
+    contract = DataContract.import_from_source("odata", source=root, odata_resource=["Products", "Orders"])
     get.assert_called_once()
     assert get.call_args.args == (SERVICE_ROOT + "$metadata",)
     assert contract.servers[0].location == root.rstrip("/") + "/"
@@ -681,7 +783,7 @@ def test_redirected_service_document_base(service_response, url, root):
     service, get = service_response
     service.url = url
     contract = DataContract.import_from_source("odata", source=root)
-    assert contract.schema_[0].customProperties[1].value == "https://example.com/redirected/products"
+    assert contract.schema_[0].customProperties[0].value == "https://example.com/redirected/products"
     assert contract.servers[0].location == SERVICE_ROOT
     assert [call.args[0] for call in get.call_args_list] == [SERVICE_ROOT + "$metadata", SERVICE_ROOT]
 
@@ -710,7 +812,11 @@ def test_cli_offline_all_sets(metadata_response, tmp_path):
         output,
     )
     assert result.exit_code == 0, result.output
-    assert [s["name"] for s in yaml.safe_load(output.read_text())["schema"]] == ["Products", "Orders"]
+    assert [s["name"] for s in yaml.safe_load(output.read_text())["schema"]] == [
+        "Products",
+        "Orders",
+        "FeaturedProduct",
+    ]
     get.assert_not_called()
 
 

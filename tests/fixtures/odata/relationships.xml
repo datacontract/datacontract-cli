@@ -1,0 +1,37 @@
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+  <edmx:DataServices>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Catalog.Model" Alias="Catalog">
+      <EntityType Name="Country">
+        <Key><PropertyRef Name="Code"/><PropertyRef Name="Region"/></Key>
+        <Property Name="Code" Type="Edm.String" Nullable="false"/>
+        <Property Name="Region" Type="Edm.String" Nullable="false"/>
+        <NavigationProperty Name="Cities" Type="Collection(Catalog.City)"/>
+      </EntityType>
+      <EntityType Name="City">
+        <Key><PropertyRef Name="Id"/></Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="CountryCode" Type="Edm.String"/>
+        <Property Name="CountryRegion" Type="Edm.String"/>
+        <NavigationProperty Name="Country" Type="Catalog.Model.Country">
+          <ReferentialConstraint Property="CountryCode" ReferencedProperty="Code"/>
+          <ReferentialConstraint Property="CountryRegion" ReferencedProperty="Region"/>
+        </NavigationProperty>
+      </EntityType>
+    </Schema>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Catalog.Service" Alias="Service">
+      <EntityContainer Name="Store">
+        <EntitySet Name="Cities" EntityType="Catalog.City">
+          <NavigationPropertyBinding Path="Country" Target="Catalog.Service.Store/Countries"/>
+        </EntitySet>
+        <Singleton Name="CapitalCity" Type="Catalog.City">
+          <NavigationPropertyBinding Path="Country" Target="PreferredCountry"/>
+        </Singleton>
+        <EntitySet Name="Countries" EntityType="Catalog.Country"/>
+        <EntitySet Name="ArchivedCountries" EntityType="Catalog.Country"/>
+        <Singleton Name="PreferredCountry" Type="Catalog.Country"/>
+        <FunctionImport Name="FindCity" Function="Catalog.FindCity"/>
+        <ActionImport Name="Reset" Action="Catalog.Reset"/>
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

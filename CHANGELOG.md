@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `datacontract lint` and `test` reject the schema `logicalType: blob`, which ODCS does not allow (#1859)
+- `datacontract import odata` imports singletons and foreign-key relationships. Maps `Edm.Duration` and `Edm.Binary` to string fields. Writes `entitySet` or `singleton` as `physicalType`, and omits `odataMetadataUrl` and `odataEntitySet`. Entity sets and singletons are selected with `--resource`, retaining `--entity-set` as a hidden compatibility alias. Preserves complex, collection, enum and type-definition fields without a logical type and emits a warning
 
 ### Fixed
 - `datacontract test` checks the constraints and quality rules of nested properties (struct fields and array items) on Dremio servers
