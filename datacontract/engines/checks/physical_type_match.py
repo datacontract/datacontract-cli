@@ -38,6 +38,8 @@ def _timestamp_family() -> set:
     time zone`` column: they are the same base type and the distinction is not
     modelled at the logical level many contracts are written at (in particular,
     DCS contracts store the logical ``timestamp`` keyword as the physicalType).
+    Not on BigQuery, where they are two types: ``DATETIME`` (parsed as TIMESTAMP)
+    is a civil date and time, ``TIMESTAMP`` (parsed as TIMESTAMPTZ) an instant.
     """
     names = ("TIMESTAMP", "TIMESTAMPTZ", "TIMESTAMPLTZ", "TIMESTAMPNTZ", "TIMESTAMP_S", "TIMESTAMP_MS", "TIMESTAMP_NS")
     return {getattr(exp.DataType.Type, n) for n in names if hasattr(exp.DataType.Type, n)}
@@ -218,7 +220,7 @@ def _base_compatible(exp_dt: exp.DataType, act_dt: exp.DataType, dialect) -> boo
     both_numeric = {exp_dt.this, act_dt.this} <= exp.DataType.NUMERIC_TYPES
     return (
         exp_dt.this == act_dt.this
-        or {exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY
+        or ({exp_dt.this, act_dt.this} <= _TIMESTAMP_FAMILY and _dialect_name(dialect) != "bigquery")
         or (both_numeric and _base_sql(exp_dt, dialect) == _base_sql(act_dt, dialect))
         or (_is_snowflake(dialect) and any({exp_dt.this, act_dt.this} <= family for family in _SNOWFLAKE_FAMILIES))
         or (_dialect_name(dialect) in _TRINO_DIALECTS and {exp_dt.this, act_dt.this} <= _TRINO_TEXT_FAMILY)
