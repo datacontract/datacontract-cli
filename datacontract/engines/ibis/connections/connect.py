@@ -626,8 +626,9 @@ def _connect_mysql_via_duckdb(
     ibis's native MySQL backend requires ``mysqlclient`` (a C extension with no
     macOS/Linux wheels, needing system MySQL client libraries to build). Routing
     through DuckDB keeps the install pure-pip: DuckDB ATTACHes the MySQL database
-    and we expose each contract model as a view in the default catalog so the
-    rest of the engine works unchanged.
+    read-only and each contract model is a view in the default catalog, so the
+    rest of the engine works unchanged. DuckDB pushes the filters and aggregates
+    it can, so the table is not copied first.
     """
     import duckdb
 
@@ -645,6 +646,8 @@ def _connect_mysql_via_duckdb(
 
     con = duckdb.connect()
     _load_extension(con, "mysql", "mysql")
+    # The extension leaves this off, so a MAX would still read every value.
+    con.execute("SET mysql_aggregate_pushdown_enabled = true")
 
     run.log_info(f"Attaching MySQL {host}:{port} via the duckdb mysql extension")
     _attach_mysql(con, host, port, user, password, database, config.get_connect_timeout())
@@ -654,23 +657,21 @@ def _connect_mysql_via_duckdb(
             if schema_name != "all" and schema_obj.name != schema_name:
                 continue
             model = schema_obj.physicalName or schema_obj.name
-            _materialize_attached_table(con, "mysqldb", database, model)
+            _expose_attached_table(con, "mysqldb", database, model)
 
-    # the checks read the local copies; contract SQL must not reach MySQL with these credentials
-    con.execute("DETACH mysqldb")
+    # The attachment stays so the views can run. It is read-only, and a quality
+    # rule cannot call mysql_query or name this catalog.
     if untrusted_contract:
         restrict_to_paths(con, [])
 
     return ibis.duckdb.from_connection(con)
 
 
-def _materialize_attached_table(con, catalog: str, database: str | None, model: str):
-    """Copy an attached-catalog table into a local DuckDB table named ``model``.
+def _expose_attached_table(con, catalog: str, database: str | None, model: str):
+    """Point a local view named ``model`` at an attached MySQL table.
 
-    Materializing (rather than a view over the attached catalog) ensures all
-    checks run against local DuckDB data. Pushing complex check queries through
-    the DuckDB MySQL scanner can trigger DuckDB binder errors (e.g. on the
-    grouped duplicate-count query), so we read the rows once and check locally.
+    A check runs against the view, and DuckDB sends the filters and aggregates
+    it can to MySQL instead of copying the table first.
     """
     # both come from the contract
     safe_model = model.replace('"', '""')
@@ -682,7 +683,7 @@ def _materialize_attached_table(con, catalog: str, database: str | None, model: 
     last_error = None
     for src in candidates:
         try:
-            con.execute(f'CREATE OR REPLACE TABLE "{safe_model}" AS SELECT * FROM {src}')
+            con.execute(f'CREATE OR REPLACE VIEW "{safe_model}" AS SELECT * FROM {src}')
             return
         except Exception as e:  # noqa: BLE001 - try the next naming candidate
             last_error = e

@@ -32,7 +32,7 @@ _DIALECT_BY_SERVER_TYPE = {
     "api": "duckdb",
     "iceberg": "duckdb",
     "duckdb": "duckdb",
-    # copied into duckdb
+    # queried through duckdb
     "mysql": "duckdb",
     # spark session backends
     "dataframe": "spark",
@@ -82,12 +82,17 @@ def sqlglot_dialect_by_name(dialect: Optional[str]):
     return dialect
 
 
-def refusal_reason(query: str, dialect: Optional[str] = None) -> Optional[str]:
+def refusal_reason(query: str, dialect: Optional[str] = None, *, server_type: Optional[str] = None) -> Optional[str]:
     """Why `query` is refused, or None when it is a single read-only statement.
 
     Fails closed: a query that does not parse is refused rather than passed
     through, and so is one that holds a second statement -- a trailing
     `; DROP TABLE orders` must never reach the data source.
+
+    On MySQL the database stays attached so a view can push the check down, and
+    ``server_type="mysql"`` also refuses ``mysql_query`` and the attached
+    catalog. A rule is DuckDB SQL over the contracted tables; those two would
+    send the rule's own SQL, or read a table the contract does not name.
     """
     try:
         statements = sqlglot.parse(query, dialect=sqlglot_dialect_by_name(dialect))
@@ -106,8 +111,25 @@ def refusal_reason(query: str, dialect: Optional[str] = None) -> Optional[str]:
     # A trailing semicolon parses as an extra empty statement.
     statements = [statement for statement in statements if statement is not None]
     if len(statements) == 1 and isinstance(statements[0], _READ_ONLY):
+        if (server_type or "").lower() == "mysql":
+            reason = _mysql_attachment_reason(statements[0])
+            if reason is not None:
+                return reason
         return None
     return "A quality rule query must be a single read-only query, so it was not executed."
+
+
+def _mysql_attachment_reason(statement) -> Optional[str]:
+    for node in statement.walk():
+        name = getattr(node, "name", None)
+        if isinstance(node, exp.Func) and isinstance(name, str) and name.lower() in {"mysql_query", "mysql_execute"}:
+            return _MYSQL_ONLY_CONTRACTED_TABLES
+        if isinstance(node, exp.Table) and any(part.lower() == "mysqldb" for part in (node.catalog, node.db) if part):
+            return _MYSQL_ONLY_CONTRACTED_TABLES
+    return None
+
+
+_MYSQL_ONLY_CONTRACTED_TABLES = "A quality rule can only read the contracted MySQL tables, so it was not executed."
 
 
 def _unreadable(error: sqlglot.errors.SqlglotError, dialect: Optional[str]) -> str:

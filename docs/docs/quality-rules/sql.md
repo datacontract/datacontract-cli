@@ -116,7 +116,7 @@ There is no `dialect` field on a quality rule. The dialect is **derived from the
 
 The ODCS synonyms resolve to the spelling above before the dialect is looked up, so `postgresql` is read as `postgres`. A server declared as `type: custom` with `customType: mssql` is read as `tsql`, like `sqlserver`.
 
-Files, Kafka topics, API responses and Iceberg tables are read through DuckDB, and MySQL tables are copied into DuckDB before the checks run, so a rule on those server types is written in DuckDB SQL — including its functions, such as `read_parquet` or `list_contains`. MySQL-only syntax, such as backtick-quoted names or `DATE_SUB`, does not work there.
+Files, Kafka topics, API responses, Iceberg tables and MySQL are queried through DuckDB, so a rule on those server types is written in DuckDB SQL, including its functions, such as `read_parquet` or `list_contains`. MySQL-only syntax, such as backtick-quoted names or `DATE_SUB`, does not work there. On MySQL the table is not copied into DuckDB first. DuckDB runs the query and sends the filters and aggregates it can to the server.
 
 ## Notes
 

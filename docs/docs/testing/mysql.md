@@ -77,7 +77,7 @@ schema:
         mustBe: 0
 ```
 
-The tables are copied into DuckDB before the checks run, so write the query in [DuckDB SQL](../quality-rules/sql.md#sql-dialect), not MySQL.
+Write the query in [DuckDB SQL](../quality-rules/sql.md#sql-dialect), not MySQL. The table is not copied into DuckDB first. DuckDB runs the query and sends the filters and aggregates it can to MySQL.
 
 Run `datacontract test datacontract.yaml` again: every violation is listed as an error, and the command exits with code `1` — ready for [CI/CD and scheduled runs](../scheduling/index.md) so you catch drift before your consumers do.
 
