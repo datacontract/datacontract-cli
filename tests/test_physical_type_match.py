@@ -96,6 +96,11 @@ def test_bigquery_legacy_type_names_match_googlesql_names():
     assert physical_type_matches("BYTEINT", "INT64", "bigquery")[0] is True
 
 
+def test_bigquery_datetime_and_timestamp_stay_distinct():
+    assert physical_type_matches("DATETIME", "TIMESTAMP", "bigquery")[0] is False
+    assert physical_type_matches("TIMESTAMP", "DATETIME", "bigquery")[0] is False
+
+
 def test_integer_widths_stay_distinct_outside_bigquery():
     # Aliasing is the dialect's call, not ours: INTEGER is a narrower type than
     # BIGINT in Postgres, so declaring one against the other fails.
