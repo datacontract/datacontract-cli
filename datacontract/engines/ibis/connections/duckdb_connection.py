@@ -711,7 +711,12 @@ def _attach_mysql(
     database: str | None,
     connect_timeout: int = DEFAULT_CONNECT_TIMEOUT,
 ) -> None:
-    """ATTACH MySQL as ``mysqldb``; the password goes in a secret, as DuckDB echoes the ATTACH string in its errors."""
+    """ATTACH MySQL as ``mysqldb``, read-only.
+
+    The password goes in a secret, as DuckDB echoes the ATTACH string in its errors.
+    Read-only so a check cannot change the server. The catalog stays attached:
+    views over it push filters and aggregates to MySQL.
+    """
     _wait_for_mysql_greeting(host, port, connect_timeout)
     parts = [f"host={host}", f"port={port}", f"user={user}"]
     if database:
@@ -719,7 +724,7 @@ def _attach_mysql(
     conn_str = " ".join(parts).replace("'", "''")
     con.execute("CREATE TEMPORARY SECRET mysqldb_password (TYPE mysql, PASSWORD ?)", [password])
     try:
-        con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql, SECRET mysqldb_password)")
+        con.execute(f"ATTACH '{conn_str}' AS mysqldb (TYPE mysql, SECRET mysqldb_password, READ_ONLY)")
     finally:
         con.execute("DROP TEMPORARY SECRET mysqldb_password")
 

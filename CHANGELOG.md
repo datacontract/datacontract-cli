@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `datacontract import postgres` and `import sql` no longer map bit strings of more than one bit (`bit(8)`, `bit varying`) to `boolean`
 - `datacontract lint` accepts the ids and references the current ODCS v3.1.0 schema allows, such as ids with `:` and shorthand references with `-` (#1859)
 - `datacontract lint` accepts quality rules that combine several operators, such as `mustBeGreaterThan` with `mustBeLessThan`, and `test`, `breaking`, `dbt sync` and `export sodacl` apply every one of them; `export excel` warns about the ones it cannot hold (#1859)
+- `datacontract test` runs MySQL checks on the server instead of copying the whole table into DuckDB (#1602)
 
 ## [1.2.11] - 2026-11-17
 

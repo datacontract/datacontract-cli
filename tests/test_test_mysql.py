@@ -118,17 +118,18 @@ schema:
 
 
 def test_a_check_does_not_copy_the_mysql_table(start_mysql_container, monkeypatch):
-    """A MAX over the table is computed by MySQL. The server is not asked for every row."""
+    """A MAX and a filtered count run on MySQL. The server is not asked for every row."""
     monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", mysql_container.username)
     monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", mysql_container.password)
     _seed_bulk_orders()
     _reset_general_log()
     _run_bulk_contract()
-    statements = _general_log()
 
-    copies = [sql for sql in statements if _reads_every_row(sql)]
-    assert copies == [], copies
-    assert any("max(" in sql.lower() and "bulk_orders" in sql.lower() for sql in statements)
+    data_sql = [
+        sql for sql in _general_log() if "bulk_orders" in sql.lower() and sql.lower().lstrip().startswith("select")
+    ]
+    assert data_sql
+    assert all(_is_pushed_aggregate(sql) for sql in data_sql), data_sql
 
 
 def _run_bulk_contract():
@@ -150,18 +151,17 @@ schema:
     properties:
       - name: n
         logicalType: integer
-        required: true
-        unique: true
-        logicalTypeOptions:
-          minimum: 0
       - name: label
         logicalType: string
-        required: true
     quality:
       - type: sql
         description: highest n
         query: SELECT MAX(n) FROM bulk_orders
         mustBe: 99
+      - type: sql
+        description: no negative n
+        query: SELECT COUNT(*) FROM bulk_orders WHERE n < 0
+        mustBe: 0
 """
     run = DataContract(data_contract_str=contract).test()
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
@@ -224,10 +224,6 @@ def _root_connection():
     )
 
 
-def _reads_every_row(sql: str) -> bool:
+def _is_pushed_aggregate(sql: str) -> bool:
     compact = " ".join(sql.lower().split())
-    if "bulk_orders" not in compact or not compact.startswith("select"):
-        return False
-    return not any(
-        token in compact for token in (" where ", " group by ", " limit ", "max(", "min(", "count(", "sum(", "avg(")
-    )
+    return any(token in compact for token in ("max(", "min(", "count(", "sum(", "avg("))

@@ -15,7 +15,7 @@ from datacontract.api import ALLOW_LOCAL_FILES_ENV, app
 from datacontract.data_contract import DataContract
 from datacontract.engines.checks.create_checks import prepare_query
 from datacontract.engines.checks.sql_guard import dialect_for_server_type, refusal_reason
-from datacontract.engines.ibis.connections.connect import _materialize_attached_table
+from datacontract.engines.ibis.connections.connect import _expose_attached_table
 from datacontract.engines.ibis.connections.duckdb_connection import restrict_to_paths
 from datacontract.model.run import ResultEnum
 
@@ -136,8 +136,8 @@ def test_the_server_dialect_still_refuses_what_is_not_a_query():
 
 
 def test_server_types_run_in_duckdb_are_read_as_duckdb():
-    """local/s3/gcs/azure/iceberg are read through duckdb and mysql tables are copied
-    into it, so a rule on them is duckdb SQL."""
+    """local/s3/gcs/azure/iceberg and mysql are queried through duckdb, so a rule
+    on them is duckdb SQL."""
     for server_type in ("local", "s3", "gcs", "azure", "iceberg", "mysql"):
         assert dialect_for_server_type(server_type) == "duckdb"
 
@@ -160,16 +160,38 @@ def test_a_backslash_in_a_name_cannot_hide_a_second_statement_on_mysql():
 
 
 def test_a_quote_in_a_table_name_cannot_start_a_second_statement_on_mysql():
-    """The table name comes from the contract and runs while MySQL is still attached."""
+    """The table name comes from the contract and is quoted into the view definition."""
     model = 'orders" AS SELECT 1; CREATE TABLE pwned AS SELECT 1; --'
     con = duckdb.connect()
     con.execute("ATTACH ':memory:' AS mysqldb")
     con.execute('CREATE TABLE mysqldb."orders"" AS SELECT 1; CREATE TABLE pwned AS SELECT 1; --" AS SELECT 1 AS id')
 
-    _materialize_attached_table(con, "mysqldb", None, model)
+    _expose_attached_table(con, "mysqldb", None, model)
 
-    tables = con.execute("SELECT table_name FROM duckdb_tables() WHERE database_name = 'memory'").fetchall()
-    assert tables == [(model,)]
+    tables = [name for (name,) in con.execute("SELECT table_name FROM duckdb_tables()").fetchall()]
+    views = [
+        name
+        for (name,) in con.execute(
+            "SELECT view_name FROM duckdb_views() WHERE schema_name = 'main' AND NOT internal"
+        ).fetchall()
+    ]
+    assert "pwned" not in tables
+    assert views == [model]
+
+
+def test_a_mysql_rule_cannot_use_the_attached_server():
+    """The attachment stays up so checks can be pushed down. A rule must not use it
+    to send its own SQL or to read a table the contract does not name."""
+    for query in (
+        "SELECT * FROM mysql_query('mysqldb', 'SELECT * FROM mysql.user')",
+        "SELECT mysql_execute('mysqldb', 'SELECT 1')",
+        "SELECT COUNT(*) FROM mysqldb.secrets",
+        "SELECT COUNT(*) FROM mysqldb.test.secrets",
+    ):
+        assert refusal_reason(query, "duckdb", server_type="mysql") is not None
+        assert refusal_reason(query, "duckdb") is None
+
+    assert refusal_reason("SELECT MAX(n) FROM orders", "duckdb", server_type="mysql") is None
 
 
 def test_the_documented_dialect_mapping_matches_the_code():

@@ -1019,7 +1019,7 @@ def _quality_rule_checks(
                 check_key, check_type, model, field, quality, e.reason, "error", e.name, e.dimension, e.warnings
             )
         rule = instance.quality
-        refusal = refusal_reason(query, dialect)
+        refusal = refusal_reason(query, dialect, server_type=get_server_type(server))
         if refusal is not None:
             return _unexecuted_check(
                 check_key,
@@ -1094,7 +1094,8 @@ def _quality_rule_checks(
             return not_executed(str(e))
         # The query is read as the dialect of the server it runs against, so
         # dialect-specific syntax is not mistaken for something that is not a query.
-        refusal = refusal_reason(query, dialect_for_server_type(get_server_type(server)))
+        server_type = get_server_type(server)
+        refusal = refusal_reason(query, dialect_for_server_type(server_type), server_type=server_type)
         if refusal is not None:
             return not_executed(refusal)
         return [
