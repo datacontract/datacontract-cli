@@ -28,6 +28,7 @@ from ruamel.yaml.error import CommentMark
 from ruamel.yaml.tokens import CommentToken
 from ruamel.yaml.util import load_yaml_guess_indent
 
+from datacontract.engines.checks.check_spec import Comparison, Op, Threshold
 from datacontract.engines.checks.create_checks import is_percent_unit, to_threshold, unrunnable_reason
 from datacontract.engines.checks.dimensions import default_dimension
 from datacontract.export.sql_type_converter import _get_config_value, convert_to_sql_type
@@ -40,6 +41,9 @@ from datacontract.model.run import Check, ResultEnum, Run
 logger = logging.getLogger(__name__)
 
 META_NAMESPACE = "datacontract_cli"
+
+# The threshold of the generic dbt tests, which fail on any bad row.
+_NONE_ALLOWED = Threshold([Comparison(Op.EQ, 0)])
 
 
 def _generated_sql_header(contract_id: str, contract_version: str, model: str, label: Optional[str] = None) -> str:
@@ -823,7 +827,7 @@ def _library_metric_singular_test(
         else:
             query = f"SELECT COUNT(*) AS metric_value FROM {model_ref} WHERE {bad_row}"
 
-    bound = f"{count_name} {to_threshold(quality).describe()}{'%' if percent else ''}"
+    bound = to_threshold(quality).describe(count_name, "%" if percent else "")
     if field:
         label = f"{field}__{metric}"
         check_type = {
@@ -881,26 +885,23 @@ def _composite_pk_singular_test(
 
 
 def _describe_row_count_quality(quality: DataQuality, model: str) -> Optional[str]:
-    if quality.mustBe is not None:
-        return f"Check that model {model} has exactly {quality.mustBe} rows"
-    if quality.mustNotBe is not None:
-        return f"Check that model {model} does not have exactly {quality.mustNotBe} rows"
-    if quality.mustBeGreaterThan is not None:
-        return f"Check that model {model} has more than {quality.mustBeGreaterThan} rows"
-    if quality.mustBeGreaterOrEqualTo is not None:
-        return f"Check that model {model} has at least {quality.mustBeGreaterOrEqualTo} rows"
-    if quality.mustBeLessThan is not None:
-        return f"Check that model {model} has fewer than {quality.mustBeLessThan} rows"
-    if quality.mustBeLessOrEqualTo is not None:
-        return f"Check that model {model} has at most {quality.mustBeLessOrEqualTo} rows"
-    if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
-        return f"Check that model {model} has between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]} rows"
-    if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
-        return (
-            f"Check that model {model} has a row count outside "
-            f"{quality.mustNotBeBetween[0]} to {quality.mustNotBeBetween[1]}"
+    parts = [
+        f"{phrase} {value} rows"
+        for phrase, value in (
+            ("has exactly", quality.mustBe),
+            ("does not have exactly", quality.mustNotBe),
+            ("has more than", quality.mustBeGreaterThan),
+            ("has at least", quality.mustBeGreaterOrEqualTo),
+            ("has fewer than", quality.mustBeLessThan),
+            ("has at most", quality.mustBeLessOrEqualTo),
         )
-    return None
+        if value is not None
+    ]
+    if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
+        parts.append(f"has between {quality.mustBeBetween[0]} and {quality.mustBeBetween[1]} rows")
+    if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
+        parts.append(f"has a row count outside {quality.mustNotBeBetween[0]} to {quality.mustNotBeBetween[1]}")
+    return f"Check that model {model} {' and '.join(parts)}" if parts else None
 
 
 # ---------------------------------------------------------------------------
@@ -1092,7 +1093,7 @@ def _model_data_tests(
             run.log_warn(
                 f"Skipping unsupported quality on `{schema_obj.name}`: metric={q.metric!r} — please raise an issue on GitHub if this quality check should be added: https://github.com/datacontract/datacontract-cli/issues"
             )
-        elif q.mustBe == 0 and len(pk_cols) > 1 and set(properties) == set(pk_cols):
+        elif to_threshold(q) == _NONE_ALLOWED and len(pk_cols) > 1 and set(properties) == set(pk_cols):
             continue  # the composite primary key test already fails on any duplicate
         else:
             singular_tests.append(
@@ -1218,11 +1219,12 @@ def _column_dict(
         args = data_quality.arguments or {}
         valid_values = [v for v in (args.get("validValues") or []) if v is not None]
         native, check_type = None, None
-        if data_quality.mustBe == 0 and metric == "nullValues":
+        none_allowed = to_threshold(data_quality) == _NONE_ALLOWED
+        if none_allowed and metric == "nullValues":
             native, check_type = "not_null", "field_null_values"
-        elif data_quality.mustBe == 0 and metric == "duplicateValues":
+        elif none_allowed and metric == "duplicateValues":
             native, check_type = "unique", "field_duplicate_values"
-        elif data_quality.mustBe == 0 and metric == "invalidValues" and valid_values and args.get("pattern") is None:
+        elif none_allowed and metric == "invalidValues" and valid_values and args.get("pattern") is None:
             native = {"accepted_values": {"arguments": {"values": valid_values}}}
             check_type = "field_invalid_values"
         if native is not None:

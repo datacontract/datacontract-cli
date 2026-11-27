@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import operator
 import re
 import uuid
 from datetime import datetime, timezone
@@ -281,7 +282,7 @@ def _check_property(
             if not passed:
                 violations.append((blob.name, reason))
 
-        constraint_desc = _describe_quality_constraint(quality)
+        constraint_desc = _describe_quality_constraint(quality, prop_name)
         check_name = f"Check schema[{schema_name}].properties[{prop_name}] has {constraint_desc}"
 
         if violations:
@@ -296,7 +297,7 @@ def _check_property(
                 model=schema_name,
                 field=prop_name,
                 result=ResultEnum.failed,
-                reason=f"{len(violations)} blob(s) violate '{prop_name} {constraint_desc}'.",
+                reason=f"{len(violations)} blob(s) violate '{constraint_desc}'.",
                 details=details,
                 check_filter=check_filter,
                 quality=quality,
@@ -310,7 +311,7 @@ def _check_property(
                 model=schema_name,
                 field=prop_name,
                 result=ResultEnum.passed,
-                reason=f"All {len(blobs)} blob(s) satisfy '{prop_name} {constraint_desc}'.",
+                reason=f"All {len(blobs)} blob(s) satisfy '{constraint_desc}'.",
                 check_filter=check_filter,
                 quality=quality,
             )
@@ -335,78 +336,61 @@ def _evaluate_quality_constraint(quality: DataQuality, value: Any, prop_name: st
 
     norm_value = _normalize(value)
 
+    outcomes: List[Tuple[bool, str]] = []
     if quality.mustBe is not None:
-        expected = _normalize(quality.mustBe)
-        return norm_value == expected, f"value is {value!r}; expected {quality.mustBe!r}"
-
+        outcomes.append((norm_value == _normalize(quality.mustBe), f"expected {quality.mustBe!r}"))
     if quality.mustNotBe is not None:
-        expected = _normalize(quality.mustNotBe)
-        return norm_value != expected, f"value is {value!r}; must not be {quality.mustNotBe!r}"
-
-    if quality.mustBeGreaterThan is not None:
-        threshold = quality.mustBeGreaterThan
+        outcomes.append((norm_value != _normalize(quality.mustNotBe), f"must not be {quality.mustNotBe!r}"))
+    for symbol, compare, threshold in (
+        (">", operator.gt, quality.mustBeGreaterThan),
+        (">=", operator.ge, quality.mustBeGreaterOrEqualTo),
+        ("<", operator.lt, quality.mustBeLessThan),
+        ("<=", operator.le, quality.mustBeLessOrEqualTo),
+    ):
+        if threshold is None:
+            continue
         try:
-            return value > threshold, f"value is {value!r}; must be > {threshold!r}"
+            outcomes.append((compare(value, threshold), f"must be {symbol} {threshold!r}"))
         except TypeError:
-            return False, f"Cannot compare {value!r} > {threshold!r}"
-
-    if quality.mustBeGreaterOrEqualTo is not None:
-        threshold = quality.mustBeGreaterOrEqualTo
+            return False, f"Cannot compare {value!r} {symbol} {threshold!r}"
+    for bounds, inside, requirement in (
+        (quality.mustBeBetween, True, "must be between"),
+        (quality.mustNotBeBetween, False, "must not be between"),
+    ):
+        if bounds is None or len(bounds) != 2:
+            continue
+        lo, hi = bounds
         try:
-            return value >= threshold, f"value is {value!r}; must be >= {threshold!r}"
-        except TypeError:
-            return False, f"Cannot compare {value!r} >= {threshold!r}"
-
-    if quality.mustBeLessThan is not None:
-        threshold = quality.mustBeLessThan
-        try:
-            return value < threshold, f"value is {value!r}; must be < {threshold!r}"
-        except TypeError:
-            return False, f"Cannot compare {value!r} < {threshold!r}"
-
-    if quality.mustBeLessOrEqualTo is not None:
-        threshold = quality.mustBeLessOrEqualTo
-        try:
-            return value <= threshold, f"value is {value!r}; must be <= {threshold!r}"
-        except TypeError:
-            return False, f"Cannot compare {value!r} <= {threshold!r}"
-
-    if quality.mustBeBetween is not None and len(quality.mustBeBetween) == 2:
-        lo, hi = quality.mustBeBetween[0], quality.mustBeBetween[1]
-        try:
-            return lo <= value <= hi, f"value is {value!r}; must be between {lo!r} and {hi!r}"
+            outcomes.append(((lo <= value <= hi) == inside, f"{requirement} {lo!r} and {hi!r}"))
         except TypeError:
             return False, f"Cannot compare {lo!r} <= {value!r} <= {hi!r}"
 
-    if quality.mustNotBeBetween is not None and len(quality.mustNotBeBetween) == 2:
-        lo, hi = quality.mustNotBeBetween[0], quality.mustNotBeBetween[1]
-        try:
-            return not (lo <= value <= hi), f"value is {value!r}; must not be between {lo!r} and {hi!r}"
-        except TypeError:
-            return False, f"Cannot compare {lo!r} <= {value!r} <= {hi!r}"
-
-    return True, f"value is {value!r}; no threshold specified"
+    if not outcomes:
+        return True, f"value is {value!r}; no threshold specified"
+    violated = [requirement for passed, requirement in outcomes if not passed]
+    requirements = violated or [requirement for _, requirement in outcomes]
+    return not violated, f"value is {value!r}; {' and '.join(requirements)}"
 
 
-def _describe_quality_constraint(quality: DataQuality) -> str:
-    """Return a short human-readable description of a quality constraint."""
-    if quality.mustBe is not None:
-        return f"= {quality.mustBe!r}"
-    if quality.mustNotBe is not None:
-        return f"!= {quality.mustNotBe!r}"
-    if quality.mustBeGreaterThan is not None:
-        return f"> {quality.mustBeGreaterThan!r}"
-    if quality.mustBeGreaterOrEqualTo is not None:
-        return f">= {quality.mustBeGreaterOrEqualTo!r}"
-    if quality.mustBeLessThan is not None:
-        return f"< {quality.mustBeLessThan!r}"
-    if quality.mustBeLessOrEqualTo is not None:
-        return f"<= {quality.mustBeLessOrEqualTo!r}"
+def _describe_quality_constraint(quality: DataQuality, subject: str) -> str:
+    """Return a short human-readable description of a quality constraint, e.g. `size > 0 and size < 10`."""
+    parts = [
+        f"{subject} {symbol} {threshold!r}"
+        for symbol, threshold in (
+            ("=", quality.mustBe),
+            ("!=", quality.mustNotBe),
+            (">", quality.mustBeGreaterThan),
+            (">=", quality.mustBeGreaterOrEqualTo),
+            ("<", quality.mustBeLessThan),
+            ("<=", quality.mustBeLessOrEqualTo),
+        )
+        if threshold is not None
+    ]
     if quality.mustBeBetween is not None:
-        return f"between {quality.mustBeBetween[0]!r} and {quality.mustBeBetween[1]!r}"
+        parts.append(f"{subject} between {quality.mustBeBetween[0]!r} and {quality.mustBeBetween[1]!r}")
     if quality.mustNotBeBetween is not None:
-        return f"not between {quality.mustNotBeBetween[0]!r} and {quality.mustNotBeBetween[1]!r}"
-    return "(no constraint)"
+        parts.append(f"{subject} not between {quality.mustNotBeBetween[0]!r} and {quality.mustNotBeBetween[1]!r}")
+    return " and ".join(parts) or "(no constraint)"
 
 
 # ---------------------------------------------------------------------------
@@ -426,12 +410,12 @@ def _check_file_count_quality(
         if getattr(quality, "metric", None) not in _FILE_COUNT_METRICS:
             continue
         passed, reason = _evaluate_quality_constraint(quality, file_count, "fileCount")
-        constraint_desc = _describe_quality_constraint(quality)
+        constraint_desc = _describe_quality_constraint(quality, quality.metric)
         _append_check(
             run,
             check_type="azure_file_count_quality",
             category="quality",
-            name=f"Check schema[{schema_name}] has {quality.metric} {constraint_desc}",
+            name=f"Check schema[{schema_name}] has {constraint_desc}",
             model=schema_name,
             result=ResultEnum.passed if passed else ResultEnum.failed,
             reason=reason,

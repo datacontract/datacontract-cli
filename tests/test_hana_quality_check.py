@@ -160,6 +160,16 @@ def test_sql_quality_threshold_operators():
         (DataQuality(type="sql", query="SELECT 5 FROM {model}", mustBeBetween=[1, 5]), 5, ResultEnum.passed),
         (DataQuality(type="sql", query="SELECT 5 FROM {model}", mustNotBeBetween=[6, 9]), 5, ResultEnum.passed),
         (DataQuality(type="sql", query="SELECT 5 FROM {model}", mustBeGreaterThan=5), 5, ResultEnum.failed),
+        (
+            DataQuality(type="sql", query="SELECT 5 FROM {model}", mustBeGreaterThan=0, mustBeLessThan=5),
+            5,
+            ResultEnum.failed,
+        ),
+        (
+            DataQuality(type="sql", query="SELECT 5 FROM {model}", mustBeBetween=[0, 9], mustNotBe=4),
+            5,
+            ResultEnum.passed,
+        ),
     ]
 
     for quality, value, expected in cases:

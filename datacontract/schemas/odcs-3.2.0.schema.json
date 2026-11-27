@@ -12,24 +12,13 @@
       "type": "string",
       "default": "DataContract",
       "description": "The kind of file this is. Valid value is `DataContract`.",
-      "enum": [
-        "DataContract"
-      ]
+      "enum": ["DataContract"]
     },
     "apiVersion": {
       "type": "string",
       "default": "v3.2.0",
       "description": "Version of the standard used to build data contract. Default value is v3.2.0.",
-      "enum": [
-        "v3.2.0",
-        "v3.1.0",
-        "v3.0.2",
-        "v3.0.1",
-        "v3.0.0",
-        "v2.2.2",
-        "v2.2.1",
-        "v2.2.0"
-      ]
+      "enum": ["v3.2.0", "v3.1.0", "v3.0.2", "v3.0.1", "v3.0.0", "v2.2.2", "v2.2.1", "v2.2.0"]
     },
     "id": {
       "type": "string",
@@ -50,11 +39,7 @@
       "type": "string",
       "description": "Current status of the dataset.",
       "examples": [
-        "proposed",
-        "draft",
-        "active",
-        "deprecated",
-        "retired"
+        "proposed", "draft", "active", "deprecated", "retired"
       ]
     },
     "servers": {
@@ -96,11 +81,7 @@
     "domain": {
       "type": "string",
       "description": "Name of the logical data domain.",
-      "examples": [
-        "imdb_ds_aggregate",
-        "receiver_profile_out",
-        "transaction_profile_out"
-      ]
+      "examples": ["imdb_ds_aggregate", "receiver_profile_out", "transaction_profile_out"]
     },
     "context": {
       "$ref": "#/$defs/Context"
@@ -165,12 +146,7 @@
       "description": "Timestamp in UTC of when the data contract was created."
     }
   },
-  "required": [
-    "version",
-    "apiVersion",
-    "kind",
-    "id"
-  ],
+  "required": ["version", "apiVersion", "kind", "id"],
   "additionalProperties": false,
   "unevaluatedProperties": false,
   "$defs": {
@@ -194,34 +170,14 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string",
-                    "description": "Stable identifier for the entry."
-                  },
-                  "question": {
-                    "type": "string",
-                    "description": "The canonical question."
-                  },
-                  "answer": {
-                    "type": "string",
-                    "description": "The expected response or result description."
-                  },
-                  "authoritativeDefinitions": {
-                    "$ref": "#/$defs/AuthoritativeDefinitions"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "customProperties": {
-                    "$ref": "#/$defs/CustomProperties"
-                  }
+                  "id": { "type": "string", "description": "Stable identifier for the entry." },
+                  "question": { "type": "string", "description": "The canonical question." },
+                  "answer": { "type": "string", "description": "The expected response or result description." },
+                  "authoritativeDefinitions": { "$ref": "#/$defs/AuthoritativeDefinitions" },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "customProperties": { "$ref": "#/$defs/CustomProperties" }
                 },
-                "required": [
-                  "question"
-                ],
+                "required": ["question"],
                 "additionalProperties": false
               }
             },
@@ -231,30 +187,13 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string",
-                    "description": "Stable identifier for the constraint."
-                  },
-                  "constraint": {
-                    "type": "string",
-                    "description": "The constraint text (negative guidance for AI agents)."
-                  },
-                  "authoritativeDefinitions": {
-                    "$ref": "#/$defs/AuthoritativeDefinitions"
-                  },
-                  "tags": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "customProperties": {
-                    "$ref": "#/$defs/CustomProperties"
-                  }
+                  "id": { "type": "string", "description": "Stable identifier for the constraint." },
+                  "constraint": { "type": "string", "description": "The constraint text (negative guidance for AI agents)." },
+                  "authoritativeDefinitions": { "$ref": "#/$defs/AuthoritativeDefinitions" },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "customProperties": { "$ref": "#/$defs/CustomProperties" }
                 },
-                "required": [
-                  "constraint"
-                ],
+                "required": ["constraint"],
                 "additionalProperties": false
               }
             }
@@ -279,10 +218,7 @@
       "pattern": "^[^\\s.#/\\\\@!%&^]+$"
     },
     "Port": {
-      "type": [
-        "integer",
-        "string"
-      ],
+      "type": ["integer", "string"],
       "description": "A network port: an integer, or a string, e.g. to hold a variable reference such as ${DB_PORT} resolved at runtime (RFC 0050)."
     },
     "Server": {
@@ -300,50 +236,10 @@
           "type": "string",
           "description": "Type of the server.",
           "enum": [
-            "api",
-            "athena",
-            "azure",
-            "bigquery",
-            "btrieve",
-            "clickhouse",
-            "databricks",
-            "denodo",
-            "dremio",
-            "duckdb",
-            "exasol",
-            "fastobjects",
-            "glue",
-            "hana",
-            "cloudsql",
-            "db2",
-            "hive",
-            "iceberg",
-            "impala",
-            "informix",
-            "ingres",
-            "kafka",
-            "kinesis",
-            "local",
-            "mysql",
-            "oracle",
-            "poet",
-            "postgresql",
-            "postgres",
-            "presto",
-            "pubsub",
-            "redshift",
-            "s3",
-            "sftp",
-            "snowflake",
-            "sqlserver",
-            "synapse",
-            "teradata",
-            "trino",
-            "vectorwise",
-            "versant",
-            "vertica",
-            "zen",
-            "custom"
+            "api", "athena", "azure", "bigquery", "btrieve", "clickhouse", "databricks", "denodo", "dremio",
+            "duckdb", "exasol", "fastobjects", "glue", "hana", "cloudsql", "db2", "hive", "iceberg", "impala", "informix", "ingres", "kafka", "kinesis", "local",
+            "mysql", "oracle", "poet", "postgresql", "postgres", "presto", "pubsub",
+            "redshift", "s3", "sftp", "snowflake", "sqlserver", "synapse", "teradata", "trino", "vectorwise", "versant", "vertica", "zen", "custom"
           ]
         },
         "description": {
@@ -353,12 +249,7 @@
         "environment": {
           "type": "string",
           "description": "Environment of the server.",
-          "examples": [
-            "prod",
-            "preprod",
-            "dev",
-            "uat"
-          ]
+          "examples": ["prod", "preprod", "dev", "uat"]
         },
         "roles": {
           "type": "array",
@@ -379,9 +270,7 @@
                 "const": "api"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/ApiServer"
@@ -394,9 +283,7 @@
                 "const": "athena"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/AthenaServer"
@@ -409,9 +296,7 @@
                 "const": "azure"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/AzureServer"
@@ -424,9 +309,7 @@
                 "const": "bigquery"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/BigQueryServer"
@@ -439,9 +322,7 @@
                 "const": "btrieve"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/ZenServer"
@@ -454,9 +335,7 @@
                 "const": "clickhouse"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/ClickHouseServer"
@@ -469,9 +348,7 @@
                 "const": "databricks"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/DatabricksServer"
@@ -484,9 +361,7 @@
                 "const": "denodo"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/DenodoServer"
@@ -499,9 +374,7 @@
                 "const": "dremio"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/DremioServer"
@@ -514,9 +387,7 @@
                 "const": "duckdb"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/DuckdbServer"
@@ -529,9 +400,7 @@
                 "const": "exasol"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/ExasolServer"
@@ -544,9 +413,7 @@
                 "const": "fastobjects"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/PoetServer"
@@ -559,9 +426,7 @@
                 "const": "glue"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/GlueServer"
@@ -574,9 +439,7 @@
                 "const": "cloudsql"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/GoogleCloudSqlServer"
@@ -589,9 +452,7 @@
                 "const": "db2"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/IBMDB2Server"
@@ -604,9 +465,7 @@
                 "const": "hive"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/HiveServer"
@@ -619,9 +478,7 @@
                 "const": "impala"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/ImpalaServer"
@@ -634,9 +491,7 @@
                 "const": "informix"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/InformixServer"
@@ -649,9 +504,7 @@
                 "const": "ingres"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/IngresServer"
@@ -664,9 +517,7 @@
                 "const": "zen"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/ZenServer"
@@ -679,9 +530,7 @@
                 "const": "custom"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/CustomServer"
@@ -694,9 +543,7 @@
                 "const": "kafka"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/KafkaServer"
@@ -709,9 +556,7 @@
                 "const": "kinesis"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/KinesisServer"
@@ -724,9 +569,7 @@
                 "const": "local"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/LocalServer"
@@ -739,9 +582,7 @@
                 "const": "mysql"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/MySqlServer"
@@ -754,9 +595,7 @@
                 "const": "oracle"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/OracleServer"
@@ -769,9 +608,7 @@
                 "const": "poet"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/PoetServer"
@@ -784,9 +621,7 @@
                 "const": "hana"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/HanaServer"
@@ -799,9 +634,7 @@
                 "const": "iceberg"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/IcebergServer"
@@ -814,9 +647,7 @@
                 "const": "postgresql"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/PostgresServer"
@@ -829,9 +660,7 @@
                 "const": "postgres"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/PostgresServer"
@@ -844,9 +673,7 @@
                 "const": "presto"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/PrestoServer"
@@ -859,9 +686,7 @@
                 "const": "pubsub"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/PubSubServer"
@@ -874,9 +699,7 @@
                 "const": "redshift"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/RedshiftServer"
@@ -889,9 +712,7 @@
                 "const": "s3"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/S3Server"
@@ -904,9 +725,7 @@
                 "const": "sftp"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/SftpServer"
@@ -919,9 +738,7 @@
                 "const": "snowflake"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/SnowflakeServer"
@@ -934,9 +751,7 @@
                 "const": "sqlserver"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/SqlserverServer"
@@ -949,9 +764,7 @@
                 "const": "synapse"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/SynapseServer"
@@ -964,9 +777,7 @@
                 "const": "teradata"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/TeradataServer"
@@ -979,9 +790,7 @@
                 "const": "trino"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/TrinoServer"
@@ -994,9 +803,7 @@
                 "const": "vectorwise"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/VectorwiseServer"
@@ -1009,9 +816,7 @@
                 "const": "versant"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/VersantServer"
@@ -1024,19 +829,14 @@
                 "const": "vertica"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/ServerSource/VerticaServer"
           }
         }
       ],
-      "required": [
-        "server",
-        "type"
-      ],
+      "required": ["server", "type"],
       "unevaluatedProperties": false
     },
     "ServerSource": {
@@ -1081,16 +881,12 @@
           "regionName": {
             "type": "string",
             "description": "The region your AWS account uses.",
-            "examples": [
-              "eu-west-1"
-            ]
+            "examples": ["eu-west-1"]
           },
           "workgroup": {
             "type": "string",
             "description": "The Athena workgroup to use. Workgroups can enforce query result location and other client-side settings via the 'Override client-side settings' option.",
-            "examples": [
-              "primary"
-            ]
+            "examples": ["primary"]
           }
         },
         "required": [
@@ -1522,10 +1318,7 @@
             "description": "Database name to connect to on the Zen server."
           }
         },
-        "required": [
-          "host",
-          "database"
-        ]
+        "required": ["host", "database"]
       },
       "CustomServer": {
         "type": "object",
@@ -1633,12 +1426,7 @@
           "format": {
             "type": "string",
             "description": "The format of the messages.",
-            "examples": [
-              "json",
-              "avro",
-              "protobuf",
-              "xml"
-            ],
+            "examples": ["json", "avro", "protobuf", "xml"],
             "default": "json"
           },
           "encoding": {
@@ -1875,17 +1663,13 @@
           "catalog": {
             "type": "string",
             "description": "Catalog name as registered in the query engine or catalog service.",
-            "examples": [
-              "my_catalog"
-            ]
+            "examples": ["my_catalog"]
           },
           "catalogUrl": {
             "type": "string",
             "format": "uri",
             "description": "URL of the Iceberg compatible REST catalog service (Polaris, S3 Tables, Nessie, Unity Catalog, Glue, etc.)",
-            "examples": [
-              "https://my-catalog-service.com"
-            ]
+            "examples": ["https://my-catalog-service.com"]
           },
           "namespace": {
             "type": "string",
@@ -1894,11 +1678,7 @@
           "warehouse": {
             "type": "string",
             "description": "Logical catalog or base location for the catalog to use.",
-            "examples": [
-              "s3://my-bucket/warehouse/sales/",
-              "production",
-              "development"
-            ]
+            "examples": ["s3://my-bucket/warehouse/sales/", "production", "development"]
           }
         },
         "required": [
@@ -1968,9 +1748,7 @@
           "region": {
             "type": "string",
             "description": "AWS region of Redshift server.",
-            "examples": [
-              "us-east-1"
-            ]
+            "examples": ["us-east-1"]
           },
           "account": {
             "type": "string",
@@ -1998,9 +1776,7 @@
             "type": "string",
             "format": "uri",
             "description": "The server endpoint for S3-compatible servers.",
-            "examples": [
-              "https://minio.example.com"
-            ]
+            "examples": ["https://minio.example.com"]
           },
           "format": {
             "type": "string",
@@ -2350,12 +2126,7 @@
         "physicalType": {
           "type": "string",
           "description": "The physical element data type in the data source.",
-          "examples": [
-            "table",
-            "view",
-            "topic",
-            "file"
-          ]
+          "examples": ["table", "view", "topic", "file"]
         },
         "description": {
           "type": "string",
@@ -2390,24 +2161,17 @@
         "logicalType": {
           "type": "string",
           "description": "The logical element data type.",
-          "enum": [
-            "object",
-            "blob"
-          ]
+          "enum": ["object"]
         },
         "physicalName": {
           "type": "string",
           "description": "Physical name.",
-          "examples": [
-            "table_1_2_0"
-          ]
+          "examples": ["table_1_2_0"]
         },
         "dataGranularityDescription": {
           "type": "string",
           "description": "Granular level of the data in the object.",
-          "examples": [
-            "Aggregation by country"
-          ]
+          "examples": ["Aggregation by country"]
         },
         "properties": {
           "type": "array",
@@ -2435,9 +2199,7 @@
           "$ref": "#/$defs/SchemaElement"
         }
       ],
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "unevaluatedProperties": false
     },
     "SchemaBaseProperty": {
@@ -2455,19 +2217,7 @@
         "logicalType": {
           "type": "string",
           "description": "The logical element data type.",
-          "enum": [
-            "string",
-            "date",
-            "timestamp",
-            "time",
-            "number",
-            "integer",
-            "object",
-            "array",
-            "boolean",
-            "map",
-            "vector"
-          ]
+          "enum": ["string", "date", "timestamp", "time", "number", "integer", "object", "array", "boolean", "map", "vector"]
         },
         "logicalTypeOptions": {
           "type": "object",
@@ -2480,9 +2230,7 @@
         "physicalName": {
           "type": "string",
           "description": "Physical name.",
-          "examples": [
-            "col_str_a"
-          ]
+          "examples": ["col_str_a"]
         },
         "required": {
           "type": "boolean",
@@ -2496,11 +2244,7 @@
         },
         "semanticType": {
           "type": "string",
-          "enum": [
-            "column",
-            "measure",
-            "dimension"
-          ],
+          "enum": ["column", "measure", "dimension"],
           "default": "column",
           "description": "The semantic role the property plays in the data model. `column` (the default) is a physical column in the underlying data store; `measure` is an aggregated value (e.g., `SUM(revenue)`) whose aggregation expression is held in `transformLogic`; `dimension` is a categorical attribute used for grouping and filtering. See RFC 0034."
         },
@@ -2517,11 +2261,7 @@
         "classification": {
           "type": "string",
           "description": "Can be anything, like confidential, restricted, and public to more advanced categorization. Some companies like PayPal, use data classification indicating the class of data in the element; expected values are 1, 2, 3, 4, or 5.",
-          "examples": [
-            "confidential",
-            "restricted",
-            "public"
-          ]
+          "examples": ["confidential", "restricted", "public"]
         },
         "encryptedName": {
           "type": "string",
@@ -2608,17 +2348,7 @@
                   },
                   "format": {
                     "type": "string",
-                    "examples": [
-                      "password",
-                      "byte",
-                      "binary",
-                      "email",
-                      "uuid",
-                      "uri",
-                      "hostname",
-                      "ipv4",
-                      "ipv6"
-                    ],
+                    "examples": ["password", "byte", "binary", "email", "uuid", "uri", "hostname", "ipv4", "ipv6"],
                     "description": "Provides extra context about what format the string follows."
                   }
                 }
@@ -2642,11 +2372,7 @@
                 "properties": {
                   "format": {
                     "type": "string",
-                    "examples": [
-                      "yyyy-MM-dd",
-                      "yyyy-MM-dd HH:mm:ss",
-                      "HH:mm:ss"
-                    ],
+                    "examples": ["yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "HH:mm:ss"],
                     "description": "Format of the date. Follows the format as prescribed by [JDK DateTimeFormatter](https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html). For example, format 'yyyy-MM-dd'."
                   },
                   "exclusiveMaximum": {
@@ -2697,11 +2423,7 @@
                 "properties": {
                   "format": {
                     "type": "string",
-                    "examples": [
-                      "yyyy-MM-dd",
-                      "yyyy-MM-dd HH:mm:ss",
-                      "HH:mm:ss"
-                    ],
+                    "examples": ["yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "HH:mm:ss"],
                     "description": "Format of the date. Follows the format as prescribed by [JDK DateTimeFormatter](https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html). For example, format 'yyyy-MM-dd'."
                   },
                   "exclusiveMaximum": {
@@ -2777,18 +2499,7 @@
                     "type": "string",
                     "default": "i32",
                     "description": "Format of the value in terms of how many bits of space it can use and whether it is signed or unsigned (follows the Rust integer types).",
-                    "enum": [
-                      "i8",
-                      "i16",
-                      "i32",
-                      "i64",
-                      "i128",
-                      "u8",
-                      "u16",
-                      "u32",
-                      "u64",
-                      "u128"
-                    ]
+                    "enum": ["i8", "i16", "i32", "i64", "i128", "u8", "u16", "u32", "u64", "u128"]
                   }
                 }
               }
@@ -2838,10 +2549,7 @@
                     "type": "string",
                     "default": "i32",
                     "description": "Format of the value in terms of how many bits of space it can use (follows the Rust float types).",
-                    "enum": [
-                      "f32",
-                      "f64"
-                    ]
+                    "enum": ["f32", "f64"]
                   }
                 }
               }
@@ -2960,15 +2668,10 @@
                     "description": "Definition of the map's value."
                   }
                 },
-                "required": [
-                  "key",
-                  "value"
-                ]
+                "required": ["key", "value"]
               }
             },
-            "required": [
-              "map"
-            ]
+            "required": ["map"]
           }
         },
         {
@@ -2992,46 +2695,23 @@
                     "type": "integer",
                     "minimum": 1,
                     "description": "The fixed length of the vector. Positive integer (only applicable when `logicalType: vector`). See RFC 0042.",
-                    "examples": [
-                      384,
-                      768,
-                      1024,
-                      1536,
-                      3072
-                    ]
+                    "examples": [384, 768, 1024, 1536, 3072]
                   },
                   "elementType": {
                     "type": "string",
-                    "enum": [
-                      "bfloat16",
-                      "binary",
-                      "float16",
-                      "float32",
-                      "float64",
-                      "int8",
-                      "uint8"
-                    ],
+                    "enum": ["bfloat16", "binary", "float16", "float32", "float64", "int8", "uint8"],
                     "default": "float32",
                     "description": "Numeric type of each vector element. `binary` means each element is one bit (binary-quantized vectors)."
                   },
                   "distanceMetric": {
                     "type": "string",
-                    "enum": [
-                      "cosine",
-                      "dotProduct",
-                      "euclidean",
-                      "hamming",
-                      "manhattan"
-                    ],
+                    "enum": ["cosine", "dotProduct", "euclidean", "hamming", "manhattan"],
                     "description": "Intended similarity metric. Advisory \u2014 the physical index may differ."
                   },
                   "embeddingModel": {
                     "type": "string",
                     "description": "Identifier of the model used to produce the vectors.",
-                    "examples": [
-                      "openai/text-embedding-3-small",
-                      "cohere/embed-english-v3.0"
-                    ]
+                    "examples": ["openai/text-embedding-3-small", "cohere/embed-english-v3.0"]
                   },
                   "embeddingModelVersion": {
                     "type": "string",
@@ -3043,14 +2723,10 @@
                     "description": "True if vectors are L2-normalized before storage, which makes cosine and dotProduct equivalent."
                   }
                 },
-                "required": [
-                  "dimensions"
-                ]
+                "required": ["dimensions"]
               }
             },
-            "required": [
-              "logicalTypeOptions"
-            ]
+            "required": ["logicalTypeOptions"]
           }
         }
       ],
@@ -3059,9 +2735,7 @@
     "SchemaProperty": {
       "type": "object",
       "$ref": "#/$defs/SchemaBaseProperty",
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "unevaluatedProperties": false
     },
     "SchemaItemProperty": {
@@ -3081,11 +2755,7 @@
     "Tags": {
       "type": "array",
       "description": "A list of tags that may be assigned to the elements (object or property); the tags keyword may appear at any level. Tags may be used to better categorize an element. For example, `finance`, `sensitive`, `employee_record`.",
-      "examples": [
-        "finance",
-        "sensitive",
-        "employee_record"
-      ],
+      "examples": ["finance", "sensitive", "employee_record"],
       "items": {
         "type": "string"
       }
@@ -3102,10 +2772,7 @@
         "businessImpact": {
           "type": "string",
           "description": "Consequences of the rule failure.",
-          "examples": [
-            "operational",
-            "regulatory"
-          ]
+          "examples": ["operational", "regulatory"]
         },
         "customProperties": {
           "type": "array",
@@ -3121,21 +2788,11 @@
         "dimension": {
           "type": "string",
           "description": "The key performance indicator (KPI) or dimension for data quality.",
-          "enum": [
-            "accuracy",
-            "completeness",
-            "conformity",
-            "consistency",
-            "coverage",
-            "timeliness",
-            "uniqueness"
-          ]
+          "enum": ["accuracy", "completeness", "conformity", "consistency", "coverage", "timeliness", "uniqueness"]
         },
         "method": {
           "type": "string",
-          "examples": [
-            "reconciliation"
-          ]
+          "examples": ["reconciliation"]
         },
         "name": {
           "type": "string",
@@ -3144,25 +2801,17 @@
         "schedule": {
           "type": "string",
           "description": "Rule execution schedule details.",
-          "examples": [
-            "0 20 * * *"
-          ]
+          "examples": ["0 20 * * *"]
         },
         "scheduler": {
           "type": "string",
           "description": "The name or type of scheduler used to start the data quality check.",
-          "examples": [
-            "cron"
-          ]
+          "examples": ["cron"]
         },
         "severity": {
           "type": "string",
           "description": "The severance of the quality rule.",
-          "examples": [
-            "info",
-            "warning",
-            "error"
-          ]
+          "examples": ["info", "warning", "error"]
         },
         "tags": {
           "$ref": "#/$defs/Tags"
@@ -3170,21 +2819,13 @@
         "type": {
           "type": "string",
           "description": "The type of quality check. 'text' is human-readable text that describes the quality of the data. 'library' is a set of maintained predefined quality attributes such as row count or unique. 'sql' is an individual SQL query that returns a value that can be compared. 'custom' is quality attributes that are vendor-specific, such as Soda or Great Expectations.",
-          "enum": [
-            "text",
-            "library",
-            "sql",
-            "custom"
-          ],
+          "enum": ["text", "library", "sql", "custom"],
           "default": "library"
         },
         "unit": {
           "type": "string",
           "description": "Unit the rule is using, popular values are `rows` or `percent`, but any value is allowed.",
-          "examples": [
-            "rows",
-            "percent"
-          ]
+          "examples": ["rows", "percent"]
         }
       },
       "allOf": [
@@ -3197,9 +2838,7 @@
                     "const": "library"
                   }
                 },
-                "required": [
-                  "type"
-                ]
+                "required": ["type"]
               },
               {
                 "properties": {
@@ -3207,9 +2846,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "metric"
-                ]
+                "required": ["metric"]
               }
             ]
           },
@@ -3224,9 +2861,7 @@
                 "const": "sql"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/DataQualitySql"
@@ -3239,9 +2874,7 @@
                 "const": "custom"
               }
             },
-            "required": [
-              "type"
-            ]
+            "required": ["type"]
           },
           "then": {
             "$ref": "#/$defs/DataQualityCustom"
@@ -3260,16 +2893,14 @@
     "DataQualityOperators": {
       "type": "object",
       "description": "Common comparison operators for data quality checks.",
-      "oneOf": [
+      "anyOf": [
         {
           "properties": {
             "mustBe": {
               "description": "Must be equal to the value to be valid. When using numbers, it is equivalent to '='."
             }
           },
-          "required": [
-            "mustBe"
-          ]
+          "required": ["mustBe"]
         },
         {
           "properties": {
@@ -3277,9 +2908,7 @@
               "description": "Must not be equal to the value to be valid. When using numbers, it is equivalent to '!='."
             }
           },
-          "required": [
-            "mustNotBe"
-          ]
+          "required": ["mustNotBe"]
         },
         {
           "properties": {
@@ -3288,9 +2917,7 @@
               "description": "Must be greater than the value to be valid. It is equivalent to '>'."
             }
           },
-          "required": [
-            "mustBeGreaterThan"
-          ]
+          "required": ["mustBeGreaterThan"]
         },
         {
           "properties": {
@@ -3299,9 +2926,7 @@
               "description": "Must be greater than or equal to the value to be valid. It is equivalent to '>='."
             }
           },
-          "required": [
-            "mustBeGreaterOrEqualTo"
-          ]
+          "required": ["mustBeGreaterOrEqualTo"]
         },
         {
           "properties": {
@@ -3310,9 +2935,7 @@
               "description": "Must be less than the value to be valid. It is equivalent to '<'."
             }
           },
-          "required": [
-            "mustBeLessThan"
-          ]
+          "required": ["mustBeLessThan"]
         },
         {
           "properties": {
@@ -3321,9 +2944,7 @@
               "description": "Must be less than or equal to the value to be valid. It is equivalent to '<='."
             }
           },
-          "required": [
-            "mustBeLessOrEqualTo"
-          ]
+          "required": ["mustBeLessOrEqualTo"]
         },
         {
           "properties": {
@@ -3338,9 +2959,7 @@
               }
             }
           },
-          "required": [
-            "mustBeBetween"
-          ]
+          "required": ["mustBeBetween"]
         },
         {
           "properties": {
@@ -3355,9 +2974,7 @@
               }
             }
           },
-          "required": [
-            "mustNotBeBetween"
-          ]
+          "required": ["mustNotBeBetween"]
         }
       ]
     },
@@ -3372,13 +2989,7 @@
         "metric": {
           "type": "string",
           "description": "Define a data quality check based on the predefined metrics as per ODCS.",
-          "enum": [
-            "nullValues",
-            "missingValues",
-            "invalidValues",
-            "duplicateValues",
-            "rowCount"
-          ]
+          "enum": ["nullValues", "missingValues", "invalidValues", "duplicateValues", "rowCount"]
         },
         "rule": {
           "type": "string",
@@ -3390,9 +3001,7 @@
           "description": "Additional arguments for the metric, if needed."
         }
       },
-      "required": [
-        "metric"
-      ]
+      "required": ["metric"]
     },
     "DataQualitySql": {
       "type": "object",
@@ -3405,14 +3014,10 @@
         "query": {
           "type": "string",
           "description": "Query string that adheres to the dialect of the provided server.",
-          "examples": [
-            "SELECT COUNT(*) FROM ${table} WHERE ${column} IS NOT NULL"
-          ]
+          "examples": ["SELECT COUNT(*) FROM ${table} WHERE ${column} IS NOT NULL"]
         }
       },
-      "required": [
-        "query"
-      ]
+      "required": ["query"]
     },
     "DataQualityCustom": {
       "type": "object",
@@ -3420,12 +3025,7 @@
         "engine": {
           "type": "string",
           "description": "Name of the engine which executes the data quality checks.",
-          "examples": [
-            "soda",
-            "great-expectations",
-            "monte-carlo",
-            "dbt"
-          ]
+          "examples": ["soda", "great-expectations", "monte-carlo", "dbt"]
         },
         "implementation": {
           "oneOf": [
@@ -3438,10 +3038,7 @@
           ]
         }
       },
-      "required": [
-        "engine",
-        "implementation"
-      ]
+      "required": ["engine", "implementation"]
     },
     "AuthoritativeDefinitions": {
       "type": "array",
@@ -3459,27 +3056,14 @@
           "type": {
             "type": "string",
             "description": "Type of definition for authority. See the recommended values in the documentation.",
-            "examples": [
-              "businessDefinition",
-              "canonicalUrl",
-              "glossary",
-              "implementation",
-              "ontology",
-              "taxonomy",
-              "transformationImplementation",
-              "tutorial",
-              "videoTutorial"
-            ]
+            "examples": ["businessDefinition", "canonicalUrl", "glossary", "implementation", "ontology", "taxonomy", "transformationImplementation", "tutorial", "videoTutorial"]
           },
           "description": {
             "type": "string",
             "description": "Description of the authoritative definition for humans."
           }
         },
-        "required": [
-          "url",
-          "type"
-        ],
+        "required": ["url", "type"],
         "additionalProperties": false
       }
     },
@@ -3511,25 +3095,12 @@
         "tool": {
           "type": "string",
           "description": "Name of the tool, value can be `email`, `slack`, `teams`, `discord`, `ticket`, `googlechat`, or `other`.",
-          "examples": [
-            "email",
-            "slack",
-            "teams",
-            "discord",
-            "ticket",
-            "googlechat",
-            "other"
-          ]
+          "examples": ["email", "slack", "teams", "discord", "ticket", "googlechat", "other"]
         },
         "scope": {
           "type": "string",
           "description": "Scope can be: `interactive`, `announcements`, `issues`, `notifications`.",
-          "examples": [
-            "interactive",
-            "announcements",
-            "issues",
-            "notifications"
-          ]
+          "examples": ["interactive", "announcements", "issues", "notifications"]
         },
         "invitationUrl": {
           "type": "string",
@@ -3539,9 +3110,7 @@
           "$ref": "#/$defs/CustomProperties"
         }
       },
-      "required": [
-        "channel"
-      ],
+      "required": ["channel"],
       "additionalProperties": false
     },
     "Pricing": {
@@ -3617,9 +3186,7 @@
           "$ref": "#/$defs/AuthoritativeDefinitions"
         }
       },
-      "required": [
-        "username"
-      ]
+      "required": ["username"]
     },
     "Team": {
       "type": "object",
@@ -3689,9 +3256,7 @@
           "$ref": "#/$defs/CustomProperties"
         }
       },
-      "required": [
-        "role"
-      ],
+      "required": ["role"],
       "additionalProperties": false
     },
     "ServiceLevelAgreementProperty": {
@@ -3739,32 +3304,22 @@
         "driver": {
           "type": "string",
           "description": "Describes the importance of the SLA from the list of: `regulatory`, `analytics`, or `operational`.",
-          "examples": [
-            "regulatory",
-            "analytics",
-            "operational"
-          ]
+          "examples": ["regulatory", "analytics", "operational"]
         },
         "description": {
           "type": "string",
           "description": "Description of the SLA for humans.",
-          "examples": [
-            "99.9% of the time, data is available by 6 AM UTC"
-          ]
+          "examples": ["99.9% of the time, data is available by 6 AM UTC"]
         },
         "scheduler": {
           "type": "string",
           "description": "Name of the scheduler, can be cron or any tool your organization support.",
-          "examples": [
-            "cron"
-          ]
+          "examples": ["cron"]
         },
         "schedule": {
           "type": "string",
           "description": "Configuration information for the scheduling tool, for cron a possible value is 0 20 * * *.",
-          "examples": [
-            "0 20 * * *"
-          ]
+          "examples": ["0 20 * * *"]
         },
         "customProperties": {
           "$ref": "#/$defs/CustomProperties"
@@ -3773,10 +3328,7 @@
           "$ref": "#/$defs/AuthoritativeDefinitions"
         }
       },
-      "required": [
-        "property",
-        "value"
-      ],
+      "required": ["property", "value"],
       "additionalProperties": false
     },
     "CustomProperties": {
@@ -3819,9 +3371,7 @@
           "$ref": "#/$defs/Tags"
         }
       },
-      "required": [
-        "value"
-      ],
+      "required": ["value"],
       "additionalProperties": false
     },
     "Synonyms": {
@@ -3862,9 +3412,7 @@
           "$ref": "#/$defs/CustomProperties"
         }
       },
-      "required": [
-        "synonym"
-      ],
+      "required": ["synonym"],
       "additionalProperties": false
     },
     "CustomProperty": {
@@ -3875,7 +3423,7 @@
         },
         "property": {
           "type": "string",
-          "description": "The name of the key. Names should be in camel case\u2013the same as if they were permanent properties in the contract."
+          "description": "The name of the key. Names should be in camel case–the same as if they were permanent properties in the contract."
         },
         "value": {
           "$ref": "#/$defs/AnyType",
@@ -3888,18 +3436,10 @@
         "vendor": {
           "type": "string",
           "description": "Identifies the vendor, provider, or external system associated with this custom property. SHOULD be a stable, lowercase identifier matching ^[a-z0-9][a-z0-9-]*$ (e.g. confluent, zeenea, atlan, soda). Tools MUST preserve unknown vendor values.",
-          "examples": [
-            "confluent",
-            "zeenea",
-            "atlan",
-            "soda"
-          ]
+          "examples": ["confluent", "zeenea", "atlan", "soda"]
         }
       },
-      "required": [
-        "property",
-        "value"
-      ],
+      "required": ["property", "value"],
       "additionalProperties": false
     },
     "AnyType": {
@@ -3958,9 +3498,7 @@
           "type": "string",
           "description": "The type of relationship. Defaults to 'foreignKey'.",
           "default": "foreignKey",
-          "enum": [
-            "foreignKey"
-          ]
+          "enum": ["foreignKey"]
         },
         "from": {
           "oneOf": [
@@ -4037,10 +3575,7 @@
           "$ref": "#/$defs/RelationshipBase"
         },
         {
-          "required": [
-            "from",
-            "to"
-          ]
+          "required": ["from", "to"]
         },
         {
           "oneOf": [
@@ -4088,15 +3623,11 @@
         },
         {
           "type": "object",
-          "required": [
-            "to"
-          ]
+          "required": ["to"]
         },
         {
           "not": {
-            "required": [
-              "from"
-            ]
+            "required": ["from"]
           },
           "description": "The 'from' field must not be specified at property level as it is implicitly derived from the property context"
         }

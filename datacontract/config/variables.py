@@ -106,7 +106,7 @@ _ENUM_VALUES: dict[tuple[str, str], frozenset[str]] = {
     ("DataQuality", "dimension"): frozenset(
         {"accuracy", "completeness", "conformity", "consistency", "coverage", "timeliness", "uniqueness"}
     ),
-    ("SchemaObject", "logicalType"): frozenset({"object", "blob"}),
+    ("SchemaObject", "logicalType"): frozenset({"object"}),
     ("SchemaProperty", "logicalType"): frozenset(
         {
             "string",

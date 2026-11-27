@@ -80,8 +80,8 @@ class Op(str, Enum):
 
 
 @dataclass
-class Threshold:
-    """A structured comparison applied to a computed metric value."""
+class Comparison:
+    """A single comparison applied to a computed metric value."""
 
     op: Op
     value: Any = None
@@ -110,12 +110,27 @@ class Threshold:
             return not bool(v <= a <= self.value2)
         return False
 
-    def describe(self) -> str:
+    def describe(self, subject: str | None = None, unit: str = "") -> str:
+        prefix = f"{subject} " if subject else ""
         if self.op == Op.BETWEEN:
-            return f"between {self.value} and {self.value2}"
+            return f"{prefix}between {self.value}{unit} and {self.value2}{unit}"
         if self.op == Op.NOT_BETWEEN:
-            return f"not between {self.value} and {self.value2}"
-        return f"{self.op.value} {self.value}"
+            return f"{prefix}not between {self.value}{unit} and {self.value2}{unit}"
+        return f"{prefix}{self.op.value} {self.value}{unit}"
+
+
+@dataclass
+class Threshold:
+    """The comparisons a computed metric value must all pass."""
+
+    comparisons: List[Comparison]
+
+    def passes(self, actual: Any) -> bool:
+        return all(comparison.passes(actual) for comparison in self.comparisons)
+
+    def describe(self, subject: str | None = None, unit: str = "") -> str:
+        """Each comparison names the subject, if given, and carries the unit, e.g. `size > 0% and size < 5%`."""
+        return " and ".join(comparison.describe(subject, unit) for comparison in self.comparisons)
 
 
 @dataclass

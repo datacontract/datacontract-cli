@@ -76,7 +76,7 @@ quality:
 
 ## Comparators
 
-The query must return a single value, which is compared using exactly one of:
+The query must return a single value, which is compared using one or more of these comparators. With several, all of them must hold.
 
 | Comparator | Passes when the result… |
 |---|---|
