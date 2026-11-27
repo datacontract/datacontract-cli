@@ -115,3 +115,119 @@ schema:
     run = DataContract(data_contract_str=contract).test()
 
     assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+
+
+def test_a_check_does_not_copy_the_mysql_table(start_mysql_container, monkeypatch):
+    """A MAX over the table is computed by MySQL. The server is not asked for every row."""
+    monkeypatch.setenv("DATACONTRACT_MYSQL_USERNAME", mysql_container.username)
+    monkeypatch.setenv("DATACONTRACT_MYSQL_PASSWORD", mysql_container.password)
+    _seed_bulk_orders()
+    _reset_general_log()
+    _run_bulk_contract()
+    statements = _general_log()
+
+    copies = [sql for sql in statements if _reads_every_row(sql)]
+    assert copies == [], copies
+    assert any("max(" in sql.lower() and "bulk_orders" in sql.lower() for sql in statements)
+
+
+def _run_bulk_contract():
+    port = mysql_container.get_exposed_port(3306)
+    contract = f"""apiVersion: v3.1.0
+kind: DataContract
+id: mysql-bulk
+name: Bulk orders
+version: 1.0.0
+status: active
+servers:
+  - server: mysql
+    type: mysql
+    host: localhost
+    port: {port}
+    database: {mysql_container.dbname}
+schema:
+  - name: bulk_orders
+    properties:
+      - name: n
+        logicalType: integer
+        required: true
+        unique: true
+        logicalTypeOptions:
+          minimum: 0
+      - name: label
+        logicalType: string
+        required: true
+    quality:
+      - type: sql
+        description: highest n
+        query: SELECT MAX(n) FROM bulk_orders
+        mustBe: 99
+"""
+    run = DataContract(data_contract_str=contract).test()
+    assert run.result == "passed", [(c.name, c.reason) for c in run.checks if c.result != "passed"]
+    return run
+
+
+def _seed_bulk_orders():
+    connection = mysql.connector.connect(
+        database=mysql_container.dbname,
+        user=mysql_container.username,
+        password=mysql_container.password,
+        host=mysql_container.get_container_host_ip(),
+        port=int(mysql_container.get_exposed_port(3306)),
+    )
+    cursor = connection.cursor()
+    cursor.execute("DROP TABLE IF EXISTS bulk_orders")
+    cursor.execute("CREATE TABLE bulk_orders (n INT NOT NULL, label VARCHAR(16) NOT NULL, PRIMARY KEY (n))")
+    cursor.executemany(
+        "INSERT INTO bulk_orders (n, label) VALUES (%s, %s)",
+        [(i, f"row-{i}") for i in range(100)],
+    )
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
+def _reset_general_log():
+    connection = _root_connection()
+    cursor = connection.cursor()
+    cursor.execute("SET GLOBAL log_output = 'TABLE'")
+    cursor.execute("SET GLOBAL general_log = 'ON'")
+    cursor.execute("TRUNCATE TABLE mysql.general_log")
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
+def _general_log() -> list[str]:
+    connection = _root_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "SELECT argument FROM mysql.general_log WHERE command_type IN ('Query', 'Execute') AND argument IS NOT NULL"
+    )
+    statements = []
+    for (argument,) in cursor.fetchall():
+        if isinstance(argument, (bytes, bytearray)):
+            argument = argument.decode()
+        statements.append(argument)
+    cursor.close()
+    connection.close()
+    return statements
+
+
+def _root_connection():
+    return mysql.connector.connect(
+        user="root",
+        password=mysql_container.root_password,
+        host=mysql_container.get_container_host_ip(),
+        port=int(mysql_container.get_exposed_port(3306)),
+    )
+
+
+def _reads_every_row(sql: str) -> bool:
+    compact = " ".join(sql.lower().split())
+    if "bulk_orders" not in compact or not compact.startswith("select"):
+        return False
+    return not any(
+        token in compact for token in (" where ", " group by ", " limit ", "max(", "min(", "count(", "sum(", "avg(")
+    )
